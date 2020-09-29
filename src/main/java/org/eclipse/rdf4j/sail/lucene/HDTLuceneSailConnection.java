@@ -287,6 +287,7 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
 
     // constant optimizer - evaluate lucene queries
     if (!queries.isEmpty()) {
+      System.out.println("the query is using lucene...");
       evaluateLuceneQueries(queries);
     }
 
@@ -316,7 +317,7 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
       // new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
       new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
 
-      logger.trace("Optimized query model:\n{}", tupleExpr);
+      logger.info("Optimized query model:\n{}", tupleExpr);
 
       // System.out.println("Optimized query model:\n{}"+ tupleExpr);
       try {
@@ -352,6 +353,7 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
       // evaluate the Lucene query and generate bindings
       final Collection<BindingSet> bindingSets = luceneIndex.evaluate(query);
 
+        System.out.println("Binding sets size:"+bindingSets.size());
       final BindingSetAssignment bsa = new BindingSetAssignment();
 
       // found something?

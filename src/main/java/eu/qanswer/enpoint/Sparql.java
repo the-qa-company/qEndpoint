@@ -51,14 +51,14 @@ public class Sparql {
             baseSail.initialize();
             HDTLuceneSail lucenesail = new HDTLuceneSail(baseSail);
             lucenesail.setReindexQuery(
-                    "SELECT ?s ?p ?o WHERE { {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p=<https://linkedopendata.eu/prop/direct/P836> && lang(?o)=\"en\")} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q196899> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p = <https://linkedopendata.eu/prop/direct/P127>) } } } order by ?s");
+                    "SELECT ?s ?p ?o WHERE {?s ?p ?o } order by ?s");
             lucenesail.setParameter(
                     LuceneSail.LUCENE_DIR_KEY, location + "lucene");
-            lucenesail.setParameter(LuceneSail.WKT_FIELDS, "http://www.opengis.net/ont/geosparql#wktLiteral https://linkedopendata.eu/prop/direct/P127");
+            lucenesail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127");
             lucenesail.setParameter(LuceneSail.MAX_DOCUMENTS_KEY, "5000");
             lucenesail.setBaseSail(baseSail);
             lucenesail.initialize();
-            lucenesail.reindex();
+            //lucenesail.reindex();
             Repository db = new SailRepository(lucenesail);
             db.init();
             RepositoryConnection conn = db.getConnection();
