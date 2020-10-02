@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
+import org.eclipse.rdf4j.model.impl.util.LiteralParser;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -92,12 +93,13 @@ public class SimpleLiteralHDT implements Literal {
 
   protected void parseLiteral() {
     if (label == null) {
-       //System.out.println("Parse lietral "+hdtID + " -- " + hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString());
+//       System.out.println("Parse lietral "+hdtID + " -- " + hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString());
       try {
         String literal =
-            hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString();
-        Literal l = NTriplesUtil.parseLiteral(literal, valueFactory);
+                hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString();
+        Literal l = LiteralParser.parseLiteral(literal, valueFactory);
         label = l.getLabel();
+//        System.out.println("Parsed literal "+label);
         if (l.getLanguage().isPresent()) {
           language = l.getLanguage().get();
         }
@@ -107,22 +109,6 @@ public class SimpleLiteralHDT implements Literal {
         label = "";
         datatype = XMLSchema.STRING;
       }
-      //            if (literal.contains("\"@")) {
-      //                label = literal.substring(1,literal.lastIndexOf("@")-1);
-      //                language = literal.substring(literal.lastIndexOf("@")+1,literal.length());
-      //                datatype = RDF.LANGSTRING;
-      //
-      //
-      //
-      //            } else if (literal.contains("^^")) {
-      //
-      //                label = literal.substring(1,literal.lastIndexOf("^^")-1);
-      //                datatype = new
-      // SimpleIRI2(literal.substring(literal.lastIndexOf("^^")+3,literal.length()-1));
-      //            } else {
-      //                label = literal.substring(1,literal.length()-1);
-      //                datatype = XMLSchema.STRING;
-      //            }
     }
   }
 
