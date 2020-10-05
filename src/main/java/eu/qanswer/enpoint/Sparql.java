@@ -1,6 +1,7 @@
 package eu.qanswer.enpoint;
 
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResultHandler;
@@ -25,12 +26,6 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.HashMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Component
 public class Sparql {
@@ -66,51 +61,32 @@ public class Sparql {
         }
     }
 
-    public String executeJson(String sparqlQuery, int timeout)
-            throws Exception {
+    public String executeJson(String sparqlQuery, int timeout) throws Exception {
         logger.info("Json " + sparqlQuery);
         inizialize(location);
-        ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        Callable<Object> task =
-                new Callable<Object>() {
-                    public Object call() throws Exception {
-                        ParsedQuery parsedQuery =
-                                QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-                        if (parsedQuery instanceof ParsedTupleQuery) {
-                            TupleQuery query = model.get(location).prepareTupleQuery(sparqlQuery);
-                            ByteArrayOutputStream out = new ByteArrayOutputStream();
-                            TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
-                            query.evaluate(writer);
-                            return out.toString("UTF8");
-                        } else if (parsedQuery instanceof ParsedBooleanQuery) {
-                            BooleanQuery query = model.get(location).prepareBooleanQuery(sparqlQuery);
-                            if (query.evaluate() == true) {
-                                return "{ \"head\" : { } , \"boolean\" : true }";
-                            } else {
-                                return "{ \"head\" : { } , \"boolean\" : false }";
-                            }
-                        } else {
-                            System.out.println("Not knowledgebase yet: query is neither a SELECT nor an ASK");
-                        }
-                        return null;
-                    };
-                };
-        Future<Object> future = executor.submit(task);
-        Object result = null;
-        try {
-            result = future.get(timeout, TimeUnit.SECONDS);
-        } catch (TimeoutException ex) {
-            logger.info(
-                    "The query "
-                            + sparqlQuery
-                            + " timeed out!"+" Limit "+timeout);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            // handle the interrupts
-        } finally {
-            future.cancel(true);
-            executor.shutdownNow(); // may or may not desire this
+        ParsedQuery parsedQuery =
+                QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+        if (parsedQuery instanceof ParsedTupleQuery) {
+            TupleQuery query = model.get(location).prepareTupleQuery(sparqlQuery);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
+            query.setMaxExecutionTime(timeout);
+            try {
+                query.evaluate(writer);
+            } catch (QueryEvaluationException q){
+                System.out.println("I catched this expetion!!!!"+q);
+            }
+            return out.toString("UTF8");
+        } else if (parsedQuery instanceof ParsedBooleanQuery) {
+            BooleanQuery query = model.get(location).prepareBooleanQuery(sparqlQuery);
+            if (query.evaluate() == true) {
+                return "{ \"head\" : { } , \"boolean\" : true }";
+            } else {
+                return "{ \"head\" : { } , \"boolean\" : false }";
+            }
+        } else {
+            System.out.println("Not knowledgebase yet: query is neither a SELECT nor an ASK");
         }
-        return (String) result;
+        return null;
     }
 }
