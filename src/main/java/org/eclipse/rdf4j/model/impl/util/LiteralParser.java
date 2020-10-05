@@ -20,7 +20,7 @@ public class LiteralParser {
                 }
 
                 String label = nTriplesLiteral.substring(1, endLabelIdx);
-                label = unescapeString(label);
+                //label = unescapeString(label);
                 String datatype;
                 if (startLangIdx != -1) {
                     datatype = nTriplesLiteral.substring(startLangIdx + 1);
