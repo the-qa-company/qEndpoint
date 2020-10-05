@@ -21,7 +21,7 @@ public class ParseDateFunction implements Function {
     public static final String NAMESPACE = "http://qanswer.eu/function/";
 
     /**
-     * return the URI 'http://example.org/custom-function/palindrome' as a
+     * return the URI 'http://qanswer.eu/function/parse_date' as a
      * String
      */
     public String getURI() {
@@ -31,17 +31,13 @@ public class ParseDateFunction implements Function {
     /**
      * Function to parse a date
      *
-     * @return A boolean literal representing true if the input argument is a
-     *         palindrome, false otherwise.
+     * @return a string with the date formatted in the predefined format
      * @throws ValueExprEvaluationException
-     *         if more than one argument is supplied or if the supplied argument
-     *         is not a literal.
+     *         if more than two argument is supplied or if the supplied argument
+     *         is not a literal of the right type.
      */
     public Value evaluate(ValueFactory valueFactory, Value... args)
-            throws ValueExprEvaluationException
-    {
-        // our palindrome function expects only a single argument, so throw an error
-        // if there's more than one
+            throws ValueExprEvaluationException {
         if (args.length != 2) {
             throw new ValueExprEvaluationException(
                     "Parse date function requires"
@@ -49,17 +45,6 @@ public class ParseDateFunction implements Function {
                             + args.length);
         }
         Value arg1 = args[0];
-        // check if the argument is a literal, if not, we throw an error
-        if ((arg1 instanceof Literal)) {
-            if (((Literal)arg1).getDatatype().equals("http://www.w3.org/2001/XMLSchema#date") || ((Literal)arg1).getDatatype().equals("http://www.w3.org/2001/XMLSchema#dateTime")){
-                throw new ValueExprEvaluationException(
-                        "invalid argument (expect an xsd:date or xsd:dateTime): " + arg1);
-            }
-        } else {
-            throw new ValueExprEvaluationException(
-                    "Invalid argument (expect an xsd:date or xsd:dateTime): " + arg1);
-        }
-
         Value arg2 = args[1];
         if ((arg2 instanceof Literal)) {
             System.out.println(((Literal)arg1).getLabel());
@@ -73,16 +58,24 @@ public class ParseDateFunction implements Function {
                     throw new ValueExprEvaluationException(
                             "Cannot parse date: " + arg2);
                 }
+            } else if (((Literal)arg1).getDatatype().toString().equals("http://www.w3.org/2001/XMLSchema#date")){
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                try {
+                    Date date = simpleDateFormat.parse(((Literal)arg1).getLabel());
+                    simpleDateFormat = new SimpleDateFormat(((Literal)arg2).getLabel());
+                    return valueFactory.createLiteral(simpleDateFormat.format(date));
+                } catch (ParseException e) {
+                    throw new ValueExprEvaluationException(
+                            "Cannot parse date: " + arg2);
+                }
+            } else {
+                throw new ValueExprEvaluationException(
+                        "invalid argument (expect an xsd:date or xsd:dateTime): " + arg1);
             }
 
+        } else {
+            throw new ValueExprEvaluationException(
+                    "Invalid argument (expect an xsd:date or xsd:dateTime): " + arg1);
         }
-
-        // get the actual string value that we want to check for palindrome-ness.
-        String label = ((Literal)arg1).getLabel();
-        // we invert our string
-
-        // a function is always expected to return a Value object, so we
-        // return our boolean result as a Literal
-        return valueFactory.createLiteral(label+"BLU");
     }
 }
