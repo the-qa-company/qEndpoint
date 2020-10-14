@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.AbstractRepository;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTSpecification;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +35,10 @@ public class HDTRepository extends AbstractRepository {
   protected void initializeInternal() throws RepositoryException {
     try {
       if (file != null) {
-        hdt = HDTManager.mapIndexedHDT(file.getAbsolutePath());
+        HDTSpecification spec = new HDTSpecification();
+        //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj");
+
+        hdt = HDTManager.mapIndexedHDT(file.getAbsolutePath(),spec);
       }
       tripleSource = new HDTTripleSource(hdt);
       queryPreparer = new HDTQueryPreparer(tripleSource);

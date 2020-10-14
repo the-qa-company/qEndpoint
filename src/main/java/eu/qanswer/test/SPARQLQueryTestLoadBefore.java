@@ -1,8 +1,9 @@
-package org.test;
+package eu.qanswer.test;
 
 
+import org.eclipse.rdf4j.common.io.FileUtil;
+import org.eclipse.rdf4j.common.io.ZipUtil;
 import org.eclipse.rdf4j.query.Dataset;
-
 import org.eclipse.rdf4j.query.parser.sparql.manifest.SPARQLQueryTest;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -10,10 +11,14 @@ import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HDTRepository;
 
-import java.io.File;
-
+import java.io.*;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Scanner;
+import java.util.jar.JarFile;
 
 
 public abstract class SPARQLQueryTestLoadBefore extends SPARQLQueryTest {
@@ -34,18 +39,39 @@ public abstract class SPARQLQueryTestLoadBefore extends SPARQLQueryTest {
             System.out.println("This dataset here " + this.dataset.getDefaultGraphs());
             System.out.println("Reading1 ");
 
-            File file = new File(this.dataset.getDefaultGraphs().toString().replace("file:", "").replace("[", "").replace("]", ""));
+
+            String x = this.dataset.getDefaultGraphs().toString();
+            String str = x.substring(x.indexOf("!") +1 ).replace("]","");
+
+            URL url = SPARQL11Manifest.class.getResource(str);
+            //File tmpDir = FileUtil.createTempDir("sparql11-test-evaluation");
+            File tmpDir = new File("test");
+            if(!tmpDir.isDirectory()){
+                tmpDir.mkdir();
+            }
+            JarURLConnection con = (JarURLConnection)url.openConnection();
+            //JarFile jar = con.getJarFile();
+            //ZipUtil.extract(jar, tmpDir);
+            File file = new File(tmpDir, con.getEntryName());
+
             HDT hdt = null;
+
+            HDTSpecification spec = new HDTSpecification();
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj");
+
             if(file.getName().endsWith("rdf")){
-                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.RDFXML, new HDTSpecification(), null);
+                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.RDFXML, spec, null);
             }else if(file.getName().endsWith("ttl")){
-                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.TURTLE, new HDTSpecification(), null);
+                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.TURTLE, spec, null);
             }else if(file.getName().endsWith("nt")){
-                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.NTRIPLES, new HDTSpecification(), null);
+                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.NTRIPLES, spec, null);
             }
             this.dataRep = new HDTRepository(hdt);
             this.dataRep.init();
-            System.out.println("Query " + this.readQueryString());
+
+
+            System.out.println("Query: " + this.readQueryString());
+
         }
 
     }

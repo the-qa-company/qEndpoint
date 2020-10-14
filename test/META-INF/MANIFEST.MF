@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: jenkins
+Build-Jdk: 1.8.0_202
+Implementation-Build: 11f33e0
+Implementation-Title: RDF4J SPARQL compliance test suite
+Implementation-Vendor: Eclipse Foundation
+Implementation-Vendor-Id: org.eclipse.rdf4j
+Implementation-Version: 3.4.2+11f33e0
+

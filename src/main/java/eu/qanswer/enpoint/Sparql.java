@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.sail.lucene.HDTLuceneSail;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HDTSail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +45,12 @@ public class Sparql {
         if (!model.containsKey(location)) {
             model.put(location, null);
             System.out.println("initialize "+location);
+            HDTSpecification spec = new HDTSpecification();
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+
             HDT hdt =
                     HDTManager.mapIndexedHDT(
-                            new File(location+"index_big.hdt").getAbsolutePath());
+                            new File(location+"index_big.hdt").getAbsolutePath(),spec);
             HDTSail baseSail = new HDTSail(hdt);
             baseSail.initialize();
             HDTLuceneSail lucenesail = new HDTLuceneSail(baseSail);
@@ -58,7 +62,7 @@ public class Sparql {
             lucenesail.setParameter(LuceneSail.MAX_DOCUMENTS_KEY, "5000");
             lucenesail.setBaseSail(baseSail);
             lucenesail.initialize();
-            //lucenesail.reindex();
+            lucenesail.reindex();
             Repository db = new SailRepository(lucenesail);
             db.init();
             RepositoryConnection conn = db.getConnection();
@@ -69,6 +73,7 @@ public class Sparql {
     public String executeJson(String sparqlQuery, int timeout)
             throws Exception {
         logger.info("Json " + sparqlQuery);
+        location = "/Users/alihaidar/Desktop/qa-company/hdt_file/";
         inizialize(location);
         ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Callable<Object> task =
