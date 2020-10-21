@@ -41,11 +41,11 @@ public class Sparql {
             model.put(location, null);
             System.out.println("initialize "+location);
             HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+            //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 
             HDT hdt =
                     HDTManager.mapIndexedHDT(
-                            new File(location+"index_big.hdt").getAbsolutePath(),spec);
+                            new File(location+"index_test.hdt").getAbsolutePath(),spec);
             HDTSail baseSail = new HDTSail(hdt);
             baseSail.initialize();
             HDTLuceneSail lucenesail = new HDTLuceneSail(baseSail);
@@ -57,7 +57,7 @@ public class Sparql {
             lucenesail.setParameter(LuceneSail.MAX_DOCUMENTS_KEY, "5000");
             lucenesail.setBaseSail(baseSail);
             lucenesail.initialize();
-            lucenesail.reindex();
+            //lucenesail.reindex();
             Repository db = new SailRepository(lucenesail);
             db.init();
             RepositoryConnection conn = db.getConnection();
