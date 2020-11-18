@@ -26,10 +26,11 @@ public class EndpointController {
             @RequestParam(value = "query", required = true) final String query,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            @RequestHeader(value = "timeout", defaultValue = "5") int timeout,
+            @RequestParam(value = "timeout", defaultValue = "5") int timeout,
             Principal principal)
             throws Exception {
         logger.info("Query "+query);
+        logger.info("timeout: "+timeout);
         if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
             return ResponseEntity.status(HttpStatus.OK)
                     .header("Content-Type", "application/sparql-results+json")

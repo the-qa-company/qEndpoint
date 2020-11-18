@@ -45,19 +45,17 @@ public class Sparql {
 
             HDT hdt =
                     HDTManager.mapIndexedHDT(
-                            new File(location+"index_test.hdt").getAbsolutePath(),spec);
+                            new File(location+"data-15.hdt").getAbsolutePath(),spec);
             HDTSail baseSail = new HDTSail(hdt);
             baseSail.initialize();
             HDTLuceneSail lucenesail = new HDTLuceneSail(baseSail);
-            lucenesail.setReindexQuery(
-                    "SELECT ?s ?p ?o WHERE {?s ?p ?o } order by ?s");
-            lucenesail.setParameter(
-                    LuceneSail.LUCENE_DIR_KEY, location + "lucene");
-            lucenesail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127");
-            lucenesail.setParameter(LuceneSail.MAX_DOCUMENTS_KEY, "5000");
+            //lucenesail.setReindexQuery("SELECT ?s ?p ?o WHERE { {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p=<https://linkedopendata.eu/prop/direct/P836>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q196899> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q9934> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>) }} UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p = <https://linkedopendata.eu/prop/direct/P127>) } } } order by ?s");
+            lucenesail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
+            lucenesail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
+            lucenesail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
             lucenesail.setBaseSail(baseSail);
             lucenesail.initialize();
-            //lucenesail.reindex();
+            lucenesail.reindex();
             Repository db = new SailRepository(lucenesail);
             db.init();
             RepositoryConnection conn = db.getConnection();
@@ -67,7 +65,7 @@ public class Sparql {
 
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
         logger.info("Json " + sparqlQuery);
-        location = "/Users/alihaidar/Desktop/qa-company/hdt_file/";
+        location = "/Users/alihaidar/Desktop/qa-company/hdt/hdt_file/";
         inizialize(location);
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);

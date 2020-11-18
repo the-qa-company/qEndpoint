@@ -10,10 +10,10 @@
 
     <groupId>eu.qanswer</groupId>
     <artifactId>hdtSparqlEndpoint</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
-        <rdf4j.version>3.4.5-SNAPSHOT</rdf4j.version>
+        <rdf4j.version>3.4.6-SNAPSHOT</rdf4j.version>
     </properties>
 
     <dependencies>
