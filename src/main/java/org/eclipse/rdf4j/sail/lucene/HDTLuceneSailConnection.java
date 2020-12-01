@@ -67,6 +67,7 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
 
   private final HDTLuceneSail sail;
 
+
   /** the buffer that collects operations */
   private final LuceneSailBuffer buffer = new LuceneSailBuffer();
 
@@ -294,16 +295,16 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
     if (sail.getEvaluationMode() == TupleFunctionEvaluationMode.TRIPLE_SOURCE) {
 
       HDTEvaluationStatisticsV2 evaluationStatistics =
-          new HDTEvaluationStatisticsV2(sail.getHdtSail().getHdt());
+          new HDTEvaluationStatisticsV2(sail.getHdtStore().getHdt());
       EvaluationStrategy strategy =
           new ExtendedEvaluationStrategy(
-              sail.getHdtSail().getTripleSource(),
+              sail.getHdtStore().getTripleSource(),
               dataset,
               new SPARQLServiceResolver(),
               0L,
               evaluationStatistics);
 
-      new VariableToIdSubstitution(sail.getHdtSail().getHdt())
+      new VariableToIdSubstitution(sail.getHdtStore().getHdt())
           .optimize(tupleExpr, dataset, bindings);
       new BindingAssigner().optimize(tupleExpr, dataset, bindings);
       new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);

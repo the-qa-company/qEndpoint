@@ -5,11 +5,15 @@ import org.eclipse.rdf4j.common.io.FileUtil;
 import org.eclipse.rdf4j.common.io.ZipUtil;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.parser.sparql.manifest.SPARQLQueryTest;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HDTRepository;
+import org.rdfhdt.hdt.rdf4j.HDTStore;
 
 import java.io.*;
 import java.net.JarURLConnection;
@@ -66,8 +70,24 @@ public abstract class SPARQLQueryTestLoadBefore extends SPARQLQueryTest {
             }else if(file.getName().endsWith("nt")){
                 hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.NTRIPLES, spec, null);
             }
-            this.dataRep = new HDTRepository(hdt);
-            this.dataRep.init();
+            //this is working
+            //this.dataRep = new SailRepository(new HDTStore(hdt));
+            //this.dataRep.init();
+
+            HDTStore baseSail = new HDTStore(hdt);
+            baseSail.initialize();
+            LuceneSail lucenesail = new LuceneSail();
+            //lucenesail.setReindexQuery("SELECT ?s ?p ?o WHERE { {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p=<https://linkedopendata.eu/prop/direct/P836>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q196899> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q9934> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>) }} UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p = <https://linkedopendata.eu/prop/direct/P127>) } } } order by ?s");
+            lucenesail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
+            lucenesail.setParameter(LuceneSail.LUCENE_DIR_KEY, "/Users/Dennis/Downloads/lucene_test");
+            lucenesail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
+            lucenesail.setBaseSail(baseSail);
+            lucenesail.initialize();
+            lucenesail.reindex();
+
+            this.dataRep = new SailRepository(lucenesail);
+
+
 
 
             System.out.println("Query: " + this.readQueryString());

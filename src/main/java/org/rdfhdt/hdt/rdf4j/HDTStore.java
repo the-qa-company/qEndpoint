@@ -14,19 +14,19 @@ import org.rdfhdt.hdt.hdt.HDT;
 import java.io.File;
 import java.util.List;
 
-public class HDTSail extends AbstractSail implements NotifyingSail {
+public class HDTStore extends AbstractSail implements NotifyingSail {
 
   private File file;
   private HDT hdt;
   private HDTTripleSource tripleSource;
   private HDTQueryPreparer queryPreparer;
 
-  public HDTSail(HDT hdt) {
+  public HDTStore(HDT hdt) {
     this.hdt = hdt;
   }
 
   @Override
-  public void initialize() throws SailException {
+  public void initializeInternal() throws SailException {
     tripleSource = new HDTTripleSource(hdt);
     queryPreparer = new HDTQueryPreparer(tripleSource);
   }
@@ -41,12 +41,12 @@ public class HDTSail extends AbstractSail implements NotifyingSail {
 
   @Override
   public NotifyingSailConnection getConnection() throws SailException {
-    return new HDTSailConnection(this);
+    return new HDTStoreConnection(this);
   }
 
   @Override
   protected SailConnection getConnectionInternal() throws SailException {
-    return new HDTSailConnection(this);
+    return new HDTStoreConnection(this);
   }
 
   @Override

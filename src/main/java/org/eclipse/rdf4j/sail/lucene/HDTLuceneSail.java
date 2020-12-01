@@ -27,7 +27,7 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.eclipse.rdf4j.sail.lucene.util.SearchIndexUtils;
-import org.rdfhdt.hdt.rdf4j.HDTSail;
+import org.rdfhdt.hdt.rdf4j.HDTStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -331,10 +331,10 @@ public class HDTLuceneSail extends NotifyingSailWrapper {
 
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  private HDTSail hdtSail;
+  private HDTStore hdtStore;
 
-  public HDTLuceneSail(HDTSail hdtSail) {
-    this.hdtSail = hdtSail;
+  public HDTLuceneSail(HDTStore hdtStore) {
+    this.hdtStore = hdtStore;
   }
 
   public void setLuceneIndex(SearchIndex luceneIndex) {
@@ -638,12 +638,12 @@ public class HDTLuceneSail extends NotifyingSailWrapper {
         new GeoRelationQuerySpecBuilder(luceneIndex));
   }
 
-  public HDTSail getHdtSail() {
-    return hdtSail;
+  public HDTStore getHdtStore() {
+    return hdtStore;
   }
 
-  public void setHdtSail(HDTSail hdtSail) {
-    this.hdtSail = hdtSail;
+  public void setHdtStore(HDTStore hdtStore) {
+    this.hdtStore = hdtStore;
   }
 }
 
