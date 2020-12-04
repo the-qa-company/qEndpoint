@@ -1,34 +1,39 @@
-package org.rdfhdt.hdt.rdf4j;
+package org.rdfhdt.hdt.rdf4j.misc;
 
 import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailChangedListener;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractSail;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
+import org.rdfhdt.hdt.rdf4j.TripleSource;
 
 import java.io.File;
 import java.util.List;
 
-public class HDTSail extends AbstractSail implements NotifyingSail {
+public class HDTStore extends AbstractSail implements NotifyingSail {
 
   private File file;
   private HDT hdt;
-  private HDTTripleSource tripleSource;
+  private TripleSource tripleSource;
   private HDTQueryPreparer queryPreparer;
-
-  public HDTSail(HDT hdt) {
+  private NativeStore nativeStore;
+  public HDTStore(HDT hdt, NativeStore nativeStore) {
     this.hdt = hdt;
+    this.nativeStore = nativeStore;
   }
 
   @Override
   public void initialize() throws SailException {
-    tripleSource = new HDTTripleSource(hdt);
-    queryPreparer = new HDTQueryPreparer(tripleSource);
+    tripleSource = new TripleSource(hdt,nativeStore);
+    //queryPreparer = new HDTQueryPreparer(tripleSource);
   }
 
   @Override
@@ -41,12 +46,12 @@ public class HDTSail extends AbstractSail implements NotifyingSail {
 
   @Override
   public NotifyingSailConnection getConnection() throws SailException {
-    return new HDTSailConnection(this);
+    return new HDTSailConnection(this,nativeStore);
   }
 
   @Override
   protected SailConnection getConnectionInternal() throws SailException {
-    return new HDTSailConnection(this);
+    return new HDTSailConnection(this,nativeStore);
   }
 
   @Override
@@ -70,7 +75,7 @@ public class HDTSail extends AbstractSail implements NotifyingSail {
     return null;
   }
 
-  public HDTTripleSource getTripleSource() {
+  public TripleSource getTripleSource() {
     return tripleSource;
   }
 
@@ -90,7 +95,12 @@ public class HDTSail extends AbstractSail implements NotifyingSail {
     this.queryPreparer = queryPreparer;
   }
 
-  public void setTripleSource(HDTTripleSource tripleSource) {
+  public void setTripleSource(TripleSource tripleSource) {
     this.tripleSource = tripleSource;
   }
+
+  public void setNativeStore(NativeStore nativeStore) {
+    this.nativeStore = nativeStore;
+  }
+
 }

@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
 import org.eclipse.rdf4j.query.algebra.evaluation.function.TupleFunctionRegistry;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
@@ -27,7 +28,7 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.eclipse.rdf4j.sail.lucene.util.SearchIndexUtils;
-import org.rdfhdt.hdt.rdf4j.HDTSail;
+import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -305,6 +306,8 @@ public class HDTLuceneSail extends NotifyingSailWrapper {
 
   /** See {@link TupleFunctionEvaluationMode}. */
   public static final String EVALUATION_MODE_KEY = "evaluationMode";
+  private final HybridStore hybridStore;
+  private RepositoryConnection hybridStoreConnection;
 
   /** The LuceneIndex holding the indexed literals. */
   private volatile SearchIndex luceneIndex;
@@ -331,10 +334,17 @@ public class HDTLuceneSail extends NotifyingSailWrapper {
 
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  private HDTSail hdtSail;
 
-  public HDTLuceneSail(HDTSail hdtSail) {
-    this.hdtSail = hdtSail;
+  public HDTLuceneSail(HybridStore hybridStore) {
+    this.hybridStore = hybridStore;
+  }
+  public HDTLuceneSail(HybridStore hybridStore, RepositoryConnection hybridStoreConnection) {
+    this.hybridStore = hybridStore;
+    this.hybridStoreConnection = hybridStoreConnection;
+  }
+
+  public HybridStore getHybridStore() {
+    return hybridStore;
   }
 
   public void setLuceneIndex(SearchIndex luceneIndex) {
@@ -348,7 +358,7 @@ public class HDTLuceneSail extends NotifyingSailWrapper {
   @Override
   public NotifyingSailConnection getConnection() throws SailException {
     if (!closed.get()) {
-      return new HDTLuceneSailConnection(super.getConnection(), luceneIndex, this);
+      return new HDTLuceneSailConnection(super.getConnection(), luceneIndex, this,this.hybridStoreConnection);
     } else {
       throw new SailException("Sail is shut down or not initialized");
     }
@@ -638,13 +648,6 @@ public class HDTLuceneSail extends NotifyingSailWrapper {
         new GeoRelationQuerySpecBuilder(luceneIndex));
   }
 
-  public HDTSail getHdtSail() {
-    return hdtSail;
-  }
-
-  public void setHdtSail(HDTSail hdtSail) {
-    this.hdtSail = hdtSail;
-  }
 }
 
 /*

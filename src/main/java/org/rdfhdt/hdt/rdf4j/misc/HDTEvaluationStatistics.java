@@ -1,4 +1,4 @@
-package org.rdfhdt.hdt.rdf4j;
+package org.rdfhdt.hdt.rdf4j.misc;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;

@@ -8,9 +8,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.Dataset;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.algebra.BindingSetAssignment;
 import org.eclipse.rdf4j.query.algebra.MultiProjection;
 import org.eclipse.rdf4j.query.algebra.Projection;
@@ -19,26 +17,20 @@ import org.eclipse.rdf4j.query.algebra.QueryRoot;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryContext;
+import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizerPipeline;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.AbstractFederatedServiceResolver;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.BindingAssigner;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.CompareOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.ConjunctiveConstraintSplitter;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.ConstantOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.DisjunctiveConstraintOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.ExtendedEvaluationStrategy;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.IterativeEvaluationOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.OrderLimitOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryJoinOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryModelNormalizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.SameTermFilterOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.*;
 import org.eclipse.rdf4j.query.algebra.evaluation.iterator.QueryContextIteration;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnectionListener;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
+import org.rdfhdt.hdt.rdf4j.CombinedEvaluationStatistics;
 import org.rdfhdt.hdt.rdf4j.HDTEvaluationStatisticsV2;
 import org.rdfhdt.hdt.rdf4j.VariableToIdSubstitution;
 import org.slf4j.Logger;
@@ -65,7 +57,7 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
   @SuppressWarnings("unused")
   private final AbstractFederatedServiceResolver tupleFunctionServiceResolver;
 
-  private final HDTLuceneSail sail;
+  private final HDTLuceneSail  sail;
 
   /** the buffer that collects operations */
   private final LuceneSailBuffer buffer = new LuceneSailBuffer();
@@ -106,19 +98,43 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
 
   /** To remember if the iterator was already closed and only free resources once */
   private final AtomicBoolean closed = new AtomicBoolean(false);
+  private RepositoryConnection hybridStoreConnection;
 
   public HDTLuceneSailConnection(
-      NotifyingSailConnection wrappedConnection, SearchIndex luceneIndex, HDTLuceneSail sail) {
+          NotifyingSailConnection wrappedConnection, SearchIndex luceneIndex, HDTLuceneSail sail) {
     super(wrappedConnection);
     this.luceneIndex = luceneIndex;
     this.sail = sail;
-
     if (sail.getEvaluationMode() == TupleFunctionEvaluationMode.SERVICE) {
       FederatedServiceResolver resolver = sail.getFederatedServiceResolver();
       if (!(resolver instanceof AbstractFederatedServiceResolver)) {
         throw new IllegalArgumentException(
             "SERVICE EvaluationMode requires a FederatedServiceResolver that is an instance of "
                 + AbstractFederatedServiceResolver.class.getName());
+      }
+      this.tupleFunctionServiceResolver = (AbstractFederatedServiceResolver) resolver;
+    } else {
+      this.tupleFunctionServiceResolver = null;
+    }
+
+    /*
+     * Using SailConnectionListener, see <a href="#whySailConnectionListener">above</a>
+     */
+
+    wrappedConnection.addConnectionListener(connectionListener);
+  }
+  public HDTLuceneSailConnection(
+          NotifyingSailConnection wrappedConnection, SearchIndex luceneIndex, HDTLuceneSail sail, RepositoryConnection hybridStoreConnection) {
+    super(wrappedConnection);
+    this.luceneIndex = luceneIndex;
+    this.sail = sail;
+    this.hybridStoreConnection = hybridStoreConnection;
+    if (sail.getEvaluationMode() == TupleFunctionEvaluationMode.SERVICE) {
+      FederatedServiceResolver resolver = sail.getFederatedServiceResolver();
+      if (!(resolver instanceof AbstractFederatedServiceResolver)) {
+        throw new IllegalArgumentException(
+                "SERVICE EvaluationMode requires a FederatedServiceResolver that is an instance of "
+                        + AbstractFederatedServiceResolver.class.getName());
       }
       this.tupleFunctionServiceResolver = (AbstractFederatedServiceResolver) resolver;
     } else {
@@ -161,9 +177,27 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
     }
   }
 
+  private int getCurrentCount(){
+    String queryCount = "select (count(*) as ?c) where { ?s ?p ?o}";
+
+    TupleQuery tupleQuery = this.sail.getHybridStore().getRepoConnection().prepareTupleQuery(queryCount);
+    try (TupleQueryResult result = tupleQuery.evaluate()) {
+      while (result.hasNext()) {
+        BindingSet bindingSet = result.next();
+        Value valueOfC = bindingSet.getValue("c");
+        return Integer.parseInt(valueOfC.stringValue());
+      }
+    }
+    return 0;
+  }
   @Override
   public void begin() throws SailException {
+    System.out.println("Making an update...");
+    System.out.println(getCurrentCount());
+    if (getCurrentCount() > 1000)
+      this.sail.getHybridStore().switchStore = !this.sail.getHybridStore().switchStore;
     super.begin();
+
     buffer.reset();
     try {
       luceneIndex.begin();
@@ -175,7 +209,6 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
   @Override
   public void commit() throws SailException {
     super.commit();
-
     logger.debug("Committing Lucene transaction with {} operations.", buffer.operations().size());
     try {
       // preprocess buffer
@@ -240,7 +273,6 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
       throw e;
     }
   }
-
   // //////////////////////////////// Methods related to querying
 
   @Override
@@ -293,17 +325,20 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
 
     if (sail.getEvaluationMode() == TupleFunctionEvaluationMode.TRIPLE_SOURCE) {
 
-      HDTEvaluationStatisticsV2 evaluationStatistics =
-          new HDTEvaluationStatisticsV2(sail.getHdtSail().getHdt());
+      HDTEvaluationStatisticsV2 hdtEvaluationStatistics =
+          new HDTEvaluationStatisticsV2(sail.getHybridStore().getHdt());
+      CombinedEvaluationStatistics combinedEvaluationStatistics  = new CombinedEvaluationStatistics(
+              hdtEvaluationStatistics,
+              this.sail.getHybridStore().getNativeStoreA().getSailStore().getEvaluationStatistics()
+      );
       EvaluationStrategy strategy =
           new ExtendedEvaluationStrategy(
-              sail.getHdtSail().getTripleSource(),
+              sail.getHybridStore().getTripleSource(),
               dataset,
               new SPARQLServiceResolver(),
               0L,
-              evaluationStatistics);
-
-      new VariableToIdSubstitution(sail.getHdtSail().getHdt())
+              combinedEvaluationStatistics);
+      new VariableToIdSubstitution(sail.getHybridStore().getHdt())
           .optimize(tupleExpr, dataset, bindings);
       new BindingAssigner().optimize(tupleExpr, dataset, bindings);
       new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
@@ -312,7 +347,7 @@ public class HDTLuceneSailConnection extends NotifyingSailConnectionWrapper {
       new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
       new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
       new QueryModelNormalizer().optimize(tupleExpr, dataset, bindings);
-      new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
+      new QueryJoinOptimizer(combinedEvaluationStatistics).optimize(tupleExpr, dataset, bindings);
       new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
       // new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
       new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);

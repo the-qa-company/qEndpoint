@@ -1,4 +1,4 @@
-package org.rdfhdt.hdt.rdf4j;
+package org.rdfhdt.hdt.rdf4j.misc;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -15,16 +15,23 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyF
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.SailReadOnlyException;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 
 public class HDTSailConnection extends SailSourceConnection {
 
-  HDTSail hdtSail;
+  HDTStore hdtStore;
   // QueryPreparer queryPreparer;
-
-  public HDTSailConnection(HDTSail hdtSail) {
-    super(hdtSail, new HDTSailStore(hdtSail.getHdt()), new StrictEvaluationStrategyFactory());
-    this.hdtSail = hdtSail;
+  NativeStore nativeStore;
+  public HDTSailConnection(HDTStore hdtStore, NativeStore nativeStore) {
+    super(hdtStore, new HDTSailStore(hdtStore.getHdt(),nativeStore), new StrictEvaluationStrategyFactory());
+    this.hdtStore = hdtStore;
+    this.nativeStore = nativeStore;
     // this.queryPreparer = new HDTQueryPreparer(hdtSail.getTripleSource());
+  }
+
+  @Override
+  public void begin() throws SailException {
+    nativeStore.getConnection().begin();
   }
 
   @Override
@@ -97,7 +104,7 @@ public class HDTSailConnection extends SailSourceConnection {
   protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(
       TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred)
       throws SailException {
-    return hdtSail
+    return hdtStore
         .getQueryPreparer()
         .evaluate(tupleExpr, dataset, bindings, includeInferred, 1000000);
   }
@@ -113,7 +120,7 @@ public class HDTSailConnection extends SailSourceConnection {
       Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts)
       throws SailException {
     CloseableIteration<? extends Statement, QueryEvaluationException> result =
-        hdtSail.getTripleSource().getStatements(subj, pred, obj, contexts);
+        hdtStore.getTripleSource().getStatements(subj, pred, obj, contexts);
     return new ExceptionConvertingIteration<Statement, SailException>(result) {
       @Override
       protected SailException convert(Exception e) {

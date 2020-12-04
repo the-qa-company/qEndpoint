@@ -1,4 +1,4 @@
-package org.rdfhdt.hdt.rdf4j;
+package org.rdfhdt.hdt.rdf4j.misc;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -21,6 +21,9 @@ import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.impl.AbstractParserQuery;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.rdf4j.HDTEvaluationStatisticsV2;
+import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
+import org.rdfhdt.hdt.rdf4j.VariableToIdSubstitution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +36,7 @@ public class HDTQueryPreparer extends AbstractQueryPreparer {
   // FIX ME for joint optimization
   private EvaluationStatistics evaluationStatistics;
 
-  public HDTQueryPreparer(HDTTripleSource tripleSource) {
+  public HDTQueryPreparer(HybridTripleSource tripleSource) {
     super(tripleSource);
     hdt = tripleSource.getHdt();
     // @Ali check here
