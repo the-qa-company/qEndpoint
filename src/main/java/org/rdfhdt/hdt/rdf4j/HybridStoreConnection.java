@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.query.algebra.evaluation.QueryPreparer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.SailReadOnlyException;
@@ -19,64 +20,21 @@ import org.rdfhdt.hdt.rdf4j.misc.HDTQueryPreparer;
 
 public class HybridStoreConnection extends SailSourceConnection {
 
-  private final HDTQueryPreparer queryPreparer;
   HybridStore hybridStore;
-  // QueryPreparer queryPreparer;
+
   public HybridStoreConnection(HybridStore hybridStore) {
     super(hybridStore, hybridStore.getCurrentStore().getSailStore(),new StrictEvaluationStrategyFactory());
     this.hybridStore = hybridStore;
-    this.queryPreparer = new HDTQueryPreparer(hybridStore.getTripleSource());
   }
 
   @Override
-  public void begin() throws SailException {
-    this.hybridStore.getNativeStoreConnection().begin();
+  protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+
+    return hybridStore.getQueryPreparer().evaluate(tupleExpr, dataset, bindings, includeInferred,0);
   }
 
   @Override
-  public void startUpdate(UpdateContext op) throws SailException {
-    hybridStore.getNativeStoreConnection().startUpdate(op);
-  }
-
-
-  @Override
-  public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
-    System.out.println("--------------: "+hybridStore.getCurrentCount());
-    //getCount();
-    hybridStore.getNativeStoreConnection().addStatement(op, subj, pred, obj, contexts);
-  }
-  void getCount(){
-    CloseableIteration<? extends Statement, SailException>  res =
-            hybridStore.getCurrentStore().getConnection().getStatements(null,null,
-                    null,false,null);
-    int count = 0;
-    while (res.hasNext()){
-      res.next();
-      count++;
-    }
-    System.out.println("count:============"+count);
-  }
-
-  @Override
-  protected void endUpdateInternal(UpdateContext op) throws SailException {
-    hybridStore.getNativeStoreConnection().endUpdate(op);
-  }
-
-  @Override
-  protected IsolationLevel getTransactionIsolation() {
-    return this.hybridStore.getCurrentStore().getDefaultIsolationLevel();
-  }
-
-  @Override
-  public boolean isActive() throws UnknownSailTransactionStateException {
-    return this.hybridStore.getNativeStoreConnection().isActive();
-  }
-
-
-  @Override
-  protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(
-          Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts)
-          throws SailException {
+  protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
     CloseableIteration<? extends Statement, QueryEvaluationException> result =
             hybridStore.getTripleSource().getStatements(subj, pred, obj, contexts);
     return new ExceptionConvertingIteration<Statement, SailException>(result) {
@@ -88,6 +46,16 @@ public class HybridStoreConnection extends SailSourceConnection {
   }
 
   @Override
+  public void begin() throws SailException {
+    super.begin();
+    int count = hybridStore.getCurrentCount();
+    System.out.println("--------------: "+count);
+    if(count >= hybridStore.getThreshold()){ // THRESHOLD
+      hybridStore.makeMerge();
+    }
+    this.hybridStore.getNativeStoreConnection().begin();
+  }
+  @Override
   public void setNamespaceInternal(String prefix, String name) throws SailException {
     hybridStore.getNativeStoreConnection().setNamespace(prefix,name);
   }
@@ -95,14 +63,17 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
           throws SailException {
-    System.out.println("--------------: "+hybridStore.getCurrentCount());
     hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
   }
 
+  @Override
+  public boolean isActive() throws UnknownSailTransactionStateException {
+    return hybridStore.getNativeStoreConnection().isActive();
+  }
 
   @Override
-  protected void startTransactionInternal() throws SailException {
-    new SailReadOnlyException("");
+  public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+    hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
   }
 
   @Override
@@ -138,7 +109,18 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   protected void commitInternal() throws SailException {
+    super.commitInternal();
     hybridStore.getNativeStoreConnection().commit();
+  }
+
+  @Override
+  public void startUpdate(UpdateContext op) throws SailException {
+    hybridStore.getNativeStoreConnection().startUpdate(op);
+  }
+
+  @Override
+  protected void endUpdateInternal(UpdateContext op) throws SailException {
+    hybridStore.getNativeStoreConnection().endUpdate(op);
   }
 
   @Override

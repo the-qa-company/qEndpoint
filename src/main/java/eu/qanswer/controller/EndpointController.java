@@ -7,10 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
@@ -20,7 +17,7 @@ public class EndpointController {
     private static final Logger logger = LoggerFactory.getLogger(EndpointController.class);
 
     @Autowired private Sparql sparql;
-
+    @CrossOrigin(origins = "http://localhost:3000")
     @RequestMapping(value = "/sparql")
     public ResponseEntity<String> sparqlEndpoint(
             @RequestParam(value = "query", required = true) final String query,
@@ -55,19 +52,19 @@ public class EndpointController {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
     }
-    @RequestMapping(value = "/merge")
-    public ResponseEntity<String> makeMerge(
-            @RequestParam(value = "format", defaultValue = "json") final String format,
-            @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            Principal principal)
-            throws Exception {
-        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
-            return ResponseEntity.status(HttpStatus.OK)
-                    .header("Content-Type", "application/sparql-results+json")
-                    .body(sparql.makeMerge());
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
-    }
+//    @RequestMapping(value = "/merge")
+//    public ResponseEntity<String> makeMerge(
+//            @RequestParam(value = "format", defaultValue = "json") final String format,
+//            @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
+//            Principal principal)
+//            throws Exception {
+//        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
+//            return ResponseEntity.status(HttpStatus.OK)
+//                    .header("Content-Type", "application/sparql-results+json")
+//                    .body(sparql.makeMerge());
+//        }
+//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
+//    }
     @RequestMapping(value = "/nativecount")
     public ResponseEntity<String> getNativeCount(
             @RequestParam(value = "format", defaultValue = "json") final String format,
@@ -81,6 +78,5 @@ public class EndpointController {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
     }
-
 
 }

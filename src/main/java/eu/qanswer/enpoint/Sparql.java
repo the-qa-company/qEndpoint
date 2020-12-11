@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.HDTLuceneSail;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
@@ -24,6 +25,7 @@ import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HybridStore;
+import org.rdfhdt.hdt.rdf4j.extensible.MyStore;
 import org.rdfhdt.hdt.rdf4j.misc.HDTStore;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
@@ -41,7 +43,7 @@ public class Sparql {
     private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
     private final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
-    private final int THRESHOLD = 5;
+    private final int THRESHOLD = 2;
     private NativeStore nativeStore;
     @Value("${locationHdt}")
     private String locationHdt;
@@ -54,19 +56,19 @@ public class Sparql {
     void initialize(String location) throws Exception {
         if (!model.containsKey(location)) {
             model.put(location, null);
-            System.out.println("initialize "+location);
             HDTSpecification spec = new HDTSpecification();
             //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 
             HDT hdt = HDTManager.mapIndexedHDT(
                             new File(location+"index.hdt").getAbsolutePath(),spec);
 
-            HDTStore hdtStore = new HDTStore(hdt,this.nativeStore);
+            HybridStore hdtStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,hdt,locationHdt,2);
             LuceneSail luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
             luceneSail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
             luceneSail.setBaseSail(hdtStore);
+            luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
             luceneSail.initialize();
             //lucenesail.reindex();
             Repository db = new SailRepository(luceneSail);
@@ -136,145 +138,15 @@ public class Sparql {
         }
         return 0;
     }
-    boolean switchStore = true;
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
         initializeNativeStore();
+        initialize(locationHdt);
         logger.info("Running update query:"+sparqlQuery);
-        int count = getCurrentCount();
-        if(count >= THRESHOLD){
-            // switch native store - cat hdt with the index
-
-            makeMerge();
-            if(switchStore){
-                this.nativeStore = nativeStoreB;
-                switchStore = false;
-            }else{
-                this.nativeStore = nativeStoreA;
-                switchStore = true;
-            }
-            // replace the connection with the switched store
-            Repository repo = new SailRepository(this.nativeStore);
-            RepositoryConnection connection = repo.getConnection();
-            model.put("native-store", connection);
-        }
-        Update preparedUpdate = model.get("native-store").prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
+        Update preparedUpdate = model.get(locationHdt).prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
         if(preparedUpdate != null) {
             preparedUpdate.execute();
             return "OK\n";
         }
         return null;
-    }
-
-    public String makeMerge() {
-        initializeNativeStore();
-        HDTSpecification spec = new HDTSpecification();
-        try {
-            HDT hdt = HDTManager.mapIndexedHDT(
-                    new File(locationHdt+"index.hdt").getAbsolutePath(),spec);
-            MergeThread mergeThread = new MergeThread(locationHdt+"/"+hdtindex,model.get("native-store"));
-            mergeThread.run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "Merged!";
-    }
-
-    public class MergeThread implements Runnable {
-
-        private HDT hdt;
-        private RepositoryConnection nativeStoreConnection;
-        private String hdtIndex;
-        public MergeThread(HDT hdt,RepositoryConnection nativeStoreConnection) {
-            this.hdt = hdt;
-            this.nativeStoreConnection = nativeStoreConnection;
-        }
-        public MergeThread(String hdtIndex,RepositoryConnection nativeStoreConnection) {
-            this.hdtIndex = hdtIndex;
-            this.nativeStoreConnection = nativeStoreConnection;
-        }
-
-
-        public void run() {
-            // dump all triples in native store
-            writeTempFile();
-            // create the hdt index for the temp dump
-            createHDTDump();
-            // cat the original index and the temp index
-            catIndexes();
-            // empty native store
-            emptyNativeStore();
-            try {
-                Files.delete(Paths.get(locationHdt+"/temp.hdt"));
-                Files.delete(Paths.get(locationHdt+"/temp.nt"));
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        private void catIndexes(){
-
-            String hdtOutput = locationHdt+"index.hdt";
-            String hdtInput1 = hdtIndex;
-            String hdtInput2 = locationHdt+"/temp.hdt";
-            HDTSpecification spec = new HDTSpecification();
-            try {
-                File file = new File(hdtOutput);
-                File theDir = new File(file.getAbsolutePath()+"_tmp");
-                theDir.mkdirs();
-                String location = theDir.getAbsolutePath()+"/";
-                HDT hdt = HDTManager.catHDT(location,hdtInput1, hdtInput2 , spec,null);
-
-                StopWatch sw = new StopWatch();
-                hdt.saveToHDT(hdtOutput, null);
-                System.out.println("HDT saved to file in: "+sw.stopAndShow());
-                Files.delete(Paths.get(location+"dictionary"));
-                Files.delete(Paths.get(location+"triples"));
-                theDir.delete();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        }
-        private void createHDTDump(){
-
-            String rdfInput = locationHdt+"temp.nt";
-            String hdtOutput = locationHdt+"temp.hdt";
-            String baseURI = "file://"+rdfInput;
-            RDFNotation notation = RDFNotation.guess(rdfInput);
-            HDTSpecification spec = new HDTSpecification();
-
-            try {
-                StopWatch sw = new StopWatch();
-                HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , spec, null);
-                System.out.println("File converted in: "+sw.stopAndShow());
-                hdt.saveToHDT(hdtOutput, null);
-                System.out.println("HDT saved to file in: "+sw.stopAndShow());
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ParserException e) {
-                e.printStackTrace();
-            }
-        }
-        private void writeTempFile(){
-            FileOutputStream out = null;
-            try {
-                out = new FileOutputStream(locationHdt+"temp.nt");
-                RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
-                RepositoryResult<Statement> repositoryResult =
-                        this.nativeStoreConnection.getStatements(null,null,null,false,(Resource)null);
-                writer.startRDF();
-                while (repositoryResult.hasNext()) {
-                    Statement stm = repositoryResult.next();
-                    writer.handleStatement(stm);
-                }
-                writer.endRDF();
-                out.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        private void emptyNativeStore(){
-            nativeStoreConnection.clear((Resource)null);
-        }
     }
 }

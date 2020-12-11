@@ -1,5 +1,6 @@
 package org.rdfhdt.hdt.rdf4j.extensible;
 
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.common.iteration.LookAheadIteration;
@@ -8,6 +9,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.extensiblestore.DataStructureInterface;
 import org.eclipse.rdf4j.sail.extensiblestore.valuefactory.ExtensibleContextStatement;
@@ -26,9 +28,13 @@ public class MyDataStructure implements DataStructureInterface {
         this.tripleSource = new MyTripleSource(hdt,nativeStore);
     }
     public void addStatement(ExtensibleStatement extensibleStatement) {
+        SailConnection connection = this.nativeStore.getConnection();
 
+        connection.begin(IsolationLevels.NONE);
+        connection.addStatement(extensibleStatement.getSubject(),
+                extensibleStatement.getPredicate(),extensibleStatement.getObject());
+        connection.commit();
     }
-
     public void removeStatement(ExtensibleStatement extensibleStatement) {
 
     }

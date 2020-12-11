@@ -1,5 +1,6 @@
 package org.rdfhdt.hdt.rdf4j;
 
+import eu.qanswer.enpoint.MergeRunnable;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -16,6 +17,11 @@ import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTSpecification;
+
+import java.io.File;
+import java.io.IOException;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
     private HDT hdt;
@@ -28,14 +34,32 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     private SailRepository repo;
     public boolean switchStore = false;
-    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,HDT hdt){
+
+    public boolean isMerging = false;
+    private String locationHdt;
+    private HybridQueryPreparer queryPreparer;
+    private int threshold;
+    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,HDT hdt,int threshold){
         this.hdt = hdt;
         this.nativeStoreA = nativeStoreA;
         this.nativeStoreB = nativeStoreB;
         this.currentStore = nativeStoreA;
+        this.threshold = threshold;
         this.tripleSource = new HybridTripleSource(hdt,this);
         this.nativeStoreConnection = this.currentStore.getConnection();
         this.repo = new SailRepository(currentStore);
+    }
+    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,HDT hdt,String locationHdt,int threshold){
+        this.hdt = hdt;
+        this.nativeStoreA = nativeStoreA;
+        this.nativeStoreB = nativeStoreB;
+        this.currentStore = nativeStoreA;
+        this.threshold = threshold;
+        this.tripleSource = new HybridTripleSource(hdt,this);
+        this.nativeStoreConnection = this.currentStore.getConnection();
+        this.repo = new SailRepository(currentStore);
+        this.locationHdt = locationHdt;
+        this.queryPreparer = new HybridQueryPreparer(this);
     }
 
     @Override
@@ -44,11 +68,19 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         nativeStoreB.init();
     }
 
+    public int getThreshold() {
+        return threshold;
+    }
+
     public NativeStore getCurrentStore() {
         return currentStore;
     }
     public SailConnection getNativeStoreConnection(){
         return this.nativeStoreConnection;
+    }
+
+    public void setNativeStoreConnection(SailConnection nativeStoreConnection) {
+        this.nativeStoreConnection = nativeStoreConnection;
     }
 
     public HDT getHdt() {
@@ -107,10 +139,18 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
     }
 
+    public HybridQueryPreparer getQueryPreparer() {
+        return queryPreparer;
+    }
+
+    public void setQueryPreparer(HybridQueryPreparer queryPreparer) {
+        this.queryPreparer = queryPreparer;
+    }
+
     public int getCurrentCount(){
         String queryCount = "select (count(*) as ?c) where { ?s ?p ?o}";
 
-        TupleQuery tupleQuery = repo.getConnection().prepareTupleQuery(queryCount);
+        TupleQuery tupleQuery = getRepoConnection().prepareTupleQuery(queryCount);
         try (TupleQueryResult result = tupleQuery.evaluate()) {
             while (result.hasNext()) {
                 BindingSet bindingSet = result.next();
@@ -119,6 +159,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             }
         }
         return 0;
+    }
+
+    public boolean isMerging() {
+        return isMerging;
     }
     public NativeStore getNativeStoreA() {
         return nativeStoreA;
@@ -131,4 +175,29 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 //    public SailStore getSailStore() {
 //        return this.store;
 //    }
+
+
+    public void setTripleSource(HybridTripleSource tripleSource) {
+        this.tripleSource = tripleSource;
+    }
+
+    public String makeMerge() {
+        try {
+            MergeRunnable mergeRunnable = new MergeRunnable(locationHdt,getRepoConnection(),this);
+            Thread thread = new Thread(mergeRunnable);
+            thread.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if(switchStore){
+            this.setNativeStoreConnection(this.nativeStoreA.getConnection());
+            this.currentStore = this.nativeStoreA;
+            switchStore = false;
+        }else{
+            this.setNativeStoreConnection(this.nativeStoreB.getConnection());
+            this.currentStore = this.nativeStoreB;
+            switchStore = true;
+        }
+        return "Merged!";
+    }
 }
