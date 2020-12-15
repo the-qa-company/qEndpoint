@@ -1,4 +1,4 @@
-package org.rdfhdt.hdt.rdf4j;
+package org.rdfhdt.hdt.rdf4j.misc;
 
 import org.eclipse.rdf4j.common.iteration.EmptyIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -25,6 +25,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.base.AbstractRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
+import org.rdfhdt.hdt.rdf4j.misc.HDTRepository;
 
 import static org.eclipse.rdf4j.query.QueryLanguage.SPARQL;
 

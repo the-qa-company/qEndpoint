@@ -87,6 +87,10 @@ public class SimpleIRIHDT implements IRI {
     return iriString;
   }
 
+  public String getIriString() {
+    return iriString;
+  }
+
   public String stringValue() {
     if (hdtId.startsWith("hdt:")) {
       String identifier = hdtId.replace("hdt:", "");

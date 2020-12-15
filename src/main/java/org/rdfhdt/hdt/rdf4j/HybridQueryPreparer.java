@@ -1,15 +1,7 @@
 package org.rdfhdt.hdt.rdf4j;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.Dataset;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.TupleQueryResultHandler;
-import org.eclipse.rdf4j.query.TupleQueryResultHandlerException;
-import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.algebra.QueryRoot;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.UpdateExpr;
@@ -26,18 +18,23 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
-public class HDTQueryPreparer extends AbstractQueryPreparer {
+public class HybridQueryPreparer extends AbstractQueryPreparer {
   private static final Logger LOGGER = LoggerFactory.getLogger("queryPreparer");
 
   HDT hdt;
   // FIX ME for joint optimization
   private EvaluationStatistics evaluationStatistics;
-
-  public HDTQueryPreparer(HDTTripleSource tripleSource) {
-    super(tripleSource);
+  private HybridTripleSource tripleSource;
+  private HybridStore hybridStore;
+  public HybridQueryPreparer(HybridStore hybridStore) {
+    super(hybridStore.getTripleSource());
+    this.tripleSource = hybridStore.getTripleSource();
+    this.hybridStore = hybridStore;
     hdt = tripleSource.getHdt();
-    // @Ali check here
-    evaluationStatistics = new HDTEvaluationStatisticsV2(hdt);
+
+    // TODO change evaluation statistics to be combined
+    evaluationStatistics = new CombinedEvaluationStatistics(new HDTEvaluationStatisticsV2(hdt),
+            hybridStore.getCurrentStore().getSailStore().getEvaluationStatistics());
     // evaluationStatistics = new EvaluationStatistics();
   }
 
@@ -52,7 +49,7 @@ public class HDTQueryPreparer extends AbstractQueryPreparer {
     if (!(tupleExpr instanceof QueryRoot)) {
       tupleExpr = new QueryRoot(tupleExpr);
     }
-
+    System.out.println("From this store:\n"+this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath());
     EvaluationStrategy strategy =
         new ExtendedEvaluationStrategy(
             getTripleSource(), dataset, new SPARQLServiceResolver(), 0L, evaluationStatistics);
@@ -109,7 +106,7 @@ public class HDTQueryPreparer extends AbstractQueryPreparer {
       try {
         TupleExpr tupleExpr = this.getParsedQuery().getTupleExpr();
         bindingsIter1 =
-            HDTQueryPreparer.this.evaluate(
+            HybridQueryPreparer.this.evaluate(
                 tupleExpr,
                 this.getActiveDataset(),
                 this.getBindings(),

@@ -1,34 +1,35 @@
 package eu.qanswer.test;
 
 
-import org.eclipse.rdf4j.common.io.FileUtil;
-import org.eclipse.rdf4j.common.io.ZipUtil;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.parser.sparql.manifest.SPARQLQueryTest;
 import org.eclipse.rdf4j.repository.Repository;
+
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
+
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
-import org.rdfhdt.hdt.rdf4j.HDTRepository;
-import org.rdfhdt.hdt.rdf4j.HDTStore;
-
 import java.io.*;
 import java.net.JarURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.jar.JarFile;
 
 
 public abstract class SPARQLQueryTestLoadBefore extends SPARQLQueryTest {
 
     public SPARQLQueryTestLoadBefore(String testURI, String name, String queryFileURL, String resultFileURL, Dataset dataSet, boolean laxCardinality, boolean checkOrder, String... ignoredTests){
         super(testURI, name, queryFileURL, resultFileURL, dataSet, laxCardinality, false, ignoredTests);
+    }
+    Repository nativeRepo;
+
+    @Override
+    protected void tearDown() throws Exception {
+        nativeRepo.shutDown();
+        super.tearDown();
     }
 
     @Override
@@ -74,7 +75,7 @@ public abstract class SPARQLQueryTestLoadBefore extends SPARQLQueryTest {
             //this.dataRep = new SailRepository(new HDTStore(hdt));
             //this.dataRep.init();
 
-            HDTStore baseSail = new HDTStore(hdt);
+            MemoryStore baseSail = new MemoryStore();
             baseSail.initialize();
             LuceneSail lucenesail = new LuceneSail();
             //lucenesail.setReindexQuery("SELECT ?s ?p ?o WHERE { {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p=<https://linkedopendata.eu/prop/direct/P836>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q196899> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>)} } UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . ?s <https://linkedopendata.eu/prop/direct/P35> <https://linkedopendata.eu/entity/Q9934> . FILTER (?p=<http://www.w3.org/2000/01/rdf-schema#label>) }} UNION {SELECT ?s ?p ?o WHERE {?s ?p ?o . FILTER (?p = <https://linkedopendata.eu/prop/direct/P127>) } } } order by ?s");
@@ -86,12 +87,6 @@ public abstract class SPARQLQueryTestLoadBefore extends SPARQLQueryTest {
             lucenesail.reindex();
 
             this.dataRep = new SailRepository(lucenesail);
-
-
-
-
-            System.out.println("Query: " + this.readQueryString());
-
         }
 
     }

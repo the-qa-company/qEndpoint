@@ -1,4 +1,4 @@
-package org.rdfhdt.hdt.rdf4j;
+package org.rdfhdt.hdt.rdf4j.misc;
 
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.repository.base.AbstractRepository;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class HDTRepository extends AbstractRepository {
   private HDT hdt;
   private boolean quadMode;
   private QueryParser queryParser = new SPARQLParser();
-  private HDTTripleSource tripleSource;
+  private HybridTripleSource tripleSource;
   private QueryPreparer queryPreparer;
 
   public HDTRepository(File file) {
@@ -40,7 +41,8 @@ public class HDTRepository extends AbstractRepository {
 
         hdt = HDTManager.mapIndexedHDT(file.getAbsolutePath(),spec);
       }
-      tripleSource = new HDTTripleSource(hdt);
+      // TODO: adapt this for tests....
+      //tripleSource = new HDTTripleSource(hdt);
       queryPreparer = new HDTQueryPreparer(tripleSource);
     } catch (IOException e) {
       e.printStackTrace();

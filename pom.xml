@@ -34,7 +34,11 @@
             <artifactId>hdt-java-core</artifactId>
             <version>2.1.2-SNAPSHOT</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-sail-extensible-store</artifactId>
+            <version>3.4.4</version>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-runtime</artifactId>
