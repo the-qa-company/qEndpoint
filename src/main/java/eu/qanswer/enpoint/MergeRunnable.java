@@ -69,6 +69,7 @@ public class MergeRunnable implements Runnable {
             this.hdt = HDTManager.mapIndexedHDT(hdtIndex,new HDTSpecification());
             this.hybridStore.setTripleSource(new HybridTripleSource(hdt,this.hybridStore));
             this.hybridStore.setQueryPreparer(new HybridQueryPreparer(this.hybridStore));
+            this.hybridStore.setHdt(this.hdt);
             this.hybridStore.isMerging = false;
         } catch (IOException e) {
             e.printStackTrace();

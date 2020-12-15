@@ -29,8 +29,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private NativeStore nativeStoreA;
     private NativeStore nativeStoreB;
     private NativeStore currentStore;
-
+    private NativeStore deleteStore;
     private SailConnection nativeStoreConnection;
+    private SailConnection deleteStoreConnection;
 
     private SailRepository repo;
     public boolean switchStore = false;
@@ -61,6 +62,20 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.locationHdt = locationHdt;
         this.queryPreparer = new HybridQueryPreparer(this);
     }
+    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,NativeStore deleteStore,HDT hdt,String locationHdt,int threshold){
+        this.hdt = hdt;
+        this.nativeStoreA = nativeStoreA;
+        this.nativeStoreB = nativeStoreB;
+        this.currentStore = nativeStoreA;
+        this.threshold = threshold;
+        this.tripleSource = new HybridTripleSource(hdt,this);
+        this.nativeStoreConnection = this.currentStore.getConnection();
+        this.repo = new SailRepository(currentStore);
+        this.locationHdt = locationHdt;
+        this.queryPreparer = new HybridQueryPreparer(this);
+        this.deleteStore = deleteStore;
+        this.deleteStoreConnection = this.deleteStore.getConnection();
+    }
 
     @Override
     protected void initializeInternal() throws SailException {
@@ -85,6 +100,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public HDT getHdt() {
         return hdt;
+    }
+
+    public void setHdt(HDT hdt) {
+        this.hdt = hdt;
     }
 
     public HybridTripleSource getTripleSource() {
@@ -147,18 +166,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.queryPreparer = queryPreparer;
     }
 
-    public int getCurrentCount(){
-        String queryCount = "select (count(*) as ?c) where { ?s ?p ?o}";
 
-        TupleQuery tupleQuery = getRepoConnection().prepareTupleQuery(queryCount);
-        try (TupleQueryResult result = tupleQuery.evaluate()) {
-            while (result.hasNext()) {
-                BindingSet bindingSet = result.next();
-                Value valueOfC = bindingSet.getValue("c");
-                return Integer.parseInt(valueOfC.stringValue());
-            }
-        }
-        return 0;
+    public SailConnection getDeleteStoreConnection() {
+        return deleteStoreConnection;
     }
 
     public boolean isMerging() {

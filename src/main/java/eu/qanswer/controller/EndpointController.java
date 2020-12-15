@@ -65,7 +65,7 @@ public class EndpointController {
 //        }
 //        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
 //    }
-    @RequestMapping(value = "/nativecount")
+    @RequestMapping(value = "/count")
     public ResponseEntity<String> getNativeCount(
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,

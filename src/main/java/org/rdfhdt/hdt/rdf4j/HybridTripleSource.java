@@ -18,6 +18,7 @@ import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.utility.BinarySearch;
 import org.rdfhdt.hdt.rdf4j.utility.CombinedNativeStoreResult;
 import org.rdfhdt.hdt.rdf4j.utility.HDTConverter;
+import org.rdfhdt.hdt.rdf4j.utility.TripleWithDeleteIter;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.TripleID;
 import org.slf4j.Logger;
@@ -65,8 +66,9 @@ public class HybridTripleSource implements TripleSource {
       throws QueryEvaluationException {
 
     Resource resourceNative = null;
-    if(resource != null)
+    if(resource != null) {
       resourceNative = factory.createIRI(resource.toString());
+    }
     IRI iriNative = null;
     if(iri != null)
       iriNative = factory.createIRI(iri.toString());
@@ -110,64 +112,19 @@ public class HybridTripleSource implements TripleSource {
 
     TripleID t = new TripleID(subject, predicate, object);
     IteratorTripleID iterator = hdt.getTriples().search(t);
-
+    TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this,iterator);
     return new CloseableIteration<Statement, QueryEvaluationException>() {
       @Override
       public void close() throws QueryEvaluationException {}
 
       @Override
       public boolean hasNext() throws QueryEvaluationException {
-        boolean result = iterator.hasNext() || repositoryResult.hasNext();
-        return result;
+        return tripleWithDeleteIter.hasNext();
       }
 
       @Override
       public Statement next() throws QueryEvaluationException {
-        if(iterator.hasNext()) {
-          TripleID tripleID = iterator.next();
-          return new Statement() {
-            @Override
-            public Resource getSubject() {
-              if (tripleID.getSubject() <= hdt.getDictionary().getNshared()) {
-                return new SimpleIRIHDT(hdt, "hdt:SO" + tripleID.getSubject());
-              } else {
-                return new SimpleIRIHDT(hdt, "hdt:S" + tripleID.getSubject());
-              }
-            }
-
-            @Override
-            public IRI getPredicate() {
-              return new SimpleIRIHDT(hdt, "hdt:P" + tripleID.getPredicate());
-            }
-
-            @Override
-            public Value getObject() {
-              if (tripleID.getObject() >= startLiteral && tripleID.getObject() <= endLiteral) {
-                // System.out.println("Literal "+tripleID.getObject()+" --
-                // "+hdt.getDictionary().idToString(tripleID.getObject(),TripleComponentRole.OBJECT));
-                return new SimpleLiteralHDT(hdt, tripleID.getObject(), factory);
-              } else {
-                // System.out.println("IRI
-                // "+hdt.getDictionary().idToString(tripleID.getObject(),TripleComponentRole.OBJECT));
-                if (tripleID.getObject() <= hdt.getDictionary().getNshared()) {
-                  return new SimpleIRIHDT(hdt, ("hdt:SO" + tripleID.getObject()));
-                } else {
-                  return new SimpleIRIHDT(hdt, ("hdt:O" + tripleID.getObject()));
-                }
-              }
-            }
-
-            @Override
-            public Resource getContext() {
-              return null;
-            }
-          };
-        }else{
-          if(repositoryResult.hasNext()){
-            return repositoryResult.next();
-          }
-          return null;
-        }
+          return tripleWithDeleteIter.next();
       } ///
 
       @Override
@@ -184,5 +141,21 @@ public class HybridTripleSource implements TripleSource {
 
   public HDT getHdt() {
     return hdt;
+  }
+
+  public long getStartLiteral() {
+    return startLiteral;
+  }
+
+  public long getEndLiteral() {
+    return endLiteral;
+  }
+
+  public HybridStore getHybridStore() {
+    return hybridStore;
+  }
+
+  public CloseableIteration<? extends Statement, SailException> getRepositoryResult() {
+    return repositoryResult;
   }
 }

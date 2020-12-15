@@ -52,8 +52,19 @@ public class Sparql {
     @Value("${locationNativeB}")
     private String locationNativeB;
 
+    @Value("${locationDelete}")
+    private String locationDelete;
+
     private String hdtindex = "index.hdt";
-    void initialize(String location) throws Exception {
+
+    private NativeStore nativeStoreA;
+    private NativeStore nativeStoreB;
+    private NativeStore deleteStore;
+
+    private HybridStore hybridStore;
+    private LuceneSail luceneSail;
+    private SailRepository repository;
+    void initializeHybridStore(String location) throws Exception {
         if (!model.containsKey(location)) {
             model.put(location, null);
             HDTSpecification spec = new HDTSpecification();
@@ -62,54 +73,45 @@ public class Sparql {
             HDT hdt = HDTManager.mapIndexedHDT(
                             new File(location+"index.hdt").getAbsolutePath(),spec);
 
-            HybridStore hdtStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,hdt,locationHdt,2);
-            LuceneSail luceneSail = new LuceneSail();
-            luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
-            luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
-            luceneSail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
-            luceneSail.setBaseSail(hdtStore);
-            luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
-            luceneSail.initialize();
-            //lucenesail.reindex();
-            Repository db = new SailRepository(luceneSail);
-            db.init();
-            RepositoryConnection conn = db.getConnection();
-            model.put(location, conn);
-        }
-    }
-    NativeStore nativeStoreA;
-    NativeStore nativeStoreB;
-    public void initializeNativeStore(){
-        if(!model.containsKey("native-store")) {
             File dataDir1 = new File(locationNativeA);
             File dataDir2 = new File(locationNativeB);
+            File dataDir3 = new File(locationDelete);
+
             String indexes = "spoc,posc,cosp";
             nativeStoreA = new NativeStore(dataDir1,indexes);
             nativeStoreB = new NativeStore(dataDir2,indexes);
-
-            this.nativeStore = nativeStoreA;
-            Repository repo = new SailRepository(this.nativeStore);
-            RepositoryConnection connection = repo.getConnection();
-            model.put("native-store", connection);
+            deleteStore = new NativeStore(dataDir3,indexes);
+            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,2);
+            luceneSail = new LuceneSail();
+            luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
+            luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
+            luceneSail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
+            luceneSail.setBaseSail(hybridStore);
+            luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
+            luceneSail.initialize();
+            repository = new SailRepository(luceneSail);
+            repository.init();
+            //lucenesail.reindex();
         }
     }
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
         logger.info("Json " + sparqlQuery);
-        initializeNativeStore();
-        initialize(locationHdt);
+        initializeHybridStore(locationHdt);
 
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
 
+
+        RepositoryConnection connection = repository.getConnection();
         if (parsedQuery instanceof ParsedTupleQuery) {
-            TupleQuery query = model.get(locationHdt).prepareTupleQuery(sparqlQuery);
+            TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
             query.setMaxExecutionTime(timeout);
             try {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
-                System.out.println("This exception was caught ["+q+"]");
+                logger.error("This exception was caught ["+q+"]");
             }
             return out.toString("UTF8");
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
@@ -124,11 +126,12 @@ public class Sparql {
             return "Bad Request : query not supported ";
         }
     }
-    public int getCurrentCount(){
-        initializeNativeStore();
+    public int getCurrentCount() throws Exception {
+        initializeHybridStore(locationHdt);
         String queryCount = "select (count(*) as ?c) where { ?s ?p ?o}";
 
-        TupleQuery tupleQuery = model.get("native-store").prepareTupleQuery(queryCount);
+        RepositoryConnection connection = repository.getConnection();
+        TupleQuery tupleQuery = connection.prepareTupleQuery(queryCount);
         try (TupleQueryResult result = tupleQuery.evaluate()) {
             while (result.hasNext()) {
                 BindingSet bindingSet = result.next();
@@ -139,10 +142,10 @@ public class Sparql {
         return 0;
     }
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
-        initializeNativeStore();
-        initialize(locationHdt);
+        initializeHybridStore(locationHdt);
         logger.info("Running update query:"+sparqlQuery);
-        Update preparedUpdate = model.get(locationHdt).prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
+        RepositoryConnection connection = repository.getConnection();
+        Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
         if(preparedUpdate != null) {
             preparedUpdate.execute();
             return "OK\n";

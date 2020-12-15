@@ -28,11 +28,25 @@ public class HybridStoreConnection extends SailSourceConnection {
   }
 
   @Override
+  public void begin() throws SailException {
+    super.begin();
+    long count = hybridStore.getNativeStoreConnection().size((Resource)null);
+    //System.out.println("--------------: "+count);
+    if(count >= hybridStore.getThreshold()){ // THRESHOLD
+      System.out.println("Merging...");
+      hybridStore.makeMerge();
+    }
+    this.hybridStore.getNativeStoreConnection().begin();
+    this.hybridStore.getDeleteStoreConnection().begin();
+  }
+  // for SPARQL queries
+  @Override
   protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
 
     return hybridStore.getQueryPreparer().evaluate(tupleExpr, dataset, bindings, includeInferred,0);
   }
 
+  // USED from connection get api not SPARQL
   @Override
   protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
     CloseableIteration<? extends Statement, QueryEvaluationException> result =
@@ -43,17 +57,6 @@ public class HybridStoreConnection extends SailSourceConnection {
         return new SailException(e);
       }
     };
-  }
-
-  @Override
-  public void begin() throws SailException {
-    super.begin();
-    int count = hybridStore.getCurrentCount();
-    System.out.println("--------------: "+count);
-    if(count >= hybridStore.getThreshold()){ // THRESHOLD
-      hybridStore.makeMerge();
-    }
-    this.hybridStore.getNativeStoreConnection().begin();
   }
   @Override
   public void setNamespaceInternal(String prefix, String name) throws SailException {
@@ -111,21 +114,27 @@ public class HybridStoreConnection extends SailSourceConnection {
   protected void commitInternal() throws SailException {
     super.commitInternal();
     hybridStore.getNativeStoreConnection().commit();
+    hybridStore.getDeleteStoreConnection().commit();
   }
 
   @Override
   public void startUpdate(UpdateContext op) throws SailException {
     hybridStore.getNativeStoreConnection().startUpdate(op);
+    hybridStore.getDeleteStoreConnection().startUpdate(op);
   }
 
   @Override
   protected void endUpdateInternal(UpdateContext op) throws SailException {
     hybridStore.getNativeStoreConnection().endUpdate(op);
+    hybridStore.getDeleteStoreConnection().endUpdate(op);
+
   }
 
   @Override
   protected void rollbackInternal() throws SailException {
     hybridStore.getNativeStoreConnection().rollback();
+    hybridStore.getDeleteStoreConnection().rollback();
+
   }
 
   @Override
@@ -144,6 +153,20 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   protected long sizeInternal(Resource... contexts) throws SailException {
-    return 0;
+    //return hybridStore.getNativeStoreConnection().size(contexts);
+    long sizeNativeA = this.hybridStore.getNativeStoreA().getConnection().size(contexts);
+    long sizeNativeB = this.hybridStore.getNativeStoreB().getConnection().size(contexts);
+    long sizeNativeDelete = this.hybridStore.getDeleteStoreConnection().size(contexts);
+    long sizeHdt = this.hybridStore.getHdt().getTriples().getNumberOfElements();
+
+    return sizeHdt + sizeNativeA + sizeNativeB - sizeNativeDelete;
+  }
+
+  @Override
+  public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+    // remove from native current store
+    this.hybridStore.getNativeStoreConnection().removeStatement(op, subj, pred, obj, contexts);
+    // add to delete store so we can skip it if it exists in hdt
+    this.hybridStore.getDeleteStoreConnection().addStatement(op, subj, pred, obj, contexts);
   }
 }
