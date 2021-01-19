@@ -3,7 +3,7 @@ stages:
   - deploy
 
 build:
-  stage: building docker
+  stage: build
   script:
     - echo "Login to gitlab registry"
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
