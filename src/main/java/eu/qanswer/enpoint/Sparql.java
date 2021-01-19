@@ -63,7 +63,7 @@ public class Sparql {
             nativeStoreA = new NativeStore(dataDir1,indexes);
             nativeStoreB = new NativeStore(dataDir2,indexes);
             deleteStore = new NativeStore(dataDir3,indexes);
-            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,2);
+            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,100000,false);
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");

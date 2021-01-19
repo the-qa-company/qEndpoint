@@ -7,7 +7,9 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.SailConnection;
 import org.rdfhdt.hdt.enums.RDFNotation;
+import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
@@ -15,6 +17,7 @@ import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HybridQueryPreparer;
 import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
+import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +27,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Iterator;
 
 public class MergeRunnable implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
     private RepositoryConnection nativeStoreConnection;
+    private RepositoryConnection deleteStoreConnection;
+
     private String hdtIndex;
     private String locationHdt;
 
@@ -44,10 +50,11 @@ public class MergeRunnable implements Runnable {
         this.nativeStoreConnection = nativeStoreConnection;
     }
 
-    public MergeRunnable(String locationHdt, RepositoryConnection nativeStoreConnection, HybridStore hybridStore) {
+    public MergeRunnable(String locationHdt, HybridStore hybridStore) {
         this.locationHdt = locationHdt;
         this.hdtIndex = locationHdt+"index.hdt";
-        this.nativeStoreConnection = nativeStoreConnection;
+        this.nativeStoreConnection = hybridStore.getRepoConnection();
+        this.deleteStoreConnection = hybridStore.getDeleteRepoConnection();
         this.hybridStore = hybridStore;
     }
 
@@ -55,30 +62,70 @@ public class MergeRunnable implements Runnable {
     public synchronized void run() {
         hybridStore.isMerging = true;
         try {
+            String rdfInput = locationHdt+"temp.nt";
+            String hdtOutput = locationHdt+"temp.hdt";
+            String rdfInputDelete = locationHdt+"temp_delete.nt";
+            String hdtOutputDelete = locationHdt+"temp_delete.hdt";
+
             // dump all triples in native store
-            writeTempFile();
+            writeTempFile(nativeStoreConnection,rdfInput);
             // create the hdt index for the temp dump
-            createHDTDump();
+            createHDTDump(rdfInput,hdtOutput);
             // cat the original index and the temp index
-            catIndexes();
+            catIndexes(hdtIndex,hdtOutput);
+
+            writeTempFile(deleteStoreConnection,rdfInputDelete);
+
+            createHDTDump(rdfInputDelete,hdtOutputDelete);
+            // diff hdt indexes...
+            diffIndexes(hdtIndex,hdtOutputDelete);
             // empty native store
             emptyNativeStore();
-            Files.delete(Paths.get(locationHdt+"/temp.hdt"));
-            Files.delete(Paths.get(locationHdt+"/temp.nt"));
 
+            Files.delete(Paths.get(rdfInput));
+            Files.delete(Paths.get(hdtOutput));
+            Files.delete(Paths.get(rdfInputDelete));
+            Files.delete(Paths.get(hdtOutputDelete));
+            Files.deleteIfExists(Paths.get(locationHdt+"triples-delete.arr"));
             this.hdt = HDTManager.mapIndexedHDT(hdtIndex,new HDTSpecification());
+            //hdt.search("","","").forEachRemaining(System.out::println);
+            //hdt.getTriples().searchAll().forEachRemaining(System.out::println);
             this.hybridStore.setTripleSource(new HybridTripleSource(hdt,this.hybridStore));
             this.hybridStore.setQueryPreparer(new HybridQueryPreparer(this.hybridStore));
             this.hybridStore.setHdt(this.hdt);
+            this.hybridStore.initDeleteArray();
             this.hybridStore.isMerging = false;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    private void catIndexes() throws IOException {
+
+    private void diffIndexes(String hdtInput1,String hdtInput2) {
+
         String hdtOutput = locationHdt+"new_index.hdt";
-        String hdtInput1 = hdtIndex;
-        String hdtInput2 = locationHdt+"temp.hdt";
+        try {
+            HDT hdt = HDTManager.diffHDT(hdtInput1,hdtInput2,new HDTSpecification(),null);
+            hdt.saveToHDT(hdtOutput,null);
+            hdt = HDTManager.indexedHDT(hdt,null);
+
+            Files.deleteIfExists(Paths.get(hdtIndex));
+            Files.deleteIfExists(Paths.get(hdtIndex+".index.v1-1"));
+            File file = new File(hdtOutput);
+            boolean renamed = file.renameTo(new File(hdtIndex));
+            File indexFile = new File(hdtOutput+".index.v1-1");
+            boolean renamedIndex = indexFile.renameTo(new File(hdtIndex+".index.v1-1"));
+            if(renamed && renamedIndex) {
+                logger.info("Replaced indexes successfully");
+                hdt.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void catIndexes(String hdtInput1,String hdtInput2) throws IOException {
+        String hdtOutput = locationHdt+"new_index.hdt";
         HDT hdt = null;
         HDTSpecification spec = new HDTSpecification();
         try {
@@ -114,10 +161,9 @@ public class MergeRunnable implements Runnable {
         }
 
     }
-    private void createHDTDump(){
+    private void createHDTDump(String rdfInput,String hdtOutput){
 
-        String rdfInput = locationHdt+"temp.nt";
-        String hdtOutput = locationHdt+"temp.hdt";
+
         String baseURI = "file://"+rdfInput;
         RDFNotation notation = RDFNotation.guess(rdfInput);
         HDTSpecification spec = new HDTSpecification();
@@ -134,13 +180,13 @@ public class MergeRunnable implements Runnable {
             e.printStackTrace();
         }
     }
-    private void writeTempFile(){
+    private void writeTempFile(RepositoryConnection connection,String file){
         FileOutputStream out = null;
         try {
-            out = new FileOutputStream(locationHdt+"temp.nt");
+            out = new FileOutputStream(file);
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             RepositoryResult<Statement> repositoryResult =
-                    this.nativeStoreConnection.getStatements(null,null,null,false,(Resource)null);
+                    connection.getStatements(null,null,null,false,(Resource)null);
             writer.startRDF();
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
@@ -154,5 +200,6 @@ public class MergeRunnable implements Runnable {
     }
     private void emptyNativeStore(){
         nativeStoreConnection.clear((Resource)null);
+        deleteStoreConnection.clear((Resource)null);
     }
 }

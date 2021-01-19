@@ -10,12 +10,17 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryPreparer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
-import org.eclipse.rdf4j.sail.SailException;
-import org.eclipse.rdf4j.sail.SailReadOnlyException;
-import org.eclipse.rdf4j.sail.UnknownSailTransactionStateException;
-import org.eclipse.rdf4j.sail.UpdateContext;
+import org.eclipse.rdf4j.sail.*;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
+import org.rdfhdt.hdt.compact.bitmap.Bitmap375;
+import org.rdfhdt.hdt.compact.bitmap.Bitmap64;
+import org.rdfhdt.hdt.compact.sequence.SequenceLog64Big;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdt.triples.TripleID;
+
+import java.util.HashSet;
+import java.util.Iterator;
 
 public class HybridStoreConnection extends SailSourceConnection {
 
@@ -158,14 +163,41 @@ public class HybridStoreConnection extends SailSourceConnection {
     long sizeNativeDelete = this.hybridStore.getDeleteStoreConnection().size(contexts);
     long sizeHdt = this.hybridStore.getHdt().getTriples().getNumberOfElements();
 
-    return sizeHdt + sizeNativeA + sizeNativeB - sizeNativeDelete;
+    long sizeDeleted = this.hybridStore.getDeleteBitMap().countOnes();
+
+    return sizeHdt + sizeNativeA + sizeNativeB - sizeDeleted;
   }
 
   @Override
   public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // remove from native current store
     this.hybridStore.getNativeStoreConnection().removeStatement(op, subj, pred, obj, contexts);
+    //assignBitSets(subj,pred,obj);
     // add to delete store so we can skip it if it exists in hdt
-    this.hybridStore.getDeleteStoreConnection().addStatement(op, subj, pred, obj, contexts);
+    long subjId = convertToId(subj,TripleComponentRole.SUBJECT);
+    //IRI s = this.hybridStore.getValueFactory().createIRI("http://hdt-"+subjId);
+    long predId = convertToId(pred,TripleComponentRole.PREDICATE);
+    //IRI p= this.hybridStore.getValueFactory().createIRI("http://hdt-"+predId);
+    long objId = convertToId(obj,TripleComponentRole.OBJECT);
+    //IRI o = this.hybridStore.getValueFactory().createIRI("http://hdt-"+objId);
+    assignBitMapDeletes(subjId,predId,objId);
+    // TODO: replace with an implementation when merging hdt files...
+    this.hybridStore.getDeleteStoreConnection().addStatement(op,subj , pred, obj, contexts);
+  }
+  private void assignBitMapDeletes(long subjId,long predId,long objecId) throws SailException {
+    TripleID t = new TripleID(subjId, predId, objecId);
+    Iterator<TripleID> iter = hybridStore.getHdt().getTriples().search(t);
+    long index = -1;
+
+    if(iter.hasNext())
+      index = iter.next().getIndex();
+    if(index != -1)
+      this.hybridStore.getDeleteBitMap().set(index-1,true);
+    else{
+      System.out.println("triple not found in HDT to be deleted");
+    }
+  }
+  private long convertToId(Value iri,TripleComponentRole position){
+    return hybridStore.getHdt().getDictionary().stringToId(iri.toString(),position);
   }
 }

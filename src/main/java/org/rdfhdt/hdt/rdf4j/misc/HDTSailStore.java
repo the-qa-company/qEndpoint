@@ -14,11 +14,9 @@ import org.rdfhdt.hdt.rdf4j.HDTEvaluationStatisticsV2;
 public class HDTSailStore implements SailStore {
 
   private HDT hdt;
-  NativeStore nativeStore;
 
   HDTSailStore(HDT hdt,NativeStore nativeStore) {
     this.hdt = hdt;
-    this.nativeStore = nativeStore;
   }
 
   @Override
@@ -28,17 +26,17 @@ public class HDTSailStore implements SailStore {
 
   @Override
   public EvaluationStatistics getEvaluationStatistics() {
-    return new CombinedEvaluationStatistics(new HDTEvaluationStatisticsV2(hdt),nativeStore.getSailStore().getEvaluationStatistics());
+    return new HDTEvaluationStatisticsV2(hdt);
   }
 
   @Override
   public SailSource getExplicitSailSource() {
-    return nativeStore.getSailStore().getExplicitSailSource();
+    return null;
   }
 
   @Override
   public SailSource getInferredSailSource() {
-    return nativeStore.getSailStore().getInferredSailSource();
+    return null;
   }
 
   @Override

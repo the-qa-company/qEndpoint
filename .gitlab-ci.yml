@@ -1,4 +1,18 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: building docker
+  script:
+    - echo "Login to gitlab registry"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo "Building docker container"
+    - docker build -t gitlab.the-qa-company.com:5050/d063520/hdtsparqlendpoint .
+    - echo "Pushing container to registry"
+    - docker push $CI_REGISTRY/d063520/hdtsparqlendpoint
 deploy:
+  stage: deploy
   image: maven:3.6-jdk-11
   script:
     - 'mvn deploy -U -s ci_settings.xml'

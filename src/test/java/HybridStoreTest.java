@@ -1,12 +1,9 @@
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.AbstractValueFactoryHDT;
-import org.eclipse.rdf4j.model.impl.SimpleStatement;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -17,14 +14,8 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
-import org.eclipse.rdf4j.sail.memory.model.MemStatement;
-import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,11 +30,9 @@ import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +47,7 @@ public class HybridStoreTest {
             NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
 
-            HybridStore hybridStore = new HybridStore(nativeA,nativeB,createTempHdtIndex(true),10);
+            HybridStore hybridStore = new HybridStore(nativeA,nativeB, Utility.createTempHdtIndex(tempDir, true,false),10);
             hybridStore.shutDown();
 
         } catch (IOException e) {
@@ -71,7 +60,7 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            HybridStore hybridStore = new HybridStore(nativeA,nativeB,createTempHdtIndex(true),10);
+            HybridStore hybridStore = new HybridStore(nativeA,nativeB, Utility.createTempHdtIndex(tempDir, true,false),10);
 
             try (SailConnection connection = hybridStore.getConnection()) {
             }
@@ -85,7 +74,7 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,createTempHdtIndex(true),10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB, Utility.createTempHdtIndex(tempDir, true,false),10));
             hybridStore.shutDown();
         } catch (IOException e) {
             e.printStackTrace();
@@ -96,7 +85,7 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,createTempHdtIndex(true),10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,Utility.createTempHdtIndex(tempDir, true,false),10));
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
             }
             hybridStore.shutDown();
@@ -109,8 +98,11 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            HDT hdt = createTempHdtIndex(true);
-            HybridStore hybridStore = new HybridStore(nativeA,nativeB,hdt,10);
+            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+
+            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+            HybridStore hybridStore = new HybridStore(nativeA,nativeB,deleteStore,hdt,
+                    System.getProperty("user.dir")+"/",10,true);
 
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
@@ -118,7 +110,8 @@ public class HybridStoreTest {
                 connection.commit();
             }
             hybridStore.shutDown();
-            hybridStore = new HybridStore(nativeA,nativeB,hdt,10);
+            hybridStore = new HybridStore(nativeA,nativeB,deleteStore,hdt,
+                    System.getProperty("user.dir")+"/",10,true);
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
                 connection.addStatement(RDF.TYPE, RDF.TYPE, RDFS.RESOURCE);
@@ -128,6 +121,7 @@ public class HybridStoreTest {
             hdt.close();
         } catch (IOException e) {
             e.printStackTrace();
+            fail(e.getMessage());
         }
     }
     @Test
@@ -135,9 +129,12 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            HDT hdt = createTempHdtIndex(false);
+            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,hdt,10));
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(nativeA,nativeB,deleteStore,hdt,
+                            System.getProperty("user.dir")+"/",10,true));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -160,10 +157,14 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
+            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
             createHDTIndex("index",false);
             HDT hdt = HDTManager.mapHDT("index.hdt");
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,hdt,System.getProperty("user.dir")+"/",2));
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(nativeA,nativeB,deleteStore,hdt,
+                            System.getProperty("user.dir")+"/",2,true)
+            );
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -177,17 +178,26 @@ public class HybridStoreTest {
                 IRI pierre = vf.createIRI(ex, "Pierre");
                 connection.add(pierre, RDF.TYPE, FOAF.PERSON);
 
+                IRI guo = vf.createIRI(ex, "Guo");
+                connection.remove(guo, RDF.TYPE, FOAF.PERSON);
+
                 // wait for merge to be done because it's on a separate thread
 
                 List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
-                for (Statement s: statements) {
-                    System.out.println(s.getSubject());
-                }
-                // 1 triple hdt, 2 triples native a, 1 triple native b
-                assertEquals(4, statements.size());
+                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
+                while (sts.hasNext())
+                    System.out.println(sts.next());
+                // 1 triple hdt, 2 triples native a, 1 triple native b -1 triple removed from hdt
+                assertEquals(3, statements.size());
                 Thread.sleep(2000);
-                // 3 triples hdt, 0 triples native a, 1 triple native b
-                assertEquals(4, statements.size());
+
+                statements = Iterations.asList(connection.getStatements(null, null, null, true));
+
+                sts = connection.getStatements(null, null, null, true);
+                while (sts.hasNext())
+                    System.out.println(sts.next());
+                // 2 triples hdt, 0 triples native a, 1 triple native b
+                assertEquals(3, statements.size());
                 Files.deleteIfExists(Paths.get("index.hdt"));
                 Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
@@ -203,10 +213,12 @@ public class HybridStoreTest {
         try {
             NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
+            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
             createHDTIndex("index",false);
             HDT hdt = HDTManager.mapHDT("index.hdt");
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,hdt,System.getProperty("user.dir")+"/",10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,deleteStore,
+                    hdt,System.getProperty("user.dir")+"/",10,true));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -239,16 +251,20 @@ public class HybridStoreTest {
             NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
             NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
             NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            HDT hdt = createTempHdtIndex(false);
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,deleteStore,hdt,System.getProperty("user.dir")+"/",10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,deleteStore,hdt,
+                    System.getProperty("user.dir")+"/",10,true));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
                 String ex = "http://example.com/";
+                IRI ali = vf.createIRI(ex,"Ali");
+                connection.add(ali,RDF.TYPE,FOAF.PERSON);
 
                 IRI guo = vf.createIRI(ex,"Guo");
                 connection.remove(guo,RDF.TYPE,FOAF.PERSON);
+                connection.remove(ali,RDF.TYPE,FOAF.PERSON);
                 // query everything of type PERSON
                 List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
                 for (Statement s:statements) {
@@ -271,7 +287,8 @@ public class HybridStoreTest {
             createHDTIndex("index", false);
             HDT hdt = HDTManager.mapHDT("index.hdt");
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB,deleteStore, hdt, System.getProperty("user.dir") + "/", 10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB,deleteStore, hdt,
+                    System.getProperty("user.dir") + "/", 10,true));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -312,7 +329,8 @@ public class HybridStoreTest {
             createHDTIndex("index", false);
             HDT hdt = HDTManager.mapHDT("index.hdt");
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore,hdt, System.getProperty("user.dir") + "/", 10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore,hdt,
+                    System.getProperty("user.dir") + "/", 10,true));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -332,6 +350,7 @@ public class HybridStoreTest {
                 List<Statement> statements = Iterations.asList(connection.getStatements(null,null,null,(Resource)null));
                 for (Statement s:statements){
                     System.out.println(s);
+                    assertEquals(ali.toString(),s.getSubject().toString());
                 }
                 assertEquals(1, statements.size());
                 Files.deleteIfExists(Paths.get("index.hdt"));
@@ -351,7 +370,8 @@ public class HybridStoreTest {
             createHDTIndex("index", false);
             HDT hdt = HDTManager.mapHDT("index.hdt");
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore,hdt, System.getProperty("user.dir") + "/", 10));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore,hdt,
+                    System.getProperty("user.dir") + "/", 10,true));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -396,7 +416,8 @@ public class HybridStoreTest {
             HDT hdt = HDTManager.mapHDT("index.hdt");
             System.out.println("HDT: ==================");
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore, hdt, System.getProperty("user.dir") + "/", 1000000));
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore, hdt,
+                    System.getProperty("user.dir") + "/", 1000000,true));
 
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();
@@ -425,54 +446,51 @@ public class HybridStoreTest {
         }
 
     }
-    private void writeTempRDF(File file){
-        FileOutputStream out = null;
-        ValueFactory vf = new MemValueFactory();
+    @Test
+    public void misc(){
         try {
-            out = new FileOutputStream(file);
-            RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
-            writer.startRDF();
-            String ex = "http://example.com/";
-            IRI guo = vf.createIRI(ex,"Guo");
-            Statement stm = vf.createStatement(guo,RDF.TYPE,FOAF.PERSON);
-            writer.handleStatement(stm);
-            writer.endRDF();
-            out.close();
-        } catch (IOException e) {
+            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
+            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
+            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
+            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore, hdt,
+                    System.getProperty("user.dir") + "/", 1000000,true));
+            try (SailRepositoryConnection connection = hybridStore.getConnection()) {
+                StopWatch stopWatch = StopWatch.createStarted();
+                RepositoryResult<Statement> statements = connection.getStatements(null, null, FOAF.PERSON, true);
+                int count = 0;
+                while (statements.hasNext()) {
+                    statements.next();
+                    count++;
+                }
+                System.out.println("the count is: "+count);
+                assertEquals(Utility.count,count);
+                stopWatch.stop();
+                System.out.println("Time to query : "+stopWatch.getTime(TimeUnit.MILLISECONDS));
+            }
+        }catch (Exception e){
             e.printStackTrace();
+            fail("Catched Exception");
         }
     }
+
+
+
     private void printHDT(HDT hdt) throws NotFoundException {
         IteratorTripleString it = hdt.search("","","");
         while (it.hasNext()){
             System.out.println(it.next());
         }
     }
-    private HDT createTempHdtIndex(boolean empty){
-        try {
-            String rdfInput = "temp.nt";
-            File inputFile = tempDir.newFile(rdfInput);
-            if(!empty){
-                writeTempRDF(inputFile);
-            }
-            String baseURI = inputFile.getAbsolutePath();
-            RDFNotation notation = RDFNotation.guess(rdfInput);
-            HDTSpecification spec = new HDTSpecification();
-            return HDTManager.generateHDT(inputFile.getAbsolutePath(),baseURI,notation,spec,null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+
     private void createHDTIndex(String fileName,boolean empty){
         try {
             String rdfInput = fileName+".nt";
             String hdtOutput = fileName+".hdt";
             File inputFile = new File(rdfInput);
             if(!empty){
-                writeTempRDF(inputFile);
+                Utility.writeTempRDF(inputFile);
             }
             String baseURI = inputFile.getAbsolutePath();
             RDFNotation notation = RDFNotation.guess(rdfInput);
