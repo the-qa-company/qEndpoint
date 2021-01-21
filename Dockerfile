@@ -11,6 +11,6 @@ RUN mvn -f /home/app/pom.xml clean package -s /home/app/ci_settings.xml --quiet
 # Package stage
 #
 FROM openjdk:11-jre-slim
-COPY --from=build /home/app/target/hdtSparqlEndpoint-1.0.1-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-1.0.1-SNAPSHOT.jar
+COPY --from=build /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
 EXPOSE 1234
-ENTRYPOINT ["java","-jar","/usr/local/lib/hdtSparqlEndpoint-1.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-jar","/usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar"]
