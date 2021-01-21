@@ -28,11 +28,22 @@ public class EndpointController {
             throws Exception {
         logger.info("Query "+query);
         logger.info("timeout: "+timeout);
-        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
+        if (acceptHeader.contains("application/sparql-results+json")) {
             return ResponseEntity.status(HttpStatus.OK)
                     .header("Content-Type", "application/sparql-results+json")
                     .body(sparql.executeJson(query, timeout));
         }
+        if (acceptHeader.contains("application/sparql-results+xml")) {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .header("Content-Type", "application/sparql-results+xml")
+                    .body(sparql.executeXML(query, timeout));
+        }
+        if (acceptHeader.contains("application/x-binary-rdf-results-table")) {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .header("Content-Type", "application/x-binary-rdf-results-table")
+                    .body(sparql.executeBinary(query, timeout));
+        }
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
     }
     @RequestMapping(value = "/update")

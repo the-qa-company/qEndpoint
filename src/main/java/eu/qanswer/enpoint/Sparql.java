@@ -2,7 +2,9 @@ package eu.qanswer.enpoint;
 
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.parser.*;
+import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriter;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
+import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
@@ -52,6 +54,7 @@ public class Sparql {
             HDTSpecification spec = new HDTSpecification();
             //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 
+
             HDT hdt = HDTManager.mapIndexedHDT(
                             new File(location+"index.hdt").getAbsolutePath(),spec);
 
@@ -80,6 +83,42 @@ public class Sparql {
         logger.info("Json " + sparqlQuery);
         initializeHybridStore(locationHdt);
 
+
+
+        RepositoryConnection connection = repository.getConnection();
+        connection.setNamespace("ontolex","http://www.w3.org/ns/lemon/ontolex#");
+
+        TupleQuery query1 = connection.prepareTupleQuery(sparqlQuery);
+        ParsedQuery parsedQuery =
+                QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+
+        if (parsedQuery instanceof ParsedTupleQuery) {
+            TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
+            query.setMaxExecutionTime(timeout);
+            try {
+                query.evaluate(writer);
+            } catch (QueryEvaluationException q){
+                logger.error("This exception was caught ["+q+"]");
+            }
+            return out.toString("UTF8");
+        } else if (parsedQuery instanceof ParsedBooleanQuery) {
+            BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+            if (query.evaluate() == true) {
+                return "{ \"head\" : { } , \"boolean\" : true }";
+            } else {
+                return "{ \"head\" : { } , \"boolean\" : false }";
+            }
+        } else {
+            System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
+            return "Bad Request : query not supported ";
+        }
+    }
+    public String executeXML(String sparqlQuery, int timeout) throws Exception {
+        logger.info("Json " + sparqlQuery);
+        initializeHybridStore(locationHdt);
+
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
 
@@ -88,7 +127,39 @@ public class Sparql {
         if (parsedQuery instanceof ParsedTupleQuery) {
             TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
+            TupleQueryResultHandler writer = new SPARQLResultsXMLWriter(out);
+            query.setMaxExecutionTime(timeout);
+            try {
+                query.evaluate(writer);
+            } catch (QueryEvaluationException q){
+                logger.error("This exception was caught ["+q+"]");
+            }
+            return out.toString("UTF8");
+        } else if (parsedQuery instanceof ParsedBooleanQuery) {
+            BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+            if (query.evaluate() == true) {
+                return "{ \"head\" : { } , \"boolean\" : true }";
+            } else {
+                return "{ \"head\" : { } , \"boolean\" : false }";
+            }
+        } else {
+            System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
+            return "Bad Request : query not supported ";
+        }
+    }
+    public String executeBinary(String sparqlQuery, int timeout) throws Exception {
+        logger.info("Json " + sparqlQuery);
+        initializeHybridStore(locationHdt);
+        ParsedQuery parsedQuery =
+                QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+
+
+        RepositoryConnection connection = repository.getConnection();
+        if (parsedQuery instanceof ParsedTupleQuery) {
+
+            TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            TupleQueryResultHandler writer = new BinaryQueryResultWriter(out);
             query.setMaxExecutionTime(timeout);
             try {
                 query.evaluate(writer);

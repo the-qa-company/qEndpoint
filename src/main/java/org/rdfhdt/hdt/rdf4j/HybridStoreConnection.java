@@ -64,6 +64,7 @@ public class HybridStoreConnection extends SailSourceConnection {
   }
   @Override
   public void setNamespaceInternal(String prefix, String name) throws SailException {
+    super.setNamespaceInternal(prefix,name);
     hybridStore.getNativeStoreConnection().setNamespace(prefix,name);
   }
 
