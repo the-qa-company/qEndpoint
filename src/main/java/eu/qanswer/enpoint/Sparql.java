@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
+import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
@@ -22,6 +23,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 @Component
@@ -86,10 +89,15 @@ public class Sparql {
             HDTSpecification spec = new HDTSpecification();
             //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 
-
-            HDT hdt = HDTManager.mapIndexedHDT(
-                            new File(location+"index.hdt").getAbsolutePath(),spec);
-
+            File hdtFile = new File(location+"index.hdt");
+            if(!hdtFile.exists()){
+                File tempRDF = new File(location+"tmp_index.nt");
+                tempRDF.createNewFile();
+                HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(),"uri", RDFNotation.NTRIPLES,spec,null);
+                hdt.saveToHDT(hdtFile.getAbsolutePath(),null);
+                Files.delete(Paths.get(tempRDF.getAbsolutePath()));
+            }
+            HDT hdt = HDTManager.mapIndexedHDT(hdtFile.getAbsolutePath(),spec);
             File dataDir1 = new File(locationNativeA);
             File dataDir2 = new File(locationNativeB);
             File dataDir3 = new File(locationDelete);
@@ -98,7 +106,7 @@ public class Sparql {
             nativeStoreA = new NativeStore(dataDir1,indexes);
             nativeStoreB = new NativeStore(dataDir2,indexes);
             deleteStore = new NativeStore(dataDir3,indexes);
-            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,1000000,false);
+            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,100000,false);
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");

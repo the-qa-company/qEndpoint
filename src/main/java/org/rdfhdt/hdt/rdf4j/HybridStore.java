@@ -64,7 +64,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdt = hdt;
         this.nativeStoreA = nativeStoreA;
         this.nativeStoreB = nativeStoreB;
-        this.currentStore = nativeStoreA;
+        if(switchStore)
+            this.currentStore = nativeStoreB;
+        else
+            this.currentStore = nativeStoreA;
         this.threshold = threshold;
         this.tripleSource = new HybridTripleSource(hdt,this);
         this.nativeStoreConnection = this.currentStore.getConnection();
