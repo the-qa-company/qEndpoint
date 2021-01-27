@@ -18,8 +18,8 @@ public class CombinedEvaluationStatistics extends EvaluationStatistics {
     public synchronized double getCardinality(TupleExpr expr) {
         double hdtCard = hdtEvaluationStatistics.getCardinality(expr);
         double nativeCard = nativeEvaluationStatistics.getCardinality(expr);
-        System.out.println(" HDT stat: ---------------------- "+hdtCard);
-        System.out.println(" Native stat: ---------------------- "+nativeCard);
+//        System.out.println(" HDT stat: ---------------------- "+hdtCard);
+//        System.out.println(" Native stat: ---------------------- "+nativeCard);
         if(hdtCard == Integer.MAX_VALUE && nativeCard >0)
             hdtCard = 0;
         return hdtCard + nativeCard;

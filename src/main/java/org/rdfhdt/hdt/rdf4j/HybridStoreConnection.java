@@ -35,7 +35,7 @@ public class HybridStoreConnection extends SailSourceConnection {
   public void begin() throws SailException {
     super.begin();
     long count = hybridStore.getNativeStoreConnection().size((Resource)null);
-    //System.out.println("--------------: "+count);
+    System.err.println("--------------: "+count);
     if(count >= hybridStore.getThreshold()){ // THRESHOLD
       System.out.println("Merging...");
       hybridStore.makeMerge();
@@ -148,7 +148,9 @@ public class HybridStoreConnection extends SailSourceConnection {
   }
 
   @Override
-  protected void closeInternal() throws SailException {}
+  protected void closeInternal() throws SailException {
+
+  }
 
   @Override
   protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal()

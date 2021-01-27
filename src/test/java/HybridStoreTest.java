@@ -208,6 +208,48 @@ public class HybridStoreTest {
             fail("Exception found !");
         }
     }
+
+    @Test
+    public void testMergeMultiple(){
+        try {
+            NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
+            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
+            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+            createHDTIndex("index",true);
+            HDT hdt = HDTManager.mapHDT("index.hdt");
+            printHDT(hdt);
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(nativeA,nativeB,deleteStore,hdt,
+                            System.getProperty("user.dir")+"/",999,true)
+            );
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+
+                for (int i = 0; i < 5; i++) {
+                    System.out.println("Merging phase: "+(i+1));
+                    int count = 1000;
+                    connection.begin();
+                    for (int j = i*count; j < (i+1)*count; j++) {
+                        connection.add(RDFS.RESOURCE, RDFS.LABEL, connection.getValueFactory().createLiteral(j));
+                    }
+                    connection.commit();
+                    System.out.println("Count before merge:"+connection.size());
+                    assertEquals(count*(i+1),connection.size());
+                    Thread.sleep(4000);
+                    System.out.println("Count after merge:"+connection.size());
+                    assertEquals(count*(i+1),connection.size());
+                }
+                assertEquals(5000, connection.size());
+                Files.deleteIfExists(Paths.get("index.hdt"));
+                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get("index.nt"));
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception found !");
+        }
+    }
     @Test
     public void testCommonNativeAndHdt(){
         try {
@@ -491,6 +533,8 @@ public class HybridStoreTest {
             File inputFile = new File(rdfInput);
             if(!empty){
                 Utility.writeTempRDF(inputFile);
+            }else{
+                inputFile.createNewFile();
             }
             String baseURI = inputFile.getAbsolutePath();
             RDFNotation notation = RDFNotation.guess(rdfInput);

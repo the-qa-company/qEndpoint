@@ -24,8 +24,8 @@ WORKDIR /home/app
 RUN mkdir data
 RUN mkdir data/hdt-store
 
-COPY --from=build /home/app/target/hdtSparqlEndpoint-1.0.1-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-1.0.1-SNAPSHOT.jar
+COPY --from=build /home/app/target/hdtSparqlEndpoint-1.0.2-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-1.0.2-SNAPSHOT.jar
 
 COPY --from=build /home/app/src/main/resources/application-prod.properties /home/app/application-prod.properties
 EXPOSE 1234
-ENTRYPOINT ["java","-Dspring.config.location=file:///home/app/application-prod.properties","-jar","/usr/local/lib/hdtSparqlEndpoint-1.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-Dspring.config.location=file:///home/app/application-prod.properties","-jar","/usr/local/lib/hdtSparqlEndpoint-1.0.2-SNAPSHOT.jar"]

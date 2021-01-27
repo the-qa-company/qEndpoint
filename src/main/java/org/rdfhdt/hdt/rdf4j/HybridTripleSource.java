@@ -59,13 +59,12 @@ public class HybridTripleSource implements TripleSource {
   }
 
 
-  CloseableIteration<? extends Statement, SailException> repositoryResult;
-  TripleWithDeleteIter tripleWithDeleteIter;
   @Override
   public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(
       Resource resource, IRI iri, Value value, Resource... resources)
       throws QueryEvaluationException {
 
+    CloseableIteration<? extends Statement, SailException> repositoryResult;
     Resource resourceNative = null;
     if(resource != null) {
       resourceNative = factory.createIRI(resource.toString());
@@ -113,7 +112,7 @@ public class HybridTripleSource implements TripleSource {
 
     TripleID t = new TripleID(subject, predicate, object);
     IteratorTripleID iterator = hdt.getTriples().search(t);
-    tripleWithDeleteIter = new TripleWithDeleteIter(this,iterator);
+    TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this,iterator,repositoryResult);
     return new CloseableIteration<Statement, QueryEvaluationException>() {
       @Override
       public void close() throws QueryEvaluationException {
@@ -158,7 +157,4 @@ public class HybridTripleSource implements TripleSource {
     return hybridStore;
   }
 
-  public CloseableIteration<? extends Statement, SailException> getRepositoryResult() {
-    return repositoryResult;
-  }
 }

@@ -1,5 +1,6 @@
 package org.rdfhdt.hdt.rdf4j.utility;
 
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -8,6 +9,7 @@ import org.eclipse.rdf4j.model.impl.HDTStatement;
 import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
 import org.eclipse.rdf4j.model.impl.SimpleLiteralHDT;
 import org.eclipse.rdf4j.sail.SailConnection;
+import org.eclipse.rdf4j.sail.SailException;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
@@ -21,10 +23,18 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     private HybridTripleSource tripleSource;
     private IteratorTripleID iterator;
     private HDT hdt;
+    private CloseableIteration<? extends Statement, SailException> repositoryResult;
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter){
         this.tripleSource = tripleSource;
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
+    }
+
+    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter, CloseableIteration<? extends Statement, SailException> repositoryResult){
+        this.tripleSource = tripleSource;
+        this.iterator = iter;
+        this.hdt = tripleSource.getHdt();
+        this.repositoryResult = repositoryResult;
     }
     Statement next;
 
@@ -59,8 +69,8 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
 //                return true;
 //            }
         }
-        if(tripleSource.getRepositoryResult().hasNext()) {
-            next = tripleSource.getRepositoryResult().next();
+        if(this.repositoryResult.hasNext()) {
+            next = repositoryResult.next();
             return true;
         }
         return false;

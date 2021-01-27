@@ -41,7 +41,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk deleteBitMap;
 
     private SailRepository repo;
-    public boolean switchStore = false;
+    public boolean switchStore = true;
 
     public boolean isMerging = false;
     private String locationHdt;

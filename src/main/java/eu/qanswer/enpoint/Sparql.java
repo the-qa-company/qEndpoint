@@ -1,5 +1,6 @@
 package eu.qanswer.enpoint;
 
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriter;
@@ -7,6 +8,7 @@ import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
@@ -48,6 +50,36 @@ public class Sparql {
     private HybridStore hybridStore;
     private LuceneSail luceneSail;
     private SailRepository repository;
+
+    private String sparqlPrefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+            "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
+            "PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>\n" +
+            "PREFIX dct: <http://purl.org/dc/terms/>\n" +
+            "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+            "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n" +
+            "PREFIX wikibase: <http://wikiba.se/ontology#>\n" +
+            "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+            "PREFIX cc: <http://creativecommons.org/ns#>\n" +
+            "PREFIX geo: <http://www.opengis.net/ont/geosparql#>\n" +
+            "PREFIX prov: <http://www.w3.org/ns/prov#>\n" +
+            "PREFIX wd: <http://www.wikidata.org/entity/>\n" +
+            "PREFIX data: <https://www.wikidata.org/wiki/Special:EntityData/>\n" +
+            "PREFIX s: <http://www.wikidata.org/entity/statement/>\n" +
+            "PREFIX ref: <http://www.wikidata.org/reference/>\n" +
+            "PREFIX v: <http://www.wikidata.org/value/>\n" +
+            "PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n" +
+            "PREFIX wdtn: <http://www.wikidata.org/prop/direct-normalized/>\n" +
+            "PREFIX p: <http://www.wikidata.org/prop/>\n" +
+            "PREFIX ps: <http://www.wikidata.org/prop/statement/>\n" +
+            "PREFIX psv: <http://www.wikidata.org/prop/statement/value/>\n" +
+            "PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>\n" +
+            "PREFIX pq: <http://www.wikidata.org/prop/qualifier/>\n" +
+            "PREFIX pqv: <http://www.wikidata.org/prop/qualifier/value/>\n" +
+            "PREFIX pqn: <http://www.wikidata.org/prop/qualifier/value-normalized/>\n" +
+            "PREFIX pr: <http://www.wikidata.org/prop/reference/>\n" +
+            "PREFIX prv: <http://www.wikidata.org/prop/reference/value/>\n" +
+            "PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>\n" +
+            "PREFIX wdno: <http://www.wikidata.org/prop/novalue/> \n";
     void initializeHybridStore(String location) throws Exception {
         if (!model.containsKey(location)) {
             model.put(location, null);
@@ -66,7 +98,7 @@ public class Sparql {
             nativeStoreA = new NativeStore(dataDir1,indexes);
             nativeStoreB = new NativeStore(dataDir2,indexes);
             deleteStore = new NativeStore(dataDir3,indexes);
-            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,100000,false);
+            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,1000000,false);
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
@@ -80,15 +112,16 @@ public class Sparql {
         }
     }
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
-        logger.info("Json " + sparqlQuery);
         initializeHybridStore(locationHdt);
 
 
 
         RepositoryConnection connection = repository.getConnection();
-        connection.setNamespace("ontolex","http://www.w3.org/ns/lemon/ontolex#");
 
-        TupleQuery query1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = sparqlPrefixes+sparqlQuery;
+
+//        logger.info("Json " + sparqlQuery);
+
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
 
@@ -101,6 +134,9 @@ public class Sparql {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
                 logger.error("This exception was caught ["+q+"]");
+            }
+            finally {
+                connection.close();
             }
             return out.toString("UTF8");
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
@@ -133,6 +169,8 @@ public class Sparql {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
                 logger.error("This exception was caught ["+q+"]");
+            }finally {
+                connection.close();
             }
             return out.toString("UTF8");
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
@@ -148,11 +186,14 @@ public class Sparql {
         }
     }
     public String executeBinary(String sparqlQuery, int timeout) throws Exception {
-        logger.info("Json " + sparqlQuery);
         initializeHybridStore(locationHdt);
+
+        sparqlQuery = sparqlPrefixes+sparqlQuery;
+
+        //logger.info("Json " + sparqlQuery);
+
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-
 
         RepositoryConnection connection = repository.getConnection();
         if (parsedQuery instanceof ParsedTupleQuery) {
@@ -165,6 +206,8 @@ public class Sparql {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
                 logger.error("This exception was caught ["+q+"]");
+            }finally {
+                connection.close();
             }
             return out.toString("UTF8");
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
@@ -186,23 +229,35 @@ public class Sparql {
         RepositoryConnection connection = repository.getConnection();
         TupleQuery tupleQuery = connection.prepareTupleQuery(queryCount);
         try (TupleQueryResult result = tupleQuery.evaluate()) {
-            while (result.hasNext()) {
+            if(result.hasNext()) {
                 BindingSet bindingSet = result.next();
                 org.eclipse.rdf4j.model.Value valueOfC = bindingSet.getValue("c");
+                connection.close();
                 return Integer.parseInt(valueOfC.stringValue());
             }
         }
         return 0;
     }
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
+
         initializeHybridStore(locationHdt);
-        logger.info("Running update query:"+sparqlQuery);
+        sparqlQuery = sparqlPrefixes + sparqlQuery;
+//        logger.info("Running update query:"+sparqlQuery);
         RepositoryConnection connection = repository.getConnection();
         Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
         if(preparedUpdate != null) {
             preparedUpdate.execute();
-            return "OK\n";
+            connection.close();
+            return "OK";
         }
         return null;
+    }
+    public void clearAllData(){
+        try {
+            initializeHybridStore(locationHdt);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        repository.getConnection().clear((Resource)null);
     }
 }

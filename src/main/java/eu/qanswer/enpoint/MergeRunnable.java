@@ -115,7 +115,7 @@ public class MergeRunnable implements Runnable {
             File indexFile = new File(hdtOutput+".index.v1-1");
             boolean renamedIndex = indexFile.renameTo(new File(hdtIndex+".index.v1-1"));
             if(renamed && renamedIndex) {
-                logger.info("Replaced indexes successfully");
+                logger.info("Replaced indexes successfully after diff");
                 hdt.close();
             }
         } catch (IOException e) {
@@ -150,7 +150,7 @@ public class MergeRunnable implements Runnable {
             File indexFile = new File(hdtOutput+".index.v1-1");
             boolean renamedIndex = indexFile.renameTo(new File(hdtIndex+".index.v1-1"));
             if(renamed && renamedIndex) {
-                logger.info("Replaced indexes successfully");
+                logger.info("Replaced indexes successfully after cat");
             }
 
         } catch (IOException e) {
@@ -170,7 +170,7 @@ public class MergeRunnable implements Runnable {
 
         try {
             StopWatch sw = new StopWatch();
-            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , spec, null);
+            HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI,RDFNotation.NTRIPLES , spec, null);
             logger.info("File converted in: "+sw.stopAndShow());
             hdt.saveToHDT(hdtOutput, null);
             logger.info("HDT saved to file in: "+sw.stopAndShow());
