@@ -89,7 +89,7 @@ public class Sparql {
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
 
-            hybridStore = new HybridStore(hdtFile.getAbsolutePath(),locationNative,false);
+            hybridStore = new HybridStore(locationHdt,locationNative,false);
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");

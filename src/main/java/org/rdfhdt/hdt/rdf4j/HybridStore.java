@@ -75,7 +75,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
 
         try {
-            this.hdt = HDTManager.mapIndexedHDT(locationHdt,new HDTSpecification());
+            this.hdt = HDTManager.mapIndexedHDT(locationHdt+"index.hdt",new HDTSpecification());
         } catch (IOException e) {
             e.printStackTrace();
         }
