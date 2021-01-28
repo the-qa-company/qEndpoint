@@ -32,23 +32,14 @@ public class Sparql {
     private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
     private final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
-    private final int THRESHOLD = 2;
     private NativeStore nativeStore;
     @Value("${locationHdt}")
     private String locationHdt;
-    @Value("${locationNativeA}")
-    private String locationNativeA;
-    @Value("${locationNativeB}")
-    private String locationNativeB;
 
-    @Value("${locationDelete}")
-    private String locationDelete;
+    @Value("${locationNative}")
+    private String locationNative;
 
     private String hdtindex = "index.hdt";
-
-    private NativeStore nativeStoreA;
-    private NativeStore nativeStoreB;
-    private NativeStore deleteStore;
 
     private HybridStore hybridStore;
     private LuceneSail luceneSail;
@@ -97,16 +88,8 @@ public class Sparql {
                 hdt.saveToHDT(hdtFile.getAbsolutePath(),null);
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
-            HDT hdt = HDTManager.mapIndexedHDT(hdtFile.getAbsolutePath(),spec);
-            File dataDir1 = new File(locationNativeA);
-            File dataDir2 = new File(locationNativeB);
-            File dataDir3 = new File(locationDelete);
 
-            String indexes = "spoc,posc,cosp";
-            nativeStoreA = new NativeStore(dataDir1,indexes);
-            nativeStoreB = new NativeStore(dataDir2,indexes);
-            deleteStore = new NativeStore(dataDir3,indexes);
-            hybridStore = new HybridStore(this.nativeStoreA,this.nativeStoreB,deleteStore,hdt,locationHdt,100000,false);
+            hybridStore = new HybridStore(hdtFile.getAbsolutePath(),locationNative,false);
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");

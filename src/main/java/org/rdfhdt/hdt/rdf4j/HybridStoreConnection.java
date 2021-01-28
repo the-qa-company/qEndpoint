@@ -1,6 +1,5 @@
 package org.rdfhdt.hdt.rdf4j;
 
-import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.model.*;
@@ -8,18 +7,13 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
-import org.eclipse.rdf4j.query.algebra.evaluation.QueryPreparer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.sail.*;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
-import org.rdfhdt.hdt.compact.bitmap.Bitmap375;
-import org.rdfhdt.hdt.compact.bitmap.Bitmap64;
-import org.rdfhdt.hdt.compact.sequence.SequenceLog64Big;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.triples.TripleID;
 
-import java.util.HashSet;
+
 import java.util.Iterator;
 
 public class HybridStoreConnection extends SailSourceConnection {
@@ -36,7 +30,8 @@ public class HybridStoreConnection extends SailSourceConnection {
     super.begin();
     long count = hybridStore.getNativeStoreConnection().size((Resource)null);
     System.err.println("--------------: "+count);
-    if(count >= hybridStore.getThreshold()){ // THRESHOLD
+    // Merge only if threshold in native store exceeded and not merging with hdt
+    if(count >= hybridStore.getThreshold() && !hybridStore.isMerging()){
       System.out.println("Merging...");
       hybridStore.makeMerge();
     }
