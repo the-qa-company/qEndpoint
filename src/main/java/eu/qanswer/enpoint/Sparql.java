@@ -1,5 +1,6 @@
 package eu.qanswer.enpoint;
 
+import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.parser.*;
@@ -28,6 +29,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class Sparql {
@@ -248,7 +250,10 @@ public class Sparql {
         preparedUpdate.setMaxExecutionTime(timeout);
 
         if(preparedUpdate != null) {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             preparedUpdate.execute();
+            stopwatch.stop(); // optional
+            System.out.println("Time elapsed to execute update query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
             connection.close();
             return "OK";
         }
