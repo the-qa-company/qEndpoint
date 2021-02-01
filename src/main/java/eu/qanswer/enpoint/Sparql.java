@@ -9,6 +9,8 @@ import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.rio.ParserConfig;
+import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
@@ -38,6 +40,9 @@ public class Sparql {
 
     @Value("${locationNative}")
     private String locationNative;
+
+    @Value("${threshold}")
+    private int threshold;
 
     private String hdtindex = "index.hdt";
 
@@ -90,6 +95,8 @@ public class Sparql {
             }
 
             hybridStore = new HybridStore(locationHdt,locationNative,false);
+            hybridStore.setThreshold(threshold);
+            logger.info("Threshold for triples in Native RDF store: "+threshold+" triples");
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
@@ -235,6 +242,8 @@ public class Sparql {
         sparqlQuery = sparqlPrefixes + sparqlQuery;
 //        logger.info("Running update query:"+sparqlQuery);
         RepositoryConnection connection = repository.getConnection();
+        connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
+
         Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
         if(preparedUpdate != null) {
             preparedUpdate.execute();
