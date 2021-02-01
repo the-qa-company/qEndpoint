@@ -245,6 +245,8 @@ public class Sparql {
         connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
         Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
+        preparedUpdate.setMaxExecutionTime(timeout);
+
         if(preparedUpdate != null) {
             preparedUpdate.execute();
             connection.close();

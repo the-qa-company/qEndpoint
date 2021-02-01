@@ -27,7 +27,7 @@ public class EndpointController {
             @RequestParam(value = "update", required = false) final String updateQuery,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            @RequestParam(value = "timeout", defaultValue = "5") int timeout,
+            @RequestParam(value = "timeout", defaultValue = "60") int timeout,
             @RequestBody String body,
             Principal principal)
             throws Exception {
