@@ -96,13 +96,13 @@ public class HybridStoreTest {
     @Test
     public void testShutdownAndRecreate() {
         try {
-            NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
 
             HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
-            HybridStore hybridStore = new HybridStore(nativeA,nativeB,deleteStore,hdt,
-                    System.getProperty("user.dir")+"/",10,true);
+            HybridStore hybridStore = new HybridStore(
+                    nativeStore.getAbsolutePath(),hdtStore.getAbsolutePath(),true
+            );
 
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
@@ -110,8 +110,9 @@ public class HybridStoreTest {
                 connection.commit();
             }
             hybridStore.shutDown();
-            hybridStore = new HybridStore(nativeA,nativeB,deleteStore,hdt,
-                    System.getProperty("user.dir")+"/",10,true);
+            hybridStore = new HybridStore(
+                    nativeStore.getAbsolutePath(),hdtStore.getAbsolutePath(),true
+            );
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
                 connection.addStatement(RDF.TYPE, RDF.TYPE, RDFS.RESOURCE);
@@ -127,14 +128,17 @@ public class HybridStoreTest {
     @Test
     public void testAddStatement(){
         try {
-            NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             SailRepository hybridStore = new SailRepository(
-                    new HybridStore(nativeA,nativeB,deleteStore,hdt,
-                            System.getProperty("user.dir")+"/",10,true));
+                    new HybridStore(
+                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    )
+            );
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -155,16 +159,17 @@ public class HybridStoreTest {
     @Test
     public void testMerge(){
         try {
-            NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index",false);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(
-                    new HybridStore(nativeA,nativeB,deleteStore,hdt,
-                            System.getProperty("user.dir")+"/",2,true)
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
             );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -212,16 +217,18 @@ public class HybridStoreTest {
     @Test
     public void testMergeMultiple(){
         try {
-                NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index",true);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
+
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(
-                    new HybridStore(nativeA,nativeB,deleteStore,hdt,
-                            System.getProperty("user.dir")+"/",999,true)
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
             );
+            store.setThreshold(999);
+            SailRepository hybridStore = new SailRepository(store);
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
 
@@ -253,14 +260,18 @@ public class HybridStoreTest {
     @Test
     public void testCommonNativeAndHdt(){
         try {
-            NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index",false);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,deleteStore,
-                    hdt,System.getProperty("user.dir")+"/",10,true));
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(10);
+            SailRepository hybridStore = new SailRepository(store);
+
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -290,13 +301,17 @@ public class HybridStoreTest {
     @Test
     public void testDelete(){
         try {
-            NativeStore nativeA  = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,deleteStore,hdt,
-                    System.getProperty("user.dir")+"/",10,true));
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(10);
+            SailRepository hybridStore = new SailRepository(store);
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -323,14 +338,18 @@ public class HybridStoreTest {
     @Test
     public void sparqlTest() throws IOException {
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index", false);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB,deleteStore, hdt,
-                    System.getProperty("user.dir") + "/", 10,true));
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(10);
+            SailRepository hybridStore = new SailRepository(store);
+
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -365,14 +384,18 @@ public class HybridStoreTest {
     @Test
     public void sparqlDeleteTest() throws IOException {
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index", false);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore,hdt,
-                    System.getProperty("user.dir") + "/", 10,true));
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -406,14 +429,19 @@ public class HybridStoreTest {
     @Test
     public void sparqlJoinTest() throws IOException {
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index", false);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore,hdt,
-                    System.getProperty("user.dir") + "/", 10,true));
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
+
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
                 ValueFactory vf = connection.getValueFactory();
@@ -451,15 +479,18 @@ public class HybridStoreTest {
     public void testAddLargeDataset() {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-            createHDTIndex("index", false);
-            HDT hdt = HDTManager.mapHDT("index.hdt");
-            System.out.println("HDT: ==================");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore, hdt,
-                    System.getProperty("user.dir") + "/", 1000000,true));
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(1000000);
+            SailRepository hybridStore = new SailRepository(store);
+
 
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();
@@ -491,13 +522,15 @@ public class HybridStoreTest {
     @Test
     public void misc(){
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
 
             HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore, hdt,
-                    System.getProperty("user.dir") + "/", 1000000,true));
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(
+                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    )
+            );
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 StopWatch stopWatch = StopWatch.createStarted();
                 RepositoryResult<Statement> statements = connection.getStatements(null, null, FOAF.PERSON, true);
@@ -517,36 +550,10 @@ public class HybridStoreTest {
         }
     }
 
-
-
     private void printHDT(HDT hdt) throws NotFoundException {
         IteratorTripleString it = hdt.search("","","");
         while (it.hasNext()){
             System.out.println(it.next());
-        }
-    }
-
-    private void createHDTIndex(String fileName,boolean empty){
-        try {
-            String rdfInput = fileName+".nt";
-            String hdtOutput = fileName+".hdt";
-            File inputFile = new File(rdfInput);
-            if(!empty){
-                Utility.writeTempRDF(inputFile);
-            }else{
-                inputFile.createNewFile();
-            }
-            String baseURI = inputFile.getAbsolutePath();
-            RDFNotation notation = RDFNotation.guess(rdfInput);
-            HDTSpecification spec = new HDTSpecification();
-            HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(),baseURI,notation,spec,null);
-            hdt.saveToHDT(hdtOutput,null);
-            if(hdt != null)
-                hdt.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserException e) {
-            e.printStackTrace();
         }
     }
 }

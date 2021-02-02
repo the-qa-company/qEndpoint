@@ -266,5 +266,10 @@ public class Sparql {
             e.printStackTrace();
         }
         repository.getConnection().clear((Resource)null);
+        try {
+            Files.deleteIfExists(Paths.get(locationHdt+"index.hdt"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

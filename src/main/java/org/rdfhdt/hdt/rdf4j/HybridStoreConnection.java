@@ -36,7 +36,6 @@ public class HybridStoreConnection extends SailSourceConnection {
       hybridStore.makeMerge();
     }
     this.hybridStore.getNativeStoreConnection().begin();
-    this.hybridStore.getDeleteStoreConnection().begin();
   }
   // for SPARQL queries
   @Override
@@ -114,27 +113,21 @@ public class HybridStoreConnection extends SailSourceConnection {
   protected void commitInternal() throws SailException {
     super.commitInternal();
     hybridStore.getNativeStoreConnection().commit();
-    hybridStore.getDeleteStoreConnection().commit();
   }
 
   @Override
   public void startUpdate(UpdateContext op) throws SailException {
     hybridStore.getNativeStoreConnection().startUpdate(op);
-    hybridStore.getDeleteStoreConnection().startUpdate(op);
   }
 
   @Override
   protected void endUpdateInternal(UpdateContext op) throws SailException {
     hybridStore.getNativeStoreConnection().endUpdate(op);
-    hybridStore.getDeleteStoreConnection().endUpdate(op);
-
   }
 
   @Override
   protected void rollbackInternal() throws SailException {
     hybridStore.getNativeStoreConnection().rollback();
-    hybridStore.getDeleteStoreConnection().rollback();
-
   }
 
   @Override
@@ -158,7 +151,6 @@ public class HybridStoreConnection extends SailSourceConnection {
     //return hybridStore.getNativeStoreConnection().size(contexts);
     long sizeNativeA = this.hybridStore.getNativeStoreA().getConnection().size(contexts);
     long sizeNativeB = this.hybridStore.getNativeStoreB().getConnection().size(contexts);
-    long sizeNativeDelete = this.hybridStore.getDeleteStoreConnection().size(contexts);
     long sizeHdt = this.hybridStore.getHdt().getTriples().getNumberOfElements();
 
     long sizeDeleted = this.hybridStore.getDeleteBitMap().countOnes();
@@ -179,8 +171,6 @@ public class HybridStoreConnection extends SailSourceConnection {
     long objId = convertToId(obj,TripleComponentRole.OBJECT);
     //IRI o = this.hybridStore.getValueFactory().createIRI("http://hdt-"+objId);
     assignBitMapDeletes(subjId,predId,objId);
-    // TODO: replace with an implementation when merging hdt files...
-    this.hybridStore.getDeleteStoreConnection().addStatement(op,subj , pred, obj, contexts);
   }
   private void assignBitMapDeletes(long subjId,long predId,long objecId) throws SailException {
     TripleID t = new TripleID(subjId, predId, objecId);

@@ -14,6 +14,7 @@ import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.HybridStore;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -28,14 +29,13 @@ public class BenchMarkTest {
     public void benchmarkDelete() {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            NativeStore deleteStore = new NativeStore(tempDir.newFolder("native-delete"), "spoc,posc");
-
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
             //printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA, nativeB, deleteStore, hdt,
-                    System.getProperty("user.dir") + "/", 1000000,true));
+            SailRepository hybridStore = new SailRepository(new HybridStore(
+                    nativeStore.getAbsolutePath(),hdtStore.getAbsolutePath(),true
+            ));
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();
                 int count = 100000;

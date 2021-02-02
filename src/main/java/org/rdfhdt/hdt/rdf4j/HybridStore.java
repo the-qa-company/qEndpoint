@@ -25,10 +25,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private NativeStore nativeStoreA;
     private NativeStore nativeStoreB;
     private NativeStore currentStore;
-    private NativeStore deleteStore;
     private SailConnection nativeStoreConnection;
-    private SailConnection deleteStoreConnection;
-
 
     private BitArrayDisk deleteBitMap;
 
@@ -51,7 +48,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreConnection = this.currentStore.getConnection();
         this.repo = new SailRepository(currentStore);
     }
-    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,NativeStore deleteStore,
+    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,
                        HDT hdt,String locationHdt,int threshold,boolean inMemDeletes){
         this.hdt = hdt;
         this.nativeStoreA = nativeStoreA;
@@ -66,8 +63,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
         this.queryPreparer = new HybridQueryPreparer(this);
-        this.deleteStore = deleteStore;
-        this.deleteStoreConnection = this.deleteStore.getConnection();
         this.inMemDeletes = inMemDeletes;
         initDeleteArray();
     }
@@ -92,8 +87,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
         this.queryPreparer = new HybridQueryPreparer(this);
-        this.deleteStore = new NativeStore(new File(locationNative+"delete"),"spoc,posc,cosp");
-        this.deleteStoreConnection = this.deleteStore.getConnection();
         this.inMemDeletes = inMemDeletes;
         initDeleteArray();
     }
@@ -161,9 +154,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         else
             return new SailRepository(nativeStoreA).getConnection();
     }
-    public RepositoryConnection getDeleteRepoConnection(){
-        return new SailRepository(deleteStore).getConnection();
-    }
 
     @Override
     public ValueFactory getValueFactory() {
@@ -200,14 +190,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.queryPreparer = queryPreparer;
     }
 
-
-    public SailConnection getDeleteStoreConnection() {
-        return deleteStoreConnection;
-    }
-
-    public NativeStore getDeleteStore() {
-        return deleteStore;
-    }
 
     public boolean isMerging() {
         return isMerging;

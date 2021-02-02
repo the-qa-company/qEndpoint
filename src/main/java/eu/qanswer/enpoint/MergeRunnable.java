@@ -33,7 +33,6 @@ public class MergeRunnable implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
     private RepositoryConnection nativeStoreConnection;
-    private RepositoryConnection deleteStoreConnection;
 
     private String hdtIndex;
     private String locationHdt;
@@ -54,7 +53,6 @@ public class MergeRunnable implements Runnable {
         this.locationHdt = locationHdt;
         this.hdtIndex = locationHdt+"index.hdt";
         this.nativeStoreConnection = hybridStore.getRepoConnection();
-        this.deleteStoreConnection = hybridStore.getDeleteRepoConnection();
         this.hybridStore = hybridStore;
     }
 
@@ -64,28 +62,19 @@ public class MergeRunnable implements Runnable {
         try {
             String rdfInput = locationHdt+"temp.nt";
             String hdtOutput = locationHdt+"temp.hdt";
-            String rdfInputDelete = locationHdt+"temp_delete.nt";
-            String hdtOutputDelete = locationHdt+"temp_delete.hdt";
-
             // dump all triples in native store
             writeTempFile(nativeStoreConnection,rdfInput);
             // create the hdt index for the temp dump
             createHDTDump(rdfInput,hdtOutput);
             // cat the original index and the temp index
             catIndexes(hdtIndex,hdtOutput);
-
-            writeTempFile(deleteStoreConnection,rdfInputDelete);
-
-            createHDTDump(rdfInputDelete,hdtOutputDelete);
             // diff hdt indexes...
-            diffIndexes(hdtIndex,hdtOutputDelete);
+            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
             // empty native store
             emptyNativeStore();
 
             Files.delete(Paths.get(rdfInput));
             Files.delete(Paths.get(hdtOutput));
-            Files.delete(Paths.get(rdfInputDelete));
-            Files.delete(Paths.get(hdtOutputDelete));
             Files.deleteIfExists(Paths.get(locationHdt+"triples-delete.arr"));
             this.hdt = HDTManager.mapIndexedHDT(hdtIndex,new HDTSpecification());
             //hdt.search("","","").forEachRemaining(System.out::println);
@@ -100,11 +89,11 @@ public class MergeRunnable implements Runnable {
         }
     }
 
-    private void diffIndexes(String hdtInput1,String hdtInput2) {
+    private void diffIndexes(String hdtInput1,String bitArray) {
 
         String hdtOutput = locationHdt+"new_index.hdt";
         try {
-            HDT hdt = HDTManager.diffHDT(hdtInput1,hdtInput2,new HDTSpecification(),null);
+            HDT hdt = HDTManager.diffHDTBit(hdtInput1,bitArray,new HDTSpecification(),null);
             hdt.saveToHDT(hdtOutput,null);
             hdt = HDTManager.indexedHDT(hdt,null);
 
@@ -200,6 +189,5 @@ public class MergeRunnable implements Runnable {
     }
     private void emptyNativeStore(){
         nativeStoreConnection.clear((Resource)null);
-        deleteStoreConnection.clear((Resource)null);
     }
 }
