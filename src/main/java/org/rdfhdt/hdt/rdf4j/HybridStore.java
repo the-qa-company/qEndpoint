@@ -106,6 +106,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         nativeStoreA.init();
         nativeStoreB.init();
     }
+    
 
     public int getThreshold() {
         return threshold;

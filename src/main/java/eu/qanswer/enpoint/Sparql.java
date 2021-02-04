@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriter;
+import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriterFactory;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -200,7 +201,7 @@ public class Sparql {
 
             TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            TupleQueryResultHandler writer = new BinaryQueryResultWriter(out);
+            TupleQueryResultHandler writer = new BinaryQueryResultWriterFactory().getWriter(out);
             query.setMaxExecutionTime(timeout);
             try {
                 query.evaluate(writer);
