@@ -203,6 +203,8 @@ public class Sparql {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             TupleQueryResultHandler writer = new BinaryQueryResultWriterFactory().getWriter(out);
             query.setMaxExecutionTime(timeout);
+
+            Stopwatch stopwatch = Stopwatch.createStarted();
             try {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
@@ -210,6 +212,9 @@ public class Sparql {
             }finally {
                 connection.close();
             }
+            stopwatch.stop(); // optional
+            System.out.println("Time elapsed to execute tuple query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
             return out.toString("UTF8");
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
             BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);

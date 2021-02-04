@@ -1,5 +1,6 @@
 package org.rdfhdt.hdt.rdf4j;
 
+import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.model.*;
@@ -15,6 +16,7 @@ import org.rdfhdt.hdt.triples.TripleID;
 
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 public class HybridStoreConnection extends SailSourceConnection {
 
@@ -161,7 +163,10 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // remove from native current store
+    Stopwatch stopwatch = Stopwatch.createStarted();
     this.hybridStore.getNativeStoreConnection().removeStatement(op, subj, pred, obj, contexts);
+    stopwatch.stop(); // optional
+    System.out.println("Time elapsed to delete from  native store: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
     //assignBitSets(subj,pred,obj);
     // add to delete store so we can skip it if it exists in hdt
     long subjId = convertToId(subj,TripleComponentRole.SUBJECT);
@@ -170,7 +175,11 @@ public class HybridStoreConnection extends SailSourceConnection {
     //IRI p= this.hybridStore.getValueFactory().createIRI("http://hdt-"+predId);
     long objId = convertToId(obj,TripleComponentRole.OBJECT);
     //IRI o = this.hybridStore.getValueFactory().createIRI("http://hdt-"+objId);
+
+    stopwatch = Stopwatch.createStarted();
     assignBitMapDeletes(subjId,predId,objId);
+    stopwatch.stop(); // optional
+    System.out.println("Time elapsed to delete from hdt: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
   }
   private void assignBitMapDeletes(long subjId,long predId,long objecId) throws SailException {
     TripleID t = new TripleID(subjId, predId, objecId);
@@ -182,7 +191,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     if(index != -1)
       this.hybridStore.getDeleteBitMap().set(index-1,true);
     else{
-      System.out.println("triple not found in HDT to be deleted");
+      //System.out.println("triple not found in HDT to be deleted");
     }
   }
   private long convertToId(Value iri,TripleComponentRole position){
