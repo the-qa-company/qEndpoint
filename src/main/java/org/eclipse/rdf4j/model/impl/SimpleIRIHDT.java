@@ -9,6 +9,7 @@ package org.eclipse.rdf4j.model.impl;
  * *****************************************************************************
  */
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -16,22 +17,27 @@ import org.rdfhdt.hdt.hdt.HDT;
 import java.util.Objects;
 
 /** The default implementation of the {@link IRI} interface. */
-public class SimpleIRIHDT implements IRI {
+public class SimpleIRIHDT extends AbstractIRI implements IRI {
 
   /*-----------*
    * Constants *
    *-----------*/
 
   private static final long serialVersionUID = -7330406348751485330L;
-  private HDT hdt;
+  public static final int SUBJECT_POS = 1;
+  public static final int PREDICATE_POS = 2;
+  public static final int OBJECT_POS = 3;
+  public static final int SHARED_POS = 4;
+
 
   /*-----------*
    * Variables *
    *-----------*/
 
   /** The IRI string. */
-  private String hdtId;
-
+  private HDT hdt;
+  private int postion;
+  private long id;
   /** The IRI string. */
   private String iriString;
 
@@ -57,77 +63,79 @@ public class SimpleIRIHDT implements IRI {
    * from your repository or by using {@link SimpleValueFactory#getInstance()}) to create new IRI
    * objects.
    *
-   * @param hdtId A String representing a valid, absolute IRI. May not be <code>null</code>.
+   * @param position an integer represents if the IRI is a subject, object, predicate or shared
    * @throws IllegalArgumentException If the supplied IRI is not a valid (absolute) IRI.
    * @see {@link SimpleValueFactory#createIRI(String)}
    */
-  public SimpleIRIHDT(HDT hdt, String hdtId) {
-    // System.out.println("Creating "+iriString);
+  public SimpleIRIHDT(HDT hdt,int position,long id) {
     this.hdt = hdt;
-    setHdtId(hdtId);
+    this.postion = position;
+    this.id = id;
+  }
+  public SimpleIRIHDT(HDT hdt,String iriString) {
+    this.hdt = hdt;
+    this.iriString = iriString;
+    this.id = -1;
   }
 
+  public long getId() {
+    return id;
+  }
+
+  public int getPostion() {
+    return postion;
+  }
   /*---------*
    * Methods *
    *---------*/
 
-  protected void setHdtId(String hdtId) {
-    Objects.requireNonNull(hdtId, "iriString must not be null");
-    this.hdtId = hdtId;
-  }
-
-  public String getHdtId() {
-    return hdtId;
-  }
-
   // Implements IRI.toString()
   @Override
   public String toString() {
-    iriString = stringValue();
+    if(iriString == null)
+      iriString = stringValue();
+    // if not null means that it doesn't exist in hdt
     return iriString;
   }
 
-  public String getIriString() {
-    return iriString;
-  }
-
+  @Override
   public String stringValue() {
-    if (hdtId.startsWith("hdt:")) {
-      String identifier = hdtId.replace("hdt:", "");
-
-      if (identifier.startsWith("SO")) {
+    if(this.iriString != null)
+      return this.iriString;
+    else {
+      if (this.postion == SHARED_POS) {
         return hdt.getDictionary()
-            .idToString(
-                Long.valueOf(identifier.substring(2, identifier.length())),
-                TripleComponentRole.SUBJECT)
-            .toString();
-      } else if (identifier.startsWith("S")) {
+                .idToString(
+                        this.id,
+                        TripleComponentRole.SUBJECT)
+                .toString();
+      } else if (this.postion == SUBJECT_POS) {
         return hdt.getDictionary()
-            .idToString(
-                Long.valueOf(identifier.substring(1, identifier.length())),
-                TripleComponentRole.SUBJECT)
-            .toString();
-      } else if (identifier.startsWith("O")) {
+                .idToString(
+                        this.id,
+                        TripleComponentRole.SUBJECT)
+                .toString();
+      } else if (this.postion == OBJECT_POS) {
         return hdt.getDictionary()
-            .idToString(
-                Long.valueOf(identifier.substring(1, identifier.length())),
-                TripleComponentRole.OBJECT)
-            .toString();
-      } else if (identifier.startsWith("P")) {
+                .idToString(
+                        this.id,
+                        TripleComponentRole.OBJECT)
+                .toString();
+      } else if (this.postion == PREDICATE_POS) {
         return hdt.getDictionary()
-            .idToString(
-                Long.valueOf(identifier.substring(1, identifier.length())),
-                TripleComponentRole.PREDICATE)
-            .toString();
+                .idToString(
+                        this.id,
+                        TripleComponentRole.PREDICATE)
+                .toString();
       } else {
         try {
-          throw new Exception("The iri " + hdtId + "could not be mapped");
+          throw new Exception("The iri could not be mapped");
         } catch (Exception e) {
           e.printStackTrace();
         }
+        return null;
       }
     }
-    return hdtId;
   }
 
   public String getNamespace() {
@@ -157,18 +165,11 @@ public class SimpleIRIHDT implements IRI {
     if (this == o) {
       return true;
     }
-    if (o instanceof SimpleIRIHDT) {
-      return hdtId.equals(((SimpleIRIHDT) o).getHdtId());
-    }
-    if (o instanceof IRI) {
+    else if (o instanceof SimpleIRIHDT && this.id != -1) {
+      return this.id == (((SimpleIRIHDT) o).getId());
+    }else { // could not compare IDs, we have to compare to string
       return toString().equals(o.toString());
     }
-    return false;
   }
 
-  // Implements IRI.hashCode()
-  @Override
-  public int hashCode() {
-    return hdtId.hashCode();
-  }
 }

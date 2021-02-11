@@ -32,9 +32,12 @@ public class BenchMarkTest {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             //printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(new HybridStore(
-                    nativeStore.getAbsolutePath(),hdtStore.getAbsolutePath(),true
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
             ));
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();

@@ -1,9 +1,11 @@
 package org.rdfhdt.hdt.rdf4j;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import eu.qanswer.enpoint.Sparql;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -12,7 +14,10 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyF
 import org.eclipse.rdf4j.sail.*;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdt.rdf4j.utility.HDTConverter;
 import org.rdfhdt.hdt.triples.TripleID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.util.Iterator;
@@ -21,10 +26,12 @@ import java.util.concurrent.TimeUnit;
 public class HybridStoreConnection extends SailSourceConnection {
 
   HybridStore hybridStore;
-
+  HDTConverter hdtConverter;
+  private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
   public HybridStoreConnection(HybridStore hybridStore) {
     super(hybridStore, hybridStore.getCurrentStore().getSailStore(),new StrictEvaluationStrategyFactory());
     this.hybridStore = hybridStore;
+    this.hdtConverter = new HDTConverter(hybridStore.getHdt());
   }
 
   @Override
@@ -77,8 +84,38 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
-    hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
+    // TODO: convert to Ids if exist, else keep
+    // use
+//    String subjStr = subj.toString();
+//    Resource newSubj = null;
+//    long subjId = this.hybridStore.getHdt().getDictionary().stringToId(subjStr,TripleComponentRole.SUBJECT);
+//    if(subjId != -1){
+//      newSubj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/S"+subjId);
+//    }else{
+//      newSubj = subj;
+//    }
+//    String predStr = pred.toString();
+//    IRI newPred = null;
+//    long predId = this.hybridStore.getHdt().getDictionary().stringToId(predStr,TripleComponentRole.PREDICATE);
+//    if(predId != -1){
+//      newPred = this.hybridStore.getValueFactory().createIRI("http://hdt.org/P"+predId);
+//    }else{
+//      newPred = pred;
+//    }
+//    String objStr = pred.toString();
+//    Value newObj = null;
+//    long objId = this.hybridStore.getHdt().getDictionary().stringToId(objStr,TripleComponentRole.OBJECT);
+//    if(objId != -1){
+//      newObj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/O"+objId);
+//    }else{
+//      newObj = obj;
+//    }
+//
+//    hybridStore.getNativeStoreConnection().addStatement(newSubj,newPred,newObj,contexts);
+      hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
+
   }
+
 
   @Override
   public void clearNamespacesInternal() throws SailException {
@@ -163,35 +200,39 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // remove from native current store
-    Stopwatch stopwatch = Stopwatch.createStarted();
     this.hybridStore.getNativeStoreConnection().removeStatement(op, subj, pred, obj, contexts);
-    stopwatch.stop(); // optional
-    System.out.println("Time elapsed to delete from  native store: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
-    //assignBitSets(subj,pred,obj);
-    // add to delete store so we can skip it if it exists in hdt
-    long subjId = convertToId(subj,TripleComponentRole.SUBJECT);
-    //IRI s = this.hybridStore.getValueFactory().createIRI("http://hdt-"+subjId);
-    long predId = convertToId(pred,TripleComponentRole.PREDICATE);
-    //IRI p= this.hybridStore.getValueFactory().createIRI("http://hdt-"+predId);
-    long objId = convertToId(obj,TripleComponentRole.OBJECT);
-    //IRI o = this.hybridStore.getValueFactory().createIRI("http://hdt-"+objId);
 
-    stopwatch = Stopwatch.createStarted();
+    long subjId;
+    long predId;
+    long objId;
+    if(subj instanceof SimpleIRIHDT){
+      subjId = hdtConverter.subjectId(subj);
+    }else{
+      subjId = convertToId(subj,TripleComponentRole.SUBJECT);
+    }
+    if(pred instanceof SimpleIRIHDT){
+      predId = hdtConverter.predicateId(pred);
+    }else{
+      predId = convertToId(pred,TripleComponentRole.PREDICATE);
+    }
+    if(obj instanceof SimpleIRIHDT){
+      objId = hdtConverter.objectId(obj);
+    }else{
+      objId = convertToId(obj,TripleComponentRole.OBJECT);
+    }
     assignBitMapDeletes(subjId,predId,objId);
-    stopwatch.stop(); // optional
-    System.out.println("Time elapsed to delete from hdt: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
   }
   private void assignBitMapDeletes(long subjId,long predId,long objecId) throws SailException {
-    TripleID t = new TripleID(subjId, predId, objecId);
-    Iterator<TripleID> iter = hybridStore.getHdt().getTriples().search(t);
-    long index = -1;
+    if(subjId != -1 && predId != -1 && objecId != -1) {
+      TripleID t = new TripleID(subjId, predId, objecId);
+      Iterator<TripleID> iter = hybridStore.getHdt().getTriples().search(t);
+      long index = -1;
 
-    if(iter.hasNext())
-      index = iter.next().getIndex();
-    if(index != -1)
-      this.hybridStore.getDeleteBitMap().set(index-1,true);
-    else{
-      //System.out.println("triple not found in HDT to be deleted");
+      if (iter.hasNext())
+        index = iter.next().getIndex();
+      if (index != -1)
+        this.hybridStore.getDeleteBitMap().set(index - 1, true);
     }
   }
   private long convertToId(Value iri,TripleComponentRole position){

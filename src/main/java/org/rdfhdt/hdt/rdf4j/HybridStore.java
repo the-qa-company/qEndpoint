@@ -3,6 +3,7 @@ package org.rdfhdt.hdt.rdf4j;
 import eu.qanswer.enpoint.BitArrayDisk;
 import eu.qanswer.enpoint.MergeRunnable;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.AbstractValueFactoryHDT;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolverClient;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -38,6 +39,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private int threshold;
 
     private boolean inMemDeletes;
+    ValueFactory valueFactory;
     public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,HDT hdt,int threshold){
         this.hdt = hdt;
         this.nativeStoreA = nativeStoreA;
@@ -47,24 +49,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.tripleSource = new HybridTripleSource(hdt,this);
         this.nativeStoreConnection = this.currentStore.getConnection();
         this.repo = new SailRepository(currentStore);
-    }
-    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,
-                       HDT hdt,String locationHdt,int threshold,boolean inMemDeletes){
-        this.hdt = hdt;
-        this.nativeStoreA = nativeStoreA;
-        this.nativeStoreB = nativeStoreB;
-        if(switchStore)
-            this.currentStore = nativeStoreB;
-        else
-            this.currentStore = nativeStoreA;
-        this.threshold = threshold;
-        this.tripleSource = new HybridTripleSource(hdt,this);
-        this.nativeStoreConnection = this.currentStore.getConnection();
-        this.repo = new SailRepository(currentStore);
-        this.locationHdt = locationHdt;
-        this.queryPreparer = new HybridQueryPreparer(this);
-        this.inMemDeletes = inMemDeletes;
-        initDeleteArray();
     }
 
     public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
@@ -77,6 +61,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
         this.nativeStoreA = new NativeStore(new File(locationNative+"A"),"spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(locationNative+"B"),"spoc,posc,cosp");
+        this.valueFactory = new AbstractValueFactoryHDT(hdt);
         if(switchStore)
             this.currentStore = nativeStoreB;
         else
@@ -158,15 +143,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     @Override
     public ValueFactory getValueFactory() {
-        if(nativeStoreA == null)
-            System.out.println("A is null");
-        else if(nativeStoreB == null)
-            System.out.println("B is null");
-        if(switchStore)
-            return nativeStoreB.getValueFactory();
-        else
-            return nativeStoreA.getValueFactory();
+        return this.valueFactory;
     }
+
 
     @Override
     protected NotifyingSailConnection getConnectionInternal() throws SailException {

@@ -35,32 +35,32 @@ public class VariableToIdSubstitution implements QueryOptimizer {
     public void meet(Var var) {
       if (var.isAnonymous() && var.hasValue()) {
         QueryModelNode parent = var.getParentNode();
-        String identifier = "";
-        long id =
-            hdt.getDictionary().stringToId(var.getValue().toString(), TripleComponentRole.SUBJECT);
+        String iriString = var.getValue().toString();
+        long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
+        int position = -1;
         if (id != -1) {
           if (id <= hdt.getDictionary().getNshared()) {
-            identifier = "SO" + id;
+            position = SimpleIRIHDT.SHARED_POS;
           } else {
-            identifier = "S" + id;
+            position = SimpleIRIHDT.SUBJECT_POS;
           }
         } else {
           id =
-              hdt.getDictionary().stringToId(var.getValue().toString(), TripleComponentRole.OBJECT);
+              hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
           if (id != -1) {
-            identifier = "O" + id;
+            position = SimpleIRIHDT.OBJECT_POS;
           } else {
             id =
                 hdt.getDictionary()
-                    .stringToId(var.getValue().toString(), TripleComponentRole.PREDICATE);
+                    .stringToId(iriString, TripleComponentRole.PREDICATE);
             if (id != -1) {
-              identifier = "P" + id;
+              position = SimpleIRIHDT.PREDICATE_POS;
             }
           }
         }
         if (id != -1) {
 
-          var.setValue(new SimpleIRIHDT(hdt, "hdt:" + identifier));
+          var.setValue(new SimpleIRIHDT(hdt, position,id));
         }
       }
     }

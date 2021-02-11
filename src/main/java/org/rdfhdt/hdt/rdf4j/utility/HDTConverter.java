@@ -21,29 +21,24 @@ public class HDTConverter {
 
     if (resource == null) {
       subject = 0;
-    } else if (!(resource instanceof SimpleIRIHDT)) {
-      subject = hdt.getDictionary().stringToId(resource.toString(), TripleComponentRole.SUBJECT);
-
+    }else if(!(resource instanceof SimpleIRIHDT)){
+        subject = hdt.getDictionary().stringToId(resource.toString(), TripleComponentRole.SUBJECT);
     } else {
-      String hdtStr = ((SimpleIRIHDT) resource).getHdtId();
-      String identifier = hdtStr.replace("hdt:", "");
-      if (identifier.startsWith("SO")) {
-        subject = Long.valueOf(identifier.substring(2, identifier.length()));
-      } else if (identifier.startsWith("S")) {
-        subject = Long.valueOf(identifier.substring(1, identifier.length()));
+      long id = ((SimpleIRIHDT) resource).getId();
+      long position = ((SimpleIRIHDT) resource).getPostion();
+      if (id == -1) { // no id found when conversion
+        subject = hdt.getDictionary().stringToId(resource.toString(), TripleComponentRole.SUBJECT);
       } else {
-        if (identifier.startsWith("P")) {
-          Long id = Long.valueOf(identifier.substring(1, identifier.length()));
+        if (position == SimpleIRIHDT.PREDICATE_POS) {
           String translate =
-              hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
+                  hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
           long translatedId =
-              hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
+                  hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
           if (translatedId != -1) {
             subject = translatedId;
           }
-
-        } else {
-          subject = -1;
+        }else{
+          subject = id;
         }
       }
     }
@@ -54,51 +49,54 @@ public class HDTConverter {
     long predicate = -1;
     if (iri == null) {
       predicate = 0;
-    } else if (!(iri instanceof SimpleIRIHDT)) {
+    }else if( !(iri instanceof SimpleIRIHDT)){
       predicate = hdt.getDictionary().stringToId(iri.toString(), TripleComponentRole.PREDICATE);
     } else {
-      String identifier = ((SimpleIRIHDT) iri).getHdtId().replace("hdt:", "");
-      if (identifier.startsWith("P")) {
-        predicate = Long.valueOf(identifier.substring(1, identifier.length()));
-      } else {
-        if (identifier.startsWith("SO")) {
-          String translate =
-              hdt.getDictionary()
-                  .idToString(
-                      Long.valueOf(identifier.substring(2, identifier.length())),
-                      TripleComponentRole.SUBJECT)
-                  .toString();
-          long translatedId =
-              hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
-          if (translatedId != -1) {
-            predicate = translatedId;
-          }
-        } else if (identifier.startsWith("S")) {
-          String translate =
-              hdt.getDictionary()
-                  .idToString(
-                      Long.valueOf(identifier.substring(1, identifier.length())),
-                      TripleComponentRole.SUBJECT)
-                  .toString();
-          long translatedId =
-              hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
-          if (translatedId != -1) {
-            predicate = translatedId;
-          }
-        } else if (identifier.startsWith("O")) {
-          String translate =
-              hdt.getDictionary()
-                  .idToString(
-                      Long.valueOf(identifier.substring(1, identifier.length())),
-                      TripleComponentRole.OBJECT)
-                  .toString();
-          long translatedId =
-              hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
-          if (translatedId != -1) {
-            predicate = translatedId;
-          }
+      long id = ((SimpleIRIHDT) iri).getId();
+      long position = ((SimpleIRIHDT) iri).getPostion();
+      if(id == -1){ // no id found when conversion
+        predicate = hdt.getDictionary().stringToId(iri.toString(), TripleComponentRole.PREDICATE);
+      }else{
+        if (position == SimpleIRIHDT.PREDICATE_POS) {
+          predicate = id;
         } else {
-          predicate = -1;
+          if (position == SimpleIRIHDT.SHARED_POS) {
+            String translate =
+                    hdt.getDictionary()
+                            .idToString(id,
+                                    TripleComponentRole.SUBJECT)
+                            .toString();
+            long translatedId =
+                    hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
+            if (translatedId != -1) {
+              predicate = translatedId;
+            }
+          } else if (position == SimpleIRIHDT.SUBJECT_POS) {
+            String translate =
+                    hdt.getDictionary()
+                            .idToString(
+                                    id,
+                                    TripleComponentRole.SUBJECT)
+                            .toString();
+            long translatedId =
+                    hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
+            if (translatedId != -1) {
+              predicate = translatedId;
+            }
+          } else if (position == SimpleIRIHDT.OBJECT_POS) {
+            String translate =
+                    hdt.getDictionary()
+                            .idToString(id,
+                                    TripleComponentRole.OBJECT)
+                            .toString();
+            long translatedId =
+                    hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
+            if (translatedId != -1) {
+              predicate = translatedId;
+            }
+          } else {
+            predicate = -1;
+          }
         }
       }
     }
@@ -109,27 +107,29 @@ public class HDTConverter {
     long object = -1;
     if (value == null) {
       object = 0;
-    } else if (value instanceof SimpleIRIHDT) {
-      String identifier = ((SimpleIRIHDT) value).getHdtId().replace("hdt:", "");
-      if (identifier.startsWith("SO")) {
-        object = Long.valueOf(identifier.substring(2, identifier.length()));
-      } else if (identifier.startsWith("O")) {
-        object = Long.valueOf(identifier.substring(1, identifier.length()));
-      } else {
-        if (identifier.startsWith("P")) {
-          Long id = Long.valueOf(identifier.substring(1, identifier.length()));
-          String translate =
-              hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
-          long translatedId = hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
-          if (translatedId != -1) {
-            object = translatedId;
-          }
+    }else if( !(value instanceof SimpleIRIHDT)){
+      object = hdt.getDictionary().stringToId(value.toString(), TripleComponentRole.OBJECT);
+    }else {
+      long id = ((SimpleIRIHDT) value).getId();
+      long position = ((SimpleIRIHDT) value).getPostion();
+      if(id == -1){
+        object = hdt.getDictionary().stringToId(value.toString(), TripleComponentRole.OBJECT);
+      }else {
+        if (position == SimpleIRIHDT.SUBJECT_POS) {
+          object = id;
+        } else if (position == SimpleIRIHDT.OBJECT_POS) {
+          object = id;
         } else {
-          object = -1;
+          if (position == SimpleIRIHDT.PREDICATE_POS) {
+            String translate =
+                    hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
+            long translatedId = hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
+            if (translatedId != -1) {
+              object = translatedId;
+            }
+          }
         }
       }
-    } else {
-      object = hdt.getDictionary().stringToId(value.toString(), TripleComponentRole.OBJECT);
     }
     return object;
   }

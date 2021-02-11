@@ -2,16 +2,23 @@ package eu.qanswer.enpoint;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.parser.*;
+import org.eclipse.rdf4j.query.parser.sparql.SPARQLParser;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriter;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriterFactory;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailUpdate;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.ParserConfig;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
@@ -97,7 +104,7 @@ public class Sparql {
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
 
-            hybridStore = new HybridStore(locationHdt,locationNative,false);
+            hybridStore = new HybridStore(locationHdt,locationNative,true);
             hybridStore.setThreshold(threshold);
             logger.info("Threshold for triples in Native RDF store: "+threshold+" triples");
             luceneSail = new LuceneSail();
@@ -195,7 +202,6 @@ public class Sparql {
 
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-
         RepositoryConnection connection = repository.getConnection();
         if (parsedQuery instanceof ParsedTupleQuery) {
 
@@ -249,12 +255,14 @@ public class Sparql {
         initializeHybridStore(locationHdt);
         sparqlQuery = sparqlPrefixes + sparqlQuery;
 //        logger.info("Running update query:"+sparqlQuery);
-        RepositoryConnection connection = repository.getConnection();
+        SailRepositoryConnection connection = repository.getConnection();
         connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
-
-        Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
-        preparedUpdate.setMaxExecutionTime(timeout);
-
+        ValueFactory valueFactory = connection.getValueFactory();
+//        Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
+//        preparedUpdate.setMaxExecutionTime(timeout);
+        SPARQLParser parser = new SPARQLParser();
+        ParsedUpdate parsedUpdate = parser.parseUpdate(sparqlQuery,(String)null,valueFactory);
+        Update preparedUpdate = new SailUpdate(parsedUpdate,connection);
         if(preparedUpdate != null) {
             Stopwatch stopwatch = Stopwatch.createStarted();
             preparedUpdate.execute();

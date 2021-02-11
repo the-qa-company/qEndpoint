@@ -64,17 +64,17 @@ public class HybridTripleSource implements TripleSource {
       Resource resource, IRI iri, Value value, Resource... resources)
       throws QueryEvaluationException {
 
-    CloseableIteration<? extends Statement, SailException> repositoryResult;
-    Resource resourceNative = null;
-    if(resource != null) {
-      resourceNative = factory.createIRI(resource.toString());
-    }
-    IRI iriNative = null;
-    if(iri != null)
-      iriNative = factory.createIRI(iri.toString());
-    Value valueNative = null;
-    if(value != null)
-      valueNative = factory.createIRI(value.toString());
+    CloseableIteration<? extends Statement, SailException> repositoryResult = null;
+    Resource resourceNative = resource;
+//    if(resource != null) {
+//      resourceNative = factory.createIRI(resource.toString());
+//    }
+    IRI iriNative = iri;
+//    if(iri != null)
+//      iriNative = factory.createIRI(iri.toString());
+    Value valueNative = value;
+//    if(value != null)
+//      valueNative = factory.createIRI(value.toString());
 
     if(hybridStore.isMerging()){
       // query both native stores

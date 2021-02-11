@@ -42,34 +42,13 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     public boolean hasNext() {
         while (iterator.hasNext()) {
             TripleID tripleID = iterator.next();
-//            long subj = tripleID.getSubject() -1;
-//            long pred = tripleID.getPredicate() -1;
-//            long obj = tripleID.getObject() -1;
-//            if(!(tripleSource.getHybridStore().getSubjVec().access(subj) &&
-//                    tripleSource.getHybridStore().getObjVec().access(obj ) &&
-//                    tripleSource.getHybridStore().getPredVec().access(pred))) {
-//                return new HDTStatement(hdt, tripleID, tripleSource);
-//            }
-//            long subjId = tripleID.getSubject();
-//            long predId = tripleID.getPredicate();
-//            long objId = tripleID.getObject();
             Statement stm = new HDTStatement(hdt, tripleID, tripleSource);
-
             if(!tripleSource.getHybridStore().getDeleteBitMap().access(tripleID.getIndex() -1)){
                 next = stm;
                 return true;
             }
-//            Resource subj = tripleSource.getHybridStore().getValueFactory().createIRI("http://hdt-"+subjId);
-//            IRI pred = tripleSource.getHybridStore().getValueFactory().createIRI("http://hdt-"+predId);
-//            IRI obj = tripleSource.getHybridStore().getValueFactory().createIRI("http://hdt-"+objId);
-//            // check if the statement was deleted already... in deleteStore
-//
-//            if(!tripleSource.getHybridStore().getDeleteStoreConnection().hasStatement(subj,pred,obj,false,(Resource)null)){
-//                next = stm;
-//                return true;
-//            }
         }
-        if(this.repositoryResult.hasNext()) {
+        if(this.repositoryResult != null && this.repositoryResult.hasNext()) {
             next = repositoryResult.next();
             return true;
         }

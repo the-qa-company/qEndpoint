@@ -21,30 +21,26 @@ public class HDTStatement implements Statement {
     @Override
     public Resource getSubject() {
         if (tripleID.getSubject() <= hdt.getDictionary().getNshared()) {
-            return new SimpleIRIHDT(hdt, "hdt:SO" + tripleID.getSubject());
+            return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS,+ tripleID.getSubject());
         } else {
-            return new SimpleIRIHDT(hdt, "hdt:S" + tripleID.getSubject());
+            return new SimpleIRIHDT(hdt, SimpleIRIHDT.SUBJECT_POS ,tripleID.getSubject());
         }
     }
 
     @Override
     public IRI getPredicate() {
-        return new SimpleIRIHDT(hdt, "hdt:P" + tripleID.getPredicate());
+        return new SimpleIRIHDT(hdt, SimpleIRIHDT.PREDICATE_POS ,tripleID.getPredicate());
     }
 
     @Override
     public Value getObject() {
         if (tripleID.getObject() >= tripleSource.getStartLiteral() && tripleID.getObject() <= tripleSource.getEndLiteral()) {
-            // System.out.println("Literal "+tripleID.getObject()+" --
-            // "+hdt.getDictionary().idToString(tripleID.getObject(),TripleComponentRole.OBJECT));
             return new SimpleLiteralHDT(hdt, tripleID.getObject(), tripleSource.getValueFactory());
         } else {
-            // System.out.println("IRI
-            // "+hdt.getDictionary().idToString(tripleID.getObject(),TripleComponentRole.OBJECT));
             if (tripleID.getObject() <= hdt.getDictionary().getNshared()) {
-                return new SimpleIRIHDT(hdt, ("hdt:SO" + tripleID.getObject()));
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS,tripleID.getObject());
             } else {
-                return new SimpleIRIHDT(hdt, ("hdt:O" + tripleID.getObject()));
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.OBJECT_POS,tripleID.getObject());
             }
         }
     }

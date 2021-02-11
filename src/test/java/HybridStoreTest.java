@@ -100,8 +100,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
 
             HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             HybridStore hybridStore = new HybridStore(
-                    nativeStore.getAbsolutePath(),hdtStore.getAbsolutePath(),true
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
             );
 
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
@@ -111,7 +113,7 @@ public class HybridStoreTest {
             }
             hybridStore.shutDown();
             hybridStore = new HybridStore(
-                    nativeStore.getAbsolutePath(),hdtStore.getAbsolutePath(),true
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
             );
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
@@ -149,6 +151,7 @@ public class HybridStoreTest {
                 connection.add(dennis, RDF.TYPE, FOAF.PERSON);
                 List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
                 // one triple in hdt and 2 added to native = 3 triples
+                statements.forEach(System.out::println);
                 assertEquals(3, statements.size());
             }
         } catch (Exception e) {
@@ -526,6 +529,8 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
 
             HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
                             hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
