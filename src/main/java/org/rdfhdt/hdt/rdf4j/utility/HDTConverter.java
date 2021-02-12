@@ -27,7 +27,7 @@ public class HDTConverter {
       long id = ((SimpleIRIHDT) resource).getId();
       long position = ((SimpleIRIHDT) resource).getPostion();
       if (id == -1) { // no id found when conversion
-        subject = hdt.getDictionary().stringToId(resource.toString(), TripleComponentRole.SUBJECT);
+        return -1;
       } else {
         if (position == SimpleIRIHDT.PREDICATE_POS) {
           String translate =
@@ -55,7 +55,7 @@ public class HDTConverter {
       long id = ((SimpleIRIHDT) iri).getId();
       long position = ((SimpleIRIHDT) iri).getPostion();
       if(id == -1){ // no id found when conversion
-        predicate = hdt.getDictionary().stringToId(iri.toString(), TripleComponentRole.PREDICATE);
+        return -1;
       }else{
         if (position == SimpleIRIHDT.PREDICATE_POS) {
           predicate = id;
@@ -113,7 +113,7 @@ public class HDTConverter {
       long id = ((SimpleIRIHDT) value).getId();
       long position = ((SimpleIRIHDT) value).getPostion();
       if(id == -1){
-        object = hdt.getDictionary().stringToId(value.toString(), TripleComponentRole.OBJECT);
+        return -1;
       }else {
         if (position == SimpleIRIHDT.SUBJECT_POS) {
           object = id;

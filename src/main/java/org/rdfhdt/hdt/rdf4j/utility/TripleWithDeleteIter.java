@@ -38,12 +38,14 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
 
     @Override
     public boolean hasNext() {
-        while (iterator.hasNext()) {
-            TripleID tripleID = iterator.next();
-            Statement stm = new HDTStatement(hdt, tripleID, tripleSource);
-            if(!tripleSource.getHybridStore().getDeleteBitMap().access(tripleID.getIndex() -1)){
-                next = stm;
-                return true;
+        if(iterator != null) {
+            while (iterator.hasNext()) {
+                TripleID tripleID = iterator.next();
+                Statement stm = new HDTStatement(hdt, tripleID, tripleSource);
+                if (!tripleSource.getHybridStore().getDeleteBitMap().access(tripleID.getIndex() - 1)) {
+                    next = stm;
+                    return true;
+                }
             }
         }
         if(this.repositoryResult != null && this.repositoryResult.hasNext()) {

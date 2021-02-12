@@ -99,9 +99,11 @@ public class HybridTripleSource implements TripleSource {
       logger.debug(subject+"--"+predicate+"--"+object);
     }
 
-
-    TripleID t = new TripleID(subject, predicate, object);
-    IteratorTripleID iterator = hdt.getTriples().search(t);
+    IteratorTripleID iterator = null;
+    if(subject != -1 && predicate != -1 && object != -1) {
+      TripleID t = new TripleID(subject, predicate, object);
+      iterator = hdt.getTriples().search(t);
+    }
     TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this,iterator,repositoryResult);
     return new CloseableIteration<Statement, QueryEvaluationException>() {
       @Override
@@ -124,6 +126,7 @@ public class HybridTripleSource implements TripleSource {
         iterator.remove();
       }
     };
+    }
   }
 
   @Override
