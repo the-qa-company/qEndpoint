@@ -105,6 +105,7 @@ public class HybridTripleSource implements TripleSource {
       iterator = hdt.getTriples().search(t);
     }
     TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this,iterator,repositoryResult);
+    IteratorTripleID finalIterator = iterator;
     return new CloseableIteration<Statement, QueryEvaluationException>() {
       @Override
       public void close() throws QueryEvaluationException {
@@ -123,10 +124,9 @@ public class HybridTripleSource implements TripleSource {
 
       @Override
       public void remove() throws QueryEvaluationException {
-        iterator.remove();
+        finalIterator.remove();
       }
     };
-    }
   }
 
   @Override
