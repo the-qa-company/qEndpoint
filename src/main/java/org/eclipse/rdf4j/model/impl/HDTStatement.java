@@ -21,7 +21,7 @@ public class HDTStatement implements Statement {
     @Override
     public Resource getSubject() {
         if (tripleID.getSubject() <= hdt.getDictionary().getNshared()) {
-            return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS,+ tripleID.getSubject());
+            return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, tripleID.getSubject());
         } else {
             return new SimpleIRIHDT(hdt, SimpleIRIHDT.SUBJECT_POS ,tripleID.getSubject());
         }

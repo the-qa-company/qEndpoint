@@ -65,32 +65,22 @@ public class HybridTripleSource implements TripleSource {
       throws QueryEvaluationException {
 
     CloseableIteration<? extends Statement, SailException> repositoryResult = null;
-    Resource resourceNative = resource;
-//    if(resource != null) {
-//      resourceNative = factory.createIRI(resource.toString());
-//    }
-    IRI iriNative = iri;
-//    if(iri != null)
-//      iriNative = factory.createIRI(iri.toString());
-    Value valueNative = value;
-//    if(value != null)
-//      valueNative = factory.createIRI(value.toString());
 
     if(hybridStore.isMerging()){
       // query both native stores
       CloseableIteration<? extends Statement, SailException> repositoryResult1 =
               this.hybridStore.getNativeStoreA().getConnection().getStatements(
-                      resourceNative,iriNative,valueNative,false,resources
+                      resource,iri,value,false,resources
               );
       CloseableIteration<? extends Statement, SailException> repositoryResult2 =
               this.hybridStore.getNativeStoreB().getConnection().getStatements(
-                      resourceNative,iriNative,valueNative,false,resources
+                      resource,iri,value,false,resources
               );
       repositoryResult = new CombinedNativeStoreResult(repositoryResult1,repositoryResult2);
 
     }else{
       repositoryResult = this.hybridStore.getCurrentStore().getConnection().getStatements(
-              resourceNative,iriNative,valueNative,false,resources
+              resource,iri,value,false,resources
       );
     }
     long subject = hdtConverter.subjectId(resource);

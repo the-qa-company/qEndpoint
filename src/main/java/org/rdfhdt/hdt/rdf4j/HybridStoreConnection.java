@@ -86,33 +86,37 @@ public class HybridStoreConnection extends SailSourceConnection {
   public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // TODO: convert to Ids if exist, else keep
     // use
-//    String subjStr = subj.toString();
-//    Resource newSubj = null;
-//    long subjId = this.hybridStore.getHdt().getDictionary().stringToId(subjStr,TripleComponentRole.SUBJECT);
-//    if(subjId != -1){
-//      newSubj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/S"+subjId);
-//    }else{
-//      newSubj = subj;
-//    }
-//    String predStr = pred.toString();
-//    IRI newPred = null;
-//    long predId = this.hybridStore.getHdt().getDictionary().stringToId(predStr,TripleComponentRole.PREDICATE);
-//    if(predId != -1){
-//      newPred = this.hybridStore.getValueFactory().createIRI("http://hdt.org/P"+predId);
-//    }else{
-//      newPred = pred;
-//    }
-//    String objStr = pred.toString();
-//    Value newObj = null;
-//    long objId = this.hybridStore.getHdt().getDictionary().stringToId(objStr,TripleComponentRole.OBJECT);
-//    if(objId != -1){
-//      newObj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/O"+objId);
-//    }else{
-//      newObj = obj;
-//    }
-//
-//    hybridStore.getNativeStoreConnection().addStatement(newSubj,newPred,newObj,contexts);
-      hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
+    String subjStr = subj.toString();
+    Resource newSubj = null;
+    long subjId = this.hybridStore.getHdt().getDictionary().stringToId(subjStr,TripleComponentRole.SUBJECT);
+    if(subjId != -1){
+      if(subjId <= this.hybridStore.getHdt().getDictionary().getNshared()){
+        newSubj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/SO" + subjId);
+      }else {
+        newSubj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/S" + subjId);
+      }
+    }else{
+      newSubj = subj;
+    }
+    String predStr = pred.toString();
+    IRI newPred = null;
+    long predId = this.hybridStore.getHdt().getDictionary().stringToId(predStr,TripleComponentRole.PREDICATE);
+    if(predId != -1){
+      newPred = this.hybridStore.getValueFactory().createIRI("http://hdt.org/P"+predId);
+    }else{
+      newPred = pred;
+    }
+    String objStr = pred.toString();
+    Value newObj = null;
+    long objId = this.hybridStore.getHdt().getDictionary().stringToId(objStr,TripleComponentRole.OBJECT);
+    if(objId != -1){
+      newObj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/O"+objId);
+    }else{
+      newObj = obj;
+    }
+
+    hybridStore.getNativeStoreConnection().addStatement(newSubj,newPred,newObj,contexts);
+      //hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
 
   }
 
