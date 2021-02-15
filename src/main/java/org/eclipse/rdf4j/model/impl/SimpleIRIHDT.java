@@ -8,6 +8,7 @@ package org.eclipse.rdf4j.model.impl;
  * http://www.eclipse.org/org/documents/edl-v10.php.
  * *****************************************************************************
  */
+import eu.qanswer.enpoint.Sparql;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
@@ -94,7 +95,7 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
   public String toString() {
     if(iriString == null)
       iriString = stringValue();
-    // if not null means that it doesn't exist in hdt
+    // if not null means that it doesn't exist in hdt or already converted
     return iriString;
   }
 
@@ -103,6 +104,8 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
     if(this.iriString != null)
       return this.iriString;
     else {
+      Sparql.count++;
+      System.out.println(Sparql.count);
       if (this.postion == SHARED_POS) {
         return hdt.getDictionary()
                 .idToString(

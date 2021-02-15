@@ -6,9 +6,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.*;
-import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
-import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
@@ -22,6 +20,8 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     private IteratorTripleID iterator;
     private HDT hdt;
     private CloseableIteration<? extends Statement, SailException> repositoryResult;
+
+    private IRIConverter iriConverter;
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter){
         this.tripleSource = tripleSource;
         this.iterator = iter;
@@ -33,6 +33,7 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
         this.repositoryResult = repositoryResult;
+        this.iriConverter = new IRIConverter(hdt);
     }
     Statement next;
 
@@ -56,66 +57,17 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
         return false;
     }
     private Statement convertStatement(Statement stm){
+
         Resource subject = stm.getSubject();
-        SimpleIRIHDT newSubj = getIRIHdtSubj(subject);
+        SimpleIRIHDT newSubj = iriConverter.getIRIHdtSubj(subject);
         IRI predicate = stm.getPredicate();
-        SimpleIRIHDT newPred = getIRIHdtPred(predicate);
+        SimpleIRIHDT newPred = iriConverter.getIRIHdtPred(predicate);
         Value object = stm.getObject();
-        SimpleIRIHDT newObj = getIRIHdtObj(object);
+        SimpleIRIHDT newObj = iriConverter.getIRIHdtObj(object);
 
         return this.tripleSource.getValueFactory().createStatement(newSubj,newPred,newObj);
     }
-    private SimpleIRIHDT getIRIHdtSubj(Resource subj){
-        String iriString = subj.toString();
-        long id = -1;
-        int position = -1;
-        if(iriString.startsWith(("http://hdt.org/"))){
-            iriString = iriString.replace("http://hdt.org/","");
-            if(iriString.startsWith("SO")){
-                id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
-            }else if(iriString.startsWith("S")){
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.SUBJECT_POS;
-            }
-            return new SimpleIRIHDT(this.hdt,position,id);
-        }else{ // string was not converted upon insert - iriString the real IRI
-            return new SimpleIRIHDT(this.hdt,iriString);
-        }
-    }
-    private SimpleIRIHDT getIRIHdtPred(IRI pred){
-        String iriString = pred.toString();
-        long id = -1;
-        int position = -1;
-        if(iriString.startsWith(("http://hdt.org/"))){
-            iriString = iriString.replace("http://hdt.org/","");
-            if(iriString.startsWith("P")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.PREDICATE_POS;
-            }
-            return new SimpleIRIHDT(this.hdt,position,id);
-        }else{ // string was not converted upon insert - iriString the real IRI
-            return new SimpleIRIHDT(this.hdt,iriString);
-        }
-    }
-    private SimpleIRIHDT getIRIHdtObj(Value object){
-        String iriString = object.toString();
-        long id = -1;
-        int position = -1;
-        if(iriString.startsWith(("http://hdt.org/"))){
-            iriString = iriString.replace("http://hdt.org/","");
-            if(iriString.startsWith("SO")){
-                id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
-            }else if(iriString.startsWith("O")){
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.OBJECT_POS;
-            }
-            return new SimpleIRIHDT(this.hdt,position,id);
-        }else{ // string was not converted upon insert - iriString the real IRI
-            return new SimpleIRIHDT(this.hdt,iriString);
-        }
-    }
+
     @Override
     public Statement next() {
         return next;

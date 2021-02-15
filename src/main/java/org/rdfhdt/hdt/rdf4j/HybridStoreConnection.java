@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.sail.*;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.rdf4j.utility.HDTConverter;
+import org.rdfhdt.hdt.rdf4j.utility.IRIConverter;
 import org.rdfhdt.hdt.triples.TripleID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +28,13 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   HybridStore hybridStore;
   HDTConverter hdtConverter;
+  IRIConverter iriConverter;
   private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
   public HybridStoreConnection(HybridStore hybridStore) {
     super(hybridStore, hybridStore.getCurrentStore().getSailStore(),new StrictEvaluationStrategyFactory());
     this.hybridStore = hybridStore;
     this.hdtConverter = new HDTConverter(hybridStore.getHdt());
+    this.iriConverter = new IRIConverter(hybridStore.getHdt());
   }
 
   @Override
@@ -85,39 +88,13 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // TODO: convert to Ids if exist, else keep
-    // use
-    String subjStr = subj.toString();
-    Resource newSubj = null;
-    long subjId = this.hybridStore.getHdt().getDictionary().stringToId(subjStr,TripleComponentRole.SUBJECT);
-    if(subjId != -1){
-      if(subjId <= this.hybridStore.getHdt().getDictionary().getNshared()){
-        newSubj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/SO" + subjId);
-      }else {
-        newSubj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/S" + subjId);
-      }
-    }else{
-      newSubj = subj;
-    }
-    String predStr = pred.toString();
-    IRI newPred = null;
-    long predId = this.hybridStore.getHdt().getDictionary().stringToId(predStr,TripleComponentRole.PREDICATE);
-    if(predId != -1){
-      newPred = this.hybridStore.getValueFactory().createIRI("http://hdt.org/P"+predId);
-    }else{
-      newPred = pred;
-    }
-    String objStr = pred.toString();
-    Value newObj = null;
-    long objId = this.hybridStore.getHdt().getDictionary().stringToId(objStr,TripleComponentRole.OBJECT);
-    if(objId != -1){
-      newObj = this.hybridStore.getValueFactory().createIRI("http://hdt.org/O"+objId);
-    }else{
-      newObj = obj;
-    }
 
-    hybridStore.getNativeStoreConnection().addStatement(newSubj,newPred,newObj,contexts);
-      //hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
-
+    hybridStore.getNativeStoreConnection().addStatement(
+            iriConverter.convertSubj(subj),
+            iriConverter.convertPred(pred),
+            iriConverter.convertObj(obj),
+            contexts
+    );
   }
 
 

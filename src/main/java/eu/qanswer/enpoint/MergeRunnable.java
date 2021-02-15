@@ -1,5 +1,6 @@
 package eu.qanswer.enpoint;
 
+import org.apache.zookeeper.data.Stat;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -17,6 +18,7 @@ import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HybridQueryPreparer;
 import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
+import org.rdfhdt.hdt.rdf4j.utility.IRIConverter;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
@@ -39,21 +41,13 @@ public class MergeRunnable implements Runnable {
 
     private HDT hdt;
     private HybridStore hybridStore;
-    public MergeRunnable(HDT hdt,RepositoryConnection nativeStoreConnection) {
-        //this.hdt = hdt;
-        this.nativeStoreConnection = nativeStoreConnection;
-    }
-    public MergeRunnable(String locationHdt,RepositoryConnection nativeStoreConnection) {
-        this.locationHdt = locationHdt;
-        this.hdtIndex = locationHdt+"index.hdt";
-        this.nativeStoreConnection = nativeStoreConnection;
-    }
 
     public MergeRunnable(String locationHdt, HybridStore hybridStore) {
         this.locationHdt = locationHdt;
         this.hdtIndex = locationHdt+"index.hdt";
         this.nativeStoreConnection = hybridStore.getRepoConnection();
         this.hybridStore = hybridStore;
+        this.hdt = hybridStore.getHdt();
     }
 
 
@@ -177,9 +171,15 @@ public class MergeRunnable implements Runnable {
             RepositoryResult<Statement> repositoryResult =
                     connection.getStatements(null,null,null,false,(Resource)null);
             writer.startRDF();
+            IRIConverter iriConverter = new IRIConverter(this.hdt);
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
-                writer.handleStatement(stm);
+                Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
+                  iriConverter.getIRIHdtSubj(stm.getSubject()),
+                  iriConverter.getIRIHdtPred(stm.getPredicate()),
+                  iriConverter.getIRIHdtObj(stm.getObject())
+                );
+                writer.handleStatement(stmConverted);
             }
             writer.endRDF();
             out.close();

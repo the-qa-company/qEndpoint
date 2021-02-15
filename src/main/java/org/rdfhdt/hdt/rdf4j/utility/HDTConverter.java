@@ -37,7 +37,7 @@ public class HDTConverter {
           if (translatedId != -1) {
             subject = translatedId;
           }
-        }else{
+        }else if(position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS){
           subject = id;
         }
       }
@@ -115,9 +115,7 @@ public class HDTConverter {
       if(id == -1){
         return -1;
       }else {
-        if (position == SimpleIRIHDT.SUBJECT_POS) {
-          object = id;
-        } else if (position == SimpleIRIHDT.OBJECT_POS) {
+        if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.OBJECT_POS) {
           object = id;
         } else {
           if (position == SimpleIRIHDT.PREDICATE_POS) {

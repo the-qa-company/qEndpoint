@@ -60,6 +60,7 @@ public class Sparql {
     private LuceneSail luceneSail;
     private SailRepository repository;
 
+    public static int count = 0 ;
     private String sparqlPrefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
             "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
             "PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>\n" +
@@ -251,7 +252,6 @@ public class Sparql {
         return 0;
     }
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
-
         initializeHybridStore(locationHdt);
         sparqlQuery = sparqlPrefixes + sparqlQuery;
 //        logger.info("Running update query:"+sparqlQuery);
