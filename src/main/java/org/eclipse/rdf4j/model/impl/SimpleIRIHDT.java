@@ -104,8 +104,8 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
     if(this.iriString != null)
       return this.iriString;
     else {
-      Sparql.count++;
-      System.out.println(Sparql.count);
+//      Sparql.count++;
+//      System.out.println(Sparql.count);
       if (this.postion == SHARED_POS) {
         return hdt.getDictionary()
                 .idToString(

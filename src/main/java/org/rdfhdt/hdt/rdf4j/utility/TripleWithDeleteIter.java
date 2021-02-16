@@ -50,8 +50,8 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
             }
         }
         if(this.repositoryResult != null && this.repositoryResult.hasNext()) {
-
-            next = convertStatement(repositoryResult.next());
+            Statement stm = repositoryResult.next();
+            next = convertStatement(stm);
             return true;
         }
         return false;

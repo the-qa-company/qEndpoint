@@ -136,6 +136,18 @@ public class HybridStoreConnection extends SailSourceConnection {
   }
 
   @Override
+  public void flush() throws SailException {
+    super.flush();
+    hybridStore.getNativeStoreConnection().flush();
+  }
+
+  @Override
+  public void flushUpdates() throws SailException {
+    super.flushUpdates();
+    hybridStore.getNativeStoreConnection().flush();
+  }
+
+  @Override
   public void startUpdate(UpdateContext op) throws SailException {
     hybridStore.getNativeStoreConnection().startUpdate(op);
   }

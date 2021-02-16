@@ -28,6 +28,9 @@ public class IRIConverter {
             }else if(iriString.startsWith("S")){
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.SUBJECT_POS;
+            }else if(iriString.startsWith("P")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.PREDICATE_POS;
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
@@ -43,6 +46,15 @@ public class IRIConverter {
             if(iriString.startsWith("P")) {
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
+            }else if(iriString.startsWith("SO")){
+                id = Long.parseLong(iriString.substring(2));
+                position = SimpleIRIHDT.SHARED_POS;
+            }else if(iriString.startsWith("S")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.SUBJECT_POS;
+            }else if(iriString.startsWith("O")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.OBJECT_POS;
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
@@ -61,6 +73,9 @@ public class IRIConverter {
             }else if(iriString.startsWith("O")){
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.OBJECT_POS;
+            }else if(iriString.startsWith("P")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.PREDICATE_POS;
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
@@ -79,8 +94,10 @@ public class IRIConverter {
                     String prefix = "http://hdt.org/";
                     if (position == SimpleIRIHDT.SHARED_POS) {
                         prefix += "SO";
-                    } else if (position == SimpleIRIHDT.SUBJECT_POS) {
+                    } else if(position == SimpleIRIHDT.SUBJECT_POS){
                         prefix += "S";
+                    }else if(position == SimpleIRIHDT.PREDICATE_POS){
+                        prefix += "P";
                     }
                     String subjIdentifier = prefix + id;
                     newSubj = this.tempFactory.createIRI(subjIdentifier);
@@ -111,7 +128,13 @@ public class IRIConverter {
                 long position = ((SimpleIRIHDT) pred).getPostion();
                 if (id != -1) {
                     String prefix = "http://hdt.org/";
-                    if (position == SimpleIRIHDT.PREDICATE_POS) {
+                    if (position == SimpleIRIHDT.SHARED_POS) {
+                        prefix += "SO";
+                    } else if(position == SimpleIRIHDT.SUBJECT_POS){
+                        prefix += "S";
+                    }else if (position == SimpleIRIHDT.OBJECT_POS) {
+                        prefix += "O";
+                    } else if(position == SimpleIRIHDT.PREDICATE_POS){
                         prefix += "P";
                     }
                     String predIdentifier = prefix + id;
@@ -141,8 +164,12 @@ public class IRIConverter {
                     String prefix = "http://hdt.org/";
                     if (position == SimpleIRIHDT.SHARED_POS) {
                         prefix += "SO";
-                    } else if (position == SimpleIRIHDT.OBJECT_POS) {
+                    } else if(position == SimpleIRIHDT.SUBJECT_POS){
+                        prefix += "S";
+                    }else if (position == SimpleIRIHDT.OBJECT_POS) {
                         prefix += "O";
+                    } else if(position == SimpleIRIHDT.PREDICATE_POS){
+                        prefix += "P";
                     }
                     String objIdentifier = prefix + id;
                     newObj = this.tempFactory.createIRI(objIdentifier);
