@@ -24,7 +24,7 @@ public class Utility {
     public static HDT createTempHdtIndex(TemporaryFolder tempDir,boolean empty, boolean isBig){
         try {
             String rdfInput = "temp.nt";
-            File inputFile = tempDir.newFile(rdfInput);
+            File inputFile = tempDir.newFile();
             if(!empty){
                 if(!isBig)
                     writeTempRDF(inputFile);

@@ -1,17 +1,16 @@
 package org.rdfhdt.hdt.rdf4j.utility;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.*;
+import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.TripleID;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 public class TripleWithDeleteIter implements Iterator<Statement> {
@@ -22,18 +21,24 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     private CloseableIteration<? extends Statement, SailException> repositoryResult;
 
     private IRIConverter iriConverter;
+    ArrayList<SailConnection> connections;
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter){
         this.tripleSource = tripleSource;
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
     }
 
-    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter, CloseableIteration<? extends Statement, SailException> repositoryResult){
+    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter,
+                                CloseableIteration<? extends Statement,
+                                        SailException> repositoryResult,
+                                ArrayList<SailConnection> connections
+    ){
         this.tripleSource = tripleSource;
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
         this.repositoryResult = repositoryResult;
         this.iriConverter = new IRIConverter(hdt);
+        this.connections = connections;
     }
     Statement next;
 
@@ -59,17 +64,18 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     private Statement convertStatement(Statement stm){
 
         Resource subject = stm.getSubject();
-        SimpleIRIHDT newSubj = iriConverter.getIRIHdtSubj(subject);
+        Resource newSubj = iriConverter.getIRIHdtSubj(subject);
         IRI predicate = stm.getPredicate();
-        SimpleIRIHDT newPred = iriConverter.getIRIHdtPred(predicate);
-        Value object = stm.getObject();
-        SimpleIRIHDT newObj = iriConverter.getIRIHdtObj(object);
+        IRI newPred = iriConverter.getIRIHdtPred(predicate);
+        Value newObject = iriConverter.getIRIHdtObj(stm.getObject());
+        return this.tripleSource.getValueFactory().createStatement(newSubj,newPred,newObject, stm.getContext());
 
-        return this.tripleSource.getValueFactory().createStatement(newSubj,newPred,newObj);
+
     }
 
     @Override
     public Statement next() {
-        return next;
+        Statement stm = this.tripleSource.getValueFactory().createStatement(next.getSubject(),next.getPredicate(),next.getObject(), next.getContext());
+        return stm;
     }
 }

@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
+import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -83,10 +84,19 @@ public class HybridStoreTest {
     @Test
     public void testGetSailRepositoryConnection() {
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB,Utility.createTempHdtIndex(tempDir, true,false),10));
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(
+                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    )
+//                    new NativeStore(nativeStore,"spoc")
+            );
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
+                System.out.println(connection.size());
             }
             hybridStore.shutDown();
         } catch (IOException e) {
@@ -188,24 +198,27 @@ public class HybridStoreTest {
 
                 IRI guo = vf.createIRI(ex, "Guo");
                 connection.remove(guo, RDF.TYPE, FOAF.PERSON);
-
                 // wait for merge to be done because it's on a separate thread
 
-                List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
                 RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
-                while (sts.hasNext())
+                int count = 0;
+                while (sts.hasNext()){
                     System.out.println(sts.next());
+                    count++;
+                }
                 // 1 triple hdt, 2 triples native a, 1 triple native b -1 triple removed from hdt
-                assertEquals(3, statements.size());
-                Thread.sleep(2000);
+                assertEquals(3, count);
+                Thread.sleep(3000);
 
-                statements = Iterations.asList(connection.getStatements(null, null, null, true));
 
                 sts = connection.getStatements(null, null, null, true);
-                while (sts.hasNext())
+                count = 0;
+                while (sts.hasNext()) {
                     System.out.println(sts.next());
+                    count++;
+                }
                 // 2 triples hdt, 0 triples native a, 1 triple native b
-                assertEquals(3, statements.size());
+                assertEquals(3, count);
                 Files.deleteIfExists(Paths.get("index.hdt"));
                 Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
@@ -287,10 +300,57 @@ public class HybridStoreTest {
                 // query everything of type PERSON
                 List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, RDF.TYPE, FOAF.PERSON, true));
                 for (Statement s:statements) {
-                    System.out.println(s.getSubject());
+                    System.out.println(s);
                 }
                 // 1 triple in hdt and 2 added to native = 3 triples
                 assertEquals(3, statements.size());
+                Files.deleteIfExists(Paths.get("index.hdt"));
+                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get("index.nt"));
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception found !");
+        }
+    }
+    @Test
+    public void testMisc(){
+        try {
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(1);
+            SailRepository hybridStore = new SailRepository(store);
+
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = connection.getValueFactory();
+                String ex = "http://example.com/";
+                IRI ali = vf.createIRI(ex, "Ali");
+                connection.add(ali, RDF.TYPE, FOAF.PERSON);
+                IRI dennis = vf.createIRI(ex, "Dennis");
+                connection.add(dennis, RDF.TYPE, FOAF.PERSON);
+                Thread.sleep(2000);
+                // query everything of type PERSON
+                List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
+                for (Statement s:statements) {
+                    System.out.println(s);
+                }
+                assertEquals(3, statements.size());
+//                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
+//                int count = 0;
+//                while (sts.hasNext()){
+//                    System.out.println(sts.next());
+//                    count++;
+//                }
+//                assertEquals(3, count);
                 Files.deleteIfExists(Paths.get("index.hdt"));
                 Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
@@ -317,7 +377,7 @@ public class HybridStoreTest {
             SailRepository hybridStore = new SailRepository(store);
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
-                ValueFactory vf = connection.getValueFactory();
+                ValueFactory vf = new MemValueFactory();
                 String ex = "http://example.com/";
                 IRI ali = vf.createIRI(ex,"Ali");
                 connection.add(ali,RDF.TYPE,FOAF.PERSON);
@@ -330,6 +390,7 @@ public class HybridStoreTest {
                 for (Statement s:statements) {
                     System.out.println(s.toString());
                 }
+                connection.close();
                 assertEquals(0, statements.size());
 
             }
@@ -430,6 +491,41 @@ public class HybridStoreTest {
         }
     }
     @Test
+    public void sparqlDeleteAllTest() throws IOException {
+        try {
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = connection.getValueFactory();
+                String ex = "http://example.com/";
+                IRI ali = vf.createIRI(ex, "Ali");
+                connection.add(ali, RDF.TYPE, FOAF.PERSON);
+
+                Update update = connection.prepareUpdate(String.join("\n", "",
+                        "DELETE {",
+                        "	?s ?p ?o",
+                        "}","\n","WHERE { ?s ?p ?o}"));
+
+                update.execute();
+                List<Statement> statements = Iterations.asList(connection.getStatements(null,null,null,(Resource)null));
+                assertEquals(0, statements.size());
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    @Test
     public void sparqlJoinTest() throws IOException {
         try {
             File nativeStore = tempDir.newFolder("native-store");
@@ -470,6 +566,8 @@ public class HybridStoreTest {
                     System.out.println(binding);
                 }
                 assertEquals(1, bindingSets.size());
+                connection.close();
+                hybridStore.shutDown();
                 Files.deleteIfExists(Paths.get("index.hdt"));
                 Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
@@ -521,38 +619,6 @@ public class HybridStoreTest {
             fail(e.getMessage());
         }
 
-    }
-    @Test
-    public void misc(){
-        try {
-            File nativeStore = tempDir.newFolder("native-store");
-            File hdtStore = tempDir.newFolder("hdt-store");
-
-            HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
-            assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
-            SailRepository hybridStore = new SailRepository(
-                    new HybridStore(
-                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
-                    )
-            );
-            try (SailRepositoryConnection connection = hybridStore.getConnection()) {
-                StopWatch stopWatch = StopWatch.createStarted();
-                RepositoryResult<Statement> statements = connection.getStatements(null, null, FOAF.PERSON, true);
-                int count = 0;
-                while (statements.hasNext()) {
-                    statements.next();
-                    count++;
-                }
-                System.out.println("the count is: "+count);
-                assertEquals(Utility.count,count);
-                stopWatch.stop();
-                System.out.println("Time to query : "+stopWatch.getTime(TimeUnit.MILLISECONDS));
-            }
-        }catch (Exception e){
-            e.printStackTrace();
-            fail("Catched Exception");
-        }
     }
 
     private void printHDT(HDT hdt) throws NotFoundException {

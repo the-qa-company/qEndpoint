@@ -39,6 +39,11 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
   }
 
   @Override
+  public HybridTripleSource getTripleSource() {
+    return tripleSource;
+  }
+
+  @Override
   protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(
       TupleExpr tupleExpr,
       Dataset dataset,

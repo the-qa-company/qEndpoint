@@ -8,6 +8,8 @@ import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
 import org.rdfhdt.hdt.triples.TripleID;
 
+import java.util.Objects;
+
 public class HDTStatement implements Statement {
 
     private TripleID tripleID;
@@ -52,5 +54,20 @@ public class HDTStatement implements Statement {
     @Override
     public String toString() {
         return "("+getSubject().toString()+", "+getPredicate().toString()+", "+getObject()+")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HDTStatement that = (HDTStatement) o;
+        return this.tripleID.getSubject() == that.tripleID.getSubject()
+                && this.tripleID.getPredicate() == that.tripleID.getObject()
+                && this.tripleID.getObject() == that.tripleID.getObject();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tripleID, hdt, tripleSource);
     }
 }

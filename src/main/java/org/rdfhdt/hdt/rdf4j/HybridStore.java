@@ -26,7 +26,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private NativeStore nativeStoreA;
     private NativeStore nativeStoreB;
     private NativeStore currentStore;
-    private SailConnection nativeStoreConnection;
 
     private BitArrayDisk deleteBitMap;
 
@@ -47,7 +46,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.currentStore = nativeStoreA;
         this.threshold = threshold;
         this.tripleSource = new HybridTripleSource(hdt,this);
-        this.nativeStoreConnection = this.currentStore.getConnection();
         this.repo = new SailRepository(currentStore);
     }
 
@@ -66,9 +64,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             this.currentStore = nativeStoreB;
         else
             this.currentStore = nativeStoreA;
+        this.currentStore.init();
         this.threshold = 100000;
         this.tripleSource = new HybridTripleSource(hdt,this);
-        this.nativeStoreConnection = this.currentStore.getConnection();
         this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
         this.queryPreparer = new HybridQueryPreparer(this);
@@ -88,8 +86,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
     @Override
     protected void initializeInternal() throws SailException {
-        nativeStoreA.init();
-        nativeStoreB.init();
+//        this.repo.init();
+        this.nativeStoreA.init();
+        this.nativeStoreB.init();
     }
     
 
@@ -100,13 +99,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public NativeStore getCurrentStore() {
         return currentStore;
     }
-    public SailConnection getNativeStoreConnection(){
-        return this.nativeStoreConnection;
-    }
 
-    public void setNativeStoreConnection(SailConnection nativeStoreConnection) {
-        this.nativeStoreConnection = nativeStoreConnection;
-    }
 
     public HDT getHdt() {
         return hdt;
@@ -122,8 +115,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     @Override
     protected void shutDownInternal() throws SailException {
-        nativeStoreA.shutDown();
-        nativeStoreB.shutDown();
+        this.nativeStoreA.shutDown();
+        this.nativeStoreB.shutDown();
     }
 
     @Override
@@ -139,6 +132,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             return new SailRepository(nativeStoreB).getConnection();
         else
             return new SailRepository(nativeStoreA).getConnection();
+    }
+
+    public SailRepository getRepository() {
+        return repo;
     }
 
     @Override
@@ -157,11 +154,19 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     @Override
+    protected void connectionClosed(SailConnection connection) {
+        super.connectionClosed(connection);
+    }
+
+    @Override
     public void setFederatedServiceResolver(FederatedServiceResolver federatedServiceResolver) {
         nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
         nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
     }
 
+    public SailConnection getConnectionNative(){
+        return this.currentStore.getConnection();
+    }
     public HybridQueryPreparer getQueryPreparer() {
         return queryPreparer;
     }
@@ -201,11 +206,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             e.printStackTrace();
         }
         if(switchStore){
-            this.setNativeStoreConnection(this.nativeStoreA.getConnection());
             this.currentStore = this.nativeStoreA;
             switchStore = false;
         }else{
-            this.setNativeStoreConnection(this.nativeStoreB.getConnection());
             this.currentStore = this.nativeStoreB;
             switchStore = true;
         }

@@ -4,6 +4,7 @@ import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import eu.qanswer.enpoint.Sparql;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
+import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -11,8 +12,10 @@ import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.sail.*;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
+import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.rdf4j.utility.HDTConverter;
 import org.rdfhdt.hdt.rdf4j.utility.IRIConverter;
@@ -22,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class HybridStoreConnection extends SailSourceConnection {
@@ -29,38 +33,52 @@ public class HybridStoreConnection extends SailSourceConnection {
   HybridStore hybridStore;
   HDTConverter hdtConverter;
   IRIConverter iriConverter;
+  SailConnection nativeStoreConnection;
+  SailConnection connA;
+  SailConnection connB;
   private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
   public HybridStoreConnection(HybridStore hybridStore) {
     super(hybridStore, hybridStore.getCurrentStore().getSailStore(),new StrictEvaluationStrategyFactory());
     this.hybridStore = hybridStore;
     this.hdtConverter = new HDTConverter(hybridStore.getHdt());
     this.iriConverter = new IRIConverter(hybridStore.getHdt());
+    this.nativeStoreConnection = hybridStore.getConnectionNative();
+    this.connA = hybridStore.getNativeStoreA().getConnection();
+    this.connB = hybridStore.getNativeStoreB().getConnection();
   }
 
   @Override
   public void begin() throws SailException {
     super.begin();
-    long count = hybridStore.getNativeStoreConnection().size((Resource)null);
+    long count = this.nativeStoreConnection.size((Resource)null);
     System.err.println("--------------: "+count);
     // Merge only if threshold in native store exceeded and not merging with hdt
     if(count >= hybridStore.getThreshold() && !hybridStore.isMerging()){
       System.out.println("Merging...");
       hybridStore.makeMerge();
     }
-    this.hybridStore.getNativeStoreConnection().begin();
+    this.nativeStoreConnection.begin();
   }
   // for SPARQL queries
   @Override
   protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
-
-    return hybridStore.getQueryPreparer().evaluate(tupleExpr, dataset, bindings, includeInferred,0);
+    HybridQueryPreparer queryPreparer = hybridStore.getQueryPreparer();
+    HybridTripleSource tripleSource = queryPreparer.getTripleSource();
+    tripleSource.setConnA(this.connA);
+    tripleSource.setConnB(this.connB);
+    tripleSource.setConnCurr(this.nativeStoreConnection);
+    return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred,0);
   }
 
   // USED from connection get api not SPARQL
   @Override
   protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
+    HybridTripleSource tripleSource = hybridStore.getTripleSource();
+    tripleSource.setConnA(this.connA);
+    tripleSource.setConnB(this.connB);
+    tripleSource.setConnCurr(this.nativeStoreConnection);
     CloseableIteration<? extends Statement, QueryEvaluationException> result =
-            hybridStore.getTripleSource().getStatements(subj, pred, obj, contexts);
+            tripleSource.getStatements(subj, pred, obj, contexts);
     return new ExceptionConvertingIteration<Statement, SailException>(result) {
       @Override
       protected SailException convert(Exception e) {
@@ -70,29 +88,34 @@ public class HybridStoreConnection extends SailSourceConnection {
   }
   @Override
   public void setNamespaceInternal(String prefix, String name) throws SailException {
-    super.setNamespaceInternal(prefix,name);
-    hybridStore.getNativeStoreConnection().setNamespace(prefix,name);
+//    super.setNamespaceInternal(prefix,name);
+    this.nativeStoreConnection.setNamespace(prefix,name);
   }
 
   @Override
   public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
           throws SailException {
-    hybridStore.getNativeStoreConnection().addStatement(subj,pred,obj,contexts);
+    this.nativeStoreConnection.addStatement(subj,pred,obj,contexts);
   }
 
   @Override
   public boolean isActive() throws UnknownSailTransactionStateException {
-    return hybridStore.getNativeStoreConnection().isActive();
+    return this.nativeStoreConnection.isActive();
   }
 
   @Override
   public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // TODO: convert to Ids if exist, else keep
-
-    hybridStore.getNativeStoreConnection().addStatement(
+    Value newObj;
+    if(obj instanceof Literal){
+      newObj = iriConverter.convertLiteral((Literal)obj);
+    }else{
+      newObj = iriConverter.convertObj(obj);
+    }
+    this.nativeStoreConnection.addStatement(
             iriConverter.convertSubj(subj),
             iriConverter.convertPred(pred),
-            iriConverter.convertObj(obj),
+            newObj,
             contexts
     );
   }
@@ -100,12 +123,14 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   public void clearNamespacesInternal() throws SailException {
-    throw new SailReadOnlyException("");
+    //super.clearNamespacesInternal();
+    this.nativeStoreConnection.clearNamespaces();
   }
 
   @Override
   public void removeNamespaceInternal(String prefix) throws SailException {
-    throw new SailReadOnlyException("");
+    //super.removeNamespaceInternal(prefix);
+    this.nativeStoreConnection.removeNamespace(prefix);
   }
   @Override
   public void removeStatementsInternal(Resource subj, IRI pred, Value obj, Resource... context)
@@ -115,51 +140,50 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   protected void clearInternal(Resource... contexts) throws SailException {
-    hybridStore.getNativeStoreConnection().clear(contexts);
+   this.nativeStoreConnection.clear(contexts);
   }
-
   @Override
   protected CloseableIteration<? extends Namespace, SailException> getNamespacesInternal()
           throws SailException {
-    return hybridStore.getNativeStoreConnection().getNamespaces();
+    return this.nativeStoreConnection.getNamespaces();
   }
 
   @Override
   protected String getNamespaceInternal(String prefix) throws SailException {
-    return hybridStore.getNativeStoreConnection().getNamespace(prefix);
+    return this.nativeStoreConnection.getNamespace(prefix);
   }
 
   @Override
   protected void commitInternal() throws SailException {
     super.commitInternal();
-    hybridStore.getNativeStoreConnection().commit();
+    this.nativeStoreConnection.commit();
   }
 
   @Override
   public void flush() throws SailException {
     super.flush();
-    hybridStore.getNativeStoreConnection().flush();
+    this.nativeStoreConnection.flush();
   }
 
   @Override
   public void flushUpdates() throws SailException {
     super.flushUpdates();
-    hybridStore.getNativeStoreConnection().flush();
+    this.nativeStoreConnection.flush();
   }
 
   @Override
   public void startUpdate(UpdateContext op) throws SailException {
-    hybridStore.getNativeStoreConnection().startUpdate(op);
+    this.nativeStoreConnection.startUpdate(op);
   }
 
   @Override
   protected void endUpdateInternal(UpdateContext op) throws SailException {
-    hybridStore.getNativeStoreConnection().endUpdate(op);
+    this.nativeStoreConnection.endUpdate(op);
   }
 
   @Override
   protected void rollbackInternal() throws SailException {
-    hybridStore.getNativeStoreConnection().rollback();
+    this.nativeStoreConnection.rollback();
   }
 
   @Override
@@ -169,20 +193,27 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   protected void closeInternal() throws SailException {
-
+    super.closeInternal();
+    this.nativeStoreConnection.close();
+    this.connA.close();
+    this.connB.close();
   }
 
   @Override
   protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal()
           throws SailException {
-    return null;
+    return this.nativeStoreConnection.getContextIDs();
   }
 
   @Override
   protected long sizeInternal(Resource... contexts) throws SailException {
     //return hybridStore.getNativeStoreConnection().size(contexts);
-    long sizeNativeA = this.hybridStore.getNativeStoreA().getConnection().size(contexts);
-    long sizeNativeB = this.hybridStore.getNativeStoreB().getConnection().size(contexts);
+    SailConnection connectionA = this.hybridStore.getNativeStoreA().getConnection();
+    long sizeNativeA = connectionA.size(contexts);
+    connectionA.close();
+    SailConnection connectionB = this.hybridStore.getNativeStoreB().getConnection();
+    long sizeNativeB = connectionB.size(contexts);
+    connectionB.close();
     long sizeHdt = this.hybridStore.getHdt().getTriples().getNumberOfElements();
 
     long sizeDeleted = this.hybridStore.getDeleteBitMap().countOnes();
@@ -193,8 +224,15 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     // remove from native current store
-    this.hybridStore.getNativeStoreConnection().removeStatement(op, subj, pred, obj, contexts);
-
+    Resource newSubj = iriConverter.convertSubj(subj);
+    IRI newPred = iriConverter.convertPred(pred);
+    Value newObj;
+    if(obj instanceof Literal){
+      newObj = iriConverter.convertLiteral((Literal)obj);
+    }else{
+      newObj = iriConverter.convertObj(obj);
+    }
+    this.nativeStoreConnection.removeStatement(op, newSubj, newPred, newObj, contexts);
     long subjId;
     long predId;
     long objId;
@@ -208,7 +246,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     }else{
       predId = convertToId(pred,TripleComponentRole.PREDICATE);
     }
-    if(obj instanceof SimpleIRIHDT){
+    if(obj instanceof SimpleIRIHDT){ // TODO: or Literals
       objId = hdtConverter.objectId(obj);
     }else{
       objId = convertToId(obj,TripleComponentRole.OBJECT);

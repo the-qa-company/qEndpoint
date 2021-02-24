@@ -174,5 +174,22 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
       return toString().equals(o.toString());
     }
   }
+  @Override
+  public int hashCode() {
+    String prefix = "http://hdt.org/";
+    if(this.postion == SHARED_POS)
+      prefix +="SO";
+    else if(this.postion == SUBJECT_POS)
+      prefix += "S";
+    else if(this.postion == PREDICATE_POS)
+      prefix += "P";
+    else if(this.postion == OBJECT_POS)
+      prefix += "O";
+    else{
+      if(iriString != null)
+        prefix = iriString;
+    }
+    return prefix.hashCode();
+  }
 
 }

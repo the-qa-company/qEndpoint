@@ -1,8 +1,10 @@
 package eu.qanswer.enpoint;
 
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -56,28 +58,31 @@ public class MergeRunnable implements Runnable {
         try {
             String rdfInput = locationHdt+"temp.nt";
             String hdtOutput = locationHdt+"temp.hdt";
+            // diff hdt indexes...
+            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
+
             // dump all triples in native store
             writeTempFile(nativeStoreConnection,rdfInput);
             // create the hdt index for the temp dump
             createHDTDump(rdfInput,hdtOutput);
             // cat the original index and the temp index
             catIndexes(hdtIndex,hdtOutput);
-            // diff hdt indexes...
-            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
             // empty native store
             emptyNativeStore();
 
             Files.delete(Paths.get(rdfInput));
             Files.delete(Paths.get(hdtOutput));
             Files.deleteIfExists(Paths.get(locationHdt+"triples-delete.arr"));
+
             this.hdt = HDTManager.mapIndexedHDT(hdtIndex,new HDTSpecification());
-            //hdt.search("","","").forEachRemaining(System.out::println);
+//            hdt.search("","","").forEachRemaining(System.out::println);
             //hdt.getTriples().searchAll().forEachRemaining(System.out::println);
             this.hybridStore.setTripleSource(new HybridTripleSource(hdt,this.hybridStore));
             this.hybridStore.setQueryPreparer(new HybridQueryPreparer(this.hybridStore));
             this.hybridStore.setHdt(this.hdt);
             this.hybridStore.initDeleteArray();
             this.hybridStore.isMerging = false;
+            this.nativeStoreConnection.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -174,10 +179,11 @@ public class MergeRunnable implements Runnable {
             IRIConverter iriConverter = new IRIConverter(this.hdt);
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
+
                 Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
                   iriConverter.getIRIHdtSubj(stm.getSubject()),
                   iriConverter.getIRIHdtPred(stm.getPredicate()),
-                  iriConverter.getIRIHdtObj(stm.getObject())
+                        iriConverter.getIRIHdtObj(stm.getObject())
                 );
                 writer.handleStatement(stmConverted);
             }

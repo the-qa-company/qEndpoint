@@ -3,6 +3,7 @@ package org.rdfhdt.hdt.rdf4j.utility;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.AbstractValueFactoryHDT;
 import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
+import org.eclipse.rdf4j.model.impl.SimpleLiteralHDT;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -16,7 +17,7 @@ public class IRIConverter {
         this.valueFactory = new AbstractValueFactoryHDT(this.hdt);
         this.tempFactory = new MemValueFactory();
     }
-    public SimpleIRIHDT getIRIHdtSubj(Resource subj){
+    public Resource getIRIHdtSubj(Resource subj){
         String iriString = subj.toString();
         long id = -1;
         int position = -1;
@@ -34,10 +35,10 @@ public class IRIConverter {
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
-            return new SimpleIRIHDT(this.hdt,iriString);
+            return subj;
         }
     }
-    public SimpleIRIHDT getIRIHdtPred(IRI pred){
+    public IRI getIRIHdtPred(IRI pred){
         String iriString = pred.toString();
         long id = -1;
         int position = -1;
@@ -58,10 +59,10 @@ public class IRIConverter {
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
-            return new SimpleIRIHDT(this.hdt,iriString);
+            return pred;
         }
     }
-    public SimpleIRIHDT getIRIHdtObj(Value object){
+    public Value getIRIHdtObj(Value object){
         String iriString = object.toString();
         long id = -1;
         int position = -1;
@@ -77,9 +78,13 @@ public class IRIConverter {
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
             }
-            return new SimpleIRIHDT(this.hdt,position,id);
+            if(object instanceof Literal){
+                return new SimpleLiteralHDT(this.hdt,id,this.valueFactory);
+            }else {
+                return new SimpleIRIHDT(this.hdt, position, id);
+            }
         }else{ // string was not converted upon insert - iriString the real IRI
-            return new SimpleIRIHDT(this.hdt,iriString);
+            return object;
         }
     }
 
@@ -191,5 +196,15 @@ public class IRIConverter {
             }
         }
         return newObj;
+    }
+    public Literal convertLiteral(Literal obj){
+        String objStr = obj.toString();
+        if(objStr.startsWith("http://hdt.org/")){
+            objStr = objStr.replace("http://hdt.org/","");
+            long id = Long.parseLong(objStr.substring(1));
+            return new SimpleLiteralHDT(hdt,id,this.valueFactory);
+        }else{
+            return obj;
+        }
     }
 }

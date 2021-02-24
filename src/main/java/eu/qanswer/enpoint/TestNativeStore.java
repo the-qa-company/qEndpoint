@@ -1,7 +1,11 @@
 package eu.qanswer.enpoint;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -28,26 +32,32 @@ public class TestNativeStore {
 
     public static void main(String[] args) {
 
-        NativeStore nativeStoreA = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdtsparqlendpoint/native-store/B"),"spoc,posc,cosp");
+        NativeStore nativeStoreA = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdtsparqlendpoint/native-store/A"),"spoc");
         SailRepository repository = new SailRepository(nativeStoreA);
-        writeTempFile(repository.getConnection(),"/Users/alyhdr/Desktop/index.nt");
-        String rdfInput = "/Users/alyhdr/Desktop/index.nt";
-        String hdtOutput = "/Users/alyhdr/Desktop/index.hdt";
-        String baseURI = "file://"+rdfInput;
-        RDFNotation notation = RDFNotation.guess(rdfInput);
-        HDTSpecification spec = new HDTSpecification();
-
-        try {
-            StopWatch sw = new StopWatch();
-            HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI,RDFNotation.NTRIPLES , spec, null);
-            logger.info("File converted in: "+sw.stopAndShow());
-            hdt.saveToHDT(hdtOutput, null);
-            logger.info("HDT saved to file in: "+sw.stopAndShow());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserException e) {
-            e.printStackTrace();
-        }
+        RepositoryConnection connection = repository.getConnection();
+        connection.setNamespace("","http://example.com/");
+        ValueFactory vf = connection.getValueFactory();
+        String ex = "";
+        IRI ali = vf.createIRI(ex, "Ali");
+        connection.add(ali, RDF.TYPE, FOAF.PERSON);
+//        writeTempFile(repository.getConnection(),"/Users/alyhdr/Desktop/index.nt");
+//        String rdfInput = "/Users/alyhdr/Desktop/index.nt";
+//        String hdtOutput = "/Users/alyhdr/Desktop/index.hdt";
+//        String baseURI = "file://"+rdfInput;
+//        RDFNotation notation = RDFNotation.guess(rdfInput);
+//        HDTSpecification spec = new HDTSpecification();
+//
+//        try {
+//            StopWatch sw = new StopWatch();
+//            HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI,RDFNotation.NTRIPLES , spec, null);
+//            logger.info("File converted in: "+sw.stopAndShow());
+//            hdt.saveToHDT(hdtOutput, null);
+//            logger.info("HDT saved to file in: "+sw.stopAndShow());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (ParserException e) {
+//            e.printStackTrace();
+//        }
     }
     private static void writeTempFile(RepositoryConnection connection, String file){
         FileOutputStream out = null;

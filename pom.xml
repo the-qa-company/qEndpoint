@@ -42,8 +42,9 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-queryresultio-api</artifactId>
+            <artifactId>rdf4j-sparql-compliance</artifactId>
             <version>${rdf4j.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

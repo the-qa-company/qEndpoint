@@ -4,6 +4,8 @@ import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.*;
+
+
 import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLParser;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriter;
@@ -101,7 +103,7 @@ public class Sparql {
                 File tempRDF = new File(location+"tmp_index.nt");
                 tempRDF.createNewFile();
                 HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(),"uri", RDFNotation.NTRIPLES,spec,null);
-                hdt.saveToHDT(hdtFile.getAbsolutePath(),null);
+                hdt.saveToHDT(hdtFile.getPath(),null);
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
 
