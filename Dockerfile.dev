@@ -14,7 +14,8 @@ COPY src /home/app/src
 RUN mvn -f /home/app/pom.xml clean package -s /home/app/ci_settings.xml --quiet -DskipTests
 
 
-#
+
+
 # Package stage
 #
 FROM openjdk:11-jre-slim
@@ -24,8 +25,18 @@ WORKDIR /home/app
 RUN mkdir data
 RUN mkdir data/hdt-store
 
-COPY --from=build /home/app/target/hdtSparqlEndpoint-1.0.2-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-1.0.2-SNAPSHOT.jar
+COPY --from=build /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
 
 COPY --from=build /home/app/src/main/resources/application-prod.properties /home/app/application-prod.properties
 EXPOSE 1234
-ENTRYPOINT ["java","-Dspring.config.location=file:///home/app/application-prod.properties","-jar","/usr/local/lib/hdtSparqlEndpoint-1.0.2-SNAPSHOT.jar"]
+RUN  apt-get update \
+  && apt-get install -y wget \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY loadData.sh .
+RUN chmod +x loadData.sh
+CMD ./loadData.sh
+# ENTRYPOINT echo "Downloading the HDT index..." && wget --progress=bar:force:noscroll -O /home/app/data/hdt-store/index.hdt https://data.linkedopendata.eu/index_big.hdt \
+#         && wget --progress=bar:force:noscroll -O /home/app/data/hdt-store/index.hdt.index.v1-1 https://data.linkedopendata.eu/index_big.hdt.index.v1-1 \
+#         && echo "Starting HDT Sparql Service..." \
+#         && java -Dspring.config.location=file:///home/app/application-prod.properties -jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar

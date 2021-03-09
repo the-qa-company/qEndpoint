@@ -38,6 +38,8 @@ public class HDTStatement implements Statement {
     public Value getObject() {
         if (tripleID.getObject() >= tripleSource.getStartLiteral() && tripleID.getObject() <= tripleSource.getEndLiteral()) {
             return new SimpleLiteralHDT(hdt, tripleID.getObject(), tripleSource.getValueFactory());
+        }else if(tripleID.getObject() >= tripleSource.startBlank && tripleID.getObject() <= tripleSource.endBlank){
+            return this.tripleSource.getValueFactory().createBNode();
         } else {
             if (tripleID.getObject() <= hdt.getDictionary().getNshared()) {
                 return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS,tripleID.getObject());

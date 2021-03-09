@@ -38,6 +38,8 @@ public class HybridTripleSource implements TripleSource {
   ValueFactory factory;
   long startLiteral;
   long endLiteral;
+  public long startBlank;
+  public long endBlank;
   HDTConverter hdtConverter;
   IRIConverter iriConverter;
   ValueFactory tempFactory;
@@ -66,6 +68,17 @@ public class HybridTripleSource implements TripleSource {
     this.iriConverter = new IRIConverter(hdt);
     this.tempFactory = new MemValueFactory();
 
+    this.startBlank = BinarySearch.first(
+            hdt.getDictionary(),
+            hdt.getDictionary().getNshared() + 1,
+            hdt.getDictionary().getNobjects(),
+            "_");
+    this.endBlank = BinarySearch.last(
+            hdt.getDictionary(),
+            hdt.getDictionary().getNshared() + 1,
+            hdt.getDictionary().getNobjects(),
+            hdt.getDictionary().getNobjects(),
+            "_");
   }
 
   public ValueFactory getTempFactory() {
@@ -84,7 +97,6 @@ public class HybridTripleSource implements TripleSource {
     Value newValue = iriConverter.convertObj(value);
 
 
-    System.out.println("Get statements...");
     ArrayList<SailConnection> connections = new ArrayList();
     connections.add(connA);
     connections.add(connB);

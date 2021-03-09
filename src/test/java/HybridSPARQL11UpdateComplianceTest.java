@@ -43,7 +43,7 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
         HybridStore hybridStore = new HybridStore(
                 hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
         );
-        hybridStore.setThreshold(3);
+//        hybridStore.setThreshold(2);
 
         SailRepository repository = new SailRepository(hybridStore);
         return new DatasetRepository(repository);
@@ -53,6 +53,5 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
     }
 }

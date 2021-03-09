@@ -30,7 +30,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk deleteBitMap;
 
     private SailRepository repo;
-    public boolean switchStore = true;
+    public boolean switchStore = false;
 
     public boolean isMerging = false;
     private String locationHdt;
@@ -202,6 +202,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             MergeRunnable mergeRunnable = new MergeRunnable(locationHdt,this);
             Thread thread = new Thread(mergeRunnable);
             thread.start();
+//            mergeRunnable.run();
         } catch (Exception e) {
             e.printStackTrace();
         }

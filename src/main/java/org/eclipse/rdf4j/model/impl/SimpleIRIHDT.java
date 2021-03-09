@@ -165,31 +165,34 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
   // Implements IRI.equals(Object)
   @Override
   public boolean equals(Object o) {
+    if(o == null)
+      return false;
     if (this == o) {
       return true;
     }
-    else if (o instanceof SimpleIRIHDT && this.id != -1) {
+    else if (o instanceof SimpleIRIHDT && this.id != -1 && ((SimpleIRIHDT) o).getId() != -1) {
       return this.id == (((SimpleIRIHDT) o).getId());
     }else { // could not compare IDs, we have to compare to string
       return toString().equals(o.toString());
     }
   }
-  @Override
-  public int hashCode() {
-    String prefix = "http://hdt.org/";
-    if(this.postion == SHARED_POS)
-      prefix +="SO";
-    else if(this.postion == SUBJECT_POS)
-      prefix += "S";
-    else if(this.postion == PREDICATE_POS)
-      prefix += "P";
-    else if(this.postion == OBJECT_POS)
-      prefix += "O";
-    else{
-      if(iriString != null)
-        prefix = iriString;
-    }
-    return prefix.hashCode();
-  }
-
+//  @Override
+//  public int hashCode() {
+//    String prefix = "http://hdt.org/";
+//    if(this.postion == SHARED_POS)
+//      prefix +="SO";
+//    else if(this.postion == SUBJECT_POS)
+//      prefix += "S";
+//    else if(this.postion == PREDICATE_POS)
+//      prefix += "P";
+//    else if(this.postion == OBJECT_POS)
+//      prefix += "O";
+//    else{
+//      if(iriString != null)
+//        prefix = iriString;
+//      return prefix.hashCode();
+//    }
+//    prefix+=id;
+//    return prefix.hashCode();
+//  }
 }

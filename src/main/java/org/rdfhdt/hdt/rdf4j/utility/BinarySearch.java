@@ -34,7 +34,7 @@ public class BinarySearch {
       int c2 = comparator.compare(string, s.substring(0, Math.min(s.length(), string.length())));
       //            System.out.println("c "+c);
       //            System.out.println("c2 "+c2);
-      if ((mid == 1 || c < 0) && c2 == 0) return mid;
+      if ((mid == 1 || c != 0) && c2 == 0) return mid;
       else if (c > 0) return first(dictionary, (mid + 1), high, string);
       else return first(dictionary, low, (mid - 1), string);
     }
@@ -62,11 +62,11 @@ public class BinarySearch {
       }
       int c2 =
           comparator.compare(
-              "\"",
+              string,
               dictionary.idToString(mid, TripleComponentRole.OBJECT).toString().subSequence(0, 1));
       //            System.out.println("c"+c);
       //            System.out.println("c2 "+c2);
-      if ((mid == n || c < 0) && c2 == 0) return mid;
+      if ((mid == n || c != 0) && c2 == 0) return mid;
       else if (c < 0) return last(dictionary, low, (mid - 1), n, string);
       else return last(dictionary, (mid + 1), high, n, string);
     }

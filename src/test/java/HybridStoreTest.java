@@ -7,9 +7,7 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -35,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -319,14 +318,14 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
                     hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
             );
-            store.setThreshold(1);
+            //store.setThreshold(1);
             SailRepository hybridStore = new SailRepository(store);
 
 
@@ -336,14 +335,27 @@ public class HybridStoreTest {
                 IRI ali = vf.createIRI(ex, "Ali");
                 connection.add(ali, RDF.TYPE, FOAF.PERSON);
                 IRI dennis = vf.createIRI(ex, "Dennis");
-                connection.add(dennis, RDF.TYPE, FOAF.PERSON);
-                Thread.sleep(2000);
+                connection.add(dennis, vf.createIRI(ex,"has"), ali);
+                //Thread.sleep(2000);
                 // query everything of type PERSON
-                List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
-                for (Statement s:statements) {
-                    System.out.println(s);
+                GraphQuery tupleQuery = connection.prepareGraphQuery(String.join("\n", "",
+                        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+                        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
+                        "PREFIX ex: <http://example.com/>",
+                        "construct where {",
+                        "	ex:Guo rdf:type ?o .",
+                        "	?s rdf:type ?o .",
+
+                        "}"));
+
+                GraphQueryResult evaluate = tupleQuery.evaluate();
+                int count = 0;
+                while (evaluate.hasNext())
+                {
+                    count++;
+                    System.out.println(evaluate.next());
                 }
-                assertEquals(3, statements.size());
+                assertEquals(2, count);
 //                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
 //                int count = 0;
 //                while (sts.hasNext()){

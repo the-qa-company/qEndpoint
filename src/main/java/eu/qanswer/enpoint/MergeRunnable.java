@@ -1,12 +1,15 @@
 package eu.qanswer.enpoint;
 
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
@@ -31,7 +34,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class MergeRunnable implements Runnable {
 
@@ -58,8 +63,7 @@ public class MergeRunnable implements Runnable {
         try {
             String rdfInput = locationHdt+"temp.nt";
             String hdtOutput = locationHdt+"temp.hdt";
-            // diff hdt indexes...
-            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
+
 
             // dump all triples in native store
             writeTempFile(nativeStoreConnection,rdfInput);
@@ -67,6 +71,10 @@ public class MergeRunnable implements Runnable {
             createHDTDump(rdfInput,hdtOutput);
             // cat the original index and the temp index
             catIndexes(hdtIndex,hdtOutput);
+
+            // diff hdt indexes...
+            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
+
             // empty native store
             emptyNativeStore();
 
@@ -75,7 +83,6 @@ public class MergeRunnable implements Runnable {
             Files.deleteIfExists(Paths.get(locationHdt+"triples-delete.arr"));
 
             this.hdt = HDTManager.mapIndexedHDT(hdtIndex,new HDTSpecification());
-//            hdt.search("","","").forEachRemaining(System.out::println);
             //hdt.getTriples().searchAll().forEachRemaining(System.out::println);
             this.hybridStore.setTripleSource(new HybridTripleSource(hdt,this.hybridStore));
             this.hybridStore.setQueryPreparer(new HybridQueryPreparer(this.hybridStore));
@@ -174,12 +181,11 @@ public class MergeRunnable implements Runnable {
             out = new FileOutputStream(file);
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             RepositoryResult<Statement> repositoryResult =
-                    connection.getStatements(null,null,null,false,(Resource)null);
+                    connection.getStatements(null,null,null,false);
             writer.startRDF();
             IRIConverter iriConverter = new IRIConverter(this.hdt);
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
-
                 Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
                   iriConverter.getIRIHdtSubj(stm.getSubject()),
                   iriConverter.getIRIHdtPred(stm.getPredicate()),
@@ -194,6 +200,6 @@ public class MergeRunnable implements Runnable {
         }
     }
     private void emptyNativeStore(){
-        nativeStoreConnection.clear((Resource)null);
+        nativeStoreConnection.clear();
     }
 }

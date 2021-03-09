@@ -108,6 +108,8 @@ public class HDTConverter {
     if (value == null) {
       object = 0;
     }else if( !(value instanceof SimpleIRIHDT)){
+      String str = value.toString();
+
       object = hdt.getDictionary().stringToId(value.toString(), TripleComponentRole.OBJECT);
     }else {
       long id = ((SimpleIRIHDT) value).getId();

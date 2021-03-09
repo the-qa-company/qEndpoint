@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TestNativeStore {
 
@@ -32,14 +34,20 @@ public class TestNativeStore {
 
     public static void main(String[] args) {
 
-        NativeStore nativeStoreA = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdtsparqlendpoint/native-store/A"),"spoc");
-        SailRepository repository = new SailRepository(nativeStoreA);
-        RepositoryConnection connection = repository.getConnection();
-        connection.setNamespace("","http://example.com/");
-        ValueFactory vf = connection.getValueFactory();
-        String ex = "";
-        IRI ali = vf.createIRI(ex, "Ali");
-        connection.add(ali, RDF.TYPE, FOAF.PERSON);
+        String str = "\"1\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+
+        Pattern pattern = Pattern.compile(".*\\^<.*>$");
+        Matcher matcher = pattern.matcher(str);
+        if(matcher.matches())
+            System.out.println("matched!");
+//        NativeStore nativeStoreA = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdtsparqlendpoint/native-store/A"),"spoc");
+//        SailRepository repository = new SailRepository(nativeStoreA);
+//        RepositoryConnection connection = repository.getConnection();
+//        connection.setNamespace("","http://example.com/");
+//        ValueFactory vf = connection.getValueFactory();
+//        String ex = "";
+//        IRI ali = vf.createIRI(ex, "Ali");
+//        connection.add(ali, RDF.TYPE, FOAF.PERSON);
 //        writeTempFile(repository.getConnection(),"/Users/alyhdr/Desktop/index.nt");
 //        String rdfInput = "/Users/alyhdr/Desktop/index.nt";
 //        String hdtOutput = "/Users/alyhdr/Desktop/index.hdt";

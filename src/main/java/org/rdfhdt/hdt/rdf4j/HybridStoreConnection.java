@@ -50,7 +50,7 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void begin() throws SailException {
     super.begin();
-    long count = this.nativeStoreConnection.size((Resource)null);
+    long count = this.nativeStoreConnection.size();
     System.err.println("--------------: "+count);
     // Merge only if threshold in native store exceeded and not merging with hdt
     if(count >= hybridStore.getThreshold() && !hybridStore.isMerging()){
