@@ -26,9 +26,9 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
   private EvaluationStatistics evaluationStatistics;
   private HybridTripleSource tripleSource;
   private HybridStore hybridStore;
-  public HybridQueryPreparer(HybridStore hybridStore) {
-    super(hybridStore.getTripleSource());
-    this.tripleSource = hybridStore.getTripleSource();
+  public HybridQueryPreparer(HybridStore hybridStore,HybridTripleSource tripleSource) {
+    super(tripleSource);
+    this.tripleSource = tripleSource;
     this.hybridStore = hybridStore;
     hdt = tripleSource.getHdt();
 

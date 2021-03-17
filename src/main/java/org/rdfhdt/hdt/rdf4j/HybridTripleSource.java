@@ -46,49 +46,43 @@ public class HybridTripleSource implements TripleSource {
   private SailConnection connA;
   private SailConnection connB;
   private SailConnection connCurr;
+  private long numberOfCurrentTriples;
   public HybridTripleSource(HDT hdt, HybridStore hybridStore) {
     this.hybridStore = hybridStore;
     this.hdt = hdt;
     this.hdtDictionaryMapping = new HDTDictionaryMapping(hdt);
     this.factory = new AbstractValueFactoryHDT(hdt);
-    this.startLiteral =
-        BinarySearch.first(
-            hdt.getDictionary(),
-            hdt.getDictionary().getNshared() + 1,
-            hdt.getDictionary().getNobjects(),
-            "\"");
-    this.endLiteral =
-        BinarySearch.last(
-            hdt.getDictionary(),
-            hdt.getDictionary().getNshared() + 1,
-            hdt.getDictionary().getNobjects(),
-            hdt.getDictionary().getNobjects(),
-            "\"");
+    this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
+    this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
+    this.startBlank = hybridStore.getHdtProps().getStartBlank();
+    this.endBlank = hybridStore.getHdtProps().getEndBlank();
+    this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
     this.hdtConverter = new HDTConverter(hdt);
     this.iriConverter = new IRIConverter(hdt);
     this.tempFactory = new MemValueFactory();
 
-    this.startBlank = BinarySearch.first(
-            hdt.getDictionary(),
-            hdt.getDictionary().getNshared() + 1,
-            hdt.getDictionary().getNobjects(),
-            "_");
-    this.endBlank = BinarySearch.last(
-            hdt.getDictionary(),
-            hdt.getDictionary().getNshared() + 1,
-            hdt.getDictionary().getNobjects(),
-            hdt.getDictionary().getNobjects(),
-            "_");
   }
 
   public ValueFactory getTempFactory() {
     return tempFactory;
   }
-
+  private void initHDTIndex(){
+    this.hdt = this.hybridStore.getHdt();
+    this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
+    this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
+    this.startBlank = hybridStore.getHdtProps().getStartBlank();
+    this.endBlank = hybridStore.getHdtProps().getEndBlank();
+    this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
+  }
   @Override
   public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(
       Resource resource, IRI iri, Value value, Resource... resources)
       throws QueryEvaluationException {
+
+    // check if the index changed
+    if(numberOfCurrentTriples != this.hybridStore.getHdt().getTriples().getNumberOfElements()){
+      initHDTIndex();
+    }
 
     CloseableIteration<? extends Statement, SailException> repositoryResult = null;
 
@@ -100,6 +94,7 @@ public class HybridTripleSource implements TripleSource {
     ArrayList<SailConnection> connections = new ArrayList();
     connections.add(connA);
     connections.add(connB);
+
     if(hybridStore.isMerging()){
       // query both native stores
       CloseableIteration<? extends Statement, SailException> repositoryResult1 =
@@ -164,6 +159,10 @@ public class HybridTripleSource implements TripleSource {
         tripleWithDeleteIter.remove();
       }
     };
+  }
+
+  public void setHdt(HDT hdt) {
+    this.hdt = hdt;
   }
 
   @Override

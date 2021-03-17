@@ -44,10 +44,14 @@ public class HybridStoreTest {
     @Test
     public void testInstantiate() {
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-
-            HybridStore hybridStore = new HybridStore(nativeA,nativeB, Utility.createTempHdtIndex(tempDir, true,false),10);
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            HybridStore hybridStore = new HybridStore(
+                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+            );
             hybridStore.shutDown();
 
         } catch (IOException e) {
@@ -58,10 +62,14 @@ public class HybridStoreTest {
     public void testGetConneciton() {
 
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            HybridStore hybridStore = new HybridStore(nativeA,nativeB, Utility.createTempHdtIndex(tempDir, true,false),10);
-
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            HybridStore hybridStore = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+            );
             try (SailConnection connection = hybridStore.getConnection()) {
             }
             hybridStore.shutDown();
@@ -72,9 +80,16 @@ public class HybridStoreTest {
     @Test
     public void testSailRepository() {
         try {
-            NativeStore nativeA = new NativeStore(tempDir.newFolder("native-a"), "spoc,posc");
-            NativeStore nativeB = new NativeStore(tempDir.newFolder("native-b"), "spoc,posc");
-            SailRepository hybridStore = new SailRepository(new HybridStore(nativeA,nativeB, Utility.createTempHdtIndex(tempDir, true,false),10));
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            SailRepository hybridStore = new SailRepository(
+                    new HybridStore(
+                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    )
+            );
             hybridStore.shutDown();
         } catch (IOException e) {
             e.printStackTrace();
@@ -245,28 +260,27 @@ public class HybridStoreTest {
             store.setThreshold(999);
             SailRepository hybridStore = new SailRepository(store);
 
-            try (RepositoryConnection connection = hybridStore.getConnection()) {
-
-                for (int i = 0; i < 5; i++) {
-                    System.out.println("Merging phase: "+(i+1));
-                    int count = 1000;
-                    connection.begin();
-                    for (int j = i*count; j < (i+1)*count; j++) {
-                        connection.add(RDFS.RESOURCE, RDFS.LABEL, connection.getValueFactory().createLiteral(j));
-                    }
-                    connection.commit();
-                    System.out.println("Count before merge:"+connection.size());
-                    assertEquals(count*(i+1),connection.size());
-                    Thread.sleep(4000);
-                    System.out.println("Count after merge:"+connection.size());
-                    assertEquals(count*(i+1),connection.size());
+            RepositoryConnection connection = hybridStore.getConnection();
+            for (int i = 0; i < 5; i++) {
+                System.out.println("Merging phase: "+(i+1));
+                int count = 1000;
+                connection = hybridStore.getConnection();
+                connection.begin();
+                for (int j = i*count; j < (i+1)*count; j++) {
+                    connection.add(RDFS.RESOURCE, RDFS.LABEL, connection.getValueFactory().createLiteral(j));
                 }
-                assertEquals(5000, connection.size());
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
-                Files.deleteIfExists(Paths.get("index.nt"));
-
+                connection.commit();
+                System.out.println("Count before merge:"+connection.size());
+                assertEquals(count*(i+1),connection.size());
+                Thread.sleep(4000);
+                System.out.println("Count after merge:"+connection.size());
+                assertEquals(count*(i+1),connection.size());
             }
+            assertEquals(5000, connection.size());
+            Files.deleteIfExists(Paths.get("index.hdt"));
+            Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+            Files.deleteIfExists(Paths.get("index.nt"));
+
         } catch (Exception e) {
             e.printStackTrace();
             fail("Exception found !");

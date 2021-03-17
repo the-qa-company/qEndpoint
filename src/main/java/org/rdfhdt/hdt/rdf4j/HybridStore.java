@@ -16,13 +16,14 @@ import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.rdf4j.utility.HDTProps;
 
 import java.io.File;
 import java.io.IOException;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
     private HDT hdt;
-    private HybridTripleSource tripleSource;
+
     private NativeStore nativeStoreA;
     private NativeStore nativeStoreB;
     private NativeStore currentStore;
@@ -34,20 +35,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public boolean isMerging = false;
     private String locationHdt;
-    private HybridQueryPreparer queryPreparer;
+
     private int threshold;
 
     private boolean inMemDeletes;
+
+    private HDTProps hdtProps;
+
     ValueFactory valueFactory;
-    public HybridStore(NativeStore nativeStoreA,NativeStore nativeStoreB,HDT hdt,int threshold){
-        this.hdt = hdt;
-        this.nativeStoreA = nativeStoreA;
-        this.nativeStoreB = nativeStoreB;
-        this.currentStore = nativeStoreA;
-        this.threshold = threshold;
-        this.tripleSource = new HybridTripleSource(hdt,this);
-        this.repo = new SailRepository(currentStore);
-    }
 
     public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
 
@@ -66,11 +61,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             this.currentStore = nativeStoreA;
         this.currentStore.init();
         this.threshold = 100000;
-        this.tripleSource = new HybridTripleSource(hdt,this);
+
         this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
-        this.queryPreparer = new HybridQueryPreparer(this);
+
         this.inMemDeletes = inMemDeletes;
+        this.hdtProps = new HDTProps(this.hdt);
         initDeleteArray();
     }
 
@@ -109,9 +105,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdt = hdt;
     }
 
-    public HybridTripleSource getTripleSource() {
-        return tripleSource;
-    }
 
     @Override
     protected void shutDownInternal() throws SailException {
@@ -167,14 +160,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public SailConnection getConnectionNative(){
         return this.currentStore.getConnection();
     }
-    public HybridQueryPreparer getQueryPreparer() {
-        return queryPreparer;
-    }
-
-    public void setQueryPreparer(HybridQueryPreparer queryPreparer) {
-        this.queryPreparer = queryPreparer;
-    }
-
 
     public boolean isMerging() {
         return isMerging;
@@ -187,11 +172,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         return nativeStoreB;
     }
 
-
-    public void setTripleSource(HybridTripleSource tripleSource) {
-        this.tripleSource = tripleSource;
+    public HDTProps getHdtProps() {
+        return hdtProps;
     }
 
+    public void setHdtProps(HDTProps hdtProps) {
+        this.hdtProps = hdtProps;
+    }
 
     public BitArrayDisk getDeleteBitMap() {
         return deleteBitMap;

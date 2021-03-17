@@ -23,6 +23,7 @@ import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HybridQueryPreparer;
 import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
+import org.rdfhdt.hdt.rdf4j.utility.HDTProps;
 import org.rdfhdt.hdt.rdf4j.utility.IRIConverter;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.util.StopWatch;
@@ -64,6 +65,9 @@ public class MergeRunnable implements Runnable {
             String rdfInput = locationHdt+"temp.nt";
             String hdtOutput = locationHdt+"temp.hdt";
 
+            // diff hdt indexes...
+            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
+
 
             // dump all triples in native store
             writeTempFile(nativeStoreConnection,rdfInput);
@@ -71,10 +75,6 @@ public class MergeRunnable implements Runnable {
             createHDTDump(rdfInput,hdtOutput);
             // cat the original index and the temp index
             catIndexes(hdtIndex,hdtOutput);
-
-            // diff hdt indexes...
-            diffIndexes(hdtIndex,locationHdt+"triples-delete.arr");
-
             // empty native store
             emptyNativeStore();
 
@@ -82,10 +82,11 @@ public class MergeRunnable implements Runnable {
             Files.delete(Paths.get(hdtOutput));
             Files.deleteIfExists(Paths.get(locationHdt+"triples-delete.arr"));
 
+
             this.hdt = HDTManager.mapIndexedHDT(hdtIndex,new HDTSpecification());
-            //hdt.getTriples().searchAll().forEachRemaining(System.out::println);
-            this.hybridStore.setTripleSource(new HybridTripleSource(hdt,this.hybridStore));
-            this.hybridStore.setQueryPreparer(new HybridQueryPreparer(this.hybridStore));
+
+
+            this.hybridStore.setHdtProps(new HDTProps(hdt));
             this.hybridStore.setHdt(this.hdt);
             this.hybridStore.initDeleteArray();
             this.hybridStore.isMerging = false;
@@ -98,8 +99,11 @@ public class MergeRunnable implements Runnable {
     private void diffIndexes(String hdtInput1,String bitArray) {
 
         String hdtOutput = locationHdt+"new_index.hdt";
+        File filex = new File(hdtOutput);
+        File theDir = new File(filex.getAbsolutePath() + "_tmp");
+        theDir.mkdirs();
         try {
-            HDT hdt = HDTManager.diffHDTBit(hdtInput1,bitArray,new HDTSpecification(),null);
+            HDT hdt = HDTManager.diffHDTBit(theDir.getAbsolutePath(),hdtInput1,bitArray,new HDTSpecification(),null);
             hdt.saveToHDT(hdtOutput,null);
             hdt = HDTManager.indexedHDT(hdt,null);
 

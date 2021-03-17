@@ -36,6 +36,9 @@ public class HybridStoreConnection extends SailSourceConnection {
   SailConnection nativeStoreConnection;
   SailConnection connA;
   SailConnection connB;
+  private HybridTripleSource tripleSource;
+  private HybridQueryPreparer queryPreparer;
+
   private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
   public HybridStoreConnection(HybridStore hybridStore) {
     super(hybridStore, hybridStore.getCurrentStore().getSailStore(),new StrictEvaluationStrategyFactory());
@@ -45,6 +48,8 @@ public class HybridStoreConnection extends SailSourceConnection {
     this.nativeStoreConnection = hybridStore.getConnectionNative();
     this.connA = hybridStore.getNativeStoreA().getConnection();
     this.connB = hybridStore.getNativeStoreB().getConnection();
+    this.tripleSource = new HybridTripleSource(hybridStore.getHdt(),hybridStore);
+    this.queryPreparer = new HybridQueryPreparer(hybridStore,tripleSource);
   }
 
   @Override
@@ -54,15 +59,16 @@ public class HybridStoreConnection extends SailSourceConnection {
     System.err.println("--------------: "+count);
     // Merge only if threshold in native store exceeded and not merging with hdt
     if(count >= hybridStore.getThreshold() && !hybridStore.isMerging()){
-      System.out.println("Merging...");
+      System.out.println("Merging..."+count);
       hybridStore.makeMerge();
     }
     this.nativeStoreConnection.begin();
+    this.connA.begin();
+    this.connB.begin();
   }
   // for SPARQL queries
   @Override
   protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
-    HybridQueryPreparer queryPreparer = hybridStore.getQueryPreparer();
     HybridTripleSource tripleSource = queryPreparer.getTripleSource();
     tripleSource.setConnA(this.connA);
     tripleSource.setConnB(this.connB);
@@ -73,7 +79,6 @@ public class HybridStoreConnection extends SailSourceConnection {
   // USED from connection get api not SPARQL
   @Override
   protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
-    HybridTripleSource tripleSource = hybridStore.getTripleSource();
     tripleSource.setConnA(this.connA);
     tripleSource.setConnB(this.connB);
     tripleSource.setConnCurr(this.nativeStoreConnection);
@@ -157,6 +162,8 @@ public class HybridStoreConnection extends SailSourceConnection {
   protected void commitInternal() throws SailException {
     super.commitInternal();
     this.nativeStoreConnection.commit();
+    this.connA.commit();
+    this.connB.commit();
   }
 
   @Override
@@ -217,7 +224,12 @@ public class HybridStoreConnection extends SailSourceConnection {
     long sizeHdt = this.hybridStore.getHdt().getTriples().getNumberOfElements();
 
     long sizeDeleted = this.hybridStore.getDeleteBitMap().countOnes();
-
+    System.out.println("---------------------------");
+    System.out.println("Size native A:"+sizeNativeA);
+    System.out.println("Size native B:"+sizeNativeB);
+    System.out.println("Size deleted:"+sizeDeleted);
+    System.out.println("Size size HDT:"+sizeHdt);
+    System.out.println("---------------------------");
     return sizeHdt + sizeNativeA + sizeNativeB - sizeDeleted;
   }
 
