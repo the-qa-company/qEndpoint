@@ -1,5 +1,29 @@
-target/
-*.iml
-.idea/
-hdt-store/
-native-store/
+hdt-qs-backend/target/
+hdt-qs-backend/*.iml
+hdt-qs-backend/.idea/
+hdt-qs-backend/hdt-store/
+hdt-qs-backend/native-store/
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+hdt-qs-frontend/node_modules
+hdt-qs-frontend/.pnp
+hdt-qs-frontend/.pnp.js
+
+# testing
+hdt-qs-frontend/coverage
+
+# production
+hdt-qs-frontend/build
+
+# misc
+hdt-qs-frontend/.DS_Store
+hdt-qs-frontend/.env.local
+hdt-qs-frontend/.env.development.local
+hdt-qs-frontend/.env.test.local
+hdt-qs-frontend/.env.production.local
+
+hdt-qs-frontend/npm-debug.log*
+hdt-qs-frontend/yarn-debug.log*
+hdt-qs-frontend/yarn-error.log*

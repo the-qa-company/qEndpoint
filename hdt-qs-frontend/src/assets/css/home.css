@@ -1,0 +1,89 @@
+.main-div {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: rgb(156, 202, 245);
+}
+
+.images-horizontal {
+    display: block;
+}
+.combined {
+    display: flex;
+    flex-wrap: wrap;
+}
+.image-item {
+    display: block;
+    padding: 10px;
+}
+
+.inline {
+    display: inline;
+}
+
+
+.sparql-code {
+    display: block;
+    margin-left: 20%;
+    margin-right: 20%;
+    margin-top: 2%;
+    margin-bottom: 2%;
+    font-size: large;
+    height: 300px;
+    background-color: aliceblue;
+}
+.button {
+    background-color: #333;
+    border: none;
+    color: white;
+    padding: 20px;
+    padding-right: 50px;
+    padding-left: 50px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    font-size: x-large;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 2%;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+
+.title p{
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    font-size: xx-large;
+    font-weight: bold;
+    color: rgb(65, 62, 62);
+}
+
+.footer {
+    background-color: #333;
+    padding-left: 100px;
+    padding-right: 100px;
+    overflow: hidden;
+}
+
+.center {
+    text-align: center;
+}
+
+.big-font {
+    font-size: x-large;
+}
+
+.container{
+    margin-left: 500px;
+    margin-right: 500px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+.container:hover{
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+.container-inside {
+    padding: 50px;
+}
