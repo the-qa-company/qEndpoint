@@ -134,6 +134,9 @@ public class HybridTripleSource implements TripleSource {
     if(subject != -1 && predicate != -1 && object != -1) {
       TripleID t = new TripleID(subject, predicate, object);
       iterator = hdt.getTriples().search(t);
+//      while (iterator.hasNext()){
+//        System.out.println(iterator.next());
+//      }
     }else{ // no need to search over hdt
       iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
     }

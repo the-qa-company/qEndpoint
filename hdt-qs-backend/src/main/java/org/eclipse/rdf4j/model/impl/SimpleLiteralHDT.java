@@ -95,11 +95,11 @@ public class SimpleLiteralHDT implements Literal {
     if (label == null) {
 //       System.out.println("Parse lietral "+hdtID + " -- " + hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString());
       try {
-        String literal =
-                hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString();
+        String literal = hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString();
         Literal l = LiteralParser.parseLiteral(literal, valueFactory);
         label = l.getLabel();
 //        System.out.println("Parsed literal "+label);
+//        System.out.println("Label from HDT:"+literal);
         if (l.getLanguage().isPresent()) {
           language = l.getLanguage().get();
         }

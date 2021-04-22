@@ -35,8 +35,8 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
 
     public HybridSPARQL11QueryComplianceTest(String displayName, String testURI, String name, String queryFileURL,
                                              String resultFileURL, Dataset dataset, boolean ordered) {
-        super(displayName, testURI, name, queryFileURL, resultFileURL, dataset, ordered);
-        //setUpHDT(dataset);
+        super(displayName, testURI, name, queryFileURL, resultFileURL, null, ordered);
+        setUpHDT(dataset);
     }
 
     @Rule
@@ -50,7 +50,7 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
         nativeStore = tempDir.newFolder();
         hdtStore = tempDir.newFolder();
         if(this.hdt == null)
-        hdt = Utility.createTempHdtIndex(tempDir, true,false);
+            hdt = Utility.createTempHdtIndex(tempDir, true,false);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
         hybridStore = new HybridStore(
@@ -66,7 +66,7 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        this.hybridStore.makeMerge();
+//        this.hybridStore.makeMerge();
 //        RepositoryConnection connection = this.getDataRepository().getConnection();
 //        connection.clear();
 //        connection.close();

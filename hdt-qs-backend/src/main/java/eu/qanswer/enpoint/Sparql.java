@@ -145,11 +145,15 @@ public class Sparql {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
                 logger.error("This exception was caught ["+q+"]");
+                return "{\"timeout\":"+timeout+"}";
+                //q.printStackTrace();
             }
             finally {
                 connection.close();
             }
-            return out.toString("UTF8");
+            byte b [] = out.toByteArray();
+            out.writeTo(new FileOutputStream(new File("result.json")));
+            return "good\n";
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
             BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
             if (query.evaluate() == true) {

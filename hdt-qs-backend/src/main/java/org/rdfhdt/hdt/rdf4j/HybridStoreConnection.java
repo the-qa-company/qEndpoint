@@ -1,7 +1,6 @@
 package org.rdfhdt.hdt.rdf4j;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
-import eu.qanswer.enpoint.Sparql;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.common.iteration.Iterations;

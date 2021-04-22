@@ -34,6 +34,7 @@ public class Utility {
             String baseURI = inputFile.getAbsolutePath();
             RDFNotation notation = RDFNotation.guess(rdfInput);
             HDTSpecification spec = new HDTSpecification();
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(),baseURI,notation,spec,null);
             return HDTManager.indexedHDT(hdt,null);
         } catch (IOException e) {

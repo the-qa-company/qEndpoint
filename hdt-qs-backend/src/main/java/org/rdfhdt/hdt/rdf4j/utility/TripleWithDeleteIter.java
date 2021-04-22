@@ -48,6 +48,7 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
             while (iterator.hasNext()) {
                 TripleID tripleID = iterator.next();
                 Statement stm = new HDTStatement(hdt, tripleID, tripleSource);
+                String obj = stm.getObject().toString();
                 if (!tripleSource.getHybridStore().getDeleteBitMap().access(tripleID.getIndex() - 1)) {
                     next = stm;
                     return true;

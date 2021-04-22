@@ -1,5 +1,8 @@
 package eu.qanswer.enpoint;
 
+import org.eclipse.rdf4j.http.client.RDF4JProtocolSession;
+import org.eclipse.rdf4j.http.client.SharedHttpClientSessionManager;
+import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -9,6 +12,7 @@ import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -27,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,23 +40,22 @@ public class TestNativeStore {
     private static final Logger logger = LoggerFactory.getLogger(TestNativeStore.class);
 
     public static void main(String[] args) {
+        TestNativeStore nativeStore = new TestNativeStore();
+        nativeStore.createProtocolSession();
+    }
+    private String testHeader = "X-testing-header";
+    private String testValue = "foobar";
 
-        BitArrayDisk arrayDisk = new BitArrayDisk(0,"/Users/alyhdr/Desktop/qa-company/hdtsparqlendpoint/hdt-store/arr.bit");
-        System.out.println(arrayDisk.access(100));
+    private String serverURL = "http://localhost:1234/hdt-qs-server";
+    private String repositoryID = "test";
 
-//        SPARQLRepository repository = new SPARQLRepository("https://query.wikidata.org/sparql");
-//        IRI s = Values.iri("http://www.wikidata.org/entity/Q30600575");
-//        IRI p = Values.iri("http://www.wikidata.org/prop/direct/P31");
-//        IRI o = Values.iri("http://www.wikidata.org/entity/Q146");
-//
-//        RepositoryResult<Statement> statements = repository.getConnection().getStatements(null, p, o);
-//        int count = 0;
-//        while (statements.hasNext()) {
-//            System.out.println(statements.next());
-//            count++;
-//        }
-//        System.out.println(count);
-
+    RDF4JProtocolSession createProtocolSession() {
+        RDF4JProtocolSession session = new SharedHttpClientSessionManager().createRDF4JProtocolSession(serverURL);
+        session.setRepository(Protocol.getRepositoryLocation(serverURL, repositoryID));
+        HashMap<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put(testHeader, testValue);
+        session.setAdditionalHttpHeaders(additionalHeaders);
+        return session;
     }
 
 }
