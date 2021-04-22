@@ -296,15 +296,15 @@ public class Sparql {
         }
         return null;
     }
-    public String loadFile(InputStream input){
+    public String loadFile(InputStream input, String filename){
         try {
             Files.deleteIfExists(Paths.get(locationHdt+"index.hdt"));
             Files.deleteIfExists(Paths.get(locationHdt+"index.hdt.index.v1-1"));
 
-            String rdfInput = locationHdt+"dump.nt";
+            String rdfInput = locationHdt+filename;
             String hdtOutput = locationHdt+"index.hdt";
 
-            Files.copy(input, Paths.get(locationHdt+"dump.nt"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(input, Paths.get(locationHdt+filename), StandardCopyOption.REPLACE_EXISTING);
             RDFNotation notation = RDFNotation.guess(rdfInput);
             String baseURI = "file://"+rdfInput;
             HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , new HDTSpecification(), null);

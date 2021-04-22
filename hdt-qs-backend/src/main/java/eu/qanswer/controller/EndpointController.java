@@ -145,8 +145,9 @@ public class EndpointController {
             Principal principal) {
 
         try {
+            logger.info("Tryind to index "+file.getOriginalFilename());
             InputStream inputStream = file.getInputStream();
-            String s = sparql.loadFile(inputStream);
+            String s = sparql.loadFile(inputStream, file.getOriginalFilename());
             if(s.equals("error"))
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
             return ResponseEntity.status(HttpStatus.OK).body(s);
