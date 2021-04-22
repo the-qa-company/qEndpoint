@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +58,11 @@ public class EndpointController {
                 return ResponseEntity.status(HttpStatus.OK)
                         .header("Content-Type", "application/x-binary-rdf-results-table")
                         .body(sparql.executeBinary(query, timeout));
+            }
+            if (format.equals("turtle") || acceptHeader.contains("text/turtle")) {
+                return ResponseEntity.status(HttpStatus.OK)
+                        .header("Content-Type", "application/sparql-results+json")
+                        .body(sparql.executeTurtle(query, timeout));
             }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
 
@@ -130,6 +138,22 @@ public class EndpointController {
                     .body("cleared\n");
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
+    }
+    @PostMapping(value = "/load")
+    public ResponseEntity<String> clearData(
+            @RequestParam(value = "file") final MultipartFile file,
+            Principal principal) {
+
+        try {
+            InputStream inputStream = file.getInputStream();
+            String s = sparql.loadFile(inputStream);
+            if(s.equals("error"))
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
+            return ResponseEntity.status(HttpStatus.OK).body(s);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
     }
 
 }

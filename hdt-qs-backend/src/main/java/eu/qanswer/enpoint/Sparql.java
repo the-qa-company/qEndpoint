@@ -17,15 +17,13 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailUpdate;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
-import org.eclipse.rdf4j.rio.ParserConfig;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParser;
-import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.*;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.RDFNotation;
+import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
@@ -38,6 +36,7 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -151,9 +150,7 @@ public class Sparql {
             finally {
                 connection.close();
             }
-            byte b [] = out.toByteArray();
-            out.writeTo(new FileOutputStream(new File("result.json")));
-            return "good\n";
+            return new String(out.toByteArray());
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
             BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
             if (query.evaluate() == true) {
@@ -278,6 +275,50 @@ public class Sparql {
             return "OK";
         }
         return null;
+    }
+    public String executeTurtle(String sparqlQuery, int timeout) throws Exception {
+        logger.info("Turtle " + sparqlQuery);
+        System.out.println("TURTLE !!!!!!!!!!!!");
+        initializeHybridStore(locationHdt);
+        ParsedQuery parsedQuery =
+                QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+        System.out.println(parsedQuery.getClass());
+        RepositoryConnection connection = repository.getConnection();
+        if (parsedQuery instanceof ParsedGraphQuery) {
+            GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            RDFHandler turtleWriter = Rio.createWriter(RDFFormat.TURTLE, out);
+            query.evaluate(turtleWriter);
+            query.setMaxExecutionTime(timeout);
+            return out.toString("UTF8");
+        } else {
+            System.out.println("Not knowledgebase yet: query is not construct");
+        }
+        return null;
+    }
+    public String loadFile(InputStream input){
+        try {
+            Files.deleteIfExists(Paths.get(locationHdt+"index.hdt"));
+            Files.deleteIfExists(Paths.get(locationHdt+"index.hdt.index.v1-1"));
+
+            String rdfInput = locationHdt+"dump.nt";
+            String hdtOutput = locationHdt+"index.hdt";
+
+            Files.copy(input, Paths.get(locationHdt+"dump.nt"), StandardCopyOption.REPLACE_EXISTING);
+            RDFNotation notation = RDFNotation.guess(rdfInput);
+            String baseURI = "file://"+rdfInput;
+            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , new HDTSpecification(), null);
+            hdt.saveToHDT(hdtOutput,null);
+            initializeHybridStore(locationHdt);
+            return "File was loaded successfully...\n";
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParserException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "error";
     }
     public void clearAllData(){
         try {
