@@ -74,8 +74,7 @@ public class HDTConverter {
           } else if (position == SimpleIRIHDT.SUBJECT_POS) {
             String translate =
                     hdt.getDictionary()
-                            .idToString(
-                                    id,
+                            .idToString(id,
                                     TripleComponentRole.SUBJECT)
                             .toString();
             long translatedId =

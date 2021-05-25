@@ -48,13 +48,32 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
         try {
             HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+            //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 
             this.hdt = HDTManager.mapIndexedHDT(locationHdt+"index.hdt",spec);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        this.nativeStoreA = new NativeStore(new File(locationNative+"A"),"spoc,posc,cosp");
+        this.nativeStoreB = new NativeStore(new File(locationNative+"B"),"spoc,posc,cosp");
+        this.valueFactory = new AbstractValueFactoryHDT(hdt);
+        if(switchStore)
+            this.currentStore = nativeStoreB;
+        else
+            this.currentStore = nativeStoreA;
+        this.currentStore.init();
+        this.threshold = 100000;
+
+        this.repo = new SailRepository(currentStore);
+        this.locationHdt = locationHdt;
+
+        this.inMemDeletes = inMemDeletes;
+        this.hdtProps = new HDTProps(this.hdt);
+        initDeleteArray();
+    }
+    public HybridStore(HDT hdt,String locationNative,boolean inMemDeletes){
+        this.hdt = hdt;
         this.nativeStoreA = new NativeStore(new File(locationNative+"A"),"spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(locationNative+"B"),"spoc,posc,cosp");
         this.valueFactory = new AbstractValueFactoryHDT(hdt);

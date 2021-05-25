@@ -133,14 +133,21 @@ public class IRIConverter {
                 long position = ((SimpleIRIHDT) pred).getPostion();
                 if (id != -1) {
                     String prefix = "http://hdt.org/";
-                    if (position == SimpleIRIHDT.SHARED_POS) {
-                        prefix += "SO";
-                    } else if(position == SimpleIRIHDT.SUBJECT_POS){
-                        prefix += "S";
-                    }else if (position == SimpleIRIHDT.OBJECT_POS) {
-                        prefix += "O";
-                    } else if(position == SimpleIRIHDT.PREDICATE_POS){
-                        prefix += "P";
+                    prefix += "P";
+                    if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
+                        String translate =
+                                hdt.getDictionary()
+                                        .idToString(id,
+                                                TripleComponentRole.SUBJECT)
+                                        .toString();
+                        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
+                    } else if (position == SimpleIRIHDT.OBJECT_POS) {
+                        String translate =
+                                hdt.getDictionary()
+                                        .idToString(id,
+                                                TripleComponentRole.OBJECT)
+                                        .toString();
+                        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
                     }
                     String predIdentifier = prefix + id;
                     newPred = this.tempFactory.createIRI(predIdentifier);

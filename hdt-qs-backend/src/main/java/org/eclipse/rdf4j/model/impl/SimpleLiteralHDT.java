@@ -196,6 +196,10 @@ public class SimpleLiteralHDT implements Literal {
     }
   }
 
+  public long getHdtID() {
+    return hdtID;
+  }
+
   public String stringValue() {
     return getLabel();
   }

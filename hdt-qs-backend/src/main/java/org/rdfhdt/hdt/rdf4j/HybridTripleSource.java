@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.rdfhdt.hdt.enums.TripleComponentOrder;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.utility.*;
@@ -134,9 +135,7 @@ public class HybridTripleSource implements TripleSource {
     if(subject != -1 && predicate != -1 && object != -1) {
       TripleID t = new TripleID(subject, predicate, object);
       iterator = hdt.getTriples().search(t);
-//      while (iterator.hasNext()){
-//        System.out.println(iterator.next());
-//      }
+
     }else{ // no need to search over hdt
       iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
     }

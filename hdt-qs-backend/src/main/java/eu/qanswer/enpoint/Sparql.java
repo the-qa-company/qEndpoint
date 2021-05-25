@@ -100,6 +100,8 @@ public class Sparql {
             File hdtFile = new File(location+"index.hdt");
             if(!hdtFile.exists()){
                 File tempRDF = new File(location+"tmp_index.nt");
+                if(!tempRDF.getParentFile().exists())
+                    tempRDF.getParentFile().mkdir();
                 tempRDF.createNewFile();
                 HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(),"uri", RDFNotation.NTRIPLES,spec,null);
                 hdt.saveToHDT(hdtFile.getPath(),null);
