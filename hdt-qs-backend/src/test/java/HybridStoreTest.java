@@ -327,66 +327,66 @@ public class HybridStoreTest {
             fail("Exception found !");
         }
     }
-    @Test
-    public void testMisc(){
-        try {
-            File nativeStore = tempDir.newFolder("native-store");
-            File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
-            assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
-            printHDT(hdt);
-            HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
-            );
-            //store.setThreshold(1);
-            SailRepository hybridStore = new SailRepository(store);
-
-
-            try (RepositoryConnection connection = hybridStore.getConnection()) {
-                ValueFactory vf = connection.getValueFactory();
-                String ex = "http://example.com/";
-                IRI ali = vf.createIRI(ex, "Ali");
-                connection.add(ali, RDF.TYPE, FOAF.PERSON);
-                IRI dennis = vf.createIRI(ex, "Dennis");
-                connection.add(dennis, vf.createIRI(ex,"has"), ali);
-                //Thread.sleep(2000);
-                // query everything of type PERSON
-                GraphQuery tupleQuery = connection.prepareGraphQuery(String.join("\n", "",
-                        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-                        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
-                        "PREFIX ex: <http://example.com/>",
-                        "construct where {",
-                        "	ex:Guo rdf:type ?o .",
-                        "	?s rdf:type ?o .",
-
-                        "}"));
-
-                GraphQueryResult evaluate = tupleQuery.evaluate();
-                int count = 0;
-                while (evaluate.hasNext())
-                {
-                    count++;
-                    System.out.println(evaluate.next());
-                }
-                assertEquals(2, count);
-//                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
+//    @Test
+//    public void testMisc(){
+//        try {
+//            File nativeStore = tempDir.newFolder("native-store");
+//            File hdtStore = tempDir.newFolder("hdt-store");
+//            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+//            assert hdt != null;
+//            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+//            printHDT(hdt);
+//            HybridStore store = new HybridStore(
+//                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+//            );
+//            //store.setThreshold(1);
+//            SailRepository hybridStore = new SailRepository(store);
+//
+//
+//            try (RepositoryConnection connection = hybridStore.getConnection()) {
+//                ValueFactory vf = connection.getValueFactory();
+//                String ex = "http://example.com/";
+//                IRI ali = vf.createIRI(ex, "Ali");
+//                connection.add(ali, RDF.TYPE, FOAF.PERSON);
+//                IRI dennis = vf.createIRI(ex, "Dennis");
+//                connection.add(dennis, vf.createIRI(ex,"has"), ali);
+//                //Thread.sleep(2000);
+//                // query everything of type PERSON
+//                GraphQuery tupleQuery = connection.prepareGraphQuery(String.join("\n", "",
+//                        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+//                        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
+//                        "PREFIX ex: <http://example.com/>",
+//                        "construct where {",
+//                        "	ex:Guo rdf:type ?o .",
+//                        "	?s rdf:type ?o .",
+//
+//                        "}"));
+//
+//                GraphQueryResult evaluate = tupleQuery.evaluate();
 //                int count = 0;
-//                while (sts.hasNext()){
-//                    System.out.println(sts.next());
+//                while (evaluate.hasNext())
+//                {
 //                    count++;
+//                    System.out.println(evaluate.next());
 //                }
-//                assertEquals(3, count);
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
-                Files.deleteIfExists(Paths.get("index.nt"));
-
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("Exception found !");
-        }
-    }
+//                assertEquals(2, count);
+////                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
+////                int count = 0;
+////                while (sts.hasNext()){
+////                    System.out.println(sts.next());
+////                    count++;
+////                }
+////                assertEquals(3, count);
+//                Files.deleteIfExists(Paths.get("index.hdt"));
+//                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+//                Files.deleteIfExists(Paths.get("index.nt"));
+//
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            fail("Exception found !");
+//        }
+//    }
     @Test
     public void testDelete(){
         try {
