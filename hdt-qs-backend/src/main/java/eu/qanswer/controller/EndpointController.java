@@ -112,33 +112,6 @@ public class EndpointController {
 //        }
 //        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
 //    }
-    @RequestMapping(value = "/count")
-    public ResponseEntity<String> getNativeCount(
-            @RequestParam(value = "format", defaultValue = "json") final String format,
-            @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            Principal principal)
-            throws Exception {
-        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
-            return ResponseEntity.status(HttpStatus.OK)
-                    .header("Content-Type", "application/sparql-results+json")
-                    .body(sparql.getCurrentCount()+"");
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
-    }
-    @RequestMapping(value = "/clear")
-    public ResponseEntity<String> clearData(
-            @RequestParam(value = "format", defaultValue = "json") final String format,
-            @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            Principal principal)
-            throws Exception {
-        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
-            sparql.clearAllData();
-            return ResponseEntity.status(HttpStatus.OK)
-                    .header("Content-Type", "application/sparql-results+json")
-                    .body("cleared\n");
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
-    }
     @PostMapping(value = "/load")
     public ResponseEntity<String> clearData(
             @RequestParam(value = "file") final MultipartFile file,
