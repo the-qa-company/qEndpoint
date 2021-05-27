@@ -150,7 +150,10 @@ public class IRIConverter {
                         id = hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
                     }
                     String predIdentifier = prefix + id;
-                    newPred = this.tempFactory.createIRI(predIdentifier);
+                    if(id == -1){
+                        newPred = pred;
+                    }else
+                        newPred = this.tempFactory.createIRI(predIdentifier);
                 } else {
                     newPred = pred;
                 }

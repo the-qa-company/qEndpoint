@@ -68,6 +68,9 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
         Resource newSubj = iriConverter.getIRIHdtSubj(subject);
         IRI predicate = stm.getPredicate();
         IRI newPred = iriConverter.getIRIHdtPred(predicate);
+        if(newPred instanceof SimpleIRIHDT && ((SimpleIRIHDT)newPred).getId() == -1){
+            System.out.println("alerttttt this should not happen");
+        }
         Value newObject = iriConverter.getIRIHdtObj(stm.getObject());
         return this.tripleSource.getValueFactory().createStatement(newSubj,newPred,newObject, stm.getContext());
 

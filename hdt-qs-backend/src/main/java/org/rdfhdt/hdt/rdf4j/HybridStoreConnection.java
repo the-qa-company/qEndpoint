@@ -116,9 +116,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     }else{
       newObj = iriConverter.convertObj(obj);
     }
+    IRI iri = iriConverter.convertPred(pred);
+    if(iri.toString().equals("http://hdt.org/P-1")){
+      System.err.println("Alert found -1 when adding predicate: "+pred.toString());
+    }
     this.nativeStoreConnection.addStatement(
             iriConverter.convertSubj(subj),
-            iriConverter.convertPred(pred),
+            iri,
             newObj,
             contexts
     );

@@ -125,11 +125,11 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
                         TripleComponentRole.OBJECT)
                 .toString();
       } else if (this.postion == PREDICATE_POS) {
-        return hdt.getDictionary()
-                .idToString(
-                        this.id,
-                        TripleComponentRole.PREDICATE)
-                .toString();
+        CharSequence charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
+        if(charSequence == null){
+          System.out.println(this.postion);
+        }
+        return charSequence.toString();
       } else {
         try {
           throw new Exception("The iri could not be mapped");
