@@ -72,7 +72,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdtProps = new HDTProps(this.hdt);
         initDeleteArray();
     }
-    public HybridStore(HDT hdt,String locationNative,boolean inMemDeletes){
+    public HybridStore(HDT hdt,String locationHdt,String locationNative,boolean inMemDeletes){
         this.hdt = hdt;
         this.nativeStoreA = new NativeStore(new File(locationNative+"A"),"spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(locationNative+"B"),"spoc,posc,cosp");

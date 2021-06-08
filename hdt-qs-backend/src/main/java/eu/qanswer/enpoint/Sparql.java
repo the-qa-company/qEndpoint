@@ -108,7 +108,7 @@ public class Sparql {
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
 
-            hybridStore = new HybridStore(locationHdt,locationNative,true);
+            hybridStore = new HybridStore(locationHdt,locationNative,false);
             hybridStore.setThreshold(threshold);
             logger.info("Threshold for triples in Native RDF store: "+threshold+" triples");
             luceneSail = new LuceneSail();

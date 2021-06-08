@@ -1,6 +1,7 @@
 package org.rdfhdt.hdt.rdf4j;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.common.iteration.Iterations;
@@ -53,7 +54,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   public void begin() throws SailException {
-    super.begin();
+    super.begin(IsolationLevels.NONE);
     long count = this.nativeStoreConnection.size();
     System.err.println("--------------: "+count);
     // Merge only if threshold in native store exceeded and not merging with hdt
@@ -61,9 +62,9 @@ public class HybridStoreConnection extends SailSourceConnection {
       System.out.println("Merging..."+count);
       hybridStore.makeMerge();
     }
-    this.nativeStoreConnection.begin();
-    this.connA.begin();
-    this.connB.begin();
+    this.nativeStoreConnection.begin(IsolationLevels.NONE);
+    this.connA.begin(IsolationLevels.NONE);
+    this.connB.begin(IsolationLevels.NONE);
   }
   // for SPARQL queries
   @Override

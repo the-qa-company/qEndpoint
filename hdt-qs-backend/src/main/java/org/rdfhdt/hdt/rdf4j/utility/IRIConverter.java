@@ -32,6 +32,9 @@ public class IRIConverter {
             }else if(iriString.startsWith("P")){
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
+            }else if(iriString.startsWith("O")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.OBJECT_POS;
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
@@ -77,6 +80,9 @@ public class IRIConverter {
             }else if(iriString.startsWith("P")){
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
+            }else if(iriString.startsWith("S")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.SUBJECT_POS;
             }
             if(object instanceof Literal){
                 return new SimpleLiteralHDT(this.hdt,id,this.valueFactory);
