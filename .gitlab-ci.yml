@@ -5,10 +5,10 @@ stages:
 build:
   stage: build
   script:
-    - echo "Login to gitlab registry"
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - echo "Building docker container"
     - docker build -t gitlab.the-qa-company.com:5050/d063520/hdtsparqlendpoint .
+    - echo "Login to gitlab registry"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - echo "Pushing container to registry"
     - docker push $CI_REGISTRY/d063520/hdtsparqlendpoint
 deploy:
