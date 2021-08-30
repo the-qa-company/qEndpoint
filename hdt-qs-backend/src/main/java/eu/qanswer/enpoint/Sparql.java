@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
@@ -62,6 +63,8 @@ public class Sparql {
     private SailRepository repository;
 
     public static int count = 0 ;
+    public static int countEquals = 0 ;
+
     private String sparqlPrefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
             "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
             "PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>\n" +
@@ -95,7 +98,7 @@ public class Sparql {
         if (!model.containsKey(location)) {
             model.put(location, null);
             HDTSpecification spec = new HDTSpecification();
-            //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 
             File hdtFile = new File(location+"index.hdt");
             if(!hdtFile.exists()){
@@ -130,6 +133,7 @@ public class Sparql {
 
         RepositoryConnection connection = repository.getConnection();
 
+        sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+\\}", "");
         //sparqlQuery = sparqlPrefixes+sparqlQuery;
 
         logger.info("Running given sparql query: " + sparqlQuery);
@@ -259,15 +263,18 @@ public class Sparql {
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
         initializeHybridStore(locationHdt);
         sparqlQuery = sparqlPrefixes + sparqlQuery;
-//        logger.info("Running update query:"+sparqlQuery);
+        sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
+        //logger.info("Running update query:"+sparqlQuery);
         SailRepositoryConnection connection = repository.getConnection();
         connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
-        ValueFactory valueFactory = connection.getValueFactory();
-//        Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
-//        preparedUpdate.setMaxExecutionTime(timeout);
-        SPARQLParser parser = new SPARQLParser();
-        ParsedUpdate parsedUpdate = parser.parseUpdate(sparqlQuery,(String)null,valueFactory);
-        Update preparedUpdate = new SailUpdate(parsedUpdate,connection);
+
+        Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
+         preparedUpdate.setMaxExecutionTime(timeout);
+
+//        ValueFactory valueFactory = connection.getValueFactory();
+//        SPARQLParser parser = new SPARQLParser();
+//        ParsedUpdate parsedUpdate = parser.parseUpdate(sparqlQuery,(String)null,valueFactory);
+//        Update preparedUpdate = new SailUpdate(parsedUpdate,connection);
         if(preparedUpdate != null) {
             Stopwatch stopwatch = Stopwatch.createStarted();
             preparedUpdate.execute();

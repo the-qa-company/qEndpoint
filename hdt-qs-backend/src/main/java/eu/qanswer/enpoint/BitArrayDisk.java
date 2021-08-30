@@ -229,4 +229,11 @@ public class BitArrayDisk {
             e.printStackTrace();
         }
     }
+    public void force(Boolean bool){
+        try {
+            this.output.force(bool);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

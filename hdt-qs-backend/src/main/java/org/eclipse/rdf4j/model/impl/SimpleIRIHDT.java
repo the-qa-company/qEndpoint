@@ -73,6 +73,12 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
     this.postion = position;
     this.id = id;
   }
+  public SimpleIRIHDT(HDT hdt,String iriString,int position,long id) {
+    this.hdt = hdt;
+    this.iriString = iriString;
+    this.postion = position;
+    this.id = id;
+  }
   public SimpleIRIHDT(HDT hdt,String iriString) {
     this.hdt = hdt;
     this.iriString = iriString;
@@ -104,8 +110,8 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
     if(this.iriString != null)
       return this.iriString;
     else {
-//      Sparql.count++;
-//      System.out.println(Sparql.count);
+      Sparql.count++;
+
       if (this.postion == SHARED_POS) {
         return hdt.getDictionary()
                 .idToString(
@@ -119,15 +125,18 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
                         TripleComponentRole.SUBJECT)
                 .toString();
       } else if (this.postion == OBJECT_POS) {
-        return hdt.getDictionary()
+        CharSequence charSequence = hdt.getDictionary()
                 .idToString(
                         this.id,
-                        TripleComponentRole.OBJECT)
-                .toString();
+                        TripleComponentRole.OBJECT);
+        if(charSequence == null){
+          System.out.println("NULL for ID: "+id);
+        }
+        return charSequence.toString();
       } else if (this.postion == PREDICATE_POS) {
         CharSequence charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
         if(charSequence == null){
-          System.out.println(this.postion);
+          System.out.println("NULL for ID: "+id);
         }
         return charSequence.toString();
       } else {

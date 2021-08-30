@@ -1,4 +1,6 @@
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.zookeeper.data.Stat;
+import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -12,29 +14,31 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
-import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -387,6 +391,93 @@ public class HybridStoreTest {
 //            fail("Exception found !");
 //        }
 //    }
+    private class StatementComparator implements Comparator<Statement>{
+
+    @Override
+    public int compare(Statement o1, Statement o2) {
+        if(o1.getSubject().toString().compareTo(o2.getSubject().toString()) == 0){
+            if(o1.getPredicate().toString().compareTo(o2.getPredicate().toString()) == 0){
+                if(o1.getObject().toString().compareTo(o2.getObject().toString()) == 0){
+                    return 0;
+                }else{
+                    return o1.getObject().toString().compareTo(o2.getObject().toString());
+                }
+            }else{
+                return o1.getPredicate().toString().compareTo(o2.getPredicate().toString());
+            }
+        }else{
+            return o1.getSubject().toString().compareTo(o2.getSubject().toString());
+        }
+    }
+}
+    private void compareTriples(List<? extends Statement>  stmtsAdded, List<? extends Statement> stmtsQueried){
+        stmtsQueried.sort(new StatementComparator());
+        stmtsAdded.sort(new StatementComparator());
+
+        for (int i = 0; i < stmtsAdded.size(); i++) {
+            Statement stm1 = stmtsAdded.get(i);
+            Statement stm2 = stmtsQueried.get(i);
+
+            if( !(stm1.getSubject().equals(stm2.getSubject())
+                    && stm1.getPredicate().equals(stm2.getPredicate())
+                    && stm1.getObject().equals(stm2.getObject())) ){
+
+                fail("Not equal: ["+stm1+"] - ["+stm2+"]");
+            }
+        }
+    }
+    @Test
+    public void testIndexGradually(){
+        try {
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(99);
+            SailRepository hybridStore = new SailRepository(store);
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                try {
+                    ClassLoader classLoader = getClass().getClassLoader();
+                    InputStream inputStream = new FileInputStream(classLoader.getResource("cocktails.nt").getFile());
+                    RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
+                    rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
+                    try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null,rdfParser)) {
+                        int count = 1;
+                        ArrayList<Statement> stmtsAdded = new ArrayList<>();
+                        while (res.hasNext()) {
+                            Statement st = res.next();
+                            stmtsAdded.add(st);
+                            connection.add(st);
+                            if( count % 100  == 0){
+                                System.out.println("Sleeping for 2s...");
+                                List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null));
+                                compareTriples(stmtsAdded,statements);
+                            }
+                            count++;
+                        }
+                        Thread.sleep(2000);
+                    }
+                    catch (RDF4JException e) {
+                        // handle unrecoverable error
+                        e.printStackTrace();
+                    } finally {
+                        inputStream.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception found !");
+        }
+    }
     @Test
     public void testDelete(){
         try {
@@ -399,7 +490,7 @@ public class HybridStoreTest {
             HybridStore store = new HybridStore(
                     hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
             );
-            store.setThreshold(10);
+            store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
@@ -407,7 +498,10 @@ public class HybridStoreTest {
                 String ex = "http://example.com/";
                 IRI ali = vf.createIRI(ex,"Ali");
                 connection.add(ali,RDF.TYPE,FOAF.PERSON);
-
+                connection.add(vf.createIRI(ex,"Dennis"),RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Pierre"),RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Clement"),RDF.TYPE,FOAF.PERSON);
+                Thread.sleep(2000);
                 IRI guo = vf.createIRI(ex,"Guo");
                 connection.remove(guo,RDF.TYPE,FOAF.PERSON);
                 connection.remove(ali,RDF.TYPE,FOAF.PERSON);
@@ -417,8 +511,97 @@ public class HybridStoreTest {
                     System.out.println(s.toString());
                 }
                 connection.close();
-                assertEquals(0, statements.size());
+                assertEquals(3, statements.size());
 
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception found !");
+        }
+    }
+    @Test
+    public void testIDsConversion(){
+        try {
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = new MemValueFactory();
+                String ex = "http://example.com/";
+                IRI ali = vf.createIRI(ex,"Ali");
+                connection.add(ali,RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Dennis"),RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Pierre"),RDF.TYPE,FOAF.PERSON);
+                IRI guo = vf.createIRI(ex,"Guo");
+                connection.remove(guo,RDF.TYPE,FOAF.PERSON);
+
+                connection.remove(ali,RDF.TYPE,FOAF.PERSON);
+
+                connection.add(guo,RDF.TYPE,FOAF.PERSON);
+                Thread.sleep(10000);
+                // query everything of type PERSON
+                List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
+                for (Statement s:statements) {
+                    System.out.println(s.toString());
+                }
+                connection.close();
+                assertEquals(3, statements.size());
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception found !");
+        }
+    }
+    @Test
+    public void testDeleteWhileMerge(){
+        try {
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+            );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = new MemValueFactory();
+                String ex = "http://example.com/";
+                IRI ali = vf.createIRI(ex,"Ali");
+                connection.add(ali,RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Dennis"),RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Pierre"),RDF.TYPE,FOAF.PERSON);
+                connection.add(vf.createIRI(ex,"Clement"),RDF.TYPE,FOAF.PERSON);
+                IRI guo = vf.createIRI(ex,"Guo");
+                connection.remove(guo,RDF.TYPE,FOAF.PERSON);
+                connection.remove(ali,RDF.TYPE,FOAF.PERSON);
+                // query everything of type PERSON
+                List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
+                for (Statement s:statements) {
+                    System.out.println(s.toString());
+                }
+                assertEquals(3, statements.size());
+                Thread.sleep(3000);
+                System.out.println("After merge:");
+                statements = Iterations.asList(connection.getStatements(null, null, null, true));
+                for (Statement s:statements) {
+                    System.out.println(s.toString());
+                }
+                assertEquals(3, statements.size());
+                connection.close();
             }
         } catch (Exception e) {
             e.printStackTrace();

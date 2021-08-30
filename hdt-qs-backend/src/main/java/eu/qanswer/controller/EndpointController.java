@@ -32,6 +32,8 @@ public class EndpointController {
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
             @RequestHeader(value = "timeout", defaultValue = "30") int timeout,
+            @RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
+
             @RequestBody(required = false) String body ,
             Principal principal)
             throws Exception {
@@ -67,6 +69,11 @@ public class EndpointController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
 
         }else{
+            if(body!= null && content.equals("application/sparql-query")){
+                return ResponseEntity.status(HttpStatus.OK)
+                        .header("Content-Type", "application/sparql-results+json")
+                        .body(sparql.executeJson(body, timeout));
+            }
             if(updateQuery != null){
                 return ResponseEntity.status(HttpStatus.OK)
                         .body(sparql.executeUpdate(updateQuery, timeout));
