@@ -533,10 +533,16 @@ public class HybridStoreTest {
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
+            ArrayList<IRI> subjects = new ArrayList<>();
+            ValueFactory vf = new MemValueFactory();
+            String ex = "http://example.com/";
+
+            subjects.add(vf.createIRI(ex,"Dennis"));
+            subjects.add(vf.createIRI(ex,"Pierre"));
+            subjects.add(vf.createIRI(ex,"Guo"));
 
             try (RepositoryConnection connection = hybridStore.getConnection()) {
-                ValueFactory vf = new MemValueFactory();
-                String ex = "http://example.com/";
+
                 IRI ali = vf.createIRI(ex,"Ali");
                 connection.add(ali,RDF.TYPE,FOAF.PERSON);
                 connection.add(vf.createIRI(ex,"Dennis"),RDF.TYPE,FOAF.PERSON);
@@ -547,11 +553,14 @@ public class HybridStoreTest {
                 connection.remove(ali,RDF.TYPE,FOAF.PERSON);
 
                 connection.add(guo,RDF.TYPE,FOAF.PERSON);
-                Thread.sleep(10000);
+                Thread.sleep(5000);
                 // query everything of type PERSON
                 List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
+                int index = 0;
                 for (Statement s:statements) {
-                    System.out.println(s.toString());
+                    System.out.println(s.getSubject().toString());
+                    assertEquals(subjects.get(index).toString(),s.getSubject().toString());
+                    index++;
                 }
                 connection.close();
                 assertEquals(3, statements.size());

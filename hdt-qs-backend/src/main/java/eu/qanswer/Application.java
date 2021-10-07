@@ -19,6 +19,7 @@ public class Application {
     String port;
 
     public static void main(String[] args) {
+        System.setProperty("org.eclipse.rdf4j.rio.verify_uri_syntax","true");
         SpringApplication.run(Application.class, args);
     }
 }

@@ -39,8 +39,11 @@ public class HybridTripleSource implements TripleSource {
   ValueFactory factory;
   long startLiteral;
   long endLiteral;
-  public long startBlank;
-  public long endBlank;
+  public long startBlankObjects;
+  public long endBlankObjects;
+  public long startBlankShared;
+  public long endBlankShared;
+
   HDTConverter hdtConverter;
   IRIConverter iriConverter;
   ValueFactory tempFactory;
@@ -48,6 +51,7 @@ public class HybridTripleSource implements TripleSource {
   private SailConnection connB;
   private SailConnection connCurr;
   private long numberOfCurrentTriples;
+
   public HybridTripleSource(HDT hdt, HybridStore hybridStore) {
     this.hybridStore = hybridStore;
     this.hdt = hdt;
@@ -55,24 +59,24 @@ public class HybridTripleSource implements TripleSource {
     this.factory = new AbstractValueFactoryHDT(hdt);
     this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
     this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
-    this.startBlank = hybridStore.getHdtProps().getStartBlank();
-    this.endBlank = hybridStore.getHdtProps().getEndBlank();
+    this.startBlankObjects = hybridStore.getHdtProps().getStartBlankObjects();
+    this.endBlankObjects = hybridStore.getHdtProps().getEndBlankObjects();
     this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
     this.hdtConverter = new HDTConverter(hdt);
     this.iriConverter = new IRIConverter(hdt);
     this.tempFactory = new MemValueFactory();
-
   }
 
   public ValueFactory getTempFactory() {
     return tempFactory;
   }
+
   private void initHDTIndex(){
     this.hdt = this.hybridStore.getHdt();
     this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
     this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
-    this.startBlank = hybridStore.getHdtProps().getStartBlank();
-    this.endBlank = hybridStore.getHdtProps().getEndBlank();
+    this.startBlankObjects = hybridStore.getHdtProps().getStartBlankObjects();
+    this.endBlankObjects = hybridStore.getHdtProps().getEndBlankObjects();
     this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
   }
   @Override
@@ -113,25 +117,27 @@ public class HybridTripleSource implements TripleSource {
               newRes, newIRI, newValue, false, resources
       );
     }
-    long subject = -1;
-    if(newRes == null){
-      subject = 0;
-    }else if(newRes instanceof SimpleIRIHDT){
-      subject = ((SimpleIRIHDT)newRes).getId();
-    }
-    long predicate = -1;
-    if(newIRI == null){
-      predicate = 0;
-    }else if (newIRI instanceof SimpleIRIHDT){
-      predicate = ((SimpleIRIHDT)newIRI).getId();
-    }
-    long object = -1;
-    if(newValue == null){
-      object = 0;
-    }else if(newValue instanceof SimpleIRIHDT){
-      object = ((SimpleIRIHDT)newValue).getId();
-    }
-    //long object = hdtConverter.objectId(value);
+//    long subject = -1;
+//    if(newRes == null){
+//      subject = 0;
+//    }else if(newRes instanceof SimpleIRIHDT){
+//      subject = ((SimpleIRIHDT)newRes).getId();
+//    }
+//    long predicate = -1;
+//    if(newIRI == null){
+//      predicate = 0;
+//    }else if (newIRI instanceof SimpleIRIHDT){
+//      predicate = ((SimpleIRIHDT)newIRI).getId();
+//    }
+//    long object = -1;
+//    if(newValue == null){
+//      object = 0;
+//    }else if(newValue instanceof SimpleIRIHDT){
+//      object = ((SimpleIRIHDT)newValue).getId();
+//    }
+    long subject = hdtConverter.subjectId(resource);
+    long predicate = hdtConverter.predicateId(iri);
+    long object = hdtConverter.objectId(value);
     if (logger.isDebugEnabled()) {
       if (resource != null) {
         logger.debug(resource.toString());

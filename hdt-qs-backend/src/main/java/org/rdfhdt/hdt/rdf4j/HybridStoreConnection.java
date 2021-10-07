@@ -1,5 +1,7 @@
 package org.rdfhdt.hdt.rdf4j;
 
+import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
 import org.eclipse.rdf4j.model.*;
@@ -54,8 +56,20 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void begin() throws SailException {
     super.begin();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     long count = this.getCurrentConnection().size();
+    stopwatch.stop(); // optional
+    System.out.println("Time elapsed for count request: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+    //long count = 0;
     System.err.println("--------------: "+count);
+
+    try {
+      this.hybridStore.manager.waitForActiveLocks();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    this.lock = this.hybridStore.connectionsLockManager.createLock("connection-lock");
     // Merge only if threshold in native store exceeded and not merging with hdt
     if(count >= hybridStore.getThreshold() && !hybridStore.isMerging()){
       System.out.println("Merging..."+count);
@@ -64,6 +78,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     //this.getCurrentConnection().begin();
     this.connA.begin();
     this.connB.begin();
+
   }
   // for SPARQL queries
   @Override
@@ -140,6 +155,19 @@ public class HybridStoreConnection extends SailSourceConnection {
     }
   }
 
+  private boolean inOtherStore(Resource subj, IRI pred, Value obj) {
+    // only in the case while merging - we check if the triple exists in the other store
+    if(true){
+      System.out.println("checking in other store -========== = == = == = = = ");
+      // if delta is B then check in A
+      if(hybridStore.switchStore){
+        return this.connA.hasStatement(subj,pred,obj,false);
+      }else
+        return this.connB.hasStatement(subj,pred,obj,false);
+    }
+    return false;
+  }
+
 
   @Override
   public void clearNamespacesInternal() throws SailException {
@@ -179,30 +207,35 @@ public class HybridStoreConnection extends SailSourceConnection {
     //this.nativeStoreConnection.commit();
     this.connA.commit();
     this.connB.commit();
+    this.lock.release();
   }
 
   @Override
   public void flush() throws SailException {
     super.flush();
-    getCurrentConnection().flush();
+    this.connA.flush();
+    this.connB.flush();
   }
 
   @Override
   public void flushUpdates() throws SailException {
     super.flushUpdates();
-    getCurrentConnection().flush();
+    this.connA.flush();
+    this.connB.flush();
   }
-
+  private Lock lock;
   @Override
   public void startUpdate(UpdateContext op) throws SailException {
-    try {
-      hybridStore.manager.waitForActiveLocks();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+
+//    try {
+//      hybridStore.manager.waitForActiveLocks();
+//    } catch (InterruptedException e) {
+//      e.printStackTrace();
+//    }
     //this.nativeStoreConnection.startUpdate(op);
     this.connA.startUpdate(op);
     this.connB.startUpdate(op);
+    // release the lock after the update is finished
 
   }
 
@@ -211,6 +244,8 @@ public class HybridStoreConnection extends SailSourceConnection {
     //this.nativeStoreConnection.endUpdate(op);
     this.connA.endUpdate(op);
     this.connB.endUpdate(op);
+
+
 
   }
 
@@ -262,9 +297,6 @@ public class HybridStoreConnection extends SailSourceConnection {
   @Override
   public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
     //printTriples();
-    if(obj.toString().equals("\"Albania\"@en")){
-      System.out.println("Found the triples ======================== "+subj+ " "+pred+" "+obj);
-    }
     Resource newSubj = iriConverter.convertSubj(subj);
     IRI newPred = iriConverter.convertPred(pred);
     Value newObj;

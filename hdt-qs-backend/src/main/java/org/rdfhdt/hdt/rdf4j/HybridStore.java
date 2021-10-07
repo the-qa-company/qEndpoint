@@ -3,6 +3,7 @@ package org.rdfhdt.hdt.rdf4j;
 import eu.qanswer.enpoint.BitArrayDisk;
 import eu.qanswer.enpoint.MergeRunnable;
 import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -46,9 +47,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
     private HDT hdt;
 
-    private NativeStore nativeStoreA;
-    private NativeStore nativeStoreB;
-    private NativeStore currentStore;
+    public NativeStore nativeStoreA;
+    public NativeStore nativeStoreB;
+    public NativeStore currentStore;
 
     private BitArrayDisk deleteBitMap;
     private BitArrayDisk tempdeleteBitMap;
@@ -71,6 +72,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private RDFWriter rdfWriterTempTriples;
     private String locationNative;
     public LockManager manager;
+    public LockManager connectionsLockManager;
+
     public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
 
         try {
@@ -103,6 +106,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdtProps = new HDTProps(this.hdt);
         this.locationNative = locationNative;
         this.manager = new LockManager();
+        this.connectionsLockManager = new LockManager();
         initDeleteArray();
     }
     public HybridStore(HDT hdt,String locationHdt,String locationNative,boolean inMemDeletes){
@@ -131,6 +135,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdtProps = new HDTProps(this.hdt);
         this.locationNative = locationNative;
         this.manager = new LockManager();
+        this.connectionsLockManager = new LockManager();
         initDeleteArray();
     }
 
@@ -409,22 +414,16 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
     public String makeMerge() {
         try {
-            MergeRunnable mergeRunnable = new MergeRunnable(locationHdt,this);
+            // create a lock so that new incoming connections don't do anything
+            Lock lock = this.manager.createLock("Merge-Lock");
+            MergeRunnable mergeRunnable = new MergeRunnable(locationHdt,this,lock);
             Thread thread = new Thread(mergeRunnable);
             thread.start();
 //            mergeRunnable.run();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if(switchStore){
-            this.currentStore = this.nativeStoreA;
-            switchStore = false;
-        }else{
-            this.currentStore = this.nativeStoreB;
-            switchStore = true;
-        }
-        // write the switchStore value to disk in case, something crash we can recover
-        writeWhichStore();
+
         return "Merged!";
     }
 }

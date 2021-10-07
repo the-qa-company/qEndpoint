@@ -22,7 +22,10 @@ public class IRIConverter {
         String iriString = subj.toString();
         long id = -1;
         int position = -1;
-        if(iriString.startsWith(("http://hdt.org/"))){
+        if(subj.isBNode()){
+            return this.valueFactory.createBNode(iriString);
+        }
+        else if(iriString.startsWith(("http://hdt.org/"))){
             iriString = iriString.replace("http://hdt.org/","");
             if(iriString.startsWith("SO")){
                 id = Long.parseLong(iriString.substring(2));
@@ -39,14 +42,17 @@ public class IRIConverter {
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
-            return subj;
+            return new SimpleIRIHDT(this.hdt,subj.toString());
         }
     }
-    public IRI getIRIHdtPred(IRI pred){
+    public Value getIRIHdtPred(IRI pred){
         String iriString = pred.toString();
         long id = -1;
         int position = -1;
-        if(iriString.startsWith(("http://hdt.org/"))){
+        if(pred.isBNode()){
+            return this.valueFactory.createBNode(iriString);
+        }
+        else if(iriString.startsWith(("http://hdt.org/"))){
             iriString = iriString.replace("http://hdt.org/","");
             if(iriString.startsWith("P")) {
                 id = Long.parseLong(iriString.substring(1));
@@ -63,14 +69,17 @@ public class IRIConverter {
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
-            return pred;
+            return new SimpleIRIHDT(this.hdt,pred.toString());
         }
     }
     public Value getIRIHdtObj(Value object){
         String iriString = object.toString();
         long id = -1;
         int position = -1;
-        if(iriString.startsWith(("http://hdt.org/"))){
+        if(object.isBNode()){
+            return this.valueFactory.createBNode(iriString);
+        }
+        else if(iriString.startsWith(("http://hdt.org/"))){
             iriString = iriString.replace("http://hdt.org/","");
             if(iriString.startsWith("SO")){
                 id = Long.parseLong(iriString.substring(2));
@@ -91,15 +100,22 @@ public class IRIConverter {
                 return new SimpleIRIHDT(this.hdt, position, id);
             }
         }else{ // string was not converted upon insert - iriString the real IRI
-            return object;
+            if(object.isLiteral())
+                return object;
+            else
+                return new SimpleIRIHDT(this.hdt,object.toString());
         }
     }
 
 
     public Resource convertSubj(Resource subj){
         Resource newSubj = null;
+        boolean convert = false;
         if(subj != null) {
-            if (subj instanceof SimpleIRIHDT) {
+            if(subj.isBNode()){
+                return subj;
+            }
+            else if (subj instanceof SimpleIRIHDT) {
                 long id = ((SimpleIRIHDT) subj).getId();
                 long position = ((SimpleIRIHDT) subj).getPostion();
                 if (id != -1) {
@@ -119,7 +135,8 @@ public class IRIConverter {
                                         .toString();
                         id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
                     }
-                    if(id == -1){
+                    if(id == -1){ // means that id doesn't exist after translation, return with id = -1
+                        //newSubj = new SimpleIRIHDT(hdt,prefix+"empty");;
                         newSubj = subj;
                     }else {
                         if(id <= this.hdt.getDictionary().getNshared()){
@@ -134,9 +151,12 @@ public class IRIConverter {
                         }
                     }
                 } else {
-                    newSubj = subj;
+                    convert = true;
                 }
             } else { // upon insertion need to convert string to ID
+                convert = true;
+            }
+            if(convert){
                 String subjStr = subj.toString();
                 long subjId = this.hdt.getDictionary().stringToId(subjStr, TripleComponentRole.SUBJECT);
                 if (subjId != -1) {
@@ -154,22 +174,27 @@ public class IRIConverter {
     }
     public IRI convertPred(IRI pred){
         IRI newPred = null;
+        boolean convert = false;
         if(pred != null) {
-            if (pred instanceof SimpleIRIHDT) {
+            if(pred.isBNode()){
+                return pred;
+            }
+            else if (pred instanceof SimpleIRIHDT) {
                 long id = ((SimpleIRIHDT) pred).getId();
                 long position = ((SimpleIRIHDT) pred).getPostion();
                 if (id != -1) {
                     String prefix = "http://hdt.org/";
                     prefix += "P";
+                    String translate = "";
                     if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
-                        String translate =
+                        translate =
                                 hdt.getDictionary()
                                         .idToString(id,
                                                 TripleComponentRole.SUBJECT)
                                         .toString();
                         id = hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
                     } else if (position == SimpleIRIHDT.OBJECT_POS) {
-                        String translate =
+                        translate =
                                 hdt.getDictionary()
                                         .idToString(id,
                                                 TripleComponentRole.OBJECT)
@@ -178,13 +203,18 @@ public class IRIConverter {
                     }
                     String predIdentifier = prefix + id;
                     if(id == -1){
-                        newPred = pred;
+                        //newPred = new SimpleIRIHDT(hdt,prefix+"empty");
+                        // newPred = pred;
+                        newPred = this.tempFactory.createIRI(translate);
                     }else
                         newPred = new SimpleIRIHDT(hdt,predIdentifier,SimpleIRIHDT.PREDICATE_POS,id);
                 } else {
-                    newPred = pred;
+                    convert = true;
                 }
             } else {
+                convert = true;
+            }
+            if(convert){
                 String predStr = pred.toString();
                 long predId = this.hdt.getDictionary().stringToId(predStr, TripleComponentRole.PREDICATE);
                 if (predId != -1) {
@@ -198,8 +228,12 @@ public class IRIConverter {
     }
     public Value convertObj(Value obj){
         Value newObj = null;
+        boolean convert = false;
         if(obj != null) {
-            if (obj instanceof SimpleIRIHDT) {
+            if(obj.isBNode()){
+                return obj;
+            }
+            else if (obj instanceof SimpleIRIHDT) {
                 long id = ((SimpleIRIHDT) obj).getId();
                 long position = ((SimpleIRIHDT) obj).getPostion();
                 if (id != -1) {
@@ -220,6 +254,7 @@ public class IRIConverter {
                         id = hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
                     }
                     if(id == -1){
+                        // newObj = new SimpleIRIHDT(hdt,prefix+"empty");
                         newObj = obj;
                     }else {
                         if(id <= this.hdt.getDictionary().getNshared()){
@@ -234,9 +269,12 @@ public class IRIConverter {
                         }
                     }
                 } else {
-                    newObj = obj;
+                    convert = true;
                 }
             } else {
+                convert = true;
+            }
+            if(convert){
                 String objStr = obj.toString();
                 long objId = this.hdt.getDictionary().stringToId(objStr, TripleComponentRole.OBJECT);
                 if (objId != -1) {

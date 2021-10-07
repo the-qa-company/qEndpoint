@@ -119,7 +119,7 @@ public class Sparql {
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
             luceneSail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
             luceneSail.setBaseSail(hybridStore);
-            luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
+            //luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
             luceneSail.initialize();
             repository = new SailRepository(luceneSail);
             repository.init();
@@ -150,6 +150,7 @@ public class Sparql {
                 query.evaluate(writer);
             } catch (QueryEvaluationException q){
                 logger.error("This exception was caught ["+q+"]");
+                q.printStackTrace();
                 return "{\"timeout\":"+timeout+"}";
                 //q.printStackTrace();
             }
@@ -262,9 +263,9 @@ public class Sparql {
     }
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
         initializeHybridStore(locationHdt);
+        //logger.info("Running update query:"+sparqlQuery);
         sparqlQuery = sparqlPrefixes + sparqlQuery;
         sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
-        //logger.info("Running update query:"+sparqlQuery);
         SailRepositoryConnection connection = repository.getConnection();
         connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 

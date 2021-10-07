@@ -4,6 +4,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.rdf4j.HybridTripleSource;
 import org.rdfhdt.hdt.triples.TripleID;
@@ -22,10 +23,16 @@ public class HDTStatement implements Statement {
     }
     @Override
     public Resource getSubject() {
-        if (tripleID.getSubject() <= hdt.getDictionary().getNshared()) {
-            return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, tripleID.getSubject());
-        } else {
-            return new SimpleIRIHDT(hdt, SimpleIRIHDT.SUBJECT_POS ,tripleID.getSubject());
+        if(tripleID.getSubject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankShared()
+                && tripleID.getSubject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankShared()){
+            return this.tripleSource.getValueFactory().createBNode(
+                    this.hdt.getDictionary().idToString(tripleID.getSubject(), TripleComponentRole.SUBJECT).toString());
+        }else {
+            if (tripleID.getSubject() <= hdt.getDictionary().getNshared()) {
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, tripleID.getSubject());
+            } else {
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SUBJECT_POS, tripleID.getSubject());
+            }
         }
     }
 
@@ -38,8 +45,13 @@ public class HDTStatement implements Statement {
     public Value getObject() {
         if (tripleID.getObject() >= tripleSource.getStartLiteral() && tripleID.getObject() <= tripleSource.getEndLiteral()) {
             return new SimpleLiteralHDT(hdt, tripleID.getObject(), tripleSource.getValueFactory());
-        }else if(tripleID.getObject() >= tripleSource.startBlank && tripleID.getObject() <= tripleSource.endBlank){
-            return this.tripleSource.getValueFactory().createBNode();
+        }else if( (tripleID.getObject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankObjects()
+                && tripleID.getObject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankObjects())
+                || (tripleID.getObject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankShared()
+                && tripleID.getObject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankShared())
+        ){
+            return this.tripleSource.getValueFactory().createBNode(
+                    this.hdt.getDictionary().idToString(tripleID.getObject(), TripleComponentRole.OBJECT).toString());
         } else {
             if (tripleID.getObject() <= hdt.getDictionary().getNshared()) {
                 return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS,tripleID.getObject());
