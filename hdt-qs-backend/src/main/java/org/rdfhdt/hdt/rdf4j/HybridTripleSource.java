@@ -113,10 +113,25 @@ public class HybridTripleSource implements TripleSource {
               newRes, newIRI, newValue, false, resources
       );
     }
-
-    long subject = hdtConverter.subjectId(resource);
-    long predicate = hdtConverter.predicateId(iri);
-    long object = hdtConverter.objectId(value);
+    long subject = -1;
+    if(newRes == null){
+      subject = 0;
+    }else if(newRes instanceof SimpleIRIHDT){
+      subject = ((SimpleIRIHDT)newRes).getId();
+    }
+    long predicate = -1;
+    if(newIRI == null){
+      predicate = 0;
+    }else if (newIRI instanceof SimpleIRIHDT){
+      predicate = ((SimpleIRIHDT)newIRI).getId();
+    }
+    long object = -1;
+    if(newValue == null){
+      object = 0;
+    }else if(newValue instanceof SimpleIRIHDT){
+      object = ((SimpleIRIHDT)newValue).getId();
+    }
+    //long object = hdtConverter.objectId(value);
     if (logger.isDebugEnabled()) {
       if (resource != null) {
         logger.debug(resource.toString());

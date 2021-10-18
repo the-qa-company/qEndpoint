@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.impl.AbstractValueFactoryHDT;
 import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
 import org.eclipse.rdf4j.model.impl.SimpleLiteralHDT;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
+import org.rdfhdt.hdt.dictionary.impl.MultipleBaseDictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
@@ -32,6 +33,9 @@ public class IRIConverter {
             }else if(iriString.startsWith("P")){
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
+            }else if(iriString.startsWith("O")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.OBJECT_POS;
             }
             return new SimpleIRIHDT(this.hdt,position,id);
         }else{ // string was not converted upon insert - iriString the real IRI
@@ -77,8 +81,11 @@ public class IRIConverter {
             }else if(iriString.startsWith("P")){
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
+            }else if(iriString.startsWith("S")){
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.SUBJECT_POS;
             }
-            if(object instanceof Literal){
+            if(isLiteral(id)){
                 return new SimpleLiteralHDT(this.hdt,id,this.valueFactory);
             }else {
                 return new SimpleIRIHDT(this.hdt, position, id);
@@ -97,15 +104,35 @@ public class IRIConverter {
                 long position = ((SimpleIRIHDT) subj).getPostion();
                 if (id != -1) {
                     String prefix = "http://hdt.org/";
-                    if (position == SimpleIRIHDT.SHARED_POS) {
-                        prefix += "SO";
-                    } else if(position == SimpleIRIHDT.SUBJECT_POS){
-                        prefix += "S";
-                    }else if(position == SimpleIRIHDT.PREDICATE_POS){
-                        prefix += "P";
+                    if(position == SimpleIRIHDT.PREDICATE_POS){
+                        String translate =
+                                hdt.getDictionary()
+                                        .idToString(id,
+                                                TripleComponentRole.PREDICATE)
+                                        .toString();
+                        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
+                    }else if(position == SimpleIRIHDT.OBJECT_POS){
+                        String translate =
+                                hdt.getDictionary()
+                                        .idToString(id,
+                                                TripleComponentRole.OBJECT)
+                                        .toString();
+                        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
                     }
-                    String subjIdentifier = prefix + id;
-                    newSubj = this.tempFactory.createIRI(subjIdentifier);
+                    if(id == -1){
+                        newSubj = subj;
+                    }else {
+                        if(id <= this.hdt.getDictionary().getNshared()){
+                            prefix += "SO";
+                            String subjIdentifier = prefix + id;
+                            newSubj = new SimpleIRIHDT(hdt, subjIdentifier, SimpleIRIHDT.SHARED_POS, id);
+                        }
+                        else {
+                            prefix += "S";
+                            String subjIdentifier = prefix + id;
+                            newSubj = new SimpleIRIHDT(hdt, subjIdentifier, SimpleIRIHDT.SUBJECT_POS, id);
+                        }
+                    }
                 } else {
                     newSubj = subj;
                 }
@@ -114,9 +141,9 @@ public class IRIConverter {
                 long subjId = this.hdt.getDictionary().stringToId(subjStr, TripleComponentRole.SUBJECT);
                 if (subjId != -1) {
                     if (subjId <= this.hdt.getDictionary().getNshared()) {
-                        newSubj = this.valueFactory.createIRI("http://hdt.org/SO" + subjId);
+                        newSubj = new SimpleIRIHDT(hdt,"http://hdt.org/SO" + subjId,SimpleIRIHDT.SHARED_POS,subjId);
                     } else {
-                        newSubj = this.valueFactory.createIRI("http://hdt.org/S" + subjId);
+                        newSubj = new SimpleIRIHDT(hdt,"http://hdt.org/S" + subjId,SimpleIRIHDT.SUBJECT_POS,subjId);
                     }
                 } else {
                     newSubj = subj;
@@ -153,7 +180,7 @@ public class IRIConverter {
                     if(id == -1){
                         newPred = pred;
                     }else
-                        newPred = this.tempFactory.createIRI(predIdentifier);
+                        newPred = new SimpleIRIHDT(hdt,predIdentifier,SimpleIRIHDT.PREDICATE_POS,id);
                 } else {
                     newPred = pred;
                 }
@@ -161,7 +188,7 @@ public class IRIConverter {
                 String predStr = pred.toString();
                 long predId = this.hdt.getDictionary().stringToId(predStr, TripleComponentRole.PREDICATE);
                 if (predId != -1) {
-                    newPred = this.valueFactory.createIRI("http://hdt.org/P" + predId);
+                    newPred = new SimpleIRIHDT(hdt,"http://hdt.org/P" + predId,SimpleIRIHDT.PREDICATE_POS,predId);
                 } else {
                     newPred = pred;
                 }
@@ -177,17 +204,35 @@ public class IRIConverter {
                 long position = ((SimpleIRIHDT) obj).getPostion();
                 if (id != -1) {
                     String prefix = "http://hdt.org/";
-                    if (position == SimpleIRIHDT.SHARED_POS) {
-                        prefix += "SO";
-                    } else if(position == SimpleIRIHDT.SUBJECT_POS){
-                        prefix += "S";
-                    }else if (position == SimpleIRIHDT.OBJECT_POS) {
-                        prefix += "O";
-                    } else if(position == SimpleIRIHDT.PREDICATE_POS){
-                        prefix += "P";
+                    if(position == SimpleIRIHDT.SUBJECT_POS || position == SimpleIRIHDT.SHARED_POS){
+                        String translate =
+                                hdt.getDictionary()
+                                        .idToString(id,
+                                                TripleComponentRole.SUBJECT)
+                                        .toString();
+                        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
+                    }else if(position == SimpleIRIHDT.PREDICATE_POS){
+                        String translate =
+                                hdt.getDictionary()
+                                        .idToString(id,
+                                                TripleComponentRole.PREDICATE)
+                                        .toString();
+                        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
                     }
-                    String objIdentifier = prefix + id;
-                    newObj = this.tempFactory.createIRI(objIdentifier);
+                    if(id == -1){
+                        newObj = obj;
+                    }else {
+                        if(id <= this.hdt.getDictionary().getNshared()){
+                            prefix += "SO";
+                            String objIdentifier = prefix + id;
+                            newObj = new SimpleIRIHDT(hdt, objIdentifier, SimpleIRIHDT.SHARED_POS, id);
+                        }
+                        else {
+                            prefix += "O";
+                            String objIdentifier = prefix + id;
+                            newObj = new SimpleIRIHDT(hdt, objIdentifier, SimpleIRIHDT.OBJECT_POS, id);
+                        }
+                    }
                 } else {
                     newObj = obj;
                 }
@@ -196,9 +241,10 @@ public class IRIConverter {
                 long objId = this.hdt.getDictionary().stringToId(objStr, TripleComponentRole.OBJECT);
                 if (objId != -1) {
                     if (objId <= this.hdt.getDictionary().getNshared()) {
-                        newObj = this.valueFactory.createIRI("http://hdt.org/SO" + objId);
+
+                        newObj = new SimpleIRIHDT(hdt,"http://hdt.org/SO" + objId,SimpleIRIHDT.SHARED_POS,objId);
                     } else {
-                        newObj = this.valueFactory.createIRI("http://hdt.org/O" + objId);
+                        newObj = new SimpleIRIHDT(hdt,"http://hdt.org/O" + objId,SimpleIRIHDT.OBJECT_POS,objId);
                     }
                 } else {
                     newObj = obj;
@@ -216,5 +262,10 @@ public class IRIConverter {
         }else{
             return obj;
         }
+    }
+    private boolean isLiteral(long id){
+        //MultipleBaseDictionary dictionary = (;
+        String dataType = this.hdt.getDictionary().dataTypeOfId(id);
+        return !dataType.equals("NO_DATATYPE") && !dataType.equals("section");
     }
 }

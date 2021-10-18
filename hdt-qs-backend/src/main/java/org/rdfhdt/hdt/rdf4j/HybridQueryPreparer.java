@@ -32,7 +32,6 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
     this.hybridStore = hybridStore;
     hdt = tripleSource.getHdt();
 
-    // TODO change evaluation statistics to be combined
     evaluationStatistics = new CombinedEvaluationStatistics(new HDTEvaluationStatisticsV2(hdt),
             hybridStore.getCurrentStore().getSailStore().getEvaluationStatistics());
     // evaluationStatistics = new EvaluationStatistics();
