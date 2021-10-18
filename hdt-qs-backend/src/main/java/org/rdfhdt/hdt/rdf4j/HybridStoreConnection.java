@@ -9,8 +9,12 @@ import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
+import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
+import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.sail.*;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
@@ -55,21 +59,22 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   public void begin() throws SailException {
-    super.begin();
-    Stopwatch stopwatch = Stopwatch.createStarted();
-    long count = this.getCurrentConnection().size();
-    stopwatch.stop(); // optional
-    System.out.println("Time elapsed for count request: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-    //long count = 0;
-    System.err.println("--------------: "+count);
-
     try {
       this.hybridStore.manager.waitForActiveLocks();
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
     this.lock = this.hybridStore.connectionsLockManager.createLock("connection-lock");
+    super.begin();
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    long count = this.getCurrentConnection().size();
+
+    stopwatch.stop(); // optional
+    System.out.println("Time elapsed for count request: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+    //long count = 0;
+    System.err.println("--------------: "+count);
+
     // Merge only if threshold in native store exceeded and not merging with hdt
     if(count >= hybridStore.getThreshold() && !hybridStore.isMerging()){
       System.out.println("Merging..."+count);
@@ -79,6 +84,16 @@ public class HybridStoreConnection extends SailSourceConnection {
     this.connA.begin();
     this.connB.begin();
 
+  }
+  private void getCardinality(){
+    ParsedTupleQuery query = QueryParserUtil.parseTupleQuery(QueryLanguage.SPARQL,
+            "select * where {?a ?b ?c. }", null);
+
+    TupleExpr expr = query.getTupleExpr();
+    double cardinality = this.hybridStore.getCurrentStore().getSailStore().getEvaluationStatistics().getCardinality(
+            expr
+    );
+    logger.info("Cardinality = "+cardinality);
   }
   // for SPARQL queries
   @Override
@@ -130,11 +145,13 @@ public class HybridStoreConnection extends SailSourceConnection {
       IRI newPred = iriConverter.convertPred(pred);
       Resource newSubj = iriConverter.convertSubj(subj);
       Value newObj = null;
-      if (obj instanceof Literal) {
-        newObj = iriConverter.convertLiteral((Literal) obj);
-      } else {
-        newObj = iriConverter.convertObj(obj);
-      }
+//      if (obj instanceof Literal) {
+//        newObj = iriConverter.convertLiteral((Literal) obj);
+//        System.out.println(obj+","+newObj);
+//      } else {
+//        newObj = iriConverter.convertObj(obj);
+//      }
+      newObj = iriConverter.convertObj(obj);
       getCurrentConnection().addStatement(
               newSubj,
               newPred,
@@ -300,11 +317,12 @@ public class HybridStoreConnection extends SailSourceConnection {
     Resource newSubj = iriConverter.convertSubj(subj);
     IRI newPred = iriConverter.convertPred(pred);
     Value newObj;
-    if(obj instanceof Literal){
-      newObj = iriConverter.convertLiteral((Literal)obj);
-    }else{
-      newObj = iriConverter.convertObj(obj);
-    }
+//    if(obj instanceof Literal){
+//      newObj = iriConverter.convertLiteral((Literal)obj);
+//    }else{
+//      newObj = iriConverter.convertObj(obj);
+//    }
+    newObj = iriConverter.convertObj(obj);
     // remove statement from both stores... A and B
     this.connA.removeStatement(op, newSubj, newPred, newObj, contexts);
     this.connB.removeStatement(op, newSubj, newPred, newObj, contexts);

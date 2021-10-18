@@ -36,6 +36,7 @@ import org.rdfhdt.hdt.rdf4j.utility.IRIConverter;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.triples.TripleID;
+import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,33 +60,31 @@ public class TestNativeStore {
         nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/data/admin/eu/native-store/A"),"spoc,posc,cosp");
     }
     public static void main(String[] args) {
-//        try {
-//            HDTSpecification spec = new HDTSpecification();
-//            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-//            HDT hdt = HDTManager.mapIndexedHDT("/Users/alyhdr/Desktop/qa-company/data/admin/eu/hdt_index/index.hdt",spec);
-//            CharSequence charSequence = hdt.getDictionary().idToString(-110, TripleComponentRole.OBJECT);
-//            System.out.println(charSequence);
-////            IteratorTripleString search = hdt.search("", "", "");
-////            while (search.hasNext()){
-////                System.out.println(search.next());
-////            }
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-        NativeStore nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/data/admin/eu/native-store/B"), "spoc,posc,cosp");
-        SailRepository repository = new SailRepository(nativeStore);
-        ValueFactory vf = new MemValueFactory();
-        String ex = "http://hdt.org/";
-        try (RepositoryConnection connection = repository.getConnection()) {
-            long size = connection.size();
-            System.out.println(size);
-//            RepositoryResult<Statement> statements = connection.getStatements(vf.createIRI("https://linkedopendata.eu/entity/","Q16"), null, null);
-//
-//            for (Statement s:statements) {
-//                System.out.println(s);
-//            }
+        try {
+            HDTSpecification spec = new HDTSpecification();
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+            HDT hdt = HDTManager.mapIndexedHDT("/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/hdt-store/index.hdt",spec);
+            //hdt.getDictionary().idToString();
+            hdt.getTriples().searchAll().forEachRemaining(System.out::println);
+            System.out.println("=============");
+            hdt.search("","","").forEachRemaining(System.out::println);
+            System.out.println("idToString: "+hdt.getDictionary().idToString(1,TripleComponentRole.OBJECT).toString());
+        } catch (IOException | NotFoundException e) {
+            e.printStackTrace();
         }
+//        NativeStore nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/data/admin/eu/native-store/C"), "spoc,posc,cosp");
+//        SailRepository repository = new SailRepository(nativeStore);
+//        ValueFactory vf = new MemValueFactory();
+//        String ex = "http://hdt.org/";
+//        try (RepositoryConnection connection = repository.getConnection()) {
+//            long size = connection.size();
+//            System.out.println(size);
+////            RepositoryResult<Statement> statements = connection.getStatements(vf.createIRI("https://linkedopendata.eu/entity/","Q16"), null, null);
+////
+////            for (Statement s:statements) {
+////                System.out.println(s);
+////            }
+//        }
 
     }
 //    private void writeTempFile(RepositoryConnection connection,String file){

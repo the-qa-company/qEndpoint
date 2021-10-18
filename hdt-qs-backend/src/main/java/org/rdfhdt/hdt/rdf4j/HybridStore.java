@@ -426,4 +426,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
         return "Merged!";
     }
+
+    public String getLocationNative() {
+        return locationNative;
+    }
+
+    public String getLocationHdt() {
+        return locationHdt;
+    }
 }

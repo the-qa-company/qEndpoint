@@ -1,9 +1,7 @@
 package org.rdfhdt.hdt.rdf4j.utility;
 
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.AbstractValueFactoryHDT;
-import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
-import org.eclipse.rdf4j.model.impl.SimpleLiteralHDT;
+import org.eclipse.rdf4j.model.impl.*;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.rdfhdt.hdt.dictionary.impl.MultipleBaseDictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
@@ -271,7 +269,10 @@ public class IRIConverter {
                 } else {
                     convert = true;
                 }
-            } else {
+            }else if(obj instanceof SimpleLiteralHDT) {
+                long objId = ((SimpleLiteralHDT) obj).getHdtID();
+                newObj = new SimpleIRIHDT(hdt,"http://hdt.org/O" + objId,SimpleIRIHDT.OBJECT_POS,objId);
+            }else {
                 convert = true;
             }
             if(convert){
@@ -291,6 +292,9 @@ public class IRIConverter {
         }
         return newObj;
     }
+    public Literal convertLiteralToIRIHDT(){
+        return null;
+    }
     public Literal convertLiteral(Literal obj){
         String objStr = obj.toString();
         if(objStr.startsWith("http://hdt.org/")){
@@ -298,7 +302,13 @@ public class IRIConverter {
             long id = Long.parseLong(objStr.substring(1));
             return new SimpleLiteralHDT(hdt,id,this.valueFactory);
         }else{
-            return obj;
+            long objId = this.hdt.getDictionary().stringToId(objStr, TripleComponentRole.OBJECT);
+            if(objId != -1){
+                // found literal in HDT then return a literal object
+                return new SimpleLiteralHDT(hdt,objId,this.valueFactory);
+            }else {
+                return obj;
+            }
         }
     }
     private boolean isLiteral(long id){

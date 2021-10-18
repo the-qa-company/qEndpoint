@@ -12,10 +12,12 @@ import org.eclipse.rdf4j.model.impl.SimpleLiteralHDT;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
@@ -34,8 +36,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.annotation.Native;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
 public class MergeRunnable implements Runnable {
@@ -66,6 +71,9 @@ public class MergeRunnable implements Runnable {
 
     public synchronized void run() {
         hybridStore.isMerging = true;
+        // init the temp deletes while merging...
+        hybridStore.initTempDeleteArray();
+        hybridStore.initTempDump();
 
         // wait for all running updates to finish
         try {
@@ -85,9 +93,6 @@ public class MergeRunnable implements Runnable {
         // write the switchStore value to disk in case, something crash we can recover
         this.hybridStore.writeWhichStore();
 
-        // init the temp deletes while merging...
-        hybridStore.initTempDeleteArray();
-        hybridStore.initTempDump();
         try {
             String rdfInput = locationHdt+"temp.nt";
             String hdtOutput = locationHdt+"temp.hdt";
@@ -264,6 +269,9 @@ public class MergeRunnable implements Runnable {
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
 //        }
+//        NativeStore tempStore = new NativeStore(new File(this.hybridStore.getLocationNative()+"C"),"spoc,posc,cosp");
+//        SailRepositoryConnection tempConnection = new SailRepository(tempStore).getConnection();
+
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             try (RepositoryConnection connection = this.hybridStore.getRepoConnection()) {
@@ -288,25 +296,24 @@ public class MergeRunnable implements Runnable {
                         SimpleIRIHDT simpleIRIHDTSubj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.SUBJECT_POS, newSubjId);
                         newSubjIRI = newConverter.convertSubj(simpleIRIHDTSubj);
                     } else // convert the string of old ID to the original String..
-                        newSubjIRI = tempFactory.createIRI(iriHdtSubj.toString());
+                        newSubjIRI = iriHdtSubj;
+
                     long newPredId = newHDT.getDictionary().stringToId(iriHdtPred.toString(), TripleComponentRole.PREDICATE);
                     IRI newPredIRI = null;
                     if (newPredId != -1) {
                         SimpleIRIHDT simpleIRIHDTPred = new SimpleIRIHDT(newHDT, SimpleIRIHDT.PREDICATE_POS, newPredId);
                         newPredIRI = newConverter.convertPred(simpleIRIHDTPred);
                     } else { // convert the string of old ID to the original String..
-                        newPredIRI = tempFactory.createIRI(iriHdtPred.toString());
+                        newPredIRI = iriHdtPred;
                     }
+
                     long newObjId = newHDT.getDictionary().stringToId(iriHdtObj.toString(), TripleComponentRole.OBJECT);
                     Value newObjIRI = null;
                     if (newObjId != -1) {
                         SimpleIRIHDT simpleIRIHDTObj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.OBJECT_POS, newObjId);
                         newObjIRI = newConverter.convertObj(simpleIRIHDTObj);
                     } else {
-                        if (iriHdtObj instanceof Literal || iriHdtObj instanceof SimpleLiteralHDT)
-                            newObjIRI = tempFactory.createLiteral(iriHdtObj.toString());
-                        else
-                            newObjIRI = tempFactory.createIRI(iriHdtObj.toString());
+                        newObjIRI = iriHdtObj;
                     }
 //                System.out.println("old:["+ oldSubject+" "+oldPredicate+" "+oldObject+"]");
 //                System.out.println("new:["+ newSubjIRI+" "+newPredIRI+" "+newObjIRI+"]");
@@ -314,12 +321,38 @@ public class MergeRunnable implements Runnable {
                     // remove the old statements and append the new converted ones.
                     connection.remove(oldSubject, oldPredicate, oldObject);
                     connection.add(newSubjIRI, newPredIRI, newObjIRI);
+                    // append data to the temp native store
+                    //tempConnection.add(newSubjIRI, newPredIRI, newObjIRI);
                 }
             }
+            // replace the index on disk
+
+            // close connection and shutdown the store to release the locks
+//            tempConnection.close();
+//            tempStore.shutDown();
+//
+//
+//            String dirPath = this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath();
+//            Files.walk(Paths.get(dirPath))
+//                    .sorted(Comparator.reverseOrder())
+//                    .map(Path::toFile)
+//                    .forEach(File::delete);
+//
+//            //Files.deleteIfExists();
+//            // rename the temp store to the current store
+//            File file = new File(tempStore.getDataDir().getAbsolutePath());
+//            boolean renamed = file.renameTo(this.hybridStore.getCurrentStore().getDataDir());
+//            if(renamed){
+//                logger.info("Replaced the current store data with the mapped triples to the new HDT");
+//                this.hybridStore.getCurrentStore().shutDown();
+//                this.hybridStore.getCurrentStore().init();
+//            }
+
             stopwatch.stop(); // optional
             System.out.println("Time elapsed for conversion: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }catch (Exception e){
-            logger.error("Something went wrong during conversion of IDs in merge phase: "+e.getMessage());
+            logger.error("Something went wrong during conversion of IDs in merge phase: ");
+            e.printStackTrace();
             hybridStore.isMerging = false;
         }
         lock.release();
