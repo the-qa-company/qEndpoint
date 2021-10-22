@@ -119,7 +119,7 @@ public class Sparql {
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
             luceneSail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry");
             luceneSail.setBaseSail(hybridStore);
-            //luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
+            luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
             luceneSail.initialize();
             repository = new SailRepository(luceneSail);
             repository.init();
