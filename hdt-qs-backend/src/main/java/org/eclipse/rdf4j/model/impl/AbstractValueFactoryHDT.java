@@ -44,23 +44,26 @@ public class AbstractValueFactoryHDT extends AbstractValueFactory {
     return stringToId(iri);
   }
   private SimpleIRIHDT stringToId(String iriString){
-    long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
+
+    // give priority to predicates to avoid reified triples...
+    // not a nice fix, but we assume that we don't support reification
+    long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.PREDICATE);
     int position = -1;
     if (id != -1) {
-      if (id <= hdt.getDictionary().getNshared()) {
-        position = SimpleIRIHDT.SHARED_POS;
-      } else {
-        position = SimpleIRIHDT.SUBJECT_POS;
-      }
-    } else {
-      id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
+      position = SimpleIRIHDT.PREDICATE_POS;
+    }else{
+      id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
       if (id != -1) {
-        position = SimpleIRIHDT.OBJECT_POS;
+        if (id <= hdt.getDictionary().getNshared()) {
+          position = SimpleIRIHDT.SHARED_POS;
+        } else {
+          position = SimpleIRIHDT.SUBJECT_POS;
+        }
       } else {
-        id = hdt.getDictionary()
-                        .stringToId(iriString, TripleComponentRole.PREDICATE);
+        // not in subject position, then check in object position
+        id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
         if (id != -1) {
-          position = SimpleIRIHDT.PREDICATE_POS;
+          position = SimpleIRIHDT.OBJECT_POS;
         }
       }
     }
