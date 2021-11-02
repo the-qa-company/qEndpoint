@@ -90,6 +90,8 @@ public class MergeRunnable implements Runnable {
             this.hybridStore.currentStore = this.hybridStore.nativeStoreB;
             this.hybridStore.switchStore = true;
         }
+        // reset the count of triples to 0 when after switching the stores
+        this.hybridStore.setTriplesCount(0);
         // write the switchStore value to disk in case, something crash we can recover
         this.hybridStore.writeWhichStore();
 
@@ -134,6 +136,12 @@ public class MergeRunnable implements Runnable {
             this.hybridStore.setHdtProps(new HDTProps(tempHdt));
             this.hybridStore.setHdt(tempHdt);
             this.hybridStore.setValueFactory(new AbstractValueFactoryHDT(tempHdt));
+            // initialize bitmaps again with the new dictionary
+            Files.deleteIfExists(Paths.get(this.locationHdt+"bitX"));
+            Files.deleteIfExists(Paths.get(this.locationHdt+"bitY"));
+            Files.deleteIfExists(Paths.get(this.locationHdt+"bitZ"));
+
+            hybridStore.initNativeStoreDictionary();
             // mark the triples as deleted from the temp file stored while merge
             this.hybridStore.markDeletedTempTriples();
             this.hybridStore.isMerging = false;
@@ -144,6 +152,8 @@ public class MergeRunnable implements Runnable {
             e.printStackTrace();
         }
     }
+
+
 
     private void diffIndexes(String hdtInput1,String bitArray) {
 

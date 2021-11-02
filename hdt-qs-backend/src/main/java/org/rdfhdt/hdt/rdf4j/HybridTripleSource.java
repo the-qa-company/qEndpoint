@@ -51,7 +51,7 @@ public class HybridTripleSource implements TripleSource {
   private SailConnection connB;
   private SailConnection connCurr;
   private long numberOfCurrentTriples;
-
+  private long count = 0;
   public HybridTripleSource(HDT hdt, HybridStore hybridStore) {
     this.hybridStore = hybridStore;
     this.hdt = hdt;
@@ -91,31 +91,35 @@ public class HybridTripleSource implements TripleSource {
 
     CloseableIteration<? extends Statement, SailException> repositoryResult = null;
 
-    Resource newRes = iriConverter.convertSubj(resource);
-    IRI newIRI = iriConverter.convertPred(iri);
-    Value newValue = iriConverter.convertObj(value);
-
 
     ArrayList<SailConnection> connections = new ArrayList();
     connections.add(connA);
     connections.add(connB);
 
-    if(hybridStore.isMerging()){
-      // query both native stores
-      CloseableIteration<? extends Statement, SailException> repositoryResult1 =
-              connA.getStatements(
-                      newRes,newIRI,newValue,false,resources
-              );
-      CloseableIteration<? extends Statement, SailException> repositoryResult2 =
-              connB.getStatements(
-                      newRes,newIRI,newValue,false,resources
-              );
-      repositoryResult = new CombinedNativeStoreResult(repositoryResult1,repositoryResult2);
 
-    }else{
-      repositoryResult = this.connCurr.getStatements(
-              newRes, newIRI, newValue, false, resources
-      );
+    Resource newRes = iriConverter.convertSubj(resource);
+    IRI newIRI = iriConverter.convertPred(iri);
+    Value newValue = iriConverter.convertObj(value);
+
+    if(shouldSearchOverNativeStore(newRes,newIRI,newValue)) {
+      count++;
+      if (hybridStore.isMerging()) {
+        // query both native stores
+        CloseableIteration<? extends Statement, SailException> repositoryResult1 =
+                connA.getStatements(
+                        newRes, newIRI, newValue, false, resources
+                );
+        CloseableIteration<? extends Statement, SailException> repositoryResult2 =
+                connB.getStatements(
+                        newRes, newIRI, newValue, false, resources
+                );
+        repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
+
+      } else {
+        repositoryResult = this.connCurr.getStatements(
+                newRes, newIRI, newValue, false, resources
+        );
+      }
     }
 //    long subject = -1;
 //    if(newRes == null){
@@ -135,6 +139,8 @@ public class HybridTripleSource implements TripleSource {
 //    }else if(newValue instanceof SimpleIRIHDT){
 //      object = ((SimpleIRIHDT)newValue).getId();
 //    }
+
+
     long subject = hdtConverter.subjectId(resource);
     long predicate = hdtConverter.predicateId(iri);
     long object = hdtConverter.objectId(value);
@@ -155,11 +161,13 @@ public class HybridTripleSource implements TripleSource {
     //System.out.println(subject+"--"+predicate+"--"+object);
     if(subject != -1 && predicate != -1 && object != -1) {
       TripleID t = new TripleID(subject, predicate, object);
-      iterator = hdt.getTriples().search(t);
+      // search with the ID to check if the triples has been deleted
+      iterator = hdt.getTriples().searchWithId(t);
 
     }else{ // no need to search over hdt
       iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
     }
+//    IteratorTripleID iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
     TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this,iterator,repositoryResult,connections);
     return new CloseableIteration<Statement, QueryEvaluationException>() {
       @Override
@@ -184,6 +192,57 @@ public class HybridTripleSource implements TripleSource {
     };
   }
 
+  private boolean shouldSearchOverNativeStore(Resource subject,IRI predicate,Value object){
+    boolean containsSubject = false;
+    boolean containsPredicate = false;
+    boolean containsObject = false;
+
+    if(subject instanceof SimpleIRIHDT){
+      if(((SimpleIRIHDT) subject).getId() != -1)
+        containsSubject = this.hybridStore.getBitX().access(((SimpleIRIHDT) subject).getId() - 1);
+      else
+        containsSubject = true;
+    }else {
+      containsSubject = true;
+    }
+    if(predicate instanceof SimpleIRIHDT){
+      if(((SimpleIRIHDT) predicate).getId() != -1)
+        containsPredicate = this.hybridStore.getBitY().access(((SimpleIRIHDT) predicate).getId() - 1);
+      else
+        containsPredicate = true;
+    }else {
+      containsPredicate = true;
+    }
+    if(object instanceof SimpleIRIHDT){
+      if(((SimpleIRIHDT) object).getId() != -1) {
+        if(((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.SHARED_POS)
+          containsObject = this.hybridStore.getBitX().access(((SimpleIRIHDT) object).getId() - 1);
+        else if(((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.OBJECT_POS)
+          containsObject = this.hybridStore.getBitZ().access(((SimpleIRIHDT) object).getId() - 1);
+      }else
+        containsObject = true;
+    }else{
+      containsObject = true;
+    }
+    return containsSubject && containsPredicate && containsObject;
+  }
+  /*
+  private boolean shouldSearchOverNativeStore(Resource subject,IRI predicate,Value object){
+    boolean containsSubject = false;
+    boolean containsPredicate = false;
+    boolean containsObject = false;
+
+    if(subject instanceof SimpleIRIHDT){
+      containsSubject = this.hybridStore.nativeStoreDictionary.contains(((SimpleIRIHDT) subject).getIriString());
+    }
+    if(predicate instanceof SimpleIRIHDT){
+      containsPredicate = this.hybridStore.nativeStoreDictionary.contains(((SimpleIRIHDT) predicate).getIriString());
+    }
+    if(object instanceof SimpleIRIHDT){
+      containsObject = this.hybridStore.nativeStoreDictionary.contains(((SimpleIRIHDT) object).getIriString());
+    }
+    return containsSubject && containsPredicate && containsObject;
+  } */
   public void setHdt(HDT hdt) {
     this.hdt = hdt;
   }
@@ -227,5 +286,9 @@ public class HybridTripleSource implements TripleSource {
 
   public void setConnCurr(SailConnection connCurr) {
     this.connCurr = connCurr;
+  }
+
+  public long getCount() {
+    return count;
   }
 }

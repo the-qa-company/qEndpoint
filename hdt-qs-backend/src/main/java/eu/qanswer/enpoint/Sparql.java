@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.*;
 
 
+import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLParser;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriter;
@@ -143,6 +144,9 @@ public class Sparql {
 
         if (parsedQuery instanceof ParsedTupleQuery) {
             TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
+            Explanation explain = query.explain(Explanation.Level.Timed);
+            System.out.println(explain);
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
             query.setMaxExecutionTime(timeout);
@@ -159,7 +163,7 @@ public class Sparql {
             }
             return new String(out.toByteArray());
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
-            BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+            BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
             if (query.evaluate() == true) {
                 return "{ \"head\" : { } , \"boolean\" : true }";
             } else {

@@ -208,4 +208,8 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
       return toString().hashCode();
     }
   }
+
+  public String getIriString() {
+    return iriString;
+  }
 }

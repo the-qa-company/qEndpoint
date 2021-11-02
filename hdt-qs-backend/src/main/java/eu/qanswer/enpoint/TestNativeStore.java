@@ -1,5 +1,6 @@
 package eu.qanswer.enpoint;
 
+import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import org.eclipse.rdf4j.http.client.RDF4JProtocolSession;
 import org.eclipse.rdf4j.http.client.SharedHttpClientSessionManager;
 import org.eclipse.rdf4j.http.protocol.Protocol;
@@ -48,7 +49,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,31 +61,41 @@ public class TestNativeStore {
         nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/data/admin/eu/native-store/A"),"spoc,posc,cosp");
     }
     public static void main(String[] args) {
-        try {
-            HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-            HDT hdt = HDTManager.mapIndexedHDT("/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/hdt-store/index.hdt",spec);
-            //hdt.getDictionary().idToString();
-            hdt.getTriples().searchAll().forEachRemaining(System.out::println);
-            System.out.println("=============");
-            hdt.search("","","").forEachRemaining(System.out::println);
-            System.out.println("idToString: "+hdt.getDictionary().idToString(1,TripleComponentRole.OBJECT).toString());
-        } catch (IOException | NotFoundException e) {
-            e.printStackTrace();
-        }
-//        NativeStore nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/data/admin/eu/native-store/C"), "spoc,posc,cosp");
-//        SailRepository repository = new SailRepository(nativeStore);
-//        ValueFactory vf = new MemValueFactory();
-//        String ex = "http://hdt.org/";
-//        try (RepositoryConnection connection = repository.getConnection()) {
-//            long size = connection.size();
-//            System.out.println(size);
-////            RepositoryResult<Statement> statements = connection.getStatements(vf.createIRI("https://linkedopendata.eu/entity/","Q16"), null, null);
-////
-////            for (Statement s:statements) {
-////                System.out.println(s);
-////            }
+//        try {
+//            HDTSpecification spec = new HDTSpecification();
+//            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+//            HDT hdt = HDTManager.mapIndexedHDT("/Users/alyhdr/Desktop/qa-company/data/admin/eu/hdt_index/index.hdt",spec);
+//
+//            long pred_id = hdt.getDictionary().stringToId("https://linkedopendata.eu/prop/direct/P35",TripleComponentRole.PREDICATE);
+//            long obj_od = hdt.getDictionary().stringToId("https://linkedopendata.eu/entity/Q196788",TripleComponentRole.OBJECT);
+//            TripleID tripleID = new TripleID(0,pred_id,obj_od);
+//            IteratorTripleID search = hdt.getTriples().searchWithId(tripleID);
+//
+//            Stopwatch stopwatch = Stopwatch.createStarted();
+//            long count = 0;
+//            while (search.hasNext()){
+//                search.next();
+//                count++;
+//            }
+//            stopwatch.stop();
+//            System.out.println("time to iterate:"+stopwatch.toString()+", over "+count+" triples");
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
 //        }
+        NativeStore nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/native-store/B"), "spoc,posc,cosp");
+        SailRepository repository = new SailRepository(nativeStore);
+        ValueFactory vf = new MemValueFactory();
+        String ex = "http://hdt.org/";
+        try (RepositoryConnection connection = repository.getConnection()) {
+            long size = connection.size();
+            System.out.println(size);
+            RepositoryResult<Statement> statements = connection.getStatements(null, null, null,false);
+
+            for (Statement s:statements) {
+                System.out.println(s);
+            }
+        }
 
     }
 //    private void writeTempFile(RepositoryConnection connection,String file){

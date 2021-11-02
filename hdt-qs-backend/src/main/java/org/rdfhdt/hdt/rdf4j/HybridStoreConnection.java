@@ -66,13 +66,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     }
     this.lock = this.hybridStore.connectionsLockManager.createLock("connection-lock");
     super.begin();
-    Stopwatch stopwatch = Stopwatch.createStarted();
-    long count = this.getCurrentConnection().size();
 
-    stopwatch.stop(); // optional
-    System.out.println("Time elapsed for count request: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
-    //long count = 0;
+    //long count = this.getCurrentConnection().size();
+
+    // use the estimated count;
+    long count = this.hybridStore.triplesCount;
+
     System.err.println("--------------: "+count);
 
     // Merge only if threshold in native store exceeded and not merging with hdt
@@ -104,7 +104,6 @@ public class HybridStoreConnection extends SailSourceConnection {
     tripleSource.setConnCurr(getCurrentConnection());
     return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred,0);
   }
-
   // USED from connection get api not SPARQL
   @Override
   protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
@@ -158,20 +157,28 @@ public class HybridStoreConnection extends SailSourceConnection {
               newObj,
               contexts
       );
-//      // if merge is happening we don't insert the converted IRIs because they rely on the old index after merge
-//      if (hybridStore.isMerging()) {
-//        this.nativeStoreConnection.addStatement(
-//                subj,
-//                pred,
-//                obj,
-//                contexts
-//        );
-//      } else { // not merging insert with HDT IDs
-//
-//      }
+      // modify the bitmaps if the IRIs used are in HDT
+      this.hybridStore.modifyBitmaps(newSubj,newPred,newObj);
+      // increase the number of statements
+      this.hybridStore.triplesCount++;
+
+
+      // if merge is happening we don't insert the converted IRIs because they rely on the old index after merge
+
+      /*
+      if (hybridStore.isMerging()) {
+        this.nativeStoreConnection.addStatement(
+                subj,
+                pred,
+                obj,
+                contexts
+        );
+      } else { // not merging insert with HDT IDs
+
+      }
+      */
     }
   }
-
   private boolean inOtherStore(Resource subj, IRI pred, Value obj) {
     // only in the case while merging - we check if the triple exists in the other store
     if(true){
@@ -278,6 +285,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   protected void closeInternal() throws SailException {
+    System.out.println("Number of counts native store was called:"+this.tripleSource.getCount());
     super.closeInternal();
     //this.nativeStoreConnection.close();
     this.connA.close();
@@ -326,6 +334,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     // remove statement from both stores... A and B
     this.connA.removeStatement(op, newSubj, newPred, newObj, contexts);
     this.connB.removeStatement(op, newSubj, newPred, newObj, contexts);
+    this.hybridStore.triplesCount--;
 
     long subjId;
     long predId;
@@ -367,7 +376,7 @@ public class HybridStoreConnection extends SailSourceConnection {
       objId = convertToId(obj,TripleComponentRole.OBJECT);
     }
     TripleID t = new TripleID(subjId, predId, objId);
-    Iterator<TripleID> iter = hybridStore.getHdt().getTriples().search(t);
+    Iterator<TripleID> iter = hybridStore.getHdt().getTriples().searchWithId(t);
     // if iterator is empty then the given triple 't' doesn't exist in HDT
     if(iter.hasNext()){
       TripleID next = iter.next();
@@ -382,7 +391,7 @@ public class HybridStoreConnection extends SailSourceConnection {
   private void assignBitMapDeletes(long subjId,long predId,long objecId,Resource subj, IRI pred, Value obj) throws SailException {
     if(subjId != -1 && predId != -1 && objecId != -1) {
       TripleID t = new TripleID(subjId, predId, objecId);
-      Iterator<TripleID> iter = hybridStore.getHdt().getTriples().search(t);
+      Iterator<TripleID> iter = hybridStore.getHdt().getTriples().searchWithId(t);
       long index = -1;
 
       if (iter.hasNext())

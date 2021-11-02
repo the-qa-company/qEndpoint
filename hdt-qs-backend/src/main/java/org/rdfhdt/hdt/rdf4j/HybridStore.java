@@ -1,19 +1,22 @@
 package org.rdfhdt.hdt.rdf4j;
 
+import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import eu.qanswer.enpoint.BitArrayDisk;
 import eu.qanswer.enpoint.MergeRunnable;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.AbstractValueFactoryHDT;
+import org.eclipse.rdf4j.model.impl.SimpleIRIHDT;
 import org.eclipse.rdf4j.model.impl.SimpleStatement;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolverClient;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -31,6 +34,7 @@ import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.rdf4j.utility.HDTProps;
+import org.rdfhdt.hdt.rdf4j.utility.IRIConverter;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.triples.TripleID;
@@ -42,6 +46,8 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
@@ -74,6 +80,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public LockManager manager;
     public LockManager connectionsLockManager;
 
+    public long triplesCount;
+
+    public HashSet<String> nativeStoreDictionary;
+    private BitArrayDisk bitX;
+    private BitArrayDisk bitY;
+    private BitArrayDisk bitZ;
+
     public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
 
         try {
@@ -98,7 +111,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             this.currentStore = nativeStoreA;
         this.currentStore.init();
         this.threshold = 100000;
-
         this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
 
@@ -108,6 +120,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.manager = new LockManager();
         this.connectionsLockManager = new LockManager();
         initDeleteArray();
+        // initialize the count of the triples
+        this.triplesCount = getCurrentStore().getConnection().size();
+        this.nativeStoreDictionary = new HashSet<>();
+        // initialize native store dictionary
+        //initNativeStoreDictionaryMemory();
+        initNativeStoreDictionary();
     }
     public HybridStore(HDT hdt,String locationHdt,String locationNative,boolean inMemDeletes){
         this.hdt = hdt;
@@ -127,7 +145,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             this.currentStore = nativeStoreA;
         this.currentStore.init();
         this.threshold = 100000;
-
         this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
 
@@ -137,6 +154,34 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.manager = new LockManager();
         this.connectionsLockManager = new LockManager();
         initDeleteArray();
+        // initialize the count of the triples
+        this.triplesCount = getCurrentStore().getConnection().size();
+        this.nativeStoreDictionary = new HashSet<>();
+        // initialize native store dictionary
+        //initNativeStoreDictionaryMemory();
+        initNativeStoreDictionary();
+    }
+
+    public void initNativeStoreDictionaryMemory(){
+        RepositoryResult<Statement> statements1 = getRepoConnection().getStatements(null, null, null, false);
+        CloseableIteration<? extends Statement, SailException> statements = this.currentStore.getConnection().getStatements(null, null, null, false);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (statements1.hasNext()){
+            Statement next = statements1.next();
+            nativeStoreDictionary.add(next.getSubject().toString());
+            nativeStoreDictionary.add(next.getPredicate().toString());
+            nativeStoreDictionary.add(next.getObject().toString());
+        }
+        System.out.println("Time elapsed to create native store dictionary: "+ stopwatch);
+    }
+    public void initNativeStoreDictionary(){
+        this.bitX = new BitArrayDisk(this.hdt.getDictionary().getNsubjects(),this.locationHdt+"bitX");
+        this.bitY = new BitArrayDisk(this.hdt.getDictionary().getNpredicates(),this.locationHdt+"bitY");
+        this.bitZ = new BitArrayDisk(this.hdt.getDictionary().getNAllObjects(),this.locationHdt+"bitZ");
+        // if the bitmaps have not been initialized with the native store
+        if(this.bitX.countOnes() == 0 && this.bitY.countOnes() == 0 && this.bitZ.countOnes() == 0){
+            initBitmaps();
+        }
     }
 
     public void setThreshold(int threshold) {
@@ -341,8 +386,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                         CharSequence subject = this.hdt.getDictionary().idToString(tripleID.getSubject(), TripleComponentRole.SUBJECT);
                         CharSequence predicate = this.hdt.getDictionary().idToString(tripleID.getPredicate(), TripleComponentRole.PREDICATE);
                         CharSequence object = this.hdt.getDictionary().idToString(tripleID.getObject(), TripleComponentRole.OBJECT);
-
-                        IteratorTripleString hit = newHdt.search(subject, predicate, object);
+                        // search over the given triple with the ID so that we can mark the new array..
+                        IteratorTripleString hit = newHdt.searchWithId(subject, predicate, object);
                         if(hit.hasNext()){
                             TripleString next = hit.next();
                             long newIndex = next.getIndex();
@@ -391,7 +436,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null,rdfParser)) {
                 while (res.hasNext()) {
                     Statement st = res.next();
-                    IteratorTripleString search = this.hdt.search(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());
+                    IteratorTripleString search = this.hdt.searchWithId(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());
                     if(search.hasNext()){
                         TripleString next = search.next();
                         long index = next.getIndex();
@@ -411,6 +456,50 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             e.printStackTrace();
         }
 
+    }
+    public void modifyBitmaps(Resource subject, IRI predicate, Value object) {
+        if (subject instanceof SimpleIRIHDT) {
+            long id = ((SimpleIRIHDT) subject).getId();
+            if (id != -1) {
+                this.getBitX().set(id - 1, true);
+            }
+        }
+        if (predicate instanceof SimpleIRIHDT) {
+            long id = ((SimpleIRIHDT) predicate).getId();
+            if (id != -1) {
+                if (((SimpleIRIHDT) predicate).getPostion() == SimpleIRIHDT.PREDICATE_POS)
+                    this.getBitY().set(id - 1, true);
+            }
+        }
+        if (object instanceof SimpleIRIHDT) {
+            long id = ((SimpleIRIHDT) object).getId();
+            if (id != -1) {
+                // case when the position is object we have to subtract the number elements of the shared section, so that
+                // the index stars from 0
+                if (((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.OBJECT_POS)
+                    this.getBitZ().set(id - this.getHdt().getDictionary().getNshared() - 1, true);
+                else if (((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.SHARED_POS)
+                    this.getBitX().set(id - 1, true);
+            }
+        }
+    }
+    private void initBitmaps() {
+        Lock lock = this.manager.createLock("bitmaps_init_lock");
+        try {
+            IRIConverter converter = new IRIConverter(this.hdt);
+            try (RepositoryConnection connection = this.getRepoConnection()) {
+                RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
+                for(Statement statement:statements){
+                    Resource subject = converter.getIRIHdtSubj(statement.getSubject());
+                    IRI predicate = (IRI) converter.getIRIHdtPred(statement.getPredicate());
+                    Value object = converter.getIRIHdtObj(statement.getObject());
+                    this.modifyBitmaps(subject,predicate,object);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        lock.release();
     }
     public String makeMerge() {
         try {
@@ -433,5 +522,21 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public String getLocationHdt() {
         return locationHdt;
+    }
+
+    public void setTriplesCount(long triplesCount) {
+        this.triplesCount = triplesCount;
+    }
+
+    public BitArrayDisk getBitX() {
+        return bitX;
+    }
+
+    public BitArrayDisk getBitY() {
+        return bitY;
+    }
+
+    public BitArrayDisk getBitZ() {
+        return bitZ;
     }
 }
