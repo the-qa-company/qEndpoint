@@ -2,6 +2,7 @@
 import java.io.File;
 import java.util.Map;
 
+import eu.qanswer.hybridstore.HybridStore;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
 import org.eclipse.rdf4j.repository.Repository;
@@ -13,7 +14,6 @@ import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.rdf4j.HybridStore;
 
 /**
  * Test SPARQL 1.1 Update functionality on a native store.

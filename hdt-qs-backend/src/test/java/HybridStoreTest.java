@@ -1,3 +1,4 @@
+import eu.qanswer.hybridstore.HybridStore;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.rdf4j.RDF4JException;
@@ -21,12 +22,12 @@ import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.rdf4j.HybridStore;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 
 import java.io.File;
@@ -249,6 +250,7 @@ public class HybridStoreTest {
     }
 
     @Test
+    @Ignore
     public void testMergeMultiple(){
         try {
 
@@ -703,6 +705,7 @@ public class HybridStoreTest {
                 Files.deleteIfExists(Paths.get("index.hdt"));
                 Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
+
             }
         }catch (Exception e){
             e.printStackTrace();

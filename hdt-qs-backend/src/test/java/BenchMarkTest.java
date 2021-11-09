@@ -1,3 +1,4 @@
+import eu.qanswer.hybridstore.HybridStore;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -7,12 +8,10 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.rdf4j.HybridStore;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;

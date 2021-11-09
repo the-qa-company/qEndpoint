@@ -2,7 +2,7 @@
 //
 //import com.metreeca.jse.JSEServer;
 //import com.metreeca.rdf4j.assets.Graph;
-//import eu.qanswer.enpoint.Sparql;
+//import eu.qanswer.hybridstore.Sparql;
 //import org.eclipse.rdf4j.repository.sail.SailRepository;
 //import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 //import org.eclipse.rdf4j.sail.lucene.LuceneSail;

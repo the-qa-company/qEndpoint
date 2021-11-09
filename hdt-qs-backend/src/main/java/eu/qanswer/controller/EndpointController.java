@@ -1,6 +1,6 @@
 package eu.qanswer.controller;
 
-import eu.qanswer.enpoint.Sparql;
+import eu.qanswer.hybridstore.Sparql;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 
 @CrossOrigin(origins = "http://localhost:3001")

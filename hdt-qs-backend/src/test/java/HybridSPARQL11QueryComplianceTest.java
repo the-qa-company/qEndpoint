@@ -1,5 +1,6 @@
 
 
+import eu.qanswer.hybridstore.HybridStore;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.Dataset;
@@ -19,7 +20,6 @@ import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
-import org.rdfhdt.hdt.rdf4j.HybridStore;
 
 import java.io.File;
 import java.io.IOException;
