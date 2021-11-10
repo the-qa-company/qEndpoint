@@ -42,13 +42,6 @@ public class HybridStoreConnection extends SailSourceConnection {
   public HybridStoreConnection(HybridStore hybridStore) {
     super(hybridStore, hybridStore.getCurrentStore().getSailStore(),new StrictEvaluationStrategyFactory());
     this.hybridStore = hybridStore;
-    // lock logic is here so that the connections is blocked
-    try {
-      this.hybridStore.manager.waitForActiveLocks();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-    this.connectionLock = this.hybridStore.connectionsLockManager.createLock("connection-lock");
 //    this.nativeStoreConnection = hybridStore.getConnectionNative();
     this.connA = hybridStore.getNativeStoreA().getConnection();
     this.connB = hybridStore.getNativeStoreB().getConnection();
@@ -58,6 +51,14 @@ public class HybridStoreConnection extends SailSourceConnection {
 
   @Override
   public void begin() throws SailException {
+    // lock logic is here so that the connections is blocked
+    try {
+      this.hybridStore.manager.waitForActiveLocks();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    this.connectionLock = this.hybridStore.connectionsLockManager.createLock("connection-lock");
+
     super.begin();
 
 

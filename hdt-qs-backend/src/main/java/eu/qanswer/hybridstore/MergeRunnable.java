@@ -36,25 +36,24 @@ import java.nio.file.Paths;
 public class MergeRunnable implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
-    private RepositoryConnection nativeStoreConnection;
+    private final RepositoryConnection nativeStoreConnection;
 
-    private String hdtIndex;
-    private String locationHdt;
+    private final String hdtIndex;
+    private final String locationHdt;
 
-    private HDT hdt;
-    private HybridStore hybridStore;
-    HDTSpecification spec;
-    private ValueFactory tempFactory;
-    private Lock mergeLock;
+    private final HDT hdt;
+    private final HybridStore hybridStore;
+    private final HDTSpecification spec;
+    private final Lock mergeLock;
+
     public MergeRunnable(String locationHdt, HybridStore hybridStore,Lock lock) {
         this.locationHdt = locationHdt;
         this.hdtIndex = locationHdt+"index.hdt";
         this.nativeStoreConnection = hybridStore.getRepoConnection();
         this.hybridStore = hybridStore;
         this.hdt = hybridStore.getHdt();
-        this.spec = new HDTSpecification();
-        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-        tempFactory = new MemValueFactory();
+        this.spec = hybridStore.getHDTSpec();
+        ValueFactory tempFactory = new MemValueFactory();
         this.mergeLock = lock;
     }
 

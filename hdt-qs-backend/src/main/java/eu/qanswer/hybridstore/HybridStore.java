@@ -67,7 +67,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private boolean inMemDeletes;
 
     private HDTProps hdtProps;
-    HDTSpecification spec;
     ValueFactory valueFactory;
     File checkFile;
 
@@ -83,12 +82,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk bitY;
     private BitArrayDisk bitZ;
     private IRIConverter iriConverter;
-
-    public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
+    private HDTSpecification spec;
+    public HybridStore(String locationHdt,HDTSpecification spec,String locationNative,boolean inMemDeletes){
 
         try {
-            HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             this.spec = spec;
             this.hdt = HDTManager.mapIndexedHDT(locationHdt+"index.hdt",spec);
         } catch (IOException e) {
@@ -131,8 +128,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
     public HybridStore(HDT hdt,String locationHdt,String locationNative,boolean inMemDeletes){
         this.hdt = hdt;
-        this.spec = new HDTSpecification();
-        this.spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         this.nativeStoreA = new NativeStore(new File(locationNative+"A"),"spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(locationNative+"B"),"spoc,posc,cosp");
         this.valueFactory = new AbstractValueFactoryHDT(hdt);
@@ -556,5 +551,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public BitArrayDisk getBitZ() {
         return bitZ;
+    }
+
+    public HDTSpecification getHDTSpec() {
+        return spec;
     }
 }

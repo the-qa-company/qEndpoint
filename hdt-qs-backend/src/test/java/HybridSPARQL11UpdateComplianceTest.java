@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.options.HDTSpecification;
 
 /**
  * Test SPARQL 1.1 Update functionality on a native store.
@@ -40,8 +41,12 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
         HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+
+        HDTSpecification spec = new HDTSpecification();
+        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+
         HybridStore hybridStore = new HybridStore(
-                hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
         );
 //        hybridStore.setThreshold(2);
 

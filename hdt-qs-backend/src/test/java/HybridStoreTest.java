@@ -22,12 +22,14 @@ import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 
 import java.io.File;
@@ -46,6 +48,12 @@ import static org.junit.Assert.*;
 public class HybridStoreTest {
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
+    HDTSpecification spec;
+    @Before
+    public void setUp() {
+        spec = new HDTSpecification();
+        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+    }
     @Test
     public void testInstantiate() {
         try {
@@ -55,7 +63,7 @@ public class HybridStoreTest {
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             HybridStore hybridStore = new HybridStore(
-                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
             );
             hybridStore.shutDown();
 
@@ -73,7 +81,7 @@ public class HybridStoreTest {
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             HybridStore hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
             );
             try (SailConnection connection = hybridStore.getConnection()) {
             }
@@ -92,7 +100,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                            hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
                     )
             );
             hybridStore.shutDown();
@@ -110,7 +118,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                            hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
                     )
 //                    new NativeStore(nativeStore,"spoc")
             );
@@ -132,7 +140,7 @@ public class HybridStoreTest {
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             HybridStore hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
             );
 
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
@@ -142,7 +150,7 @@ public class HybridStoreTest {
             }
             hybridStore.shutDown();
             hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
             );
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
@@ -167,7 +175,7 @@ public class HybridStoreTest {
             printHDT(hdt);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                            hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
                     )
             );
 
@@ -198,7 +206,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -261,7 +269,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(999);
             SailRepository hybridStore = new SailRepository(store);
@@ -302,7 +310,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(10);
             SailRepository hybridStore = new SailRepository(store);
@@ -333,7 +341,7 @@ public class HybridStoreTest {
             fail("Exception found !");
         }
     }
-//    @Test
+    //    @Test
 //    public void testMisc(){
 //        try {
 //            File nativeStore = tempDir.newFolder("native-store");
@@ -343,7 +351,7 @@ public class HybridStoreTest {
 //            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
 //            printHDT(hdt);
 //            HybridStore store = new HybridStore(
-//                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+//                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
 //            );
 //            //store.setThreshold(1);
 //            SailRepository hybridStore = new SailRepository(store);
@@ -395,23 +403,23 @@ public class HybridStoreTest {
 //    }
     private class StatementComparator implements Comparator<Statement>{
 
-    @Override
-    public int compare(Statement o1, Statement o2) {
-        if(o1.getSubject().toString().compareTo(o2.getSubject().toString()) == 0){
-            if(o1.getPredicate().toString().compareTo(o2.getPredicate().toString()) == 0){
-                if(o1.getObject().toString().compareTo(o2.getObject().toString()) == 0){
-                    return 0;
+        @Override
+        public int compare(Statement o1, Statement o2) {
+            if(o1.getSubject().toString().compareTo(o2.getSubject().toString()) == 0){
+                if(o1.getPredicate().toString().compareTo(o2.getPredicate().toString()) == 0){
+                    if(o1.getObject().toString().compareTo(o2.getObject().toString()) == 0){
+                        return 0;
+                    }else{
+                        return o1.getObject().toString().compareTo(o2.getObject().toString());
+                    }
                 }else{
-                    return o1.getObject().toString().compareTo(o2.getObject().toString());
+                    return o1.getPredicate().toString().compareTo(o2.getPredicate().toString());
                 }
             }else{
-                return o1.getPredicate().toString().compareTo(o2.getPredicate().toString());
+                return o1.getSubject().toString().compareTo(o2.getSubject().toString());
             }
-        }else{
-            return o1.getSubject().toString().compareTo(o2.getSubject().toString());
         }
     }
-}
     private void compareTriples(List<? extends Statement>  stmtsAdded, List<? extends Statement> stmtsQueried){
         stmtsQueried.sort(new StatementComparator());
         stmtsAdded.sort(new StatementComparator());
@@ -439,7 +447,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(99);
             SailRepository hybridStore = new SailRepository(store);
@@ -491,7 +499,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -532,7 +540,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -584,7 +592,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -630,7 +638,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(10);
             SailRepository hybridStore = new SailRepository(store);
@@ -676,7 +684,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -722,7 +730,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -757,7 +765,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -809,7 +817,7 @@ public class HybridStoreTest {
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",false
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
             );
             store.setThreshold(1000000);
             SailRepository hybridStore = new SailRepository(store);

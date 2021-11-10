@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.options.HDTSpecification;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -34,9 +35,11 @@ public class BenchMarkTest {
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
             //printHDT(hdt);
+            HDTSpecification spec = new HDTSpecification();
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",nativeStore.getAbsolutePath()+"/",true
+                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
             ));
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();
