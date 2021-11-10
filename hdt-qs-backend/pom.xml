@@ -22,7 +22,7 @@
 
     <groupId>eu.qanswer</groupId>
     <artifactId>hdtSparqlEndpoint</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
 
     <properties>
         <rdf4j.version>3.4.8-SNAPSHOT</rdf4j.version>
