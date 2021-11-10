@@ -82,6 +82,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk bitX;
     private BitArrayDisk bitY;
     private BitArrayDisk bitZ;
+    private IRIConverter iriConverter;
 
     public HybridStore(String locationHdt,String locationNative,boolean inMemDeletes){
 
@@ -125,6 +126,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         // initialize native store dictionary
         //initNativeStoreDictionaryMemory();
         initNativeStoreDictionary(this.hdt);
+        this.iriConverter = new IRIConverter(this.hdt);
+
     }
     public HybridStore(HDT hdt,String locationHdt,String locationNative,boolean inMemDeletes){
         this.hdt = hdt;
@@ -162,6 +165,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         // initialize native store dictionary
         //initNativeStoreDictionaryMemory();
         initNativeStoreDictionary(this.hdt);
+        this.iriConverter = new IRIConverter(this.hdt);
+
     }
 
     public void initNativeStoreDictionaryMemory(){
@@ -185,7 +190,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             initBitmaps(hdt);
         }
     }
+    public void initHDT(HDT hdt){
+        this.setHdt(hdt);
+        this.iriConverter = new IRIConverter(hdt);
+        this.setHdtProps(new HDTProps(hdt));
+        this.setValueFactory(new AbstractValueFactoryHDT(hdt));
 
+    }
     public void setThreshold(int threshold) {
         this.threshold = threshold;
     }
@@ -517,6 +528,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
 
         return "Merged!";
+    }
+
+    public IRIConverter getIriConverter() {
+        return iriConverter;
     }
 
     public String getLocationNative() {

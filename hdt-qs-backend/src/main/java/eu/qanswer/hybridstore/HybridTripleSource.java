@@ -75,7 +75,7 @@ public class HybridTripleSource implements TripleSource {
       Resource resource, IRI iri, Value value, Resource... resources)
       throws QueryEvaluationException {
 
-    // check if the index changed
+    // check if the index changed, then refresh it
     if(numberOfCurrentTriples != this.hybridStore.getHdt().getTriples().getNumberOfElements()){
       initHDTIndex();
     }

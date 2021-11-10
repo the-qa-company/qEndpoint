@@ -124,9 +124,7 @@ public class MergeRunnable implements Runnable {
             // convert all triples added to the merge store to new IDs of the new generated HDT
             Lock lock = hybridStore.manager.createLock("IDs conversion lock");
             convertOldToNew(this.hdt,tempHdt);
-            this.hybridStore.setHdtProps(new HDTProps(tempHdt));
-            this.hybridStore.setHdt(tempHdt);
-            this.hybridStore.setValueFactory(new AbstractValueFactoryHDT(tempHdt));
+            this.hybridStore.initHDT(tempHdt);
             logger.info("Releasing lock....");
             lock.release();
             // mark the triples as deleted from the temp file stored while merge

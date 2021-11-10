@@ -10,7 +10,7 @@ hdt-qs-backend/native-store/
 hdt-qs-frontend/node_modules
 hdt-qs-frontend/.pnp
 hdt-qs-frontend/.pnp.js
-
+.DS_Store
 # testing
 hdt-qs-frontend/coverage
 

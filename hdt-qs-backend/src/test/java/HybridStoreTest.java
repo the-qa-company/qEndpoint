@@ -429,6 +429,7 @@ public class HybridStoreTest {
         }
     }
     @Test
+    @Ignore
     public void testIndexGradually(){
         try {
             File nativeStore = tempDir.newFolder("native-store");
