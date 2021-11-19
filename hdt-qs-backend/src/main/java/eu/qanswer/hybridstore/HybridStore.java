@@ -3,6 +3,7 @@ package eu.qanswer.hybridstore;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import eu.qanswer.model.AbstractValueFactoryHDT;
 import eu.qanswer.model.SimpleIRIHDT;
+import eu.qanswer.model.SimpleLiteralHDT;
 import eu.qanswer.utils.BitArrayDisk;
 import eu.qanswer.utils.HDTProps;
 import eu.qanswer.utils.IRIConverter;
@@ -484,11 +485,23 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             long id = ((SimpleIRIHDT) object).getId();
             if (id != -1) {
                 // case when the position is object we have to subtract the number elements of the shared section, so that
-                // the index stars from 0
-                if (((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.OBJECT_POS)
+                // the index starts from 0
+                if (((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.OBJECT_POS) {
+                    if(id - hdt.getDictionary().getNshared() -1 < 0){
+                        System.out.println("Given id: "+id);
+                        System.out.println("Given object:"+object);
+
+                        throw new IllegalStateException("id is negative for the objects bitmap, "+ (id - hdt.getDictionary().getNshared() -1));
+                    }
                     this.getBitZ().set(id - hdt.getDictionary().getNshared() - 1, true);
+                }
                 else if (((SimpleIRIHDT) object).getPostion() == SimpleIRIHDT.SHARED_POS)
                     this.getBitX().set(id - 1, true);
+            }
+        }else if(object instanceof SimpleLiteralHDT){
+            long id = ((SimpleLiteralHDT) object).getHdtID();
+            if(id != -1){
+                this.getBitZ().set(id - hdt.getDictionary().getNshared() - 1, true);
             }
         }
     }
@@ -555,5 +568,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public HDTSpecification getHDTSpec() {
         return spec;
+    }
+
+    public void setSpec(HDTSpecification spec) {
+        this.spec = spec;
     }
 }
