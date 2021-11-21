@@ -7,7 +7,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,7 +28,8 @@ import java.security.Principal;
 public class EndpointController {
     private static final Logger logger = LoggerFactory.getLogger(EndpointController.class);
 
-    @Autowired private Sparql sparql;
+    @Autowired
+    private Sparql sparql;
 
     @RequestMapping(value = "/sparql")
     public ResponseEntity<String> sparqlEndpoint(
@@ -33,18 +40,11 @@ public class EndpointController {
             @RequestHeader(value = "timeout", defaultValue = "30") int timeout,
             @RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
-            @RequestBody(required = false) String body ,
-            Principal principal)
+            @RequestBody(required = false) String body)
             throws Exception {
+        logger.info("Query {} timeout {} update query {} body {} ", query, timeout, updateQuery, body);
 
-
-//        logger.info("Query "+query);
-//        logger.info("timeout: "+timeout);
-//        logger.info("update query: "+updateQuery);
-//        logger.info("body: "+body);
-
-
-        if(query != null) {
+        if (query != null) {
             if (acceptHeader.contains("application/sparql-results+json")) {
                 return ResponseEntity.status(HttpStatus.OK)
                         .header("Content-Type", "application/sparql-results+json")
@@ -67,17 +67,17 @@ public class EndpointController {
             }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
 
-        }else{
-            if(body!= null && content.equals("application/sparql-query")){
+        } else {
+            if (body != null && content.equals("application/sparql-query")) {
                 return ResponseEntity.status(HttpStatus.OK)
                         .header("Content-Type", "application/sparql-results+json")
                         .body(sparql.executeJson(body, timeout));
             }
-            if(updateQuery != null){
+            if (updateQuery != null) {
                 return ResponseEntity.status(HttpStatus.OK)
                         .body(sparql.executeUpdate(updateQuery, timeout));
-            }else{
-                if(body != null){
+            } else {
+                if (body != null) {
                     return ResponseEntity.status(HttpStatus.OK)
                             .body(sparql.executeUpdate(body, timeout));
                 }
@@ -85,19 +85,17 @@ public class EndpointController {
             }
         }
     }
-    private String decode(String value) throws UnsupportedEncodingException {
-        return URLDecoder.decode(value);
-    }
+
     @RequestMapping(value = "/update")
     public ResponseEntity<String> sparqlUpdate(
-            @RequestParam(value = "query", required = true) final String query,
+            @RequestParam(value = "query") final String query,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
             @RequestParam(value = "timeout", defaultValue = "5") int timeout,
             Principal principal)
             throws Exception {
-        logger.info("Query "+query);
-        logger.info("timeout: "+timeout);
+        logger.info("Query " + query);
+        logger.info("timeout: " + timeout);
         if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
             return ResponseEntity.status(HttpStatus.OK)
                     .header("Content-Type", "application/sparql-results+json")
@@ -105,29 +103,16 @@ public class EndpointController {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
     }
-//    @RequestMapping(value = "/merge")
-//    public ResponseEntity<String> makeMerge(
-//            @RequestParam(value = "format", defaultValue = "json") final String format,
-//            @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-//            Principal principal)
-//            throws Exception {
-//        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
-//            return ResponseEntity.status(HttpStatus.OK)
-//                    .header("Content-Type", "application/sparql-results+json")
-//                    .body(sparql.makeMerge());
-//        }
-//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
-//    }
+
     @PostMapping(value = "/load")
     public ResponseEntity<String> clearData(
-            @RequestParam(value = "file") final MultipartFile file,
-            Principal principal) {
+            @RequestParam(value = "file") final MultipartFile file) {
 
         try {
-            logger.info("Tryind to index "+file.getOriginalFilename());
+            logger.info("Tryind to index " + file.getOriginalFilename());
             InputStream inputStream = file.getInputStream();
             String s = sparql.loadFile(inputStream, file.getOriginalFilename());
-            if(s.equals("error"))
+            if (s.equals("error"))
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
             return ResponseEntity.status(HttpStatus.OK).body(s);
         } catch (IOException e) {

@@ -1,6 +1,5 @@
 import eu.qanswer.hybridstore.HybridStore;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.zookeeper.data.Stat;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -39,7 +38,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -856,5 +854,115 @@ public class HybridStoreTest {
         while (it.hasNext()){
             System.out.println(it.next());
         }
+    }
+
+    @Test
+    public void testCoherence() throws IOException, NotFoundException, InterruptedException {
+        // initialize the store
+        File nativeStore = tempDir.newFolder("native-store");
+        File hdtStore = tempDir.newFolder("hdt-store");
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+        assert hdt != null;
+        hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+        printHDT(hdt);
+        HybridStore store = new HybridStore(
+                hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
+        );
+        store.setThreshold(10);
+        SailRepository hybridStore = new SailRepository(store);
+
+        // PRE MERGE PHASE
+
+        // insert some data
+        String sparqlQuery = "INSERT DATA { ";
+        for (int i=0; i<130; i++){
+            sparqlQuery += "	<http://s"+i+">  <http://p"+i+">  <http://o"+i+"> . ";
+        }
+        sparqlQuery += "} ";
+        RepositoryConnection connection = hybridStore.getConnection();
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        // query some data
+        for (int i=0; i<130; i++) {
+            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p"+i+">  <http://o"+i+"> . } ";
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            assertEquals(true, tupleQueryResult.hasNext());
+            while (tupleQueryResult.hasNext()) {
+                BindingSet b = tupleQueryResult.next();
+                assertEquals("http://s"+i, b.getBinding("s").getValue().toString());
+            }
+        }
+        for (int i=0; i<130; i++) {
+            sparqlQuery = "SELECT ?p WHERE { <http://s"+i+">  ?p  <http://o"+i+"> . } ";
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            assertEquals(true, tupleQueryResult.hasNext());
+            while (tupleQueryResult.hasNext()) {
+                BindingSet b = tupleQueryResult.next();
+                assertEquals("http://p"+i, b.getBinding("p").getValue().toString());
+            }
+        }
+
+        // delete some data
+        sparqlQuery = "DELETE DATA { ";
+        for (int i=0; i<10; i++){
+            sparqlQuery += "	<http://s"+i+">  <http://p"+i+">  <http://o"+i+"> . ";
+        }
+        sparqlQuery += "} ";
+        connection = hybridStore.getConnection();
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        // query some data
+        for (int i=10; i<130; i++) {
+            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p"+i+">  <http://o"+i+"> . } ";
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            assertEquals(true, tupleQueryResult.hasNext());
+            while (tupleQueryResult.hasNext()) {
+                BindingSet b = tupleQueryResult.next();
+                assertEquals("http://s"+i, b.getBinding("s").getValue().toString());
+            }
+        }
+        for (int i=10; i<130; i++) {
+            sparqlQuery = "SELECT ?p WHERE { <http://s"+i+">  ?p  <http://o"+i+"> . } ";
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            System.out.println("i"+i);
+            assertEquals(true, tupleQueryResult.hasNext());
+            while (tupleQueryResult.hasNext()) {
+                BindingSet b = tupleQueryResult.next();
+                assertEquals("http://p"+i, b.getBinding("p").getValue().toString());
+            }
+        }
+
+        // START MERGE
+
+        // insert one more triple, this should trigger the merge
+        sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
+        connection = hybridStore.getConnection();
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        Thread.sleep(3000);
+        hybridStore.shutDown();
+
+
+
+
+
+
+
+
+
+
+        //store.makeMerge();
+
+        // convert delta during merge
+
+        // after merge
+
     }
 }
