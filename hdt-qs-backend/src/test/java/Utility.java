@@ -20,11 +20,16 @@ import java.io.IOException;
 
 public class Utility {
 
+    public static HDT createTempHdtIndex(TemporaryFolder fileName,boolean empty, boolean isBig) throws IOException {
+        TemporaryFolder tempDir = new TemporaryFolder();
+        return createTempHdtIndex(tempDir.newFile().getAbsolutePath(),empty,isBig);
+    }
 
-    public static HDT createTempHdtIndex(TemporaryFolder tempDir,boolean empty, boolean isBig){
+
+    public static HDT createTempHdtIndex(String fileName,boolean empty, boolean isBig){
         try {
             String rdfInput = "temp.nt";
-            File inputFile = tempDir.newFile();
+            File inputFile = new File(fileName);
             if(!empty){
                 if(!isBig)
                     writeTempRDF(inputFile);

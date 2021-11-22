@@ -36,6 +36,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -861,7 +862,22 @@ public class HybridStoreTest {
         // initialize the store
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = Utility.createTempHdtIndex(tempDir, false,false);
+        if (new File("/Users/Dennis/Downloads/test/").exists()) {
+            Files.walk(Paths.get("/Users/Dennis/Downloads/test/"))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
+
+        System.out.println(new File("/Users/Dennis/Downloads/test/").mkdirs());
+        nativeStore = new File("/Users/Dennis/Downloads/test/native-store/");
+        nativeStore.mkdirs();
+        hdtStore = new File("/Users/Dennis/Downloads/test/hdt-store/");
+        hdtStore.mkdirs();
+        File tmp = new File("/Users/Dennis/Downloads/test/hdt-store/temp.nt");
+        tmp.createNewFile();
+
+        HDT hdt = Utility.createTempHdtIndex("/Users/Dennis/Downloads/test/hdt-store/temp.nt", true,false);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
         printHDT(hdt);
@@ -883,6 +899,7 @@ public class HybridStoreTest {
         Update tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
+        System.out.println("FIRST QUERY");
         // query some data
         for (int i=0; i<130; i++) {
             sparqlQuery = "SELECT ?s WHERE { ?s  <http://p"+i+">  <http://o"+i+"> . } ";
@@ -894,6 +911,7 @@ public class HybridStoreTest {
                 assertEquals("http://s"+i, b.getBinding("s").getValue().toString());
             }
         }
+        System.out.println("SECOND QUERY");
         for (int i=0; i<130; i++) {
             sparqlQuery = "SELECT ?p WHERE { <http://s"+i+">  ?p  <http://o"+i+"> . } ";
             TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
@@ -906,6 +924,7 @@ public class HybridStoreTest {
         }
 
         // delete some data
+        System.out.println("DELETE QUERY");
         sparqlQuery = "DELETE DATA { ";
         for (int i=0; i<10; i++){
             sparqlQuery += "	<http://s"+i+">  <http://p"+i+">  <http://o"+i+"> . ";
@@ -926,14 +945,23 @@ public class HybridStoreTest {
                 assertEquals("http://s"+i, b.getBinding("s").getValue().toString());
             }
         }
+
+        sparqlQuery = "SELECT ?s ?p ?o WHERE { ?s ?p ?o } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        while (tupleQueryResult.hasNext()) {
+            BindingSet b = tupleQueryResult.next();
+            System.out.println(b.toString());
+        }
+
         for (int i=10; i<130; i++) {
             sparqlQuery = "SELECT ?p WHERE { <http://s"+i+">  ?p  <http://o"+i+"> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            TupleQuery tupleQuery2 = connection.prepareTupleQuery(sparqlQuery);
+            TupleQueryResult tupleQueryResult2 = tupleQuery2.evaluate();
             System.out.println("i"+i);
-            assertEquals(true, tupleQueryResult.hasNext());
-            while (tupleQueryResult.hasNext()) {
-                BindingSet b = tupleQueryResult.next();
+            assertEquals(true, tupleQueryResult2.hasNext());
+            while (tupleQueryResult2.hasNext()) {
+                BindingSet b = tupleQueryResult2.next();
                 assertEquals("http://p"+i, b.getBinding("p").getValue().toString());
             }
         }
@@ -946,6 +974,7 @@ public class HybridStoreTest {
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
+        connection.close();
         Thread.sleep(3000);
         hybridStore.shutDown();
 

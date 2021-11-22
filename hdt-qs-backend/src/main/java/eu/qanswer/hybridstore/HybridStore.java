@@ -53,6 +53,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 
@@ -276,7 +277,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreB.shutDown();
         // check also that the merge thread is finished
         try {
-            mergerThread.join();
+            if (mergerThread!=null){
+                mergerThread.join();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -402,7 +405,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void resetDeleteArray() {
         // delete array created at merge time
         try {
-            System.out.println(locationHdt + "new_index.hdt");
             HDT newHdt = HDTManager.mapIndexedHDT(locationHdt + "new_index.hdt", this.spec);
             BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
                     this.locationHdt + "triples-delete-new.arr");
