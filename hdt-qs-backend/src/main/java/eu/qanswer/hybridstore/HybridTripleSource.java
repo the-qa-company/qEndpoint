@@ -15,6 +15,9 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
@@ -36,12 +39,6 @@ public class HybridTripleSource implements TripleSource {
     ValueFactory factory;
     long startLiteral;
     long endLiteral;
-    // @todo: these are not used here .... are they not rather properties of the store?
-    // @todo: in fact they are coming from hybridStore.getHdtProps()
-    public long startBlankObjects;
-    public long endBlankObjects;
-    public long startBlankShared;
-    public long endBlankShared;
 
     HDTConverter hdtConverter;
     IRIConverter iriConverter;
@@ -51,22 +48,23 @@ public class HybridTripleSource implements TripleSource {
     private SailConnection connB;
     private SailConnection connCurr;
     private long numberOfCurrentTriples;
-    // @todo: what is this variable for?
+    // count the number of times rdf4j is called within a triple pattern..
+    // only for debugging ...
     private long count = 0;
+    HybridStoreConnection hybridStoreConnection;
 
     // @todo: I'm not sure, but should the connections not be passed here?
-    public HybridTripleSource(HDT hdt, HybridStore hybridStore) {
+    public HybridTripleSource(HybridStoreConnection hybridStoreConnection,HDT hdt, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
         this.hdt = hdt;
         this.factory = new AbstractValueFactoryHDT(hdt);
         this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
         this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
-        this.startBlankObjects = hybridStore.getHdtProps().getStartBlankObjects();
-        this.endBlankObjects = hybridStore.getHdtProps().getEndBlankObjects();
         this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
         this.hdtConverter = new HDTConverter(hdt);
         this.iriConverter = new IRIConverter(hdt);
         this.tempFactory = new MemValueFactory();
+        this.hybridStoreConnection = hybridStoreConnection;
     }
 
     public ValueFactory getTempFactory() {
@@ -77,8 +75,6 @@ public class HybridTripleSource implements TripleSource {
         this.hdt = this.hybridStore.getHdt();
         this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
         this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
-        this.startBlankObjects = hybridStore.getHdtProps().getStartBlankObjects();
-        this.endBlankObjects = hybridStore.getHdtProps().getEndBlankObjects();
         this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
     }
 
@@ -108,18 +104,21 @@ public class HybridTripleSource implements TripleSource {
                 // query both native stores
                 CloseableIteration<? extends Statement, SailException> repositoryResult1 =
                         connA.getStatements(
-                                newRes, newIRI, newValue, false, resources
+                                newRes, newIRI, newValue, false, (Resource) null
                         );
                 CloseableIteration<? extends Statement, SailException> repositoryResult2 =
                         connB.getStatements(
-                                newRes, newIRI, newValue, false, resources
+                                newRes, newIRI, newValue, false, (Resource) null
                         );
                 repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
             } else {
-                repositoryResult = this.connCurr.getStatements(
-                        newRes, newIRI, newValue, false, resources
+                System.out.println("Triple source:"+this.hybridStoreConnection.getCurrentConnection());
+
+                repositoryResult = this.hybridStoreConnection.getCurrentConnection().getStatements(
+                        newRes, newIRI, newValue, false, (Resource) null
                 );
+                this.hybridStoreConnection.getCurrentConnection().commit();
             }
         }
 
@@ -151,12 +150,8 @@ public class HybridTripleSource implements TripleSource {
             iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
         }
 
-        // @todo: it does not look like "connections" is used in the TripleWithDeleteIter
-        ArrayList<SailConnection> connections = new ArrayList();
-        connections.add(connA);
-        connections.add(connB);
         // iterate over hdt result, delete the triples marked as deleted and add the triples from the delta
-        TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this, iterator, repositoryResult, connections);
+        TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this, iterator, repositoryResult);
         return new CloseableIteration<>() {
             @Override
             public void close() throws QueryEvaluationException {

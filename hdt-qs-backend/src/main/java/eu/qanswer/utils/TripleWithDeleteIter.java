@@ -24,8 +24,7 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     private CloseableIteration<? extends Statement, SailException> repositoryResult;
 
     private IRIConverter iriConverter;
-    // @todo: is this used at any point in time?
-    ArrayList<SailConnection> connections;
+
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter){
         this.tripleSource = tripleSource;
         this.iterator = iter;
@@ -34,15 +33,13 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
 
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter,
                                 CloseableIteration<? extends Statement,
-                                        SailException> repositoryResult,
-                                ArrayList<SailConnection> connections
+                                        SailException> repositoryResult
     ){
         this.tripleSource = tripleSource;
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
         this.repositoryResult = repositoryResult;
         this.iriConverter = new IRIConverter(hdt);
-        this.connections = connections;
     }
     Statement next;
 

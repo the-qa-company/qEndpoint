@@ -862,22 +862,22 @@ public class HybridStoreTest {
         // initialize the store
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        if (new File("/Users/Dennis/Downloads/test/").exists()) {
-            Files.walk(Paths.get("/Users/Dennis/Downloads/test/"))
+        if (new File("/Users/alyhdr/Downloads/test/").exists()) {
+            Files.walk(Paths.get("/Users/alyhdr/Downloads/test/"))
                     .sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(File::delete);
         }
 
-        System.out.println(new File("/Users/Dennis/Downloads/test/").mkdirs());
-        nativeStore = new File("/Users/Dennis/Downloads/test/native-store/");
+        System.out.println(new File("/Users/alyhdr/Downloads/test/").mkdirs());
+        nativeStore = new File("/Users/alyhdr/Downloads/test/native-store/");
         nativeStore.mkdirs();
-        hdtStore = new File("/Users/Dennis/Downloads/test/hdt-store/");
+        hdtStore = new File("/Users/alyhdr/Downloads/test/hdt-store/");
         hdtStore.mkdirs();
-        File tmp = new File("/Users/Dennis/Downloads/test/hdt-store/temp.nt");
+        File tmp = new File("/Users/alyhdr/Downloads/test/hdt-store/temp.nt");
         tmp.createNewFile();
 
-        HDT hdt = Utility.createTempHdtIndex("/Users/Dennis/Downloads/test/hdt-store/temp.nt", true,false);
+        HDT hdt = Utility.createTempHdtIndex("/Users/alyhdr/Downloads/test/hdt-store/temp.nt", true,false);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
         printHDT(hdt);
@@ -888,34 +888,40 @@ public class HybridStoreTest {
         SailRepository hybridStore = new SailRepository(store);
 
         // PRE MERGE PHASE
-
+        int numbeOfTriples = 1300;
         // insert some data
         String sparqlQuery = "INSERT DATA { ";
-        for (int i=0; i<130; i++){
+        for (int i=0; i<numbeOfTriples; i++){
             sparqlQuery += "	<http://s"+i+">  <http://p"+i+">  <http://o"+i+"> . ";
         }
         sparqlQuery += "} ";
         RepositoryConnection connection = hybridStore.getConnection();
         Update tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
+        connection.commit();
+
+        sparqlQuery = "SELECT ?s ?p ?o WHERE { ?s  ?p  ?o. } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+//        tupleQueryResult.stream().iterator().forEachRemaining(System.out::println);
 
         System.out.println("FIRST QUERY");
         // query some data
-        for (int i=0; i<130; i++) {
+        for (int i=0; i<numbeOfTriples; i++) {
             sparqlQuery = "SELECT ?s WHERE { ?s  <http://p"+i+">  <http://o"+i+"> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-            assertEquals(true, tupleQueryResult.hasNext());
+            tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            tupleQueryResult = tupleQuery1.evaluate();
+            assertTrue(tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
                 BindingSet b = tupleQueryResult.next();
                 assertEquals("http://s"+i, b.getBinding("s").getValue().toString());
             }
         }
         System.out.println("SECOND QUERY");
-        for (int i=0; i<130; i++) {
+        for (int i=0; i<numbeOfTriples; i++) {
             sparqlQuery = "SELECT ?p WHERE { <http://s"+i+">  ?p  <http://o"+i+"> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            tupleQueryResult = tupleQuery1.evaluate();
             assertEquals(true, tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
                 BindingSet b = tupleQueryResult.next();
@@ -935,10 +941,10 @@ public class HybridStoreTest {
         tupleQuery.execute();
 
         // query some data
-        for (int i=10; i<130; i++) {
+        for (int i=10; i<numbeOfTriples; i++) {
             sparqlQuery = "SELECT ?s WHERE { ?s  <http://p"+i+">  <http://o"+i+"> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            tupleQueryResult = tupleQuery1.evaluate();
             assertEquals(true, tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
                 BindingSet b = tupleQueryResult.next();
@@ -947,14 +953,14 @@ public class HybridStoreTest {
         }
 
         sparqlQuery = "SELECT ?s ?p ?o WHERE { ?s ?p ?o } ";
-        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        tupleQueryResult = tupleQuery1.evaluate();
         while (tupleQueryResult.hasNext()) {
             BindingSet b = tupleQueryResult.next();
             System.out.println(b.toString());
         }
 
-        for (int i=10; i<130; i++) {
+        for (int i=10; i<numbeOfTriples; i++) {
             sparqlQuery = "SELECT ?p WHERE { <http://s"+i+">  ?p  <http://o"+i+"> . } ";
             TupleQuery tupleQuery2 = connection.prepareTupleQuery(sparqlQuery);
             TupleQueryResult tupleQueryResult2 = tupleQuery2.evaluate();
@@ -975,17 +981,7 @@ public class HybridStoreTest {
         tupleQuery.execute();
 
         connection.close();
-        Thread.sleep(3000);
         hybridStore.shutDown();
-
-
-
-
-
-
-
-
-
 
         //store.makeMerge();
 

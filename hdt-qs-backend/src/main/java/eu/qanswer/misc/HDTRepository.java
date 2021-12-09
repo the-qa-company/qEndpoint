@@ -41,7 +41,6 @@ public class HDTRepository extends AbstractRepository {
 
         hdt = HDTManager.mapIndexedHDT(file.getAbsolutePath(),spec);
       }
-      // TODO: adapt this for tests....
       //tripleSource = new HDTTripleSource(hdt);
       queryPreparer = new HDTQueryPreparer(tripleSource);
     } catch (IOException e) {

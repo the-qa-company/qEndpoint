@@ -129,7 +129,7 @@ public class SimpleLiteralHDT implements Literal {
   // Overrides Object.equals(Object), implements Literal.equals(Object)
   @Override
   public boolean equals(Object o) {
-    //        TODO: This can be probably done more efficielnty
+    //TODO: This can be probably done more efficielnty
     parseLiteral();
     if (this == o) {
       return true;

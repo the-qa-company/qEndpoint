@@ -43,6 +43,7 @@ import java.util.ArrayList;
 
 
 // @todo: are there any changes in this class except that the evaluationStatistics is using the CombinedEvaluationStatistics?
+// yes
 public class HybridQueryPreparer extends AbstractQueryPreparer {
     private static final Logger logger = LoggerFactory.getLogger(HybridQueryPreparer.class);
 

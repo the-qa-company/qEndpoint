@@ -1,5 +1,15 @@
 package eu.qanswer.misc;
 
+import eu.qanswer.hybridstore.HybridStore;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -17,31 +27,41 @@ public class TestNativeStore {
         nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/data/admin/eu/native-store/A"),"spoc,posc,cosp");
     }
     public static void main(String[] args) {
+
+//        NativeStore nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/native-store/A"), "spoc,posc,cosp");
+
+
+        HDTSpecification spec = new HDTSpecification();
+        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        HybridStore nativeStore = null;
         try {
-            HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-            HDT hdt = HDTManager.mapIndexedHDT("/Users/alyhdr/Desktop/qa-company/data/admin/eu-2/hdt_index/index.hdt",spec);
-            System.out.println(hdt.getDictionary().getNshared() + hdt.getDictionary().getNAllObjects());
-
-            System.out.println(hdt.getDictionary().idToString(21980853,TripleComponentRole.OBJECT));
-
+            nativeStore = new HybridStore("/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/hdt-store/",
+                    spec,"/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/native-store/",false);
         } catch (IOException e) {
             e.printStackTrace();
         }
-//        NativeStore nativeStore = new NativeStore(new File("/Users/alyhdr/Desktop/qa-company/hdt-query-service/hdt-qs-backend/native-store/B"), "spoc,posc,cosp");
-//        SailRepository repository = new SailRepository(nativeStore);
-//        ValueFactory vf = new MemValueFactory();
-//        String ex = "http://hdt.org/";
-//        try (RepositoryConnection connection = repository.getConnection()) {
-//            long size = connection.size();
-//            System.out.println(size);
-//            RepositoryResult<Statement> statements = connection.getStatements(null, null, null,false);
-//
-//            for (Statement s:statements) {
-//                System.out.println(s);
-//            }
-//        }
+        SailRepository repository = new SailRepository(nativeStore);
 
+        String ex = "http://hdt.org/";
+        int numbeOfTriples = 1300;
+        String sparqlQuery = "INSERT DATA { ";
+        for (int i=0; i<numbeOfTriples; i++){
+            sparqlQuery += "<http://s"+i+">  <http://p"+i+">  <http://o"+i+"> . ";
+        }
+        sparqlQuery += "} ";
+        RepositoryConnection connection = repository.getConnection();
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p1> <http://o1> . } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        // print out the result
+        tupleQueryResult.stream().iterator().forEachRemaining(System.out::println);
+
+        connection.begin();
+        connection.clear();
+        connection.commit();
     }
 //    private void writeTempFile(RepositoryConnection connection,String file){
 //        FileOutputStream out = null;

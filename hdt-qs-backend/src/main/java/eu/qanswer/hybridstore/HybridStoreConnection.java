@@ -3,6 +3,7 @@ package eu.qanswer.hybridstore;
 import eu.qanswer.model.SimpleIRIHDT;
 import eu.qanswer.model.SimpleLiteralHDT;
 
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -19,6 +20,8 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -49,7 +52,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 //    this.nativeStoreConnection = hybridStore.getConnectionNative();
         this.connA = hybridStore.getNativeStoreA().getConnection();
         this.connB = hybridStore.getNativeStoreB().getConnection();
-        this.tripleSource = new HybridTripleSource(hybridStore.getHdt(), hybridStore);
+        this.tripleSource = new HybridTripleSource(this,hybridStore.getHdt(), hybridStore);
         this.queryPreparer = new HybridQueryPreparer(hybridStore, tripleSource);
     }
 
@@ -75,8 +78,8 @@ public class HybridStoreConnection extends SailSourceConnection {
             hybridStore.makeMerge();
         }
         //this.getCurrentConnection().begin();
-        this.connA.begin();
-        this.connB.begin();
+        this.connA.begin(IsolationLevels.NONE);
+        this.connB.begin(IsolationLevels.NONE);
 
     }
 
@@ -96,9 +99,15 @@ public class HybridStoreConnection extends SailSourceConnection {
     protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
         HybridTripleSource tripleSource = queryPreparer.getTripleSource();
         // @todo: this looks dangerous ..... the connection is setting a connection in the triple source, what happens if there are multiple connections, are they overwriting each other!
+        // each hybridStoreConneciton have a triple source ( ideally it should be in the query preparer as in rdf4j..)
         tripleSource.setConnA(this.connA);
         tripleSource.setConnB(this.connB);
         tripleSource.setConnCurr(getCurrentConnection());
+//        CloseableIteration<? extends Statement, SailException> statements = getCurrentConnection().
+//        getStatements(null, this.hybridStore.valueFactory.createIRI("http://p0"), this.hybridStore.valueFactory.createIRI("http://o0"), true, (Resource) null);
+//        while (statements.hasNext()) System.out.println(statements.next());
+
+        // TODO: check max execution time
         return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
     }
 
@@ -127,6 +136,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
             throws SailException {
+
         this.getCurrentConnection().addStatement(subj, pred, obj, contexts);
     }
 
@@ -143,14 +153,16 @@ public class HybridStoreConnection extends SailSourceConnection {
         TripleID tripleID = getTripleID(newSubj, newPred, newObj);
 
         if (!tripleExistInHDT(tripleID)) {
-            // TODO: convert to Ids if exist, else keep
-
             getCurrentConnection().addStatement(
                     newSubj,
                     newPred,
                     newObj,
                     contexts
             );
+
+//            CloseableIteration<? extends Statement, SailException> statements = getCurrentConnection().
+//                    getStatements(null, newPred, newObj, true, contexts);
+//            while (statements.hasNext()) System.out.println(statements.next());
             // modify the bitmaps if the IRIs used are in HDT
             this.hybridStore.modifyBitmaps(this.hybridStore.getHdt(), newSubj, newPred, newObj);
             // increase the number of statements
@@ -224,23 +236,26 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     protected void commitInternal() throws SailException {
-        super.commitInternal();
+//        super.commitInternal();
         //this.nativeStoreConnection.commit();
+        this.connA.flush();
+        this.connA.prepare();
         this.connA.commit();
+
         this.connB.commit();
         this.connectionLock.release();
     }
 
     @Override
     public void flush() throws SailException {
-        super.flush();
+//        super.flush();
         this.connA.flush();
         this.connB.flush();
     }
 
     @Override
     public void flushUpdates() throws SailException {
-        super.flushUpdates();
+//        super.flushUpdates();
         this.connA.flush();
         this.connB.flush();
     }

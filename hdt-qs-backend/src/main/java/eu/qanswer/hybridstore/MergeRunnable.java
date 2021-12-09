@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MergeRunnable implements Runnable {
 
@@ -109,7 +110,7 @@ public class MergeRunnable implements Runnable {
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
             System.out.println("CAT completed!!!!! "+locationHdt);
             Path path = Paths.get(locationHdt + "new_index.hdt");
-            assertEquals(true,Files.exists(path));
+            assertTrue(Files.exists(path));
             // empty native store
             emptyNativeStore();
             System.out.println(rdfInput);
@@ -122,13 +123,12 @@ public class MergeRunnable implements Runnable {
             file.delete();
             file = new File(locationHdt + "triples-delete.arr");
             file.delete();
-
 //            Files.deleteIfExists(Paths.get(rdfInput));
 //            Files.deleteIfExists(Paths.get(hdtOutput));
 //            Files.deleteIfExists(Paths.get(locationHdt + "triples-delete-cpy.arr"));
 //            Files.deleteIfExists(Paths.get(locationHdt + "triples-delete.arr"));
 
-
+            // add a lock here
             this.hybridStore.resetDeleteArray();  // @todo: no deletes are allowed in this moment of time!
             HDT tempHdt = HDTManager.mapIndexedHDT(hdtIndex, this.spec);
             try {
@@ -144,7 +144,7 @@ public class MergeRunnable implements Runnable {
             // convert all triples added to the merge store to new IDs of the new generated HDT
             Lock lock = hybridStore.manager.createLock("IDs conversion lock");
             convertOldToNew(this.hdt, tempHdt);
-            this.hybridStore.initHDT(tempHdt);
+            this.hybridStore.resetHDT(tempHdt);
             logger.info("Releasing lock....");
             lock.release();
             // mark the triples as deleted from the temp file stored while merge

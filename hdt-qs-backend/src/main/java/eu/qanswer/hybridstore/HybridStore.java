@@ -80,7 +80,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk deleteBitMap;
     // bitmap used to mark deleted triples in HDT during a merge operation
     private BitArrayDisk tempdeleteBitMap;
-    // @todo: setting to put the delete map in memory?
+    // setting to put the delete map only in memory, i.e don't write to disk
     private boolean inMemDeletes;
 
     // bitmaps used to mark if the subject, predicate, object elements in HDT are used in the rdf4j delta store
@@ -88,8 +88,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk bitY;
     private BitArrayDisk bitZ;
 
-    // @todo: when is this used? I think I'm confused by the name ....
-    private SailRepository repo;
     // marks if store A or store B is used
     public boolean switchStore = false;
     // file storing which store is used
@@ -104,16 +102,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     private RDFWriter rdfWriterTempTriples;
 
-    // @todo: this is the lock for which operation?
+    // lock manager for the merge thread
     public LockManager manager;
-    // @todo: this is the lock for which operation?
+    // lock manager for the connections over the current repository
     public LockManager connectionsLockManager;
 
     // variable counting the current number of triples in the delta
     public long triplesCount;
-
-    // @todo: this can be deleted right? since we use the bitmaps instead
-    public HashSet<String> nativeStoreDictionary;
 
     private IRIConverter iriConverter;
 
@@ -126,8 +121,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreB = new NativeStore(new File(locationNative + "B"), "spoc,posc,cosp");
 
         this.checkFile = new File(locationNative + "which_store.check");
+
         // init the store before creating the check store file
-        // @todo: are these two lines necessary?
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
@@ -135,10 +130,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             this.currentStore = nativeStoreB;
         else
             this.currentStore = nativeStoreA;
-        // @todo: was it not initialized before?
-        this.currentStore.init();
         this.threshold = 100000;
-        this.repo = new SailRepository(currentStore);
         this.locationHdt = locationHdt;
 
         this.inMemDeletes = inMemDeletes;
@@ -152,8 +144,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.triplesCount = connection.size();
         connection.close();
 
-        // @todo: this can be deleted right? since we use the bitmaps instead
-        this.nativeStoreDictionary = new HashSet<>();
         // initialize native store dictionary
         //initNativeStoreDictionaryMemory();
         initNativeStoreDictionary(this.hdt);
@@ -166,20 +156,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.spec = spec;
     }
 
-    // @todo: this can be deleted right? since we use the bitmaps instead
-    // this was a test, it should not be used since it is to memory intense
-    public void initNativeStoreDictionaryMemory() {
-        RepositoryResult<Statement> statements1 = getRepoConnection().getStatements(null, null, null, false);
-        CloseableIteration<? extends Statement, SailException> statements = this.currentStore.getConnection().getStatements(null, null, null, false);
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (statements1.hasNext()) {
-            Statement next = statements1.next();
-            nativeStoreDictionary.add(next.getSubject().toString());
-            nativeStoreDictionary.add(next.getPredicate().toString());
-            nativeStoreDictionary.add(next.getObject().toString());
-        }
-        logger.info("Time elapsed to create native store dictionary: " + stopwatch);
-    }
 
     public void initNativeStoreDictionary(HDT hdt) {
         this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), this.locationHdt + "bitX");
@@ -191,8 +167,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
-    // @todo: I would call this reset HDT
-    public void initHDT(HDT hdt) {
+    public void resetHDT(HDT hdt) {
         this.setHdt(hdt);
         this.iriConverter = new IRIConverter(hdt);
         this.setHdtProps(new HDTProps(hdt));
@@ -204,7 +179,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.threshold = threshold;
     }
 
-    // @todo: I would call this reset delete arrays, does this not happen always together with initHDT
+    // init the delete array upon the first start of the store
     public void initDeleteArray() {
         if (this.inMemDeletes)
             this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), true);
@@ -298,10 +273,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             return new SailRepository(nativeStoreB).getConnection();
         else
             return new SailRepository(nativeStoreA).getConnection();
-    }
-
-    public SailRepository getRepository() {
-        return repo;
     }
 
     @Override
@@ -488,9 +459,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     }
 
+    // called from a locked block
     private void initBitmaps(HDT hdt) {
-        // @todo: this is not necessary?
-        //Lock lock = this.manager.createLock("bitmaps_init_lock");
         try {
             IRIConverter converter = new IRIConverter(hdt);
             // iterate over the current rdf4j store and mark in HDT the store the subject, predicate, objects that are used in rdf4j
@@ -506,7 +476,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //lock.release();
     }
 
     public void modifyBitmaps(HDT hdt, Resource subject, IRI predicate, Value object) {
@@ -549,10 +518,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     // @todo: this can be dangerous, what if it is called 2 times, then two threads will start which will overlap each other, only one should be allowed, no?
+    // should not be called from the outside because it's internals, the case is handled in the HybridStoreConnection when
+    // the store is being merged we don't call it again..
     // starts the merging process to merge the delta into HDT
     public void makeMerge() {
         try {
-            // @todo: this is strange, the lock does not seam to have a relation with the connections, is this lock maybe not necessary?
             // create a lock so that new incoming connections don't do anything
             Lock lock = this.manager.createLock("Merge-Lock");
             System.out.println("LOCATION BEFORE MERGE "+locationHdt);

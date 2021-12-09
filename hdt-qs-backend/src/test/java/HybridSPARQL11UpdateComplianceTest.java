@@ -28,7 +28,6 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
                                               Map<String, IRI> resultNamedGraphs) {
         super(displayName, testURI, name, requestFile, defaultGraphURI, inputNamedGraphs, resultDefaultGraphURI,
                 resultNamedGraphs);
-        // TODO Auto-generated constructor stub
     }
 
     @Rule
