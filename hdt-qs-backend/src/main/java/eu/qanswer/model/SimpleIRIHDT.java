@@ -17,13 +17,13 @@ import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
 /** The default implementation of the {@link IRI} interface. */
-public class SimpleIRIHDT extends AbstractIRI implements IRI {
+public class SimpleIRIHDT extends AbstractIRI {
 
   /*-----------*
    * Constants *
    *-----------*/
 
-  private static final long serialVersionUID = -7330406348751485330L;
+  private static final long serialVersionUID=-3220264926968931192L;
   public static final int SUBJECT_POS = 1;
   public static final int PREDICATE_POS = 2;
   public static final int OBJECT_POS = 3;
@@ -71,17 +71,20 @@ public class SimpleIRIHDT extends AbstractIRI implements IRI {
     this.hdt = hdt;
     this.postion = position;
     this.id = id;
+    this.localNameIdx = -1;
   }
   public SimpleIRIHDT(HDT hdt,String iriString,int position,long id) {
     this.hdt = hdt;
     this.iriString = iriString;
     this.postion = position;
     this.id = id;
+    this.localNameIdx = -1;
   }
   public SimpleIRIHDT(HDT hdt,String iriString) {
     this.hdt = hdt;
     this.iriString = iriString;
     this.id = -1;
+    this.localNameIdx = -1;
   }
 
   public long getId() {
