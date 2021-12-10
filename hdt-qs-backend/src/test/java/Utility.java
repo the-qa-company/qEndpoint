@@ -21,8 +21,7 @@ import java.io.IOException;
 public class Utility {
 
     public static HDT createTempHdtIndex(TemporaryFolder fileName,boolean empty, boolean isBig) throws IOException {
-        TemporaryFolder tempDir = new TemporaryFolder();
-        return createTempHdtIndex(tempDir.newFile().getAbsolutePath(),empty,isBig);
+        return createTempHdtIndex(fileName.newFile().getAbsolutePath(),empty,isBig);
     }
 
 
