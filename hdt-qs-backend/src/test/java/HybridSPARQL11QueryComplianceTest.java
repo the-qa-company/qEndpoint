@@ -69,7 +69,7 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
                 String str = x.substring(x.lastIndexOf("!") + 1).replace("]", "");
 
                 URL url = SPARQL11QueryComplianceTest.class.getResource(str);
-                File tmpDir = new File("hdt-qs-backend/test");
+                File tmpDir = new File("test");
                 if (!tmpDir.isDirectory()) {
                     tmpDir.mkdir();
                 }
