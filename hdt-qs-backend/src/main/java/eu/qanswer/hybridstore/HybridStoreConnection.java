@@ -20,8 +20,6 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -262,7 +260,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void startUpdate(UpdateContext op) throws SailException {
-
+        // @todo: is this not strange that both are prepared?
         this.connA.startUpdate(op);
         this.connB.startUpdate(op);
 
@@ -270,6 +268,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     protected void endUpdateInternal(UpdateContext op) throws SailException {
+        // @todo: is this not strange that both are prepared?
         this.connA.endUpdate(op);
         this.connB.endUpdate(op);
     }
