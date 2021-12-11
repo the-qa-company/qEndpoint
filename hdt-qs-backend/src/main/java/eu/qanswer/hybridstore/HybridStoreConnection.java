@@ -76,8 +76,8 @@ public class HybridStoreConnection extends SailSourceConnection {
             hybridStore.makeMerge();
         }
         //this.getCurrentConnection().begin();
-        this.connA.begin(IsolationLevels.NONE);
-        this.connB.begin(IsolationLevels.NONE);
+        this.connA.begin();
+        this.connB.begin();
     }
 
     private void getCardinality() {
