@@ -130,14 +130,6 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.getCurrentConnection().setNamespace(prefix, name);
     }
 
-    // @TODO: I think this is also not used because addStatement is used
-    @Override
-    public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
-            throws SailException {
-
-        this.getCurrentConnection().addStatement(subj, pred, obj, contexts);
-    }
-
     @Override
     public boolean isActive() throws UnknownSailTransactionStateException {
         return this.getCurrentConnection().isActive();
@@ -184,6 +176,14 @@ public class HybridStoreConnection extends SailSourceConnection {
         }
     }
 
+    // @TODO: I think this is also not used because addStatement is used
+    @Override
+    public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
+            throws SailException {
+
+        this.getCurrentConnection().addStatement(subj, pred, obj, contexts);
+    }
+
     private boolean inOtherStore(Resource subj, IRI pred, Value obj) {
         // only in the case while merging - we check if the triple exists in the other store
         if (true) {
@@ -208,13 +208,6 @@ public class HybridStoreConnection extends SailSourceConnection {
     public void removeNamespaceInternal(String prefix) throws SailException {
         //super.removeNamespaceInternal(prefix);
         getCurrentConnection().removeNamespace(prefix);
-    }
-
-    // @todo: I think this is never used since it is not called in removeStatement
-    @Override
-    public void removeStatementsInternal(Resource subj, IRI pred, Value obj, Resource... context)
-            throws SailException {
-        throw new SailReadOnlyException("");
     }
 
     @Override
@@ -314,11 +307,11 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
-        //printTriples();
         Resource newSubj = this.hybridStore.getIriConverter().convertSubj(subj);
         IRI newPred = this.hybridStore.getIriConverter().convertPred(pred);
         Value newObj;
         newObj = this.hybridStore.getIriConverter().convertObj(obj);
+        // @todo: should we remove not only over the current store, I mean it will work, but it is an overhead
         // remove statement from both stores... A and B
         this.connA.removeStatement(op, newSubj, newPred, newObj, contexts);
         this.connB.removeStatement(op, newSubj, newPred, newObj, contexts);
@@ -326,6 +319,13 @@ public class HybridStoreConnection extends SailSourceConnection {
 
         TripleID tripleID = getTripleID(newSubj, newPred, newObj);
         assignBitMapDeletes(tripleID, subj, pred, obj);
+    }
+
+    // @todo: I think this is never used since it is not called in removeStatement, not sure if this is good, since there is some logic that we might miss
+    @Override
+    public void removeStatementsInternal(Resource subj, IRI pred, Value obj, Resource... context)
+            throws SailException {
+        throw new SailReadOnlyException("");
     }
 
     private TripleID getTripleID(Resource subj, IRI pred, Value obj) {

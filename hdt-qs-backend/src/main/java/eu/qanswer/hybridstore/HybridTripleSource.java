@@ -104,11 +104,11 @@ public class HybridTripleSource implements TripleSource {
                 // query both native stores
                 CloseableIteration<? extends Statement, SailException> repositoryResult1 =
                         connA.getStatements(
-                                newRes, newIRI, newValue, false, (Resource) null
+                                newRes, newIRI, newValue, false, resources
                         );
                 CloseableIteration<? extends Statement, SailException> repositoryResult2 =
                         connB.getStatements(
-                                newRes, newIRI, newValue, false, (Resource) null
+                                newRes, newIRI, newValue, false, resources
                         );
                 repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
@@ -116,7 +116,7 @@ public class HybridTripleSource implements TripleSource {
                 System.out.println("Triple source:"+this.hybridStoreConnection.getCurrentConnection());
 
                 repositoryResult = this.hybridStoreConnection.getCurrentConnection().getStatements(
-                        newRes, newIRI, newValue, false, (Resource) null
+                        newRes, newIRI, newValue, false, resources
                 );
             }
         }
