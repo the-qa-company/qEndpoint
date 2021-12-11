@@ -35,8 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class MergeRunnable implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
@@ -109,7 +107,6 @@ public class MergeRunnable implements Runnable {
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
             System.out.println("CAT completed!!!!! " + locationHdt);
             Path path = Paths.get(locationHdt + "new_index.hdt");
-            assertTrue(Files.exists(path));
             // empty native store
             emptyNativeStore();
             System.out.println(rdfInput);

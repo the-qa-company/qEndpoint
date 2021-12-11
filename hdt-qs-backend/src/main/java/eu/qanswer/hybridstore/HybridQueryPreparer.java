@@ -59,7 +59,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         hdt = tripleSource.getHdt();
 
         evaluationStatistics = new CombinedEvaluationStatistics(new HDTEvaluationStatisticsV2(hdt),
-                hybridStore.getCurrentStore().getSailStore().getEvaluationStatistics());
+                hybridStore.getCurrentSaliStore().getEvaluationStatistics());
     }
 
     @Override
@@ -78,7 +78,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         if (!(tupleExpr instanceof QueryRoot)) {
             tupleExpr = new QueryRoot(tupleExpr);
         }
-        logger.debug("From this store:\n" + this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath());
+        logger.debug("From this store:\n"+this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath());
         EvaluationStrategy strategy =
                 new ExtendedEvaluationStrategy(
                         getTripleSource(), dataset, new SPARQLServiceResolver(), 0L, evaluationStatistics);

@@ -30,6 +30,7 @@ import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
@@ -49,6 +50,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -231,6 +234,23 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public NativeStore getCurrentStore() {
         return currentStore;
+    }
+
+    // force access to the store via reflection, the library does not allow directly since the method is protected
+    public SailStore getCurrentSaliStore() {
+        Method method = null;
+        try {
+            method = currentStore.getClass().getDeclaredMethod("getSailStore");
+            method.setAccessible(true);
+            return (SailStore)method.invoke(currentStore);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public HDT getHdt() {

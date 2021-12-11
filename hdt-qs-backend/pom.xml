@@ -25,7 +25,7 @@
     <version>1.0.5-SNAPSHOT</version>
 
     <properties>
-        <rdf4j.version>3.4.8-SNAPSHOT</rdf4j.version>
+        <rdf4j.version>3.7.4</rdf4j.version>
     </properties>
 
     <dependencies>
@@ -53,18 +53,6 @@
             <type>pom</type>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sparql-compliance</artifactId>
-            <version>${rdf4j.version}</version>
-            <type>pom</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.rdf4j</groupId>
-                    <artifactId>rdf4j-http-server</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13</version>
@@ -74,6 +62,11 @@
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-sparql-testsuite</artifactId>
+            <version>3.4.8-SNAPSHOT</version>
         </dependency>
 
         <!--        <dependency>-->
