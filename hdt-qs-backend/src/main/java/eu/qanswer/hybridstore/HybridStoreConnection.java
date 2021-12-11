@@ -78,7 +78,6 @@ public class HybridStoreConnection extends SailSourceConnection {
         //this.getCurrentConnection().begin();
         this.connA.begin(IsolationLevels.NONE);
         this.connB.begin(IsolationLevels.NONE);
-
     }
 
     private void getCardinality() {
@@ -131,6 +130,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.getCurrentConnection().setNamespace(prefix, name);
     }
 
+    // @TODO: I think this is also not used because addStatement is used
     @Override
     public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
             throws SailException {
@@ -210,6 +210,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         getCurrentConnection().removeNamespace(prefix);
     }
 
+    // @todo: I think this is never used since it is not called in removeStatement
     @Override
     public void removeStatementsInternal(Resource subj, IRI pred, Value obj, Resource... context)
             throws SailException {
@@ -242,14 +243,14 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void flush() throws SailException {
-//        super.flush();
+        super.flush();
         this.connA.flush();
         this.connB.flush();
     }
 
     @Override
     public void flushUpdates() throws SailException {
-//        super.flushUpdates();
+        super.flushUpdates();
         this.connA.flush();
         this.connB.flush();
     }
