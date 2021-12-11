@@ -66,54 +66,9 @@
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-sparql-testsuite</artifactId>
-            <version>3.4.8-SNAPSHOT</version>
+            <version>${rdf4j.version}</version>
         </dependency>
-
-        <!--        <dependency>-->
-<!--            <groupId>com.metreeca</groupId>-->
-<!--            <artifactId>metreeca-jse</artifactId>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.eclipse.rdf4j</groupId>-->
-<!--                    <artifactId>rdf4j-bom</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>com.metreeca</groupId>-->
-<!--            <artifactId>metreeca-rdf4j</artifactId>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.eclipse.rdf4j</groupId>-->
-<!--                    <artifactId>rdf4j-bom</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
-
     </dependencies>
-<!--    <dependencyManagement>-->
-
-<!--        <dependencies>-->
-
-<!--            <dependency>-->
-<!--                <groupId>com.metreeca</groupId>-->
-<!--                <artifactId>metreeca-link</artifactId>-->
-<!--                <version>0.55.0</version>-->
-<!--                <type>pom</type>-->
-<!--                <scope>import</scope>-->
-<!--                <exclusions>-->
-<!--                    <exclusion>-->
-<!--                        <groupId>org.eclipse.rdf4j</groupId>-->
-<!--                        <artifactId>rdf4j-bom</artifactId>-->
-<!--                    </exclusion>-->
-
-<!--                </exclusions>-->
-<!--            </dependency>-->
-
-<!--        </dependencies>-->
-
-<!--    </dependencyManagement>-->
     <profiles>
         <profile>
             <id>prod</id>
