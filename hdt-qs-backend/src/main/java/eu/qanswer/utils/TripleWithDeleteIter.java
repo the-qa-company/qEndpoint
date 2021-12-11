@@ -2,18 +2,17 @@ package eu.qanswer.utils;
 
 import eu.qanswer.hybridstore.HybridTripleSource;
 import eu.qanswer.model.HDTStatement;
+
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.TripleID;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 public class TripleWithDeleteIter implements Iterator<Statement> {
@@ -25,7 +24,7 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
 
     private IRIConverter iriConverter;
 
-    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter){
+    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter) {
         this.tripleSource = tripleSource;
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
@@ -34,19 +33,20 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter,
                                 CloseableIteration<? extends Statement,
                                         SailException> repositoryResult
-    ){
+    ) {
         this.tripleSource = tripleSource;
         this.iterator = iter;
         this.hdt = tripleSource.getHdt();
         this.repositoryResult = repositoryResult;
         this.iriConverter = new IRIConverter(hdt);
     }
+
     Statement next;
 
     @Override
     public boolean hasNext() {
         // iterate over the result of hdt
-        if(iterator != null) {
+        if (iterator != null) {
             while (iterator.hasNext()) {
                 TripleID tripleID = iterator.next();
                 Statement stm = new HDTStatement(hdt, tripleID, tripleSource);
@@ -57,14 +57,15 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
             }
         }
         // iterate over the result of rdf4j
-        if(this.repositoryResult != null && this.repositoryResult.hasNext()) {
+        if (this.repositoryResult != null && this.repositoryResult.hasNext()) {
             Statement stm = repositoryResult.next();
             next = convertStatement(stm);
             return true;
         }
         return false;
     }
-    private Statement convertStatement(Statement stm){
+
+    private Statement convertStatement(Statement stm) {
 
         Resource subject = stm.getSubject();
         Resource newSubj = iriConverter.getIRIHdtSubj(subject);
@@ -74,14 +75,14 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
 //            System.out.println("alerttttt this should not happen: "+newPred.toString());
 //        }
         Value newObject = iriConverter.getIRIHdtObj(stm.getObject());
-        return this.tripleSource.getValueFactory().createStatement(newSubj,(IRI)newPred,newObject, stm.getContext());
+        return this.tripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
 
 
     }
 
     @Override
     public Statement next() {
-        Statement stm = this.tripleSource.getValueFactory().createStatement(next.getSubject(),next.getPredicate(),next.getObject(), next.getContext());
+        Statement stm = this.tripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(), next.getObject(), next.getContext());
         return stm;
     }
 }

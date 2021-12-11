@@ -1,11 +1,9 @@
 package eu.qanswer.utils;
 
 import org.eclipse.rdf4j.common.io.NioFile;
-import org.rdfhdt.hdt.compact.bitmap.Bitmap375;
-import org.rdfhdt.hdt.util.io.IOUtil;
 
-import java.io.*;
-import java.nio.file.Files;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class BitArrayDisk {
@@ -14,15 +12,15 @@ public class BitArrayDisk {
     protected final static int W = 64;
 
     protected long numbits;
-    protected long [] words;
+    protected long[] words;
 
     private static final int BLOCKS_PER_SUPER = 4;
 
     // Variables
     private long pop;
-    private long [] superBlocksLong;
-    private int [] superBlocksInt;
-    private byte [] blocks;
+    private long[] superBlocksLong;
+    private int[] superBlocksInt;
+    private byte[] blocks;
     private boolean indexUpToDate;
 
     private String location;
@@ -32,7 +30,7 @@ public class BitArrayDisk {
     private boolean inMemory = false;
 
 
-    public BitArrayDisk(long nbits,String location){
+    public BitArrayDisk(long nbits, String location) {
         this.numbits = 0;
         this.location = location;
         try {
@@ -42,12 +40,14 @@ public class BitArrayDisk {
             e.printStackTrace();
         }
     }
-    public BitArrayDisk(long nbits,boolean inMemory){
+
+    public BitArrayDisk(long nbits, boolean inMemory) {
         this.numbits = 0;
         this.inMemory = inMemory;
         initWordsArray(nbits);
     }
-    public BitArrayDisk(long nbits,File file){
+
+    public BitArrayDisk(long nbits, File file) {
         this.numbits = 0;
         this.location = file.getAbsolutePath();
         try {
@@ -58,9 +58,9 @@ public class BitArrayDisk {
         }
     }
 
-    private void initWordsArray(long nbits){
+    private void initWordsArray(long nbits) {
         try {
-            if(!inMemory) {
+            if (!inMemory) {
                 if (output.size() == 0) { // file empty
                     int nwords = (int) numWords(nbits);
                     this.words = new long[nwords];
@@ -74,7 +74,7 @@ public class BitArrayDisk {
                         this.words[i] = this.output.readLong((i + 1) * 8);
                     }
                 }
-            }else{
+            } else {
                 int nwords = (int) numWords(nbits);
                 this.words = new long[nwords];
             }
@@ -83,9 +83,11 @@ public class BitArrayDisk {
             e.printStackTrace();
         }
     }
+
     public static long numWords(long numbits) {
-        return ((numbits-1)>>>LOGW) + 1;
+        return ((numbits - 1) >>> LOGW) + 1;
     }
+
     protected static int wordIndex(long bitIndex) {
         return (int) (bitIndex >>> LOGW);
     }
@@ -95,7 +97,7 @@ public class BitArrayDisk {
             throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
 
         int wordIndex = wordIndex(bitIndex);
-        if(wordIndex>=words.length) {
+        if (wordIndex >= words.length) {
             return false;
         }
 
@@ -103,8 +105,8 @@ public class BitArrayDisk {
     }
 
     protected final void ensureSize(int wordsRequired) {
-        if(words.length<wordsRequired) {
-            long [] newWords = new long[Math.max(words.length*2, wordsRequired)];
+        if (words.length < wordsRequired) {
+            long[] newWords = new long[Math.max(words.length * 2, wordsRequired)];
             System.arraycopy(words, 0, newWords, 0, Math.min(words.length, newWords.length));
             words = newWords;
         }
@@ -116,53 +118,56 @@ public class BitArrayDisk {
             throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
 
         int wordIndex = wordIndex(bitIndex);
-        ensureSize(wordIndex+1);
+        ensureSize(wordIndex + 1);
 
-        if(value) {
+        if (value) {
             words[wordIndex] |= (1L << bitIndex);
         } else {
             words[wordIndex] &= ~(1L << bitIndex);
         }
 
-        this.numbits = Math.max(this.numbits, bitIndex+1);
-        if(!inMemory)
-            writeToDisk(words[wordIndex],wordIndex);
+        this.numbits = Math.max(this.numbits, bitIndex + 1);
+        if (!inMemory)
+            writeToDisk(words[wordIndex], wordIndex);
     }
-    private void writeToDisk(long l,int wordIndex){
+
+    private void writeToDisk(long l, int wordIndex) {
         try {
-            output.writeLong(l,(wordIndex + 1)*8); // +1 reserved for the length of the array
+            output.writeLong(l, (wordIndex + 1) * 8); // +1 reserved for the length of the array
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
     public void trimToSize() {
         int wordNum = (int) numWords(numbits);
-        if(wordNum!=words.length) {
+        if (wordNum != words.length) {
             words = Arrays.copyOf(words, wordNum);
         }
     }
+
     public void updateIndex() {
         trimToSize();
-        if(numbits>Integer.MAX_VALUE) {
-            superBlocksLong = new long[1+(words.length-1)/BLOCKS_PER_SUPER];
+        if (numbits > Integer.MAX_VALUE) {
+            superBlocksLong = new long[1 + (words.length - 1) / BLOCKS_PER_SUPER];
         } else {
-            superBlocksInt = new int[1+(words.length-1)/BLOCKS_PER_SUPER];
+            superBlocksInt = new int[1 + (words.length - 1) / BLOCKS_PER_SUPER];
         }
         blocks = new byte[words.length];
 
-        long countBlock=0, countSuperBlock=0;
-        int blockIndex=0, superBlockIndex=0;
+        long countBlock = 0, countSuperBlock = 0;
+        int blockIndex = 0, superBlockIndex = 0;
 
-        while(blockIndex<words.length) {
-            if((blockIndex%BLOCKS_PER_SUPER)==0) {
+        while (blockIndex < words.length) {
+            if ((blockIndex % BLOCKS_PER_SUPER) == 0) {
                 countSuperBlock += countBlock;
-                if(superBlocksLong!=null) {
-                    if(superBlockIndex<superBlocksLong.length) {
+                if (superBlocksLong != null) {
+                    if (superBlockIndex < superBlocksLong.length) {
                         superBlocksLong[superBlockIndex++] = countSuperBlock;
                     }
                 } else {
-                    if(superBlockIndex<superBlocksInt.length) {
-                        superBlocksInt[superBlockIndex++] = (int)countSuperBlock;
+                    if (superBlockIndex < superBlocksInt.length) {
+                        superBlocksInt[superBlockIndex++] = (int) countSuperBlock;
                     }
                 }
                 countBlock = 0;
@@ -171,38 +176,39 @@ public class BitArrayDisk {
             countBlock += Long.bitCount(words[blockIndex]);
             blockIndex++;
         }
-        pop = countSuperBlock+countBlock;
+        pop = countSuperBlock + countBlock;
         indexUpToDate = true;
     }
 
     public long rank1(long pos) {
-        if(pos<0) {
+        if (pos < 0) {
             return 0;
         }
-        if(!indexUpToDate) {
+        if (!indexUpToDate) {
             updateIndex();
         }
-        if(pos>=numbits) {
+        if (pos >= numbits) {
             return pop;
         }
 
-        long superBlockIndex = pos/(BLOCKS_PER_SUPER*W);
+        long superBlockIndex = pos / (BLOCKS_PER_SUPER * W);
         long superBlockRank;
-        if(superBlocksLong!=null) {
-            superBlockRank = superBlocksLong[(int)superBlockIndex];
+        if (superBlocksLong != null) {
+            superBlockRank = superBlocksLong[(int) superBlockIndex];
         } else {
-            superBlockRank = superBlocksInt[(int)superBlockIndex];
+            superBlockRank = superBlocksInt[(int) superBlockIndex];
         }
 
-        long blockIndex = pos/W;
-        long blockRank = 0xFF & blocks[(int)blockIndex];
+        long blockIndex = pos / W;
+        long blockRank = 0xFF & blocks[(int) blockIndex];
 
-        long chunkIndex = W-1-pos%W;
-        long block = words[(int)blockIndex] << chunkIndex;
+        long chunkIndex = W - 1 - pos % W;
+        long block = words[(int) blockIndex] << chunkIndex;
         long chunkRank = Long.bitCount(block);
 
         return superBlockRank + blockRank + chunkRank;
     }
+
     public long countOnes() {
         return rank1(numbits);
     }
@@ -210,26 +216,29 @@ public class BitArrayDisk {
     public long getNumbits() {
         return numbits;
     }
-    public int getNumWords(){
+
+    public int getNumWords() {
         return this.words.length;
     }
 
 
     public String toString() {
         StringBuilder str = new StringBuilder();
-        for(long i=0;i<numbits;i++) {
+        for (long i = 0; i < numbits; i++) {
             str.append(access(i) ? '1' : '0');
         }
         return str.toString();
     }
-    public void close(){
+
+    public void close() {
         try {
             this.output.close();
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public void force(Boolean bool){
+
+    public void force(Boolean bool) {
         try {
             this.output.force(bool);
         } catch (IOException e) {

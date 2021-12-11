@@ -35,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MergeRunnable implements Runnable {
@@ -52,7 +51,7 @@ public class MergeRunnable implements Runnable {
     private final HDTSpecification spec;
     private final Lock mergeLock;
 
-    private int block=1000;
+    private int block = 1000;
 
     public MergeRunnable(String locationHdt, HybridStore hybridStore, Lock lock) {
         this.locationHdt = locationHdt;
@@ -108,7 +107,7 @@ public class MergeRunnable implements Runnable {
             createHDTDump(rdfInput, hdtOutput);
             // cat the original index and the temp index
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
-            System.out.println("CAT completed!!!!! "+locationHdt);
+            System.out.println("CAT completed!!!!! " + locationHdt);
             Path path = Paths.get(locationHdt + "new_index.hdt");
             assertTrue(Files.exists(path));
             // empty native store

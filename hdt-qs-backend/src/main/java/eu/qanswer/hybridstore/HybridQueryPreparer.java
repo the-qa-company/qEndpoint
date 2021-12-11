@@ -78,7 +78,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         if (!(tupleExpr instanceof QueryRoot)) {
             tupleExpr = new QueryRoot(tupleExpr);
         }
-        logger.debug("From this store:\n"+this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath());
+        logger.debug("From this store:\n" + this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath());
         EvaluationStrategy strategy =
                 new ExtendedEvaluationStrategy(
                         getTripleSource(), dataset, new SPARQLServiceResolver(), 0L, evaluationStatistics);
@@ -99,7 +99,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         return strategy.evaluate(tupleExpr, bindings);
     }
 
-    // @todo: this looks wrong
+    // @todo: this looks wrong, apperently if one wraps around the store SailRepository then the function is overwritten, this is the reason we do not say an error
     @Override
     protected void execute(
             UpdateExpr updateExpr,

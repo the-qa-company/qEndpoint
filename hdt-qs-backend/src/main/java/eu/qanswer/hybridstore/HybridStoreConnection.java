@@ -3,7 +3,6 @@ package eu.qanswer.hybridstore;
 import eu.qanswer.model.SimpleIRIHDT;
 import eu.qanswer.model.SimpleLiteralHDT;
 
-import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -50,7 +49,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 //    this.nativeStoreConnection = hybridStore.getConnectionNative();
         this.connA = hybridStore.getNativeStoreA().getConnection();
         this.connB = hybridStore.getNativeStoreB().getConnection();
-        this.tripleSource = new HybridTripleSource(this,hybridStore.getHdt(), hybridStore);
+        this.tripleSource = new HybridTripleSource(this, hybridStore.getHdt(), hybridStore);
         this.queryPreparer = new HybridQueryPreparer(hybridStore, tripleSource);
     }
 

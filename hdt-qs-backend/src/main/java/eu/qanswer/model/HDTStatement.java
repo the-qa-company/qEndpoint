@@ -1,6 +1,7 @@
 package eu.qanswer.model;
 
 import eu.qanswer.hybridstore.HybridTripleSource;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -16,18 +17,20 @@ public class HDTStatement implements Statement {
     private TripleID tripleID;
     private HDT hdt;
     private HybridTripleSource tripleSource;
-    public HDTStatement(HDT hdt,TripleID tripleID,HybridTripleSource tripleSource){
+
+    public HDTStatement(HDT hdt, TripleID tripleID, HybridTripleSource tripleSource) {
         this.tripleID = tripleID;
         this.hdt = hdt;
         this.tripleSource = tripleSource;
     }
+
     @Override
     public Resource getSubject() {
-        if(tripleID.getSubject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankShared()
-                && tripleID.getSubject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankShared()){
+        if (tripleID.getSubject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankShared()
+                && tripleID.getSubject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankShared()) {
             return this.tripleSource.getValueFactory().createBNode(
                     this.hdt.getDictionary().idToString(tripleID.getSubject(), TripleComponentRole.SUBJECT).toString());
-        }else {
+        } else {
             if (tripleID.getSubject() <= hdt.getDictionary().getNshared()) {
                 return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, tripleID.getSubject());
             } else {
@@ -38,28 +41,29 @@ public class HDTStatement implements Statement {
 
     @Override
     public IRI getPredicate() {
-        return new SimpleIRIHDT(hdt, SimpleIRIHDT.PREDICATE_POS ,tripleID.getPredicate());
+        return new SimpleIRIHDT(hdt, SimpleIRIHDT.PREDICATE_POS, tripleID.getPredicate());
     }
 
     @Override
     public Value getObject() {
         if (tripleID.getObject() >= tripleSource.getStartLiteral() && tripleID.getObject() <= tripleSource.getEndLiteral()) {
             return new SimpleLiteralHDT(hdt, tripleID.getObject(), tripleSource.getValueFactory());
-        }else if( (tripleID.getObject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankObjects()
+        } else if ((tripleID.getObject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankObjects()
                 && tripleID.getObject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankObjects())
                 || (tripleID.getObject() >= tripleSource.getHybridStore().getHdtProps().getStartBlankShared()
                 && tripleID.getObject() <= tripleSource.getHybridStore().getHdtProps().getEndBlankShared())
-        ){
+        ) {
             return this.tripleSource.getValueFactory().createBNode(
                     this.hdt.getDictionary().idToString(tripleID.getObject(), TripleComponentRole.OBJECT).toString());
         } else {
             if (tripleID.getObject() <= hdt.getDictionary().getNshared()) {
-                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS,tripleID.getObject());
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, tripleID.getObject());
             } else {
-                return new SimpleIRIHDT(hdt, SimpleIRIHDT.OBJECT_POS,tripleID.getObject());
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.OBJECT_POS, tripleID.getObject());
             }
         }
     }
+
     @Override
     public Resource getContext() {
         return null;
@@ -67,7 +71,7 @@ public class HDTStatement implements Statement {
 
     @Override
     public String toString() {
-        return "("+getSubject().toString()+", "+getPredicate().toString()+", "+getObject()+")";
+        return "(" + getSubject().toString() + ", " + getPredicate().toString() + ", " + getObject() + ")";
     }
 
     @Override

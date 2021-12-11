@@ -12,7 +12,7 @@ public class HDTProps {
     private final long startBlankShared;
     private final long endBlankShared;
 
-    public HDTProps(HDT hdt){
+    public HDTProps(HDT hdt) {
 
         this.startLiteral =
                 BinarySearch.first(
@@ -31,17 +31,17 @@ public class HDTProps {
         long end = -1;
         // if the dictionay is spliting the objects to sections - we just have to look in the
         // NO_DATATYPE section for the blank nodes range
-        if(hdt.getDictionary() instanceof MultipleSectionDictionary){
+        if (hdt.getDictionary() instanceof MultipleSectionDictionary) {
             MultipleSectionDictionary dictionary = (MultipleSectionDictionary) hdt.getDictionary();
             start = dictionary.getDataTypeRange("NO_DATATYPE").getKey();
             end = dictionary.getDataTypeRange("NO_DATATYPE").getValue();
-            if(end == 0){
+            if (end == 0) {
                 end = -1;
             }
-        }else {
+        } else {
             // other wise we look over the whole objects section
-           start = hdt.getDictionary().getNshared() + 1;
-           end = hdt.getDictionary().getNobjects();
+            start = hdt.getDictionary().getNshared() + 1;
+            end = hdt.getDictionary().getNobjects();
         }
         // use binary search to check the start and the end of blank nodes
         // where items are sorted lexicographically

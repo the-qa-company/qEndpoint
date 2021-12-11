@@ -1,4 +1,5 @@
 import eu.qanswer.hybridstore.HybridStore;
+
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -24,23 +25,22 @@ public class BenchMarkTest {
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
-
     @Test
     public void benchmarkDelete() {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = Utility.createTempHdtIndex(tempDir, false,true);
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false, true);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             //printHDT(hdt);
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
-            ));
+                            hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                    ));
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();
                 int count = 100000;
@@ -51,21 +51,21 @@ public class BenchMarkTest {
                 while (statements.hasNext())
                     statements.next();
                 stopWatch.stop();
-                System.out.println("Time to query all initialiy: "+stopWatch.getTime(TimeUnit.MILLISECONDS));
+                System.out.println("Time to query all initialiy: " + stopWatch.getTime(TimeUnit.MILLISECONDS));
 
                 for (int i = 0; i < 10; i++) {
                     stopWatch = StopWatch.createStarted();
                     connection.begin();
-                    for (int j = count*i +1; j <= count*(i+1) ; j++) {
-                        IRI entity = vf.createIRI(ex,"person"+j);
+                    for (int j = count * i + 1; j <= count * (i + 1); j++) {
+                        IRI entity = vf.createIRI(ex, "person" + j);
                         Statement stm = vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
                         connection.remove(stm);
                     }
                     connection.commit();
                     assert hdt != null;
-                    System.out.println("# remaining triples:"+(hdt.getTriples().getNumberOfElements() - count*(i+1)));
+                    System.out.println("# remaining triples:" + (hdt.getTriples().getNumberOfElements() - count * (i + 1)));
                     stopWatch.stop();
-                    System.out.println("Time to delete: "+stopWatch.getTime(TimeUnit.MILLISECONDS));
+                    System.out.println("Time to delete: " + stopWatch.getTime(TimeUnit.MILLISECONDS));
 
                     stopWatch = StopWatch.createStarted();
                     statements = connection.getStatements(null, null, null, true);
@@ -75,15 +75,15 @@ public class BenchMarkTest {
                         c++;
                     }
                     stopWatch.stop();
-                    System.out.println("Time to query all: "+stopWatch.getTime(TimeUnit.MILLISECONDS));
-                    System.out.println("Count:"+c);
-                    assertEquals(connection.size(),hdt.getTriples().getNumberOfElements() - count*(i+1));
+                    System.out.println("Time to query all: " + stopWatch.getTime(TimeUnit.MILLISECONDS));
+                    System.out.println("Count:" + c);
+                    assertEquals(connection.size(), hdt.getTriples().getNumberOfElements() - count * (i + 1));
                     System.out.println("---------------------------------------");
                 }
-                System.out.println("Number of remaining triples: "+connection.size());
+                System.out.println("Number of remaining triples: " + connection.size());
                 assertEquals(0, connection.size());
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             fail("Catched Exception");
         }

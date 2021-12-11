@@ -39,7 +39,7 @@ public class LiteralParser {
     }
 
     private static int findEndOfLabel(String nTriplesLiteral) {
-        for(int i = nTriplesLiteral.length()-1; i>=0; --i) {
+        for (int i = nTriplesLiteral.length() - 1; i >= 0; --i) {
             char c = nTriplesLiteral.charAt(i);
             if (c == '"') {
                 return i;

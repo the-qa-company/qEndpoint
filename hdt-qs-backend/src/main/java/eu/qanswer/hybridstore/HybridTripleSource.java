@@ -15,9 +15,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
-import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
@@ -28,8 +25,6 @@ import org.rdfhdt.hdt.triples.TripleID;
 import org.rdfhdt.hdt.triples.impl.EmptyTriplesIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 
 // this is the main class telling how, given a triple pattern, to find the results in HDT and the current stores
 public class HybridTripleSource implements TripleSource {
@@ -54,7 +49,7 @@ public class HybridTripleSource implements TripleSource {
     HybridStoreConnection hybridStoreConnection;
 
     // @todo: I'm not sure, but should the connections not be passed here?
-    public HybridTripleSource(HybridStoreConnection hybridStoreConnection,HDT hdt, HybridStore hybridStore) {
+    public HybridTripleSource(HybridStoreConnection hybridStoreConnection, HDT hdt, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
         this.hdt = hdt;
         this.factory = new AbstractValueFactoryHDT(hdt);
@@ -89,7 +84,6 @@ public class HybridTripleSource implements TripleSource {
         }
 
 
-
         // convert uris into ids if needed
         Resource newRes = iriConverter.convertSubj(resource);
         IRI newIRI = iriConverter.convertPred(iri);
@@ -113,7 +107,7 @@ public class HybridTripleSource implements TripleSource {
                 repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
             } else {
-                System.out.println("Triple source:"+this.hybridStoreConnection.getCurrentConnection());
+                System.out.println("Triple source:" + this.hybridStoreConnection.getCurrentConnection());
 
                 repositoryResult = this.hybridStoreConnection.getCurrentConnection().getStatements(
                         newRes, newIRI, newValue, false, resources

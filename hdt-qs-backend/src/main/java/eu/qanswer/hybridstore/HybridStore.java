@@ -1,7 +1,5 @@
 package eu.qanswer.hybridstore;
 
-import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
-
 import eu.qanswer.model.AbstractValueFactoryHDT;
 import eu.qanswer.model.SimpleIRIHDT;
 import eu.qanswer.model.SimpleLiteralHDT;
@@ -12,7 +10,6 @@ import eu.qanswer.utils.IRIConverter;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
-import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -53,9 +50,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
@@ -247,7 +242,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     @Override
-    protected void shutDownInternal() throws SailException{
+    protected void shutDownInternal() throws SailException {
         logger.info("Shutdown A");
         this.nativeStoreA.shutDown();
         logger.info("Shutdown B");
@@ -255,7 +250,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         // check also that the merge thread is finished
         logger.info("Shutdown merge");
         try {
-            if (mergerThread!=null){
+            if (mergerThread != null) {
                 mergerThread.join();
             }
         } catch (InterruptedException e) {
@@ -529,7 +524,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         try {
             // create a lock so that new incoming connections don't do anything
             Lock lock = this.manager.createLock("Merge-Lock");
-            System.out.println("LOCATION BEFORE MERGE "+locationHdt);
+            System.out.println("LOCATION BEFORE MERGE " + locationHdt);
             MergeRunnable mergeRunnable = new MergeRunnable(locationHdt, this, lock);
             mergerThread = new Thread(mergeRunnable);
             mergerThread.start();

@@ -20,17 +20,17 @@ import java.io.IOException;
 
 public class Utility {
 
-    public static HDT createTempHdtIndex(TemporaryFolder fileName,boolean empty, boolean isBig) throws IOException {
-        return createTempHdtIndex(fileName.newFile().getAbsolutePath(),empty,isBig);
+    public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig) throws IOException {
+        return createTempHdtIndex(fileName.newFile().getAbsolutePath(), empty, isBig);
     }
 
 
-    public static HDT createTempHdtIndex(String fileName,boolean empty, boolean isBig){
+    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig) {
         try {
             String rdfInput = "temp.nt";
             File inputFile = new File(fileName);
-            if(!empty){
-                if(!isBig)
+            if (!empty) {
+                if (!isBig)
                     writeTempRDF(inputFile);
                 else
                     writeBigIndex(inputFile);
@@ -39,8 +39,8 @@ public class Utility {
             RDFNotation notation = RDFNotation.guess(rdfInput);
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-            HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(),baseURI,notation,spec,null);
-            return HDTManager.indexedHDT(hdt,null);
+            HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(), baseURI, notation, spec, null);
+            return HDTManager.indexedHDT(hdt, null);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParserException e) {
@@ -48,8 +48,10 @@ public class Utility {
         }
         return null;
     }
+
     public static int count = 1000000;
-    private static void writeBigIndex(File file){
+
+    private static void writeBigIndex(File file) {
         FileOutputStream out = null;
         ValueFactory vf = new MemValueFactory();
         try {
@@ -57,8 +59,8 @@ public class Utility {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             writer.startRDF();
             String ex = "http://example.com/";
-            for (int i = 1; i <= count ; i++) {
-                IRI entity = vf.createIRI(ex,"person"+i);
+            for (int i = 1; i <= count; i++) {
+                IRI entity = vf.createIRI(ex, "person" + i);
                 Statement stm = vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
                 writer.handleStatement(stm);
             }
@@ -68,7 +70,8 @@ public class Utility {
             e.printStackTrace();
         }
     }
-    public static void writeTempRDF(File file){
+
+    public static void writeTempRDF(File file) {
         FileOutputStream out = null;
         ValueFactory vf = new MemValueFactory();
         try {
@@ -76,8 +79,8 @@ public class Utility {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             writer.startRDF();
             String ex = "http://example.com/";
-            IRI guo = vf.createIRI(ex,"Guo");
-            Statement stm = vf.createStatement(guo,RDF.TYPE,FOAF.PERSON);
+            IRI guo = vf.createIRI(ex, "Guo");
+            Statement stm = vf.createStatement(guo, RDF.TYPE, FOAF.PERSON);
             writer.handleStatement(stm);
             writer.endRDF();
             out.close();
