@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -27,6 +28,7 @@ import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -354,6 +356,41 @@ public class HybridStoreTest {
         } catch (Exception e) {
             e.printStackTrace();
             fail("Exception found !");
+        }
+    }
+
+    @Test
+    public void rdf4jUsedWorkflow(){
+        // not really a test, more code workflow that is used internally as one store and that can be used to debug
+        NativeStore nativeStore = new NativeStore(new File("./tests/native-store/A"), "spoc,posc,cosp");
+
+        NotifyingSailConnection connection = nativeStore.getConnection();
+
+        connection.begin();
+        connection.startUpdate(null);
+
+        ValueFactory factory = SimpleValueFactory.getInstance();
+        for (int i=0; i<5000; i++) {
+            IRI s1 = factory.createIRI("http://s"+i);
+            IRI p1 = factory.createIRI("http://p"+i);
+            IRI o1 = factory.createIRI("http://o"+i);
+            connection.addStatement(s1,p1,o1);
+        }
+        connection.endUpdate(null);
+        connection.commit();
+        connection.close();
+
+        SailRepository repository = new SailRepository(nativeStore);
+
+        RepositoryConnection connection2 = repository.getConnection();
+        String sparqlQuery = "SELECT ?s WHERE { ?s  <http://p1> <http://o1> . } ";
+        TupleQuery tupleQuery1 = connection2.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+
+        assertEquals(true,tupleQueryResult.hasNext());
+
+        if (tupleQueryResult.hasNext()){
+            tupleQueryResult.stream().iterator().forEachRemaining(System.out::println);
         }
     }
 
