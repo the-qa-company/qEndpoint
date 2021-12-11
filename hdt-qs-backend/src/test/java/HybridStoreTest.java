@@ -860,35 +860,25 @@ public class HybridStoreTest {
     @Test
     public void testCoherence() throws IOException, NotFoundException, InterruptedException {
         // initialize the store
-        File nativeStore = tempDir.newFolder("native-store");
-        File hdtStore = tempDir.newFolder("hdt-store");
-        if (new File("/Users/alyhdr/Downloads/test/").exists()) {
-            Files.walk(Paths.get("/Users/alyhdr/Downloads/test/"))
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        }
-
-        System.out.println(new File("/Users/alyhdr/Downloads/test/").mkdirs());
-        nativeStore = new File("/Users/alyhdr/Downloads/test/native-store/");
+        File nativeStore = new File("./tests/native-store/");
         nativeStore.mkdirs();
-        hdtStore = new File("/Users/alyhdr/Downloads/test/hdt-store/");
+        File hdtStore = new File("./tests/hdt-store/");
         hdtStore.mkdirs();
-        File tmp = new File("/Users/alyhdr/Downloads/test/hdt-store/temp.nt");
+        File tmp = new File("./tests/hdt-store/temp.nt");
         tmp.createNewFile();
 
-        HDT hdt = Utility.createTempHdtIndex("/Users/alyhdr/Downloads/test/hdt-store/temp.nt", true,false);
+        HDT hdt = Utility.createTempHdtIndex("/Users/Dennis/Downloads/test/hdt-store/temp.nt", true,false);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
         printHDT(hdt);
         HybridStore store = new HybridStore(
                 hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
         );
-        store.setThreshold(10);
+        store.setThreshold(1000);
         SailRepository hybridStore = new SailRepository(store);
 
         // PRE MERGE PHASE
-        int numbeOfTriples = 1300;
+        int numbeOfTriples = 500;
         // insert some data
         String sparqlQuery = "INSERT DATA { ";
         for (int i=0; i<numbeOfTriples; i++){
@@ -936,9 +926,9 @@ public class HybridStoreTest {
             sparqlQuery += "	<http://s"+i+">  <http://p"+i+">  <http://o"+i+"> . ";
         }
         sparqlQuery += "} ";
-        connection = hybridStore.getConnection();
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
+        connection.commit();
 
         // query some data
         for (int i=10; i<numbeOfTriples; i++) {
@@ -976,7 +966,6 @@ public class HybridStoreTest {
 
         // insert one more triple, this should trigger the merge
         sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
-        connection = hybridStore.getConnection();
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
