@@ -118,7 +118,6 @@ public class HybridTripleSource implements TripleSource {
                 repositoryResult = this.hybridStoreConnection.getCurrentConnection().getStatements(
                         newRes, newIRI, newValue, false, (Resource) null
                 );
-                this.hybridStoreConnection.getCurrentConnection().commit();
             }
         }
 

@@ -50,7 +50,7 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
 //        hybridStore.setThreshold(2);
 
         SailRepository repository = new SailRepository(hybridStore);
-        return new DatasetRepository(repository);
+        return repository;
 //        return new DatasetRepository(new SailRepository(new NativeStore(tempDir.newFolder(), "spoc")));
     }
 
