@@ -17,7 +17,6 @@ import java.net.URL;
 
 /**
  * @author Ali Haidar
- *
  */
 public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 
@@ -33,60 +32,51 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
     HybridStore hybridStore;
     File nativeStore;
     File hdtStore;
+
     @Override
     protected Repository newRepository() throws Exception {
         nativeStore = tempDir.newFolder();
         hdtStore = tempDir.newFolder();
-        if(this.hdt == null)
-            hdt = Utility.createTempHdtIndex(tempDir, true,false);
+        if (this.hdt == null)
+            hdt = Utility.createTempHdtIndex(tempDir, true, false);
         assert hdt != null;
         HDTSpecification spec = new HDTSpecification();
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-        hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
 
         hybridStore = new HybridStore(
-                hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
+                hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
         );
 //        hybridStore.setThreshold(2);
         SailRepository repository = new SailRepository(hybridStore);
         return repository;
-//        return new DatasetRepository(repository);
-//        return new DatasetRepository(new SailRepository(new NativeStore(tempDir.newFolder(), "spoc")));
     }
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-//        this.hybridStore.makeMerge();
-//        RepositoryConnection connection = this.getDataRepository().getConnection();
-//        connection.clear();
-//        connection.close();
     }
 
     HDT hdt;
+
     private void setUpHDT(Dataset dataset) {
         try {
-            if(dataset != null) {
+            if (dataset != null) {
                 String x = dataset.getDefaultGraphs().toString();
-                if(x.equals("[]")){
+                if (x.equals("[]")) {
                     x = dataset.getNamedGraphs().toString();
                 }
                 String str = x.substring(x.lastIndexOf("!") + 1).replace("]", "");
 
                 URL url = SPARQL11QueryComplianceTest.class.getResource(str);
-                //File tmpDir = FileUtil.createTempDir("sparql11-test-evaluation");
-                File tmpDir = new File("test");
+                File tmpDir = new File("hdt-qs-backend/test");
                 if (!tmpDir.isDirectory()) {
                     tmpDir.mkdir();
                 }
                 JarURLConnection con = (JarURLConnection) url.openConnection();
-                //JarFile jar = con.getJarFile();
-                //ZipUtil.extract(jar, tmpDir);
                 File file = new File(tmpDir, con.getEntryName());
 
-
                 HDTSpecification spec = new HDTSpecification();
-                //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj");
 
                 if (file.getName().endsWith("rdf")) {
                     hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.RDFXML, spec, null);
@@ -97,9 +87,8 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
                 }
                 assert hdt != null;
                 hdt.search("", "", "").forEachRemaining(System.out::println);
-                //hdt.getDictionary().getObjects().getSortedEntries().forEachRemaining(System.out::println);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
