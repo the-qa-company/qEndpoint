@@ -234,12 +234,8 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     protected void commitInternal() throws SailException {
-//        super.commitInternal();
-        //this.nativeStoreConnection.commit();
-        this.connA.flush();
-        this.connA.prepare();
+        super.commitInternal();
         this.connA.commit();
-
         this.connB.commit();
         this.connectionLock.release();
     }
