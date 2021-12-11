@@ -1,5 +1,6 @@
 import eu.qanswer.hybridstore.HybridStore;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
@@ -359,9 +360,16 @@ public class HybridStoreTest {
     }
 
     @Test
-    public void rdf4jUsedWorkflow(){
+    public void rdf4jUsedWorkflow() {
         // not really a test, more code workflow that is used internally as one store and that can be used to debug
-        NativeStore nativeStore = new NativeStore(new File("./tests/native-store/A"), "spoc,posc,cosp");
+        File dir = new File("./tests/native-store/A");
+        try {
+            FileUtils.deleteDirectory(dir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        dir.mkdirs();
+        NativeStore nativeStore = new NativeStore(dir, "spoc,posc,cosp");
 
         NotifyingSailConnection connection = nativeStore.getConnection();
 
