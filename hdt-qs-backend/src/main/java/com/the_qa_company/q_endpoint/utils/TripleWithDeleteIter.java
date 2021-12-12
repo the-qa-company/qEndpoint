@@ -24,19 +24,13 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
 
     private IRIConverter iriConverter;
 
-    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter) {
-        this.tripleSource = tripleSource;
-        this.iterator = iter;
-        this.hdt = tripleSource.getHdt();
-    }
-
     public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter,
                                 CloseableIteration<? extends Statement,
                                         SailException> repositoryResult
     ) {
         this.tripleSource = tripleSource;
         this.iterator = iter;
-        this.hdt = tripleSource.getHdt();
+        this.hdt = tripleSource.getHybridStore().getHdt();
         this.repositoryResult = repositoryResult;
         this.iriConverter = new IRIConverter(hdt);
     }

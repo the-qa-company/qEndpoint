@@ -30,13 +30,9 @@ import org.slf4j.LoggerFactory;
 public class HybridTripleSource implements TripleSource {
     private static final Logger logger = LoggerFactory.getLogger(HybridTripleSource.class);
     private final HybridStore hybridStore;
-    HDT hdt;
     ValueFactory factory;
     long startLiteral;
     long endLiteral;
-
-    HDTConverter hdtConverter;
-    IRIConverter iriConverter;
     ValueFactory tempFactory;
     // @todo: @Dennis: think again about this, looks strange!
     private SailConnection connA;
@@ -51,13 +47,10 @@ public class HybridTripleSource implements TripleSource {
     // @todo: I'm not sure, but should the connections not be passed here?
     public HybridTripleSource(HybridStoreConnection hybridStoreConnection, HDT hdt, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
-        this.hdt = hdt;
         this.factory = new AbstractValueFactoryHDT(hdt);
         this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
         this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
         this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
-        this.hdtConverter = new HDTConverter(hdt);
-        this.iriConverter = new IRIConverter(hdt);
         this.tempFactory = new MemValueFactory();
         this.hybridStoreConnection = hybridStoreConnection;
     }
@@ -67,10 +60,9 @@ public class HybridTripleSource implements TripleSource {
     }
 
     private void initHDTIndex() {
-        this.hdt = this.hybridStore.getHdt();
         this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
         this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
-        this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
+        this.numberOfCurrentTriples = this.hybridStore.getHdt().getTriples().getNumberOfElements();
     }
 
     @Override
@@ -79,15 +71,16 @@ public class HybridTripleSource implements TripleSource {
             throws QueryEvaluationException {
 
         // check if the index changed, then refresh it
-        if (numberOfCurrentTriples != this.hybridStore.getHdt().getTriples().getNumberOfElements()) {
+        if (this.numberOfCurrentTriples != this.hybridStore.getHdt().getTriples().getNumberOfElements()) {
             initHDTIndex();
         }
 
 
         // convert uris into ids if needed
-        Resource newRes = iriConverter.convertSubj(resource);
-        IRI newIRI = iriConverter.convertPred(iri);
-        Value newValue = iriConverter.convertObj(value);
+        Resource newRes = hybridStore.getIriConverter().convertSubj(resource);
+        IRI newIRI = hybridStore.getIriConverter().convertPred(iri);
+        Value newValue = hybridStore.getIriConverter().convertObj(value);
+
 
         // check if we need to search over the delta and if yes, search
         CloseableIteration<? extends Statement, SailException> repositoryResult = null;
@@ -114,9 +107,9 @@ public class HybridTripleSource implements TripleSource {
         }
 
         // @todo: does this not happen already above in iriConverter.convertSubj ?
-        long subject = hdtConverter.subjectId(resource);
-        long predicate = hdtConverter.predicateId(iri);
-        long object = hdtConverter.objectId(value);
+        long subject = hybridStore.getHdtConverter().subjectId(resource);
+        long predicate = hybridStore.getHdtConverter().predicateId(iri);
+        long object = hybridStore.getHdtConverter().objectId(value);
         if (logger.isDebugEnabled()) {
             if (resource != null) {
                 logger.debug(resource.toString());
@@ -127,7 +120,7 @@ public class HybridTripleSource implements TripleSource {
             if (value != null) {
                 logger.debug(value.stringValue());
             }
-            logger.debug(subject + "--" + predicate + "--" + object);
+            logger.debug(subject + "  " + predicate + "  " + object);
         }
 
         // iterate over the HDT file
@@ -135,7 +128,7 @@ public class HybridTripleSource implements TripleSource {
         if (subject != -1 && predicate != -1 && object != -1) {
             TripleID t = new TripleID(subject, predicate, object);
             // search with the ID to check if the triples has been deleted
-            iterator = hdt.getTriples().searchWithId(t);
+            iterator = this.hybridStore.getHdt().getTriples().searchWithId(t);
 
         } else {// no need to search over hdt
             iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
@@ -203,17 +196,9 @@ public class HybridTripleSource implements TripleSource {
         return containsSubject && containsPredicate && containsObject;
     }
 
-    public void setHdt(HDT hdt) {
-        this.hdt = hdt;
-    }
-
     @Override
     public ValueFactory getValueFactory() {
         return factory;
-    }
-
-    public HDT getHdt() {
-        return hdt;
     }
 
     public long getStartLiteral() {

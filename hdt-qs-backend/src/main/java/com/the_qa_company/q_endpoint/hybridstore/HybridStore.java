@@ -4,6 +4,7 @@ import com.the_qa_company.q_endpoint.model.AbstractValueFactoryHDT;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.model.SimpleLiteralHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
+import com.the_qa_company.q_endpoint.utils.HDTConverter;
 import com.the_qa_company.q_endpoint.utils.HDTProps;
 import com.the_qa_company.q_endpoint.utils.IRIConverter;
 
@@ -59,6 +60,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
     // HDT file containing the data
     private HDT hdt;
+    private IRIConverter iriConverter;
+    private HDTConverter hdtConverter;
     // location of the HDT file
     private String locationHdt;
     // specs of the HDT file
@@ -111,12 +114,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // variable counting the current number of triples in the delta
     public long triplesCount;
 
-    private IRIConverter iriConverter;
-
     private Thread mergerThread;
 
     public HybridStore(HDT hdt, String locationHdt, String locationNative, boolean inMemDeletes) {
-        this.hdt = hdt;
+        resetHDT(hdt);
         this.valueFactory = new AbstractValueFactoryHDT(hdt);
         this.nativeStoreA = new NativeStore(new File(locationNative + "A"), "spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(locationNative + "B"), "spoc,posc,cosp");
@@ -148,7 +149,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         // initialize native store dictionary
         //initNativeStoreDictionaryMemory();
         initNativeStoreDictionary(this.hdt);
-        this.iriConverter = new IRIConverter(this.hdt);
     }
 
     public HybridStore(String locationHdt, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
@@ -171,6 +171,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void resetHDT(HDT hdt) {
         this.setHdt(hdt);
         this.iriConverter = new IRIConverter(hdt);
+        this.hdtConverter = new HDTConverter(hdt);
         this.setHdtProps(new HDTProps(hdt));
         this.setValueFactory(new AbstractValueFactoryHDT(hdt));
 
@@ -600,5 +601,17 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public void setExtendsTimeMerge(int extendsTimeMerge) {
         this.extendsTimeMerge = extendsTimeMerge;
+    }
+
+    public void setIriConverter(IRIConverter iriConverter) {
+        this.iriConverter = iriConverter;
+    }
+
+    public HDTConverter getHdtConverter() {
+        return hdtConverter;
+    }
+
+    public void setHdtConverter(HDTConverter hdtConverter) {
+        this.hdtConverter = hdtConverter;
     }
 }

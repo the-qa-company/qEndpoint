@@ -14,6 +14,7 @@ import org.rdfhdt.hdt.hdt.HDT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// converts SimpleIRI to SimpleIRIHDT
 public class IRIConverter {
     private static final Logger logger = LoggerFactory.getLogger(IRIConverter.class);
     private HDT hdt;
