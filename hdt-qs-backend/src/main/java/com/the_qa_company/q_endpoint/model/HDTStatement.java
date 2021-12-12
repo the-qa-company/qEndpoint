@@ -47,7 +47,7 @@ public class HDTStatement implements Statement {
 
     @Override
     public Value getObject() {
-        if (tripleID.getObject() >= hybridTripleSource.getStartLiteral() && tripleID.getObject() <= hybridTripleSource.getEndLiteral()) {
+        if (tripleID.getObject() >= hybridStore.getHdtProps().getStartLiteral() && tripleID.getObject() <= hybridStore.getHdtProps().getEndLiteral()) {
             return new SimpleLiteralHDT(hybridStore.getHdt(), tripleID.getObject(), hybridTripleSource.getValueFactory());
         } else if ((tripleID.getObject() >= hybridStore.getHdtProps().getStartBlankObjects()
                 && tripleID.getObject() <= hybridStore.getHdtProps().getEndBlankObjects())

@@ -31,8 +31,6 @@ public class HybridTripleSource implements TripleSource {
     private static final Logger logger = LoggerFactory.getLogger(HybridTripleSource.class);
     private final HybridStore hybridStore;
     ValueFactory factory;
-    long startLiteral;
-    long endLiteral;
     ValueFactory tempFactory;
     private long numberOfCurrentTriples;
     // count the number of times rdf4j is called within a triple pattern..
@@ -43,8 +41,6 @@ public class HybridTripleSource implements TripleSource {
     public HybridTripleSource(HybridStoreConnection hybridStoreConnection, HDT hdt, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
         this.factory = new AbstractValueFactoryHDT(hdt);
-        this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
-        this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
         this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
         this.tempFactory = new MemValueFactory();
         this.hybridStoreConnection = hybridStoreConnection;
@@ -55,8 +51,6 @@ public class HybridTripleSource implements TripleSource {
     }
 
     private void initHDTIndex() {
-        this.startLiteral = hybridStore.getHdtProps().getStartLiteral();
-        this.endLiteral = hybridStore.getHdtProps().getEndLiteral();
         this.numberOfCurrentTriples = this.hybridStore.getHdt().getTriples().getNumberOfElements();
     }
 
@@ -193,14 +187,6 @@ public class HybridTripleSource implements TripleSource {
     @Override
     public ValueFactory getValueFactory() {
         return factory;
-    }
-
-    public long getStartLiteral() {
-        return startLiteral;
-    }
-
-    public long getEndLiteral() {
-        return endLiteral;
     }
 
     public HybridStore getHybridStore() {
