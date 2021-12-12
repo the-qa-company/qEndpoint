@@ -1,5 +1,6 @@
 package com.the_qa_company.q_endpoint.utils;
 
+import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.HybridTripleSource;
 import com.the_qa_company.q_endpoint.model.HDTStatement;
 
@@ -17,22 +18,19 @@ import java.util.Iterator;
 
 public class TripleWithDeleteIter implements Iterator<Statement> {
 
-    private HybridTripleSource tripleSource;
+    private HybridStore hybridStore;
+    private HybridTripleSource hybridTripleSource;
     private IteratorTripleID iterator;
-    private HDT hdt;
     private CloseableIteration<? extends Statement, SailException> repositoryResult;
 
-    private IRIConverter iriConverter;
-
-    public TripleWithDeleteIter(HybridTripleSource tripleSource, IteratorTripleID iter,
+    public TripleWithDeleteIter(HybridStore hybridStore, HybridTripleSource hybridTripleSource, IteratorTripleID iter,
                                 CloseableIteration<? extends Statement,
                                         SailException> repositoryResult
     ) {
-        this.tripleSource = tripleSource;
+        this.hybridStore = hybridStore;
+        this.hybridTripleSource = hybridTripleSource;
         this.iterator = iter;
-        this.hdt = tripleSource.getHybridStore().getHdt();
         this.repositoryResult = repositoryResult;
-        this.iriConverter = new IRIConverter(hdt);
     }
 
     Statement next;
@@ -43,8 +41,8 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 TripleID tripleID = iterator.next();
-                Statement stm = new HDTStatement(hdt, tripleID, tripleSource);
-                if (tripleID.getIndex() != -1 && !tripleSource.getHybridStore().getDeleteBitMap().access(tripleID.getIndex() - 1)) {
+                Statement stm = new HDTStatement(hybridStore, hybridTripleSource, tripleID);
+                if (tripleID.getIndex() != -1 && !hybridStore.getDeleteBitMap().access(tripleID.getIndex() - 1)) {
                     next = stm;
                     return true;
                 }
@@ -62,21 +60,21 @@ public class TripleWithDeleteIter implements Iterator<Statement> {
     private Statement convertStatement(Statement stm) {
 
         Resource subject = stm.getSubject();
-        Resource newSubj = iriConverter.getIRIHdtSubj(subject);
+        Resource newSubj = hybridStore.getIriConverter().getIRIHdtSubj(subject);
         IRI predicate = stm.getPredicate();
-        Value newPred = iriConverter.getIRIHdtPred(predicate);
+        Value newPred = hybridStore.getIriConverter().getIRIHdtPred(predicate);
 //        if(newPred instanceof SimpleIRIHDT && ((SimpleIRIHDT)newPred).getId() == -1){
 //            System.out.println("alerttttt this should not happen: "+newPred.toString());
 //        }
-        Value newObject = iriConverter.getIRIHdtObj(stm.getObject());
-        return this.tripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
+        Value newObject = hybridStore.getIriConverter().getIRIHdtObj(stm.getObject());
+        return hybridTripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
 
 
     }
 
     @Override
     public Statement next() {
-        Statement stm = this.tripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(), next.getObject(), next.getContext());
+        Statement stm = hybridTripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(), next.getObject(), next.getContext());
         return stm;
     }
 }

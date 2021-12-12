@@ -129,7 +129,7 @@ public class HybridTripleSource implements TripleSource {
         }
 
         // iterate over hdt result, delete the triples marked as deleted and add the triples from the delta
-        TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(this, iterator, repositoryResult);
+        TripleWithDeleteIter tripleWithDeleteIter = new TripleWithDeleteIter(hybridStore, this, iterator, repositoryResult);
         return new CloseableIteration<>() {
             @Override
             public void close() throws QueryEvaluationException {
