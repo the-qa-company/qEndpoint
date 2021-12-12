@@ -49,9 +49,8 @@ public class MergeRunnable implements Runnable {
     private final HDTSpecification spec;
     private final Lock mergeLock;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
-    private int extendsTimeMerge = -1;
-
-    private int block = 1000;
+    private int extendsTimeMergeBeginning = -1;
+    private int extendsTimeMergeEnd = -1;
 
     public MergeRunnable(String locationHdt, HybridStore hybridStore, Lock lock) {
         this.locationHdt = locationHdt;
@@ -80,12 +79,12 @@ public class MergeRunnable implements Runnable {
             e.printStackTrace();
         }
 
-        // extends the time of the merge, this is for testing purposes and extendsTimeMerge should be -1 in production
-        if (extendsTimeMerge!=-1){
+        // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
+        if (extendsTimeMergeBeginning!=-1){
             try {
-                logger.debug("It is sleeping extendsTimeMerge "+extendsTimeMerge);
-                Thread.sleep(extendsTimeMerge*1000);
-                logger.debug("Fnished sleeping extendsTimeMerge");
+                logger.debug("It is sleeping extendsTimeMergeBeginning "+extendsTimeMergeBeginning);
+                Thread.sleep(extendsTimeMergeBeginning*1000);
+                logger.debug("Fnished sleeping extendsTimeMergeBeginning");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -117,24 +116,18 @@ public class MergeRunnable implements Runnable {
             createHDTDump(rdfInput, hdtOutput);
             // cat the original index and the temp index
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
-            System.out.println("CAT completed!!!!! " + locationHdt);
+            logger.info("CAT completed!!!!! " + locationHdt);
             Path path = Paths.get(locationHdt + "new_index.hdt");
             // empty native store
             emptyNativeStore();
-            System.out.println(rdfInput);
             File file = new File(rdfInput);
             file.delete();
-            System.out.println(hdtOutput);
             file = new File(hdtOutput);
             file.delete();
             file = new File(locationHdt + "triples-delete-cpy.arr");
             file.delete();
             file = new File(locationHdt + "triples-delete.arr");
             file.delete();
-//            Files.deleteIfExists(Paths.get(rdfInput));
-//            Files.deleteIfExists(Paths.get(hdtOutput));
-//            Files.deleteIfExists(Paths.get(locationHdt + "triples-delete-cpy.arr"));
-//            Files.deleteIfExists(Paths.get(locationHdt + "triples-delete.arr"));
 
             // add a lock here
             this.hybridStore.resetDeleteArray();  // @todo: no deletes are allowed in this moment of time!
@@ -150,20 +143,32 @@ public class MergeRunnable implements Runnable {
                 e.printStackTrace();
             }
             // convert all triples added to the merge store to new IDs of the new generated HDT
+            logger.info("ID conversion");
             Lock lock = hybridStore.manager.createLock("IDs conversion lock");
             convertOldToNew(this.hdt, tempHdt);
             this.hybridStore.resetHDT(tempHdt);
-            logger.info("Releasing lock....");
+            logger.info("Releasing lock for ID conversion ....");
             lock.release();
+            logger.info("Lock released");
             // mark the triples as deleted from the temp file stored while merge
             this.hybridStore.markDeletedTempTriples();
             this.hybridStore.isMerging = false;
             this.nativeStoreConnection.close();
-            Thread.sleep(block);
-        } catch (IOException | InterruptedException e) {
+            // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
+            if (extendsTimeMergeEnd!=-1){
+                try {
+                    logger.debug("It is sleeping extendsTimeMergeEnd "+extendsTimeMergeEnd);
+                    Thread.sleep(extendsTimeMergeEnd*1000);
+                    logger.debug("Finshed sleeping extendsTimeMergeEnd");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (IOException e) {
             hybridStore.isMerging = false;
             e.printStackTrace();
         }
+        logger.info("Merge finished");
     }
 
 
@@ -244,8 +249,6 @@ public class MergeRunnable implements Runnable {
 
     private void createHDTDump(String rdfInput, String hdtOutput) {
         String baseURI = "file://" + rdfInput;
-        RDFNotation notation = RDFNotation.guess(rdfInput);
-
         try {
             StopWatch sw = new StopWatch();
             HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES, this.spec, null);
@@ -269,6 +272,7 @@ public class MergeRunnable implements Runnable {
             IRIConverter iriConverter = new IRIConverter(this.hdt);
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
+                System.out.println(stm.getSubject()+"--"+stm.getPredicate()+"--"+stm.getObject());
                 Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
                         iriConverter.getIRIHdtSubj(stm.getSubject()),
                         (IRI) iriConverter.getIRIHdtPred(stm.getPredicate()),
@@ -286,14 +290,6 @@ public class MergeRunnable implements Runnable {
 
     private void convertOldToNew(HDT oldHDT, HDT newHDT) {
         logger.info("Started converting IDs in the merge store");
-//        try {
-//            Thread.sleep(20000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        NativeStore tempStore = new NativeStore(new File(this.hybridStore.getLocationNative()+"C"),"spoc,posc,cosp");
-//        SailRepositoryConnection tempConnection = new SailRepository(tempStore).getConnection();
-
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             try (RepositoryConnection connection = this.hybridStore.getRepoConnection()) {
@@ -337,8 +333,8 @@ public class MergeRunnable implements Runnable {
                     } else {
                         newObjIRI = iriHdtObj;
                     }
-//                System.out.println("old:["+ oldSubject+" "+oldPredicate+" "+oldObject+"]");
-//                System.out.println("new:["+ newSubjIRI+" "+newPredIRI+" "+newObjIRI+"]");
+                System.out.println("old:["+ oldSubject+" "+oldPredicate+" "+oldObject+"]");
+                System.out.println("new:["+ newSubjIRI+" "+newPredIRI+" "+newObjIRI+"]");
 
                     // remove the old statements and append the new converted ones.
                     connection.remove(oldSubject, oldPredicate, oldObject);
@@ -393,10 +389,10 @@ public class MergeRunnable implements Runnable {
     }
 
     public int getExtendsTimeMerge() {
-        return extendsTimeMerge;
+        return extendsTimeMergeBeginning;
     }
 
     public void setExtendsTimeMerge(int extendsTimeMerge) {
-        this.extendsTimeMerge = extendsTimeMerge;
+        this.extendsTimeMergeBeginning = extendsTimeMerge;
     }
 }

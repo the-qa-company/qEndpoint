@@ -33,12 +33,12 @@ public class BenchMarkTest {
             StopWatch stopWatch = StopWatch.createStarted();
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = Utility.createTempHdtIndex(tempDir, false, true);
+            HDTSpecification spec = new HDTSpecification();
+            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             //printHDT(hdt);
-            HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
                             hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true

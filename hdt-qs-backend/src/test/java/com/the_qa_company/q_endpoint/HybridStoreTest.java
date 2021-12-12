@@ -71,7 +71,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             HybridStore hybridStore = new HybridStore(
@@ -90,7 +90,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             HybridStore hybridStore = new HybridStore(
@@ -109,7 +109,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             SailRepository hybridStore = new SailRepository(
@@ -128,7 +128,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             SailRepository hybridStore = new SailRepository(
@@ -152,7 +152,7 @@ public class HybridStoreTest {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
 
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             HybridStore hybridStore = new HybridStore(
@@ -186,7 +186,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -219,7 +219,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -282,7 +282,7 @@ public class HybridStoreTest {
 
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -324,7 +324,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -506,7 +506,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -558,7 +558,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -600,7 +600,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -653,7 +653,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -700,7 +700,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -746,7 +746,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -793,7 +793,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -829,7 +829,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);
@@ -881,7 +881,7 @@ public class HybridStoreTest {
             StopWatch stopWatch = StopWatch.createStarted();
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false);
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
             printHDT(hdt);

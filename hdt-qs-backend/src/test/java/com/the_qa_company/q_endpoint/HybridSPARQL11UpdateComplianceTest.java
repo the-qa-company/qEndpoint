@@ -34,12 +34,13 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
     protected Repository newRepository() throws Exception {
         File nativeStore = tempDir.newFolder();
         File hdtStore = tempDir.newFolder();
-        HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
+        HDTSpecification spec = new HDTSpecification();
+        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        HDT hdt = Utility.createTempHdtIndex(tempDir, true,false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
 
-        HDTSpecification spec = new HDTSpecification();
-        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+
 
         HybridStore hybridStore = new HybridStore(
                 hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true

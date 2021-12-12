@@ -61,11 +61,12 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
     protected Repository newRepository() throws Exception {
         nativeStore = tempDir.newFolder();
         hdtStore = tempDir.newFolder();
-        if (this.hdt == null)
-            hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false);
-        assert hdt != null;
         HDTSpecification spec = new HDTSpecification();
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        if (this.hdt == null)
+            hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+        assert hdt != null;
+
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
 
         hybridStore = new HybridStore(

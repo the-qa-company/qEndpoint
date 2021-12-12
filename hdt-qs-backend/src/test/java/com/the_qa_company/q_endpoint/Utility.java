@@ -22,12 +22,12 @@ import java.io.IOException;
 
 public class Utility {
 
-    public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig) throws IOException {
-        return createTempHdtIndex(fileName.newFile().getAbsolutePath(), empty, isBig);
+    public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException {
+        return createTempHdtIndex(fileName.newFile().getAbsolutePath(), empty, isBig, spec);
     }
 
 
-    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig) {
+    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec) {
         try {
             String rdfInput = "temp.nt";
             File inputFile = new File(fileName);
@@ -39,8 +39,6 @@ public class Utility {
             }
             String baseURI = inputFile.getAbsolutePath();
             RDFNotation notation = RDFNotation.guess(rdfInput);
-            HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(), baseURI, notation, spec, null);
             return HDTManager.indexedHDT(hdt, null);
         } catch (IOException e) {

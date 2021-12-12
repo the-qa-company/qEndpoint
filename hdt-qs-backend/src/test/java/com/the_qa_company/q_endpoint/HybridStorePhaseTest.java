@@ -44,7 +44,7 @@ public class HybridStorePhaseTest {
     @Before
     public void setUp() throws IOException {
         HDTSpecification spec = new HDTSpecification();
-        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         logger.info("Initialize the store ... ");
         File nativeStore = new File("./tests/native-store/");
         FileSystemUtils.deleteRecursively(nativeStore);
@@ -56,7 +56,7 @@ public class HybridStorePhaseTest {
         tmp.delete();
         tmp.createNewFile();
 
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex("/Users/Dennis/Downloads/test/hdt-store/temp.nt", true, false);
+        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex("/Users/Dennis/Downloads/test/hdt-store/temp.nt", true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
         store = new HybridStore(
@@ -144,7 +144,7 @@ public class HybridStorePhaseTest {
     }
 
     @Test
-    public void duringMerge(){
+    public void duringMerge1(){
         int threshold = 400;
         logger.info("Setting the threshold to "+threshold);
         store.setThreshold(threshold);
@@ -165,7 +165,7 @@ public class HybridStorePhaseTest {
 
         // START MERGE
         // artificially rise the time to merge to 5 seconds
-        store.setExtendsTimeMerge(15);
+        store.setExtendsTimeMerge(3);
         sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
@@ -212,6 +212,79 @@ public class HybridStorePhaseTest {
             BindingSet b = tupleQueryResult2.next();
             assertEquals("http://s700", b.getBinding("s").getValue().toString());
         }
+        connection.close();
+        logger.info("SHUTTING DOWN");
+        hybridStore.shutDown();
+    }
+
+    @Test
+    public void afterMerge() throws InterruptedException {
+        int threshold = 100;
+        logger.info("Setting the threshold to "+threshold);
+        store.setThreshold(threshold);
+        SailRepository hybridStore = new SailRepository(store);
+
+        logger.info("Insert some data");
+        int numbeOfTriples = 150;
+        String sparqlQuery = "INSERT DATA { ";
+        for (int i = 0; i < numbeOfTriples; i++) {
+            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  <http://o" + i + "> . ";
+        }
+        sparqlQuery += "} ";
+        RepositoryConnection connection = hybridStore.getConnection();
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+        connection.commit();
+
+        // START MERGE
+        logger.info("INSERT");
+        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o600> . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        // WAIT MERGE TO FINISH
+        Thread.sleep(2000);
+
+        logger.info("QUERY 1");
+        for (int i = 0; i < numbeOfTriples; i++) {
+            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ";
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            assertTrue(tupleQueryResult.hasNext());
+            while (tupleQueryResult.hasNext()) {
+                BindingSet b = tupleQueryResult.next();
+                assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+            }
+        }
+
+
+
+        logger.info("QUERY");
+        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult.hasNext());
+        while (tupleQueryResult.hasNext()) {
+            BindingSet b = tupleQueryResult.next();
+            assertEquals("http://s600", b.getBinding("s").getValue().toString());
+        }
+
+        logger.info("INSERT");
+        sparqlQuery = "INSERT DATA { <http://s700>  <http://p700>  <http://o700> . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        logger.info("QUERY");
+        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p700>  <http://o700> . } ";
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult2 = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult2.hasNext());
+        while (tupleQueryResult2.hasNext()) {
+            BindingSet b = tupleQueryResult2.next();
+            assertEquals("http://s700", b.getBinding("s").getValue().toString());
+        }
+
+        connection.close();
 
         logger.info("SHUTTING DOWN");
         hybridStore.shutDown();
