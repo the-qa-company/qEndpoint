@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 public class HybridTripleSource implements TripleSource {
     private static final Logger logger = LoggerFactory.getLogger(HybridTripleSource.class);
     private final HybridStore hybridStore;
-    ValueFactory factory;
     ValueFactory tempFactory;
     private long numberOfCurrentTriples;
     // count the number of times rdf4j is called within a triple pattern..
@@ -38,16 +37,10 @@ public class HybridTripleSource implements TripleSource {
     private long count = 0;
     HybridStoreConnection hybridStoreConnection;
 
-    public HybridTripleSource(HybridStoreConnection hybridStoreConnection, HDT hdt, HybridStore hybridStore) {
+    public HybridTripleSource(HybridStoreConnection hybridStoreConnection, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
-        this.factory = new AbstractValueFactoryHDT(hdt);
-        this.numberOfCurrentTriples = hdt.getTriples().getNumberOfElements();
-        this.tempFactory = new MemValueFactory();
+        this.numberOfCurrentTriples = hybridStore.getHdt().getTriples().getNumberOfElements();
         this.hybridStoreConnection = hybridStoreConnection;
-    }
-
-    public ValueFactory getTempFactory() {
-        return tempFactory;
     }
 
     private void initHDTIndex() {
@@ -186,7 +179,7 @@ public class HybridTripleSource implements TripleSource {
 
     @Override
     public ValueFactory getValueFactory() {
-        return factory;
+        return hybridStore.getValueFactory();
     }
 
     public HybridStore getHybridStore() {

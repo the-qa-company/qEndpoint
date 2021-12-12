@@ -175,7 +175,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdtConverter = new HDTConverter(hdt);
         this.setHdtProps(new HDTProps(hdt));
         this.setValueFactory(new AbstractValueFactoryHDT(hdt));
-
     }
 
     public void setThreshold(int threshold) {
