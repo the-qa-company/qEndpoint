@@ -46,9 +46,9 @@ public class HybridStoreConnection extends SailSourceConnection {
     public HybridStoreConnection(HybridStore hybridStore) {
         super(hybridStore, hybridStore.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
         this.hybridStore = hybridStore;
-//    this.nativeStoreConnection = hybridStore.getConnectionNative();
         this.connA = hybridStore.getNativeStoreA().getConnection();
         this.connB = hybridStore.getNativeStoreB().getConnection();
+        // each hybridStoreConnection has a triple source ( ideally it should be in the query preparer as in rdf4j..)
         this.tripleSource = new HybridTripleSource(this, hybridStore);
         this.queryPreparer = new HybridQueryPreparer(hybridStore, tripleSource);
     }
@@ -74,7 +74,6 @@ public class HybridStoreConnection extends SailSourceConnection {
             logger.info("Merging..." + count);
             hybridStore.makeMerge();
         }
-        //this.getCurrentConnection().begin();
         this.connA.begin();
         this.connB.begin();
     }
@@ -93,10 +92,6 @@ public class HybridStoreConnection extends SailSourceConnection {
     // for SPARQL queries
     @Override
     protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
-        HybridTripleSource tripleSource = queryPreparer.getTripleSource();
-        // @todo: this looks dangerous ..... the connection is setting a connection in the triple source, what happens if there are multiple connections, are they overwriting each other!
-        // each hybridStoreConneciton have a triple source ( ideally it should be in the query preparer as in rdf4j..)
-
         // TODO: check max execution time
         return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
     }
@@ -140,29 +135,10 @@ public class HybridStoreConnection extends SailSourceConnection {
                     contexts
             );
 
-//            CloseableIteration<? extends Statement, SailException> statements = getCurrentConnection().
-//                    getStatements(null, newPred, newObj, true, contexts);
-//            while (statements.hasNext()) System.out.println(statements.next());
             // modify the bitmaps if the IRIs used are in HDT
             this.hybridStore.modifyBitmaps(this.hybridStore.getHdt(), newSubj, newPred, newObj);
             // increase the number of statements
             this.hybridStore.triplesCount++;
-
-
-            // if merge is happening we don't insert the converted IRIs because they rely on the old index after merge
-
-      /*
-      if (hybridStore.isMerging()) {
-        this.nativeStoreConnection.addStatement(
-                subj,
-                pred,
-                obj,
-                contexts
-        );
-      } else { // not merging insert with HDT IDs
-
-      }
-      */
         }
     }
 
@@ -173,20 +149,6 @@ public class HybridStoreConnection extends SailSourceConnection {
 
         this.getCurrentConnection().addStatement(subj, pred, obj, contexts);
     }
-
-    private boolean inOtherStore(Resource subj, IRI pred, Value obj) {
-        // only in the case while merging - we check if the triple exists in the other store
-        if (true) {
-            System.out.println("checking in other store -========== = == = == = = = ");
-            // if delta is B then check in A
-            if (hybridStore.switchStore) {
-                return this.connA.hasStatement(subj, pred, obj, false);
-            } else
-                return this.connB.hasStatement(subj, pred, obj, false);
-        }
-        return false;
-    }
-
 
     @Override
     public void clearNamespacesInternal() throws SailException {
@@ -318,6 +280,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         throw new SailReadOnlyException("");
     }
 
+    // @todo: this logic is repeated accros many parts of the code!
     private TripleID getTripleID(Resource subj, IRI pred, Value obj) {
         long subjId = -1;
         long predId = -1;
@@ -396,6 +359,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         return connB;
     }
 
+    // @todo: this logic is already present somewhere else should be moved to the store
     private long convertToId(Value iri, TripleComponentRole position) {
         return hybridStore.getHdt().getDictionary().stringToId(iri.toString(), position);
     }
