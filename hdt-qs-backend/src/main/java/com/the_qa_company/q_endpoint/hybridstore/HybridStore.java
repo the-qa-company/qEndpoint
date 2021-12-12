@@ -60,12 +60,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
     // HDT file containing the data
     private HDT hdt;
-    private IRIConverter iriConverter;
-    private HDTConverter hdtConverter;
     // location of the HDT file
     private String locationHdt;
     // specs of the HDT file
     private HDTSpecification spec;
+    private IRIConverter iriConverter;
+    private HDTConverter hdtConverter;
+
     // some cached information about the HDT store
     private HDTProps hdtProps;
 

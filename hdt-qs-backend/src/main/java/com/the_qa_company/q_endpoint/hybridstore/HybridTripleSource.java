@@ -34,17 +34,12 @@ public class HybridTripleSource implements TripleSource {
     long startLiteral;
     long endLiteral;
     ValueFactory tempFactory;
-    // @todo: @Dennis: think again about this, looks strange!
-    private SailConnection connA;
-    private SailConnection connB;
-    private SailConnection connCurr;
     private long numberOfCurrentTriples;
     // count the number of times rdf4j is called within a triple pattern..
     // only for debugging ...
     private long count = 0;
     HybridStoreConnection hybridStoreConnection;
 
-    // @todo: I'm not sure, but should the connections not be passed here?
     public HybridTripleSource(HybridStoreConnection hybridStoreConnection, HDT hdt, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
         this.factory = new AbstractValueFactoryHDT(hdt);
@@ -70,17 +65,16 @@ public class HybridTripleSource implements TripleSource {
             Resource resource, IRI iri, Value value, Resource... resources)
             throws QueryEvaluationException {
 
+        // @todo: should we not move this to the HybridStore in the resetHDT function?
         // check if the index changed, then refresh it
         if (this.numberOfCurrentTriples != this.hybridStore.getHdt().getTriples().getNumberOfElements()) {
             initHDTIndex();
         }
 
-
         // convert uris into ids if needed
         Resource newRes = hybridStore.getIriConverter().convertSubj(resource);
         IRI newIRI = hybridStore.getIriConverter().convertPred(iri);
         Value newValue = hybridStore.getIriConverter().convertObj(value);
-
 
         // check if we need to search over the delta and if yes, search
         CloseableIteration<? extends Statement, SailException> repositoryResult = null;
@@ -90,11 +84,11 @@ public class HybridTripleSource implements TripleSource {
             if (hybridStore.isMerging()) {
                 // query both native stores
                 CloseableIteration<? extends Statement, SailException> repositoryResult1 =
-                        connA.getStatements(
+                        this.hybridStoreConnection.getConnA().getStatements(
                                 newRes, newIRI, newValue, false, resources
                         );
                 CloseableIteration<? extends Statement, SailException> repositoryResult2 =
-                        connB.getStatements(
+                        this.hybridStoreConnection.getConnB().getStatements(
                                 newRes, newIRI, newValue, false, resources
                         );
                 repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
@@ -211,26 +205,6 @@ public class HybridTripleSource implements TripleSource {
 
     public HybridStore getHybridStore() {
         return hybridStore;
-    }
-
-    public SailConnection getConnA() {
-        return connA;
-    }
-
-    public SailConnection getConnB() {
-        return connB;
-    }
-
-    public void setConnA(SailConnection connA) {
-        this.connA = connA;
-    }
-
-    public void setConnB(SailConnection connB) {
-        this.connB = connB;
-    }
-
-    public void setConnCurr(SailConnection connCurr) {
-        this.connCurr = connCurr;
     }
 
     public long getCount() {

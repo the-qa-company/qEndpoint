@@ -96,12 +96,6 @@ public class HybridStoreConnection extends SailSourceConnection {
         HybridTripleSource tripleSource = queryPreparer.getTripleSource();
         // @todo: this looks dangerous ..... the connection is setting a connection in the triple source, what happens if there are multiple connections, are they overwriting each other!
         // each hybridStoreConneciton have a triple source ( ideally it should be in the query preparer as in rdf4j..)
-        tripleSource.setConnA(this.connA);
-        tripleSource.setConnB(this.connB);
-        tripleSource.setConnCurr(getCurrentConnection());
-//        CloseableIteration<? extends Statement, SailException> statements = getCurrentConnection().
-//        getStatements(null, this.hybridStore.valueFactory.createIRI("http://p0"), this.hybridStore.valueFactory.createIRI("http://o0"), true, (Resource) null);
-//        while (statements.hasNext()) System.out.println(statements.next());
 
         // TODO: check max execution time
         return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
@@ -110,9 +104,6 @@ public class HybridStoreConnection extends SailSourceConnection {
     // USED from connection get api not SPARQL
     @Override
     protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
-        tripleSource.setConnA(this.connA);
-        tripleSource.setConnB(this.connB);
-        tripleSource.setConnCurr(getCurrentConnection());
         CloseableIteration<? extends Statement, QueryEvaluationException> result =
                 tripleSource.getStatements(subj, pred, obj, contexts);
         return new ExceptionConvertingIteration<Statement, SailException>(result) {
@@ -395,6 +386,14 @@ public class HybridStoreConnection extends SailSourceConnection {
             return connB;
         else
             return connA;
+    }
+
+    public SailConnection getConnA() {
+        return connA;
+    }
+
+    public SailConnection getConnB() {
+        return connB;
     }
 
     private long convertToId(Value iri, TripleComponentRole position) {
