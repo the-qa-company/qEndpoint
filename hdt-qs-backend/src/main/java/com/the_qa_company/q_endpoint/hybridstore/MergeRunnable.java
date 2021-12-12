@@ -67,17 +67,6 @@ public class MergeRunnable implements Runnable {
         // mark in the store that the merge process started
         hybridStore.isMerging = true;
 
-        // extends the time of the merge, this is for testing purposes and extendsTimeMerge should be -1 in production
-        if (extendsTimeMerge!=-1){
-            try {
-                logger.debug("It is sleeping extendsTimeMerge "+extendsTimeMerge);
-                Thread.sleep(extendsTimeMerge*1000);
-                logger.debug("Fnished sleeping extendsTimeMerge");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
         // init the temp deletes while merging...
         hybridStore.initTempDeleteArray();
         hybridStore.initTempDump();
@@ -90,6 +79,18 @@ public class MergeRunnable implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        // extends the time of the merge, this is for testing purposes and extendsTimeMerge should be -1 in production
+        if (extendsTimeMerge!=-1){
+            try {
+                logger.debug("It is sleeping extendsTimeMerge "+extendsTimeMerge);
+                Thread.sleep(extendsTimeMerge*1000);
+                logger.debug("Fnished sleeping extendsTimeMerge");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         if (hybridStore.switchStore) {
             this.hybridStore.currentStore = this.hybridStore.nativeStoreA;
             this.hybridStore.switchStore = false;
@@ -101,9 +102,6 @@ public class MergeRunnable implements Runnable {
         this.hybridStore.setTriplesCount(0);
         // write the switchStore value to disk in case, something crash we can recover
         this.hybridStore.writeWhichStore();
-//        System.out.println(locationHdt+"triples-delete.arr");
-//        Path path = Paths.get(locationHdt+"triples-delete.arr");
-//        assertEquals(true,Files.exists(path));
         try {
             String rdfInput = locationHdt + "temp.nt";
             String hdtOutput = locationHdt + "temp.hdt";

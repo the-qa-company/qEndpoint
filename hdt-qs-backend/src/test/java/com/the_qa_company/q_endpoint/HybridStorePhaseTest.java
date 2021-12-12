@@ -145,7 +145,6 @@ public class HybridStorePhaseTest {
 
     @Test
     public void duringMerge(){
-
         int threshold = 400;
         logger.info("Setting the threshold to "+threshold);
         store.setThreshold(threshold);
@@ -164,9 +163,8 @@ public class HybridStorePhaseTest {
         connection.commit();
 
 
-
         // START MERGE
-        // artificially rise the time to marge to 5 seconds
+        // artificially rise the time to merge to 5 seconds
         store.setExtendsTimeMerge(15);
         sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
@@ -185,12 +183,12 @@ public class HybridStorePhaseTest {
             }
         }
 
+        logger.info("INSERT");
         sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o600> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
-        logger.info("QUERY 1");
-
+        logger.info("QUERY");
         sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ";
         TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
         TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
@@ -200,17 +198,25 @@ public class HybridStorePhaseTest {
             assertEquals("http://s600", b.getBinding("s").getValue().toString());
         }
 
+        logger.info("INSERT");
+        sparqlQuery = "INSERT DATA { <http://s700>  <http://p700>  <http://o700> . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
 
+        logger.info("QUERY");
+        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p700>  <http://o700> . } ";
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult2 = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult2.hasNext());
+        while (tupleQueryResult2.hasNext()) {
+            BindingSet b = tupleQueryResult2.next();
+            assertEquals("http://s700", b.getBinding("s").getValue().toString());
+        }
 
-
-
-
+        logger.info("SHUTTING DOWN");
         hybridStore.shutDown();
-
-        //store.makeMerge();
-
-        // convert delta during merge
-
-        // after merge
     }
+
+
+
 }
