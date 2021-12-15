@@ -35,12 +35,13 @@ public class EndpointController {
             @RequestParam(value = "update", required = false) final String updateQuery,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            @RequestHeader(value = "timeout", defaultValue = "30") int timeout,
+            @RequestHeader(value = "timeout", defaultValue = "300") int timeout,
             @RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
             @RequestBody(required = false) String body)
             throws Exception {
-        logger.info("Query {} timeout {} update query {} body {} ", query, timeout, updateQuery, body);
+        logger.info("New query");
+//        logger.info("Query {} timeout {} update query {} body {} ", query, timeout, updateQuery, body);
 
         if (query != null) {
             if (acceptHeader.contains("application/sparql-results+json")) {

@@ -144,7 +144,7 @@ public class HybridStorePhaseTest {
     }
 
     @Test
-    public void duringMerge1(){
+    public void duringMerge1() throws InterruptedException {
         int threshold = 400;
         logger.info("Setting the threshold to "+threshold);
         store.setThreshold(threshold);
@@ -165,7 +165,7 @@ public class HybridStorePhaseTest {
 
         // START MERGE
         // artificially rise the time to merge to 5 seconds
-        store.setExtendsTimeMerge(3);
+        store.setExtendsTimeMergeBeginningAfterSwitch(2);
         sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
@@ -188,6 +188,12 @@ public class HybridStorePhaseTest {
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
+        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o130> . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        Thread.sleep(5000);
+
         logger.info("QUERY");
         sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ";
         TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
@@ -198,20 +204,15 @@ public class HybridStorePhaseTest {
             assertEquals("http://s600", b.getBinding("s").getValue().toString());
         }
 
-        logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s700>  <http://p700>  <http://o700> . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
-        tupleQuery.execute();
-
-        logger.info("QUERY");
-        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p700>  <http://o700> . } ";
+        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o130> . } ";
         tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-        TupleQueryResult tupleQueryResult2 = tupleQuery1.evaluate();
-        assertTrue(tupleQueryResult2.hasNext());
-        while (tupleQueryResult2.hasNext()) {
-            BindingSet b = tupleQueryResult2.next();
-            assertEquals("http://s700", b.getBinding("s").getValue().toString());
+        tupleQueryResult = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult.hasNext());
+        while (tupleQueryResult.hasNext()) {
+            BindingSet b = tupleQueryResult.next();
+            assertEquals("http://s600", b.getBinding("s").getValue().toString());
         }
+
         connection.close();
         logger.info("SHUTTING DOWN");
         hybridStore.shutDown();

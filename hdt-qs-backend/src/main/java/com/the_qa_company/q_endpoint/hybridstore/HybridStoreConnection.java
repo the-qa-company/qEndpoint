@@ -280,7 +280,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         throw new SailReadOnlyException("");
     }
 
-    // @todo: this logic is repeated accros many parts of the code!
+    // @todo: this logic is repeated across many parts of the code!
     private TripleID getTripleID(Resource subj, IRI pred, Value obj) {
         long subjId = -1;
         long predId = -1;
@@ -332,6 +332,7 @@ public class HybridStoreConnection extends SailSourceConnection {
                     this.hybridStore.getTempDeleteBitMap().set(index - 1, true);
             }
         } else {
+            // @todo: why is this important?
             // means that the triple doesn't exist in HDT - we have to dump it while merging
             if (this.hybridStore.isMerging) {
                 RDFWriter writer = this.hybridStore.getRdfWriterTempTriples();

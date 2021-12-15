@@ -50,7 +50,9 @@ public class MergeRunnable implements Runnable {
     private final Lock mergeLock;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
     private int extendsTimeMergeBeginning = -1;
+    private int extendsTimeMergeBeginningAfterSwitch = -1;
     private int extendsTimeMergeEnd = -1;
+
 
     public MergeRunnable(String locationHdt, HybridStore hybridStore, Lock lock) {
         this.locationHdt = locationHdt;
@@ -101,6 +103,21 @@ public class MergeRunnable implements Runnable {
         this.hybridStore.setTriplesCount(0);
         // write the switchStore value to disk in case, something crash we can recover
         this.hybridStore.writeWhichStore();
+
+
+        // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
+        if (extendsTimeMergeBeginningAfterSwitch!=-1){
+            try {
+                logger.debug("It is sleeping extendsTimeMergeBeginningAfterSwitch "+extendsTimeMergeBeginningAfterSwitch);
+                Thread.sleep(extendsTimeMergeBeginningAfterSwitch*1000);
+                logger.debug("Fnished sleeping extendsTimeMergeBeginningAfterSwitch");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
         try {
             String rdfInput = locationHdt + "temp.nt";
             String hdtOutput = locationHdt + "temp.hdt";
@@ -109,15 +126,15 @@ public class MergeRunnable implements Runnable {
                     Paths.get(locationHdt + "triples-delete-cpy.arr"));
 
             // diff hdt indexes...
+            logger.info("HDT Diff");
             diffIndexes(hdtIndex, locationHdt + "triples-delete-cpy.arr");
-            // dump all triples in native store
+            logger.info("Dump all triples from the native store to file");
             writeTempFile(nativeStoreConnection, rdfInput);
-            // create the hdt index for the temp dump
+            logger.info("Create HDT index from dumped file");
             createHDTDump(rdfInput, hdtOutput);
             // cat the original index and the temp index
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
             logger.info("CAT completed!!!!! " + locationHdt);
-            Path path = Paths.get(locationHdt + "new_index.hdt");
             // empty native store
             emptyNativeStore();
             File file = new File(rdfInput);
@@ -132,16 +149,6 @@ public class MergeRunnable implements Runnable {
             // add a lock here
             this.hybridStore.resetDeleteArray();  // @todo: no deletes are allowed in this moment of time!
             HDT tempHdt = HDTManager.mapIndexedHDT(hdtIndex, this.spec);
-            try {
-                // refresh the index
-                logger.info("Refreshing the new index...");
-                IteratorTripleString search = tempHdt.search("", "", "");
-                if (search.hasNext())
-                    search.next();
-                logger.info("Refreshed!!");
-            } catch (NotFoundException e) {
-                e.printStackTrace();
-            }
             // convert all triples added to the merge store to new IDs of the new generated HDT
             logger.info("ID conversion");
             Lock lock = hybridStore.manager.createLock("IDs conversion lock");
@@ -187,8 +194,6 @@ public class MergeRunnable implements Runnable {
             Files.delete(Paths.get(location + "dictionary"));
 //            Files.delete(Paths.get(location+"triples"));
             FileUtils.deleteDirectory(theDir.getAbsoluteFile());
-
-            hdt = HDTManager.indexedHDT(hdt, null);
             hdt.close();
 //            Files.deleteIfExists(Paths.get(hdtIndex));
 //            Files.deleteIfExists(Paths.get(hdtIndex+".index.v1-1"));
@@ -225,9 +230,6 @@ public class MergeRunnable implements Runnable {
             Files.delete(Paths.get(location + "dictionary"));
             Files.delete(Paths.get(location + "triples"));
             theDir.delete();
-
-            hdt = HDTManager.indexedHDT(hdt, null);
-
             Files.deleteIfExists(Paths.get(hdtInput1));
             Files.deleteIfExists(Paths.get(hdtInput1 + ".index.v1-1"));
 //            boolean renamed = file.renameTo(new File(hdtIndex));
@@ -272,7 +274,6 @@ public class MergeRunnable implements Runnable {
             IRIConverter iriConverter = new IRIConverter(this.hdt);
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
-                System.out.println(stm.getSubject()+"--"+stm.getPredicate()+"--"+stm.getObject());
                 Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
                         iriConverter.getIRIHdtSubj(stm.getSubject()),
                         (IRI) iriConverter.getIRIHdtPred(stm.getPredicate()),
@@ -292,57 +293,58 @@ public class MergeRunnable implements Runnable {
         logger.info("Started converting IDs in the merge store");
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            try (RepositoryConnection connection = this.hybridStore.getRepoConnection()) {
-                RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
-                IRIConverter converter = new IRIConverter(oldHDT);
-                IRIConverter newConverter = new IRIConverter(newHDT);
-                for (Statement s : statements) {
-                    // get the old IRIs with old IDs
-//                logger.info(s.toString());
-                    Resource oldSubject = s.getSubject();
-                    IRI oldPredicate = s.getPredicate();
-                    Value oldObject = s.getObject();
-                    // Convert to IRI HDT objects so that toString calls idToString
-                    Resource iriHdtSubj = converter.getIRIHdtSubj(oldSubject);
-                    IRI iriHdtPred = (IRI) converter.getIRIHdtPred(oldPredicate);
-                    Value iriHdtObj = converter.getIRIHdtObj(oldObject);
+            RepositoryConnection connection = this.hybridStore.getRepoConnection();
 
-                    // convert the strings to the new IDs in the new HDT
-                    long newSubjId = newHDT.getDictionary().stringToId(iriHdtSubj.toString(), TripleComponentRole.SUBJECT);
-                    Resource newSubjIRI = null;
-                    if (newSubjId != -1) {
-                        SimpleIRIHDT simpleIRIHDTSubj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.SUBJECT_POS, newSubjId);
-                        newSubjIRI = newConverter.convertSubj(simpleIRIHDTSubj);
-                    } else // convert the string of old ID to the original String..
-                        newSubjIRI = iriHdtSubj;
+            RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
+            IRIConverter converter = new IRIConverter(oldHDT);
+            IRIConverter newConverter = new IRIConverter(newHDT);
+            for (Statement s : statements) {
+                // get the old IRIs with old IDs
+                Resource oldSubject = s.getSubject();
+                IRI oldPredicate = s.getPredicate();
+                Value oldObject = s.getObject();
 
-                    long newPredId = newHDT.getDictionary().stringToId(iriHdtPred.toString(), TripleComponentRole.PREDICATE);
-                    IRI newPredIRI = null;
-                    if (newPredId != -1) {
-                        SimpleIRIHDT simpleIRIHDTPred = new SimpleIRIHDT(newHDT, SimpleIRIHDT.PREDICATE_POS, newPredId);
-                        newPredIRI = newConverter.convertPred(simpleIRIHDTPred);
-                    } else { // convert the string of old ID to the original String..
-                        newPredIRI = iriHdtPred;
-                    }
+                System.out.println("Here"+oldSubject.toString());
 
-                    long newObjId = newHDT.getDictionary().stringToId(iriHdtObj.toString(), TripleComponentRole.OBJECT);
-                    Value newObjIRI = null;
-                    if (newObjId != -1) {
-                        SimpleIRIHDT simpleIRIHDTObj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.OBJECT_POS, newObjId);
-                        newObjIRI = newConverter.convertObj(simpleIRIHDTObj);
-                    } else {
-                        newObjIRI = iriHdtObj;
-                    }
-                System.out.println("old:["+ oldSubject+" "+oldPredicate+" "+oldObject+"]");
-                System.out.println("new:["+ newSubjIRI+" "+newPredIRI+" "+newObjIRI+"]");
+                // convert the strings to the new IDs in the new HDT
+                long newSubjId = newHDT.getDictionary().stringToId(oldSubject.toString(), TripleComponentRole.SUBJECT);
+                Resource newSubjIRI = null;
+                if (newSubjId != -1) {
+                    SimpleIRIHDT simpleIRIHDTSubj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.SUBJECT_POS, newSubjId);
+                    //newSubjIRI = newConverter.convertSubj(simpleIRIHDTSubj);
+                } else // convert the string of old ID to the original String..
+                    newSubjIRI = oldSubject;
 
-                    // remove the old statements and append the new converted ones.
-                    connection.remove(oldSubject, oldPredicate, oldObject);
-                    connection.add(newSubjIRI, newPredIRI, newObjIRI);
-                    // append data to the temp native store
-                    //tempConnection.add(newSubjIRI, newPredIRI, newObjIRI);
+                long newPredId = newHDT.getDictionary().stringToId(oldPredicate.toString(), TripleComponentRole.PREDICATE);
+                IRI newPredIRI = null;
+                if (newPredId != -1) {
+                    SimpleIRIHDT simpleIRIHDTPred = new SimpleIRIHDT(newHDT, SimpleIRIHDT.PREDICATE_POS, newPredId);
+                    //newPredIRI = newConverter.convertPred(simpleIRIHDTPred);
+                } else { // convert the string of old ID to the original String..
+                    newPredIRI = oldPredicate;
                 }
+
+                long newObjId = newHDT.getDictionary().stringToId(oldObject.toString(), TripleComponentRole.OBJECT);
+                Value newObjIRI = null;
+                if (newObjId != -1) {
+                    SimpleIRIHDT simpleIRIHDTObj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.OBJECT_POS, newObjId);
+                    //newObjIRI = newConverter.convertObj(simpleIRIHDTObj);
+                } else {
+                    newObjIRI = oldObject;
+                }
+                if (!oldSubject.equals(newSubjIRI) || !oldPredicate.equals(newPredIRI) || !oldObject.equals(newObjIRI)){
+                    logger.info("old:[{} {} {}]",oldSubject,oldPredicate,oldObject);
+                    logger.info("new:[{} {} {}]",newSubjIRI,newPredIRI,newObjIRI);
+                    throw new Exception("This should not happen");
+                }
+
+                // remove the old statements and append the new converted ones.
+                connection.remove(oldSubject, oldPredicate, oldObject);
+                connection.add(newSubjIRI, newPredIRI, newObjIRI);
+                // append data to the temp native store
+                //tempConnection.add(newSubjIRI, newPredIRI, newObjIRI);
             }
+
             // replace the index on disk
 
             // close connection and shutdown the store to release the locks
@@ -388,11 +390,15 @@ public class MergeRunnable implements Runnable {
         nativeStoreConnection.commit();
     }
 
-    public int getExtendsTimeMerge() {
-        return extendsTimeMergeBeginning;
+    public void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {
+        this.extendsTimeMergeBeginning = extendsTimeMergeBeginning;
     }
 
-    public void setExtendsTimeMerge(int extendsTimeMerge) {
-        this.extendsTimeMergeBeginning = extendsTimeMerge;
+    public void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
+        this.extendsTimeMergeBeginningAfterSwitch = extendsTimeMergeBeginningAfterSwitch;
+    }
+
+    public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
+        this.extendsTimeMergeEnd = extendsTimeMergeEnd;
     }
 }

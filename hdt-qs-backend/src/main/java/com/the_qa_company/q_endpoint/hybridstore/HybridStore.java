@@ -98,7 +98,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // flag if the store is merging or not
     public boolean isMerging = false;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
-    private int extendsTimeMerge = -1;
+    private int extendsTimeMergeBeginning = -1;
+    private int extendsTimeMergeBeginningAfterSwitch = -1;
+    private int extendsTimeMergeEnd = -1;
 
     // threshold above which the merge process is starting
     private int threshold;
@@ -550,7 +552,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             // create a lock so that new incoming connections don't do anything
             Lock lock = this.manager.createLock("Merge-Lock");
             MergeRunnable mergeRunnable = new MergeRunnable(locationHdt, this, lock);
-            mergeRunnable.setExtendsTimeMerge(extendsTimeMerge);
+            mergeRunnable.setExtendsTimeMergeBeginning(extendsTimeMergeBeginning);
+            mergeRunnable.setExtendsTimeMergeBeginningAfterSwitch(extendsTimeMergeBeginningAfterSwitch);
+            mergeRunnable.setExtendsTimeMergeEnd(extendsTimeMergeEnd);
             mergerThread = new Thread(mergeRunnable);
             mergerThread.start();
             logger.info("MERGE THREAD LUNCHED");
@@ -595,12 +599,28 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.spec = spec;
     }
 
-    public int getExtendsTimeMerge() {
-        return extendsTimeMerge;
+    public int getExtendsTimeMergeBeginning() {
+        return extendsTimeMergeBeginning;
     }
 
-    public void setExtendsTimeMerge(int extendsTimeMerge) {
-        this.extendsTimeMerge = extendsTimeMerge;
+    public void setExtendsTimeMergeBeginning(int extendsTimeMerge) {
+        this.extendsTimeMergeBeginning = extendsTimeMerge;
+    }
+
+    public int getExtendsTimeMergeBeginningAfterSwitch() {
+        return extendsTimeMergeBeginningAfterSwitch;
+    }
+
+    public void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
+        this.extendsTimeMergeBeginningAfterSwitch = extendsTimeMergeBeginningAfterSwitch;
+    }
+
+    public int getExtendsTimeMergeEnd() {
+        return extendsTimeMergeEnd;
+    }
+
+    public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
+        this.extendsTimeMergeEnd = extendsTimeMergeEnd;
     }
 
     public void setIriConverter(IRIConverter iriConverter) {

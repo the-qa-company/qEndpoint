@@ -68,6 +68,9 @@ public class Sparql {
     @Value("${threshold}")
     private int threshold;
 
+    @Value("${hdtSpecification}")
+    private String hdtSpec;
+
     private String hdtindex = "index.hdt";
 
     private HybridStore hybridStore;
@@ -110,7 +113,7 @@ public class Sparql {
         if (!model.containsKey(location)) {
             model.put(location, null);
             HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+            spec.setOptions(hdtSpec);
 
             File hdtFile = new File(location+"index.hdt");
             if(!hdtFile.exists()){
@@ -245,7 +248,7 @@ public class Sparql {
                 connection.close();
             }
             stopwatch.stop(); // optional
-            System.out.println("Time elapsed to execute tuple query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            logger.info("Time elapsed to execute tuple query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
             return out.toString("UTF8");
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
@@ -295,7 +298,7 @@ public class Sparql {
             Stopwatch stopwatch = Stopwatch.createStarted();
             preparedUpdate.execute();
             stopwatch.stop(); // optional
-            System.out.println("Time elapsed to execute update query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            logger.info("Time elapsed to execute update query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
             connection.close();
             return "OK";
         }
@@ -332,7 +335,9 @@ public class Sparql {
             Files.copy(input, Paths.get(locationHdt+filename), StandardCopyOption.REPLACE_EXISTING);
             RDFNotation notation = RDFNotation.guess(rdfInput);
             String baseURI = "file://"+rdfInput;
-            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , new HDTSpecification(), null);
+            HDTSpecification spec = new HDTSpecification();
+            spec.setOptions(hdtSpec);
+            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , spec, null);
             hdt.saveToHDT(hdtOutput,null);
             initializeHybridStore(locationHdt);
             return "File was loaded successfully...\n";
