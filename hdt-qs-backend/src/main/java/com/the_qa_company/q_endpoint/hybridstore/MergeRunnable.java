@@ -335,7 +335,7 @@ public class MergeRunnable implements Runnable {
                 if (!oldSubject.equals(newSubjIRI) || !oldPredicate.equals(newPredIRI) || !oldObject.equals(newObjIRI)){
                     logger.info("old:[{} {} {}]",oldSubject,oldPredicate,oldObject);
                     logger.info("new:[{} {} {}]",newSubjIRI,newPredIRI,newObjIRI);
-                    throw new Exception("This should not happen");
+//                    throw new Exception("This should not happen");
                 }
 
                 // remove the old statements and append the new converted ones.
