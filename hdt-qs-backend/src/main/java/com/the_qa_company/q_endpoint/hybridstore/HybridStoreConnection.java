@@ -1,8 +1,5 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
-import com.the_qa_company.q_endpoint.model.SimpleLiteralHDT;
-
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -122,12 +119,35 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
-        IRI newPred = this.hybridStore.getIriConverter().convertPred(pred);
-        Resource newSubj = this.hybridStore.getIriConverter().convertSubj(subj);
-        Value newObj = this.hybridStore.getIriConverter().convertObj(obj);
-        TripleID tripleID = getTripleID(newSubj, newPred, newObj);
+        Resource newSubj;
+        IRI newPred;
+        Value newObj;
+        long subjectID = this.hybridStore.getIriConverter().convertSubj(subj);
+        long predicateID = this.hybridStore.getIriConverter().convertPred(pred);
+        long objectID = this.hybridStore.getIriConverter().convertObj(obj);
 
+        if (subjectID == -1){
+            newSubj = subj;
+        } else {
+            newSubj = this.hybridStore.getIriConverter().subjectIdToIRI(subjectID);
+        }
+        if (predicateID == -1){
+            newPred = pred;
+        } else {
+            newPred = this.hybridStore.getIriConverter().predicateIdToIRI(predicateID);
+        }
+        if (objectID == -1){
+            newObj = obj;
+        } else {
+            newObj = this.hybridStore.getIriConverter().objectIdToIRI(objectID);
+        }
+
+        logger.debug("Adding triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+
+        // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
+        TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         if (!tripleExistInHDT(tripleID)) {
+            // here we need uris using the internal IDs
             getCurrentConnection().addStatement(
                     newSubj,
                     newPred,
@@ -136,7 +156,7 @@ public class HybridStoreConnection extends SailSourceConnection {
             );
 
             // modify the bitmaps if the IRIs used are in HDT
-            this.hybridStore.modifyBitmaps(this.hybridStore.getHdt(), newSubj, newPred, newObj);
+            this.hybridStore.modifyBitmaps(subjectID, predicateID, objectID);
             // increase the number of statements
             this.hybridStore.triplesCount++;
         }
@@ -259,17 +279,37 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
-        Resource newSubj = this.hybridStore.getIriConverter().convertSubj(subj);
-        IRI newPred = this.hybridStore.getIriConverter().convertPred(pred);
+        Resource newSubj;
+        IRI newPred;
         Value newObj;
-        newObj = this.hybridStore.getIriConverter().convertObj(obj);
-        // @todo: should we remove not only over the current store, I mean it will work, but it is an overhead
+        long subjectID = this.hybridStore.getIriConverter().convertSubj(subj);
+        long predicateID = this.hybridStore.getIriConverter().convertPred(pred);
+        long objectID = this.hybridStore.getIriConverter().convertObj(obj);
+
+        if (subjectID == -1){
+            newSubj = subj;
+        } else {
+            newSubj = this.hybridStore.getIriConverter().subjectIdToIRI(subjectID);
+        }
+        if (predicateID == -1){
+            newPred = pred;
+        } else {
+            newPred = this.hybridStore.getIriConverter().predicateIdToIRI(predicateID);
+        }
+        if (objectID == -1){
+            newObj = obj;
+        } else {
+            newObj = this.hybridStore.getIriConverter().objectIdToIRI(objectID);
+        }
+
+        logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+
         // remove statement from both stores... A and B
         this.connA.removeStatement(op, newSubj, newPred, newObj, contexts);
         this.connB.removeStatement(op, newSubj, newPred, newObj, contexts);
         this.hybridStore.triplesCount--;
 
-        TripleID tripleID = getTripleID(newSubj, newPred, newObj);
+        TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         assignBitMapDeletes(tripleID, subj, pred, obj);
     }
 
@@ -280,26 +320,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         throw new SailReadOnlyException("");
     }
 
-    // @todo: this logic is repeated across many parts of the code!
-    private TripleID getTripleID(Resource subj, IRI pred, Value obj) {
-        long subjId = -1;
-        long predId = -1;
-        long objId = -1;
-        if (subj instanceof SimpleIRIHDT)
-            subjId = ((SimpleIRIHDT) subj).getId();
-        else
-            subjId = convertToId(subj, TripleComponentRole.SUBJECT);
-        if (pred instanceof SimpleIRIHDT)
-            predId = ((SimpleIRIHDT) pred).getId();
-        else
-            predId = convertToId(pred, TripleComponentRole.PREDICATE);
-        if (obj instanceof SimpleIRIHDT)
-            objId = ((SimpleIRIHDT) obj).getId();
-        else if (obj instanceof SimpleLiteralHDT)
-            objId = ((SimpleLiteralHDT) obj).getHdtID();
-        else
-            objId = convertToId(obj, TripleComponentRole.OBJECT);
-
+    private TripleID getTripleID(long subjId, long predId, long objId) {
         return new TripleID(subjId, predId, objId);
 
     }

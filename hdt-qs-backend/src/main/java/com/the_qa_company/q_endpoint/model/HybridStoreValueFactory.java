@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.model.impl.NumericLiteral;
 import org.eclipse.rdf4j.model.impl.SimpleBNode;
 import org.eclipse.rdf4j.model.impl.SimpleIRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
@@ -28,17 +29,20 @@ import org.rdfhdt.hdt.hdt.HDT;
  * @author Arjohn Kampman
  * @author Jeen Broekstra
  */
-public class AbstractValueFactoryHDT extends AbstractValueFactory {
+public class HybridStoreValueFactory extends AbstractValueFactory {
 
     private HDT hdt;
+    private ValueFactory valueFactory;
 
     /*--------------*
      * Constructors *
      *--------------*/
 
-    public AbstractValueFactoryHDT(HDT hdt) {
+    public HybridStoreValueFactory(HDT hdt) {
         super();
         this.hdt = hdt;
+        // @todo: this should be changed and the value factory of the store should be used
+        this.valueFactory = SimpleValueFactory.getInstance();;
     }
 
     /*---------*
@@ -47,19 +51,14 @@ public class AbstractValueFactoryHDT extends AbstractValueFactory {
 
     @Override
     public IRI createIRI(String iri) {
-        return stringToId(iri);
-    }
-
-    private SimpleIRIHDT stringToId(String iriString) {
-
         // give priority to predicates to avoid reified triples...
         // not a nice fix, but we assume that we don't support reification
-        long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.PREDICATE);
+        long id = hdt.getDictionary().stringToId(iri, TripleComponentRole.PREDICATE);
         int position = -1;
         if (id != -1) {
             position = SimpleIRIHDT.PREDICATE_POS;
         } else {
-            id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
+            id = hdt.getDictionary().stringToId(iri, TripleComponentRole.SUBJECT);
             if (id != -1) {
                 if (id <= hdt.getDictionary().getNshared()) {
                     position = SimpleIRIHDT.SHARED_POS;
@@ -68,7 +67,7 @@ public class AbstractValueFactoryHDT extends AbstractValueFactory {
                 }
             } else {
                 // not in subject position, then check in object position
-                id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
+                id = hdt.getDictionary().stringToId(iri, TripleComponentRole.OBJECT);
                 if (id != -1) {
                     position = SimpleIRIHDT.OBJECT_POS;
                 }
@@ -77,9 +76,11 @@ public class AbstractValueFactoryHDT extends AbstractValueFactory {
         if (id != -1) {
             return new SimpleIRIHDT(hdt, position, id);
         } else {
-            return new SimpleIRIHDT(hdt, iriString);
+            return valueFactory.createIRI(iri);
         }
     }
+
+
 
     @Override
     public IRI createIRI(String namespace, String localName) {

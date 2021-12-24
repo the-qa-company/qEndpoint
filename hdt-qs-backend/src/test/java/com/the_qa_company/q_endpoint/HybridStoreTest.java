@@ -603,6 +603,7 @@ public class HybridStoreTest {
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            System.out.println("HDT content");
             printHDT(hdt);
             HybridStore store = new HybridStore(
                     hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
@@ -633,8 +634,9 @@ public class HybridStoreTest {
                 // query everything of type PERSON
                 List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
                 int index = 0;
+                System.out.println(statements.size());
                 for (Statement s : statements) {
-                    System.out.println(s.getSubject().toString());
+                    System.out.println("here "+s.toString());
                     assertEquals(subjects.get(index).toString(), s.getSubject().toString());
                     index++;
                 }
@@ -773,11 +775,12 @@ public class HybridStoreTest {
 
                 update.execute();
                 List<Statement> statements = Iterations.asList(connection.getStatements(null, null, null, (Resource) null));
+                assertEquals(1, statements.size());
                 for (Statement s : statements) {
                     System.out.println(s);
                     assertEquals(ali.toString(), s.getSubject().toString());
                 }
-                assertEquals(1, statements.size());
+
                 Files.deleteIfExists(Paths.get("index.hdt"));
                 Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));

@@ -5,10 +5,10 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 
 public class CombinedEvaluationStatistics extends EvaluationStatistics {
 
-    private HDTEvaluationStatisticsV2 hdtEvaluationStatistics;
+    private HDTEvaluationStatistics hdtEvaluationStatistics;
     private EvaluationStatistics nativeEvaluationStatistics;
 
-    public CombinedEvaluationStatistics(HDTEvaluationStatisticsV2 hdtEvaluationStatistics,
+    public CombinedEvaluationStatistics(HDTEvaluationStatistics hdtEvaluationStatistics,
                                         EvaluationStatistics nativeEvaluationStatistics) {
         this.hdtEvaluationStatistics = hdtEvaluationStatistics;
         this.nativeEvaluationStatistics = nativeEvaluationStatistics;

@@ -24,7 +24,6 @@ public class Split implements TupleFunction {
     @Override
     public CloseableIteration<? extends List<? extends Value>, QueryEvaluationException> evaluate(
             final ValueFactory valueFactory, Value... args) throws QueryEvaluationException {
-        System.out.println("Passing split");
         if (args.length != 2) {
             throw new ValueExprEvaluationException(
                     String.format("%s requires 2 arguments, got %d", getURI(), args.length));
@@ -38,7 +37,6 @@ public class Split implements TupleFunction {
         final String s = ((Literal) args[0]).stringValue();
         final String regex = ((Literal) args[1]).stringValue();
         final String[] parts = s.split(regex);
-        System.out.println(parts);
         return new CloseableIteratorIteration(
                 new Iterator<Value>() {
 

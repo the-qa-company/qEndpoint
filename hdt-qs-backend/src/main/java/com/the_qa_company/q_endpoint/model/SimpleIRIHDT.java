@@ -1,92 +1,32 @@
 package com.the_qa_company.q_endpoint.model;
 
-/**
- * ***************************************************************************** Copyright (c) 2015
- * Eclipse RDF4J contributors, Aduna, and others. All rights reserved. This program and the
- * accompanying materials are made available under the terms of the Eclipse Distribution License
- * v1.0 which accompanies this distribution, and is available at
- * http://www.eclipse.org/org/documents/edl-v10.php.
- * *****************************************************************************
- */
-
 import com.the_qa_company.q_endpoint.hybridstore.Sparql;
 
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
-/**
- * The default implementation of the {@link IRI} interface.
- */
 public class SimpleIRIHDT extends AbstractIRI {
 
-    /*-----------*
-     * Constants *
-     *-----------*/
-
     private static final long serialVersionUID = -3220264926968931192L;
-    public static final int SUBJECT_POS = 1;
-    public static final int PREDICATE_POS = 2;
-    public static final int OBJECT_POS = 3;
-    public static final int SHARED_POS = 4;
+    public static final byte SUBJECT_POS = 1;
+    public static final byte PREDICATE_POS = 2;
+    public static final byte OBJECT_POS = 3;
+    public static final byte SHARED_POS = 4;
 
-
-    /*-----------*
-     * Variables *
-     *-----------*/
-
-    /**
-     * The IRI string.
-     */
     private HDT hdt;
     private int postion;
     private long id;
-    /**
-     * The IRI string.
-     */
     private String iriString;
-
-    /**
-     * An index indicating the first character of the local name in the IRI string, -1 if not yet set.
-     */
+    // An index indicating the first character of the local name in the IRI string, -1 if not yet set.
     private int localNameIdx;
 
-    /*--------------*
-     * Constructors *
-     *--------------*/
-
-    /**
-     * Creates a new, un-initialized IRI.
-     */
-    protected SimpleIRIHDT(HDT hdt) {
-        this.hdt = hdt;
-    }
-
-    /**
-     * Creates a new IRI from the supplied string.
-     *
-     * <p>Note that creating SimpleIRI objects directly via this constructor is not the recommended
-     * approach. Instead, use a {@link org.eclipse.rdf4j.model.ValueFactory ValueFactory} (obtained
-     * from your repository or by using {@link SimpleValueFactory#getInstance()}) to create new IRI
-     * objects.
-     *
-     * @param position an integer represents if the IRI is a subject, object, predicate or shared
-     * @throws IllegalArgumentException If the supplied IRI is not a valid (absolute) IRI.
-     * @see {@link SimpleValueFactory#createIRI(String)}
-     */
     public SimpleIRIHDT(HDT hdt, int position, long id) {
+        if (id == -1) {
+            System.out.println("This should not happen");
+        }
         this.hdt = hdt;
-        this.postion = position;
-        this.id = id;
-        this.localNameIdx = -1;
-    }
-
-    public SimpleIRIHDT(HDT hdt, String iriString, int position, long id) {
-        this.hdt = hdt;
-        this.iriString = iriString;
         this.postion = position;
         this.id = id;
         this.localNameIdx = -1;
@@ -106,24 +46,20 @@ public class SimpleIRIHDT extends AbstractIRI {
     public int getPostion() {
         return postion;
     }
-    /*---------*
-     * Methods *
-     *---------*/
 
-    // Implements IRI.toString()
     @Override
     public String toString() {
-        if (iriString == null)
+        if (iriString == null){
             iriString = stringValue();
-        // if not null means that it doesn't exist in hdt or already converted
+        }
         return iriString;
     }
 
     @Override
     public String stringValue() {
-        if (this.iriString != null)
+        if (this.iriString != null) {
             return this.iriString;
-        else {
+        } else {
             Sparql.count++;
 
             if (this.postion == SHARED_POS) {
@@ -168,9 +104,6 @@ public class SimpleIRIHDT extends AbstractIRI {
         if (iriString == null) {
             iriString = stringValue();
         }
-        //        System.out.println(hdtId);
-        //        System.out.println(iriString);
-        //        System.out.println(localNameIdx);
         if (localNameIdx < 0) {
             localNameIdx = URIUtil.getLocalNameIndex(iriString);
         }
@@ -185,7 +118,6 @@ public class SimpleIRIHDT extends AbstractIRI {
         return iriString.substring(localNameIdx);
     }
 
-    // Implements IRI.equals(Object)
     @Override
     public boolean equals(Object o) {
         if (o == null)

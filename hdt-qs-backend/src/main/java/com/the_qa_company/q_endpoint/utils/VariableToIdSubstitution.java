@@ -18,7 +18,6 @@ import java.util.Iterator;
 public class VariableToIdSubstitution implements QueryOptimizer {
 
     private HDT hdt;
-    private HDTDictionaryMapping hdtDictionaryMapping;
 
     public VariableToIdSubstitution(HDT hdt) {
         this.hdt = hdt;

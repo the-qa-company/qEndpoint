@@ -44,7 +44,7 @@ public class HybridStorePhaseTest {
     @Before
     public void setUp() throws IOException {
         HDTSpecification spec = new HDTSpecification();
-        //spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+//        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         logger.info("Initialize the store ... ");
         File nativeStore = new File("./tests/native-store/");
         FileSystemUtils.deleteRecursively(nativeStore);
@@ -65,7 +65,7 @@ public class HybridStorePhaseTest {
     }
 
     @Test
-    public void testBeforeMerge() throws IOException, NotFoundException, InterruptedException {
+    public void testBeforeMerge() {
 
         int threshold = 1000;
         logger.info("Setting the threshold to "+threshold);
@@ -191,6 +191,12 @@ public class HybridStorePhaseTest {
         sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o130> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
+
+//        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  \"my_name\" . } ";
+//        tupleQuery = connection.prepareUpdate(sparqlQuery);
+//        tupleQuery.execute();
+
+        connection.commit();
 
         Thread.sleep(5000);
 

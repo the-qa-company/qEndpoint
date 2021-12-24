@@ -18,12 +18,10 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
-import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +30,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class MergeRunnable implements Runnable {
@@ -271,14 +268,28 @@ public class MergeRunnable implements Runnable {
             RepositoryResult<Statement> repositoryResult =
                     connection.getStatements(null, null, null, false);
             writer.startRDF();
-            IRIConverter iriConverter = new IRIConverter(this.hdt);
+            logger.debug("Content dumped file");
             while (repositoryResult.hasNext()) {
                 Statement stm = repositoryResult.next();
+
+                Resource newSubjIRI = this.hybridStore.getIriConverter().getIRIHdtSubj(stm.getSubject());
+                if (newSubjIRI instanceof SimpleIRIHDT) {
+                    newSubjIRI = this.hybridStore.currentStore.getValueFactory().createIRI(newSubjIRI.stringValue());
+                }
+                IRI newPredIRI = this.hybridStore.getIriConverter().getIRIHdtPred(stm.getPredicate());
+                if (newPredIRI instanceof SimpleIRIHDT) {
+                    newPredIRI = this.hybridStore.currentStore.getValueFactory().createIRI(newPredIRI.stringValue());
+                }
+                Value newObjIRI = this.hybridStore.getIriConverter().getIRIHdtObj(stm.getObject());
+                if (newObjIRI instanceof SimpleIRIHDT) {
+                    newObjIRI = this.hybridStore.currentStore.getValueFactory().createIRI(newObjIRI.stringValue());
+                }
                 Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
-                        iriConverter.getIRIHdtSubj(stm.getSubject()),
-                        (IRI) iriConverter.getIRIHdtPred(stm.getPredicate()),
-                        iriConverter.getIRIHdtObj(stm.getObject())
+                        newSubjIRI,
+                        newPredIRI,
+                        newObjIRI
                 );
+                logger.debug("  {} {} {}",stmConverted.getSubject(),stmConverted.getPredicate(),stmConverted.getObject());
                 writer.handleStatement(stmConverted);
             }
             writer.endRDF();
@@ -296,88 +307,53 @@ public class MergeRunnable implements Runnable {
             RepositoryConnection connection = this.hybridStore.getRepoConnection();
 
             RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
-            IRIConverter converter = new IRIConverter(oldHDT);
-            IRIConverter newConverter = new IRIConverter(newHDT);
             for (Statement s : statements) {
                 // get the old IRIs with old IDs
-                Resource oldSubject = s.getSubject();
-                IRI oldPredicate = s.getPredicate();
-                Value oldObject = s.getObject();
+                IRIConverter iriConverter = new IRIConverter(oldHDT);
+                Resource oldSubject = iriConverter.getIRIHdtSubj(s.getSubject());
+                IRI oldPredicate = iriConverter.getIRIHdtPred(s.getPredicate());
+                Value oldObject = iriConverter.getIRIHdtObj(s.getObject());
 
-                System.out.println("Here"+oldSubject.toString());
-
-                // convert the strings to the new IDs in the new HDT
-                long newSubjId = newHDT.getDictionary().stringToId(oldSubject.toString(), TripleComponentRole.SUBJECT);
-                Resource newSubjIRI = null;
-                if (newSubjId != -1) {
-                    SimpleIRIHDT simpleIRIHDTSubj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.SUBJECT_POS, newSubjId);
-                    //newSubjIRI = newConverter.convertSubj(simpleIRIHDTSubj);
-                } else // convert the string of old ID to the original String..
-                    newSubjIRI = oldSubject;
-
-                long newPredId = newHDT.getDictionary().stringToId(oldPredicate.toString(), TripleComponentRole.PREDICATE);
-                IRI newPredIRI = null;
-                if (newPredId != -1) {
-                    SimpleIRIHDT simpleIRIHDTPred = new SimpleIRIHDT(newHDT, SimpleIRIHDT.PREDICATE_POS, newPredId);
-                    //newPredIRI = newConverter.convertPred(simpleIRIHDTPred);
-                } else { // convert the string of old ID to the original String..
-                    newPredIRI = oldPredicate;
+                // if the old string cannot be converted than we can keep the same
+                Resource newSubjIRI = oldSubject;
+                long id = newHDT.getDictionary().stringToId(oldSubject.toString(), TripleComponentRole.SUBJECT);
+                if (id!= -1) {
+                    if (id <= newHDT.getDictionary().getNshared()) {
+                        newSubjIRI = this.hybridStore.currentStore.getValueFactory().createIRI("http://hdt.org/SO" + id);
+                    } else {
+                        newSubjIRI = this.hybridStore.currentStore.getValueFactory().createIRI("http://hdt.org/S" + id);
+                    }
                 }
 
-                long newObjId = newHDT.getDictionary().stringToId(oldObject.toString(), TripleComponentRole.OBJECT);
-                Value newObjIRI = null;
-                if (newObjId != -1) {
-                    SimpleIRIHDT simpleIRIHDTObj = new SimpleIRIHDT(newHDT, SimpleIRIHDT.OBJECT_POS, newObjId);
-                    //newObjIRI = newConverter.convertObj(simpleIRIHDTObj);
-                } else {
-                    newObjIRI = oldObject;
+                IRI newPredIRI = oldPredicate;
+                id = newHDT.getDictionary().stringToId(oldPredicate.toString(), TripleComponentRole.PREDICATE);
+                if (id != -1) {
+                    newPredIRI = this.hybridStore.currentStore.getValueFactory().createIRI("http://hdt.org/P" + id);
                 }
-                if (!oldSubject.equals(newSubjIRI) || !oldPredicate.equals(newPredIRI) || !oldObject.equals(newObjIRI)){
-                    logger.info("old:[{} {} {}]",oldSubject,oldPredicate,oldObject);
-                    logger.info("new:[{} {} {}]",newSubjIRI,newPredIRI,newObjIRI);
-//                    throw new Exception("This should not happen");
+                Value newObjIRI = oldObject;
+                id = newHDT.getDictionary().stringToId(oldObject.toString(), TripleComponentRole.OBJECT);
+                if (id != -1) {
+                    if (id <= newHDT.getDictionary().getNshared()) {
+                        newObjIRI = this.hybridStore.currentStore.getValueFactory().createIRI("http://hdt.org/SO" + id);
+                    } else {
+                        newObjIRI = this.hybridStore.currentStore.getValueFactory().createIRI("http://hdt.org/O" + id);
+                    }
                 }
+                logger.debug("old:[{} {} {}]",oldSubject,oldPredicate,oldObject);
+                logger.debug("new:[{} {} {}]",newSubjIRI,newPredIRI,newObjIRI);
 
-                // remove the old statements and append the new converted ones.
-                connection.remove(oldSubject, oldPredicate, oldObject);
+                connection.remove(s.getSubject(), s.getPredicate(), s.getObject());
                 connection.add(newSubjIRI, newPredIRI, newObjIRI);
-                // append data to the temp native store
-                //tempConnection.add(newSubjIRI, newPredIRI, newObjIRI);
             }
-
-            // replace the index on disk
-
-            // close connection and shutdown the store to release the locks
-//            tempConnection.close();
-//            tempStore.shutDown();
-//
-//
-//            String dirPath = this.hybridStore.getCurrentStore().getDataDir().getAbsolutePath();
-//            Files.walk(Paths.get(dirPath))
-//                    .sorted(Comparator.reverseOrder())
-//                    .map(Path::toFile)
-//                    .forEach(File::delete);
-//
-//            //Files.deleteIfExists();
-//            // rename the temp store to the current store
-//            File file = new File(tempStore.getDataDir().getAbsolutePath());
-//            boolean renamed = file.renameTo(this.hybridStore.getCurrentStore().getDataDir());
-//            if(renamed){
-//                logger.info("Replaced the current store data with the mapped triples to the new HDT");
-//                this.hybridStore.getCurrentStore().shutDown();
-//                this.hybridStore.getCurrentStore().init();
-//            }
-
             stopwatch.stop(); // optional
-            System.out.println("Time elapsed for conversion: " + stopwatch);
+            logger.info("Time elapsed for conversion: " + stopwatch);
 
             // initialize bitmaps again with the new dictionary
             Files.deleteIfExists(Paths.get(this.locationHdt + "bitX"));
             Files.deleteIfExists(Paths.get(this.locationHdt + "bitY"));
             Files.deleteIfExists(Paths.get(this.locationHdt + "bitZ"));
             stopwatch = Stopwatch.createStarted();
-            hybridStore.initNativeStoreDictionary(newHDT);
-            System.out.println("Time elapsed to initialize native store dictionary: " + stopwatch);
+            logger.info("Time elapsed to initialize native store dictionary: " + stopwatch);
         } catch (Exception e) {
             logger.error("Something went wrong during conversion of IDs in merge phase: ");
             e.printStackTrace();

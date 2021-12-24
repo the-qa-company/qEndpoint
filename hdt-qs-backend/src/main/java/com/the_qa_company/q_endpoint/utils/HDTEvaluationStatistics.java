@@ -9,10 +9,10 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.triples.TripleID;
 
-public class HDTEvaluationStatisticsV2 extends EvaluationStatistics {
+public class HDTEvaluationStatistics extends EvaluationStatistics {
     private final HDT hdt;
 
-    public HDTEvaluationStatisticsV2(HDT hdt) {
+    public HDTEvaluationStatistics(HDT hdt) {
         this.hdt = hdt;
     }
 
@@ -33,15 +33,15 @@ public class HDTEvaluationStatisticsV2 extends EvaluationStatistics {
             long predId = 0;
             long objId = 0;
 
-            HDTConverter hdtConverter = new HDTConverter(hdt);
+            IRIConverter iriConverter = new IRIConverter(hdt);
             if (subject != null) {
-                subId = hdtConverter.subjectId((Resource) subject);
+                subId = iriConverter.convertSubj((Resource) subject);
             }
             if (predicate != null) {
-                predId = hdtConverter.predicateId((IRI) predicate);
+                predId = iriConverter.convertPred((IRI) predicate);
             }
             if (object != null) {
-                objId = hdtConverter.objectId(object);
+                objId = iriConverter.convertObj(object);
             }
             double cardinality;
 

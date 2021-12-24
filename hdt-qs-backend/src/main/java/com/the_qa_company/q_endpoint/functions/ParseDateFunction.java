@@ -47,7 +47,6 @@ public class ParseDateFunction implements Function {
         Value arg1 = args[0];
         Value arg2 = args[1];
         if ((arg2 instanceof Literal)) {
-            System.out.println(((Literal)arg1).getLabel());
             if (((Literal)arg1).getDatatype().toString().equals("http://www.w3.org/2001/XMLSchema#dateTime")){
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
                 try {
