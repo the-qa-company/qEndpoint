@@ -1,3 +1,4 @@
+a chnage 
 ## How to run the wikibase updater
 
 - Clone this repository of the hdt-sparql-endpoint from this link: https://gitlab.the-qa-company.com/D063520/hdtsparqlendpoint.git
