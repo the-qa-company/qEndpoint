@@ -1,6 +1,6 @@
 package com.the_qa_company.q_endpoint.model;
 
-import com.the_qa_company.q_endpoint.hybridstore.Sparql;
+import com.the_qa_company.q_endpoint.controller.Sparql;
 
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;

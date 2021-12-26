@@ -1,7 +1,5 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.utils.CombinedEvaluationStatistics;
-import com.the_qa_company.q_endpoint.utils.HDTEvaluationStatistics;
 import com.the_qa_company.q_endpoint.utils.VariableToIdSubstitution;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -58,7 +56,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         this.hybridStore = hybridStore;
         hdt = this.hybridStore.getHdt();
 
-        evaluationStatistics = new CombinedEvaluationStatistics(new HDTEvaluationStatistics(hdt),
+        evaluationStatistics = new HybridStoreEvaluationStatistics(new HDTEvaluationStatistics(hybridStore),
                 hybridStore.getCurrentSaliStore().getEvaluationStatistics());
     }
 

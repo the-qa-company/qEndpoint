@@ -1,15 +1,15 @@
-package com.the_qa_company.q_endpoint.utils;
+package com.the_qa_company.q_endpoint.hybridstore;
 
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 
-public class CombinedEvaluationStatistics extends EvaluationStatistics {
+public class HybridStoreEvaluationStatistics extends EvaluationStatistics {
 
     private HDTEvaluationStatistics hdtEvaluationStatistics;
     private EvaluationStatistics nativeEvaluationStatistics;
 
-    public CombinedEvaluationStatistics(HDTEvaluationStatistics hdtEvaluationStatistics,
-                                        EvaluationStatistics nativeEvaluationStatistics) {
+    public HybridStoreEvaluationStatistics(HDTEvaluationStatistics hdtEvaluationStatistics,
+                                           EvaluationStatistics nativeEvaluationStatistics) {
         this.hdtEvaluationStatistics = hdtEvaluationStatistics;
         this.nativeEvaluationStatistics = nativeEvaluationStatistics;
     }

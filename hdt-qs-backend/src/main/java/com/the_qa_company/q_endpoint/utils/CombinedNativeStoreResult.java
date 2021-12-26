@@ -31,11 +31,15 @@ public class CombinedNativeStoreResult implements CloseableIteration<Statement, 
 
     @Override
     public void remove() throws SailException {
-
+        if (repositoryResult1.hasNext()){
+            repositoryResult1.remove();
+        } else if (repositoryResult2.hasNext())
+            repositoryResult2.remove();
     }
 
     @Override
     public void close() {
-
+        this.repositoryResult1.close();
+        this.repositoryResult2.close();
     }
 }

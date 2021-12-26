@@ -1,6 +1,7 @@
-package com.the_qa_company.q_endpoint.hybridstore;
+package com.the_qa_company.q_endpoint.controller;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.BindingSet;

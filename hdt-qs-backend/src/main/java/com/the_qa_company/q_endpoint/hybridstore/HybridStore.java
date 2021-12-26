@@ -1,14 +1,16 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.the_qa_company.q_endpoint.model.HybridStoreValueFactory;
+import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
-import com.the_qa_company.q_endpoint.utils.HDTProps;
-import com.the_qa_company.q_endpoint.utils.IRIConverter;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -58,7 +60,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private String locationHdt;
     // specs of the HDT file
     private HDTSpecification spec;
-    private IRIConverter iriConverter;
+    private HDTConverter hdtConverter;
 
     // some cached information about the HDT store
     private HDTProps hdtProps;
@@ -142,9 +144,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         NotifyingSailConnection connection = getCurrentStore().getConnection();
         this.triplesCount = connection.size();
         connection.close();
-
-        // initialize native store dictionary
-        //initNativeStoreDictionaryMemory();
     }
 
     public HybridStore(String locationHdt, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
@@ -167,9 +166,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void resetHDT(HDT hdt) {
         this.setHdt(hdt);
         initNativeStoreDictionary(this.hdt);
-        this.iriConverter = new IRIConverter(hdt);
         this.setHdtProps(new HDTProps(hdt));
         this.setValueFactory(new HybridStoreValueFactory(hdt));
+        this.hdtConverter = new HDTConverter(this);
     }
 
     public void setThreshold(int threshold) {
@@ -481,20 +480,37 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private void initBitmaps() {
         logger.debug("Resetting bitmaps");
         try {
-            IRIConverter converter = new IRIConverter(this.getHdt());
+            HDTConverter converter = new HDTConverter(this);
             // iterate over the current rdf4j store and mark in HDT the store the subject, predicate, objects that are used in rdf4j
             try (RepositoryConnection connection = this.getRepoConnection()) {
                 RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
                 for (Statement statement : statements) {
-                    long internalSubj = converter.convertSubj(converter.getIRIHdtSubj(statement.getSubject()));
-                    long internalPredicate = converter.convertPred(converter.getIRIHdtPred(statement.getPredicate()));
-                    long internalObject = converter.convertObj(converter.getIRIHdtObj(statement.getObject()));
+                    Resource internalSubj = converter.rdf4jToHdtIDsubject(statement.getSubject());
+                    IRI internalPredicate = converter.rdf4jToHdtIDpredicate(statement.getPredicate());
+                    Value internalObject = converter.rdf4jToHdtIDobject(statement.getObject());
                     this.modifyBitmaps(internalSubj, internalPredicate, internalObject);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void modifyBitmaps(Resource subject, IRI predicate, Value object) {
+        // mark in HDT the store the subject, predicate, objects that are used in rdf4j
+        long subjectID = -1;
+        if (subject instanceof SimpleIRIHDT) {
+            subjectID = ((SimpleIRIHDT)subject).getId();
+        }
+        long predicateID = -1;
+        if (predicate  instanceof SimpleIRIHDT) {
+            predicateID = ((SimpleIRIHDT)predicate).getId();
+        }
+        long objectID = -1;
+        if (object  instanceof SimpleIRIHDT) {
+            objectID = ((SimpleIRIHDT)object).getId();
+        }
+        modifyBitmaps(subjectID,predicateID,objectID);
     }
 
     public void modifyBitmaps(long subject, long predicate, long object) {
@@ -535,8 +551,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
-    public IRIConverter getIriConverter() {
-        return iriConverter;
+    public HDTConverter getHdtConverter() {
+        return hdtConverter;
     }
 
     public String getLocationNative() {
@@ -595,8 +611,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.extendsTimeMergeEnd = extendsTimeMergeEnd;
     }
 
-    public void setIriConverter(IRIConverter iriConverter) {
-        this.iriConverter = iriConverter;
+    public void setHdtConverter(HDTConverter hdtConverter) {
+        this.hdtConverter = hdtConverter;
     }
 
 }

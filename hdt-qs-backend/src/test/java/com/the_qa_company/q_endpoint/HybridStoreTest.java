@@ -1,6 +1,7 @@
 package com.the_qa_company.q_endpoint;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -20,6 +21,7 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -922,6 +924,36 @@ public class HybridStoreTest {
         }
 
     }
+
+
+
+        @Test
+    public void small() throws IOException, NotFoundException {
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+            );
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
+            File dataDir = new File("/Users/Dennis/IdeaProjects/hdtSparqlEndpoint/hdt-qs-backend/native-store");
+            Repository repo = new SailRepository(new NativeStore(dataDir));
+            RepositoryConnection con = repo.getConnection();
+            con.add(new SimpleIRIHDT(hdt, 1,1), new SimpleIRIHDT(hdt, 1,1), new SimpleIRIHDT(hdt, 1,1));
+
+            RepositoryResult<Statement> a = con.getStatements(null,null,null);
+            while (a.hasNext()){
+                Statement statement = a.next();
+                System.out.println(statement.toString());
+                System.out.println(statement.getSubject().getClass());
+            }
+
+        }
 
     private void printHDT(HDT hdt) throws NotFoundException {
         IteratorTripleString it = hdt.search("", "", "");

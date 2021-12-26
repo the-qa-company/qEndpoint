@@ -122,24 +122,24 @@ public class HybridStoreConnection extends SailSourceConnection {
         Resource newSubj;
         IRI newPred;
         Value newObj;
-        long subjectID = this.hybridStore.getIriConverter().convertSubj(subj);
-        long predicateID = this.hybridStore.getIriConverter().convertPred(pred);
-        long objectID = this.hybridStore.getIriConverter().convertObj(obj);
+        long subjectID = this.hybridStore.getHdtConverter().subjectToID(subj);
+        long predicateID = this.hybridStore.getHdtConverter().predicateToID(pred);
+        long objectID = this.hybridStore.getHdtConverter().objectToID(obj);
 
         if (subjectID == -1){
             newSubj = subj;
         } else {
-            newSubj = this.hybridStore.getIriConverter().subjectIdToIRI(subjectID);
+            newSubj = this.hybridStore.getHdtConverter().subjectIdToIRI(subjectID);
         }
         if (predicateID == -1){
             newPred = pred;
         } else {
-            newPred = this.hybridStore.getIriConverter().predicateIdToIRI(predicateID);
+            newPred = this.hybridStore.getHdtConverter().predicateIdToIRI(predicateID);
         }
         if (objectID == -1){
             newObj = obj;
         } else {
-            newObj = this.hybridStore.getIriConverter().objectIdToIRI(objectID);
+            newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
         logger.debug("Adding triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
@@ -282,24 +282,24 @@ public class HybridStoreConnection extends SailSourceConnection {
         Resource newSubj;
         IRI newPred;
         Value newObj;
-        long subjectID = this.hybridStore.getIriConverter().convertSubj(subj);
-        long predicateID = this.hybridStore.getIriConverter().convertPred(pred);
-        long objectID = this.hybridStore.getIriConverter().convertObj(obj);
+        long subjectID = this.hybridStore.getHdtConverter().subjectToID(subj);
+        long predicateID = this.hybridStore.getHdtConverter().predicateToID(pred);
+        long objectID = this.hybridStore.getHdtConverter().objectToID(obj);
 
         if (subjectID == -1){
             newSubj = subj;
         } else {
-            newSubj = this.hybridStore.getIriConverter().subjectIdToIRI(subjectID);
+            newSubj = this.hybridStore.getHdtConverter().subjectIdToIRI(subjectID);
         }
         if (predicateID == -1){
             newPred = pred;
         } else {
-            newPred = this.hybridStore.getIriConverter().predicateIdToIRI(predicateID);
+            newPred = this.hybridStore.getHdtConverter().predicateIdToIRI(predicateID);
         }
         if (objectID == -1){
             newObj = obj;
         } else {
-            newObj = this.hybridStore.getIriConverter().objectIdToIRI(objectID);
+            newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
         logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());

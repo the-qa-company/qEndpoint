@@ -1,4 +1,6 @@
-package com.the_qa_company.q_endpoint.utils;
+package com.the_qa_company.q_endpoint.hybridstore;
+
+import com.the_qa_company.q_endpoint.utils.BinarySearch;
 
 import org.rdfhdt.hdt.dictionary.impl.MultipleSectionDictionary;
 import org.rdfhdt.hdt.hdt.HDT;

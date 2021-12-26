@@ -1,7 +1,5 @@
 package com.the_qa_company.q_endpoint.controller;
 
-import com.the_qa_company.q_endpoint.hybridstore.Sparql;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

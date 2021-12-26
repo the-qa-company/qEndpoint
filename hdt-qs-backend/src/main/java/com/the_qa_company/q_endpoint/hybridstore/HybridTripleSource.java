@@ -1,7 +1,6 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.the_qa_company.q_endpoint.utils.CombinedNativeStoreResult;
-import com.the_qa_company.q_endpoint.utils.CombinedTripleIterator;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
@@ -55,25 +54,25 @@ public class HybridTripleSource implements TripleSource {
         Resource newSubj;
         IRI newPred;
         Value newObj;
-        long subjectID = this.hybridStore.getIriConverter().convertSubj(resource);
-        long predicateID = this.hybridStore.getIriConverter().convertPred(iri);
-        long objectID = this.hybridStore.getIriConverter().convertObj(value);
+        long subjectID = this.hybridStore.getHdtConverter().subjectToID(resource);
+        long predicateID = this.hybridStore.getHdtConverter().predicateToID(iri);
+        long objectID = this.hybridStore.getHdtConverter().objectToID(value);
 
 
         if (subjectID == 0 || subjectID == -1){
             newSubj = resource;
         } else {
-            newSubj = this.hybridStore.getIriConverter().subjectIdToIRI(subjectID);
+            newSubj = this.hybridStore.getHdtConverter().subjectIdToIRI(subjectID);
         }
         if (predicateID == 0 || predicateID == -1){
             newPred = iri;
         } else {
-            newPred = this.hybridStore.getIriConverter().predicateIdToIRI(predicateID);
+            newPred = this.hybridStore.getHdtConverter().predicateIdToIRI(predicateID);
         }
         if (objectID == 0 || objectID == -1){
             newObj = value;
         } else {
-            newObj = this.hybridStore.getIriConverter().objectIdToIRI(objectID);
+            newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
         logger.debug("SEARCH "+newSubj+" - "+ newPred + " - " + newObj);
@@ -84,7 +83,6 @@ public class HybridTripleSource implements TripleSource {
         if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
             logger.debug("Searching over native store");
             count++;
-
             if (hybridStore.isMerging()) {
                 // query both native stores
                 logger.debug("Query both RDF4j stores!");
@@ -108,10 +106,6 @@ public class HybridTripleSource implements TripleSource {
             logger.debug("Not searching over native store");
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug(subjectID + "  " + predicateID + "  " + objectID);
-        }
-
         // iterate over the HDT file
         IteratorTripleID iterator;
         if ( subjectID != -1 && predicateID != -1 && objectID != -1) {
@@ -119,13 +113,12 @@ public class HybridTripleSource implements TripleSource {
             TripleID t = new TripleID(subjectID, predicateID, objectID);
             // search with the ID to check if the triples has been deleted
             iterator = this.hybridStore.getHdt().getTriples().searchWithId(t);
-
         } else {// no need to search over hdt
             iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
         }
 
         // iterate over hdt result, delete the triples marked as deleted and add the triples from the delta
-        CombinedTripleIterator tripleWithDeleteIter = new CombinedTripleIterator(hybridStore, this, iterator, repositoryResult);
+        HybridStoreTripleIterator tripleWithDeleteIter = new HybridStoreTripleIterator(hybridStore, this, iterator, repositoryResult);
         return new CloseableIteration<>() {
             @Override
             public void close() throws QueryEvaluationException {
@@ -152,19 +145,15 @@ public class HybridTripleSource implements TripleSource {
     // this function determines if a triple pattern should be searched over the native store. This is only
     // the case if the subject, predicate and object were marked as used in the bitmaps
     private boolean shouldSearchOverNativeStore(long subject, long predicate, long object) {
-        boolean containsSubject = false;
-        boolean containsPredicate = false;
-        boolean containsObject = false;
+        boolean containsSubject = true;
+        boolean containsPredicate = true;
+        boolean containsObject = true;
 
         if (subject != 0 && subject != -1) {
             containsSubject = this.hybridStore.getBitX().access(subject - 1);
-        } else {
-            containsSubject = true;
         }
         if (predicate != 0 && predicate != -1) {
             containsPredicate = this.hybridStore.getBitY().access(predicate - 1);
-        } else {
-            containsPredicate = true;
         }
         if (object!= 0 && object != -1) {
             if (object <= this.hybridStore.getHdt().getDictionary().getNshared()) {
@@ -172,8 +161,6 @@ public class HybridTripleSource implements TripleSource {
             } else {
                 containsObject = this.hybridStore.getBitZ().access(object - - this.hybridStore.getHdt().getDictionary().getNshared() - 1);
             }
-        } else {
-            containsObject = true;
         }
         logger.debug("Search over native store? {} {} {}",containsSubject, containsPredicate, containsObject);
         return containsSubject && containsPredicate && containsObject;

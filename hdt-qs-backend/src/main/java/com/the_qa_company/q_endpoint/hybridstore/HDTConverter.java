@@ -1,107 +1,38 @@
-package com.the_qa_company.q_endpoint.utils;
+package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.model.HybridStoreValueFactory;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.model.SimpleLiteralHDT;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.rdfhdt.hdt.triples.TripleID;
 
-import java.util.Iterator;
-
-// class that converts an object using the HDT dictionary to an object for RDF4j and the other way around,
-// the objective is to use HDT IDs as much as possible to minimize calls to the HDT dictionary when making for example joins
-public class IRIConverter {
-    private static final Logger logger = LoggerFactory.getLogger(IRIConverter.class);
+// there are 4 types of resources:
+// resources coming from outside,
+// HDT IDs
+// resources with HDT IDs used inside rdf4j NOTE: it is not possible to use HDT IDs in RDF4j since these are converted internally to NativeStoreIRIs and the ID is lost
+// and resources with HDT IDs (SimpleHDTIRI) used to output
+//
+// this class makes the conversion between the different types resources
+public class HDTConverter {
+    private HybridStore hybridStore;
     private HDT hdt;
     private ValueFactory valueFactory = new MemValueFactory();
 
-    public IRIConverter(HDT hdt) {
-        this.hdt = hdt;
+    public HDTConverter(HybridStore hybridStore) {
+        this.hybridStore = hybridStore;
+        this.hdt = hybridStore.getHdt();
     }
 
-    public Resource getIRIHdtSubj(Resource subj) {
-        String iriString = subj.toString();
-        long id = -1;
-        int position = -1;
-        if (iriString.startsWith(("http://hdt.org/"))) {
-            iriString = iriString.replace("http://hdt.org/", "");
-            if (iriString.startsWith("SO")) {
-                id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
-            } else if (iriString.startsWith("S")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.SUBJECT_POS;
-            } else if (iriString.startsWith("P")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.PREDICATE_POS;
-            } else if (iriString.startsWith("O")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.OBJECT_POS;
-            }
-            return new SimpleIRIHDT(this.hdt, position, id);
-        }
-        return subj;
-    }
+    // @todo: the case of creating literal or blank node should be considered
 
-    public IRI getIRIHdtPred(IRI pred) {
-        String iriString = pred.toString();
-        if (iriString.startsWith(("http://hdt.org/"))) {
-            long id = -1;
-            int position = -1;
-            iriString = iriString.replace("http://hdt.org/", "");
-            if (iriString.startsWith("P")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.PREDICATE_POS;
-            } else if (iriString.startsWith("SO")) {
-                id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
-            } else if (iriString.startsWith("S")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.SUBJECT_POS;
-            } else if (iriString.startsWith("O")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.OBJECT_POS;
-            }
-            return new SimpleIRIHDT(this.hdt, position, id);
-        }
-        return pred;
-    }
-
-    public Value getIRIHdtObj(Value object) {
-        String iriString = object.toString();
-        long id = -1;
-        int position = -1;
-        if (iriString.startsWith(("http://hdt.org/"))) {
-            iriString = iriString.replace("http://hdt.org/", "");
-            if (iriString.startsWith("SO")) {
-                id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
-            } else if (iriString.startsWith("O")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.OBJECT_POS;
-            } else if (iriString.startsWith("P")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.PREDICATE_POS;
-            } else if (iriString.startsWith("S")) {
-                id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.SUBJECT_POS;
-            }
-            return new SimpleIRIHDT(this.hdt, position, id);
-        }
-        return object;
-    }
-
-    public long convertSubj(Resource subj) {
+    // method to get the ID of a resource
+    public long subjectToID(Resource subj) {
         if (subj != null) {
             // if it is a HDT IRI we do not need to make a full conversion, we already have the IDs
             if (subj instanceof SimpleIRIHDT) {
@@ -135,7 +66,7 @@ public class IRIConverter {
         }
     }
 
-    public long convertPred(IRI pred) {
+    public long predicateToID(IRI pred) {
         if (pred != null) {
             // if it is a HDT IRI we do not need to make a full conversion, we already have the IDs
             if (pred instanceof SimpleIRIHDT) {
@@ -170,7 +101,7 @@ public class IRIConverter {
     }
 
 
-    public long convertObj(Value obj) {
+    public long objectToID(Value obj) {
         if (obj != null) {
             // if it is a HDT IRI we do not need to make a full conversion, we already have the IDs
             if (obj instanceof SimpleIRIHDT) {
@@ -202,7 +133,6 @@ public class IRIConverter {
         }
     }
 
-
     public IRI subjectIdToIRI(long id){
         if (id <= this.hdt.getDictionary().getNshared()) {
             return valueFactory.createIRI("http://hdt.org/SO"+id);
@@ -220,6 +150,94 @@ public class IRIConverter {
             return valueFactory.createIRI("http://hdt.org/SO"+id);
         } else {
             return valueFactory.createIRI("http://hdt.org/O" + id);
+        }
+    }
+
+    public Resource rdf4jToHdtIDsubject(Resource subj) {
+        String iriString = subj.toString();
+        long id = -1;
+        int position = -1;
+        if (iriString.startsWith(("http://hdt.org/"))) {
+            iriString = iriString.replace("http://hdt.org/", "");
+            if (iriString.startsWith("SO")) {
+                id = Long.parseLong(iriString.substring(2));
+                position = SimpleIRIHDT.SHARED_POS;
+            } else if (iriString.startsWith("S")) {
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.SUBJECT_POS;
+            }
+            return new SimpleIRIHDT(this.hdt, position, id);
+        }
+        return subj;
+    }
+
+    public IRI rdf4jToHdtIDpredicate(IRI pred) {
+        String iriString = pred.toString();
+        if (iriString.startsWith(("http://hdt.org/"))) {
+            long id = -1;
+            int position = -1;
+            iriString = iriString.replace("http://hdt.org/", "");
+            if (iriString.startsWith("P")) {
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.PREDICATE_POS;
+            }
+            return new SimpleIRIHDT(this.hdt, position, id);
+        }
+        return pred;
+    }
+
+    public Value rdf4jToHdtIDobject(Value object) {
+        String iriString = object.toString();
+        long id = -1;
+        int position = -1;
+        if (iriString.startsWith(("http://hdt.org/"))) {
+            iriString = iriString.replace("http://hdt.org/", "");
+            if (iriString.startsWith("SO")) {
+                id = Long.parseLong(iriString.substring(2));
+                position = SimpleIRIHDT.SHARED_POS;
+            } else if (iriString.startsWith("O")) {
+                id = Long.parseLong(iriString.substring(1));
+                position = SimpleIRIHDT.OBJECT_POS;
+            }
+            return new SimpleIRIHDT(this.hdt, position, id);
+        }
+        return object;
+    }
+
+    public Resource IdToSubjectHDTResource(long subjectID){
+        if (subjectID >= hybridStore.getHdtProps().getStartBlankShared()
+                && subjectID <= hybridStore.getHdtProps().getEndBlankShared()) {
+            return valueFactory.createBNode(
+                    hdt.getDictionary().idToString(subjectID, TripleComponentRole.SUBJECT).toString());
+        } else {
+            if (subjectID <= hdt.getDictionary().getNshared()) {
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, subjectID);
+            } else {
+                return new SimpleIRIHDT(hdt, SimpleIRIHDT.SUBJECT_POS, subjectID);
+            }
+        }
+    }
+
+    public IRI IdToPredicateHDTResource(long predicateId){
+        return new SimpleIRIHDT(hybridStore.getHdt(), SimpleIRIHDT.PREDICATE_POS, predicateId);
+    }
+
+    public Value IdToObjectHDTResource(long objectID){
+        if (objectID >= hybridStore.getHdtProps().getStartLiteral() && objectID <= hybridStore.getHdtProps().getEndLiteral()) {
+            return new SimpleLiteralHDT(hybridStore.getHdt(), objectID, hybridStore.getValueFactory());
+        } else if ((objectID >= hybridStore.getHdtProps().getStartBlankObjects()
+                && objectID <= hybridStore.getHdtProps().getEndBlankObjects())
+                || (objectID >= hybridStore.getHdtProps().getStartBlankShared()
+                && objectID <= hybridStore.getHdtProps().getEndBlankShared())
+        ) {
+            return hybridStore.getValueFactory().createBNode(
+                    hybridStore.getHdt().getDictionary().idToString(objectID, TripleComponentRole.OBJECT).toString());
+        } else {
+            if (objectID <= hybridStore.getHdt().getDictionary().getNshared()) {
+                return new SimpleIRIHDT(hybridStore.getHdt(), SimpleIRIHDT.SHARED_POS, objectID);
+            } else {
+                return new SimpleIRIHDT(hybridStore.getHdt(), SimpleIRIHDT.OBJECT_POS, objectID);
+            }
         }
     }
 }
