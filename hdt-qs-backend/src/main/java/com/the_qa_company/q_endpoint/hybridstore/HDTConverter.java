@@ -29,8 +29,6 @@ public class HDTConverter {
         this.hdt = hybridStore.getHdt();
     }
 
-    // @todo: the case of creating literal or blank node should be considered
-
     // method to get the ID of a resource
     public long subjectToID(Resource subj) {
         if (subj != null) {
@@ -153,6 +151,7 @@ public class HDTConverter {
         }
     }
 
+    // @todo: the case of creating literal or blank node should be considered
     public Resource rdf4jToHdtIDsubject(Resource subj) {
         String iriString = subj.toString();
         long id = -1;
@@ -204,6 +203,7 @@ public class HDTConverter {
         return object;
     }
 
+    // @todo: create blank node of type HDT
     public Resource IdToSubjectHDTResource(long subjectID){
         if (subjectID >= hybridStore.getHdtProps().getStartBlankShared()
                 && subjectID <= hybridStore.getHdtProps().getEndBlankShared()) {
