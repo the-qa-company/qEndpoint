@@ -312,24 +312,4 @@ public class HybridStorePhaseTest {
         logger.info("SHUTTING DOWN");
         hybridStore.shutDown();
     }
-
-    @Test
-    public void testIgestionTime(){
-        Stopwatch stopwatch = Stopwatch.createStarted();
-
-        Repository db = new SailRepository(new NativeStore(new File("/Users/Dennis/IdeaProjects/hdtSparqlEndpoint/hdt-qs-backend/A"), "spoc,posc,cosp"));
-        RepositoryConnection connection2 = db.getConnection();
-        connection2.clear();
-
-        connection2.begin();
-        for (int i=0; i<1000000; i++){
-            connection2.add(db.getValueFactory().createIRI("http://"+i),db.getValueFactory().createIRI("http://"+i),db.getValueFactory().createIRI("http://"+i));
-        }
-        connection2.commit();
-        connection2.close();
-        System.out.println(stopwatch.toString());
-    }
-
-
-
 }
