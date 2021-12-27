@@ -3,6 +3,7 @@ package com.the_qa_company.q_endpoint.hybridstore;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.model.SimpleLiteralHDT;
 
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -10,7 +11,6 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.triples.TripleID;
 
 // there are 4 types of resources:
 // resources coming from outside,
@@ -155,17 +155,14 @@ public class HDTConverter {
     public Resource rdf4jToHdtIDsubject(Resource subj) {
         String iriString = subj.toString();
         long id = -1;
-        int position = -1;
         if (iriString.startsWith(("http://hdt.org/"))) {
             iriString = iriString.replace("http://hdt.org/", "");
             if (iriString.startsWith("SO")) {
                 id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
             } else if (iriString.startsWith("S")) {
                 id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.SUBJECT_POS;
             }
-            return new SimpleIRIHDT(this.hdt, position, id);
+            return IdToSubjectHDTResource(id);
         }
         return subj;
     }
@@ -180,7 +177,7 @@ public class HDTConverter {
                 id = Long.parseLong(iriString.substring(1));
                 position = SimpleIRIHDT.PREDICATE_POS;
             }
-            return new SimpleIRIHDT(this.hdt, position, id);
+            return IdToPredicateHDTResource(id);
         }
         return pred;
     }
@@ -193,12 +190,10 @@ public class HDTConverter {
             iriString = iriString.replace("http://hdt.org/", "");
             if (iriString.startsWith("SO")) {
                 id = Long.parseLong(iriString.substring(2));
-                position = SimpleIRIHDT.SHARED_POS;
             } else if (iriString.startsWith("O")) {
                 id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.OBJECT_POS;
             }
-            return new SimpleIRIHDT(this.hdt, position, id);
+            return IdToObjectHDTResource(id);
         }
         return object;
     }
@@ -239,5 +234,40 @@ public class HDTConverter {
                 return new SimpleIRIHDT(hybridStore.getHdt(), SimpleIRIHDT.OBJECT_POS, objectID);
             }
         }
+    }
+
+    public Resource subjectHdtResourceToResource(Resource subject){
+        Resource newSubj = subject;
+        if (newSubj instanceof SimpleIRIHDT) {
+            newSubj = this.hybridStore.getChangingStore().getValueFactory().createIRI(newSubj.stringValue());
+        } else if (newSubj instanceof BNode) {
+            newSubj = this.hybridStore.getChangingStore().getValueFactory().createBNode(newSubj.stringValue());
+        }
+        return newSubj;
+    }
+
+    public IRI predicateHdtResourceToResource(IRI predicate){
+        IRI newPred = predicate;
+        if (newPred instanceof SimpleIRIHDT) {
+            newPred = this.hybridStore.getChangingStore().getValueFactory().createIRI(newPred.stringValue());
+        }
+        return newPred;
+    }
+
+    public Value objectHdtResourceToResource(Value object){
+        Value newObj = object;
+        if (newObj instanceof SimpleIRIHDT) {
+            newObj = this.hybridStore.getChangingStore().getValueFactory().createIRI(newObj.stringValue());
+        } else if (newObj instanceof BNode) {
+            newObj = this.hybridStore.getChangingStore().getValueFactory().createBNode(newObj.stringValue());
+        } else if (newObj instanceof SimpleLiteralHDT){
+            SimpleLiteralHDT literal = (SimpleLiteralHDT)newObj;
+            if (literal.getLanguage().isPresent()){
+                newObj = this.hybridStore.getChangingStore().getValueFactory().createLiteral(((SimpleLiteralHDT)newObj).getLabel(),((SimpleLiteralHDT)newObj).getLanguage().get());
+            } else {
+                newObj = this.hybridStore.getChangingStore().getValueFactory().createLiteral(((SimpleLiteralHDT)newObj).getLabel(),((SimpleLiteralHDT)newObj).getDatatype());
+            }
+        }
+        return newObj;
     }
 }

@@ -68,7 +68,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // stores to store the delta
     public NativeStore nativeStoreA;
     public NativeStore nativeStoreB;
-    public NativeStore currentStore;
 
     // location of the native store
     private String locationNative;
@@ -125,10 +124,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
-        if (switchStore)
-            this.currentStore = nativeStoreB;
-        else
-            this.currentStore = nativeStoreA;
         resetHDT(hdt);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
@@ -141,7 +136,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.connectionsLockManager = new LockManager();
         initDeleteArray();
         // initialize the count of the triples
-        NotifyingSailConnection connection = getCurrentStore().getConnection();
+        NotifyingSailConnection connection = getChangingStore().getConnection();
         this.triplesCount = connection.size();
         connection.close();
     }
@@ -230,17 +225,36 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         return threshold;
     }
 
-    public NativeStore getCurrentStore() {
-        return currentStore;
+    public NativeStore getChangingStore() {
+        if (switchStore){
+            logger.debug("Changing store is B");
+            return nativeStoreB;
+        } else {
+            logger.debug("Changing store is A");
+            return nativeStoreA;
+        }
+
+    }
+
+    public NativeStore getFreezedStoreStore() {
+        if (!switchStore){
+            logger.debug("Freezed store is B");
+            return nativeStoreB;
+        }
+        else {
+            logger.debug("Freezed store is A");
+            return nativeStoreA;
+        }
+
     }
 
     // force access to the store via reflection, the library does not allow directly since the method is protected
     public SailStore getCurrentSaliStore() {
         Method method = null;
         try {
-            method = currentStore.getClass().getDeclaredMethod("getSailStore");
+            method = getChangingStore().getClass().getDeclaredMethod("getSailStore");
             method.setAccessible(true);
-            return (SailStore)method.invoke(currentStore);
+            return (SailStore)method.invoke(getChangingStore());
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
@@ -285,13 +299,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             return nativeStoreA.isWritable();
     }
 
-    public RepositoryConnection getRepoConnection() {
-        if (switchStore)
-            return new SailRepository(nativeStoreB).getConnection();
-        else
-            return new SailRepository(nativeStoreA).getConnection();
-    }
-
     @Override
     public ValueFactory getValueFactory() {
         return this.valueFactory;
@@ -322,8 +329,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
     }
 
-    public SailConnection getConnectionNative() {
-        return this.currentStore.getConnection();
+    public RepositoryConnection getConnectionToChangingStore() {
+        return  new SailRepository(getChangingStore()).getConnection();
+    }
+
+    public RepositoryConnection getConnectionToFreezedStore() {
+        return  new SailRepository(getFreezedStoreStore()).getConnection();
     }
 
     public boolean isMerging() {
@@ -482,7 +493,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         try {
             HDTConverter converter = new HDTConverter(this);
             // iterate over the current rdf4j store and mark in HDT the store the subject, predicate, objects that are used in rdf4j
-            try (RepositoryConnection connection = this.getRepoConnection()) {
+            try (RepositoryConnection connection = this.getConnectionToChangingStore()) {
                 RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
                 for (Statement statement : statements) {
                     Resource internalSubj = converter.rdf4jToHdtIDsubject(statement.getSubject());
@@ -609,10 +620,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
         this.extendsTimeMergeEnd = extendsTimeMergeEnd;
-    }
-
-    public void setHdtConverter(HDTConverter hdtConverter) {
-        this.hdtConverter = hdtConverter;
     }
 
 }

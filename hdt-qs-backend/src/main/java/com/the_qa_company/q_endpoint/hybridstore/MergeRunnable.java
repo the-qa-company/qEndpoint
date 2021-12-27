@@ -2,8 +2,6 @@ package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 
-import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
-
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.model.IRI;
@@ -58,11 +56,6 @@ public class MergeRunnable implements Runnable {
         // mark in the store that the merge process started
         hybridStore.isMerging = true;
 
-
-
-
-        RepositoryConnection nativeStoreConnection = hybridStore.getRepoConnection();
-
         // wait for all running updates to finish
         try {
             hybridStore.connectionsLockManager.waitForActiveLocks();
@@ -83,18 +76,14 @@ public class MergeRunnable implements Runnable {
             }
         }
 
-        if (hybridStore.switchStore) {
-            this.hybridStore.currentStore = this.hybridStore.nativeStoreA;
-            this.hybridStore.switchStore = false;
-        } else {
-            this.hybridStore.currentStore = this.hybridStore.nativeStoreB;
-            this.hybridStore.switchStore = true;
-        }
-        // reset the count of triples to 0 after switching the stores
-        this.hybridStore.setTriplesCount(0);
+        // switching the stores
+        this.hybridStore.switchStore = !this.hybridStore.switchStore;
+
         // write the switchStore value to disk in case, something crash we can recover
         this.hybridStore.writeWhichStore();
 
+        // reset the count of triples to 0 after switching the stores
+        this.hybridStore.setTriplesCount(0);
 
         // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
         if (extendsTimeMergeBeginningAfterSwitch!=-1){
@@ -118,15 +107,16 @@ public class MergeRunnable implements Runnable {
             logger.info("HDT Diff");
             diffIndexes(locationHdt + "index.hdt", locationHdt + "triples-delete-cpy.arr");
             logger.info("Dump all triples from the native store to file");
+            RepositoryConnection nativeStoreConnection = hybridStore.getConnectionToFreezedStore();
             writeTempFile(nativeStoreConnection, rdfInput);
+            nativeStoreConnection.commit();
+            nativeStoreConnection.close();
             logger.info("Create HDT index from dumped file");
             createHDTDump(rdfInput, hdtOutput);
             // cat the original index and the temp index
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
             logger.info("CAT completed!!!!! " + locationHdt);
-            // empty native store
-            nativeStoreConnection.clear();
-            nativeStoreConnection.commit();
+
             File file = new File(rdfInput);
             file.delete();
             file = new File(hdtOutput);
@@ -144,13 +134,16 @@ public class MergeRunnable implements Runnable {
             Lock lock = hybridStore.manager.createLock("IDs conversion lock");
             convertOldToNew(this.hybridStore.getHdt(), tempHdt);
             this.hybridStore.resetHDT(tempHdt);
+//            // empty freezed store
+//            nativeStoreConnection.clear();
+//
             logger.info("Releasing lock for ID conversion ....");
             lock.release();
             logger.info("Lock released");
             // mark the triples as deleted from the temp file stored while merge
             this.hybridStore.markDeletedTempTriples();
             this.hybridStore.isMerging = false;
-            nativeStoreConnection.close();
+
             // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
             if (extendsTimeMergeEnd!=-1){
                 try {
@@ -242,17 +235,14 @@ public class MergeRunnable implements Runnable {
                 Statement stm = repositoryResult.next();
 
                 Resource newSubjIRI = this.hybridStore.getHdtConverter().rdf4jToHdtIDsubject(stm.getSubject());
-                if (newSubjIRI instanceof SimpleIRIHDT) {
-                    newSubjIRI = this.hybridStore.currentStore.getValueFactory().createIRI(newSubjIRI.stringValue());
-                }
+                newSubjIRI = this.hybridStore.getHdtConverter().subjectHdtResourceToResource(newSubjIRI);
+
                 IRI newPredIRI = this.hybridStore.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
-                if (newPredIRI instanceof SimpleIRIHDT) {
-                    newPredIRI = this.hybridStore.currentStore.getValueFactory().createIRI(newPredIRI.stringValue());
-                }
+                newPredIRI = this.hybridStore.getHdtConverter().predicateHdtResourceToResource(newPredIRI);
+
                 Value newObjIRI = this.hybridStore.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
-                if (newObjIRI instanceof SimpleIRIHDT) {
-                    newObjIRI = this.hybridStore.currentStore.getValueFactory().createIRI(newObjIRI.stringValue());
-                }
+                newObjIRI = this.hybridStore.getHdtConverter().objectHdtResourceToResource(newObjIRI);
+
                 Statement stmConverted = this.hybridStore.getValueFactory().createStatement(
                         newSubjIRI,
                         newPredIRI,
@@ -273,10 +263,18 @@ public class MergeRunnable implements Runnable {
         logger.info("Started converting IDs in the merge store");
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            RepositoryConnection connection = this.hybridStore.getRepoConnection();
-
+            RepositoryConnection connection = this.hybridStore.getConnectionToChangingStore();
+            RepositoryConnection connection2 = this.hybridStore.getConnectionToFreezedStore();
+            connection2.clear();
+            connection2.begin();
             RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
+            int count = 0;
             for (Statement s : statements) {
+                count++;
+                // get the string
+                // convert the string using the new dictionary
+
+
                 // get the old IRIs with old IDs
                 HDTConverter iriConverter = new HDTConverter(this.hybridStore);
                 Resource oldSubject = iriConverter.rdf4jToHdtIDsubject(s.getSubject());
@@ -302,10 +300,22 @@ public class MergeRunnable implements Runnable {
                 }
                 logger.debug("old:[{} {} {}]",oldSubject,oldPredicate,oldObject);
                 logger.debug("new:[{} {} {}]",newSubjIRI,newPredIRI,newObjIRI);
+                connection2.add(newSubjIRI, newPredIRI, newObjIRI);
+//                alternative, i.e. make inplace replacements
+//                connection.remove(s.getSubject(), s.getPredicate(), s.getObject());
+//                connection.add(newSubjIRI, newPredIRI, newObjIRI);
 
-                connection.remove(s.getSubject(), s.getPredicate(), s.getObject());
-                connection.add(newSubjIRI, newPredIRI, newObjIRI);
+                if (count %10000==0){
+                    logger.debug("Converted {}",count);
+                }
+
             }
+            connection2.commit();
+            connection.clear();
+            connection.close();
+            connection2.close();
+            this.hybridStore.switchStore = !this.hybridStore.switchStore;
+
             stopwatch.stop(); // optional
             logger.info("Time elapsed for conversion: " + stopwatch);
 

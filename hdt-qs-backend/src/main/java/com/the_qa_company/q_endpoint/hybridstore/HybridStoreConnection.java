@@ -367,10 +367,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     }
 
     public SailConnection getCurrentConnection() {
-        if (hybridStore.switchStore)
+        if (hybridStore.switchStore) {
+            logger.debug("STORE B");
             return connB;
-        else
+        } else {
+            logger.debug("STORE A");
             return connA;
+        }
     }
 
     public SailConnection getConnA() {

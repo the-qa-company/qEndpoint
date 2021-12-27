@@ -1,13 +1,19 @@
 package com.the_qa_company.q_endpoint;
 
+import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -169,6 +175,7 @@ public class HybridStorePhaseTest {
         sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
+        Thread.sleep(100);
         assertEquals(true,store.isMerging());
 
         logger.info("QUERY 1");
@@ -192,9 +199,9 @@ public class HybridStorePhaseTest {
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
-//        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  \"my_name\" . } ";
-//        tupleQuery = connection.prepareUpdate(sparqlQuery);
-//        tupleQuery.execute();
+        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  \"my_name\" . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
 
         connection.commit();
 
@@ -211,6 +218,15 @@ public class HybridStorePhaseTest {
         }
 
         sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o130> . } ";
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        tupleQueryResult = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult.hasNext());
+        while (tupleQueryResult.hasNext()) {
+            BindingSet b = tupleQueryResult.next();
+            assertEquals("http://s600", b.getBinding("s").getValue().toString());
+        }
+
+        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  \"my_name\" . } ";
         tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
         tupleQueryResult = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult.hasNext());
@@ -295,6 +311,23 @@ public class HybridStorePhaseTest {
 
         logger.info("SHUTTING DOWN");
         hybridStore.shutDown();
+    }
+
+    @Test
+    public void testIgestionTime(){
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
+        Repository db = new SailRepository(new NativeStore(new File("/Users/Dennis/IdeaProjects/hdtSparqlEndpoint/hdt-qs-backend/A"), "spoc,posc,cosp"));
+        RepositoryConnection connection2 = db.getConnection();
+        connection2.clear();
+
+        connection2.begin();
+        for (int i=0; i<1000000; i++){
+            connection2.add(db.getValueFactory().createIRI("http://"+i),db.getValueFactory().createIRI("http://"+i),db.getValueFactory().createIRI("http://"+i));
+        }
+        connection2.commit();
+        connection2.close();
+        System.out.println(stopwatch.toString());
     }
 
 
