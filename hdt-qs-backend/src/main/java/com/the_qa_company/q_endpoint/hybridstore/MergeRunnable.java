@@ -51,12 +51,15 @@ public class MergeRunnable implements Runnable {
     }
 
     public synchronized void run() {
+        // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
+        hybridStore.initTempDump();
+        hybridStore.initTempDeleteArray();
+
         // mark in the store that the merge process started
         hybridStore.isMerging = true;
 
-        // init the temp deletes while merging...
-        hybridStore.initTempDeleteArray();
-        hybridStore.initTempDump();
+
+
 
         RepositoryConnection nativeStoreConnection = hybridStore.getRepoConnection();
 

@@ -247,7 +247,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     protected void closeInternal() throws SailException {
-        logger.info("Number of counts native store was called:" + this.tripleSource.getCount());
+        logger.info("Number of times native store was called:" + this.tripleSource.getCount());
         super.closeInternal();
         //this.nativeStoreConnection.close();
         this.connA.close();
