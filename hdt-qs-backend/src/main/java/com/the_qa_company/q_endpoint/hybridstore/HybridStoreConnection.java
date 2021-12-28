@@ -307,7 +307,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         // remove statement from both stores... A and B
         this.connA.removeStatement(op, newSubj, newPred, newObj, contexts);
         this.connB.removeStatement(op, newSubj, newPred, newObj, contexts);
-        this.hybridStore.triplesCount--;
+//        this.hybridStore.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         assignBitMapDeletes(tripleID, subj, pred, obj);
