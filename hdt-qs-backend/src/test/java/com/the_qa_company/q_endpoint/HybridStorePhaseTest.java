@@ -19,8 +19,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -306,6 +308,56 @@ public class HybridStorePhaseTest {
             BindingSet b = tupleQueryResult2.next();
             assertEquals("http://s700", b.getBinding("s").getValue().toString());
         }
+
+        connection.close();
+
+        logger.info("SHUTTING DOWN");
+        hybridStore.shutDown();
+    }
+
+    @Test
+    public void insertExistingTriple() throws InterruptedException {
+        int threshold = 100;
+        logger.info("Setting the threshold to "+threshold);
+        store.setThreshold(threshold);
+        SailRepository hybridStore = new SailRepository(store);
+
+        logger.info("Insert some data");
+        int numbeOfTriples = 100;
+        String sparqlQuery = "INSERT DATA { ";
+        for (int i = 0; i < numbeOfTriples; i++) {
+            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  \""+i+"\"@pl . ";
+        }
+        sparqlQuery += "} ";
+        RepositoryConnection connection = hybridStore.getConnection();
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+        connection.commit();
+
+        // START MERGE
+        logger.info("INSERT");
+        sparqlQuery = "INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+        // WAIT MERGE TO FINISH
+        Thread.sleep(2000);
+
+        logger.info("INSERT");
+        sparqlQuery = "INSERT DATA { <http://s0>  <http://p0>  \"0\"@pl . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+
+        logger.info("QUERY");
+        sparqlQuery = "SELECT ?o WHERE { <http://s0>  ?p  ?o . } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult.hasNext());
+        BindingSet b = tupleQueryResult.next();
+        System.out.println(b.getBinding("o").getValue().toString());
+        assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
+        assertTrue(!tupleQueryResult.hasNext());
 
         connection.close();
 
