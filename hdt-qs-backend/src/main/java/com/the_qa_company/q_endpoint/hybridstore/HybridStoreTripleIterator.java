@@ -39,11 +39,11 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 TripleID tripleID = iterator.next();
-                logger.debug("HDT {} {} {} ",tripleID.getSubject(), tripleID.getPredicate(),tripleID.getObject());
                 if (tripleID.getIndex() != -1 && !hybridStore.getDeleteBitMap().access(tripleID.getIndex() - 1)) {
                     Resource subject = hybridStore.getHdtConverter().IdToSubjectHDTResource(tripleID.getSubject());
                     IRI predicate = hybridStore.getHdtConverter().IdToPredicateHDTResource(tripleID.getPredicate());
                     Value object = hybridStore.getHdtConverter().IdToObjectHDTResource(tripleID.getObject());
+                    logger.trace("HDT {} {} {} ",subject.stringValue(), predicate.stringValue(),object.stringValue());
                     next = hybridTripleSource.getValueFactory().createStatement(subject, predicate, object);
                     return true;
                 }
@@ -56,7 +56,7 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
             Value newPred = hybridStore.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
             Value newObject = hybridStore.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
             next =  hybridTripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
-            logger.debug("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
+            logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
             return true;
         }
         return false;
