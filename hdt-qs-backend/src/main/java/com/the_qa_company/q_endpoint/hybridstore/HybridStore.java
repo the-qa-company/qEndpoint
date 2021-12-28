@@ -160,8 +160,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public void resetHDT(HDT hdt) {
         this.setHdt(hdt);
-        initNativeStoreDictionary(this.hdt);
         this.setHdtProps(new HDTProps(hdt));
+        initNativeStoreDictionary(this.hdt);
         this.setValueFactory(new HybridStoreValueFactory(hdt));
         this.hdtConverter = new HDTConverter(this);
     }
