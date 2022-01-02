@@ -159,8 +159,8 @@ public class Sparql {
 
         if (parsedQuery instanceof ParsedTupleQuery) {
             TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-            Explanation explain = query.explain(Explanation.Level.Timed);
-            System.out.println(explain);
+//            Explanation explain = query.explain(Explanation.Level.Timed);
+//            System.out.println(explain);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
@@ -180,10 +180,13 @@ public class Sparql {
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
             BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
             if (query.evaluate() == true) {
+                connection.close();
                 return "{ \"head\" : { } , \"boolean\" : true }";
             } else {
+                connection.close();
                 return "{ \"head\" : { } , \"boolean\" : false }";
             }
+
         } else {
             System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
             return "Bad Request : query not supported ";
@@ -214,8 +217,10 @@ public class Sparql {
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
             BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
             if (query.evaluate() == true) {
+                connection.close();
                 return "{ \"head\" : { } , \"boolean\" : true }";
             } else {
+                connection.close();
                 return "{ \"head\" : { } , \"boolean\" : false }";
             }
         } else {
@@ -255,8 +260,10 @@ public class Sparql {
         } else if (parsedQuery instanceof ParsedBooleanQuery) {
             BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
             if (query.evaluate() == true) {
+                connection.close();
                 return "{ \"head\" : { } , \"boolean\" : true }";
             } else {
+                connection.close();
                 return "{ \"head\" : { } , \"boolean\" : false }";
             }
         } else {
@@ -319,6 +326,7 @@ public class Sparql {
             RDFHandler turtleWriter = Rio.createWriter(RDFFormat.TURTLE, out);
             query.evaluate(turtleWriter);
             query.setMaxExecutionTime(timeout);
+            connection.close();
             return out.toString("UTF8");
         } else {
             System.out.println("Not knowledgebase yet: query is not construct");
