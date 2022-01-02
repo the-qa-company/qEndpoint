@@ -35,73 +35,73 @@ public class MergeRunnable implements Runnable {
     private final String locationHdt;
 
     private final HybridStore hybridStore;
-    private final Lock mergeLock;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
     private int extendsTimeMergeBeginning = -1;
     private int extendsTimeMergeBeginningAfterSwitch = -1;
     private int extendsTimeMergeEnd = -1;
 
 
-    public MergeRunnable(String locationHdt, HybridStore hybridStore, Lock lock) {
+    public MergeRunnable(String locationHdt, HybridStore hybridStore) {
         this.locationHdt = locationHdt;
         this.hybridStore = hybridStore;
-        this.mergeLock = lock;
     }
 
     public synchronized void run() {
-        // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
-        hybridStore.initTempDump();
-        hybridStore.initTempDeleteArray();
-
-        // mark in the store that the merge process started
-        hybridStore.isMerging = true;
-
-        // wait for all running updates to finish
         try {
-            hybridStore.connectionsLockManager.waitForActiveLocks();
-            // release the lock so that the connections can continue
-            this.mergeLock.release();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
-        // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
-        if (extendsTimeMergeBeginning!=-1){
-            try {
-                logger.debug("It is sleeping extendsTimeMergeBeginning "+extendsTimeMergeBeginning);
-                Thread.sleep(extendsTimeMergeBeginning*1000);
-                logger.debug("Fnished sleeping extendsTimeMergeBeginning");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
+            hybridStore.initTempDump();
+            hybridStore.initTempDeleteArray();
+
+            // mark in the store that the merge process started
+            hybridStore.setMerging(true);
+
+            // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
+            if (extendsTimeMergeBeginning!=-1){
+                try {
+                    logger.debug("It is sleeping extendsTimeMergeBeginning "+extendsTimeMergeBeginning);
+                    Thread.sleep(extendsTimeMergeBeginning*1000);
+                    logger.debug("Fnished sleeping extendsTimeMergeBeginning");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        }
 
-        // switching the stores
-        this.hybridStore.switchStore = !this.hybridStore.switchStore;
+            logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
+            // create a lock so that new incoming connections don't do anything
+            Lock lock = hybridStore.lockToPreventNewConnections.createLock("switch-lock");
+            // wait for all running updates to finish
+            hybridStore.locksHoldByConnections.waitForActiveLocks();
+            logger.info("Can continue");
 
-        // write the switchStore value to disk in case, something crash we can recover
-        this.hybridStore.writeWhichStore();
+            // switching the stores
+            this.hybridStore.switchStore = !this.hybridStore.switchStore;
 
-        // reset the count of triples to 0 after switching the stores
-        this.hybridStore.setTriplesCount(0);
+            // write the switchStore value to disk in case, something crash we can recover
+            this.hybridStore.writeWhichStore();
 
-        // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
-        if (extendsTimeMergeBeginningAfterSwitch!=-1){
-            try {
-                logger.debug("It is sleeping extendsTimeMergeBeginningAfterSwitch "+extendsTimeMergeBeginningAfterSwitch);
-                Thread.sleep(extendsTimeMergeBeginningAfterSwitch*1000);
-                logger.debug("Fnished sleeping extendsTimeMergeBeginningAfterSwitch");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            // reset the count of triples to 0 after switching the stores
+            this.hybridStore.setTriplesCount(0);
+
+            // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
+            if (extendsTimeMergeBeginningAfterSwitch!=-1){
+                try {
+                    logger.debug("It is sleeping extendsTimeMergeBeginningAfterSwitch "+extendsTimeMergeBeginningAfterSwitch);
+                    Thread.sleep(extendsTimeMergeBeginningAfterSwitch*1000);
+                    logger.debug("Fnished sleeping extendsTimeMergeBeginningAfterSwitch");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        }
 
-        try {
             String rdfInput = locationHdt + "temp.nt";
             String hdtOutput = locationHdt + "temp.hdt";
-            // make a copy of the delete array so that the merge thread doesn't interfere with the store data access
+            // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo: a lock is needed here
             Files.copy(Paths.get(locationHdt + "triples-delete.arr"),
                     Paths.get(locationHdt + "triples-delete-cpy.arr"));
+            // release the lock so that the connections can continue
+            lock.release();
+            logger.info("Switch-Lock released");
 
             // diff hdt indexes...
             logger.info("HDT Diff");
@@ -116,7 +116,6 @@ public class MergeRunnable implements Runnable {
             // cat the original index and the temp index
             catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
             logger.info("CAT completed!!!!! " + locationHdt);
-
             File file = new File(rdfInput);
             file.delete();
             file = new File(hdtOutput);
@@ -126,23 +125,31 @@ public class MergeRunnable implements Runnable {
             file = new File(locationHdt + "triples-delete.arr");
             file.delete();
 
-            // add a lock here
-            this.hybridStore.resetDeleteArray();  // @todo: no deletes are allowed in this moment of time!
-            HDT tempHdt = HDTManager.mapIndexedHDT(locationHdt + "index.hdt", this.hybridStore.getHDTSpec());
+
+
             // convert all triples added to the merge store to new IDs of the new generated HDT
             logger.info("ID conversion");
-            Lock lock = hybridStore.manager.createLock("IDs conversion lock");
+            // create a lock so that new incoming connections don't do anything
+            lock = hybridStore.lockToPreventNewConnections.createLock("translate-lock");
+            // wait for all running updates to finish
+            logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
+            hybridStore.locksHoldByConnections.waitForActiveLocks();
+            logger.info("Can continue");
+
+            this.hybridStore.resetDeleteArray();
+            // @todo: this includes the index creation time, this can be moved outside the lock
+            HDT tempHdt = HDTManager.mapIndexedHDT(locationHdt + "index.hdt", this.hybridStore.getHDTSpec());
             convertOldToNew(this.hybridStore.getHdt(), tempHdt);
             this.hybridStore.resetHDT(tempHdt);
-//            // empty freezed store
-//            nativeStoreConnection.clear();
-//
-            logger.info("Releasing lock for ID conversion ....");
-            lock.release();
-            logger.info("Lock released");
+
             // mark the triples as deleted from the temp file stored while merge
             this.hybridStore.markDeletedTempTriples();
-            this.hybridStore.isMerging = false;
+            logger.info("Releasing lock for ID conversion ....");
+            lock.release();
+            logger.info("Translate-Lock released");
+            logger.info("Lock released");
+
+            this.hybridStore.setMerging(false);
 
             // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
             if (extendsTimeMergeEnd!=-1){
@@ -155,7 +162,9 @@ public class MergeRunnable implements Runnable {
                 }
             }
         } catch (IOException e) {
-            hybridStore.isMerging = false;
+            hybridStore.setMerging(false);
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
         logger.info("Merge finished");
@@ -169,6 +178,7 @@ public class MergeRunnable implements Runnable {
             File theDir = new File(filex.getAbsolutePath() + "_tmp");
             theDir.mkdirs();
             String location = theDir.getAbsolutePath() + "/";
+            // @todo: should we not use the already mapped HDT file instead of remapping
             HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, bitArray, this.hybridStore.getHDTSpec(), null);
             hdt.saveToHDT(hdtOutput, null);
 
@@ -176,7 +186,7 @@ public class MergeRunnable implements Runnable {
             FileUtils.deleteDirectory(theDir.getAbsoluteFile());
             hdt.close();
         } catch (Exception e) {
-            hybridStore.isMerging = false;
+            hybridStore.setMerging(false);
             e.printStackTrace();
         }
     }
@@ -188,6 +198,10 @@ public class MergeRunnable implements Runnable {
             File theDir = new File(file.getAbsolutePath() + "_tmp");
             theDir.mkdirs();
             String location = theDir.getAbsolutePath() + "/";
+            logger.info(location);
+            logger.info(hdtInput1);
+            logger.info(hdtInput2);
+            // @todo: should we not use the already mapped HDT file instead of remapping
             hdt = HDTManager.catHDT(location, hdtInput1, hdtInput2, this.hybridStore.getHDTSpec(), null);
 
             StopWatch sw = new StopWatch();
@@ -201,7 +215,7 @@ public class MergeRunnable implements Runnable {
             Files.deleteIfExists(Paths.get(hdtInput1 + ".index.v1-1"));
         } catch (Exception e) {
             e.printStackTrace();
-            hybridStore.isMerging = false;
+            hybridStore.setMerging(false);
         } finally {
             if (hdt != null)
                 hdt.close();
@@ -218,7 +232,7 @@ public class MergeRunnable implements Runnable {
             logger.info("HDT saved to file in: " + sw.stopAndShow());
         } catch (IOException | ParserException e) {
             e.printStackTrace();
-            hybridStore.isMerging = false;
+            hybridStore.setMerging(false);
         }
     }
 
@@ -255,7 +269,7 @@ public class MergeRunnable implements Runnable {
             out.close();
         } catch (IOException e) {
             e.printStackTrace();
-            hybridStore.isMerging = false;
+            hybridStore.setMerging(false);
         }
     }
 
@@ -328,7 +342,7 @@ public class MergeRunnable implements Runnable {
         } catch (Exception e) {
             logger.error("Something went wrong during conversion of IDs in merge phase: ");
             e.printStackTrace();
-            hybridStore.isMerging = false;
+            hybridStore.setMerging(false);
         }
     }
 

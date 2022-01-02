@@ -76,7 +76,6 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         if (!(tupleExpr instanceof QueryRoot)) {
             tupleExpr = new QueryRoot(tupleExpr);
         }
-        logger.debug("From this store:\n"+this.hybridStore.getChangingStore().getDataDir().getAbsolutePath());
         EvaluationStrategy strategy =
                 new ExtendedEvaluationStrategy(
                         getTripleSource(), dataset, new SPARQLServiceResolver(), 0L, evaluationStatistics);

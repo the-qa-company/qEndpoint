@@ -43,6 +43,14 @@ public class HybridStoreConnection extends SailSourceConnection {
     public HybridStoreConnection(HybridStore hybridStore) {
         super(hybridStore, hybridStore.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
         this.hybridStore = hybridStore;
+        // lock logic is here so that the connections is blocked
+        try {
+            this.hybridStore.lockToPreventNewConnections.waitForActiveLocks();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        this.connectionLock = this.hybridStore.locksHoldByConnections.createLock("connection-lock");
+
         this.connA = hybridStore.getNativeStoreA().getConnection();
         this.connB = hybridStore.getNativeStoreB().getConnection();
         // each hybridStoreConnection has a triple source ( ideally it should be in the query preparer as in rdf4j..)
@@ -52,13 +60,8 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void begin() throws SailException {
-        // lock logic is here so that the connections is blocked
-        try {
-            this.hybridStore.manager.waitForActiveLocks();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        this.connectionLock = this.hybridStore.connectionsLockManager.createLock("connection-lock");
+        logger.info("Begin connection transaction");
+
 
         super.begin();
 
@@ -203,7 +206,6 @@ public class HybridStoreConnection extends SailSourceConnection {
         super.commitInternal();
         this.connA.commit();
         this.connB.commit();
-        this.connectionLock.release();
     }
 
     @Override
@@ -252,6 +254,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         //this.nativeStoreConnection.close();
         this.connA.close();
         this.connB.close();
+        this.connectionLock.release();
     }
 
     @Override
@@ -349,13 +352,13 @@ public class HybridStoreConnection extends SailSourceConnection {
                 index = iter.next().getIndex();
             if (index != -1) {
                 this.hybridStore.getDeleteBitMap().set(index - 1, true);
-                if (this.hybridStore.isMerging)
+                if (this.hybridStore.isMerging())
                     this.hybridStore.getTempDeleteBitMap().set(index - 1, true);
             }
         } else {
             // @todo: why is this important?
-            // means that the triple doesn't exist in HDT - we have to dump it while merging
-            if (this.hybridStore.isMerging) {
+            // means that the triple doesn't exist in HDT - we have to dump it while merging, this triple might be in the newly generated HDT
+            if (this.hybridStore.isMerging()) {
                 RDFWriter writer = this.hybridStore.getRdfWriterTempTriples();
                 if (writer != null) {
                     writer.handleStatement(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));

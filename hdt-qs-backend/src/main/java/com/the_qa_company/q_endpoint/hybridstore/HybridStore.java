@@ -5,7 +5,6 @@ import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 
 import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -25,10 +24,12 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
+import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
@@ -50,6 +51,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
@@ -66,8 +68,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private HDTProps hdtProps;
 
     // stores to store the delta
-    public NativeStore nativeStoreA;
-    public NativeStore nativeStoreB;
+    public AbstractNotifyingSail nativeStoreA;
+    public AbstractNotifyingSail nativeStoreB;
 
     // location of the native store
     private String locationNative;
@@ -90,7 +92,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     File checkFile;
 
     // flag if the store is merging or not
-    public boolean isMerging = false;
+    private boolean isMerging = false;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
     private int extendsTimeMergeBeginning = -1;
     private int extendsTimeMergeBeginningAfterSwitch = -1;
@@ -104,9 +106,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private RDFWriter rdfWriterTempTriples;
 
     // lock manager for the merge thread
-    public LockManager manager;
+    public LockManager lockToPreventNewConnections;
     // lock manager for the connections over the current repository
-    public LockManager connectionsLockManager;
+    public LockManager locksHoldByConnections;
 
     // variable counting the current number of triples in the delta
     public long triplesCount;
@@ -115,9 +117,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public HybridStore(HDT hdt, String locationHdt, String locationNative, boolean inMemDeletes) {
 
-        this.nativeStoreA = new NativeStore(new File(locationNative + "A"), "spoc,posc,cosp");
-        this.nativeStoreB = new NativeStore(new File(locationNative + "B"), "spoc,posc,cosp");
+        this.nativeStoreA = new MemoryStore();
+        this.nativeStoreB = new MemoryStore();
+//        this.nativeStoreA.setDefaultIsolationLevel(IsolationLevels.NONE);
+//        this.nativeStoreB.setDefaultIsolationLevel(IsolationLevels.NONE);
+//        this.nativeStoreA = new NativeStore(new File(locationNative + "A"), "spoc,posc,cosp");
+//        this.nativeStoreB = new NativeStore(new File(locationNative + "B"), "spoc,posc,cosp");
 
+        (new File(locationNative)).mkdirs();
         this.checkFile = new File(locationNative + "which_store.check");
 
         // init the store before creating the check store file
@@ -132,11 +139,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.inMemDeletes = inMemDeletes;
         this.hdtProps = new HDTProps(this.hdt);
         this.locationNative = locationNative;
-        this.manager = new LockManager();
-        this.connectionsLockManager = new LockManager();
+        this.lockToPreventNewConnections = new LockManager();
+        this.locksHoldByConnections = new LockManager();
         initDeleteArray();
         // initialize the count of the triples
-        NotifyingSailConnection connection = getChangingStore().getConnection();
+        SailConnection connection = getChangingStore().getConnection();
         this.triplesCount = connection.size();
         connection.close();
     }
@@ -225,7 +232,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         return threshold;
     }
 
-    public NativeStore getChangingStore() {
+    public Sail getChangingStore() {
         if (switchStore){
             logger.debug("Changing store is B");
             return nativeStoreB;
@@ -236,7 +243,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     }
 
-    public NativeStore getFreezedStoreStore() {
+    public Sail getFreezedStoreStore() {
         if (!switchStore){
             logger.debug("Freezed store is B");
             return nativeStoreB;
@@ -325,8 +332,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     @Override
     public void setFederatedServiceResolver(FederatedServiceResolver federatedServiceResolver) {
-        nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
-        nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
+//        nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
+//        nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
     }
 
     public RepositoryConnection getConnectionToChangingStore() {
@@ -341,11 +348,15 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         return isMerging;
     }
 
-    public NativeStore getNativeStoreA() {
+    public void setMerging(boolean merging) {
+        isMerging = merging;
+    }
+
+    public Sail getNativeStoreA() {
         return nativeStoreA;
     }
 
-    public NativeStore getNativeStoreB() {
+    public Sail getNativeStoreB() {
         return nativeStoreB;
     }
 
@@ -548,9 +559,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void makeMerge() {
         try {
             logger.info("START MERGE");
-            // create a lock so that new incoming connections don't do anything
-            Lock lock = this.manager.createLock("Merge-Lock");
-            MergeRunnable mergeRunnable = new MergeRunnable(locationHdt, this, lock);
+
+            MergeRunnable mergeRunnable = new MergeRunnable(locationHdt, this);
             mergeRunnable.setExtendsTimeMergeBeginning(extendsTimeMergeBeginning);
             mergeRunnable.setExtendsTimeMergeBeginningAfterSwitch(extendsTimeMergeBeginningAfterSwitch);
             mergeRunnable.setExtendsTimeMergeEnd(extendsTimeMergeEnd);
