@@ -364,4 +364,54 @@ public class HybridStorePhaseTest {
         logger.info("SHUTTING DOWN");
         hybridStore.shutDown();
     }
+
+    @Test
+    public void testDeleteTripleInHdtWhileMerging() throws InterruptedException {
+        int threshold = 100;
+        logger.info("Setting the threshold to "+threshold);
+        store.setThreshold(threshold);
+        store.setExtendsTimeMergeBeginningAfterSwitch(2000);
+        SailRepository hybridStore = new SailRepository(store);
+
+        logger.info("Insert some data");
+        int numbeOfTriples = 100;
+        String sparqlQuery = "INSERT DATA { ";
+        for (int i = 0; i < numbeOfTriples; i++) {
+            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  \""+i+"\"@pl . ";
+        }
+        sparqlQuery += "} ";
+        RepositoryConnection connection = hybridStore.getConnection();
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+        connection.commit();
+
+        // START MERGE
+        logger.info("INSERT");
+        sparqlQuery = "INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+
+
+        logger.info("INSERT");
+        sparqlQuery = "DELETE DATA { <http://s0>  <http://p0>  \"0\"@pl . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+
+
+        logger.info("QUERY");
+        sparqlQuery = "SELECT ?o WHERE { <http://s0>  ?p  ?o . } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        assertTrue(tupleQueryResult.hasNext());
+        BindingSet b = tupleQueryResult.next();
+        System.out.println(b.getBinding("o").getValue().toString());
+        assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
+        assertTrue(!tupleQueryResult.hasNext());
+
+        connection.close();
+
+        logger.info("SHUTTING DOWN");
+        hybridStore.shutDown();
+    }
 }
