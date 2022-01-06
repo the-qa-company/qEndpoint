@@ -70,7 +70,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         logger.info("--------------: " + count);
 
         // Merge only if threshold in native store exceeded and not merging with hdt
-        if (count >= hybridStore.getThreshold() && !hybridStore.isMerging()) {
+        if (count >= hybridStore.getThreshold() && !hybridStore.isMergeTriggered) {
             logger.info("Merging..." + count);
             hybridStore.makeMerge();
         }
@@ -344,6 +344,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     }
 
     private void assignBitMapDeletes(TripleID tripleID, Resource subj, IRI pred, Value obj) throws SailException {
+
         if (tripleID.getSubject() != -1 && tripleID.getPredicate() != -1 && tripleID.getObject() != -1) {
             Iterator<TripleID> iter = hybridStore.getHdt().getTriples().searchWithId(tripleID);
             long index = -1;
