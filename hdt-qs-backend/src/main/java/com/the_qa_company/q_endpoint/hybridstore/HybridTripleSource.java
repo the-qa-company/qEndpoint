@@ -84,7 +84,7 @@ public class HybridTripleSource implements TripleSource {
         if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
             logger.debug("Searching over native store");
             count++;
-            if (hybridStore.isMerging()) {
+            if (hybridStore.isMergeTriggered) {
                 // query both native stores
                 logger.debug("Query both RDF4j stores!");
                 CloseableIteration<? extends Statement, SailException> repositoryResult1 =

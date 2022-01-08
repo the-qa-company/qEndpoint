@@ -93,6 +93,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     // flag if the store is merging or not
     private boolean isMerging = false;
+
+    public boolean isMergeTriggered = false;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
     private int extendsTimeMergeBeginning = -1;
     private int extendsTimeMergeBeginningAfterSwitch = -1;
@@ -558,6 +560,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // starts the merging process to merge the delta into HDT
     public void makeMerge() {
         try {
+            this.isMergeTriggered = true;
             logger.info("START MERGE");
 
             MergeRunnable mergeRunnable = new MergeRunnable(locationHdt, this);

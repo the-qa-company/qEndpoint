@@ -3,6 +3,7 @@ package com.the_qa_company.q_endpoint;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
+import org.apache.commons.io.FileDeleteStrategy;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -35,8 +36,7 @@ import org.springframework.util.FileSystemUtils;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
@@ -54,17 +54,17 @@ public class HybridStorePhaseTest {
         HDTSpecification spec = new HDTSpecification();
 //        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         logger.info("Initialize the store ... ");
-        File nativeStore = new File("./tests/native-store/");
-        FileSystemUtils.deleteRecursively(nativeStore);
+        File nativeStore = new File("tests/native-store/");
+        boolean b = FileSystemUtils.deleteRecursively(nativeStore);
         nativeStore.mkdirs();
-        File hdtStore = new File("./tests/hdt-store/");
+        File hdtStore = new File("tests/hdt-store/");
         FileSystemUtils.deleteRecursively(hdtStore);
         hdtStore.mkdirs();
-        File tmp = new File("./tests/hdt-store/temp.nt");
+        File tmp = new File("tests/hdt-store/temp.nt");
         tmp.delete();
         tmp.createNewFile();
-
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex("/Users/Dennis/Downloads/test/hdt-store/temp.nt", true, false, spec);
+        String path = "/Users/alyhdr/Downloads/test/";
+        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex("tests/hdt-store/temp.nt", true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
         store = new HybridStore(
@@ -370,7 +370,7 @@ public class HybridStorePhaseTest {
         int threshold = 100;
         logger.info("Setting the threshold to "+threshold);
         store.setThreshold(threshold);
-        store.setExtendsTimeMergeBeginningAfterSwitch(2000);
+        store.setExtendsTimeMergeBeginningAfterSwitch(2);
         SailRepository hybridStore = new SailRepository(store);
 
         logger.info("Insert some data");
@@ -384,30 +384,57 @@ public class HybridStorePhaseTest {
         Update tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
         connection.commit();
-
         // START MERGE
         logger.info("INSERT");
         sparqlQuery = "INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
+        connection.commit();
+        connection.close();
 
+        logger.info("Wait for the previous merge to finish");
+        Thread.sleep(3000);
 
+        sparqlQuery = "INSERT DATA { ";
+        for (int i = 101; i < numbeOfTriples + 101; i++) {
+            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  \""+i+"\"@pl . ";
+        }
+        sparqlQuery += "} ";
+        connection = hybridStore.getConnection();
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+        connection.commit();
 
+        // 2nd merge should happen here..
         logger.info("INSERT");
-        sparqlQuery = "DELETE DATA { <http://s0>  <http://p0>  \"0\"@pl . } ";
+        sparqlQuery = "INSERT DATA { <http://s200>  <http://p1>  \"1\"@pl . } ";
+        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        tupleQuery.execute();
+        connection.close();
+
+
+        System.out.println("Triples with s200: ");
+        connection = hybridStore.getConnection();
+        sparqlQuery = "SELECT * WHERE { <http://s200>  ?p  ?o . } ";
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+        //tupleQueryResult.stream().forEach(System.out::println);
+
+        logger.info("DELETE");
+        sparqlQuery = "DELETE { ?s <http://p1> ?o } where { ?s  <http://p1>  ?o .} ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
 
 
         logger.info("QUERY");
-        sparqlQuery = "SELECT ?o WHERE { <http://s0>  ?p  ?o . } ";
-        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-        assertTrue(tupleQueryResult.hasNext());
-        BindingSet b = tupleQueryResult.next();
-        System.out.println(b.getBinding("o").getValue().toString());
-        assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
-        assertTrue(!tupleQueryResult.hasNext());
+        sparqlQuery = "SELECT * WHERE { <http://s200>  <http://p1>  \"1\"@pl . } ";
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        tupleQueryResult = tupleQuery1.evaluate();
+        assertFalse(tupleQueryResult.hasNext());
+//        BindingSet b = tupleQueryResult.next();
+//        System.out.println(b.getBinding("o").getValue().toString());
+//        assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
+//        assertTrue(!tupleQueryResult.hasNext());
 
         connection.close();
 

@@ -49,6 +49,15 @@ public class MergeRunnable implements Runnable {
     public synchronized void run() {
         try {
 
+
+            logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
+            // create a lock so that new incoming connections don't do anything
+            Lock lock = hybridStore.lockToPreventNewConnections.createLock("switch-lock");
+            // wait for all running updates to finish
+            logger.info("hereeee");
+            hybridStore.locksHoldByConnections.waitForActiveLocks();
+            logger.info("Can continue");
+
             // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
             hybridStore.initTempDump();
             hybridStore.initTempDeleteArray();
@@ -67,12 +76,6 @@ public class MergeRunnable implements Runnable {
                 }
             }
 
-            logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
-            // create a lock so that new incoming connections don't do anything
-            Lock lock = hybridStore.lockToPreventNewConnections.createLock("switch-lock");
-            // wait for all running updates to finish
-            hybridStore.locksHoldByConnections.waitForActiveLocks();
-            logger.info("Can continue");
 
             // switching the stores
             this.hybridStore.switchStore = !this.hybridStore.switchStore;
@@ -150,7 +153,7 @@ public class MergeRunnable implements Runnable {
             logger.info("Lock released");
 
             this.hybridStore.setMerging(false);
-
+            this.hybridStore.isMergeTriggered = false;
             // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
             if (extendsTimeMergeEnd!=-1){
                 try {
