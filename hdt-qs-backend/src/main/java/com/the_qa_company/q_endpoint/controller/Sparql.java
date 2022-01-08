@@ -3,17 +3,13 @@ package com.the_qa_company.q_endpoint.controller;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResultHandler;
 import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
@@ -32,7 +28,6 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -59,7 +54,6 @@ public class Sparql {
     private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
     private final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
-    private NativeStore nativeStore;
     @Value("${locationHdt}")
     private String locationHdt;
 
@@ -76,8 +70,8 @@ public class Sparql {
     private LuceneSail luceneSail;
     private SailRepository repository;
 
-    public static int count = 0 ;
-    public static int countEquals = 0 ;
+    public static int count = 0;
+    public static int countEquals = 0;
 
     private String sparqlPrefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
             "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
@@ -115,20 +109,20 @@ public class Sparql {
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions(hdtSpec);
 
-            File hdtFile = new File(location+"index.hdt");
-            if(!hdtFile.exists()){
-                File tempRDF = new File(location+"tmp_index.nt");
-                if(!tempRDF.getParentFile().exists())
+            File hdtFile = new File(location + "index.hdt");
+            if (!hdtFile.exists()) {
+                File tempRDF = new File(location + "tmp_index.nt");
+                if (!tempRDF.getParentFile().exists())
                     tempRDF.getParentFile().mkdir();
                 tempRDF.createNewFile();
-                HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(),"uri", RDFNotation.NTRIPLES,spec,null);
-                hdt.saveToHDT(hdtFile.getPath(),null);
+                HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec, null);
+                hdt.saveToHDT(hdtFile.getPath(), null);
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
 
-            hybridStore = new HybridStore(locationHdt,spec,locationNative,false);
+            hybridStore = new HybridStore(locationHdt, spec, locationNative, false);
             hybridStore.setThreshold(threshold);
-            logger.info("Threshold for triples in Native RDF store: "+threshold+" triples");
+            logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
             luceneSail = new LuceneSail();
             luceneSail.setReindexQuery("select ?s ?p ?o where {?s ?p ?o}");
             luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY, location + "/lucene");
@@ -141,9 +135,9 @@ public class Sparql {
             //lucenesail.reindex();
         }
     }
+
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
         initializeHybridStore(locationHdt);
-
 
 
         RepositoryConnection connection = repository.getConnection();
@@ -194,6 +188,7 @@ public class Sparql {
             connection.close();
         }
     }
+
     public String executeXML(String sparqlQuery, int timeout) throws Exception {
         logger.info("Json " + sparqlQuery);
         initializeHybridStore(locationHdt);
@@ -234,10 +229,11 @@ public class Sparql {
             connection.close();
         }
     }
+
     public String executeBinary(String sparqlQuery, int timeout) throws Exception {
         initializeHybridStore(locationHdt);
 
-        sparqlQuery = sparqlPrefixes+sparqlQuery;
+        sparqlQuery = sparqlPrefixes + sparqlQuery;
 
         //logger.info("Json " + sparqlQuery);
 
@@ -307,6 +303,7 @@ public class Sparql {
             connection.close();
         }
     }
+
     public String executeTurtle(String sparqlQuery, int timeout) throws Exception {
         logger.info("Turtle " + sparqlQuery);
         System.out.println("TURTLE !!!!!!!!!!!!");
@@ -333,21 +330,21 @@ public class Sparql {
         }
     }
 
-    public String loadFile(InputStream input, String filename){
+    public String loadFile(InputStream input, String filename) {
         try {
-            Files.deleteIfExists(Paths.get(locationHdt+"index.hdt"));
-            Files.deleteIfExists(Paths.get(locationHdt+"index.hdt.index.v1-1"));
+            Files.deleteIfExists(Paths.get(locationHdt + "index.hdt"));
+            Files.deleteIfExists(Paths.get(locationHdt + "index.hdt.index.v1-1"));
 
-            String rdfInput = locationHdt+filename;
-            String hdtOutput = locationHdt+"index.hdt";
+            String rdfInput = locationHdt + filename;
+            String hdtOutput = locationHdt + "index.hdt";
 
-            Files.copy(input, Paths.get(locationHdt+filename), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
             RDFNotation notation = RDFNotation.guess(rdfInput);
-            String baseURI = "file://"+rdfInput;
+            String baseURI = "file://" + rdfInput;
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions(hdtSpec);
-            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI,notation , spec, null);
-            hdt.saveToHDT(hdtOutput,null);
+            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, notation, spec, null);
+            hdt.saveToHDT(hdtOutput, null);
             initializeHybridStore(locationHdt);
             return "File was loaded successfully...\n";
         } catch (IOException e) {
