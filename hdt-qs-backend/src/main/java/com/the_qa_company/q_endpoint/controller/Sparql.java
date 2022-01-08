@@ -72,8 +72,6 @@ public class Sparql {
     @Value("${hdtSpecification}")
     private String hdtSpec;
 
-    private String hdtindex = "index.hdt";
-
     private HybridStore hybridStore;
     private LuceneSail luceneSail;
     private SailRepository repository;
@@ -110,6 +108,7 @@ public class Sparql {
             "PREFIX prv: <http://www.wikidata.org/prop/reference/value/>\n" +
             "PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>\n" +
             "PREFIX wdno: <http://www.wikidata.org/prop/novalue/> \n";
+
     void initializeHybridStore(String location) throws Exception {
         if (!model.containsKey(location)) {
             model.put(location, null);
@@ -149,47 +148,50 @@ public class Sparql {
 
         RepositoryConnection connection = repository.getConnection();
 
-        sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+\\}", "");
-        //sparqlQuery = sparqlPrefixes+sparqlQuery;
+        try {
+            sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+\\}", "");
+            //sparqlQuery = sparqlPrefixes+sparqlQuery;
 
-        logger.info("Running given sparql query: " + sparqlQuery);
+            logger.info("Running given sparql query: " + sparqlQuery);
 
-        ParsedQuery parsedQuery =
-                QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+            ParsedQuery parsedQuery =
+                    QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
 
-        if (parsedQuery instanceof ParsedTupleQuery) {
-            TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
+            if (parsedQuery instanceof ParsedTupleQuery) {
+                TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
 //            Explanation explain = query.explain(Explanation.Level.Timed);
 //            System.out.println(explain);
 
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
-            query.setMaxExecutionTime(timeout);
-            try {
-                query.evaluate(writer);
-            } catch (QueryEvaluationException q){
-                logger.error("This exception was caught ["+q+"]");
-                q.printStackTrace();
-                return "{\"timeout\":"+timeout+"}";
-                //q.printStackTrace();
-            }
-            finally {
-                connection.close();
-            }
-            return new String(out.toByteArray());
-        } else if (parsedQuery instanceof ParsedBooleanQuery) {
-            BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
-            if (query.evaluate() == true) {
-                connection.close();
-                return "{ \"head\" : { } , \"boolean\" : true }";
-            } else {
-                connection.close();
-                return "{ \"head\" : { } , \"boolean\" : false }";
-            }
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
+                query.setMaxExecutionTime(timeout);
+                try {
+                    query.evaluate(writer);
+                } catch (QueryEvaluationException q) {
+                    logger.error("This exception was caught [" + q + "]");
+                    q.printStackTrace();
+                    return "{\"timeout\":" + timeout + "}";
+                    //q.printStackTrace();
+                } finally {
+                    connection.close();
+                }
+                return new String(out.toByteArray());
+            } else if (parsedQuery instanceof ParsedBooleanQuery) {
+                BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
+                if (query.evaluate() == true) {
+                    connection.close();
+                    return "{ \"head\" : { } , \"boolean\" : true }";
+                } else {
+                    connection.close();
+                    return "{ \"head\" : { } , \"boolean\" : false }";
+                }
 
-        } else {
-            System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
-            return "Bad Request : query not supported ";
+            } else {
+                System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
+                return "Bad Request : query not supported ";
+            }
+        } finally {
+            connection.close();
         }
     }
     public String executeXML(String sparqlQuery, int timeout) throws Exception {
@@ -201,31 +203,35 @@ public class Sparql {
 
 
         RepositoryConnection connection = repository.getConnection();
-        if (parsedQuery instanceof ParsedTupleQuery) {
-            TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            TupleQueryResultHandler writer = new SPARQLResultsXMLWriter(out);
-            query.setMaxExecutionTime(timeout);
-            try {
-                query.evaluate(writer);
-            } catch (QueryEvaluationException q){
-                logger.error("This exception was caught ["+q+"]");
-            }finally {
-                connection.close();
-            }
-            return out.toString("UTF8");
-        } else if (parsedQuery instanceof ParsedBooleanQuery) {
-            BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
-            if (query.evaluate() == true) {
-                connection.close();
-                return "{ \"head\" : { } , \"boolean\" : true }";
+        try {
+            if (parsedQuery instanceof ParsedTupleQuery) {
+                TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                TupleQueryResultHandler writer = new SPARQLResultsXMLWriter(out);
+                query.setMaxExecutionTime(timeout);
+                try {
+                    query.evaluate(writer);
+                } catch (QueryEvaluationException q) {
+                    logger.error("This exception was caught [" + q + "]");
+                } finally {
+                    connection.close();
+                }
+                return out.toString("UTF8");
+            } else if (parsedQuery instanceof ParsedBooleanQuery) {
+                BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+                if (query.evaluate() == true) {
+                    connection.close();
+                    return "{ \"head\" : { } , \"boolean\" : true }";
+                } else {
+                    connection.close();
+                    return "{ \"head\" : { } , \"boolean\" : false }";
+                }
             } else {
-                connection.close();
-                return "{ \"head\" : { } , \"boolean\" : false }";
+                System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
+                return "Bad Request : query not supported ";
             }
-        } else {
-            System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
-            return "Bad Request : query not supported ";
+        } finally {
+            connection.close();
         }
     }
     public String executeBinary(String sparqlQuery, int timeout) throws Exception {
@@ -238,79 +244,68 @@ public class Sparql {
         ParsedQuery parsedQuery =
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
         RepositoryConnection connection = repository.getConnection();
-        if (parsedQuery instanceof ParsedTupleQuery) {
+        try {
+            if (parsedQuery instanceof ParsedTupleQuery) {
 
-            TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            TupleQueryResultHandler writer = new BinaryQueryResultWriterFactory().getWriter(out);
-            query.setMaxExecutionTime(timeout);
+                TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                TupleQueryResultHandler writer = new BinaryQueryResultWriterFactory().getWriter(out);
+                query.setMaxExecutionTime(timeout);
 
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            try {
-                query.evaluate(writer);
-            } catch (QueryEvaluationException q){
-                logger.error("This exception was caught ["+q+"]");
-            }finally {
-                connection.close();
-            }
-            stopwatch.stop(); // optional
-            logger.info("Time elapsed to execute tuple query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                try {
+                    query.evaluate(writer);
+                } catch (QueryEvaluationException q) {
+                    logger.error("This exception was caught [" + q + "]");
+                } finally {
+                    connection.close();
+                }
+                stopwatch.stop(); // optional
+                logger.info("Time elapsed to execute tuple query: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
-            return out.toString("UTF8");
-        } else if (parsedQuery instanceof ParsedBooleanQuery) {
-            BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
-            if (query.evaluate() == true) {
-                connection.close();
-                return "{ \"head\" : { } , \"boolean\" : true }";
+                return out.toString("UTF8");
+            } else if (parsedQuery instanceof ParsedBooleanQuery) {
+                BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+                if (query.evaluate() == true) {
+                    connection.close();
+                    return "{ \"head\" : { } , \"boolean\" : true }";
+                } else {
+                    connection.close();
+                    return "{ \"head\" : { } , \"boolean\" : false }";
+                }
             } else {
-                connection.close();
-                return "{ \"head\" : { } , \"boolean\" : false }";
+                System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
+                return "Bad Request : query not supported ";
             }
-        } else {
-            System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
-            return "Bad Request : query not supported ";
+        } finally {
+            connection.close();
         }
     }
-    public int getCurrentCount() throws Exception {
-        initializeHybridStore(locationHdt);
-        String queryCount = "select (count(*) as ?c) where { ?s ?p ?o}";
 
-        RepositoryConnection connection = repository.getConnection();
-        TupleQuery tupleQuery = connection.prepareTupleQuery(queryCount);
-        try (TupleQueryResult result = tupleQuery.evaluate()) {
-            if(result.hasNext()) {
-                BindingSet bindingSet = result.next();
-                org.eclipse.rdf4j.model.Value valueOfC = bindingSet.getValue("c");
-                connection.close();
-                return Integer.parseInt(valueOfC.stringValue());
-            }
-        }
-        return 0;
-    }
     public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
         initializeHybridStore(locationHdt);
         //logger.info("Running update query:"+sparqlQuery);
         sparqlQuery = sparqlPrefixes + sparqlQuery;
         sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
         SailRepositoryConnection connection = repository.getConnection();
-        connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
+        try {
+            connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
-        Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL,sparqlQuery);
-         preparedUpdate.setMaxExecutionTime(timeout);
+            Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);
+            preparedUpdate.setMaxExecutionTime(timeout);
 
-//        ValueFactory valueFactory = connection.getValueFactory();
-//        SPARQLParser parser = new SPARQLParser();
-//        ParsedUpdate parsedUpdate = parser.parseUpdate(sparqlQuery,(String)null,valueFactory);
-//        Update preparedUpdate = new SailUpdate(parsedUpdate,connection);
-        if(preparedUpdate != null) {
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            preparedUpdate.execute();
-            stopwatch.stop(); // optional
-            logger.info("Time elapsed to execute update query: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            if (preparedUpdate != null) {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                preparedUpdate.execute();
+                stopwatch.stop(); // optional
+                logger.info("Time elapsed to execute update query: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                connection.close();
+                return "OK";
+            }
+            return null;
+        } finally {
             connection.close();
-            return "OK";
         }
-        return null;
     }
     public String executeTurtle(String sparqlQuery, int timeout) throws Exception {
         logger.info("Turtle " + sparqlQuery);
@@ -320,19 +315,24 @@ public class Sparql {
                 QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
         System.out.println(parsedQuery.getClass());
         RepositoryConnection connection = repository.getConnection();
-        if (parsedQuery instanceof ParsedGraphQuery) {
-            GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            RDFHandler turtleWriter = Rio.createWriter(RDFFormat.TURTLE, out);
-            query.evaluate(turtleWriter);
-            query.setMaxExecutionTime(timeout);
+        try {
+            if (parsedQuery instanceof ParsedGraphQuery) {
+                GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                RDFHandler turtleWriter = Rio.createWriter(RDFFormat.TURTLE, out);
+                query.evaluate(turtleWriter);
+                query.setMaxExecutionTime(timeout);
+                connection.close();
+                return out.toString("UTF8");
+            } else {
+                System.out.println("Not knowledgebase yet: query is not construct");
+            }
+            return null;
+        } finally {
             connection.close();
-            return out.toString("UTF8");
-        } else {
-            System.out.println("Not knowledgebase yet: query is not construct");
         }
-        return null;
     }
+
     public String loadFile(InputStream input, String filename){
         try {
             Files.deleteIfExists(Paths.get(locationHdt+"index.hdt"));
@@ -359,17 +359,5 @@ public class Sparql {
         }
         return "error";
     }
-    public void clearAllData(){
-        try {
-            initializeHybridStore(locationHdt);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        repository.getConnection().clear((Resource)null);
-        try {
-            Files.deleteIfExists(Paths.get(locationHdt+"index.hdt"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+
 }
