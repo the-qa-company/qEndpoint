@@ -184,6 +184,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         if (this.inMemDeletes)
             this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), true);
         else {
+            // @todo: these should be recovered from the file if it is there
             this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), this.locationHdt + "triples-delete.arr");
         }
     }
@@ -414,10 +415,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     // creates a new array that marks the deleted triples in the new HDT file
-    public void resetDeleteArray() {
+    public void resetDeleteArray(HDT newHdt) {
         // delete array created at merge time
         try {
-            HDT newHdt = HDTManager.mapIndexedHDT(locationHdt + "new_index.hdt", this.spec);
+
             BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
                     this.locationHdt + "triples-delete-new.arr");
             // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
@@ -453,19 +454,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                     Files.deleteIfExists(Paths.get(this.locationHdt + "triples-delete-new.arr"));
                     Files.deleteIfExists(Paths.get(locationHdt + "index.hdt"));
                     Files.deleteIfExists(Paths.get(locationHdt + "index.hdt.index.v1-1"));
-                    File newHDTFile = new File(locationHdt + "new_index.hdt");
-                    boolean renameNew = newHDTFile.renameTo(new File(locationHdt + "index.hdt"));
-                    File indexFile = new File(locationHdt + "new_index.hdt.index.v1-1");
-                    boolean renamedIndex = indexFile.renameTo(new File(locationHdt + "index.hdt.index.v1-1"));
-                    if (renameNew && renamedIndex) {
-                        logger.info("Replaced the new index by the old index");
-                    }
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-        } catch (IOException | NotFoundException e) {
+        } catch (NotFoundException e) {
             e.printStackTrace();
         }
     }

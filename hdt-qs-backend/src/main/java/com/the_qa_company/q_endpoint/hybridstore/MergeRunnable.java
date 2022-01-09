@@ -128,7 +128,8 @@ public class MergeRunnable implements Runnable {
             file = new File(locationHdt + "triples-delete.arr");
             file.delete();
 
-
+            // index the new file
+            HDT newHdt = HDTManager.mapIndexedHDT(locationHdt + "new_index.hdt", hybridStore.getHDTSpec());
 
             // convert all triples added to the merge store to new IDs of the new generated HDT
             logger.info("ID conversion");
@@ -139,8 +140,13 @@ public class MergeRunnable implements Runnable {
             hybridStore.locksHoldByConnections.waitForActiveLocks();
             logger.info("Can continue");
 
-            this.hybridStore.resetDeleteArray();
-            // @todo: this includes the index creation time, this can be moved outside the lock
+            this.hybridStore.resetDeleteArray(newHdt);
+            // rename new hdt to old hdt name so that they are replaces
+            File newHDTFile = new File(locationHdt + "new_index.hdt");
+            boolean renameNew = newHDTFile.renameTo(new File(locationHdt + "index.hdt"));
+            File indexFile = new File(locationHdt + "new_index.hdt.index.v1-1");
+            boolean renamedIndex = indexFile.renameTo(new File(locationHdt + "index.hdt.index.v1-1"));
+            newHdt.close();
             HDT tempHdt = HDTManager.mapIndexedHDT(locationHdt + "index.hdt", this.hybridStore.getHDTSpec());
             convertOldToNew(this.hybridStore.getHdt(), tempHdt);
             this.hybridStore.resetHDT(tempHdt);
