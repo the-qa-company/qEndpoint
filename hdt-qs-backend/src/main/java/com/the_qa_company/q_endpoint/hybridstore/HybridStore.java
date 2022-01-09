@@ -133,10 +133,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
+        this.locationHdt = locationHdt;
         resetHDT(hdt);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
-        this.locationHdt = locationHdt;
 
         this.inMemDeletes = inMemDeletes;
         this.hdtProps = new HDTProps(this.hdt);
