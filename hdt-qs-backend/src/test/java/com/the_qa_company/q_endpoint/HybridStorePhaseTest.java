@@ -171,16 +171,19 @@ public class HybridStorePhaseTest {
         connection.commit();
 
 
+
         // START MERGE
         // artificially rise the time to merge to 5 seconds
         store.setExtendsTimeMergeBeginningAfterSwitch(2);
         sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
         tupleQuery = connection.prepareUpdate(sparqlQuery);
         tupleQuery.execute();
-        Thread.sleep(100);
+        connection.close();
+        Thread.sleep(500);
         assertEquals(true,store.isMerging());
 
         logger.info("QUERY 1");
+        connection = hybridStore.getConnection();
         for (int i = 0; i < numbeOfTriples; i++) {
             sparqlQuery = "SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ";
             TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
