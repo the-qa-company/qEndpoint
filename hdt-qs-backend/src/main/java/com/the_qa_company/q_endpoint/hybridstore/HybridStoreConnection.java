@@ -36,8 +36,10 @@ public class HybridStoreConnection extends SailSourceConnection {
     private final HybridTripleSource tripleSource;
     private final HybridQueryPreparer queryPreparer;
     HybridStore hybridStore;
-    SailConnection connA;
-    SailConnection connB;
+    SailConnection connA_read;
+    SailConnection connB_read;
+    SailConnection connA_write;
+    SailConnection connB_write;
     private Lock connectionLock;
 
     public HybridStoreConnection(HybridStore hybridStore) {
@@ -51,8 +53,10 @@ public class HybridStoreConnection extends SailSourceConnection {
         }
         this.connectionLock = this.hybridStore.locksHoldByConnections.createLock("connection-lock");
 
-        this.connA = hybridStore.getNativeStoreA().getConnection();
-        this.connB = hybridStore.getNativeStoreB().getConnection();
+        this.connA_read = hybridStore.getNativeStoreA().getConnection();
+        this.connB_read = hybridStore.getNativeStoreB().getConnection();
+        this.connA_write = hybridStore.getNativeStoreA().getConnection();
+        this.connB_write = hybridStore.getNativeStoreB().getConnection();
         // each hybridStoreConnection has a triple source ( ideally it should be in the query preparer as in rdf4j..)
         this.tripleSource = new HybridTripleSource(this, hybridStore);
         this.queryPreparer = new HybridQueryPreparer(hybridStore, tripleSource);
@@ -74,19 +78,8 @@ public class HybridStoreConnection extends SailSourceConnection {
             logger.info("Merging..." + count);
             hybridStore.makeMerge();
         }
-        this.connA.begin();
-        this.connB.begin();
-    }
-
-    private void getCardinality() {
-        ParsedTupleQuery query = QueryParserUtil.parseTupleQuery(QueryLanguage.SPARQL,
-                "select * where {?a ?b ?c. }", null);
-
-        TupleExpr expr = query.getTupleExpr();
-        double cardinality = this.hybridStore.getCurrentSaliStore().getEvaluationStatistics().getCardinality(
-                expr
-        );
-        logger.info("Cardinality = " + cardinality);
+        this.connA_write.begin();
+        this.connB_write.begin();
     }
 
     // for SPARQL queries
@@ -112,16 +105,18 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     public void setNamespaceInternal(String prefix, String name) throws SailException {
 //    super.setNamespaceInternal(prefix,name);
-        this.getCurrentConnection().setNamespace(prefix, name);
+        this.getCurrentConnectionWrite().setNamespace(prefix, name);
+        //this.getCurrentConnectionRead().setNamespace(prefix, name);
     }
 
     @Override
     public boolean isActive() throws UnknownSailTransactionStateException {
-        return this.getCurrentConnection().isActive();
+        return this.connA_write.isActive() || this.connB_write.isActive();
     }
 
     @Override
     public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+//        System.out.println(subj.stringValue()+" - "+ pred.stringValue() + " - "+ obj.stringValue());
         Resource newSubj;
         IRI newPred;
         Value newObj;
@@ -145,23 +140,26 @@ public class HybridStoreConnection extends SailSourceConnection {
             newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("Adding triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+        logger.debug("Adding triple {} {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         if (!tripleExistInHDT(tripleID)) {
             // here we need uris using the internal IDs
-            getCurrentConnection().addStatement(
+            getCurrentConnectionWrite().addStatement(
                     newSubj,
                     newPred,
                     newObj,
                     contexts
             );
 
-            // modify the bitmaps if the IRIs used are in HDT
+//            // modify the bitmaps if the IRIs used are in HDT
             this.hybridStore.modifyBitmaps(subjectID, predicateID, objectID);
             // increase the number of statements
             this.hybridStore.triplesCount++;
+            if (this.hybridStore.triplesCount % 100 == 0){
+                System.out.println(this.hybridStore.triplesCount);
+            }
         }
     }
 
@@ -169,77 +167,80 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
             throws SailException {
-
-        this.getCurrentConnection().addStatement(subj, pred, obj, contexts);
+        this.getCurrentConnectionWrite().addStatement(subj, pred, obj, contexts);
     }
 
     @Override
     public void clearNamespacesInternal() throws SailException {
         //super.clearNamespacesInternal();
-        getCurrentConnection().clearNamespaces();
+        getCurrentConnectionWrite().clearNamespaces();
     }
 
     @Override
     public void removeNamespaceInternal(String prefix) throws SailException {
         //super.removeNamespaceInternal(prefix);
-        getCurrentConnection().removeNamespace(prefix);
+        getCurrentConnectionWrite().removeNamespace(prefix);
     }
 
     @Override
     protected void clearInternal(Resource... contexts) throws SailException {
-        getCurrentConnection().clear(contexts);
+        getCurrentConnectionWrite().clear(contexts);
     }
 
     @Override
     protected CloseableIteration<? extends Namespace, SailException> getNamespacesInternal()
             throws SailException {
-        return getCurrentConnection().getNamespaces();
+        return getCurrentConnectionRead().getNamespaces();
     }
 
     @Override
     protected String getNamespaceInternal(String prefix) throws SailException {
-        return getCurrentConnection().getNamespace(prefix);
+        return getCurrentConnectionRead().getNamespace(prefix);
     }
 
     @Override
     protected void commitInternal() throws SailException {
         super.commitInternal();
-        this.connA.commit();
-        this.connB.commit();
+        this.connA_write.commit();
+        this.connB_write.commit();
     }
 
     @Override
     public void flush() throws SailException {
         super.flush();
-        this.connA.flush();
-        this.connB.flush();
+        this.connA_write.flush();
+        this.connB_write.flush();
     }
 
     @Override
     public void flushUpdates() throws SailException {
         super.flushUpdates();
-        this.connA.flush();
-        this.connB.flush();
+        this.connA_write.flush();
+        this.connB_write.flush();
     }
 
     @Override
     public void startUpdate(UpdateContext op) throws SailException {
         // @todo: is this not strange that both are prepared?
-        this.connA.startUpdate(op);
-        this.connB.startUpdate(op);
-
+        this.connA_write.startUpdate(op);
+        this.connB_write.startUpdate(op);
+        this.connA_read.close();
+        this.connB_read.close();
+        this.connA_read = hybridStore.getNativeStoreA().getConnection();
+        this.connB_read = hybridStore.getNativeStoreB().getConnection();
     }
 
     @Override
     protected void endUpdateInternal(UpdateContext op) throws SailException {
         // @todo: is this not strange that both are prepared?
-        this.connA.endUpdate(op);
-        this.connB.endUpdate(op);
+        this.connA_write.endUpdate(op);
+        this.connB_write.endUpdate(op);
+        logger.debug("Update ended");
     }
 
     @Override
     protected void rollbackInternal() throws SailException {
-        getCurrentConnection().rollback();
+        getCurrentConnectionWrite().rollback();
     }
 
     @Override
@@ -252,22 +253,24 @@ public class HybridStoreConnection extends SailSourceConnection {
         logger.info("Number of times native store was called:" + this.tripleSource.getCount());
         super.closeInternal();
         //this.nativeStoreConnection.close();
-        this.connA.close();
-        this.connB.close();
+        this.connA_read.close();
+        this.connB_read.close();
+        this.connA_write.close();
+        this.connB_write.close();
         this.connectionLock.release();
     }
 
     @Override
     protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal()
             throws SailException {
-        return getCurrentConnection().getContextIDs();
+        return getCurrentConnectionRead().getContextIDs();
     }
 
     @Override
     protected long sizeInternal(Resource... contexts) throws SailException {
         //return hybridStore.getNativeStoreConnection().size(contexts);
-        long sizeNativeA = connA.size(contexts);
-        long sizeNativeB = connB.size(contexts);
+        long sizeNativeA = connA_read.size(contexts);
+        long sizeNativeB = connB_read.size(contexts);
         long sizeHdt = this.hybridStore.getHdt().getTriples().getNumberOfElements();
 
         long sizeDeleted = this.hybridStore.getDeleteBitMap().countOnes();
@@ -308,8 +311,8 @@ public class HybridStoreConnection extends SailSourceConnection {
         logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // remove statement from both stores... A and B
-        this.connA.removeStatement(op, newSubj, newPred, newObj, contexts);
-        this.connB.removeStatement(op, newSubj, newPred, newObj, contexts);
+        this.connA_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+        this.connB_write.removeStatement(op, newSubj, newPred, newObj, contexts);
 //        this.hybridStore.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
@@ -370,22 +373,32 @@ public class HybridStoreConnection extends SailSourceConnection {
         }
     }
 
-    public SailConnection getCurrentConnection() {
+    public SailConnection getCurrentConnectionRead() {
         if (hybridStore.switchStore) {
             logger.debug("STORE B");
-            return connB;
+            return connB_read;
         } else {
             logger.debug("STORE A");
-            return connA;
+            return connA_read;
         }
     }
 
-    public SailConnection getConnA() {
-        return connA;
+    public SailConnection getCurrentConnectionWrite() {
+        if (hybridStore.switchStore) {
+            logger.debug("STORE B");
+            return connB_write;
+        } else {
+            logger.debug("STORE A");
+            return connA_write;
+        }
     }
 
-    public SailConnection getConnB() {
-        return connB;
+    public SailConnection getConnA_read() {
+        return connA_read;
+    }
+
+    public SailConnection getConnB_read() {
+        return connB_read;
     }
 
     // @todo: this logic is already present somewhere else should be moved to the store

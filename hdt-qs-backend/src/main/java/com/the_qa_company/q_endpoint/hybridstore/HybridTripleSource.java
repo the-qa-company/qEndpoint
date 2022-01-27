@@ -10,7 +10,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.sail.SailException;
 import org.rdfhdt.hdt.enums.TripleComponentOrder;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
@@ -88,18 +87,18 @@ public class HybridTripleSource implements TripleSource {
                 // query both native stores
                 logger.debug("Query both RDF4j stores!");
                 CloseableIteration<? extends Statement, SailException> repositoryResult1 =
-                        this.hybridStoreConnection.getConnA().getStatements(
+                        this.hybridStoreConnection.getConnA_read().getStatements(
                                 newSubj, newPred, newObj, false, resources
                         );
                 CloseableIteration<? extends Statement, SailException> repositoryResult2 =
-                        this.hybridStoreConnection.getConnB().getStatements(
+                        this.hybridStoreConnection.getConnB_read().getStatements(
                                 newSubj, newPred, newObj, false, resources
                         );
                 repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
             } else {
                 logger.debug("Query only one RDF4j stores!");
-                repositoryResult = this.hybridStoreConnection.getCurrentConnection().getStatements(
+                repositoryResult = this.hybridStoreConnection.getCurrentConnectionRead().getStatements(
                         newSubj, newPred, newObj, false, resources
                 );
             }

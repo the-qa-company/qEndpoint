@@ -132,7 +132,7 @@ public class Sparql {
             luceneSail.initialize();
             repository = new SailRepository(luceneSail);
             repository.init();
-            luceneSail.reindex();
+//            luceneSail.reindex();
         }
     }
 
