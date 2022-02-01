@@ -27,12 +27,36 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 
-public class MergeRunnable implements Runnable {
-
+public class MergeRunnable {
+    @FunctionalInterface
+    private interface ExceptionRunnable {
+        void run(boolean restarting) throws InterruptedException, IOException;
+    }
+    private Runnable stopMergeIfException(final boolean restart, ExceptionRunnable runnable) {
+        return () -> {
+            try {
+                runnable.run(restart);
+            } catch (IOException e) {
+                hybridStore.setMerging(false);
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+    }
+    private static void delete(String file) {
+        if (!new File(file).delete()) {
+            logger.warn("Can't delete the file: " + file);
+        }
+    }
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
 
     private final String locationHdt;
+    private final String rdfInput;
+    private final String hdtOutput;
+    private final String previousMergeFile;
 
     private final HybridStore hybridStore;
     // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
@@ -42,149 +66,226 @@ public class MergeRunnable implements Runnable {
 
 
     public MergeRunnable(String locationHdt, HybridStore hybridStore) {
-        this.locationHdt = locationHdt;
         this.hybridStore = hybridStore;
+        this.locationHdt = locationHdt;
+        rdfInput = locationHdt + "temp.nt";
+        hdtOutput = locationHdt + "temp.hdt";
+        previousMergeFile = locationHdt + "previous_merge";
     }
 
-    public synchronized void run() {
-        try {
+    private Lock createSwitchLock() {
+        return hybridStore.lockToPreventNewConnections.createLock("switch-lock");
+    }
 
+    private Lock createTranslateLock() {
+        return hybridStore.lockToPreventNewConnections.createLock("translate-lock");
+    }
 
-            logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
-            // create a lock so that new incoming connections don't do anything
-            Lock lock = hybridStore.lockToPreventNewConnections.createLock("switch-lock");
-            // wait for all running updates to finish
-            logger.info("hereeee");
-            hybridStore.locksHoldByConnections.waitForActiveLocks();
-            logger.info("Can continue");
+    private void waitForActiveConnections() throws InterruptedException{
+        hybridStore.locksHoldByConnections.waitForActiveLocks();
+    }
 
-            // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
-            hybridStore.initTempDump();
-            hybridStore.initTempDeleteArray();
+    /**
+     * @return a new thread to merge
+     */
+    public Thread createThread() {
+        return new Thread(stopMergeIfException(false, this::runAtStep1));
+    }
 
-            // mark in the store that the merge process started
-            hybridStore.setMerging(true);
-
-            // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
-            if (extendsTimeMergeBeginning!=-1){
-                try {
-                    logger.debug("It is sleeping extendsTimeMergeBeginning "+extendsTimeMergeBeginning);
-                    Thread.sleep(extendsTimeMergeBeginning*1000);
-                    logger.debug("Fnished sleeping extendsTimeMergeBeginning");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-
-            // switching the stores
-            this.hybridStore.switchStore = !this.hybridStore.switchStore;
-
-            // write the switchStore value to disk in case, something crash we can recover
-            this.hybridStore.writeWhichStore();
-
-            // reset the count of triples to 0 after switching the stores
-            this.hybridStore.setTriplesCount(0);
-
-            // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
-            if (extendsTimeMergeBeginningAfterSwitch!=-1){
-                try {
-                    logger.debug("It is sleeping extendsTimeMergeBeginningAfterSwitch "+extendsTimeMergeBeginningAfterSwitch);
-                    Thread.sleep(extendsTimeMergeBeginningAfterSwitch*1000);
-                    logger.debug("Fnished sleeping extendsTimeMergeBeginningAfterSwitch");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            String rdfInput = locationHdt + "temp.nt";
-            String hdtOutput = locationHdt + "temp.hdt";
-            // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo: a lock is needed here
-            Files.copy(Paths.get(locationHdt + "triples-delete.arr"),
-                    Paths.get(locationHdt + "triples-delete-cpy.arr"));
-            // release the lock so that the connections can continue
-            lock.release();
-            logger.info("Switch-Lock released");
-
-            // diff hdt indexes...
-            logger.info("HDT Diff");
-            diffIndexes(locationHdt + "index.hdt", locationHdt + "triples-delete-cpy.arr");
-            logger.info("Dump all triples from the native store to file");
-            RepositoryConnection nativeStoreConnection = hybridStore.getConnectionToFreezedStore();
-            writeTempFile(nativeStoreConnection, rdfInput);
-            nativeStoreConnection.commit();
-            nativeStoreConnection.close();
-            logger.info("Create HDT index from dumped file");
-            createHDTDump(rdfInput, hdtOutput);
-            // cat the original index and the temp index
-            catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
-            logger.info("CAT completed!!!!! " + locationHdt);
-            File file = new File(rdfInput);
-            file.delete();
-            file = new File(hdtOutput);
-            file.delete();
-            file = new File(locationHdt + "triples-delete-cpy.arr");
-            file.delete();
-            file = new File(locationHdt + "triples-delete.arr");
-            file.delete();
-
-            // index the new file
-            HDT newHdt = HDTManager.mapIndexedHDT(locationHdt + "new_index.hdt", hybridStore.getHDTSpec());
-
-            // convert all triples added to the merge store to new IDs of the new generated HDT
-            logger.info("ID conversion");
-            // create a lock so that new incoming connections don't do anything
-            lock = hybridStore.lockToPreventNewConnections.createLock("translate-lock");
-            // wait for all running updates to finish
-            logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
-            hybridStore.locksHoldByConnections.waitForActiveLocks();
-            logger.info("Can continue");
-
-            this.hybridStore.resetDeleteArray(newHdt);
-            // rename new hdt to old hdt name so that they are replaces
-            File newHDTFile = new File(locationHdt + "new_index.hdt");
-            boolean renameNew = newHDTFile.renameTo(new File(locationHdt + "index.hdt"));
-            File indexFile = new File(locationHdt + "new_index.hdt.index.v1-1");
-            boolean renamedIndex = indexFile.renameTo(new File(locationHdt + "index.hdt.index.v1-1"));
-            newHdt.close();
-            HDT tempHdt = HDTManager.mapIndexedHDT(locationHdt + "index.hdt", this.hybridStore.getHDTSpec());
-            convertOldToNew(this.hybridStore.getHdt(), tempHdt);
-            this.hybridStore.resetHDT(tempHdt);
-
-            // mark the triples as deleted from the temp file stored while merge
-            this.hybridStore.markDeletedTempTriples();
-            logger.info("Releasing lock for ID conversion ....");
-            lock.release();
-            logger.info("Translate-Lock released");
-            logger.info("Lock released");
-
-            this.hybridStore.setMerging(false);
-            this.hybridStore.isMergeTriggered = false;
-            // extends the time of the merge, this is for testing purposes, extendsTimeMerge should be -1 in production
-            if (extendsTimeMergeEnd!=-1){
-                try {
-                    logger.debug("It is sleeping extendsTimeMergeEnd "+extendsTimeMergeEnd);
-                    Thread.sleep(extendsTimeMergeEnd*1000);
-                    logger.debug("Finshed sleeping extendsTimeMergeEnd");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (IOException e) {
-            hybridStore.setMerging(false);
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    /**
+     * @return an optional thread to restart a previous merge (if any)
+     */
+    public Optional<Thread> createRestartThread() {
+        // @todo: check previous step with into previousMergeFile, return a thread with the runStep
+        switch (getRestartStep()) {
+        case 0:
+            return Optional.of(new Thread(stopMergeIfException(true, this::runAtStep1)));
+        case 1:
+            return Optional.of(new Thread(stopMergeIfException(true, this::runAtStep2)));
+        case 2:
+            return Optional.of(new Thread(stopMergeIfException(true, this::runAtStep3)));
+        default:
+            return Optional.empty();
         }
+    }
+
+    private void markRestartStepCompleted(int step) throws IOException {
+        Files.writeString(Paths.get(previousMergeFile), String.valueOf(step));
+    }
+
+    private int getRestartStep() {
+        try {
+            String text = Files.readString(Paths.get(previousMergeFile));
+            return Integer.parseInt(text.trim());
+        } catch (IOException | NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private void completedMerge() throws IOException{
+        Files.delete(Paths.get(previousMergeFile));
+    }
+
+    private void sleep(int seconds, String title) {
+        if (seconds != -1){
+            try {
+                logger.debug("It is sleeping " + title + " " + seconds);
+                Thread.sleep(seconds * 1000L);
+                logger.debug("Finished sleeping " + title);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private synchronized void runAtStep1(boolean restarting) throws InterruptedException, IOException {
+        step1(restarting);
+    }
+
+    private void step1(boolean restarting) throws InterruptedException, IOException {
+        markRestartStepCompleted(0);
+        logger.info("Start Step 1");
+        logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
+        // create a lock so that new incoming connections don't do anything
+        Lock switchLock = createSwitchLock();
+        // wait for all running updates to finish
+        logger.info("hereeee");
+        waitForActiveConnections();
+        logger.info("Can continue");
+
+        // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
+        hybridStore.initTempDump(restarting);
+        hybridStore.initTempDeleteArray();
+
+        // mark in the store that the merge process started
+        hybridStore.setMerging(true);
+
+        sleep(extendsTimeMergeBeginning, "extendsTimeMergeBeginning");
+
+        // switching the stores
+        this.hybridStore.switchStore = !this.hybridStore.switchStore;
+
+        // write the switchStore value to disk in case, something crash we can recover
+        this.hybridStore.writeWhichStore();
+
+        // reset the count of triples to 0 after switching the stores
+        this.hybridStore.setTriplesCount(0);
+
+        sleep(extendsTimeMergeBeginningAfterSwitch, "extendsTimeMergeBeginningAfterSwitch");
+
+        // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo: a lock is needed here
+        Files.copy(Paths.get(locationHdt + "triples-delete.arr"),
+                Paths.get(locationHdt + "triples-delete-cpy.arr"));
+        // release the lock so that the connections can continue
+        switchLock.release();
+        logger.info("Switch-Lock released");
+        logger.info("End Step 1");
+        markRestartStepCompleted(2);
+        step2(false);
+    }
+
+    private synchronized void runAtStep2(boolean restarting) throws InterruptedException, IOException {
+        reloadDataFromStep1();
+        step2(restarting);
+    }
+
+    private void reloadDataFromStep1() {
+        // @todo: reload data from step 1
+        hybridStore.initTempDump(true);
+        hybridStore.initTempDeleteArray();
+        hybridStore.setMerging(true);
+    }
+
+    private synchronized void step2(boolean restarting) throws InterruptedException, IOException {
+        logger.info("Start Step 2");
+        // diff hdt indexes...
+        logger.info("HDT Diff");
+        diffIndexes(locationHdt + "index.hdt", locationHdt + "triples-delete-cpy.arr");
+        logger.info("Dump all triples from the native store to file");
+        RepositoryConnection nativeStoreConnection = hybridStore.getConnectionToFreezedStore();
+        writeTempFile(nativeStoreConnection, rdfInput);
+        nativeStoreConnection.commit();
+        nativeStoreConnection.close();
+        logger.info("Create HDT index from dumped file");
+        createHDTDump(rdfInput, hdtOutput);
+        // cat the original index and the temp index
+        catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
+        logger.info("CAT completed!!!!! " + locationHdt);
+
+        markRestartStepCompleted(3);
+
+        // delete the file after the mark if the shutdown occurs during the deletes
+        delete(rdfInput);
+        delete(hdtOutput);
+        delete(locationHdt + "triples-delete-cpy.arr");
+        delete(locationHdt + "triples-delete.arr");
+
+        logger.info("End Step 2");
+
+        step3(false);
+    }
+
+    private synchronized void runAtStep3(boolean restarting) throws InterruptedException, IOException {
+        reloadDataFromStep2();
+        step3(restarting);
+    }
+
+    private void reloadDataFromStep2() {
+        reloadDataFromStep1();
+        // @todo: reload data from step 2
+    }
+
+    private void step3(boolean restarting) throws InterruptedException, IOException {
+        logger.info("Start Step 3");
+        // index the new file
+        HDT newHdt = HDTManager.mapIndexedHDT(locationHdt + "new_index.hdt", hybridStore.getHDTSpec());
+
+        // convert all triples added to the merge store to new IDs of the new generated HDT
+        logger.info("ID conversion");
+        // create a lock so that new incoming connections don't do anything
+        Lock translateLock = createTranslateLock();
+        // wait for all running updates to finish
+        logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
+        waitForActiveConnections();
+        logger.info("Can continue");
+
+        this.hybridStore.resetDeleteArray(newHdt);
+        newHdt.close();
+
+
+        // rename new hdt to old hdt name so that they are replaces
+        File newHDTFile = new File(locationHdt + "new_index.hdt");
+        boolean renameNew = newHDTFile.renameTo(new File(locationHdt + "index.hdt"));
+        File indexFile = new File(locationHdt + "new_index.hdt.index.v1-1");
+        boolean renamedIndex = indexFile.renameTo(new File(locationHdt + "index.hdt.index.v1-1"));
+
+
+
+        HDT tempHdt = HDTManager.mapIndexedHDT(locationHdt + "index.hdt", this.hybridStore.getHDTSpec());
+        convertOldToNew(this.hybridStore.getHdt(), tempHdt);
+        this.hybridStore.resetHDT(tempHdt);
+
+        // mark the triples as deleted from the temp file stored while merge
+        this.hybridStore.markDeletedTempTriples();
+        logger.info("Releasing lock for ID conversion ....");
+        translateLock.release();
+        logger.info("Translate-Lock released");
+        logger.info("Lock released");
+
+        this.hybridStore.setMerging(false);
+        this.hybridStore.isMergeTriggered = false;
+
+        sleep(extendsTimeMergeEnd, "extendsTimeMergeEnd");
+
+        completedMerge();
         logger.info("Merge finished");
     }
-
 
     private void diffIndexes(String hdtInput1, String bitArray) {
         String hdtOutput = locationHdt + "new_index_diff.hdt";
         try {
-            File filex = new File(hdtOutput);
-            File theDir = new File(filex.getAbsolutePath() + "_tmp");
+            File hdtOutputFile = new File(hdtOutput);
+            File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
             theDir.mkdirs();
             String location = theDir.getAbsolutePath() + "/";
             // @todo: should we not use the already mapped HDT file instead of remapping
@@ -353,6 +454,18 @@ public class MergeRunnable implements Runnable {
             e.printStackTrace();
             hybridStore.setMerging(false);
         }
+    }
+
+    public int getExtendsTimeMergeBeginning() {
+        return extendsTimeMergeBeginning;
+    }
+
+    public int getExtendsTimeMergeBeginningAfterSwitch() {
+        return extendsTimeMergeBeginningAfterSwitch;
+    }
+
+    public int getExtendsTimeMergeEnd() {
+        return extendsTimeMergeEnd;
     }
 
     public void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {

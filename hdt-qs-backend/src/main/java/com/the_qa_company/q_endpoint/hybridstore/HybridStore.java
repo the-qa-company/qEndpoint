@@ -29,7 +29,6 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
@@ -51,7 +50,6 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
@@ -59,7 +57,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // HDT file containing the data
     private HDT hdt;
     // location of the HDT file
-    private String locationHdt;
+    private final String locationHdt;
     // specs of the HDT file
     private HDTSpecification spec;
     private HDTConverter hdtConverter;
@@ -95,10 +93,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private boolean isMerging = false;
 
     public boolean isMergeTriggered = false;
-    // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
-    private int extendsTimeMergeBeginning = -1;
-    private int extendsTimeMergeBeginningAfterSwitch = -1;
-    private int extendsTimeMergeEnd = -1;
 
     // threshold above which the merge process is starting
     private int threshold;
@@ -115,6 +109,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // variable counting the current number of triples in the delta
     public long triplesCount;
 
+    private final MergeRunnable mergeRunnable;
     private Thread mergerThread;
 
     public HybridStore(HDT hdt, String locationHdt, String locationNative, boolean inMemDeletes) {
@@ -134,6 +129,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreB.init();
         checkWhichStore();
         this.locationHdt = locationHdt;
+        this.mergeRunnable = new MergeRunnable(locationHdt, this);
         resetHDT(hdt);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
@@ -148,6 +144,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         SailConnection connection = getChangingStore().getConnection();
         this.triplesCount = connection.size();
         connection.close();
+        checkPreviousMerge();
     }
 
     public HybridStore(String locationHdt, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
@@ -395,16 +392,17 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                 this.locationHdt + "triples-delete-temp.arr");
     }
 
-    /*
-        Init temp file to store triples to be deleted from native store while merging
+    /**
+     * Init temp file to store triples to be deleted from native store while merging
+     * @param isRestarting if we should append to previous data
      */
-    public void initTempDump() {
+    public void initTempDump(boolean isRestarting) {
         FileOutputStream out = null;
         try {
             File file = new File(locationNative + "tempTriples.nt");
             if (!file.exists())
                 file.createNewFile();
-            out = new FileOutputStream(file);
+            out = new FileOutputStream(file, isRestarting);
             this.rdfWriterTempTriples = Rio.createWriter(RDFFormat.NTRIPLES, out);
             this.rdfWriterTempTriples.startRDF();
         } catch (FileNotFoundException e) {
@@ -552,21 +550,34 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // should not be called from the outside because it's internals, the case is handled in the HybridStoreConnection when
     // the store is being merged we don't call it again..
     // starts the merging process to merge the delta into HDT
-    public void makeMerge() {
-        try {
-            this.isMergeTriggered = true;
-            logger.info("START MERGE");
-
-            MergeRunnable mergeRunnable = new MergeRunnable(locationHdt, this);
-            mergeRunnable.setExtendsTimeMergeBeginning(extendsTimeMergeBeginning);
-            mergeRunnable.setExtendsTimeMergeBeginningAfterSwitch(extendsTimeMergeBeginningAfterSwitch);
-            mergeRunnable.setExtendsTimeMergeEnd(extendsTimeMergeEnd);
-            mergerThread = new Thread(mergeRunnable);
-            mergerThread.start();
-            logger.info("MERGE THREAD LUNCHED");
-        } catch (Exception e) {
-            e.printStackTrace();
+    public void mergeIfRequired() {
+        logger.info("--------------: " + triplesCount);
+        // Merge only if threshold in native store exceeded and not merging with hdt
+        if (triplesCount >= getThreshold() && !isMergeTriggered) {
+            logger.info("Merging..." + triplesCount);
+            try {
+                this.isMergeTriggered = true;
+                logger.info("START MERGE");
+                mergerThread = mergeRunnable.createThread();
+                mergerThread.start();
+                logger.info("MERGE THREAD LAUNCHED");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    /**
+     * check if a merge was already active before previous shutdown
+     */
+    private void checkPreviousMerge() {
+        logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
+        mergeRunnable.createRestartThread().ifPresent(thread -> {
+            isMergeTriggered = true;
+            mergerThread = thread;
+            thread.start();
+            logger.info("MERGE RESTART THREAD LAUNCHED");
+        });
     }
 
     public HDTConverter getHdtConverter() {
@@ -605,28 +616,30 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.spec = spec;
     }
 
-    public int getExtendsTimeMergeBeginning() {
-        return extendsTimeMergeBeginning;
-    }
+    public MergeRunnable getMergeRunnable() { return mergeRunnable; }
 
-    public void setExtendsTimeMergeBeginning(int extendsTimeMerge) {
-        this.extendsTimeMergeBeginning = extendsTimeMerge;
+
+    public int getExtendsTimeMergeBeginning() {
+        return getMergeRunnable().getExtendsTimeMergeBeginning();
     }
 
     public int getExtendsTimeMergeBeginningAfterSwitch() {
-        return extendsTimeMergeBeginningAfterSwitch;
-    }
-
-    public void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
-        this.extendsTimeMergeBeginningAfterSwitch = extendsTimeMergeBeginningAfterSwitch;
+        return getMergeRunnable().getExtendsTimeMergeBeginningAfterSwitch();
     }
 
     public int getExtendsTimeMergeEnd() {
-        return extendsTimeMergeEnd;
+        return getMergeRunnable().getExtendsTimeMergeEnd();
+    }
+
+    public void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {
+        getMergeRunnable().setExtendsTimeMergeBeginning(extendsTimeMergeBeginning);
+    }
+
+    public void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
+        getMergeRunnable().setExtendsTimeMergeBeginningAfterSwitch(extendsTimeMergeBeginningAfterSwitch);
     }
 
     public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
-        this.extendsTimeMergeEnd = extendsTimeMergeEnd;
+        getMergeRunnable().setExtendsTimeMergeEnd(extendsTimeMergeEnd);
     }
-
 }

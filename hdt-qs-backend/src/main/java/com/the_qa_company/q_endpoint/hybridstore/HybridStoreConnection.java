@@ -11,11 +11,8 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
-import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
-import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -66,18 +63,10 @@ public class HybridStoreConnection extends SailSourceConnection {
     public void begin() throws SailException {
         logger.info("Begin connection transaction");
 
-
         super.begin();
 
-        long count = this.hybridStore.triplesCount;
+        hybridStore.mergeIfRequired();
 
-        logger.info("--------------: " + count);
-
-        // Merge only if threshold in native store exceeded and not merging with hdt
-        if (count >= hybridStore.getThreshold() && !hybridStore.isMergeTriggered) {
-            logger.info("Merging..." + count);
-            hybridStore.makeMerge();
-        }
         this.connA_write.begin();
         this.connB_write.begin();
     }
