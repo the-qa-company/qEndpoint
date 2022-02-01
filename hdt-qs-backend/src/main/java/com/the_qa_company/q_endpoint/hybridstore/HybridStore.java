@@ -422,7 +422,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
                     this.locationHdt + "triples-delete-new.arr");
             // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
-            for (int i = 0; i < tempdeleteBitMap.getNumbits(); i++) {
+            for (long i = 0; i < tempdeleteBitMap.getNumbits(); i++) {
                 if (tempdeleteBitMap.access(i)) { // means that a triple has been deleted during merge
                     // find the deleted triple in the old HDT index
                     TripleID tripleID = this.hdt.getTriples().find(i + 1);
