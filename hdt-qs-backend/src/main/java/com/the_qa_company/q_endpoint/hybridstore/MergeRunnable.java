@@ -4,6 +4,7 @@ import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
+import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -26,108 +27,266 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
 public class MergeRunnable {
     @FunctionalInterface
-    private interface ExceptionRunnable {
-        void run(boolean restarting) throws InterruptedException, IOException;
+    private interface MergeThreadRunnable {
+        void run(boolean restarting, Lock lock) throws InterruptedException, IOException;
     }
-    private Runnable stopMergeIfException(final boolean restart, ExceptionRunnable runnable) {
-        return () -> {
-            try {
-                runnable.run(restart);
-            } catch (IOException e) {
-                hybridStore.setMerging(false);
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+    @FunctionalInterface
+    private interface MergeThreadReloader {
+        Lock reload();
+    }
+
+    /////// this is for testing purposes ///////
+    // it extends the merging process to this amount of seconds. If -1 then it is not set.
+    private static int extendsTimeMergeBeginning = -1;
+    private static int extendsTimeMergeBeginningAfterSwitch = -1;
+    private static int extendsTimeMergeEnd = -1;
+    // If stopPoint != null, it will throw a MergeRunnableStopPoint#MergeRunnableStopException
+    private static MergeRunnableStopPoint stopPoint;
+    // store last merge exception
+    private static final LockManager MERGE_THREAD_LOCK_MANAGER = new LockManager();
+    private static boolean debugMergeThread = false;
+    private static Exception debugLastMergeException;
+
+    public static int getExtendsTimeMergeBeginning() {
+        return extendsTimeMergeBeginning;
+    }
+
+    public static int getExtendsTimeMergeBeginningAfterSwitch() {
+        return extendsTimeMergeBeginningAfterSwitch;
+    }
+
+    public static int getExtendsTimeMergeEnd() {
+        return extendsTimeMergeEnd;
+    }
+
+    public static MergeRunnableStopPoint getStopPoint() {
+        return stopPoint;
+    }
+
+    public static void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {
+        MergeRunnable.extendsTimeMergeBeginning = extendsTimeMergeBeginning;
+    }
+
+    public static void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
+        MergeRunnable.extendsTimeMergeBeginningAfterSwitch = extendsTimeMergeBeginningAfterSwitch;
+    }
+
+    public static void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
+        MergeRunnable.extendsTimeMergeEnd = extendsTimeMergeEnd;
+    }
+
+    public static void setDebugMergeThread(boolean debugMergeThread) {
+        MergeRunnable.debugMergeThread = debugMergeThread;
+    }
+
+    public static void debugWaitMerge() throws InterruptedException {
+        MERGE_THREAD_LOCK_MANAGER.waitForActiveLocks();
+        if (debugLastMergeException != null) {
+            if (debugLastMergeException instanceof MergeRunnableStopPoint.MergeRunnableStopException) {
+                debugLastMergeException.printStackTrace();
+            } else {
+                throw new RuntimeException(debugLastMergeException);
             }
-        };
+        }
     }
+
+    /**
+     * set the next stop point in a merge, it would be used only once
+     *
+     * @param stopPoint the stop point
+     */
+    public static void setStopPoint(MergeRunnableStopPoint stopPoint) {
+        MergeRunnable.stopPoint = stopPoint;
+    }
+
     private static void delete(String file) {
         if (!new File(file).delete()) {
             logger.warn("Can't delete the file: " + file);
         }
     }
+    private static void rename(String oldFile, String newFile) {
+        if (!new File(oldFile).renameTo(new File(newFile))) {
+            logger.warn("Can't rename the file " + oldFile + " into " + newFile);
+        }
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
 
-    private final String locationHdt;
+    public class MergeThread extends Thread {
+        private MergeThreadRunnable exceptionRunnable;
+        private MergeThreadReloader reloadData;
+        private Lock lock;
+        private boolean restart;
+        private Lock debugLock;
+
+        public MergeThread(MergeThreadRunnable run, MergeThreadReloader reloadData) {
+            this(run, true);
+            this.reloadData = reloadData;
+        }
+
+        public MergeThread(MergeThreadRunnable run, boolean restart) {
+            super("MergeThread");
+            this.exceptionRunnable = run;
+            this.restart = restart;
+        }
+
+        @Override
+        public void run() {
+            try {
+                this.exceptionRunnable.run(restart, lock);
+            } catch (IOException e) {
+                synchronized (hybridStore.getMergeRunnable()) {
+                    hybridStore.setMerging(false);
+                }
+                if (debugMergeThread)
+                    debugLastMergeException = e;
+                e.printStackTrace();
+            } catch (Exception e) {
+                if (debugMergeThread)
+                    debugLastMergeException = e;
+                e.printStackTrace();
+            } finally {
+                if (debugMergeThread)
+                    debugLock.release();
+            }
+        }
+
+        @Override
+        public synchronized void start() {
+            if (debugMergeThread) {
+                debugLastMergeException = null;
+                debugLock = MERGE_THREAD_LOCK_MANAGER.createLock("thread");
+            }
+            if (reloadData != null)
+                lock = reloadData.reload();
+            super.start();
+        }
+    }
+
+    private final HybridStoreFiles hybridStoreFiles;
     private final String rdfInput;
     private final String hdtOutput;
-    private final String previousMergeFile;
 
     private final HybridStore hybridStore;
-    // this is for testing purposes, it extends the merging process to this amount of seconds. If -1 then it is not set.
-    private int extendsTimeMergeBeginning = -1;
-    private int extendsTimeMergeBeginningAfterSwitch = -1;
-    private int extendsTimeMergeEnd = -1;
 
-
-    public MergeRunnable(String locationHdt, HybridStore hybridStore) {
+    public MergeRunnable(HybridStoreFiles hybridStoreFiles, HybridStore hybridStore) {
         this.hybridStore = hybridStore;
-        this.locationHdt = locationHdt;
-        rdfInput = locationHdt + "temp.nt";
-        hdtOutput = locationHdt + "temp.hdt";
-        previousMergeFile = locationHdt + "previous_merge";
+        this.hybridStoreFiles = hybridStoreFiles;
+        rdfInput = hybridStoreFiles.getRDFTempOutput();
+        hdtOutput = hybridStoreFiles.getHDTTempOutput();
     }
 
-    private Lock createSwitchLock() {
-        return hybridStore.lockToPreventNewConnections.createLock("switch-lock");
+    /**
+     * create a lock to prevent new connection
+     *
+     * @param alias alias for logs
+     * @return the {@link Lock}
+     */
+    private Lock createConnectionLock(String alias) {
+        return hybridStore.lockToPreventNewConnections.createLock(alias);
     }
 
-    private Lock createTranslateLock() {
-        return hybridStore.lockToPreventNewConnections.createLock("translate-lock");
+    /**
+     * only for test purpose, crash if the stopPoint set with {@link #setStopPoint(MergeRunnableStopPoint)} == point
+     *
+     * @param point the point to crash
+     * @throws MergeRunnableStopPoint.MergeRunnableStopException if this point is selected
+     */
+    private void crashIfRequired(MergeRunnableStopPoint point) {
+        if (stopPoint == point) {
+            stopPoint = null;
+            point.throwStop();
+        }
     }
 
-    private void waitForActiveConnections() throws InterruptedException{
+    /**
+     * wait all active connection locks
+     *
+     * @throws InterruptedException
+     */
+    private void waitForActiveConnections() throws InterruptedException {
+        logger.debug("Waiting for connections...");
         hybridStore.locksHoldByConnections.waitForActiveLocks();
+        logger.debug("All connections completed.");
     }
 
     /**
      * @return a new thread to merge
      */
-    public Thread createThread() {
-        return new Thread(stopMergeIfException(false, this::runAtStep1));
+    public MergeThread createThread() {
+        return new MergeThread(this::step1, false);
     }
 
     /**
      * @return an optional thread to restart a previous merge (if any)
      */
-    public Optional<Thread> createRestartThread() {
+    public Optional<MergeThread> createRestartThread() {
         // @todo: check previous step with into previousMergeFile, return a thread with the runStep
         switch (getRestartStep()) {
-        case 0:
-            return Optional.of(new Thread(stopMergeIfException(true, this::runAtStep1)));
-        case 1:
-            return Optional.of(new Thread(stopMergeIfException(true, this::runAtStep2)));
-        case 2:
-            return Optional.of(new Thread(stopMergeIfException(true, this::runAtStep3)));
-        default:
-            return Optional.empty();
+            case 0:
+                return Optional.of(new MergeThread(this::step1, this::reloadDataFromStep0));
+            case 2:
+                return Optional.of(new MergeThread(this::step2, this::reloadDataFromStep1));
+            case 3:
+                return Optional.of(new MergeThread(this::step3, this::reloadDataFromStep2));
+            default:
+                return Optional.empty();
         }
     }
 
+    /**
+     * write the restart step in the merge file
+     *
+     * @param step the restart step to write
+     * @throws IOException see {@link Files#writeString(Path, CharSequence, OpenOption...)} ioe
+     */
     private void markRestartStepCompleted(int step) throws IOException {
-        Files.writeString(Paths.get(previousMergeFile), String.valueOf(step));
+        Files.writeString(Paths.get(hybridStoreFiles.getPreviousMergeFile()), String.valueOf(step));
     }
 
+    /**
+     * @return the restart step in the merge file, -1 in case of error
+     */
     private int getRestartStep() {
         try {
-            String text = Files.readString(Paths.get(previousMergeFile));
+            String text = Files.readString(Paths.get(hybridStoreFiles.getPreviousMergeFile()));
             return Integer.parseInt(text.trim());
         } catch (IOException | NumberFormatException e) {
             return -1;
         }
     }
 
-    private void completedMerge() throws IOException{
-        Files.delete(Paths.get(previousMergeFile));
+    /**
+     * delete the merge file
+     *
+     * @throws IOException see {@link Files#delete(Path)} ioe
+     */
+    private void completedMerge() throws IOException {
+        Files.delete(Paths.get(hybridStoreFiles.getPreviousMergeFile()));
+    }
+
+    private boolean hasStep3RenameMarker() {
+        return Files.exists(Paths.get(hybridStoreFiles.getStep3RenameMarker()));
+    }
+
+    private void setStep3RenameMarker() throws IOException {
+        Files.createFile(Paths.get(hybridStoreFiles.getStep3RenameMarker()));
+    }
+
+    private void removeStep3RenameMarker() throws IOException {
+        Files.deleteIfExists(Paths.get(hybridStoreFiles.getStep3RenameMarker()));
     }
 
     private void sleep(int seconds, String title) {
-        if (seconds != -1){
+        if (seconds != -1) {
             try {
                 logger.debug("It is sleeping " + title + " " + seconds);
                 Thread.sleep(seconds * 1000L);
@@ -138,20 +297,23 @@ public class MergeRunnable {
         }
     }
 
-    private synchronized void runAtStep1(boolean restarting) throws InterruptedException, IOException {
-        step1(restarting);
+    private Lock reloadDataFromStep0() {
+        return createConnectionLock("switch-lock");
     }
 
-    private void step1(boolean restarting) throws InterruptedException, IOException {
+    private synchronized void step1(boolean restarting, Lock switchLock) throws InterruptedException, IOException {
+        logger.info("Start Merge process...");
         markRestartStepCompleted(0);
-        logger.info("Start Step 1");
-        logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
+
+        crashIfRequired(MergeRunnableStopPoint.STEP1_START);
+
+        logger.debug("Start Step 1");
+        if (!restarting) {
+            switchLock = createConnectionLock("switch-lock");
+        }
         // create a lock so that new incoming connections don't do anything
-        Lock switchLock = createSwitchLock();
         // wait for all running updates to finish
-        logger.info("hereeee");
         waitForActiveConnections();
-        logger.info("Can continue");
 
         // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
         hybridStore.initTempDump(restarting);
@@ -162,11 +324,9 @@ public class MergeRunnable {
 
         sleep(extendsTimeMergeBeginning, "extendsTimeMergeBeginning");
 
+
         // switching the stores
         this.hybridStore.switchStore = !this.hybridStore.switchStore;
-
-        // write the switchStore value to disk in case, something crash we can recover
-        this.hybridStore.writeWhichStore();
 
         // reset the count of triples to 0 after switching the stores
         this.hybridStore.setTriplesCount(0);
@@ -174,115 +334,134 @@ public class MergeRunnable {
         sleep(extendsTimeMergeBeginningAfterSwitch, "extendsTimeMergeBeginningAfterSwitch");
 
         // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo: a lock is needed here
-        Files.copy(Paths.get(locationHdt + "triples-delete.arr"),
-                Paths.get(locationHdt + "triples-delete-cpy.arr"));
+        if (restarting) {
+            // delete previous array in case of restart
+            Files.deleteIfExists(Paths.get(hybridStoreFiles.getTripleDeleteCopyArr()));
+        }
+        Files.copy(Paths.get(hybridStoreFiles.getTripleDeleteArr()),
+                Paths.get(hybridStoreFiles.getTripleDeleteCopyArr()));
         // release the lock so that the connections can continue
         switchLock.release();
-        logger.info("Switch-Lock released");
-        logger.info("End Step 1");
+        logger.debug("Switch-Lock released");
+        logger.info("End merge step 1");
+        crashIfRequired(MergeRunnableStopPoint.STEP1_END);
+
+        // @todo: set these operations in an atomic way
+        // write the switchStore value to disk in case, something crash we can recover
+        this.hybridStore.writeWhichStore();
         markRestartStepCompleted(2);
-        step2(false);
+        step2(false, null);
     }
 
-    private synchronized void runAtStep2(boolean restarting) throws InterruptedException, IOException {
-        reloadDataFromStep1();
-        step2(restarting);
-    }
-
-    private void reloadDataFromStep1() {
+    private Lock reloadDataFromStep1() {
         // @todo: reload data from step 1
         hybridStore.initTempDump(true);
         hybridStore.initTempDeleteArray();
         hybridStore.setMerging(true);
+        return null;
     }
 
-    private synchronized void step2(boolean restarting) throws InterruptedException, IOException {
-        logger.info("Start Step 2");
+    private synchronized void step2(boolean restarting, Lock lock) throws InterruptedException, IOException {
+        logger.debug("Start Step 2");
+        crashIfRequired(MergeRunnableStopPoint.STEP2_START);
         // diff hdt indexes...
-        logger.info("HDT Diff");
-        diffIndexes(locationHdt + "index.hdt", locationHdt + "triples-delete-cpy.arr");
-        logger.info("Dump all triples from the native store to file");
+        logger.debug("HDT Diff");
+        diffIndexes(hybridStoreFiles.getHDTIndex(), hybridStoreFiles.getTripleDeleteCopyArr());
+        logger.debug("Dump all triples from the native store to file");
         RepositoryConnection nativeStoreConnection = hybridStore.getConnectionToFreezedStore();
         writeTempFile(nativeStoreConnection, rdfInput);
         nativeStoreConnection.commit();
         nativeStoreConnection.close();
-        logger.info("Create HDT index from dumped file");
+        logger.debug("Create HDT index from dumped file");
         createHDTDump(rdfInput, hdtOutput);
         // cat the original index and the temp index
-        catIndexes(locationHdt + "new_index_diff.hdt", hdtOutput, locationHdt + "new_index.hdt");
-        logger.info("CAT completed!!!!! " + locationHdt);
+        catIndexes(hybridStoreFiles.getHDTNewIndexDiff(), hdtOutput, hybridStoreFiles.getHDTNewIndex());
+        logger.debug("CAT completed!!!!! " + hybridStoreFiles.getLocationHdt());
 
+        crashIfRequired(MergeRunnableStopPoint.STEP2_END);
         markRestartStepCompleted(3);
 
         // delete the file after the mark if the shutdown occurs during the deletes
         delete(rdfInput);
         delete(hdtOutput);
-        delete(locationHdt + "triples-delete-cpy.arr");
-        delete(locationHdt + "triples-delete.arr");
+        delete(hybridStoreFiles.getTripleDeleteCopyArr());
+        delete(hybridStoreFiles.getTripleDeleteArr());
 
-        logger.info("End Step 2");
+        logger.info("End merge step 2");
 
-        step3(false);
+        step3(false, null);
     }
 
-    private synchronized void runAtStep3(boolean restarting) throws InterruptedException, IOException {
-        reloadDataFromStep2();
-        step3(restarting);
-    }
-
-    private void reloadDataFromStep2() {
-        reloadDataFromStep1();
+    private Lock reloadDataFromStep2() {
+        hybridStore.initTempDump(true);
+        hybridStore.initTempDeleteArray();
+        hybridStore.setMerging(true);
         // @todo: reload data from step 2
+
+        if (hasStep3RenameMarker()) {
+            rename(hybridStoreFiles.getHDTIndex(), hybridStoreFiles.getHDTNewIndex());
+            rename(hybridStoreFiles.getHDTIndexV11(), hybridStoreFiles.getHDTNewIndexV11());
+            try {
+                removeStep3RenameMarker();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return null;
     }
 
-    private void step3(boolean restarting) throws InterruptedException, IOException {
-        logger.info("Start Step 3");
+    private synchronized void step3(boolean restarting, Lock lock) throws InterruptedException, IOException {
+        logger.debug("Start Step 3");
+        crashIfRequired(MergeRunnableStopPoint.STEP3_START);
         // index the new file
-        HDT newHdt = HDTManager.mapIndexedHDT(locationHdt + "new_index.hdt", hybridStore.getHDTSpec());
+        HDT newHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTNewIndex(), hybridStore.getHDTSpec());
 
         // convert all triples added to the merge store to new IDs of the new generated HDT
-        logger.info("ID conversion");
+        logger.debug("ID conversion");
         // create a lock so that new incoming connections don't do anything
-        Lock translateLock = createTranslateLock();
+        Lock translateLock = createConnectionLock("translate-lock");
         // wait for all running updates to finish
-        logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Waiting for locks");
         waitForActiveConnections();
-        logger.info("Can continue");
 
         this.hybridStore.resetDeleteArray(newHdt);
         newHdt.close();
 
 
         // rename new hdt to old hdt name so that they are replaces
-        File newHDTFile = new File(locationHdt + "new_index.hdt");
-        boolean renameNew = newHDTFile.renameTo(new File(locationHdt + "index.hdt"));
-        File indexFile = new File(locationHdt + "new_index.hdt.index.v1-1");
-        boolean renamedIndex = indexFile.renameTo(new File(locationHdt + "index.hdt.index.v1-1"));
+        // @todo: add a rename marker to know if the rename operation already occurred
+        rename(hybridStoreFiles.getHDTNewIndex(), hybridStoreFiles.getHDTIndex());
+        rename(hybridStoreFiles.getHDTNewIndexV11(), hybridStoreFiles.getHDTIndexV11());
+        setStep3RenameMarker();
 
-
-
-        HDT tempHdt = HDTManager.mapIndexedHDT(locationHdt + "index.hdt", this.hybridStore.getHDTSpec());
+        HDT tempHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), this.hybridStore.getHDTSpec());
         convertOldToNew(this.hybridStore.getHdt(), tempHdt);
         this.hybridStore.resetHDT(tempHdt);
 
         // mark the triples as deleted from the temp file stored while merge
         this.hybridStore.markDeletedTempTriples();
-        logger.info("Releasing lock for ID conversion ....");
+        logger.debug("Releasing lock for ID conversion ....");
         translateLock.release();
-        logger.info("Translate-Lock released");
-        logger.info("Lock released");
+        logger.debug("Translate-Lock released");
+        logger.debug("Lock released");
+
+        crashIfRequired(MergeRunnableStopPoint.STEP3_END);
+        completedMerge();
+        removeStep3RenameMarker();
+        crashIfRequired(MergeRunnableStopPoint.MERGE_END);
 
         this.hybridStore.setMerging(false);
         this.hybridStore.isMergeTriggered = false;
 
         sleep(extendsTimeMergeEnd, "extendsTimeMergeEnd");
 
-        completedMerge();
+        crashIfRequired(MergeRunnableStopPoint.MERGE_END_AFTER_SLEEP);
+
         logger.info("Merge finished");
     }
 
     private void diffIndexes(String hdtInput1, String bitArray) {
-        String hdtOutput = locationHdt + "new_index_diff.hdt";
+        String hdtOutput = hybridStoreFiles.getHDTNewIndexDiff();
         try {
             File hdtOutputFile = new File(hdtOutput);
             File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
@@ -372,7 +551,7 @@ public class MergeRunnable {
                         newPredIRI,
                         newObjIRI
                 );
-                logger.debug("  {} {} {}",stmConverted.getSubject(),stmConverted.getPredicate(),stmConverted.getObject());
+                logger.debug("  {} {} {}", stmConverted.getSubject(), stmConverted.getPredicate(), stmConverted.getObject());
                 writer.handleStatement(stmConverted);
             }
             writer.endRDF();
@@ -408,7 +587,7 @@ public class MergeRunnable {
                 // if the old string cannot be converted than we can keep the same
                 Resource newSubjIRI = oldSubject;
                 long id = newHDT.getDictionary().stringToId(oldSubject.toString(), TripleComponentRole.SUBJECT);
-                if (id!= -1) {
+                if (id != -1) {
                     newSubjIRI = iriConverter.subjectIdToIRI(id);
                 }
 
@@ -420,17 +599,17 @@ public class MergeRunnable {
                 Value newObjIRI = oldObject;
                 id = newHDT.getDictionary().stringToId(oldObject.toString(), TripleComponentRole.OBJECT);
                 if (id != -1) {
-                   newObjIRI = iriConverter.objectIdToIRI(id);
+                    newObjIRI = iriConverter.objectIdToIRI(id);
                 }
-                logger.debug("old:[{} {} {}]",oldSubject,oldPredicate,oldObject);
-                logger.debug("new:[{} {} {}]",newSubjIRI,newPredIRI,newObjIRI);
+                logger.debug("old:[{} {} {}]", oldSubject, oldPredicate, oldObject);
+                logger.debug("new:[{} {} {}]", newSubjIRI, newPredIRI, newObjIRI);
                 connection2.add(newSubjIRI, newPredIRI, newObjIRI);
 //                alternative, i.e. make inplace replacements
 //                connection.remove(s.getSubject(), s.getPredicate(), s.getObject());
 //                connection.add(newSubjIRI, newPredIRI, newObjIRI);
 
-                if (count %10000==0){
-                    logger.debug("Converted {}",count);
+                if (count % 10000 == 0) {
+                    logger.debug("Converted {}", count);
                 }
 
             }
@@ -444,9 +623,9 @@ public class MergeRunnable {
             logger.info("Time elapsed for conversion: " + stopwatch);
 
             // initialize bitmaps again with the new dictionary
-            Files.deleteIfExists(Paths.get(this.locationHdt + "bitX"));
-            Files.deleteIfExists(Paths.get(this.locationHdt + "bitY"));
-            Files.deleteIfExists(Paths.get(this.locationHdt + "bitZ"));
+            Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTBitX()));
+            Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTBitY()));
+            Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTBitZ()));
             stopwatch = Stopwatch.createStarted();
             logger.info("Time elapsed to initialize native store dictionary: " + stopwatch);
         } catch (Exception e) {
@@ -456,27 +635,4 @@ public class MergeRunnable {
         }
     }
 
-    public int getExtendsTimeMergeBeginning() {
-        return extendsTimeMergeBeginning;
-    }
-
-    public int getExtendsTimeMergeBeginningAfterSwitch() {
-        return extendsTimeMergeBeginningAfterSwitch;
-    }
-
-    public int getExtendsTimeMergeEnd() {
-        return extendsTimeMergeEnd;
-    }
-
-    public void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {
-        this.extendsTimeMergeBeginning = extendsTimeMergeBeginning;
-    }
-
-    public void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
-        this.extendsTimeMergeBeginningAfterSwitch = extendsTimeMergeBeginningAfterSwitch;
-    }
-
-    public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
-        this.extendsTimeMergeEnd = extendsTimeMergeEnd;
-    }
 }

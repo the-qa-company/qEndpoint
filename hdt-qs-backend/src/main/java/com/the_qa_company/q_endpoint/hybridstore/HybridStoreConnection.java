@@ -147,7 +147,7 @@ public class HybridStoreConnection extends SailSourceConnection {
             // increase the number of statements
             this.hybridStore.triplesCount++;
             if (this.hybridStore.triplesCount % 100 == 0){
-                System.out.println(this.hybridStore.triplesCount);
+                logger.debug("Triples: {}", this.hybridStore.triplesCount);
             }
         }
     }
@@ -300,8 +300,12 @@ public class HybridStoreConnection extends SailSourceConnection {
         logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // remove statement from both stores... A and B
-        this.connA_write.removeStatement(op, newSubj, newPred, newObj, contexts);
-        this.connB_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+        if (hybridStore.isMergeTriggered) {
+            this.connA_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+            this.connB_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+        } else {
+            this.getCurrentConnectionWrite().removeStatement(op, newSubj, newPred, newObj, contexts);
+        }
 //        this.hybridStore.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);

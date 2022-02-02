@@ -56,8 +56,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
     // HDT file containing the data
     private HDT hdt;
-    // location of the HDT file
-    private final String locationHdt;
     // specs of the HDT file
     private HDTSpecification spec;
     private HDTConverter hdtConverter;
@@ -70,7 +68,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public AbstractNotifyingSail nativeStoreB;
 
     // location of the native store
-    private String locationNative;
 
     // bitmap to mark which triples in HDT were deleted
     private BitArrayDisk deleteBitMap;
@@ -110,54 +107,53 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public long triplesCount;
 
     private final MergeRunnable mergeRunnable;
-    private Thread mergerThread;
+    private final HybridStoreFiles hybridStoreFiles;
+    private MergeRunnable.MergeThread mergerThread;
 
-    public HybridStore(HDT hdt, String locationHdt, String locationNative, boolean inMemDeletes) {
-
+    private HybridStore(HDT hdt, String locationHdt, String locationNative, boolean inMemDeletes) {
+        this.hybridStoreFiles = new HybridStoreFiles(locationNative, locationHdt);
 //        this.nativeStoreA = new MemoryStore();
 //        this.nativeStoreB = new MemoryStore();
 //        this.nativeStoreA.setDefaultIsolationLevel(IsolationLevels.NONE);
 //        this.nativeStoreB.setDefaultIsolationLevel(IsolationLevels.NONE);
-        this.nativeStoreA = new NativeStore(new File(locationNative + "A"), "spoc,posc,cosp");
-        this.nativeStoreB = new NativeStore(new File(locationNative + "B"), "spoc,posc,cosp");
+        this.nativeStoreA = new NativeStore(new File(getHybridStoreFiles().getNativeStoreA()), "spoc,posc,cosp");
+        this.nativeStoreB = new NativeStore(new File(getHybridStoreFiles().getNativeStoreB()), "spoc,posc,cosp");
 
-        (new File(locationNative)).mkdirs();
-        this.checkFile = new File(locationNative + "which_store.check");
-
+        (new File(getHybridStoreFiles().getLocationNative())).mkdirs();
+        this.checkFile = new File(getHybridStoreFiles().getWhichStore());
         // init the store before creating the check store file
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
-        this.locationHdt = locationHdt;
-        this.mergeRunnable = new MergeRunnable(locationHdt, this);
+        this.mergeRunnable = new MergeRunnable(hybridStoreFiles, this);
         resetHDT(hdt);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
 
         this.inMemDeletes = inMemDeletes;
         this.hdtProps = new HDTProps(this.hdt);
-        this.locationNative = locationNative;
         this.lockToPreventNewConnections = new LockManager();
         this.locksHoldByConnections = new LockManager();
         initDeleteArray();
-        // initialize the count of the triples
-        SailConnection connection = getChangingStore().getConnection();
-        this.triplesCount = connection.size();
-        connection.close();
-        checkPreviousMerge();
     }
 
     public HybridStore(String locationHdt, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
         // load HDT file
         this(HDTManager.mapIndexedHDT(locationHdt + "index.hdt", spec), locationHdt, locationNative, inMemDeletes);
         this.spec = spec;
+
+        // initialize the count of the triples
+        checkPreviousMerge();
+        SailConnection connection = getChangingStore().getConnection();
+        this.triplesCount = connection.size();
+        connection.close();
     }
 
 
     public void initNativeStoreDictionary(HDT hdt) {
-        this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), this.locationHdt + "bitX");
-        this.bitY = new BitArrayDisk(hdt.getDictionary().getNpredicates(), this.locationHdt + "bitY");
-        this.bitZ = new BitArrayDisk(hdt.getDictionary().getNAllObjects(), this.locationHdt + "bitZ");
+        this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), hybridStoreFiles.getHDTBitX());
+        this.bitY = new BitArrayDisk(hdt.getDictionary().getNpredicates(), hybridStoreFiles.getHDTBitY());
+        this.bitZ = new BitArrayDisk(hdt.getDictionary().getNAllObjects(), hybridStoreFiles.getHDTBitZ());
         // if the bitmaps have not been initialized with the native store
         if (this.bitX.countOnes() == 0 && this.bitY.countOnes() == 0 && this.bitZ.countOnes() == 0) {
             initBitmaps();
@@ -182,7 +178,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), true);
         else {
             // @todo: these should be recovered from the file if it is there
-            this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), this.locationHdt + "triples-delete.arr");
+            this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), hybridStoreFiles.getTripleDeleteArr());
         }
     }
 
@@ -389,7 +385,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
      */
     public void initTempDeleteArray() {
         this.tempdeleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
-                this.locationHdt + "triples-delete-temp.arr");
+                hybridStoreFiles.getTripleDeleteTempArr());
     }
 
     /**
@@ -399,7 +395,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void initTempDump(boolean isRestarting) {
         FileOutputStream out = null;
         try {
-            File file = new File(locationNative + "tempTriples.nt");
+            File file = new File(hybridStoreFiles.getTempTriples());
             if (!file.exists())
                 file.createNewFile();
             out = new FileOutputStream(file, isRestarting);
@@ -418,7 +414,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         try {
 
             BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
-                    this.locationHdt + "triples-delete-new.arr");
+                    hybridStoreFiles.getTripleDeleteNewArr());
             // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
             for (long i = 0; i < tempdeleteBitMap.getNumbits(); i++) {
                 if (tempdeleteBitMap.access(i)) { // means that a triple has been deleted during merge
@@ -442,16 +438,16 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             }
             newDeleteArray.force(true);
             newDeleteArray.close();
-            File file = new File(this.locationHdt + "triples-delete-new.arr");
-            boolean renamed = file.renameTo(new File(this.locationHdt + "triples-delete.arr"));
+            File file = new File(hybridStoreFiles.getTripleDeleteNewArr());
+            boolean renamed = file.renameTo(new File(hybridStoreFiles.getTripleDeleteArr()));
             if (renamed) {
                 this.setDeleteBitMap(new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
-                        this.locationHdt + "triples-delete.arr"));
+                        hybridStoreFiles.getTripleDeleteArr()));
                 try {
-                    Files.deleteIfExists(Paths.get(this.locationHdt + "triples-delete-temp.arr"));
-                    Files.deleteIfExists(Paths.get(this.locationHdt + "triples-delete-new.arr"));
-                    Files.deleteIfExists(Paths.get(locationHdt + "index.hdt"));
-                    Files.deleteIfExists(Paths.get(locationHdt + "index.hdt.index.v1-1"));
+                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getTripleDeleteTempArr()));
+                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getTripleDeleteNewArr()));
+                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTIndex()));
+                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTIndexV11()));
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -465,7 +461,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void markDeletedTempTriples() {
         this.rdfWriterTempTriples.endRDF();
         try {
-            InputStream inputStream = new FileInputStream(locationNative + "tempTriples.nt");
+            InputStream inputStream = new FileInputStream(hybridStoreFiles.getTempTriples());
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
             try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser)) {
@@ -584,14 +580,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         return hdtConverter;
     }
 
-    public String getLocationNative() {
-        return locationNative;
-    }
-
-    public String getLocationHdt() {
-        return locationHdt;
-    }
-
     public void setTriplesCount(long triplesCount) {
         this.triplesCount = triplesCount;
     }
@@ -618,6 +606,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public MergeRunnable getMergeRunnable() { return mergeRunnable; }
 
+    public HybridStoreFiles getHybridStoreFiles() { return hybridStoreFiles; }
 
     public int getExtendsTimeMergeBeginning() {
         return getMergeRunnable().getExtendsTimeMergeBeginning();
