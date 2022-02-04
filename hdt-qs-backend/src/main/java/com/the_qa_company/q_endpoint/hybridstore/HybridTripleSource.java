@@ -159,6 +159,7 @@ public class HybridTripleSource implements TripleSource {
             if (object <= this.hybridStore.getHdt().getDictionary().getNshared()) {
                 containsObject = this.hybridStore.getBitX().access(object - 1);
             } else {
+                // @todo: check if "- -" instead of "-" can be fixed
                 containsObject = this.hybridStore.getBitZ().access(object - - this.hybridStore.getHdt().getDictionary().getNshared() - 1);
             }
         }
