@@ -297,7 +297,7 @@ public class HybridStoreConnection extends SailSourceConnection {
             newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+//        logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // remove statement from both stores... A and B
         if (hybridStore.isMergeTriggered) {
@@ -368,20 +368,20 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     public SailConnection getCurrentConnectionRead() {
         if (hybridStore.switchStore) {
-            logger.debug("STORE B");
+//            logger.debug("STORE B");
             return connB_read;
         } else {
-            logger.debug("STORE A");
+//            logger.debug("STORE A");
             return connA_read;
         }
     }
 
     public SailConnection getCurrentConnectionWrite() {
         if (hybridStore.switchStore) {
-            logger.debug("STORE B");
+//            logger.debug("STORE B");
             return connB_write;
         } else {
-            logger.debug("STORE A");
+//            logger.debug("STORE A");
             return connA_write;
         }
     }

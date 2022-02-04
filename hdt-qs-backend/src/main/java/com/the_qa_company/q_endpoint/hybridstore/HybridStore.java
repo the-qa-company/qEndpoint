@@ -29,15 +29,18 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
+import org.eclipse.rdf4j.sail.helpers.DirectoryLockManager;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.triples.TripleID;
 import org.rdfhdt.hdt.triples.TripleString;
+import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,10 +125,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         (new File(getHybridStoreFiles().getLocationNative())).mkdirs();
         this.checkFile = new File(getHybridStoreFiles().getWhichStore());
         // init the store before creating the check store file
+        if (logger.isDebugEnabled()) {
+            deleteNativeLocks();
+        }
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
-        this.mergeRunnable = new MergeRunnable(hybridStoreFiles, this);
+        this.mergeRunnable = new MergeRunnable(this);
         resetHDT(hdt);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
@@ -137,9 +143,15 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         initDeleteArray();
     }
 
+    private void deleteNativeLocks() {
+        // remove lock files of a hard shutdown (SAIL is already locked by [...])
+        new DirectoryLockManager(this.nativeStoreA.getDataDir()).revokeLock();
+        new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
+    }
+
     public HybridStore(String locationHdt, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
         // load HDT file
-        this(HDTManager.mapIndexedHDT(locationHdt + "index.hdt", spec), locationHdt, locationNative, inMemDeletes);
+        this(HDTManager.mapIndexedHDT(HybridStoreFiles.getHDTIndex(locationHdt), spec), locationHdt, locationNative, inMemDeletes);
         this.spec = spec;
 
         // initialize the count of the triples
@@ -229,7 +241,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     public Sail getChangingStore() {
-        if (switchStore){
+        if (switchStore) {
             logger.debug("Changing store is B");
             return nativeStoreB;
         } else {
@@ -240,11 +252,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     public Sail getFreezedStoreStore() {
-        if (!switchStore){
+        if (!switchStore) {
             logger.debug("Freezed store is B");
             return nativeStoreB;
-        }
-        else {
+        } else {
             logger.debug("Freezed store is A");
             return nativeStoreA;
         }
@@ -257,7 +268,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         try {
             method = getChangingStore().getClass().getDeclaredMethod("getSailStore");
             method.setAccessible(true);
-            return (SailStore)method.invoke(getChangingStore());
+            return (SailStore) method.invoke(getChangingStore());
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
@@ -333,11 +344,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     public RepositoryConnection getConnectionToChangingStore() {
-        return  new SailRepository(getChangingStore()).getConnection();
+        return new SailRepository(getChangingStore()).getConnection();
     }
 
     public RepositoryConnection getConnectionToFreezedStore() {
-        return  new SailRepository(getFreezedStoreStore()).getConnection();
+        return new SailRepository(getFreezedStoreStore()).getConnection();
     }
 
     public boolean isMerging() {
@@ -390,6 +401,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     /**
      * Init temp file to store triples to be deleted from native store while merging
+     *
      * @param isRestarting if we should append to previous data
      */
     public void initTempDump(boolean isRestarting) {
@@ -411,49 +423,124 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // creates a new array that marks the deleted triples in the new HDT file
     public void resetDeleteArray(HDT newHdt) {
         // delete array created at merge time
-        try {
 
-            BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
-                    hybridStoreFiles.getTripleDeleteNewArr());
-            // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
-            for (long i = 0; i < tempdeleteBitMap.getNumbits(); i++) {
-                if (tempdeleteBitMap.access(i)) { // means that a triple has been deleted during merge
-                    // find the deleted triple in the old HDT index
-                    TripleID tripleID = this.hdt.getTriples().find(i + 1);
-                    if (tripleID.isValid()) {
+        BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
+                hybridStoreFiles.getTripleDeleteNewArr());
 
-                        CharSequence subject = this.hdt.getDictionary().idToString(tripleID.getSubject(), TripleComponentRole.SUBJECT);
-                        CharSequence predicate = this.hdt.getDictionary().idToString(tripleID.getPredicate(), TripleComponentRole.PREDICATE);
-                        CharSequence object = this.hdt.getDictionary().idToString(tripleID.getObject(), TripleComponentRole.OBJECT);
-                        // search over the given triple with the ID so that we can mark the new array..
-                        IteratorTripleString hit = newHdt.searchWithId(subject, predicate, object);
-                        if (hit.hasNext()) {
-                            TripleString next = hit.next();
-                            long newIndex = next.getIndex();
+        long lastOldSubject = -2;
+        long lastNewSubject = -2;
+
+        long lastOldPredicate = -2;
+        long lastNewPredicate = -2;
+
+        long lastOldObject = -2;
+        long lastNewObject = -2;
+
+        // @todo: remove debug count
+        int debugSavedSubject = 0;
+        int debugSavedPredicate = 0;
+        int debugSavedObject = 0;
+        int debugTotal = 0;
+        StopWatch watch = new StopWatch();
+        boolean debugCache = true;
+
+        // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
+        for (long i = 0; i < tempdeleteBitMap.getNumbits(); i++) {
+            if (tempdeleteBitMap.access(i)) { // means that a triple has been deleted during merge
+                // find the deleted triple in the old HDT index
+                TripleID tripleID = this.hdt.getTriples().find(i + 1);
+                if (tripleID.isValid()) {
+                    long oldSubject = tripleID.getSubject();
+                    long oldPredicate = tripleID.getPredicate();
+                    long oldObject = tripleID.getObject();
+
+                    // check if the last subject was this subject
+
+                    long subject;
+
+                    if (oldSubject != lastOldSubject) {
+                        subject = newHdt.getDictionary().stringToId(
+                                this.hdt.getDictionary().idToString(oldSubject, TripleComponentRole.SUBJECT),
+                                TripleComponentRole.SUBJECT
+                        );
+                        lastNewSubject = subject;
+                        lastOldSubject = oldSubject;
+                    } else {
+                        subject = lastNewSubject;
+                        debugSavedSubject++;
+                    }
+
+                    // check if the last predicate was this predicate
+
+                    long predicate;
+
+                    if (oldPredicate != lastOldPredicate) {
+                        predicate = newHdt.getDictionary().stringToId(
+                                this.hdt.getDictionary().idToString(oldPredicate, TripleComponentRole.PREDICATE),
+                                TripleComponentRole.PREDICATE
+                        );
+                        lastNewPredicate = predicate;
+                        lastOldPredicate = oldPredicate;
+                    } else {
+                        predicate = lastNewPredicate;
+                        debugSavedPredicate++;
+                    }
+
+                    // check if the last object was this object
+
+                    long object;
+
+                    if (oldObject != lastOldObject) {
+                        object = newHdt.getDictionary().stringToId(
+                                this.hdt.getDictionary().idToString(oldObject, TripleComponentRole.OBJECT),
+                                TripleComponentRole.OBJECT
+                        );
+                        lastNewObject = object;
+                        lastOldObject = oldObject;
+                    } else {
+                        object = lastNewObject;
+                        debugSavedObject++;
+                    }
+                    debugTotal++;
+
+                    // search over the given triple with the ID so that we can mark the new array..
+                    TripleID triple = new TripleID(subject, predicate, object);
+
+                    if (!triple.isNoMatch()) {
+                        IteratorTripleID next = newHdt.getTriples().searchWithId(triple);
+                        if (next.hasNext()) {
+                            long newIndex = next.next().getIndex();
                             if (newIndex > 0)
                                 newDeleteArray.set(newIndex - 1, true);
                         }
                     }
                 }
             }
-            newDeleteArray.force(true);
-            newDeleteArray.close();
-            File file = new File(hybridStoreFiles.getTripleDeleteNewArr());
-            boolean renamed = file.renameTo(new File(hybridStoreFiles.getTripleDeleteArr()));
-            if (renamed) {
-                this.setDeleteBitMap(new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
-                        hybridStoreFiles.getTripleDeleteArr()));
-                try {
-                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getTripleDeleteTempArr()));
-                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getTripleDeleteNewArr()));
-                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTIndex()));
-                    Files.deleteIfExists(Paths.get(hybridStoreFiles.getHDTIndexV11()));
+        }
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        if (logger.isDebugEnabled()) {
+            logger.debug("HDT cache saved element(s) ones={} in {}", tempdeleteBitMap.countOnes(), watch.stopAndShow());
+            if (debugTotal != 0) {
+                logger.debug("debugSavedSubject        : {} % | {} / {}",
+                        100 * debugSavedSubject / debugTotal, debugSavedSubject, debugTotal);
+                logger.debug("debugSavedPredicate      : {} % | {} / {}",
+                        100 * debugSavedPredicate / debugTotal, debugSavedPredicate, debugTotal);
+                logger.debug("debugSavedObject         : {} % | {} / {}",
+                        100 * debugSavedObject / debugTotal, debugSavedObject, debugTotal);
+            } else {
+                logger.debug("no remap");
             }
-        } catch (NotFoundException e) {
+        }
+
+        newDeleteArray.force(true);
+        newDeleteArray.close();
+        try {
+            Files.copy(Paths.get(hybridStoreFiles.getTripleDeleteNewArr()),
+                    Paths.get(hybridStoreFiles.getTripleDeleteArr()));
+
+            this.setDeleteBitMap(new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
+                    hybridStoreFiles.getTripleDeleteArr()));
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -512,17 +599,17 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         // mark in HDT the store the subject, predicate, objects that are used in rdf4j
         long subjectID = -1;
         if (subject instanceof SimpleIRIHDT) {
-            subjectID = ((SimpleIRIHDT)subject).getId();
+            subjectID = ((SimpleIRIHDT) subject).getId();
         }
         long predicateID = -1;
-        if (predicate  instanceof SimpleIRIHDT) {
-            predicateID = ((SimpleIRIHDT)predicate).getId();
+        if (predicate instanceof SimpleIRIHDT) {
+            predicateID = ((SimpleIRIHDT) predicate).getId();
         }
         long objectID = -1;
-        if (object  instanceof SimpleIRIHDT) {
-            objectID = ((SimpleIRIHDT)object).getId();
+        if (object instanceof SimpleIRIHDT) {
+            objectID = ((SimpleIRIHDT) object).getId();
         }
-        modifyBitmaps(subjectID,predicateID,objectID);
+        modifyBitmaps(subjectID, predicateID, objectID);
     }
 
     public void modifyBitmaps(long subject, long predicate, long object) {
@@ -547,16 +634,16 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // the store is being merged we don't call it again..
     // starts the merging process to merge the delta into HDT
     public void mergeIfRequired() {
-        logger.info("--------------: " + triplesCount);
+        logger.debug("--------------: triplesCount=" + triplesCount);
         // Merge only if threshold in native store exceeded and not merging with hdt
         if (triplesCount >= getThreshold() && !isMergeTriggered) {
             logger.info("Merging..." + triplesCount);
             try {
                 this.isMergeTriggered = true;
-                logger.info("START MERGE");
+                logger.debug("START MERGE");
                 mergerThread = mergeRunnable.createThread();
                 mergerThread.start();
-                logger.info("MERGE THREAD LAUNCHED");
+                logger.debug("MERGE THREAD LAUNCHED");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -604,9 +691,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.spec = spec;
     }
 
-    public MergeRunnable getMergeRunnable() { return mergeRunnable; }
+    public MergeRunnable getMergeRunnable() {
+        return mergeRunnable;
+    }
 
-    public HybridStoreFiles getHybridStoreFiles() { return hybridStoreFiles; }
+    public HybridStoreFiles getHybridStoreFiles() {
+        return hybridStoreFiles;
+    }
 
     public int getExtendsTimeMergeBeginning() {
         return getMergeRunnable().getExtendsTimeMergeBeginning();

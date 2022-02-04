@@ -2,7 +2,9 @@ package com.the_qa_company.q_endpoint.hybridstore;
 
 public class HybridStoreFiles {
     private final String locationNative, locationHdt;
-
+    public static String getHDTIndex(String locationHdt) {
+        return locationHdt + "index.hdt";
+    }
     public HybridStoreFiles(String locationNative, String locationHdt) {
         this.locationNative = locationNative;
         this.locationHdt = locationHdt;
@@ -45,7 +47,7 @@ public class HybridStoreFiles {
     }
 
     public String getHDTIndex() {
-        return locationHdt + "index.hdt";
+        return getHDTIndex(locationHdt);
     }
 
     public String getHDTIndexV11() {
@@ -90,10 +92,6 @@ public class HybridStoreFiles {
 
     public String getPreviousMergeFile() {
         return locationHdt + "previous_merge";
-    }
-
-    public String getStep3RenameMarker() {
-        return locationHdt + "rename_merge";
     }
 
 }

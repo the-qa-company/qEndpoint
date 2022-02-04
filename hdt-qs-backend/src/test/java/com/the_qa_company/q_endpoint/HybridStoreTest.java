@@ -1,8 +1,11 @@
 package com.the_qa_company.q_endpoint;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
+import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 
+import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.RDF4JException;
@@ -53,6 +56,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -271,6 +275,96 @@ public class HybridStoreTest {
                 Files.deleteIfExists(Paths.get("index.nt"));
 
             }
+            MergeRunnable.debugWaitMerge();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception found !");
+        }
+    }
+    @Test
+    public void testMergeBig() {
+        try {
+            MergeRunnableStopPoint.STEP2_END.debugLock();
+            MergeRunnableStopPoint.STEP2_END.debugLockTest();
+            File nativeStore = tempDir.newFolder("native-store");
+            File hdtStore = tempDir.newFolder("hdt-store");
+
+            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, true, spec);
+            assert hdt != null;
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+//            printHDT(hdt);
+            HybridStore store = new HybridStore(
+                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+            );
+
+            int toAdd = 15;
+            int toDelete = Utility.COUNT / 100;
+            BitArrayDisk deleted = new BitArrayDisk(Utility.COUNT, true);
+            Random rnd = new Random(42);
+            store.setThreshold(2);
+            SailRepository hybridStore = new SailRepository(store);
+
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = connection.getValueFactory();
+                connection.add(Utility.getFakePersonStatement(vf, Utility.COUNT + toAdd - 2));
+                connection.add(Utility.getFakePersonStatement(vf, Utility.COUNT + toAdd - 1));
+                connection.add(Utility.getFakePersonStatement(vf, Utility.COUNT + toAdd));
+                // should trigger merge event
+            }
+
+            MergeRunnableStopPoint.STEP2_END.debugWaitForEvent();
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = connection.getValueFactory();
+
+                // delete toDelete persons from HDT
+                for (int i = 0; i < toDelete; i++) {
+                    int id = rnd.nextInt(Utility.COUNT);
+                    connection.remove(Utility.getFakeStatement(vf, id));
+                    deleted.set(id, true);
+                }
+            }
+
+            MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
+
+
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = connection.getValueFactory();
+
+                for (int i = 1; i <= toAdd - 3; i++) {
+                    connection.add(Utility.getFakePersonStatement(vf, Utility.COUNT + i));
+                }
+
+                int endCount = toAdd + Utility.COUNT - (int) deleted.countOnes();
+
+                // wait for merge to be done because it's on a separate thread
+
+                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
+                int count = 0;
+                while (sts.hasNext()) {
+//                    System.out.println(sts.next());
+                    count++;
+                }
+                // 1 triple hdt, 2 triples native a, 1 triple native b -1 triple removed from hdt
+                assertEquals(endCount, count);
+                Thread.sleep(3000);
+
+
+                sts = connection.getStatements(null, null, null, true);
+                count = 0;
+                while (sts.hasNext()) {
+//                    System.out.println(sts.next());
+                    count++;
+                }
+                // 2 triples hdt, 0 triples native a, 1 triple native b
+                assertEquals( endCount, count);
+                Files.deleteIfExists(Paths.get("index.hdt"));
+                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get("index.nt"));
+
+            }
+            MergeRunnable.debugWaitMerge();
         } catch (Exception e) {
             e.printStackTrace();
             fail("Exception found !");
@@ -941,7 +1035,7 @@ public class HybridStoreTest {
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
 
-            File dataDir = new File("/Users/Dennis/IdeaProjects/hdtSparqlEndpoint/hdt-qs-backend/native-store");
+            File dataDir = new File("/Users/ate/workspace/qacompany/hdtsparqlendpoint/hdt-qs-backend/native-store");
             Repository repo = new SailRepository(new NativeStore(dataDir));
             RepositoryConnection con = repo.getConnection();
             con.add(new SimpleIRIHDT(hdt, 1,1), new SimpleIRIHDT(hdt, 1,1), new SimpleIRIHDT(hdt, 1,1));

@@ -3,6 +3,7 @@ package com.the_qa_company.q_endpoint.controller;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
+import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -109,7 +110,7 @@ public class Sparql {
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions(hdtSpec);
 
-            File hdtFile = new File(location + "index.hdt");
+            File hdtFile = new File(HybridStoreFiles.getHDTIndex(location));
             if (!hdtFile.exists()) {
                 File tempRDF = new File(location + "tmp_index.nt");
                 if (!tempRDF.getParentFile().exists())
@@ -213,7 +214,7 @@ public class Sparql {
                 }
                 return out.toString("UTF8");
             } else if (parsedQuery instanceof ParsedBooleanQuery) {
-                BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+                BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
                 if (query.evaluate() == true) {
                     connection.close();
                     return "{ \"head\" : { } , \"boolean\" : true }";
@@ -261,7 +262,7 @@ public class Sparql {
 
                 return out.toString("UTF8");
             } else if (parsedQuery instanceof ParsedBooleanQuery) {
-                BooleanQuery query = model.get(locationHdt).prepareBooleanQuery(sparqlQuery);
+                BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
                 if (query.evaluate() == true) {
                     connection.close();
                     return "{ \"head\" : { } , \"boolean\" : true }";
@@ -332,11 +333,11 @@ public class Sparql {
 
     public String loadFile(InputStream input, String filename) {
         try {
-            Files.deleteIfExists(Paths.get(locationHdt + "index.hdt"));
-            Files.deleteIfExists(Paths.get(locationHdt + "index.hdt.index.v1-1"));
+            Files.deleteIfExists(Paths.get(hybridStore.getHybridStoreFiles().getHDTIndex()));
+            Files.deleteIfExists(Paths.get(hybridStore.getHybridStoreFiles().getHDTIndexV11()));
 
             String rdfInput = locationHdt + filename;
-            String hdtOutput = locationHdt + "index.hdt";
+            String hdtOutput = hybridStore.getHybridStoreFiles().getHDTIndex();
 
             Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
             RDFNotation notation = RDFNotation.guess(rdfInput);

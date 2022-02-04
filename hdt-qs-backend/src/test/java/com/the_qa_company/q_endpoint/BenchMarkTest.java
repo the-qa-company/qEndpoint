@@ -59,9 +59,7 @@ public class BenchMarkTest {
                     stopWatch = StopWatch.createStarted();
                     connection.begin();
                     for (int j = count * i + 1; j <= count * (i + 1); j++) {
-                        IRI entity = vf.createIRI(ex, "person" + j);
-                        Statement stm = vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
-                        connection.remove(stm);
+                        connection.remove(Utility.getFakeStatement(vf, j));
                     }
                     connection.commit();
                     assert hdt != null;
