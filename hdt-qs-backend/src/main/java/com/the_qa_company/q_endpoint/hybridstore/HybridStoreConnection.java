@@ -157,9 +157,6 @@ public class HybridStoreConnection extends SailSourceConnection {
             this.hybridStore.modifyBitmaps(subjectID, predicateID, objectID);
             // increase the number of statements
             this.hybridStore.triplesCount++;
-            if (this.hybridStore.triplesCount % 100 == 0){
-                System.out.println(this.hybridStore.triplesCount);
-            }
         }
     }
 
