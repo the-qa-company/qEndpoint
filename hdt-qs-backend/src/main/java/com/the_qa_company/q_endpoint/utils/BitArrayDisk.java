@@ -23,7 +23,6 @@ public class BitArrayDisk {
     private byte[] blocks;
     private boolean indexUpToDate;
 
-    private String location;
     NioFile output;
 
     // only for testing we don't necessarily need to store the array on disk
@@ -42,13 +41,27 @@ public class BitArrayDisk {
 
     public BitArrayDisk(long nbits, File file) {
         this.numbits = 0;
-        this.location = file.getAbsolutePath();
         try {
             this.output = new NioFile(file);
             initWordsArray(nbits);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private int log2(long value) {
+        if (value == 0) {
+            return 0; // Wrong, but it's private
+        }
+        long v = value;
+        int log = 0;
+
+        while (v != 0) {
+            v >>= 1;
+            log++;
+        }
+
+        return log;
     }
 
     private void initWordsArray(long nbits) {
@@ -63,9 +76,17 @@ public class BitArrayDisk {
                     // read the length of the array from the beginning
                     long length = this.output.readLong(0);
                     this.words = new long[(int) length];
+
+                    int lastNonZero = 0;
                     for (int i = 0; i < length; i++) {
-                        this.words[i] = this.output.readLong((i + 1) * 8);
+                        long v = this.output.readLong((i + 1) * 8L);
+                        if (v != 0) {
+                            this.words[i] = v;
+                            lastNonZero = i;
+                        }
                     }
+
+                    numbits = 8L * lastNonZero + log2(words[lastNonZero]);
                 }
             } else {
                 int nwords = (int) numWords(nbits);
@@ -126,7 +147,8 @@ public class BitArrayDisk {
 
     private void writeToDisk(long l, int wordIndex) {
         try {
-            output.writeLong(l, (wordIndex + 1) * 8); // +1 reserved for the length of the array
+            output.writeLong(l, (wordIndex + 1) * 8L); // +1 reserved for the length of the array
+            output.force(false);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -231,11 +253,19 @@ public class BitArrayDisk {
         }
     }
 
-    public void force(Boolean bool) {
+    public void force(boolean bool) {
         try {
             this.output.force(bool);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String printInfo() {
+        return "numWords:" + getNumWords() +
+                ", numbits: " + getNumbits() +
+                ", ones: " + countOnes() +
+                (inMemory ? ", inMemory: true" : ", file: " + output.getFile().getAbsolutePath())
+                + "\n" + this;
     }
 }
