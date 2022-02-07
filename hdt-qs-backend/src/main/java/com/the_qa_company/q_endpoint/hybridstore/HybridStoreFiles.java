@@ -1,5 +1,7 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
+import org.rdfhdt.hdt.hdt.HDTVersion;
+
 public class HybridStoreFiles {
     private final String locationNative, locationHdt, hdtIndexName;
     public static String getHDTIndex(String locationHdt, String hdtIndexName) {
@@ -52,7 +54,7 @@ public class HybridStoreFiles {
     }
 
     public String getHDTIndexV11() {
-        return locationHdt + hdtIndexName + ".index.v1-1";
+        return locationHdt + hdtIndexName + HDTVersion.get_index_suffix("-");
     }
 
     public String getHDTNewIndex() {
@@ -60,11 +62,11 @@ public class HybridStoreFiles {
     }
 
     public String getHDTNewIndexDiff() {
-        return locationHdt + hdtIndexName + ".new.hdt";
+        return locationHdt + hdtIndexName + ".diff.new.hdt";
     }
 
     public String getHDTNewIndexV11() {
-        return locationHdt + hdtIndexName + "new.hdt.index.v1-1";
+        return locationHdt + hdtIndexName + ".new.hdt" + HDTVersion.get_index_suffix("-");
     }
 
     public String getTripleDeleteArr() {
