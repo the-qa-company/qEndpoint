@@ -3,6 +3,8 @@ package com.the_qa_company.q_endpoint;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
+import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
+import org.eclipse.rdf4j.common.io.NioFile;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -113,7 +115,7 @@ public class MergeRestartTest {
             ++step;
 
             MergeRunnableStopPoint.STEP1_START.debugWaitForEvent();
-            {
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP1_START.ordinal()) {
                 // with given THRESHOLD = 2, the hdt index will be merged with all triples from current native store
                 executeTestRemoveRDF(countFile, hybridStore, 1, --count);
                 ++step;
@@ -124,13 +126,16 @@ public class MergeRestartTest {
                 executeTestRemoveHDT(countFile, hybridStore, 1, --count);
                 ++step;
 
+                logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
+                logger.debug("STEP1_TEST_BITMAP0n: {}",
+                        new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr").printInfo());
                 executeTestCount(countFile, hybridStore);
                 ++step;
             }
             MergeRunnableStopPoint.STEP1_START.debugUnlockTest();
             // lock step1
             MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
-            {
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP2_START.ordinal()) {
                 executeTestRemoveRDF(countFile, hybridStore, 2, --count);
                 ++step;
 
@@ -140,13 +145,14 @@ public class MergeRestartTest {
                 executeTestRemoveHDT(countFile, hybridStore, 2, --count);
                 ++step;
 
+                logger.debug("count of deleted in hdt step2s: " + store.getDeleteBitMap().countOnes());
                 executeTestCount(countFile, hybridStore);
                 ++step;
             }
             MergeRunnableStopPoint.STEP2_START.debugUnlockTest();
             // step 2 stuffs
             MergeRunnableStopPoint.STEP2_END.debugWaitForEvent();
-            {
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP2_END.ordinal()) {
                 executeTestRemoveRDF(countFile, hybridStore, 3, --count);
                 ++step;
 
@@ -156,6 +162,7 @@ public class MergeRestartTest {
                 executeTestRemoveHDT(countFile, hybridStore, 3, --count);
                 ++step;
 
+                logger.debug("count of deleted in hdt step2e: " + store.getDeleteBitMap().countOnes());
                 executeTestCount(countFile, hybridStore);
                 ++step;
             }
@@ -190,11 +197,14 @@ public class MergeRestartTest {
         }
     }
     private void mergeRestartTest2(MergeRunnableStopPoint point, File root) throws IOException, InterruptedException {
+        lockIfBefore(MergeRunnableStopPoint.STEP2_START, point);
         lockIfBefore(MergeRunnableStopPoint.STEP2_END, point);
 
         File nativeStore = new File(root, "native-store");
         File hdtStore = new File(root, "hdt-store");
         File countFile = new File(root, "count");
+
+        logger.debug("test2 restart, count of deleted in hdt: {}", new BitArrayDisk(4, hdtStore.getAbsolutePath() + "/triples-delete.arr").countOnes());
 
         // lock to get the test count 1 into the 2nd step
         HybridStore store2 = new HybridStore(
@@ -202,8 +212,18 @@ public class MergeRestartTest {
         );
         SailRepository hybridStore2 = new SailRepository(store2);
         // wait for the complete merge
+        MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
+        if (point.ordinal() <= MergeRunnableStopPoint.STEP2_START.ordinal()) {
+            logger.debug("test count 0");
+            logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
+            if (store2.getTempDeleteBitMap() != null)
+                logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
+            executeTestCount(countFile, hybridStore2);
+        }
+        MergeRunnableStopPoint.STEP2_START.debugUnlockTest();
+
         MergeRunnableStopPoint.STEP2_END.debugWaitForEvent();
-        {
+        if (point.ordinal() <= MergeRunnableStopPoint.STEP2_END.ordinal()) {
             logger.debug("test count 1");
             logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
             if (store2.getTempDeleteBitMap() != null)
@@ -221,12 +241,64 @@ public class MergeRestartTest {
         deleteDir(nativeStore);
         deleteDir(hdtStore);
     }
+    private static class FileStore {
+        File root1;
+        File root2;
+        boolean switchValue = false;
 
+        public FileStore(File root1, File root2) {
+            this.root1 = root1;
+            this.root2 = root2;
+        }
+
+        public synchronized void switchValue() {
+            switchValue = !switchValue;
+        }
+
+        public synchronized File getRoot() {
+            return switchValue ? root2 : root1;
+        }
+
+        public synchronized File getNativeStore() {
+            return new File(getRoot(), "native-store");
+        }
+        public synchronized File getHdtStore() {
+            return new File(getRoot(), "hdt-store");
+        }
+        public synchronized File getCountFile() {
+            return new File(getRoot(), "count");
+        }
+    }
     public void mergeRestartTest(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException, NotFoundException {
+        FileStore store = new FileStore(tempDir.getRoot(), tempDir2.getRoot());
+        Thread knowledgeThread = new Thread(() -> {
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLock();
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLockTest();
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLock();
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLockTest();
+
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugWaitForEvent();
+            {
+
+                logger.debug("STEP1_TEST_BITMAP1: {}",
+                        new BitArrayDisk(4, store.getHdtStore().getAbsolutePath() + "/triples-delete.arr").printInfo());
+            }
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugUnlockTest();
+
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugWaitForEvent();
+            {
+
+                logger.debug("STEP1_TEST_BITMAP2: {}",
+                        new BitArrayDisk(4, store.getHdtStore().getAbsolutePath() + "/triples-delete.arr").printInfo());
+            }
+            MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugUnlockTest();
+        }, "KnowledgeThread");
+        knowledgeThread.start();
         mergeRestartTest1(stopPoint, tempDir.getRoot());
         MergeRunnableStopPoint.disableRequest = false;
-        MergeRunnableStopPoint.unlockAllLocks();
+//        MergeRunnableStopPoint.unlockAllLocks();
         swapDir();
+        store.switchValue();
         mergeRestartTest2(stopPoint, tempDir2.getRoot());
     }
     public void startHalt() {

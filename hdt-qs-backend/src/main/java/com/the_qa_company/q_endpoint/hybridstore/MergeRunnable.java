@@ -355,10 +355,12 @@ public class MergeRunnable {
         // wait for all running updates to finish
         waitForActiveConnections();
 
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP1);
         // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
         hybridStore.initTempDump(restarting);
         hybridStore.initTempDeleteArray();
 
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP2);
         // mark in the store that the merge process started
         hybridStore.setMerging(true);
 
