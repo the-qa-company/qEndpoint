@@ -3,29 +3,38 @@ package com.the_qa_company.q_endpoint;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.BiConsumer;
 
 import static org.junit.Assert.assertEquals;
 
 public class MergeRestartTest {
+    private static final Logger logger = LoggerFactory.getLogger(MergeRestartTest.class);
     private static final File HALT_TEST_DIR = new File("tests", "halt_test_dir");
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
@@ -39,71 +48,175 @@ public class MergeRestartTest {
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
     }
 
+    private void writeInfoCount(File f, int count) throws IOException{
+        Files.writeString(Paths.get(f.getAbsolutePath()), String.valueOf(count));
+    }
+
+    private int getInfoCount(File f) throws IOException {
+        return Integer.parseInt(Files.readString(Paths.get(f.getAbsolutePath())));
+    }
+
+    private void lockIfBefore(MergeRunnableStopPoint point, MergeRunnableStopPoint current) {
+        if (current.ordinal() <= point.ordinal()) {
+            logger.debug("locking " + point.name().toLowerCase());
+            point.debugLockTest();
+            point.debugLock();
+        } else {
+            logger.debug("pass locking " + point.name().toLowerCase());
+        }
+    }
+    private void lockIfAfter(MergeRunnableStopPoint point, MergeRunnableStopPoint current) {
+        if (current.ordinal() >= point.ordinal()) {
+            logger.debug("locking " + point.name().toLowerCase());
+            point.debugLockTest();
+            point.debugLock();
+        } else {
+            logger.debug("pass locking " + point.name().toLowerCase());
+        }
+    }
     private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root) throws IOException, InterruptedException, NotFoundException {
+        lockIfAfter(MergeRunnableStopPoint.STEP1_START, stopPoint);
+        lockIfAfter(MergeRunnableStopPoint.STEP2_START, stopPoint);
+        lockIfAfter(MergeRunnableStopPoint.STEP2_END, stopPoint);
+        MergeRunnable.setStopPoint(stopPoint);
+
         File nativeStore = new File(root, "native-store");
         nativeStore.mkdirs();
         File hdtStore = new File(root, "hdt-store");
         hdtStore.mkdirs();
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
-        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
-        printHDT(hdt);
-        MergeRunnable.setStopPoint(stopPoint);
-        HybridStore store = new HybridStore(
-                hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
-        );
-        System.out.println("--- launching merge with stopPoint=" + stopPoint.name().toLowerCase());
+        File countFile = new File(root, "count");
 
-        store.setThreshold(2);
+        int count = 4;
+        HDT hdt = createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count);
+        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
+        printHDT(hdt);
+        writeInfoCount(countFile, count);
+        HybridStore store = new HybridStore(
+                hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
+        );
+        logger.debug("--- launching merge with stopPoint=" + stopPoint.name().toLowerCase());
+
+        store.setThreshold(3);
         SailRepository hybridStore = new SailRepository(store);
 
-        try (RepositoryConnection connection = hybridStore.getConnection()) {
-            ValueFactory vf = connection.getValueFactory();
-            String ex = "http://example.com/";
-            IRI ali = vf.createIRI(ex, "Ali");
-            System.out.println("--- add " + ali);
-            connection.add(ali, RDF.TYPE, FOAF.PERSON);
-            IRI dennis = vf.createIRI(ex, "Dennis");
-            System.out.println("--- add " + dennis);
-            connection.add(dennis, RDF.TYPE, FOAF.PERSON);
+        int step = 0;
+        try {
+            ++step;
+            executeTestAdd(countFile, hybridStore, 1, ++count);
+            ++step;
+            executeTestAdd(countFile, hybridStore, 2, ++count);
+            ++step;
+            executeTestAdd(countFile, hybridStore, 3, ++count);
+            ++step;
+            // trigger the merge with this call
+            executeTestAdd(countFile, hybridStore, 4, ++count);
+            ++step;
 
-            // with given THRESHOLD = 2, the hdt index will be merged with all triples from current native store
-            IRI pierre = vf.createIRI(ex, "Pierre");
-            System.out.println("--- add " + pierre);
-            connection.add(pierre, RDF.TYPE, FOAF.PERSON);
+            MergeRunnableStopPoint.STEP1_START.debugWaitForEvent();
+            {
+                // with given THRESHOLD = 2, the hdt index will be merged with all triples from current native store
+                executeTestRemoveRDF(countFile, hybridStore, 1, --count);
+                ++step;
 
-            IRI guo = vf.createIRI(ex, "Guo");
-            System.out.println("--- remove " + guo);
-            connection.remove(guo, RDF.TYPE, FOAF.PERSON);
-            // wait for merge to be done because it's on a separate thread
+                executeTestCount(countFile, hybridStore);
+                ++step;
 
-            // 1 triple hdt, 2 triples native a, 1 triple native b -1 triple removed from hdt
-            showCountAndAssert(connection, 3);
-            Thread.sleep(3000);
-            showCountAndAssert(connection, 3);
+                executeTestRemoveHDT(countFile, hybridStore, 1, --count);
+                ++step;
 
-            Files.deleteIfExists(Paths.get("index.hdt"));
-            Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
-            Files.deleteIfExists(Paths.get("index.nt"));
+                executeTestCount(countFile, hybridStore);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP1_START.debugUnlockTest();
+            // lock step1
+            MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
+            {
+                executeTestRemoveRDF(countFile, hybridStore, 2, --count);
+                ++step;
 
+                executeTestCount(countFile, hybridStore);
+                ++step;
+
+                executeTestRemoveHDT(countFile, hybridStore, 2, --count);
+                ++step;
+
+                executeTestCount(countFile, hybridStore);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP2_START.debugUnlockTest();
+            // step 2 stuffs
+            MergeRunnableStopPoint.STEP2_END.debugWaitForEvent();
+            {
+                executeTestRemoveRDF(countFile, hybridStore, 3, --count);
+                ++step;
+
+                executeTestCount(countFile, hybridStore);
+                ++step;
+
+                executeTestRemoveHDT(countFile, hybridStore, 3, --count);
+                ++step;
+
+                executeTestCount(countFile, hybridStore);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
+            // step 3 lock
+            MergeRunnable.debugWaitMerge();
+            ++step;
+
+            executeTestCount(countFile, hybridStore);
+            ++step;
+
+        } catch (MergeRunnableStopPoint.MergeRunnableException e) {
+            e.printStackTrace();
         }
-
-        MergeRunnable.debugWaitMerge();
+        logger.debug("End step: " + step + ", count: " + count);
     }
-    private void mergeRestartTest2(File root) throws IOException, InterruptedException, NotFoundException {
+    private void openConnection(SailRepository hybridStore, BiConsumer<ValueFactory, RepositoryConnection> accept) throws MergeRunnableStopPoint.MergeRunnableStopException {
+        try {
+            try (RepositoryConnection connection = hybridStore.getConnection()) {
+                ValueFactory vf = connection.getValueFactory();
+                accept.accept(vf, connection);
+            }
+        } catch (RepositoryException e) {
+            Throwable e2 = e;
+            while (!(e2 instanceof MergeRunnableStopPoint.MergeRunnableException)) {
+                if (e2.getCause() == null) {
+                    throw e; // it's not ours
+                }
+                e2 = e2.getCause();
+            }
+            throw (MergeRunnableStopPoint.MergeRunnableException) e2;
+        }
+    }
+    private void mergeRestartTest2(MergeRunnableStopPoint point, File root) throws IOException, InterruptedException {
+        lockIfBefore(MergeRunnableStopPoint.STEP2_END, point);
+
         File nativeStore = new File(root, "native-store");
         File hdtStore = new File(root, "hdt-store");
+        File countFile = new File(root, "count");
+
+        // lock to get the test count 1 into the 2nd step
         HybridStore store2 = new HybridStore(
-                hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
         );
         SailRepository hybridStore2 = new SailRepository(store2);
         // wait for the complete merge
-        MergeRunnable.debugWaitMerge();
-
-        // @todo: check if no issue with the new store
-
-        try (RepositoryConnection connection = hybridStore2.getConnection()) {
-            showCountAndAssert(connection, 3);
+        MergeRunnableStopPoint.STEP2_END.debugWaitForEvent();
+        {
+            logger.debug("test count 1");
+            logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
+            if (store2.getTempDeleteBitMap() != null)
+                logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
+            executeTestCount(countFile, hybridStore2);
         }
+        MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
+        MergeRunnable.debugWaitMerge();
+        logger.debug("test count 2");
+        logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
+        if (store2.getTempDeleteBitMap() != null)
+            logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
+        executeTestCount(countFile, hybridStore2);
 
         deleteDir(nativeStore);
         deleteDir(hdtStore);
@@ -111,11 +224,13 @@ public class MergeRestartTest {
 
     public void mergeRestartTest(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest1(stopPoint, tempDir.getRoot());
+        MergeRunnableStopPoint.disableRequest = false;
+        MergeRunnableStopPoint.unlockAllLocks();
         swapDir();
-        mergeRestartTest2(tempDir2.getRoot());
+        mergeRestartTest2(stopPoint, tempDir2.getRoot());
     }
     public void startHalt() {
-        MergeRunnableStopPoint.completeFailure = true;
+        MergeRunnableStopPoint.askCompleteFailure();
         deleteDir(HALT_TEST_DIR);
         Assert.assertTrue(HALT_TEST_DIR.mkdirs());
     }
@@ -126,10 +241,6 @@ public class MergeRestartTest {
     @Test
     public void mergeRestartStep1StartTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP1_START);
-    }
-    @Test
-    public void mergeRestartStep1LockTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest(MergeRunnableStopPoint.STEP1_LOCK);
     }
     @Test
     public void mergeRestartStep1EndTest() throws IOException, InterruptedException, NotFoundException {
@@ -146,10 +257,6 @@ public class MergeRestartTest {
     @Test
     public void mergeRestartStep3StartTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP3_START);
-    }
-    @Test
-    public void mergeRestartStep3LockTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest(MergeRunnableStopPoint.STEP3_LOCK);
     }
     @Test
     public void mergeRestartStep3Mid1Test() throws IOException, InterruptedException, NotFoundException {
@@ -169,7 +276,7 @@ public class MergeRestartTest {
     }
     @Test
     public void mergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest(MergeRunnableStopPoint.MERGE_END_AFTER_SLEEP);
+        mergeRestartTest(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
     }
     /* test with throw/wait */
     @Test
@@ -180,20 +287,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep1StartTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
-        endHalt();
-    }
-    @Test
-    @Ignore("should be used by hand | halt test")
-    public void haltMergeRestartStep1LockTest() throws IOException, InterruptedException, NotFoundException {
-        startHalt();
-        mergeRestartTest1(MergeRunnableStopPoint.STEP1_LOCK, HALT_TEST_DIR);
-    }
-    @Test
-    @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep1LockTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep1StartTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP1_START, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -204,8 +299,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep1EndTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep1EndTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP1_END, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -216,8 +311,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep2StartTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep2StartTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP2_START, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -228,8 +323,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep2EndTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep2EndTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP2_END, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -240,20 +335,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep3StartTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
-        endHalt();
-    }
-    @Test
-    @Ignore("should be used by hand | halt test")
-    public void haltMergeRestartStep3LockTest() throws IOException, InterruptedException, NotFoundException {
-        startHalt();
-        mergeRestartTest1(MergeRunnableStopPoint.STEP3_LOCK, HALT_TEST_DIR);
-    }
-    @Test
-    @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep3LockTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep3StartTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP3_START, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -264,8 +347,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep3Mid1Test() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep3Mid1Test() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP3_FILES_MID1, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -276,8 +359,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep3Mid2Test() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep3Mid2Test() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP3_FILES_MID2, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -288,8 +371,8 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartStep3EndTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartStep3EndTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.STEP3_END, HALT_TEST_DIR);
         endHalt();
     }
     @Test
@@ -300,20 +383,20 @@ public class MergeRestartTest {
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartMergeEndTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartMergeEndTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.MERGE_END, HALT_TEST_DIR);
         endHalt();
     }
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
-        mergeRestartTest1(MergeRunnableStopPoint.MERGE_END_AFTER_SLEEP, HALT_TEST_DIR);
+        mergeRestartTest1(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP, HALT_TEST_DIR);
     }
     @Test
     @Ignore("should be used by hand | halt test")
-    public void halt2MergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException, NotFoundException {
-        mergeRestartTest2(HALT_TEST_DIR);
+    public void halt2MergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException {
+        mergeRestartTest2(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP, HALT_TEST_DIR);
         endHalt();
     }
 
@@ -321,8 +404,9 @@ public class MergeRestartTest {
 
     private void printHDT(HDT hdt) throws NotFoundException {
         IteratorTripleString it = hdt.search("", "", "");
+        logger.debug("HDT: ");
         while (it.hasNext()) {
-            System.out.println(it.next());
+            logger.debug("- " + it.next());
         }
     }
 
@@ -330,7 +414,7 @@ public class MergeRestartTest {
         try {
             Files.walkFileTree(Paths.get(f.getAbsolutePath()), new FileVisitor<>() {
                 @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -341,7 +425,7 @@ public class MergeRestartTest {
                 }
 
                 @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
                     return FileVisitResult.TERMINATE;
                 }
 
@@ -375,7 +459,7 @@ public class MergeRestartTest {
                 }
 
                 @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
                     return FileVisitResult.TERMINATE;
                 }
 
@@ -391,15 +475,90 @@ public class MergeRestartTest {
     }
 
     private int count(RepositoryConnection connection) {
+        logger.debug("-- list");
         RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
         int count = 0;
         while (sts.hasNext()) {
-            System.out.println(sts.next());
+            logger.debug(String.valueOf(sts.next()));
             count++;
         }
         return count;
     }
-    private void showCountAndAssert(RepositoryConnection connection, int excepted) {
-        assertEquals(count(connection), excepted);
+
+    /**
+     * create a test HDT of size n
+     * @param fileName the hdt file
+     * @param spec the hdt spec
+     * @param testElements n
+     * @return the hdt
+     */
+    private HDT createTestHDT(String fileName, HDTSpecification spec, int testElements) {
+        try {
+            File inputFile = new File(fileName);
+            String baseURI = inputFile.getAbsolutePath();
+            // adding triples
+
+            ValueFactory vf = new MemValueFactory();
+            try (FileOutputStream out = new FileOutputStream(inputFile)){
+                RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
+                writer.startRDF();
+                logger.debug("Initial HDT:");
+                for (int id = 1; id <= testElements; id++) {
+                    Statement stm = vf.createStatement(
+                            vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
+                            vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
+                            vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
+                    );
+                    logger.debug("HDT statement: " + stm);
+                    writer.handleStatement(stm);
+                }
+                writer.endRDF();
+            }
+
+            HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(), baseURI, RDFNotation.NTRIPLES, spec, null);
+            return HDTManager.indexedHDT(hdt, null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private void executeTestRemoveHDT(File out, SailRepository repo, int id, int count) throws IOException {
+        openConnection(repo, (vf, connection) -> {
+            Statement stm = vf.createStatement(
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
+            );
+            logger.debug("Remove statement " + stm);
+            connection.remove(stm);
+        });
+        writeInfoCount(out, count);
+    }
+    private void executeTestRemoveRDF(File out, SailRepository repo, int id, int count) throws IOException {
+        openConnection(repo, (vf, connection) -> {
+            Statement stm = vf.createStatement(
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
+            );
+            logger.debug("Remove statement " + stm);
+            connection.remove(stm);
+        });
+        writeInfoCount(out, count);
+    }
+    private void executeTestAdd(File out, SailRepository repo, int id, int count) throws IOException {
+        openConnection(repo, (vf, connection) -> {
+            Statement stm = vf.createStatement(
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
+            );
+            logger.debug("Add statement " + stm);
+            connection.add(stm);
+        });
+        writeInfoCount(out, count);
+    }
+    private void executeTestCount(File out, SailRepository repo) throws IOException {
+        int excepted = getInfoCount(out);
+        openConnection(repo, (vf, connection) -> assertEquals(excepted, count(connection)));
     }
 }

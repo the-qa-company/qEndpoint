@@ -227,7 +227,13 @@ public class MergeRunnable {
      * @return the {@link Lock}
      */
     private Lock createConnectionLock(String alias) {
-        return hybridStore.lockToPreventNewConnections.createLock(alias);
+        Lock l = hybridStore.lockToPreventNewConnections.createLock(alias);
+
+        if (logger.isDebugEnabled()) {
+            MergeRunnableStopPoint.setLastLock(l);
+        }
+
+        return l;
     }
 
     /**
@@ -240,14 +246,15 @@ public class MergeRunnable {
         if (!logger.isDebugEnabled())
             return;
 
+        point.debugUnlock();
+        point.debugWaitForTestEvent();
+
         logger.debug("Complete merge runnable step " + point.name());
         if (stopPoint == point) {
             stopPoint = null;
             point.debugThrowStop();
-        } else {
-            point.debugUnlock();
-            point.debugWaitForTestEvent();
         }
+
     }
 
     /**
@@ -352,13 +359,11 @@ public class MergeRunnable {
         hybridStore.initTempDump(restarting);
         hybridStore.initTempDeleteArray();
 
-        debugStepPoint(MergeRunnableStopPoint.STEP1_LOCK);
-
         // mark in the store that the merge process started
         hybridStore.setMerging(true);
 
         sleep(extendsTimeMergeBeginning, "extendsTimeMergeBeginning");
-
+        debugStepPoint(MergeRunnableStopPoint.STEP1_OLD_SLEEP_BEFORE_SWITCH);
 
         // switching the stores
         this.hybridStore.switchStore = !this.hybridStore.switchStore;
@@ -367,6 +372,7 @@ public class MergeRunnable {
         this.hybridStore.setTriplesCount(0);
 
         sleep(extendsTimeMergeBeginningAfterSwitch, "extendsTimeMergeBeginningAfterSwitch");
+        debugStepPoint(MergeRunnableStopPoint.STEP1_OLD_SLEEP_AFTER_SWITCH);
 
         // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo: a lock is needed here
         if (restarting) {
@@ -376,8 +382,8 @@ public class MergeRunnable {
         Files.copy(Paths.get(hybridStoreFiles.getTripleDeleteArr()),
                 Paths.get(hybridStoreFiles.getTripleDeleteCopyArr()));
         // release the lock so that the connections can continue
-        debugStepPoint(MergeRunnableStopPoint.STEP1_END);
         switchLock.release();
+        debugStepPoint(MergeRunnableStopPoint.STEP1_END);
         logger.debug("Switch-Lock released");
         logger.info("End merge step 1");
 
@@ -397,7 +403,6 @@ public class MergeRunnable {
     }
 
     private synchronized void step2(boolean restarting, Lock lock) throws InterruptedException, IOException {
-        logger.debug("Start Step 2");
         debugStepPoint(MergeRunnableStopPoint.STEP2_START);
         // diff hdt indexes...
         logger.debug("HDT Diff");
@@ -514,7 +519,6 @@ public class MergeRunnable {
         }
 
         this.hybridStore.resetDeleteArray(newHdt);
-        debugStepPoint(MergeRunnableStopPoint.STEP3_LOCK);
         newHdt.close();
 
         // rename new hdt to old hdt name so that they are replaces
@@ -558,9 +562,7 @@ public class MergeRunnable {
         this.hybridStore.setMerging(false);
         this.hybridStore.isMergeTriggered = false;
 
-        sleep(extendsTimeMergeEnd, "extendsTimeMergeEnd");
-
-        debugStepPoint(MergeRunnableStopPoint.MERGE_END_AFTER_SLEEP);
+        debugStepPoint(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
 
         logger.info("Merge finished");
     }

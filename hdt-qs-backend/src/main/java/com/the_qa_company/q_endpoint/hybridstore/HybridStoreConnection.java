@@ -45,6 +45,8 @@ public class HybridStoreConnection extends SailSourceConnection {
         // lock logic is here so that the connections is blocked
         try {
             this.hybridStore.lockToPreventNewConnections.waitForActiveLocks();
+            if (MergeRunnableStopPoint.disableRequest)
+                throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -81,6 +83,8 @@ public class HybridStoreConnection extends SailSourceConnection {
     // USED from connection get api not SPARQL
     @Override
     protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         CloseableIteration<? extends Statement, QueryEvaluationException> result =
                 tripleSource.getStatements(subj, pred, obj, contexts);
         return new ExceptionConvertingIteration<Statement, SailException>(result) {
@@ -105,6 +109,8 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
 //        System.out.println(subj.stringValue()+" - "+ pred.stringValue() + " - "+ obj.stringValue());
         Resource newSubj;
         IRI newPred;
@@ -129,7 +135,7 @@ public class HybridStoreConnection extends SailSourceConnection {
             newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("Adding triple {} {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+        logger.debug("Adding triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
@@ -274,6 +280,8 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         Resource newSubj;
         IRI newPred;
         Value newObj;

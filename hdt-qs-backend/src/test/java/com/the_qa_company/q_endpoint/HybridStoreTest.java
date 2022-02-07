@@ -62,6 +62,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class HybridStoreTest {
+    public static final String HDT_INDEX_NAME = "index_tst.hdt";
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
     HDTSpecification spec;
@@ -79,9 +80,9 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             HybridStore hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
             );
             hybridStore.shutDown();
 
@@ -98,9 +99,9 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             HybridStore hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
             );
             try (SailConnection connection = hybridStore.getConnection()) {
             }
@@ -117,10 +118,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                            hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
                     )
             );
             hybridStore.shutDown();
@@ -136,10 +137,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                            hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
                     )
 //                    new NativeStore(nativeStore,"spoc")
             );
@@ -160,9 +161,9 @@ public class HybridStoreTest {
 
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             HybridStore hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
             );
 
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
@@ -172,7 +173,7 @@ public class HybridStoreTest {
             }
             hybridStore.shutDown();
             hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
             );
             try (NotifyingSailConnection connection = hybridStore.getConnection()) {
                 connection.begin();
@@ -194,11 +195,11 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                            hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
                     )
             );
 
@@ -227,10 +228,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -270,8 +271,8 @@ public class HybridStoreTest {
                 }
                 // 2 triples hdt, 0 triples native a, 1 triple native b
                 assertEquals(3, count);
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get(HDT_INDEX_NAME +".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
 
             }
@@ -291,15 +292,15 @@ public class HybridStoreTest {
 
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, true, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
 //            printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
             );
 
             int toAdd = 15;
             int toDelete = Utility.COUNT / 100;
-            BitArrayDisk deleted = new BitArrayDisk(Utility.COUNT, true);
+            BitArrayDisk deleted = new BitArrayDisk(Utility.COUNT);
             Random rnd = new Random(42);
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -359,8 +360,8 @@ public class HybridStoreTest {
                 }
                 // 2 triples hdt, 0 triples native a, 1 triple native b
                 assertEquals( endCount, count);
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get(HDT_INDEX_NAME+".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
 
             }
@@ -380,10 +381,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(999);
             SailRepository hybridStore = new SailRepository(store);
@@ -405,8 +406,8 @@ public class HybridStoreTest {
                 assertEquals(count * (i + 1), connection.size());
             }
             assertEquals(5000, connection.size());
-            Files.deleteIfExists(Paths.get("index.hdt"));
-            Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+            Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+            Files.deleteIfExists(Paths.get(HDT_INDEX_NAME + ".index.v1-1"));
             Files.deleteIfExists(Paths.get("index.nt"));
 
         } catch (Exception e) {
@@ -422,10 +423,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(10);
             SailRepository hybridStore = new SailRepository(store);
@@ -446,8 +447,8 @@ public class HybridStoreTest {
                 }
                 // 1 triple in hdt and 2 added to native = 3 triples
                 assertEquals(3, statements.size());
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME+".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
 
             }
@@ -506,10 +507,10 @@ public class HybridStoreTest {
 //            File hdtStore = tempDir.newFolder("hdt-store");
 //            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
 //            assert hdt != null;
-//            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+//            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/"+HybridStoreTest.HDT_INDEX_NAME,null);
 //            printHDT(hdt);
 //            HybridStore store = new HybridStore(
-//                    hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",false
+//                    hdtStore.getAbsolutePath()+"/",HybridStoreTest.HDT_INDEX_NAME,spec,nativeStore.getAbsolutePath()+"/",false
 //            );
 //            //store.setThreshold(1);
 //            SailRepository hybridStore = new SailRepository(store);
@@ -549,8 +550,8 @@ public class HybridStoreTest {
 ////                    count++;
 ////                }
 ////                assertEquals(3, count);
-//                Files.deleteIfExists(Paths.get("index.hdt"));
-//                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+//                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME));
+//                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME + ".index.v1-1"));
 //                Files.deleteIfExists(Paths.get("index.nt"));
 //
 //            }
@@ -604,10 +605,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(99);
             SailRepository hybridStore = new SailRepository(store);
@@ -656,10 +657,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -698,11 +699,11 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             System.out.println("HDT content");
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -753,10 +754,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -800,10 +801,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(10);
             SailRepository hybridStore = new SailRepository(store);
@@ -829,8 +830,8 @@ public class HybridStoreTest {
                     System.out.println(binding);
                 }
                 assertEquals(3, bindingSets.size());
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME + ".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
             }
         } catch (Exception e) {
@@ -846,10 +847,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -877,8 +878,8 @@ public class HybridStoreTest {
                     assertEquals(ali.toString(), s.getSubject().toString());
                 }
 
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME + ".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
 
             }
@@ -894,10 +895,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -930,10 +931,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);
@@ -965,8 +966,8 @@ public class HybridStoreTest {
                 assertEquals(1, bindingSets.size());
                 connection.close();
                 hybridStore.shutDown();
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get( HDT_INDEX_NAME + ".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
             }
         } catch (Exception e) {
@@ -982,10 +983,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(1000000);
             SailRepository hybridStore = new SailRepository(store);
@@ -1007,8 +1008,8 @@ public class HybridStoreTest {
                 //Thread.sleep(2000);
                 assertEquals(count + 1, connection.size());
 
-                Files.deleteIfExists(Paths.get("index.hdt"));
-                Files.deleteIfExists(Paths.get("index.hdt.index.v1-1"));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME));
+                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME + ".index.v1-1"));
                 Files.deleteIfExists(Paths.get("index.nt"));
 
             }
@@ -1027,10 +1028,10 @@ public class HybridStoreTest {
             File hdtStore = tempDir.newFolder("hdt-store");
             HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             printHDT(hdt);
             HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
             );
             store.setThreshold(2);
             SailRepository hybridStore = new SailRepository(store);

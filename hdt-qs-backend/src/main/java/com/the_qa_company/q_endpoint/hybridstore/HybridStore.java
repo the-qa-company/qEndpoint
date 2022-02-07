@@ -113,8 +113,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private final HybridStoreFiles hybridStoreFiles;
     private MergeRunnable.MergeThread mergerThread;
 
-    private HybridStore(HDT hdt, String locationHdt, String locationNative, boolean inMemDeletes) {
-        this.hybridStoreFiles = new HybridStoreFiles(locationNative, locationHdt);
+    private HybridStore(HDT hdt, String hdtIndexName, String locationHdt, String locationNative, boolean inMemDeletes) {
+        this.hybridStoreFiles = new HybridStoreFiles(locationNative, locationHdt, hdtIndexName);
 //        this.nativeStoreA = new MemoryStore();
 //        this.nativeStoreB = new MemoryStore();
 //        this.nativeStoreA.setDefaultIsolationLevel(IsolationLevels.NONE);
@@ -149,9 +149,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
     }
 
-    public HybridStore(String locationHdt, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
+    public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
         // load HDT file
-        this(HDTManager.mapIndexedHDT(HybridStoreFiles.getHDTIndex(locationHdt), spec), locationHdt, locationNative, inMemDeletes);
+        this(HDTManager.mapIndexedHDT(HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName), spec), hdtIndexName, locationHdt, locationNative, inMemDeletes);
         this.spec = spec;
 
         // initialize the count of the triples
@@ -187,7 +187,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // init the delete array upon the first start of the store
     public void initDeleteArray() {
         if (this.inMemDeletes)
-            this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), true);
+            this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements());
         else {
             // @todo: these should be recovered from the file if it is there
             this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), hybridStoreFiles.getTripleDeleteArr());

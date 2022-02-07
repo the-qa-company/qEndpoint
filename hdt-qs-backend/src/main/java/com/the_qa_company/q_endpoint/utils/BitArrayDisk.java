@@ -31,19 +31,12 @@ public class BitArrayDisk {
 
 
     public BitArrayDisk(long nbits, String location) {
-        this.numbits = 0;
-        this.location = location;
-        try {
-            this.output = new NioFile(new File(location));
-            initWordsArray(nbits);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this(nbits, new File(location));
     }
 
-    public BitArrayDisk(long nbits, boolean inMemory) {
+    public BitArrayDisk(long nbits) {
         this.numbits = 0;
-        this.inMemory = inMemory;
+        this.inMemory = true;
         initWordsArray(nbits);
     }
 

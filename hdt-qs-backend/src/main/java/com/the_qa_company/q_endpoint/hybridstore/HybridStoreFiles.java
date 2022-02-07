@@ -1,13 +1,14 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
 public class HybridStoreFiles {
-    private final String locationNative, locationHdt;
-    public static String getHDTIndex(String locationHdt) {
-        return locationHdt + "index.hdt";
+    private final String locationNative, locationHdt, hdtIndexName;
+    public static String getHDTIndex(String locationHdt, String hdtIndexName) {
+        return locationHdt + hdtIndexName;
     }
-    public HybridStoreFiles(String locationNative, String locationHdt) {
+    public HybridStoreFiles(String locationNative, String locationHdt, String hdtIndexName) {
         this.locationNative = locationNative;
         this.locationHdt = locationHdt;
+        this.hdtIndexName = hdtIndexName;
     }
 
     public String getLocationHdt() {
@@ -47,23 +48,23 @@ public class HybridStoreFiles {
     }
 
     public String getHDTIndex() {
-        return getHDTIndex(locationHdt);
+        return getHDTIndex(locationHdt, hdtIndexName);
     }
 
     public String getHDTIndexV11() {
-        return locationHdt + "index.hdt.index.v1-1";
+        return locationHdt + hdtIndexName + ".index.v1-1";
     }
 
     public String getHDTNewIndex() {
-        return locationHdt + "new_index.hdt";
+        return locationHdt + hdtIndexName + ".new.hdt";
     }
 
     public String getHDTNewIndexDiff() {
-        return locationHdt + "new_index_diff.hdt";
+        return locationHdt + hdtIndexName + ".new.hdt";
     }
 
     public String getHDTNewIndexV11() {
-        return locationHdt + "new_index.hdt.index.v1-1";
+        return locationHdt + hdtIndexName + "new.hdt.index.v1-1";
     }
 
     public String getTripleDeleteArr() {

@@ -58,6 +58,9 @@ public class Sparql {
     @Value("${locationHdt}")
     private String locationHdt;
 
+    @Value("${hdtIndexName}")
+    private String hdtIndexName;
+
     @Value("${locationNative}")
     private String locationNative;
 
@@ -110,7 +113,7 @@ public class Sparql {
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions(hdtSpec);
 
-            File hdtFile = new File(HybridStoreFiles.getHDTIndex(location));
+            File hdtFile = new File(HybridStoreFiles.getHDTIndex(location, hdtIndexName));
             if (!hdtFile.exists()) {
                 File tempRDF = new File(location + "tmp_index.nt");
                 if (!tempRDF.getParentFile().exists())
@@ -121,7 +124,7 @@ public class Sparql {
                 Files.delete(Paths.get(tempRDF.getAbsolutePath()));
             }
 
-            hybridStore = new HybridStore(locationHdt, spec, locationNative, false);
+            hybridStore = new HybridStore(locationHdt, hdtIndexName, spec, locationNative, false);
             hybridStore.setThreshold(threshold);
             logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
             luceneSail = new LuceneSail();
