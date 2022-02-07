@@ -19,6 +19,7 @@ import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.hdt.HDTVersion;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -445,27 +446,30 @@ public class MergeRunnable {
     }
 
     private Step3SubStep getStep3SubStep() {
-        if (!exists(hybridStoreFiles.getHDTNewIndexV11())) {
+
+        boolean existsOldTripleDeleteTempArr = existsOld(hybridStoreFiles.getTripleDeleteTempArr());
+
+        if (!exists(hybridStoreFiles.getHDTNewIndexV11()) && existsOldTripleDeleteTempArr) {
 //            after rename(hybridStoreFiles.getHDTNewIndexV11(), hybridStoreFiles.getHDTIndexV11());
             return Step3SubStep.AFTER_INDEX_V11_RENAME;
         }
-        if (!exists(hybridStoreFiles.getHDTNewIndex())) {
+        if (!exists(hybridStoreFiles.getHDTNewIndex()) && existsOldTripleDeleteTempArr) {
 //            after rename(hybridStoreFiles.getHDTNewIndex(), hybridStoreFiles.getHDTIndex());
             return Step3SubStep.AFTER_INDEX_RENAME;
         }
-        if (!existsOld(hybridStoreFiles.getHDTIndexV11())) {
+        if (existsOld(hybridStoreFiles.getHDTIndexV11())) {
 //            after renameToOld(hybridStoreFiles.getHDTIndexV11());
             return Step3SubStep.AFTER_INDEX_V11_OLD_RENAME;
         }
-        if (!existsOld(hybridStoreFiles.getHDTIndex())) {
+        if (existsOld(hybridStoreFiles.getHDTIndex())) {
 //            after renameToOld(hybridStoreFiles.getHDTIndex());
             return Step3SubStep.AFTER_INDEX_OLD_RENAME;
         }
-        if (!existsOld(hybridStoreFiles.getTripleDeleteNewArr())) {
+        if (existsOld(hybridStoreFiles.getTripleDeleteNewArr())) {
 //            after renameToOld(hybridStoreFiles.getTripleDeleteNewArr());
             return Step3SubStep.AFTER_TRIPLEDEL_NEW_OLD_RENAME;
         }
-        if (!existsOld(hybridStoreFiles.getTripleDeleteTempArr())) {
+        if (existsOldTripleDeleteTempArr) {
 //            after renameToOld(hybridStoreFiles.getTripleDeleteTempArr());
             return Step3SubStep.AFTER_TRIPLEDEL_TMP_OLD_RENAME;
         }
@@ -610,7 +614,7 @@ public class MergeRunnable {
             Files.delete(Paths.get(location + "triples"));
             theDir.delete();
             Files.deleteIfExists(Paths.get(hdtInput1));
-            Files.deleteIfExists(Paths.get(hdtInput1 + ".index.v1-1"));
+            Files.deleteIfExists(Paths.get(hdtInput1 + HDTVersion.get_index_suffix("-")));
         } catch (Exception e) {
             e.printStackTrace();
             hybridStore.setMerging(false);

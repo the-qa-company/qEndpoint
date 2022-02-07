@@ -50,6 +50,10 @@ public class MergeRestartTest {
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
     }
 
+    private void printHere(String title) {
+        System.out.println(title + ": " + new Throwable().getStackTrace()[1]);
+    }
+
     private void writeInfoCount(File f, int count) throws IOException{
         Files.writeString(Paths.get(f.getAbsolutePath()), String.valueOf(count));
     }
@@ -161,6 +165,7 @@ public class MergeRestartTest {
 
                 executeTestRemoveHDT(countFile, hybridStore, 3, --count);
                 ++step;
+                printHere("after remove 3");
 
                 logger.debug("count of deleted in hdt step2e: " + store.getDeleteBitMap().countOnes());
                 executeTestCount(countFile, hybridStore);
