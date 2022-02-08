@@ -81,9 +81,8 @@ public class BitArrayDisk {
     }
 
     private void writeBits() throws IOException {
-        int nwords = (int) numWords(allBits);
-        this.words = new long[nwords];
         // write the length of the array in the beginning
+        int nwords = (int) numWords(allBits);
         this.output.writeLong(nwords, 0);
     }
 
@@ -92,6 +91,8 @@ public class BitArrayDisk {
         try {
             if (!inMemory) {
                 if (output.size() == 0) { // file empty
+                    int nwords = (int) numWords(allBits);
+                    this.words = new long[nwords];
                     writeBits();
                 } else {
                     // read the length of the array from the beginning
