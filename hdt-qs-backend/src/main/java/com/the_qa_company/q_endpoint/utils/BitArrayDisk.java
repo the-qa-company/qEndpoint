@@ -12,6 +12,7 @@ public class BitArrayDisk {
     protected final static int W = 64;
 
     protected long numbits;
+    protected long allBits;
     protected long[] words;
 
     private static final int BLOCKS_PER_SUPER = 4;
@@ -49,6 +50,21 @@ public class BitArrayDisk {
         }
     }
 
+    public void changeToInDisk(File file) {
+        assert inMemory: "the BitArray should be in memory";
+        inMemory = false;
+        try {
+            this.output = new NioFile(file);
+            writeBits();
+            for (int offset = 0; offset < words.length; offset++) {
+                output.writeLong(words[offset], 8L * (offset + 1));
+            }
+            output.force(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private int log2(long value) {
         if (value == 0) {
             return 0; // Wrong, but it's private
@@ -64,14 +80,19 @@ public class BitArrayDisk {
         return log;
     }
 
+    private void writeBits() throws IOException {
+        int nwords = (int) numWords(allBits);
+        this.words = new long[nwords];
+        // write the length of the array in the beginning
+        this.output.writeLong(nwords, 0);
+    }
+
     private void initWordsArray(long nbits) {
+        allBits = nbits;
         try {
             if (!inMemory) {
                 if (output.size() == 0) { // file empty
-                    int nwords = (int) numWords(nbits);
-                    this.words = new long[nwords];
-                    // write the length of the array in the beginning
-                    this.output.writeLong(nwords, 0);
+                    writeBits();
                 } else {
                     // read the length of the array from the beginning
                     long length = this.output.readLong(0);
@@ -237,9 +258,26 @@ public class BitArrayDisk {
     }
 
 
+    @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
         for (long i = 0; i < numbits; i++) {
+            str.append(access(i) ? '1' : '0');
+        }
+        return str.toString();
+    }
+
+    public String toString(boolean allBits) {
+        StringBuilder str = new StringBuilder();
+        long end;
+
+        if (allBits) {
+            end = this.allBits;
+        } else {
+            end = numbits;
+        }
+
+        for (long i = 0; i < end; i++) {
             str.append(access(i) ? '1' : '0');
         }
         return str.toString();
@@ -265,7 +303,7 @@ public class BitArrayDisk {
         return "numWords:" + getNumWords() +
                 ", numbits: " + getNumbits() +
                 ", ones: " + countOnes() +
-                (inMemory ? ", inMemory: true" : ", file: " + output.getFile().getAbsolutePath())
-                + "\n" + this;
+                (inMemory ? ", inMemory: true" : "\nfile: " + output.getFile().getAbsolutePath()) +
+                (allBits <= 20 ? "\nbits: " + toString(true) : "");
     }
 }
