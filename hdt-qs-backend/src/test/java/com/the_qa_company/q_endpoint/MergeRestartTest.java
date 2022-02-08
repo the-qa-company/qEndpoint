@@ -311,7 +311,8 @@ public class MergeRestartTest {
         Assert.assertTrue(HALT_TEST_DIR.mkdirs());
     }
     public void endHalt() {
-        Assert.assertTrue(HALT_TEST_DIR.delete());
+        deleteDir(HALT_TEST_DIR);
+        Assert.assertFalse(HALT_TEST_DIR.exists());
     }
     /* test with throw/wait */
     @Test
