@@ -50,10 +50,6 @@ public class MergeRestartTest {
         MergeRunnableStopPoint.debug = true;
     }
 
-    private void printHere(String title, int rollback) {
-        System.out.println(title + ": " + new Throwable().getStackTrace()[1 + rollback]);
-    }
-
     private void writeInfoCount(File f, int count) throws IOException{
         Files.writeString(Paths.get(f.getAbsolutePath()), String.valueOf(count));
     }
@@ -108,14 +104,16 @@ public class MergeRestartTest {
         int step = 0;
         try {
             ++step;
-            executeTestAdd(countFile, hybridStore, 1, ++count);
+            executeTestAddRDF(countFile, hybridStore, 1, ++count);
             ++step;
-            executeTestAdd(countFile, hybridStore, 2, ++count);
+            executeTestAddRDF(countFile, hybridStore, 2, ++count);
             ++step;
-            executeTestAdd(countFile, hybridStore, 3, ++count);
+            executeTestAddRDF(countFile, hybridStore, 3, ++count);
+            executeTestAddRDF(countFile, hybridStore, 3, count);
+            executeTestAddHDT(countFile, hybridStore, 3, count);
             ++step;
             // trigger the merge with this call
-            executeTestAdd(countFile, hybridStore, 4, ++count);
+            executeTestAddRDF(countFile, hybridStore, 4, ++count);
             ++step;
 
             MergeRunnableStopPoint.STEP1_START.debugWaitForEvent();
@@ -129,6 +127,10 @@ public class MergeRestartTest {
 
                 executeTestRemoveHDT(countFile, hybridStore, 1, --count);
                 ++step;
+
+                // no duplicate test
+                executeTestAddRDF(countFile, hybridStore, 4, count);
+                executeTestAddHDT(countFile, hybridStore, 4, count);
 
                 logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
                 logger.debug("STEP1_TEST_BITMAP0n: {}",
@@ -149,6 +151,10 @@ public class MergeRestartTest {
                 executeTestRemoveHDT(countFile, hybridStore, 2, --count);
                 ++step;
 
+                // no duplicate test
+                executeTestAddRDF(countFile, hybridStore, 4, count);
+                executeTestAddHDT(countFile, hybridStore, 4, count);
+
                 logger.debug("count of deleted in hdt step2s: " + store.getDeleteBitMap().countOnes());
                 executeTestCount(countFile, hybridStore, store);
                 ++step;
@@ -165,7 +171,10 @@ public class MergeRestartTest {
 
                 executeTestRemoveHDT(countFile, hybridStore, 3, --count);
                 ++step;
-                printHere("after remove 3", 0);
+
+                // no duplicate test
+                executeTestAddRDF(countFile, hybridStore, 4, count);
+                executeTestAddHDT(countFile, hybridStore, 4, count);
 
                 logger.debug("count of deleted in hdt step2e: " + store.getDeleteBitMap().countOnes());
                 executeTestCount(countFile, hybridStore, store);
@@ -175,6 +184,13 @@ public class MergeRestartTest {
             // step 3 lock
             MergeRunnable.debugWaitMerge();
             ++step;
+
+            executeTestCount(countFile, hybridStore, store);
+            ++step;
+
+            // no duplicate test
+            executeTestAddRDF(countFile, hybridStore, 4, count);
+            executeTestAddHDT(countFile, hybridStore, 4, count);
 
             executeTestCount(countFile, hybridStore, store);
             ++step;
@@ -264,14 +280,8 @@ public class MergeRestartTest {
             return switchValue ? root2 : root1;
         }
 
-        public synchronized File getNativeStore() {
-            return new File(getRoot(), "native-store");
-        }
         public synchronized File getHdtStore() {
             return new File(getRoot(), "hdt-store");
-        }
-        public synchronized File getCountFile() {
-            return new File(getRoot(), "count");
         }
     }
     public void mergeRestartTest(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException, NotFoundException {
@@ -625,10 +635,22 @@ public class MergeRestartTest {
         });
         writeInfoCount(out, count);
     }
-    private void executeTestAdd(File out, SailRepository repo, int id, int count) throws IOException {
+    private void executeTestAddRDF(File out, SailRepository repo, int id, int count) throws IOException {
         openConnection(repo, (vf, connection) -> {
             Statement stm = vf.createStatement(
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
+            );
+            logger.debug("Add statement " + stm);
+            connection.add(stm);
+        });
+        writeInfoCount(out, count);
+    }
+    private void executeTestAddHDT(File out, SailRepository repo, int id, int count) throws IOException {
+        openConnection(repo, (vf, connection) -> {
+            Statement stm = vf.createStatement(
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
             );
