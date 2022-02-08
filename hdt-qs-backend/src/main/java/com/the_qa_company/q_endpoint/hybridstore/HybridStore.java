@@ -432,8 +432,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void resetDeleteArray(HDT newHdt) {
         // delete array created at merge time
 
-        BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
-                hybridStoreFiles.getTripleDeleteNewArr());
+        BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements());
 
         long lastOldSubject = -2;
         long lastNewSubject = -2;
@@ -538,19 +537,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             } else {
                 logger.debug("no remap");
             }
+            logger.debug("Tmp map: {}", tempdeleteBitMap.printInfo());
+            logger.debug("New map: {}", newDeleteArray.printInfo());
         }
 
-        newDeleteArray.force(true);
-        newDeleteArray.close();
-        try {
-            Files.copy(Paths.get(hybridStoreFiles.getTripleDeleteNewArr()),
-                    Paths.get(hybridStoreFiles.getTripleDeleteArr()));
-
-            this.setDeleteBitMap(new BitArrayDisk(newHdt.getTriples().getNumberOfElements(),
-                    hybridStoreFiles.getTripleDeleteArr()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        newDeleteArray.changeToInDisk(new File(hybridStoreFiles.getTripleDeleteArr()));
+        this.setDeleteBitMap(newDeleteArray);
     }
 
     public void markDeletedTempTriples() {

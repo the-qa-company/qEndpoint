@@ -77,10 +77,6 @@ public class HybridStoreFiles {
         return this.locationHdt + "triples-delete-temp.arr";
     }
 
-    public String getTripleDeleteNewArr() {
-        return this.locationHdt + "triples-delete-new.arr";
-    }
-
     public String getTripleDeleteCopyArr() {
         return this.locationHdt + "triples-delete-cpy.arr";
     }
