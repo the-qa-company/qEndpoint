@@ -99,7 +99,7 @@ public class BitArrayDisk {
                     long length = this.output.readLong(0);
                     this.words = new long[(int) length];
 
-                    int lastNonZero = 0;
+                    int lastNonZero = -1;
                     for (int i = 0; i < length; i++) {
                         long v = this.output.readLong((i + 1) * 8L);
                         if (v != 0) {
@@ -107,7 +107,7 @@ public class BitArrayDisk {
                             lastNonZero = i;
                         }
                     }
-                    if (lastNonZero != 0)
+                    if (lastNonZero != -1)
                         numbits = 8L * lastNonZero + log2(words[lastNonZero]);
                 }
             } else {
