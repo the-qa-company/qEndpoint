@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.SailReadOnlyException;
@@ -25,6 +26,7 @@ import org.rdfhdt.hdt.triples.TripleID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 public class HybridStoreConnection extends SailSourceConnection {
@@ -364,9 +366,16 @@ public class HybridStoreConnection extends SailSourceConnection {
             // @todo: why is this important?
             // means that the triple doesn't exist in HDT - we have to dump it while merging, this triple might be in the newly generated HDT
             if (this.hybridStore.isMerging()) {
-                RDFWriter writer = this.hybridStore.getRdfWriterTempTriples();
+                NTriplesWriter writer = this.hybridStore.getRdfWriterTempTriples();
                 if (writer != null) {
-                    writer.handleStatement(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
+                    Statement st = this.hybridStore.getValueFactory().createStatement(subj, pred, obj);
+                    logger.debug("add to RDFWriter: {}", st);
+                    writer.handleStatement(st);
+                    try {
+                        writer.getWriter().flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 } else {
                     logger.error("Writer is null!!");
                 }

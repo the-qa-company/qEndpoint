@@ -23,6 +23,7 @@ import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
@@ -99,7 +100,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     ValueFactory valueFactory;
 
-    private RDFWriter rdfWriterTempTriples;
+    private NTriplesWriter rdfWriterTempTriples;
 
     // lock manager for the merge thread
     public LockManager lockToPreventNewConnections;
@@ -387,7 +388,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         return tempdeleteBitMap;
     }
 
-    public RDFWriter getRdfWriterTempTriples() {
+    public NTriplesWriter getRdfWriterTempTriples() {
         return rdfWriterTempTriples;
     }
 
@@ -411,7 +412,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             if (!file.exists())
                 file.createNewFile();
             out = new FileOutputStream(file, isRestarting);
-            this.rdfWriterTempTriples = Rio.createWriter(RDFFormat.NTRIPLES, out);
+            this.rdfWriterTempTriples = new NTriplesWriter(out);
             this.rdfWriterTempTriples.startRDF();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
