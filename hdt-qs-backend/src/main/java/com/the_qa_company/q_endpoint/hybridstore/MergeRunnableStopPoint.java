@@ -11,7 +11,11 @@ import org.slf4j.LoggerFactory;
 public enum MergeRunnableStopPoint {
     STEP1_START("at start of step1/merge"),
     STEP1_TEST_BITMAP1("step1 test 1"),
+    STEP1_TEST_SELECT1("step 1 test select 1"),
     STEP1_TEST_BITMAP2("step1 test 2"),
+    STEP1_TEST_SELECT2("step 1 test select 2"),
+    STEP1_TEST_SELECT3("step 1 test select 3"),
+    STEP1_TEST_SELECT4("step 1 test select 4"),
     STEP1_OLD_SLEEP_BEFORE_SWITCH("step1 old sleep extendsTimeMergeBeginning"),
     STEP1_OLD_SLEEP_AFTER_SWITCH("step1 old sleep extendsTimeMergeBeginningAfterSwitch"),
     STEP1_END("before step1 marker write"),

@@ -35,26 +35,26 @@ import java.util.Optional;
 
 public class MergeRunnable {
     @FunctionalInterface
-    private interface MergeThreadRunnable {
+    private interface MergeThreadRunnable<T> {
         /**
          * execute a merge step and the next step
          *
          * @param restarting if the step is restarting
-         * @param lock       if restarting == true, the return value of {@link MergeThreadReloader#reload()}
+         * @param data       if restarting == true, the return value of {@link MergeThreadReloader#reload()}
          * @throws InterruptedException
          * @throws IOException
          */
-        void run(boolean restarting, Lock lock) throws InterruptedException, IOException;
+        void run(boolean restarting, T data) throws InterruptedException, IOException;
     }
 
     @FunctionalInterface
-    private interface MergeThreadReloader {
+    private interface MergeThreadReloader<T> {
         /**
          * reload the previous merge data
          *
          * @return a lock if required by the step
          */
-        Lock reload();
+        T reload();
     }
 
     /////// this is for testing purposes ///////
@@ -174,24 +174,24 @@ public class MergeRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
 
-    public class MergeThread extends Thread {
-        private MergeThreadRunnable exceptionRunnable;
-        private MergeThreadReloader reloadData;
+    public class MergeThread<T> extends Thread {
+        private final MergeThreadRunnable<T> exceptionRunnable;
+        private MergeThreadReloader<T> reloadData;
         private Runnable preload;
-        private Lock lock;
-        private boolean restart;
+        private T data;
+        private final boolean restart;
         private Lock debugLock;
 
-        private MergeThread(MergeThreadRunnable run, MergeThreadReloader reloadData) {
+        private MergeThread(MergeThreadRunnable<T> run, MergeThreadReloader<T> reloadData) {
             this(null, run, reloadData);
         }
-        private MergeThread(Runnable preload, MergeThreadRunnable run, MergeThreadReloader reloadData) {
+        private MergeThread(Runnable preload, MergeThreadRunnable<T> run, MergeThreadReloader<T> reloadData) {
             this(run, true);
             this.reloadData = reloadData;
             this.preload = preload;
         }
 
-        private MergeThread(MergeThreadRunnable run, boolean restart) {
+        private MergeThread(MergeThreadRunnable<T> run, boolean restart) {
             super("MergeThread");
             this.exceptionRunnable = run;
             this.restart = restart;
@@ -205,7 +205,7 @@ public class MergeRunnable {
         @Override
         public void run() {
             try {
-                this.exceptionRunnable.run(restart, lock);
+                this.exceptionRunnable.run(restart, data);
             } catch (IOException e) {
                 synchronized (MergeRunnable.this) {
                     hybridStore.setMerging(false);
@@ -230,7 +230,7 @@ public class MergeRunnable {
                 debugLock = MERGE_THREAD_LOCK_MANAGER.createLock("thread");
             }
             if (reloadData != null)
-                lock = reloadData.reload();
+                data = reloadData.reload();
             super.start();
         }
     }
@@ -251,6 +251,21 @@ public class MergeRunnable {
      */
     private Lock createConnectionLock(String alias) {
         Lock l = hybridStore.lockToPreventNewConnections.createLock(alias);
+
+        if (MergeRunnableStopPoint.debug) {
+            MergeRunnableStopPoint.setLastLock(l);
+        }
+
+        return l;
+    }
+    /**
+     * create a lock to prevent new update
+     *
+     * @param alias alias for logs
+     * @return the {@link Lock}
+     */
+    private Lock createUpdateLock(String alias) {
+        Lock l = hybridStore.lockToPreventNewUpdate.createLock(alias);
 
         if (MergeRunnableStopPoint.debug) {
             MergeRunnableStopPoint.setLastLock(l);
@@ -290,28 +305,38 @@ public class MergeRunnable {
         hybridStore.locksHoldByConnections.waitForActiveLocks();
         logger.debug("All connections completed.");
     }
+    /**
+     * wait all active updates locks
+     *
+     * @throws InterruptedException
+     */
+    private void waitForActiveUpdates() throws InterruptedException {
+        logger.debug("Waiting for updates...");
+        hybridStore.locksHoldByUpdates.waitForActiveLocks();
+        logger.debug("All updates completed.");
+    }
 
     /**
      * @return a new thread to merge
      */
-    public MergeThread createThread() {
-        return new MergeThread(this::step1, false);
+    public MergeThread<?> createThread() {
+        return new MergeThread<>(this::step1, false);
     }
 
     /**
      * @return an optional thread to restart a previous merge (if any)
      */
-    public Optional<MergeThread> createRestartThread() {
+    public Optional<MergeThread<?>> createRestartThread() {
         // @todo: check previous step with into previousMergeFile, return a thread with the runStep
         int step = getRestartStep();
         logger.debug("Restart step: {}", step);
         switch (step) {
             case 0:
-                return Optional.of(new MergeThread(this::step1, this::reloadDataFromStep1));
+                return Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
             case 2:
-                return Optional.of(new MergeThread(this::step2, this::reloadDataFromStep2));
+                return Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
             case 3:
-                return Optional.of(new MergeThread(this::preloadStep3, this::step3, this::reloadDataFromStep3));
+                return Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
             default:
                 return Optional.empty();
         }
@@ -361,7 +386,7 @@ public class MergeRunnable {
     }
 
     private Lock reloadDataFromStep1() {
-        return createConnectionLock("switch-lock");
+        return createUpdateLock("step1-lock");
     }
 
     private synchronized void step1(boolean restarting, Lock switchLock) throws InterruptedException, IOException {
@@ -372,18 +397,22 @@ public class MergeRunnable {
 
         logger.debug("Start Step 1");
         if (!restarting) {
-            switchLock = createConnectionLock("switch-lock");
+            switchLock = createUpdateLock("step1-lock");
         }
         // create a lock so that new incoming connections don't do anything
         // wait for all running updates to finish
-        waitForActiveConnections();
+        waitForActiveUpdates();
 
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP1);
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT1);
+
         // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
         hybridStore.initTempDump(restarting);
         hybridStore.initTempDeleteArray();
 
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP2);
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT2);
+
         // mark in the store that the merge process started
         hybridStore.setMerging(true);
 
@@ -391,7 +420,12 @@ public class MergeRunnable {
         debugStepPoint(MergeRunnableStopPoint.STEP1_OLD_SLEEP_BEFORE_SWITCH);
 
         // switching the stores
+
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT3);
+
         this.hybridStore.switchStore = !this.hybridStore.switchStore;
+
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT4);
 
         // reset the count of triples to 0 after switching the stores
         this.hybridStore.setTriplesCount(0);

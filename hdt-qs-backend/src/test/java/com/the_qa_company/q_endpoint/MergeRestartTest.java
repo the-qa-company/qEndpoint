@@ -82,6 +82,10 @@ public class MergeRestartTest {
     }
     private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root) throws IOException, InterruptedException, NotFoundException {
         lockIfAfter(MergeRunnableStopPoint.STEP1_START, stopPoint);
+        lockIfAfter(MergeRunnableStopPoint.STEP1_TEST_SELECT1, stopPoint);
+        lockIfAfter(MergeRunnableStopPoint.STEP1_TEST_SELECT2, stopPoint);
+        lockIfAfter(MergeRunnableStopPoint.STEP1_TEST_SELECT3, stopPoint);
+        lockIfAfter(MergeRunnableStopPoint.STEP1_TEST_SELECT4, stopPoint);
         lockIfAfter(MergeRunnableStopPoint.STEP2_START, stopPoint);
         lockIfAfter(MergeRunnableStopPoint.STEP2_END, stopPoint);
         MergeRunnable.setStopPoint(stopPoint);
@@ -137,6 +141,31 @@ public class MergeRestartTest {
                 ++step;
             }
             MergeRunnableStopPoint.STEP1_START.debugUnlockTest();
+
+            MergeRunnableStopPoint.STEP1_TEST_SELECT1.debugWaitForEvent();
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP1_TEST_SELECT1.ordinal()) {
+                executeTestCount(countFile, hybridStore, store);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP1_TEST_SELECT1.debugUnlockTest();
+            MergeRunnableStopPoint.STEP1_TEST_SELECT2.debugWaitForEvent();
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP1_TEST_SELECT2.ordinal()) {
+                executeTestCount(countFile, hybridStore, store);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP1_TEST_SELECT2.debugUnlockTest();
+            MergeRunnableStopPoint.STEP1_TEST_SELECT3.debugWaitForEvent();
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP1_TEST_SELECT3.ordinal()) {
+                executeTestCount(countFile, hybridStore, store);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP1_TEST_SELECT3.debugUnlockTest();
+            MergeRunnableStopPoint.STEP1_TEST_SELECT4.debugWaitForEvent();
+            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP1_TEST_SELECT4.ordinal()) {
+                executeTestCount(countFile, hybridStore, store);
+                ++step;
+            }
+            MergeRunnableStopPoint.STEP1_TEST_SELECT4.debugUnlockTest();
             // lock step1
             MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
             if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP2_START.ordinal()) {
@@ -202,6 +231,10 @@ public class MergeRestartTest {
         }
     }
     private void mergeRestartTest2(MergeRunnableStopPoint point, File root) throws IOException, InterruptedException {
+        lockIfBefore(MergeRunnableStopPoint.STEP1_TEST_SELECT1, point);
+        lockIfBefore(MergeRunnableStopPoint.STEP1_TEST_SELECT2, point);
+        lockIfBefore(MergeRunnableStopPoint.STEP1_TEST_SELECT3, point);
+        lockIfBefore(MergeRunnableStopPoint.STEP1_TEST_SELECT4, point);
         lockIfBefore(MergeRunnableStopPoint.STEP2_START, point);
         lockIfBefore(MergeRunnableStopPoint.STEP2_END, point);
 
@@ -217,6 +250,30 @@ public class MergeRestartTest {
         );
         SailRepository hybridStore2 = new SailRepository(store2);
         // wait for the complete merge
+        MergeRunnableStopPoint.STEP1_TEST_SELECT1.debugWaitForEvent();
+        if (point.ordinal() <= MergeRunnableStopPoint.STEP1_TEST_SELECT1.ordinal()) {
+            executeTestCount(countFile, hybridStore2, store2);
+        }
+        MergeRunnableStopPoint.STEP1_TEST_SELECT1.debugUnlockTest();
+
+        MergeRunnableStopPoint.STEP1_TEST_SELECT2.debugWaitForEvent();
+        if (point.ordinal() <= MergeRunnableStopPoint.STEP1_TEST_SELECT2.ordinal()) {
+            executeTestCount(countFile, hybridStore2, store2);
+        }
+        MergeRunnableStopPoint.STEP1_TEST_SELECT2.debugUnlockTest();
+
+        MergeRunnableStopPoint.STEP1_TEST_SELECT3.debugWaitForEvent();
+        if (point.ordinal() <= MergeRunnableStopPoint.STEP1_TEST_SELECT3.ordinal()) {
+            executeTestCount(countFile, hybridStore2, store2);
+        }
+        MergeRunnableStopPoint.STEP1_TEST_SELECT3.debugUnlockTest();
+
+        MergeRunnableStopPoint.STEP1_TEST_SELECT4.debugWaitForEvent();
+        if (point.ordinal() <= MergeRunnableStopPoint.STEP1_TEST_SELECT4.ordinal()) {
+            executeTestCount(countFile, hybridStore2, store2);
+        }
+        MergeRunnableStopPoint.STEP1_TEST_SELECT4.debugUnlockTest();
+
         MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
         if (point.ordinal() <= MergeRunnableStopPoint.STEP2_START.ordinal()) {
             logger.debug("test count 0");

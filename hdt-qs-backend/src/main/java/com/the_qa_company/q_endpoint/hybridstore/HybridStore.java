@@ -102,16 +102,19 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private NTriplesWriter rdfWriterTempTriples;
 
     // lock manager for the merge thread
-    public LockManager lockToPreventNewConnections;
+    public final LockManager lockToPreventNewConnections;
     // lock manager for the connections over the current repository
-    public LockManager locksHoldByConnections;
+    public final LockManager locksHoldByConnections;
+    // lock manager for the updates in the merge thread
+    public final LockManager lockToPreventNewUpdate;
+    public final LockManager locksHoldByUpdates;
 
     // variable counting the current number of triples in the delta
     public long triplesCount;
 
     private final MergeRunnable mergeRunnable;
     private final HybridStoreFiles hybridStoreFiles;
-    private MergeRunnable.MergeThread mergerThread;
+    private MergeRunnable.MergeThread<?> mergerThread;
 
     private void deleteNativeLocks() {
         // remove lock files of a hard shutdown (SAIL is already locked by [...])
@@ -123,7 +126,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hybridStoreFiles = new HybridStoreFiles(locationNative, locationHdt, hdtIndexName);
         this.mergeRunnable = new MergeRunnable(this);
         logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
-        Optional<MergeRunnable.MergeThread> mergeThread = mergeRunnable.createRestartThread();
+        Optional<MergeRunnable.MergeThread<?>> mergeThread = mergeRunnable.createRestartThread();
         mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
 
         HDT hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec);
@@ -149,8 +152,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
         this.inMemDeletes = inMemDeletes;
         this.hdtProps = new HDTProps(this.hdt);
+
         this.lockToPreventNewConnections = new LockManager();
+        this.lockToPreventNewUpdate = new LockManager();
         this.locksHoldByConnections = new LockManager();
+        this.locksHoldByUpdates = new LockManager();
+
         initDeleteArray();
         // load HDT file
         this.spec = spec;

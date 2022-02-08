@@ -27,9 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class HybridStoreConnection extends SailSourceConnection {
 
+    private static final AtomicLong DEBUG_ID_STORE = new AtomicLong();
     private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
     private final HybridTripleSource tripleSource;
     private final HybridQueryPreparer queryPreparer;
@@ -40,18 +43,21 @@ public class HybridStoreConnection extends SailSourceConnection {
     SailConnection connA_write;
     SailConnection connB_write;
     private Lock connectionLock;
+    private Lock updateLock;
+    private long debugId;
 
     public HybridStoreConnection(HybridStore hybridStore) {
         super(hybridStore, hybridStore.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
+        this.debugId = DEBUG_ID_STORE.getAndIncrement();
         this.hybridStore = hybridStore;
         // lock logic is here so that the connections is blocked
         try {
             this.hybridStore.lockToPreventNewConnections.waitForActiveLocks();
-            if (MergeRunnableStopPoint.disableRequest)
-                throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         this.connectionLock = this.hybridStore.locksHoldByConnections.createLock("connection-lock");
 
         this.connA_read = hybridStore.getNativeStoreA().getConnection();
@@ -235,6 +241,16 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.connB_read.close();
         this.connA_read = hybridStore.getNativeStoreA().getConnection();
         this.connB_read = hybridStore.getNativeStoreB().getConnection();
+
+        logger.debug("Update started");
+        try {
+            hybridStore.lockToPreventNewUpdate.waitForActiveLocks();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (op != null) {
+            updateLock = hybridStore.locksHoldByUpdates.createLock("update #" + debugId);
+        }
     }
 
     @Override
@@ -243,6 +259,9 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.connA_write.endUpdate(op);
         this.connB_write.endUpdate(op);
         logger.debug("Update ended");
+        if (op != null) {
+            updateLock.release();
+        }
     }
 
     @Override
