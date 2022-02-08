@@ -47,6 +47,7 @@ public class MergeRestartTest {
     public void setUp() {
         spec = new HDTSpecification();
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        MergeRunnableStopPoint.debug = true;
     }
 
     private void printHere(String title, int rollback) {

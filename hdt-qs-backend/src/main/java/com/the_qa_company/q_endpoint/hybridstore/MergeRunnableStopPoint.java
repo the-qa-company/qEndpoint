@@ -28,6 +28,7 @@ public enum MergeRunnableStopPoint {
     // false to simulate a throw, true to simulate an exit
     private static boolean completeFailure = false;
     public static boolean disableRequest = false;
+    public static boolean debug = false;
     private static Lock lastLock;
     private static Thread mainThread;
 
@@ -104,7 +105,7 @@ public enum MergeRunnableStopPoint {
      * be made before the merge
      */
     public void debugWaitForEvent() {
-        if (logger.isDebugEnabled()) {
+        if (debug) {
             try {
                 logger.debug("wait for active lock for event " + name().toLowerCase());
                 lockManager.waitForActiveLocks();
@@ -119,7 +120,7 @@ public enum MergeRunnableStopPoint {
      * Debug mode only, not for test class!!!, wait for test event to be completed
      */
     void debugWaitForTestEvent() {
-        if (logger.isDebugEnabled()) {
+        if (debug) {
             try {
                 lockManagerTest.waitForActiveLocks();
             } catch (InterruptedException e) {

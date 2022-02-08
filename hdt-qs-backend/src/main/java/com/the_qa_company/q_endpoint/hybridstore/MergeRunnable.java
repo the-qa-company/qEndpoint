@@ -210,22 +210,22 @@ public class MergeRunnable {
                 synchronized (MergeRunnable.this) {
                     hybridStore.setMerging(false);
                 }
-                if (logger.isDebugEnabled())
+                if (MergeRunnableStopPoint.debug)
                     debugLastMergeException = e;
                 e.printStackTrace();
             } catch (Exception e) {
-                if (logger.isDebugEnabled())
+                if (MergeRunnableStopPoint.debug)
                     debugLastMergeException = e;
                 e.printStackTrace();
             } finally {
-                if (logger.isDebugEnabled())
+                if (MergeRunnableStopPoint.debug)
                     debugLock.release();
             }
         }
 
         @Override
         public synchronized void start() {
-            if (logger.isDebugEnabled()) {
+            if (MergeRunnableStopPoint.debug) {
                 debugLastMergeException = null;
                 debugLock = MERGE_THREAD_LOCK_MANAGER.createLock("thread");
             }
@@ -252,7 +252,7 @@ public class MergeRunnable {
     private Lock createConnectionLock(String alias) {
         Lock l = hybridStore.lockToPreventNewConnections.createLock(alias);
 
-        if (logger.isDebugEnabled()) {
+        if (MergeRunnableStopPoint.debug) {
             MergeRunnableStopPoint.setLastLock(l);
         }
 
@@ -266,7 +266,7 @@ public class MergeRunnable {
      * @throws MergeRunnableStopPoint.MergeRunnableStopException if this point is selected
      */
     private void debugStepPoint(MergeRunnableStopPoint point) {
-        if (!logger.isDebugEnabled())
+        if (!MergeRunnableStopPoint.debug)
             return;
 
         point.debugUnlock();
