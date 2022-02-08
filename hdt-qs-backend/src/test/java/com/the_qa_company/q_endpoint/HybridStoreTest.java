@@ -320,11 +320,13 @@ public class HybridStoreTest {
                 ValueFactory vf = connection.getValueFactory();
 
                 // delete toDelete persons from HDT
+                connection.begin();
                 for (int i = 0; i < toDelete; i++) {
                     int id = rnd.nextInt(Utility.COUNT);
                     connection.remove(Utility.getFakeStatement(vf, id));
                     deleted.set(id, true);
                 }
+                connection.commit();
             }
 
             MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
