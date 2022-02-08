@@ -4,7 +4,6 @@ import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
-import org.eclipse.rdf4j.common.io.NioFile;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -50,8 +49,8 @@ public class MergeRestartTest {
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
     }
 
-    private void printHere(String title) {
-        System.out.println(title + ": " + new Throwable().getStackTrace()[1]);
+    private void printHere(String title, int rollback) {
+        System.out.println(title + ": " + new Throwable().getStackTrace()[1 + rollback]);
     }
 
     private void writeInfoCount(File f, int count) throws IOException{
@@ -95,7 +94,7 @@ public class MergeRestartTest {
         int count = 4;
         HDT hdt = createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count);
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
-        printHDT(hdt);
+        printHDT(hdt, null);
         writeInfoCount(countFile, count);
         HybridStore store = new HybridStore(
                 hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
@@ -124,7 +123,7 @@ public class MergeRestartTest {
                 executeTestRemoveRDF(countFile, hybridStore, 1, --count);
                 ++step;
 
-                executeTestCount(countFile, hybridStore);
+                executeTestCount(countFile, hybridStore, store);
                 ++step;
 
                 executeTestRemoveHDT(countFile, hybridStore, 1, --count);
@@ -133,7 +132,7 @@ public class MergeRestartTest {
                 logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
                 logger.debug("STEP1_TEST_BITMAP0n: {}",
                         new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr").printInfo());
-                executeTestCount(countFile, hybridStore);
+                executeTestCount(countFile, hybridStore, store);
                 ++step;
             }
             MergeRunnableStopPoint.STEP1_START.debugUnlockTest();
@@ -143,14 +142,14 @@ public class MergeRestartTest {
                 executeTestRemoveRDF(countFile, hybridStore, 2, --count);
                 ++step;
 
-                executeTestCount(countFile, hybridStore);
+                executeTestCount(countFile, hybridStore, store);
                 ++step;
 
                 executeTestRemoveHDT(countFile, hybridStore, 2, --count);
                 ++step;
 
                 logger.debug("count of deleted in hdt step2s: " + store.getDeleteBitMap().countOnes());
-                executeTestCount(countFile, hybridStore);
+                executeTestCount(countFile, hybridStore, store);
                 ++step;
             }
             MergeRunnableStopPoint.STEP2_START.debugUnlockTest();
@@ -160,15 +159,15 @@ public class MergeRestartTest {
                 executeTestRemoveRDF(countFile, hybridStore, 3, --count);
                 ++step;
 
-                executeTestCount(countFile, hybridStore);
+                executeTestCount(countFile, hybridStore, store);
                 ++step;
 
                 executeTestRemoveHDT(countFile, hybridStore, 3, --count);
                 ++step;
-                printHere("after remove 3");
+                printHere("after remove 3", 0);
 
                 logger.debug("count of deleted in hdt step2e: " + store.getDeleteBitMap().countOnes());
-                executeTestCount(countFile, hybridStore);
+                executeTestCount(countFile, hybridStore, store);
                 ++step;
             }
             MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
@@ -176,7 +175,7 @@ public class MergeRestartTest {
             MergeRunnable.debugWaitMerge();
             ++step;
 
-            executeTestCount(countFile, hybridStore);
+            executeTestCount(countFile, hybridStore, store);
             ++step;
 
         } catch (MergeRunnableStopPoint.MergeRunnableException e) {
@@ -223,7 +222,7 @@ public class MergeRestartTest {
             logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
             if (store2.getTempDeleteBitMap() != null)
                 logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
-            executeTestCount(countFile, hybridStore2);
+            executeTestCount(countFile, hybridStore2, store2);
         }
         MergeRunnableStopPoint.STEP2_START.debugUnlockTest();
 
@@ -233,7 +232,7 @@ public class MergeRestartTest {
             logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
             if (store2.getTempDeleteBitMap() != null)
                 logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
-            executeTestCount(countFile, hybridStore2);
+            executeTestCount(countFile, hybridStore2, store2);
         }
         MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
         MergeRunnable.debugWaitMerge();
@@ -241,7 +240,7 @@ public class MergeRestartTest {
         logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
         if (store2.getTempDeleteBitMap() != null)
             logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
-        executeTestCount(countFile, hybridStore2);
+        executeTestCount(countFile, hybridStore2, store2);
 
         deleteDir(nativeStore);
         deleteDir(hdtStore);
@@ -479,12 +478,14 @@ public class MergeRestartTest {
 
 
 
-    private void printHDT(HDT hdt) throws NotFoundException {
+    private void printHDT(HDT hdt, HybridStore store) throws NotFoundException {
         IteratorTripleString it = hdt.search("", "", "");
         logger.debug("HDT: ");
         while (it.hasNext()) {
-            logger.debug("- " + it.next());
+            logger.debug("- {}", it.next());
         }
+        if (store != null)
+        logger.debug("bitmap: {}", store.getDeleteBitMap().printInfo());
     }
 
     private void deleteDir(File f) {
@@ -634,8 +635,14 @@ public class MergeRestartTest {
         });
         writeInfoCount(out, count);
     }
-    private void executeTestCount(File out, SailRepository repo) throws IOException {
+    private void executeTestCount(File out, SailRepository repo, HybridStore store) throws IOException {
         int excepted = getInfoCount(out);
+        if (store != null)
+            try {
+                printHDT(store.getHdt(), store);
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
         openConnection(repo, (vf, connection) -> assertEquals(excepted, count(connection)));
     }
 }

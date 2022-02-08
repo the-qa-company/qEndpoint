@@ -55,6 +55,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
@@ -114,8 +115,20 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private final HybridStoreFiles hybridStoreFiles;
     private MergeRunnable.MergeThread mergerThread;
 
-    private HybridStore(HDT hdt, String hdtIndexName, String locationHdt, String locationNative, boolean inMemDeletes) {
+    private void deleteNativeLocks() {
+        // remove lock files of a hard shutdown (SAIL is already locked by [...])
+        new DirectoryLockManager(this.nativeStoreA.getDataDir()).revokeLock();
+        new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
+    }
+
+    public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
         this.hybridStoreFiles = new HybridStoreFiles(locationNative, locationHdt, hdtIndexName);
+        this.mergeRunnable = new MergeRunnable(this);
+        logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
+        Optional<MergeRunnable.MergeThread> mergeThread = mergeRunnable.createRestartThread();
+        mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
+
+        HDT hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec);
 //        this.nativeStoreA = new MemoryStore();
 //        this.nativeStoreB = new MemoryStore();
 //        this.nativeStoreA.setDefaultIsolationLevel(IsolationLevels.NONE);
@@ -132,7 +145,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
-        this.mergeRunnable = new MergeRunnable(this);
         resetHDT(hdt);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
@@ -142,21 +154,16 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.lockToPreventNewConnections = new LockManager();
         this.locksHoldByConnections = new LockManager();
         initDeleteArray();
-    }
-
-    private void deleteNativeLocks() {
-        // remove lock files of a hard shutdown (SAIL is already locked by [...])
-        new DirectoryLockManager(this.nativeStoreA.getDataDir()).revokeLock();
-        new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
-    }
-
-    public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
         // load HDT file
-        this(HDTManager.mapIndexedHDT(HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName), spec), hdtIndexName, locationHdt, locationNative, inMemDeletes);
         this.spec = spec;
 
         // initialize the count of the triples
-        checkPreviousMerge();
+        mergeThread.ifPresent(thread -> {
+            isMergeTriggered = true;
+            mergerThread = thread;
+            thread.start();
+            logger.info("MERGE RESTART THREAD LAUNCHED");
+        });
         SailConnection connection = getChangingStore().getConnection();
         this.triplesCount = connection.size();
         connection.close();
@@ -649,19 +656,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                 e.printStackTrace();
             }
         }
-    }
-
-    /**
-     * check if a merge was already active before previous shutdown
-     */
-    private void checkPreviousMerge() {
-        logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
-        mergeRunnable.createRestartThread().ifPresent(thread -> {
-            isMergeTriggered = true;
-            mergerThread = thread;
-            thread.start();
-            logger.info("MERGE RESTART THREAD LAUNCHED");
-        });
     }
 
     public HDTConverter getHdtConverter() {

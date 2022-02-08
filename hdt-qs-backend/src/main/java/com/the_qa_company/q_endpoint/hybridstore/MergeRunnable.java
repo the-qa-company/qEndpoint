@@ -120,6 +120,8 @@ public class MergeRunnable {
             Files.delete(Paths.get(file));
         } catch (IOException e) {
             logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
+            e.printStackTrace();
+//            throw new RuntimeException(e);
         }
     }
 
@@ -128,6 +130,8 @@ public class MergeRunnable {
             Files.deleteIfExists(Paths.get(file));
         } catch (IOException e) {
             logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
+            e.printStackTrace();
+//            throw new RuntimeException(e);
         }
     }
 
@@ -144,6 +148,12 @@ public class MergeRunnable {
         return exists(file + OLD_EXT);
     }
 
+    private static void existsSay(String file) {
+        if (exists(file)) {
+            logger.debug("The file {} exists ({})", file, new Throwable().getStackTrace()[1]);
+        }
+    }
+
     private static void renameToOld(String file) {
         rename(file, file + OLD_EXT);
     }
@@ -157,6 +167,8 @@ public class MergeRunnable {
             Files.move(Paths.get(oldFile), Paths.get(newFile));
         } catch (IOException e) {
             logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
+            e.printStackTrace();
+//            throw new RuntimeException(e);
         }
     }
 
@@ -165,19 +177,29 @@ public class MergeRunnable {
     public class MergeThread extends Thread {
         private MergeThreadRunnable exceptionRunnable;
         private MergeThreadReloader reloadData;
+        private Runnable preload;
         private Lock lock;
         private boolean restart;
         private Lock debugLock;
 
         private MergeThread(MergeThreadRunnable run, MergeThreadReloader reloadData) {
+            this(null, run, reloadData);
+        }
+        private MergeThread(Runnable preload, MergeThreadRunnable run, MergeThreadReloader reloadData) {
             this(run, true);
             this.reloadData = reloadData;
+            this.preload = preload;
         }
 
         private MergeThread(MergeThreadRunnable run, boolean restart) {
             super("MergeThread");
             this.exceptionRunnable = run;
             this.restart = restart;
+        }
+
+        public void preLoad() {
+            if (preload != null)
+                preload.run();
         }
 
         @Override
@@ -289,7 +311,7 @@ public class MergeRunnable {
             case 2:
                 return Optional.of(new MergeThread(this::step2, this::reloadDataFromStep2));
             case 3:
-                return Optional.of(new MergeThread(this::step3, this::reloadDataFromStep3));
+                return Optional.of(new MergeThread(this::preloadStep3, this::step3, this::reloadDataFromStep3));
             default:
                 return Optional.empty();
         }
@@ -440,7 +462,6 @@ public class MergeRunnable {
         AFTER_INDEX_RENAME,
         AFTER_INDEX_V11_OLD_RENAME,
         AFTER_INDEX_OLD_RENAME,
-        AFTER_TRIPLEDEL_NEW_OLD_RENAME,
         AFTER_TRIPLEDEL_TMP_OLD_RENAME,
         BEFORE_ALL
     }
@@ -465,17 +486,14 @@ public class MergeRunnable {
 //            after renameToOld(hybridStoreFiles.getHDTIndex());
             return Step3SubStep.AFTER_INDEX_OLD_RENAME;
         }
-        if (existsOld(hybridStoreFiles.getTripleDeleteNewArr())) {
-//            after renameToOld(hybridStoreFiles.getTripleDeleteNewArr());
-            return Step3SubStep.AFTER_TRIPLEDEL_NEW_OLD_RENAME;
-        }
         if (existsOldTripleDeleteTempArr) {
 //            after renameToOld(hybridStoreFiles.getTripleDeleteTempArr());
             return Step3SubStep.AFTER_TRIPLEDEL_TMP_OLD_RENAME;
         }
         return Step3SubStep.BEFORE_ALL;
     }
-    private Lock reloadDataFromStep3() {
+
+    private void preloadStep3() {
         deleteIfExists(hybridStoreFiles.getTripleDeleteArr());
 
         Step3SubStep step3SubStep = getStep3SubStep();
@@ -491,14 +509,14 @@ public class MergeRunnable {
                 renameFromOld(hybridStoreFiles.getHDTIndexV11());
             case AFTER_INDEX_OLD_RENAME:
                 renameFromOld(hybridStoreFiles.getHDTIndex());
-            case AFTER_TRIPLEDEL_NEW_OLD_RENAME:
-                renameFromOld(hybridStoreFiles.getTripleDeleteNewArr());
             case AFTER_TRIPLEDEL_TMP_OLD_RENAME:
                 renameFromOld(hybridStoreFiles.getTripleDeleteTempArr());
             case BEFORE_ALL:
                 break;
         }
+    }
 
+    private Lock reloadDataFromStep3() {
         hybridStore.initTempDump(true);
         hybridStore.initTempDeleteArray();
         hybridStore.setMerging(true);
@@ -510,6 +528,7 @@ public class MergeRunnable {
         logger.debug("Start Step 3");
         debugStepPoint(MergeRunnableStopPoint.STEP3_START);
         // index the new file
+
         HDT newHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTNewIndex(), hybridStore.getHDTSpec());
 
         // convert all triples added to the merge store to new IDs of the new generated HDT
@@ -531,10 +550,8 @@ public class MergeRunnable {
         // BEFORE_ALL
         renameToOld(hybridStoreFiles.getTripleDeleteTempArr());
         // AFTER_TRIPLEDEL_TMP_OLD_RENAME
-        renameToOld(hybridStoreFiles.getTripleDeleteNewArr());
-        debugStepPoint(MergeRunnableStopPoint.STEP3_FILES_MID1);
-        // AFTER_TRIPLEDEL_NEW_OLD_RENAME
         renameToOld(hybridStoreFiles.getHDTIndex());
+        debugStepPoint(MergeRunnableStopPoint.STEP3_FILES_MID1);
         // AFTER_INDEX_OLD_RENAME
         renameToOld(hybridStoreFiles.getHDTIndexV11());
         // AFTER_INDEX_V11_OLD_RENAME
@@ -559,7 +576,6 @@ public class MergeRunnable {
         completedMerge();
         // we've deleted the rename marker, we can delete the old HDT
         deleteOld(hybridStoreFiles.getTripleDeleteTempArr());
-        deleteOld(hybridStoreFiles.getTripleDeleteNewArr());
         deleteOld(hybridStoreFiles.getHDTIndex());
         deleteOld(hybridStoreFiles.getHDTIndexV11());
 
@@ -730,7 +746,7 @@ public class MergeRunnable {
             connectionChanging.clear();
             connectionChanging.close();
             connectionFreezed.close();
-            // wtf???
+            // @todo: why?
             this.hybridStore.switchStore = !this.hybridStore.switchStore;
 
             stopwatch.stop(); // optional
