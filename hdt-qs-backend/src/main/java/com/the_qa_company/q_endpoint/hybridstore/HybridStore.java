@@ -541,6 +541,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             logger.debug("New map: {}", newDeleteArray.printInfo());
         }
 
+        getDeleteBitMap().close();
         newDeleteArray.changeToInDisk(new File(hybridStoreFiles.getTripleDeleteArr()));
         this.setDeleteBitMap(newDeleteArray);
     }
