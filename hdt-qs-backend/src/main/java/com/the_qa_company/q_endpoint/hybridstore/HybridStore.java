@@ -20,7 +20,6 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
-import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
@@ -54,7 +53,6 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Optional;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
@@ -139,7 +137,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         (new File(getHybridStoreFiles().getLocationNative())).mkdirs();
         this.checkFile = new File(getHybridStoreFiles().getWhichStore());
         // init the store before creating the check store file
-        if (logger.isDebugEnabled()) {
+        if (MergeRunnableStopPoint.debug) {
             deleteNativeLocks();
         }
         this.nativeStoreA.init();
@@ -525,7 +523,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             }
         }
 
-        if (logger.isDebugEnabled()) {
+        if (MergeRunnableStopPoint.debug) {
             logger.debug("HDT cache saved element(s) ones={} in {}", tempdeleteBitMap.countOnes(), watch.stopAndShow());
             if (debugTotal != 0) {
                 logger.debug("debugSavedSubject        : {} % | {} / {}",
@@ -649,6 +647,15 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                 e.printStackTrace();
             }
         }
+    }
+
+    public void flushWrites() throws IOException {
+        getDeleteBitMap().force(true);
+        if (isMerging()) {
+            getRdfWriterTempTriples().getWriter().flush();
+            getTempDeleteBitMap().force(true);
+        }
+        logger.debug("Writes completed");
     }
 
     public HDTConverter getHdtConverter() {

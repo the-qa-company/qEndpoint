@@ -170,7 +170,6 @@ public class BitArrayDisk {
     private void writeToDisk(long l, int wordIndex) {
         try {
             output.writeLong(l, (wordIndex + 1) * 8L); // +1 reserved for the length of the array
-            output.force(false);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -293,6 +292,8 @@ public class BitArrayDisk {
     }
 
     public void force(boolean bool) {
+        if (inMemory)
+            return;
         try {
             this.output.force(bool);
         } catch (IOException e) {

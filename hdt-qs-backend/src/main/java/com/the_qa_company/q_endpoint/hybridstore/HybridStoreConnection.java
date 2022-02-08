@@ -13,7 +13,6 @@ import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
-import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -34,6 +33,7 @@ public class HybridStoreConnection extends SailSourceConnection {
     private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
     private final HybridTripleSource tripleSource;
     private final HybridQueryPreparer queryPreparer;
+    private boolean isWriteConnection = false;
     HybridStore hybridStore;
     SailConnection connA_read;
     SailConnection connB_read;
@@ -113,6 +113,9 @@ public class HybridStoreConnection extends SailSourceConnection {
     public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
         if (MergeRunnableStopPoint.disableRequest)
             throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+
+        isWriteConnection = true;
+
 //        System.out.println(subj.stringValue()+" - "+ pred.stringValue() + " - "+ obj.stringValue());
         Resource newSubj;
         IRI newPred;
@@ -205,6 +208,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     public void flush() throws SailException {
         super.flush();
+        if (isWriteConnection) {
+            try {
+                hybridStore.flushWrites();
+            } catch (IOException e) {
+                throw new SailException("Can't flush hybrid store writes", e);
+            }
+        }
         this.connA_write.flush();
         this.connB_write.flush();
     }
@@ -248,6 +258,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     protected void closeInternal() throws SailException {
         logger.info("Number of times native store was called:" + this.tripleSource.getCount());
+        if (isWriteConnection) {
+            try {
+                hybridStore.flushWrites();
+            } catch (IOException e) {
+                throw new SailException("Can't flush hybrid store writes", e);
+            }
+        }
         super.closeInternal();
         //this.nativeStoreConnection.close();
         this.connA_read.close();
@@ -284,6 +301,9 @@ public class HybridStoreConnection extends SailSourceConnection {
     public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
         if (MergeRunnableStopPoint.disableRequest)
             throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+
+        isWriteConnection = true;
+
         Resource newSubj;
         IRI newPred;
         Value newObj;
@@ -371,11 +391,6 @@ public class HybridStoreConnection extends SailSourceConnection {
                     Statement st = this.hybridStore.getValueFactory().createStatement(subj, pred, obj);
                     logger.debug("add to RDFWriter: {}", st);
                     writer.handleStatement(st);
-                    try {
-                        writer.getWriter().flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                 } else {
                     logger.error("Writer is null!!");
                 }

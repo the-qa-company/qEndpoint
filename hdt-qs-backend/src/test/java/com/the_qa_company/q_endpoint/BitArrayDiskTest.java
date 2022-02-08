@@ -68,7 +68,6 @@ public class BitArrayDiskTest {
                 bitArrayDisk.set(i, true);
             }
 
-
             assertEquals(60000, bitArrayDisk.countOnes());
         } catch (IOException e) {
             e.printStackTrace();
