@@ -151,6 +151,19 @@ public class HybridStoreConnection extends SailSourceConnection {
         // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         if (!tripleExistInHDT(tripleID)) {
+            if (hybridStore.isMerging()) {
+                if (hybridStore.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
+                    CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead().getStatements(
+                            newSubj,
+                            newPred,
+                            newObj,
+                            false,
+                            contexts
+                    );
+                    if (other.hasNext())
+                        return;
+                }
+            }
             // here we need uris using the internal IDs
             getCurrentConnectionWrite().addStatement(
                     newSubj,
@@ -429,6 +442,25 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     public SailConnection getCurrentConnectionWrite() {
         if (hybridStore.switchStore) {
+//            logger.debug("STORE B");
+            return connB_write;
+        } else {
+//            logger.debug("STORE A");
+            return connA_write;
+        }
+    }
+    public SailConnection getOtherConnectionRead() {
+        if (!hybridStore.switchStore) {
+//            logger.debug("STORE B");
+            return connB_read;
+        } else {
+//            logger.debug("STORE A");
+            return connA_read;
+        }
+    }
+
+    public SailConnection getOtherConnectionWrite() {
+        if (!hybridStore.switchStore) {
 //            logger.debug("STORE B");
             return connB_write;
         } else {

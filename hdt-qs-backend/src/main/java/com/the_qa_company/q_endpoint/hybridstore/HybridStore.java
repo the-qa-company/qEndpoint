@@ -618,6 +618,26 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         modifyBitmaps(subjectID, predicateID, objectID);
     }
 
+    public boolean shouldSearchOverRDF4J(long subject, long predicate, long object) {
+        if (subject != -1 && subject != 0 && !this.getBitX().access(subject - 1)) {
+            return false;
+        }
+
+        if (predicate != -1 && predicate != 0 && !this.getBitY().access(predicate - 1))
+            return false;
+
+        if (object != -1 && object != 0) {
+            if (object <= this.hdt.getDictionary().getNshared()) {
+                if (!this.getBitX().access(object - 1))
+                    return false;
+            } else {
+                if (!this.getBitZ().access(object - hdt.getDictionary().getNshared() - 1))
+                    return false;
+            }
+        }
+        return true;
+    }
+
     public void modifyBitmaps(long subject, long predicate, long object) {
         // mark in HDT the store the subject, predicate, objects that are used in rdf4j
         if (subject != -1 && subject != 0) {
