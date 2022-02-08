@@ -107,8 +107,8 @@ public class BitArrayDisk {
                             lastNonZero = i;
                         }
                     }
-
-                    numbits = 8L * lastNonZero + log2(words[lastNonZero]);
+                    if (lastNonZero != 0)
+                        numbits = 8L * lastNonZero + log2(words[lastNonZero]);
                 }
             } else {
                 int nwords = (int) numWords(nbits);
