@@ -178,7 +178,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void initNativeStoreDictionary(HDT hdt) {
         this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), hybridStoreFiles.getHDTBitX());
         this.bitY = new BitArrayDisk(hdt.getDictionary().getNpredicates(), hybridStoreFiles.getHDTBitY());
-        this.bitZ = new BitArrayDisk(hdt.getDictionary().getNAllObjects(), hybridStoreFiles.getHDTBitZ());
+        this.bitZ = new BitArrayDisk(hdt.getDictionary().getNobjects() - hdt.getDictionary().getNshared(), hybridStoreFiles.getHDTBitZ());
         // if the bitmaps have not been initialized with the native store
         if (this.bitX.countOnes() == 0 && this.bitY.countOnes() == 0 && this.bitZ.countOnes() == 0) {
             initBitmaps();
