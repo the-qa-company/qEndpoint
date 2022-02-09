@@ -151,6 +151,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         if (!tripleExistInHDT(tripleID)) {
+            // check if we need to search over the other native connection
             if (hybridStore.isMerging()) {
                 if (hybridStore.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
                     CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead().getStatements(
