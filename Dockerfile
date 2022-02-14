@@ -1,3 +1,6 @@
+#
+# Build frontend stage
+#
 
 # Set the base image to node:12-alpine
 FROM node:12-alpine as build-frontend
@@ -31,16 +34,13 @@ RUN mvn dependency:go-offline -s ci_settings.xml --quiet
 # build the application
 COPY hdt-qs-backend/allatori /home/app/allatori
 COPY hdt-qs-backend/src /home/app/src
-COPY --from=build-frontend /home/app/build/ /home/app/src/resources/main/resources/static/
+COPY --from=build-frontend /home/app/build /home/app/src/main/resources/static/
 
 RUN mvn -f /home/app/pom.xml clean package -s /home/app/ci_settings.xml --quiet -DskipTests -P prod
 
+
+
 #
-# Build frontend stage
-#
-
-
-
 # Package stage
 #
 FROM openjdk:11-jre-slim
@@ -50,10 +50,12 @@ WORKDIR /home/app
 RUN mkdir data
 RUN mkdir data/hdt-store
 
-COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
+COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT-exec.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
+COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT2.jar
 COPY --from=build-backend /home/app/src/main/resources/application-prod.properties /home/app/application-prod.properties
 
 EXPOSE 1234
+
 RUN  apt-get update \
   && apt-get install -y wget \
   && rm -rf /var/lib/apt/lists/*
