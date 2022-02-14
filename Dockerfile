@@ -45,6 +45,9 @@ RUN mvn -f /home/app/pom.xml clean package -s /home/app/ci_settings.xml --quiet 
 #
 FROM openjdk:11-jre-slim
 
+ARG MEM_SIZE=6G
+ENV MEM_SIZE ${MEM_SIZE}
+
 WORKDIR /home/app
 # init dirs
 RUN mkdir data
@@ -62,4 +65,4 @@ RUN  apt-get update \
 
 COPY loadData.sh .
 RUN chmod +x loadData.sh
-CMD ./loadData.sh
+CMD ./loadData.sh $MEM_SIZE
