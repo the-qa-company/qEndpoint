@@ -2,20 +2,17 @@ package com.the_qa_company.q_endpoint.controller;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResultHandler;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
-import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
-import org.eclipse.rdf4j.query.parser.ParsedQuery;
-import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
-import org.eclipse.rdf4j.query.parser.QueryParserUtil;
+import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
+import com.the_qa_company.q_endpoint.utils.MapIterator;
+import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.datatypes.xsd.impl.RDFLangString;
+import org.apache.jena.graph.Node;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.eclipse.rdf4j.query.*;
+import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriterFactory;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
@@ -34,19 +31,24 @@ import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.triples.TripleString;
+import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -334,31 +336,173 @@ public class Sparql {
         }
     }
 
-    public String loadFile(InputStream input, String filename) {
+    public ResponseEntity<String> loadFile(InputStream input, String filename, long size) {
+        String rdfInput = locationHdt + filename;
+        String hdtOutput = HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName);
+        String baseURI = "file://" + rdfInput;
         try {
-            Files.deleteIfExists(Paths.get(hybridStore.getHybridStoreFiles().getHDTIndex()));
-            Files.deleteIfExists(Paths.get(hybridStore.getHybridStoreFiles().getHDTIndexV11()));
+            Files.deleteIfExists(Paths.get(hdtOutput));
+            Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-            String rdfInput = locationHdt + filename;
-            String hdtOutput = hybridStore.getHybridStoreFiles().getHDTIndex();
-
-            Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
-            RDFNotation notation = RDFNotation.guess(rdfInput);
-            String baseURI = "file://" + rdfInput;
             HDTSpecification spec = new HDTSpecification();
             spec.setOptions(hdtSpec);
-            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, notation, spec, null);
-            hdt.saveToHDT(hdtOutput, null);
+
+            RDFNotation notation = RDFNotation.guess(filename);
+            if (notation == RDFNotation.NTRIPLES) {
+                compressToHdt(input, baseURI, filename, hdtOutput, spec, size);
+            } else {
+                Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
+                HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, notation, spec, null);
+                hdt.saveToHDT(hdtOutput, null);
+            }
+
             initializeHybridStore(locationHdt);
-            return "File was loaded successfully...\n";
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserException e) {
-            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.OK).body("File was loaded successfully...\n");
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "error";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
+    }
+
+    private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation, HDTSpecification specs, long size) throws IOException, ParserException {
+        /* Maximum amount of memory the JVM will attempt to use */
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        long chunkSize =
+                (long) Math.floor((maxMemory - 1024 * 1024 * 1024) * 0.85)
+                //128*1024
+                ;
+        logger.info("Maximal available memory {}", maxMemory);
+        File hdtParentFile = new File(hdtLocation).getParentFile();
+        String hdtParent = hdtParentFile.getAbsolutePath();
+        hdtParentFile.mkdirs();
+
+        if (size <= chunkSize) {
+            // we don't have to split the file
+            HDT hdtDump = HDTManager.generateHDT(parseFromStream(inputStream, baseURI), baseURI, specs, null);
+            hdtDump.saveToHDT(hdtLocation, null);
+            hdtDump.close();
+
+            return;
+        }
+
+        StopWatch timeWatch = new StopWatch();
+
+        File tempFile = new File(filename);
+        // the compression will not fit in memory, cat the files in chunks and use hdtCat
+
+        FileTripleIterator it = new FileTripleIterator(parseFromStream(inputStream, baseURI), chunkSize);
+
+        int file = 0;
+        String lastFile = null;
+        while (it.hasNewFile()) {
+            logger.info("Compressing #" + file);
+            HDT hdtDump = HDTManager.generateHDT(it, baseURI, specs, null);
+            String hdtOutput = new File(tempFile.getParent(), tempFile.getName() + "."
+                    + String.format("%03d", file) + ".hdt").getAbsolutePath();
+            hdtDump.saveToHDT(hdtOutput, null);
+            hdtDump.close();
+            hdtDump = null;
+            System.gc();
+            logger.info("Competed into " + hdtOutput);
+            if (file > 0) {
+                // not the first file, so we have at least 2 files
+                logger.info("Cat " + hdtOutput);
+                String nextIndex = hdtParent + "/index_cat_tmp_" + file + ".hdt";
+                HDT tmp = HDTManager.catHDT(nextIndex, lastFile, hdtOutput, specs, null);
+                tmp.saveToHDT(nextIndex, null);
+                tmp.close();
+                tmp = null;
+                System.gc();
+
+                Files.delete(Paths.get(hdtOutput));
+                if (file > 1) {
+                    // at least the 2nd
+                    Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdt"));
+                    Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdtdictionary"));
+                    Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
+                } else {
+                    Files.delete(Paths.get(lastFile));
+                }
+                lastFile = nextIndex;
+            } else {
+                lastFile = hdtOutput;
+            }
+            file++;
+        }
+        assert lastFile != null : "Last file can't be null";
+        Files.move(Paths.get(lastFile), Paths.get(hdtLocation));
+        Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdtdictionary"));
+        Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
+        logger.info("NT file loaded in {}", timeWatch.stopAndShow());
+    }
+
+    public String formatJenaNode(Node node) {
+        if (node.isURI()) {
+            return node.getURI();
+
+        } else if (node.isLiteral()) {
+            RDFDatatype t = node.getLiteralDatatype();
+            if (t == null || XSDDatatype.XSDstring.getURI().equals(t.getURI())) {
+                // String
+                return '"' + node.getLiteralLexicalForm() + '"';
+
+            } else if (RDFLangString.rdfLangString.equals(t)) {
+                // Lang.  Lowercase the language tag to get semantic equivalence between "x"@en and "x"@EN as required by spec
+                return '"' + node.getLiteralLexicalForm() + "\"@" + node.getLiteralLanguage().toLowerCase();
+
+            } else {
+                // Typed
+                return '"' + node.getLiteralLexicalForm() + "\"^^<" + t.getURI() + '>';
+            }
+
+        } else if (node.isBlank()) {
+            return "_:" + node.getBlankNodeLabel();
+
+        } else {
+            throw new IllegalArgumentException(String.valueOf(node));
+        }
+    }
+
+    private Iterator<TripleString> parseFromStream(InputStream inputStream, String baseURI) {
+        return new MapIterator<>(
+            RDFDataMgr.createIteratorTriples(inputStream, Lang.NT, baseURI),
+                t ->
+                        new TripleString(
+                                formatJenaNode(t.getSubject()),
+                                formatJenaNode(t.getPredicate()),
+                                formatJenaNode(t.getObject())
+                        )
+        );
+    }
+
+    private List<File> splitFile(InputStream inputStream, long sizeOfChunk, File output) throws IOException {
+        int counter = 1;
+        List<File> files = new ArrayList<>();
+        String eof = System.lineSeparator();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+            String name = output.getName();
+            String line = br.readLine();
+            long size = 0;
+            while (line != null) {
+                File newFile = new File(output.getParent(), name + "."
+                        + String.format("%03d", counter++));
+                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(newFile))) {
+                    long fileSize = 0;
+                    while (line != null) {
+                        byte[] bytes = (line + eof).getBytes(StandardCharsets.UTF_8);
+                        if (fileSize + bytes.length > sizeOfChunk)
+                            break;
+                        size += bytes.length;
+                        out.write(bytes);
+                        fileSize += bytes.length;
+                        line = br.readLine();
+                    }
+                }
+                files.add(newFile);
+            }
+            logger.info("Completed stream with size {}", size);
+        }
+        return files;
     }
 
 }

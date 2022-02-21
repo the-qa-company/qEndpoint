@@ -17,6 +17,16 @@ public class HybridStoreFiles {
         return locationHdt + hdtIndexName;
     }
 
+    /**
+     * the HDT file with HDT version
+     * @param locationHdt the HDT location dir
+     * @param hdtIndexName the HDT index name
+     * @return the hdt file
+     */
+    public static String getHDTIndexV11(String locationHdt, String hdtIndexName) {
+        return locationHdt + hdtIndexName + HDTVersion.get_index_suffix("-");
+    }
+
     // basic locations
     private final String locationNative, locationHdt, hdtIndexName;
 
@@ -106,7 +116,7 @@ public class HybridStoreFiles {
      * @return the HDT file with HDT version
      */
     public String getHDTIndexV11() {
-        return locationHdt + hdtIndexName + HDTVersion.get_index_suffix("-");
+        return getHDTIndexV11(locationHdt, hdtIndexName);
     }
 
     /**
