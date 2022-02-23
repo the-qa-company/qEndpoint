@@ -133,26 +133,26 @@ public class SimpleIRIHDT extends AbstractIRI {
 
     @Override
     public int hashCode() {
-        if (id != -1) {
-            String prefix = "http://hdt.org/";
-            if (this.postion == SHARED_POS)
-                prefix += "SO";
-            else if (this.postion == SUBJECT_POS)
-                prefix += "S";
-            else if (this.postion == PREDICATE_POS)
-                prefix += "P";
-            else if (this.postion == OBJECT_POS)
-                prefix += "O";
-            else {
-                if (iriString != null)
-                    prefix = iriString;
-                return prefix.hashCode();
-            }
-            prefix += id;
-            return prefix.hashCode();
-        } else {
+//        if (id != -1) {
+//            String prefix = "http://hdt.org/";
+//            if (this.postion == SHARED_POS)
+//                prefix += "SO";
+//            else if (this.postion == SUBJECT_POS)
+//                prefix += "S";
+//            else if (this.postion == PREDICATE_POS)
+//                prefix += "P";
+//            else if (this.postion == OBJECT_POS)
+//                prefix += "O";
+//            else {
+//                if (iriString != null)
+//                    prefix = iriString;
+//                return prefix.hashCode();
+//            }
+//            prefix += id;
+//            return prefix.hashCode();
+//        } else {
             return toString().hashCode();
-        }
+//        }
     }
 
     public String getIriString() {
