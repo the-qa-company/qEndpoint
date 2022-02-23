@@ -1,10 +1,14 @@
 package com.the_qa_company.q_endpoint.controller;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.google.code.externalsorting.csv.CsvExternalSort;
+import com.google.code.externalsorting.csv.CsvSortOptions;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
 import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
 import com.the_qa_company.q_endpoint.utils.MapIterator;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.datatypes.xsd.impl.RDFLangString;
@@ -41,14 +45,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -57,6 +59,8 @@ public class Sparql {
     private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
     private final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
+    // to test the chunk development of stream
+    public long debugMaxChunkSize = -1;
     @Value("${locationHdt}")
     private String locationHdt;
 
@@ -341,6 +345,7 @@ public class Sparql {
         String hdtOutput = HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName);
         String baseURI = "file://" + rdfInput;
         try {
+            new File(locationHdt).mkdirs();
             Files.deleteIfExists(Paths.get(hdtOutput));
             Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
@@ -372,6 +377,11 @@ public class Sparql {
                 (long) Math.floor((maxMemory - 1024 * 1024 * 1024) * 0.85)
                 //128*1024
                 ;
+
+        if (debugMaxChunkSize > 0) {
+            assert debugMaxChunkSize < chunkSize : "debugMaxChunkSize can't be higher than chunkSize";
+            chunkSize = debugMaxChunkSize;
+        }
         logger.info("Maximal available memory {}", maxMemory);
         File hdtParentFile = new File(hdtLocation).getParentFile();
         String hdtParent = hdtParentFile.getAbsolutePath();
@@ -432,73 +442,6 @@ public class Sparql {
         logger.info("NT file loaded in {}", timeWatch.stopAndShow());
     }
 
-    public void compressToHdtWithSplit(InputStream inputStream, String ntripleFile, String hdtLocation, HDTSpecification specs) {
-        /* Maximum amount of memory the JVM will attempt to use */
-        StopWatch timeWatch = new StopWatch();
-        try {
-            long maxMemory = Runtime.getRuntime().maxMemory();
-            long fileSize = 0;
-
-
-            Files.deleteIfExists(Paths.get(ntripleFile));
-            Files.copy(inputStream, Paths.get(ntripleFile));
-
-            fileSize = Files.size(Paths.get(ntripleFile));
-
-            logger.info("Size of the file to compress " + fileSize);
-            logger.info("Maximal available memory " + maxMemory);
-            logger.info("Memory used to compress " + fileSize / ((maxMemory - 1024 * 1024 * 1024) * 0.85));
-            int splits = (int) Math.ceil(fileSize / ((maxMemory - 1024 * 1024 * 1024) * 0.85));
-            logger.info("Splitting the file in " + splits + " splits");
-            if (splits == 1) {
-                HDT hdtDump =
-                        HDTManager.generateHDT(
-                                ntripleFile, "http://qanswer.eu/", RDFNotation.NTRIPLES, specs, null);
-                hdtDump.saveToHDT(hdtLocation, null);
-                System.out.println("saving hdt with " + hdtDump.getTriples().getNumberOfElements() + " triple(s) into " + hdtLocation);
-                hdtDump.close();
-            } else {
-                // the compression will not fit in memory, cat the files in chunks and use hdtCat
-                List<File> files = splitFile(new File(ntripleFile), (long) Math.floor((maxMemory - 1024 * 1024 * 1024) * 0.85));
-                for (int i = 0; i < files.size(); i++) {
-                    logger.info("Compressing " + files.get(i).getAbsolutePath());
-                    HDT hdtDump =
-                            HDTManager.generateHDT(
-                                    files.get(i).getAbsolutePath(), "http://qanswer.eu/", RDFNotation.NTRIPLES, specs, null);
-                    hdtDump.saveToHDT(files.get(i).getAbsolutePath() + ".hdt", null);
-                    hdtDump.close();
-                    String tmp = files.get(i).getAbsolutePath() + ".hdt";
-                    files.get(i).delete();
-                    files.set(i, new File(tmp));
-                }
-                String first = files.get(0).getAbsolutePath();
-                for (int i = 0; i < files.size() - 1; i++) {
-                    (new File(hdtLocation)).getParent();
-                    HDT tmp = HDTManager.catHDT((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + i + ".hdt", first, files.get(i + 1).getAbsolutePath(), specs, null);
-                    tmp.saveToHDT((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + i + ".hdt", null);
-                    tmp.close();
-                    files.get(i).delete();
-                    first = (new File(hdtLocation)).getParent() + "/index_cat_tmp_" + i + ".hdt";
-                    if (i != 0) {
-                        (new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (i - 1) + ".hdt")).delete();
-                        (new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (i - 1) + ".hdtdictionary")).delete();
-                        (new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (i - 1) + ".hdttriples")).delete();
-                    }
-                }
-                new File(first).renameTo(new File(hdtLocation));
-                files.get(files.size() - 1).delete();
-                System.out.println((new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (files.size() - 1) + ".hdt")));
-                (new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (files.size() - 2) + ".hdt")).delete();
-                (new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (files.size() - 2) + ".hdtdictionary")).delete();
-                (new File((new File(hdtLocation)).getParent() + "/index_cat_tmp_" + (files.size() - 2) + ".hdttriples")).delete();
-            }
-            Files.deleteIfExists(Paths.get(ntripleFile));
-        } catch (IOException | ParserException e) {
-            e.printStackTrace();
-        }
-        logger.info("NT file loaded in {}", timeWatch.stopAndShow());
-    }
-
     public String formatJenaNode(Node node) {
         if (node.isURI()) {
             return node.getURI();
@@ -536,33 +479,6 @@ public class Sparql {
                                 formatJenaNode(t.getObject())
                         )
         );
-    }
-
-    private List<File> splitFile(File file, long sizeOfChunk) throws IOException {
-        int counter = 1;
-        List<File> files = new ArrayList<File>();
-        String eof = System.lineSeparator();
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String name = file.getName();
-            String line = br.readLine();
-            while (line != null) {
-                File newFile = new File(file.getParent(), name + "."
-                        + String.format("%03d", counter++));
-                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(newFile))) {
-                    long fileSize = 0;
-                    while (line != null) {
-                        byte[] bytes = (line + eof).getBytes(StandardCharsets.UTF_8);
-                        if (fileSize + bytes.length > sizeOfChunk)
-                            break;
-                        out.write(bytes);
-                        fileSize += bytes.length;
-                        line = br.readLine();
-                    }
-                }
-                files.add(newFile);
-            }
-        }
-        return files;
     }
 
 }
