@@ -469,7 +469,7 @@ public class Sparql {
         }
     }
 
-    private Iterator<TripleString> parseFromStream(InputStream inputStream, String baseURI) {
+    public Iterator<TripleString> parseFromStream(InputStream inputStream, String baseURI) {
         return new MapIterator<>(
             RDFDataMgr.createIteratorTriples(inputStream, Lang.NTRIPLES, baseURI),
                 t ->
