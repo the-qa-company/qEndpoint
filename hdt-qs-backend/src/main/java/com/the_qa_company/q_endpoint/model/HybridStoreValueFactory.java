@@ -80,8 +80,6 @@ public class HybridStoreValueFactory extends AbstractValueFactory {
         }
     }
 
-
-
     @Override
     public IRI createIRI(String namespace, String localName) {
         return createIRI(namespace + localName);
@@ -100,6 +98,9 @@ public class HybridStoreValueFactory extends AbstractValueFactory {
 
     @Override
     public Literal createLiteral(String value, IRI datatype) {
+        if (datatype instanceof SimpleIRIHDT) {
+            ((SimpleIRIHDT) datatype).convertToNonHDTIRI();
+        }
         return new SimpleLiteral2(value, datatype);
     }
 
