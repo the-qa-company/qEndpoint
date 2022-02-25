@@ -7,6 +7,7 @@ import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
 import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
 import com.the_qa_company.q_endpoint.utils.MapIterator;
+import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.jena.datatypes.RDFDatatype;
@@ -392,7 +393,7 @@ public class Sparql {
         File tempFile = new File(filename);
         // the compression will not fit in memory, cat the files in chunks and use hdtCat
 
-        FileTripleIterator it = new FileTripleIterator(parseFromStream(inputStream, baseURI), chunkSize);
+        FileTripleIterator it = new FileTripleIterator(RDFStreamUtils.readRDFStreamAsTripleStringIterator(inputStream, RDFFormat.NTRIPLES, true), chunkSize);
 
         int file = 0;
         String lastFile = null;
@@ -440,45 +441,6 @@ public class Sparql {
             Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
         }
         logger.info("NT file loaded in {}", timeWatch.stopAndShow());
-    }
-
-    public String formatJenaNode(Node node) {
-        if (node.isURI()) {
-            return node.getURI();
-
-        } else if (node.isLiteral()) {
-            RDFDatatype t = node.getLiteralDatatype();
-            if (t == null || XSDDatatype.XSDstring.getURI().equals(t.getURI())) {
-                // String
-                return '"' + node.getLiteralLexicalForm() + '"';
-
-            } else if (RDFLangString.rdfLangString.equals(t)) {
-                // Lang.  Lowercase the language tag to get semantic equivalence between "x"@en and "x"@EN as required by spec
-                return '"' + node.getLiteralLexicalForm() + "\"@" + node.getLiteralLanguage().toLowerCase();
-
-            } else {
-                // Typed
-                return '"' + node.getLiteralLexicalForm() + "\"^^<" + t.getURI() + '>';
-            }
-
-        } else if (node.isBlank()) {
-            return "_:" + node.getBlankNodeLabel();
-
-        } else {
-            throw new IllegalArgumentException(String.valueOf(node));
-        }
-    }
-
-    public Iterator<TripleString> parseFromStream(InputStream inputStream, String baseURI) {
-        return new MapIterator<>(
-            RDFDataMgr.createIteratorTriples(inputStream, Lang.NTRIPLES, baseURI),
-                t ->
-                        new TripleString(
-                                formatJenaNode(t.getSubject()),
-                                formatJenaNode(t.getPredicate()),
-                                formatJenaNode(t.getObject())
-                        )
-        );
     }
 
 }

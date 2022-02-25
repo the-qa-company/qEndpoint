@@ -1,23 +1,17 @@
 package com.the_qa_company.q_endpoint.controller;
 
 import com.the_qa_company.q_endpoint.Application;
-import com.the_qa_company.q_endpoint.controller.Sparql;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.rio.*;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.rdfhdt.hdt.exceptions.NotFoundException;
-import org.rdfhdt.hdt.exceptions.ParserException;
-import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTSpecification;
-import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
@@ -30,7 +24,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
@@ -54,13 +51,13 @@ public class FileUploadTest {
     Sparql sparql;
 
     @Value("${locationHdt}")
-    private String locationHdt;
+    String locationHdt;
 
     @Value("${hdtIndexName}")
-    private String hdtIndexName;
+    String hdtIndexName;
 
     @Value("${locationNative}")
-    private String locationNative;
+    String locationNative;
 
 
     private HybridStore getHybridStore() {
@@ -73,7 +70,10 @@ public class FileUploadTest {
 
     @Before
     public void setup() throws IllegalAccessException {
-        ((Map) SPARQL_MODEL.get(sparql)).clear();
+        // clear map to recreate hybrid store
+        ((Map<?, ?>) SPARQL_MODEL.get(sparql)).clear();
+
+        // remove previous data
         try {
             FileSystemUtils.deleteRecursively(Paths.get(locationHdt));
         } catch (IOException e) {
@@ -108,97 +108,77 @@ public class FileUploadTest {
         return size;
     }
 
-    private void assertAllHDTLoaded(String file) throws ParserException, IOException, NotFoundException {
+    private void assertAllHDTLoaded(String file) throws IOException {
         HybridStore store = getHybridStore();
         SailRepository sailRepository = new SailRepository(store);
         List<Statement> statementList = new ArrayList<>();
-        RDFParser parser = Rio.createParser(RDFFormat.NTRIPLES);
-        parser.setPreserveBNodeIDs(true);
-        parser.setRDFHandler(new RDFHandler() {
-            @Override
-            public void startRDF() throws RDFHandlerException {
-            }
-
-            @Override
-            public void endRDF() throws RDFHandlerException {
-            }
-
-            @Override
-            public void handleNamespace(String s, String s1) throws RDFHandlerException {
-            }
-
-            @Override
-            public void handleStatement(Statement statement) throws RDFHandlerException {
-                if (
-                        statement.getSubject().toString().startsWith("_:")
-                                || statement.getPredicate().toString().startsWith("_:")
-                                || statement.getObject().toString().startsWith("_:"))
-                    return; // FIXME: allow blank node usage
-                statementList.add(statement);
-            }
-
-            @Override
-            public void handleComment(String s) throws RDFHandlerException {
-
-            }
-        });
-        parser.parse(stream(file));
+        RDFStreamUtils.readRDFStream(stream(file), RDFFormat.NTRIPLES, true, statement -> {
+                    if (
+                            statement.getSubject().isBNode()
+                                    || statement.getObject().isBNode())
+                        return;
+                    statementList.add(statement);
+                }
+        );
 
         try (SailRepositoryConnection connection = sailRepository.getConnection()) {
             RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false);
             while (sts.hasNext()) {
                 Statement next = sts.next();
                 if (
-                        next.getSubject().toString().startsWith("_:")
-                                || next.getPredicate().toString().startsWith("_:")
-                                || next.getObject().toString().startsWith("_:"))
+                        next.getSubject().isBNode()
+                                || next.getObject().isBNode())
                     continue;
                 Assert.assertTrue("Statement (" +
                         next.getSubject().toString() + ", " +
                         next.getPredicate().toString() + ", " +
                         next.getObject().toString()
                         + "), not in " + file, statementList.remove(next));
-                while (statementList.remove(next))
-                    ; // remove duplicates
+                while (statementList.remove(next)) {
+                    // remove duplicates
+                }
             }
         }
         if (!statementList.isEmpty()) {
             for (Statement statement : statementList) {
                 System.err.println(statement);
             }
-            Assert.fail(file + "contains more triple than the HybridStore");
+            Assert.fail(file + "contains more triples than the HybridStore");
         }
     }
 
     @Test
-    public void loadNoSplitTest() throws IOException, ParserException, NotFoundException {
-        long size = fileSize("cocktails.nt");
+    public void loadNoSplitTest() throws IOException {
+        String fileName = "cocktails.nt";
+        long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
 
-        sparql.loadFile(stream("cocktails.nt"), "cocktails.nt");
+        sparql.loadFile(stream(fileName), fileName);
 
 
-        assertAllHDTLoaded("cocktails.nt");
+        assertAllHDTLoaded(fileName);
     }
 
     @Test
-    public void loadNoNTSplitTest() throws IOException, ParserException, NotFoundException {
-        long size = fileSize("cocktails.nt");
+    public void loadNoNTSplitTest() throws IOException {
+        String fileName = "cocktails.nt";
+        long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
 
         // use ttl file because nt c ttl to avoid split
-        sparql.loadFile(stream("cocktails.nt"), "cocktails.ttl");
+        sparql.loadFile(stream(fileName), fileName + ".ttl");
 
-        assertAllHDTLoaded("cocktails.nt");
+        assertAllHDTLoaded(fileName);
     }
 
     @Test
-    public void loadSplitTest() throws IOException, ParserException, NotFoundException {
-        long size = fileSize("cocktails.nt");
+    public void loadSplitTest() throws IOException {
+        String fileName = "cocktails.nt";
+        long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
 
-        sparql.loadFile(stream("cocktails.nt"), "cocktails.nt");
+        sparql.loadFile(stream(fileName), fileName);
 
-        assertAllHDTLoaded("cocktails.nt");
+        assertAllHDTLoaded(fileName);
     }
 }
