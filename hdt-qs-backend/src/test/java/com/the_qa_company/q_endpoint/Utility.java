@@ -55,6 +55,12 @@ public class Utility {
     public static final int COUNT = SUBJECTS * PREDICATES;
     public static final String EXAMPLE_NAMESPACE = "http://example.com/";
 
+    /**
+     * create a statement of a fake person (ex:personX a foaf:person)
+     * @param vf the value factory
+     * @param id the id of the fake person
+     * @return the statement
+     */
     public static Statement getFakePersonStatement(ValueFactory vf, int id) {
         IRI entity = vf.createIRI(EXAMPLE_NAMESPACE, "person" + id);
         return vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
