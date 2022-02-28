@@ -88,12 +88,6 @@
             </plugin>
         </plugins>
     </build>
-    <repositories>
-        <repository>
-            <id>gitlab-maven-hdt</id>
-            <url>https://gitlab.the-qa-company.com/api/v4/projects/5/packages/maven</url>
-        </repository>
-    </repositories>
     <distributionManagement>
     <repository>
       <id>gitlab-maven-hdt-endpoint</id>

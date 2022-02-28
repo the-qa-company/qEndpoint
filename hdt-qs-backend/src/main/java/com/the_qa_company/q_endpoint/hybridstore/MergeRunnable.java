@@ -2,6 +2,7 @@ package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 
+import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
@@ -529,7 +530,7 @@ public class MergeRunnable {
         debugStepPoint(MergeRunnableStopPoint.STEP3_START);
         // index the new file
 
-        HDT newHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTNewIndex(), hybridStore.getHDTSpec());
+        HDT newHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTNewIndex(), hybridStore.getHDTSpec(), null);
 
         // convert all triples added to the merge store to new IDs of the new generated HDT
         logger.debug("ID conversion");
@@ -561,7 +562,7 @@ public class MergeRunnable {
         rename(hybridStoreFiles.getHDTNewIndexV11(), hybridStoreFiles.getHDTIndexV11());
         // AFTER_INDEX_V11_RENAME
 
-        HDT tempHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), this.hybridStore.getHDTSpec());
+        HDT tempHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), this.hybridStore.getHDTSpec(), null);
         convertOldToNew(this.hybridStore.getHdt(), tempHdt);
         this.hybridStore.resetHDT(tempHdt);
 
@@ -596,9 +597,11 @@ public class MergeRunnable {
             File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
             theDir.mkdirs();
             String location = theDir.getAbsolutePath() + "/";
+            BitArrayDisk deleteBitmap = new BitArrayDisk(-1, new File(bitArray));
             // @todo: should we not use the already mapped HDT file instead of remapping
-            HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, bitArray, this.hybridStore.getHDTSpec(), null);
+            HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, deleteBitmap, this.hybridStore.getHDTSpec(), null);
             hdt.saveToHDT(hdtOutput, null);
+            deleteBitmap.close();
 
             Files.delete(Paths.get(location + "dictionary"));
             FileUtils.deleteDirectory(theDir.getAbsoluteFile());

@@ -39,7 +39,8 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 TripleID tripleID = iterator.next();
-                if (tripleID.getIndex() != -1 && !hybridStore.getDeleteBitMap().access(tripleID.getIndex() - 1)) {
+                long index = iterator.getLastTriplePosition();
+                if (!hybridStore.getDeleteBitMap().access(index)) {
                     Resource subject = hybridStore.getHdtConverter().IdToSubjectHDTResource(tripleID.getSubject());
                     IRI predicate = hybridStore.getHdtConverter().IdToPredicateHDTResource(tripleID.getPredicate());
                     Value object = hybridStore.getHdtConverter().IdToObjectHDTResource(tripleID.getObject());
