@@ -54,7 +54,6 @@ RUN mkdir data
 RUN mkdir data/hdt-store
 
 COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT-exec.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
-COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT.jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT2.jar
 COPY --from=build-backend /home/app/src/main/resources/application-prod.properties /home/app/application-prod.properties
 
 EXPOSE 1234
