@@ -12,6 +12,8 @@ build:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - echo "Pushing container to registry"
     - docker push $CI_REGISTRY/d063520/hdtsparqlendpoint
+  only:
+    - master
 deploy:
   stage: deploy
   image: maven:3.6-jdk-11
