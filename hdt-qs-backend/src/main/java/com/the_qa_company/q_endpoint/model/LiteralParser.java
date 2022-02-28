@@ -4,7 +4,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 
-import static org.eclipse.rdf4j.rio.ntriples.NTriplesUtil.parseURI;
+import static org.eclipse.rdf4j.rio.helpers.NTriplesUtil.parseURI;
 
 public class LiteralParser {
 
