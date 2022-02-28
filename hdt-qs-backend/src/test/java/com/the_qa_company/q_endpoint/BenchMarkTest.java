@@ -37,11 +37,11 @@ public class BenchMarkTest {
             spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
             HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
             assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
             //printHDT(hdt);
             SailRepository hybridStore = new SailRepository(
                     new HybridStore(
-                            hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                            hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
                     ));
             try (SailRepositoryConnection connection = hybridStore.getConnection()) {
                 stopWatch.stop();
@@ -59,9 +59,7 @@ public class BenchMarkTest {
                     stopWatch = StopWatch.createStarted();
                     connection.begin();
                     for (int j = count * i + 1; j <= count * (i + 1); j++) {
-                        IRI entity = vf.createIRI(ex, "person" + j);
-                        Statement stm = vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
-                        connection.remove(stm);
+                        connection.remove(Utility.getFakeStatement(vf, j));
                     }
                     connection.commit();
                     assert hdt != null;

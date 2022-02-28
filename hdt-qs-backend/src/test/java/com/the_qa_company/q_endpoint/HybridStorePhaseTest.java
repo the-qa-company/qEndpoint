@@ -42,7 +42,6 @@ import static org.junit.Assert.*;
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = HybridStorePhaseTest.class)
 public class HybridStorePhaseTest {
-
     private static final Logger logger = LoggerFactory.getLogger(HybridStorePhaseTest.class);
 
     @Rule
@@ -66,9 +65,9 @@ public class HybridStorePhaseTest {
         String path = "/Users/alyhdr/Downloads/test/";
         HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex("tests/hdt-store/temp.nt", true, false, spec);
         assert hdt != null;
-        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
         store = new HybridStore(
-                hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", false
+                hdtStore.getAbsolutePath() + "/",HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
         );
     }
 

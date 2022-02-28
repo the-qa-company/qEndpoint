@@ -67,10 +67,10 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
             hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
 
-        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/index.hdt", null);
+        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
 
         hybridStore = new HybridStore(
-                hdtStore.getAbsolutePath() + "/", spec, nativeStore.getAbsolutePath() + "/", true
+                hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
         );
 //        hybridStore.setThreshold(2);
         SailRepository repository = new SailRepository(hybridStore);

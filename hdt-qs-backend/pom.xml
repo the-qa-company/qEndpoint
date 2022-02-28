@@ -9,7 +9,7 @@
 
     <groupId>com.the_qa_company</groupId>
     <artifactId>hdtSparqlEndpoint</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.0.7-SNAPSHOT</version>
 
     <properties>
         <rdf4j.version>3.7.4</rdf4j.version>

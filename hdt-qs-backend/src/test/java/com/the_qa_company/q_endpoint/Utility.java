@@ -49,7 +49,36 @@ public class Utility {
         return null;
     }
 
-    public static int count = 1000000;
+    public static final int SUBJECTS = 1000;
+    public static final int PREDICATES = 1000;
+    public static final int OBJECTS = 100;
+    public static final int COUNT = SUBJECTS * PREDICATES;
+    public static final String EXAMPLE_NAMESPACE = "http://example.com/";
+
+    public static Statement getFakePersonStatement(ValueFactory vf, int id) {
+        IRI entity = vf.createIRI(EXAMPLE_NAMESPACE, "person" + id);
+        return vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
+    }
+
+    /**
+     * create a fake statement of a complete graph
+     * @param vf the value factory
+     * @param id the id, must be between 0 (included) and subjects*predicates*objects (excluded)
+     * @return the statement
+     */
+    public static Statement getFakeStatement(ValueFactory vf, int id) {
+        // return getFakePersonStatement(vf, id); /*
+        int x = id % SUBJECTS;
+        int y = (id / SUBJECTS) % PREDICATES;
+        int z = id % OBJECTS;
+
+        IRI r = vf.createIRI(EXAMPLE_NAMESPACE, "sub" + x);
+        IRI p = vf.createIRI(EXAMPLE_NAMESPACE, "pre" + y);
+        IRI o = vf.createIRI(EXAMPLE_NAMESPACE, "obj" + z);
+
+        return vf.createStatement(r, p, o);
+        //*/
+    }
 
     private static void writeBigIndex(File file) {
         FileOutputStream out = null;
@@ -58,11 +87,8 @@ public class Utility {
             out = new FileOutputStream(file);
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             writer.startRDF();
-            String ex = "http://example.com/";
-            for (int i = 1; i <= count; i++) {
-                IRI entity = vf.createIRI(ex, "person" + i);
-                Statement stm = vf.createStatement(entity, RDF.TYPE, FOAF.PERSON);
-                writer.handleStatement(stm);
+            for (int i = 1; i <= COUNT; i++) {
+                writer.handleStatement(getFakeStatement(vf, i - 1));
             }
             writer.endRDF();
             out.close();

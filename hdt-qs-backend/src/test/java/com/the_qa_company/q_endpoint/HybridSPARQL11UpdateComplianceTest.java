@@ -45,12 +45,12 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         HDT hdt = Utility.createTempHdtIndex(tempDir, true,false, spec);
         assert hdt != null;
-        hdt.saveToHDT(hdtStore.getAbsolutePath()+"/index.hdt",null);
+        hdt.saveToHDT(hdtStore.getAbsolutePath()+"/" + HybridStoreTest.HDT_INDEX_NAME,null);
 
 
 
         HybridStore hybridStore = new HybridStore(
-                hdtStore.getAbsolutePath()+"/",spec,nativeStore.getAbsolutePath()+"/",true
+                hdtStore.getAbsolutePath()+"/",HybridStoreTest.HDT_INDEX_NAME, spec,nativeStore.getAbsolutePath()+"/",true
         );
 //        hybridStore.setThreshold(2);
 
