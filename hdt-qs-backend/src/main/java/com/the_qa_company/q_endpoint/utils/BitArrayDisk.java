@@ -12,6 +12,7 @@ public class BitArrayDisk {
     protected final static int W = 64;
 
     protected long numbits;
+    protected long allBits;
     protected long[] words;
 
     private static final int BLOCKS_PER_SUPER = 4;
@@ -23,7 +24,6 @@ public class BitArrayDisk {
     private byte[] blocks;
     private boolean indexUpToDate;
 
-    private String location;
     NioFile output;
 
     // only for testing we don't necessarily need to store the array on disk
@@ -31,25 +31,17 @@ public class BitArrayDisk {
 
 
     public BitArrayDisk(long nbits, String location) {
-        this.numbits = 0;
-        this.location = location;
-        try {
-            this.output = new NioFile(new File(location));
-            initWordsArray(nbits);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this(nbits, new File(location));
     }
 
-    public BitArrayDisk(long nbits, boolean inMemory) {
+    public BitArrayDisk(long nbits) {
         this.numbits = 0;
-        this.inMemory = inMemory;
+        this.inMemory = true;
         initWordsArray(nbits);
     }
 
     public BitArrayDisk(long nbits, File file) {
         this.numbits = 0;
-        this.location = file.getAbsolutePath();
         try {
             this.output = new NioFile(file);
             initWordsArray(nbits);
@@ -58,21 +50,81 @@ public class BitArrayDisk {
         }
     }
 
+    /**
+     * convert this {@link BitArrayDisk} memory instance to a file instance, only works with
+     * instance created with {@link BitArrayDisk#BitArrayDisk(long)}.
+     * @param file the file to use
+     */
+    public void changeToInDisk(File file) {
+        assert inMemory: "the BitArray should be in memory";
+        inMemory = false;
+        try {
+            this.output = new NioFile(file);
+            writeBits();
+            for (int offset = 0; offset < words.length; offset++) {
+                output.writeLong(words[offset], 8L * (offset + 1));
+            }
+            output.force(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * compute the number of the highest bit of a value
+     * @param value the value
+     * @return the number of the highest bit of value
+     */
+    private int log2(long value) {
+        if (value == 0) {
+            return 0; // Wrong, but it's private
+        }
+        long v = value;
+        int log = 0;
+
+        while (v != 0) {
+            v >>= 1;
+            log++;
+        }
+
+        return log;
+    }
+
+    /**
+     * write inside the output file the number of words
+     * @throws IOException if the write can be done
+     */
+    private void writeBits() throws IOException {
+        // write the length of the array in the beginning
+        int nwords = (int) numWords(allBits);
+        this.output.writeLong(nwords, 0);
+    }
+
     private void initWordsArray(long nbits) {
+        allBits = nbits;
         try {
             if (!inMemory) {
                 if (output.size() == 0) { // file empty
-                    int nwords = (int) numWords(nbits);
+                    int nwords = (int) numWords(allBits);
                     this.words = new long[nwords];
-                    // write the length of the array in the beginning
-                    this.output.writeLong(nwords, 0);
+                    writeBits();
                 } else {
                     // read the length of the array from the beginning
                     long length = this.output.readLong(0);
                     this.words = new long[(int) length];
+
+                    int lastNonZero = -1;
+                    // read previous values
                     for (int i = 0; i < length; i++) {
-                        this.words[i] = this.output.readLong((i + 1) * 8);
+                        long v = this.output.readLong((i + 1) * 8L);
+                        if (v != 0) {
+                            this.words[i] = v;
+                            lastNonZero = i;
+                        }
                     }
+                    // recompute numbits if we have at least one bit
+                    if (lastNonZero != -1)
+                        numbits = 8L * lastNonZero + log2(words[lastNonZero]);
                 }
             } else {
                 int nwords = (int) numWords(nbits);
@@ -133,7 +185,7 @@ public class BitArrayDisk {
 
     private void writeToDisk(long l, int wordIndex) {
         try {
-            output.writeLong(l, (wordIndex + 1) * 8); // +1 reserved for the length of the array
+            output.writeLong(l, (wordIndex + 1) * 8L); // +1 reserved for the length of the array
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -222,9 +274,26 @@ public class BitArrayDisk {
     }
 
 
+    @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
         for (long i = 0; i < numbits; i++) {
+            str.append(access(i) ? '1' : '0');
+        }
+        return str.toString();
+    }
+
+    public String toString(boolean allBits) {
+        StringBuilder str = new StringBuilder();
+        long end;
+
+        if (allBits) {
+            end = this.allBits;
+        } else {
+            end = numbits;
+        }
+
+        for (long i = 0; i < end; i++) {
             str.append(access(i) ? '1' : '0');
         }
         return str.toString();
@@ -238,11 +307,21 @@ public class BitArrayDisk {
         }
     }
 
-    public void force(Boolean bool) {
+    public void force(boolean bool) {
+        if (inMemory)
+            return;
         try {
             this.output.force(bool);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String printInfo() {
+        return "numWords:" + getNumWords() +
+                ", numbits: " + getNumbits() +
+                ", ones: " + countOnes() +
+                (inMemory ? ", inMemory: true" : "\nfile: " + output.getFile().getAbsolutePath()) +
+                (allBits <= 20 ? "\nbits: " + toString(true) : "");
     }
 }

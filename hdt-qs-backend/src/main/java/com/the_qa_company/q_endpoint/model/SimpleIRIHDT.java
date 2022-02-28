@@ -158,4 +158,9 @@ public class SimpleIRIHDT extends AbstractIRI {
     public String getIriString() {
         return iriString;
     }
+
+    public void convertToNonHDTIRI() {
+        toString(); // force to create the iriString field
+        this.id = -1;
+    }
 }

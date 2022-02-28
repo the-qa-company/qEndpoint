@@ -159,7 +159,7 @@ public class HybridTripleSource implements TripleSource {
             if (object <= this.hybridStore.getHdt().getDictionary().getNshared()) {
                 containsObject = this.hybridStore.getBitX().access(object - 1);
             } else {
-                containsObject = this.hybridStore.getBitZ().access(object - - this.hybridStore.getHdt().getDictionary().getNshared() - 1);
+                containsObject = this.hybridStore.getBitZ().access(object - this.hybridStore.getHdt().getDictionary().getNshared() - 1);
             }
         }
         logger.debug("Search over native store? {} {} {}",containsSubject, containsPredicate, containsObject);

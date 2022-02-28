@@ -11,12 +11,9 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
-import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
-import org.eclipse.rdf4j.query.parser.QueryParserUtil;
-import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.SailReadOnlyException;
@@ -28,22 +25,30 @@ import org.rdfhdt.hdt.triples.TripleID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class HybridStoreConnection extends SailSourceConnection {
 
+    private static final AtomicLong DEBUG_ID_STORE = new AtomicLong();
     private static final Logger logger = LoggerFactory.getLogger(HybridStoreConnection.class);
     private final HybridTripleSource tripleSource;
     private final HybridQueryPreparer queryPreparer;
+    private boolean isWriteConnection = false;
     HybridStore hybridStore;
     SailConnection connA_read;
     SailConnection connB_read;
     SailConnection connA_write;
     SailConnection connB_write;
     private Lock connectionLock;
+    private Lock updateLock;
+    private long debugId;
 
     public HybridStoreConnection(HybridStore hybridStore) {
         super(hybridStore, hybridStore.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
+        this.debugId = DEBUG_ID_STORE.getAndIncrement();
         this.hybridStore = hybridStore;
         // lock logic is here so that the connections is blocked
         try {
@@ -51,6 +56,8 @@ public class HybridStoreConnection extends SailSourceConnection {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         this.connectionLock = this.hybridStore.locksHoldByConnections.createLock("connection-lock");
 
         this.connA_read = hybridStore.getNativeStoreA().getConnection();
@@ -66,18 +73,10 @@ public class HybridStoreConnection extends SailSourceConnection {
     public void begin() throws SailException {
         logger.info("Begin connection transaction");
 
-
         super.begin();
 
-        long count = this.hybridStore.triplesCount;
+        hybridStore.mergeIfRequired();
 
-        logger.info("--------------: " + count);
-
-        // Merge only if threshold in native store exceeded and not merging with hdt
-        if (count >= hybridStore.getThreshold() && !hybridStore.isMergeTriggered) {
-            logger.info("Merging..." + count);
-            hybridStore.makeMerge();
-        }
         this.connA_write.begin();
         this.connB_write.begin();
     }
@@ -92,6 +91,8 @@ public class HybridStoreConnection extends SailSourceConnection {
     // USED from connection get api not SPARQL
     @Override
     protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
         CloseableIteration<? extends Statement, QueryEvaluationException> result =
                 tripleSource.getStatements(subj, pred, obj, contexts);
         return new ExceptionConvertingIteration<Statement, SailException>(result) {
@@ -116,6 +117,11 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+
+        isWriteConnection = true;
+
 //        System.out.println(subj.stringValue()+" - "+ pred.stringValue() + " - "+ obj.stringValue());
         Resource newSubj;
         IRI newPred;
@@ -140,11 +146,25 @@ public class HybridStoreConnection extends SailSourceConnection {
             newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("Adding triple {} {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+        logger.debug("Adding triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         if (!tripleExistInHDT(tripleID)) {
+            // check if we need to search over the other native connection
+            if (hybridStore.isMerging()) {
+                if (hybridStore.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
+                    CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead().getStatements(
+                            newSubj,
+                            newPred,
+                            newObj,
+                            false,
+                            contexts
+                    );
+                    if (other.hasNext())
+                        return;
+                }
+            }
             // here we need uris using the internal IDs
             getCurrentConnectionWrite().addStatement(
                     newSubj,
@@ -157,9 +177,6 @@ public class HybridStoreConnection extends SailSourceConnection {
             this.hybridStore.modifyBitmaps(subjectID, predicateID, objectID);
             // increase the number of statements
             this.hybridStore.triplesCount++;
-            if (this.hybridStore.triplesCount % 100 == 0){
-                System.out.println(this.hybridStore.triplesCount);
-            }
         }
     }
 
@@ -208,6 +225,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     public void flush() throws SailException {
         super.flush();
+        if (isWriteConnection) {
+            try {
+                hybridStore.flushWrites();
+            } catch (IOException e) {
+                throw new SailException("Can't flush hybrid store writes", e);
+            }
+        }
         this.connA_write.flush();
         this.connB_write.flush();
     }
@@ -228,6 +252,16 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.connB_read.close();
         this.connA_read = hybridStore.getNativeStoreA().getConnection();
         this.connB_read = hybridStore.getNativeStoreB().getConnection();
+
+        logger.debug("Update started");
+        try {
+            hybridStore.lockToPreventNewUpdate.waitForActiveLocks();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (op != null) {
+            updateLock = hybridStore.locksHoldByUpdates.createLock("update #" + debugId);
+        }
     }
 
     @Override
@@ -236,6 +270,9 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.connA_write.endUpdate(op);
         this.connB_write.endUpdate(op);
         logger.debug("Update ended");
+        if (op != null) {
+            updateLock.release();
+        }
     }
 
     @Override
@@ -251,6 +288,13 @@ public class HybridStoreConnection extends SailSourceConnection {
     @Override
     protected void closeInternal() throws SailException {
         logger.info("Number of times native store was called:" + this.tripleSource.getCount());
+        if (isWriteConnection) {
+            try {
+                hybridStore.flushWrites();
+            } catch (IOException e) {
+                throw new SailException("Can't flush hybrid store writes", e);
+            }
+        }
         super.closeInternal();
         //this.nativeStoreConnection.close();
         this.connA_read.close();
@@ -285,6 +329,11 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+        if (MergeRunnableStopPoint.disableRequest)
+            throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+
+        isWriteConnection = true;
+
         Resource newSubj;
         IRI newPred;
         Value newObj;
@@ -308,11 +357,15 @@ public class HybridStoreConnection extends SailSourceConnection {
             newObj = this.hybridStore.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+//        logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // remove statement from both stores... A and B
-        this.connA_write.removeStatement(op, newSubj, newPred, newObj, contexts);
-        this.connB_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+        if (hybridStore.isMergeTriggered) {
+            this.connA_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+            this.connB_write.removeStatement(op, newSubj, newPred, newObj, contexts);
+        } else {
+            this.getCurrentConnectionWrite().removeStatement(op, newSubj, newPred, newObj, contexts);
+        }
 //        this.hybridStore.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
@@ -363,9 +416,11 @@ public class HybridStoreConnection extends SailSourceConnection {
             // @todo: why is this important?
             // means that the triple doesn't exist in HDT - we have to dump it while merging, this triple might be in the newly generated HDT
             if (this.hybridStore.isMerging()) {
-                RDFWriter writer = this.hybridStore.getRdfWriterTempTriples();
+                NTriplesWriter writer = this.hybridStore.getRdfWriterTempTriples();
                 if (writer != null) {
-                    writer.handleStatement(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
+                    Statement st = this.hybridStore.getValueFactory().createStatement(subj, pred, obj);
+                    logger.debug("add to RDFWriter: {}", st);
+                    writer.handleStatement(st);
                 } else {
                     logger.error("Writer is null!!");
                 }
@@ -375,20 +430,39 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     public SailConnection getCurrentConnectionRead() {
         if (hybridStore.switchStore) {
-            logger.debug("STORE B");
+//            logger.debug("STORE B");
             return connB_read;
         } else {
-            logger.debug("STORE A");
+//            logger.debug("STORE A");
             return connA_read;
         }
     }
 
     public SailConnection getCurrentConnectionWrite() {
         if (hybridStore.switchStore) {
-            logger.debug("STORE B");
+//            logger.debug("STORE B");
             return connB_write;
         } else {
-            logger.debug("STORE A");
+//            logger.debug("STORE A");
+            return connA_write;
+        }
+    }
+    public SailConnection getOtherConnectionRead() {
+        if (!hybridStore.switchStore) {
+//            logger.debug("STORE B");
+            return connB_read;
+        } else {
+//            logger.debug("STORE A");
+            return connA_read;
+        }
+    }
+
+    public SailConnection getOtherConnectionWrite() {
+        if (!hybridStore.switchStore) {
+//            logger.debug("STORE B");
+            return connB_write;
+        } else {
+//            logger.debug("STORE A");
             return connA_write;
         }
     }
