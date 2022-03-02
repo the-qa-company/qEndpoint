@@ -1022,36 +1022,6 @@ public class HybridStoreTest {
 
     }
 
-
-
-        @Test
-    public void small() throws IOException, NotFoundException {
-            File nativeStore = tempDir.newFolder("native-store");
-            File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
-            assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-            printHDT(hdt);
-            HybridStore store = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-            );
-            store.setThreshold(2);
-            SailRepository hybridStore = new SailRepository(store);
-
-            File dataDir = new File("/Users/ate/workspace/qacompany/hdtsparqlendpoint/hdt-qs-backend/native-store");
-            Repository repo = new SailRepository(new NativeStore(dataDir));
-            RepositoryConnection con = repo.getConnection();
-            con.add(new SimpleIRIHDT(hdt, 1,1), new SimpleIRIHDT(hdt, 1,1), new SimpleIRIHDT(hdt, 1,1));
-
-            RepositoryResult<Statement> a = con.getStatements(null,null,null);
-            while (a.hasNext()){
-                Statement statement = a.next();
-                System.out.println(statement.toString());
-                System.out.println(statement.getSubject().getClass());
-            }
-
-        }
-
     private void printHDT(HDT hdt) throws NotFoundException {
         IteratorTripleString it = hdt.search("", "", "");
         while (it.hasNext()) {
