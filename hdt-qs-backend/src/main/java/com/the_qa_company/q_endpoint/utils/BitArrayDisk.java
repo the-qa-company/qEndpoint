@@ -50,6 +50,11 @@ public class BitArrayDisk {
         }
     }
 
+    /**
+     * convert this {@link BitArrayDisk} memory instance to a file instance, only works with
+     * instance created with {@link BitArrayDisk#BitArrayDisk(long)}.
+     * @param file the file to use
+     */
     public void changeToInDisk(File file) {
         assert inMemory: "the BitArray should be in memory";
         inMemory = false;
@@ -65,6 +70,11 @@ public class BitArrayDisk {
         }
     }
 
+    /**
+     * compute the number of the highest bit of a value
+     * @param value the value
+     * @return the number of the highest bit of value
+     */
     private int log2(long value) {
         if (value == 0) {
             return 0; // Wrong, but it's private
@@ -80,6 +90,10 @@ public class BitArrayDisk {
         return log;
     }
 
+    /**
+     * write inside the output file the number of words
+     * @throws IOException if the write can be done
+     */
     private void writeBits() throws IOException {
         // write the length of the array in the beginning
         int nwords = (int) numWords(allBits);
@@ -100,6 +114,7 @@ public class BitArrayDisk {
                     this.words = new long[(int) length];
 
                     int lastNonZero = -1;
+                    // read previous values
                     for (int i = 0; i < length; i++) {
                         long v = this.output.readLong((i + 1) * 8L);
                         if (v != 0) {
@@ -107,6 +122,7 @@ public class BitArrayDisk {
                             lastNonZero = i;
                         }
                     }
+                    // recompute numbits if we have at least one bit
                     if (lastNonZero != -1)
                         numbits = 8L * lastNonZero + log2(words[lastNonZero]);
                 }

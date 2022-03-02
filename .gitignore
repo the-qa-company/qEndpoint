@@ -27,3 +27,6 @@ hdt-qs-frontend/.env.production.local
 hdt-qs-frontend/npm-debug.log*
 hdt-qs-frontend/yarn-debug.log*
 hdt-qs-frontend/yarn-error.log*
+
+.idea
+data

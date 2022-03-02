@@ -34,30 +34,38 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 public class MergeRunnable {
+    /**
+     * class to use {@link MergeThread}
+     * @param <T> the merge thread type
+     */
     @FunctionalInterface
-    private interface MergeThreadRunnable {
+    private interface MergeThreadRunnable<T> {
         /**
          * execute a merge step and the next step
          *
          * @param restarting if the step is restarting
-         * @param lock       if restarting == true, the return value of {@link MergeThreadReloader#reload()}
+         * @param data       if restarting == true, the return value of {@link MergeThreadReloader#reload()}
          * @throws InterruptedException
          * @throws IOException
          */
-        void run(boolean restarting, Lock lock) throws InterruptedException, IOException;
+        void run(boolean restarting, T data) throws InterruptedException, IOException;
     }
 
+    /**
+     * class to use {@link MergeThread}
+     * @param <T> the merge thread type
+     */
     @FunctionalInterface
-    private interface MergeThreadReloader {
+    private interface MergeThreadReloader<T> {
         /**
          * reload the previous merge data
          *
          * @return a lock if required by the step
          */
-        Lock reload();
+        T reload();
     }
 
-    /////// this is for testing purposes ///////
+    /////// this part is for testing purposes ///////
     // it extends the merging process to this amount of seconds. If -1 then it is not set.
     private static int extendsTimeMergeBeginning = -1;
     private static int extendsTimeMergeBeginningAfterSwitch = -1;
@@ -66,7 +74,10 @@ public class MergeRunnable {
     private static MergeRunnableStopPoint stopPoint;
     // store last merge exception
     private static final LockManager MERGE_THREAD_LOCK_MANAGER = new LockManager();
+    // the last exception during the merge
     private static Exception debugLastMergeException;
+    /////////////////////////////////////////////////
+
 
     public static int getExtendsTimeMergeBeginning() {
         return extendsTimeMergeBeginning;
@@ -78,10 +89,6 @@ public class MergeRunnable {
 
     public static int getExtendsTimeMergeEnd() {
         return extendsTimeMergeEnd;
-    }
-
-    public static MergeRunnableStopPoint getStopPoint() {
-        return stopPoint;
     }
 
     public static void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {
@@ -96,7 +103,11 @@ public class MergeRunnable {
         MergeRunnable.extendsTimeMergeEnd = extendsTimeMergeEnd;
     }
 
-
+    /**
+     * wait for the merge to complete, if the merge was stopped because of an exception
+     * (except with {@link #setStopPoint(MergeRunnableStopPoint)} exception), it is thrown inside a RuntimeException
+     * @throws InterruptedException
+     */
     public static void debugWaitMerge() throws InterruptedException {
         MERGE_THREAD_LOCK_MANAGER.waitForActiveLocks();
         if (debugLastMergeException != null) {
@@ -115,6 +126,10 @@ public class MergeRunnable {
         MergeRunnable.stopPoint = stopPoint;
     }
 
+    /**
+     * try delete a file
+     * @param file the file to delete
+     */
     private static void delete(String file) {
         try {
             Files.delete(Paths.get(file));
@@ -125,6 +140,10 @@ public class MergeRunnable {
         }
     }
 
+    /**
+     * try delete a file if it exists
+     * @param file the file to delete
+     */
     private static void deleteIfExists(String file) {
         try {
             Files.deleteIfExists(Paths.get(file));
@@ -135,33 +154,55 @@ public class MergeRunnable {
         }
     }
 
+    // .old file extension
     private static final String OLD_EXT = ".old";
 
+    /**
+     * delete "file + {@link #OLD_EXT}"
+     * @param file file
+     */
     private static void deleteOld(String file) {
         delete(file + OLD_EXT);
     }
 
+    /**
+     * test if the file exists
+     * @param file the file
+     * @return true if the file exists, false otherwise
+     */
     private static boolean exists(String file) {
         return Files.exists(Paths.get(file));
     }
+    /**
+     * test if the file "file + {@link #OLD_EXT}" exists
+     * @param file the file
+     * @return true if the file exists, false otherwise
+     */
     private static boolean existsOld(String file) {
         return exists(file + OLD_EXT);
     }
 
-    private static void existsSay(String file) {
-        if (exists(file)) {
-            logger.debug("The file {} exists ({})", file, new Throwable().getStackTrace()[1]);
-        }
-    }
-
+    /**
+     * rename file to "file + {@link #OLD_EXT}"
+     * @param file file
+     */
     private static void renameToOld(String file) {
         rename(file, file + OLD_EXT);
     }
 
+    /**
+     * rename "file + {@link #OLD_EXT}" to file
+     * @param file file
+     */
     private static void renameFromOld(String file) {
         rename(file + OLD_EXT, file);
     }
 
+    /**
+     * rename a file to another
+     * @param oldFile the current name
+     * @param newFile the new name
+     */
     private static void rename(String oldFile, String newFile) {
         try {
             Files.move(Paths.get(oldFile), Paths.get(newFile));
@@ -174,29 +215,36 @@ public class MergeRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeRunnable.class);
 
-    public class MergeThread extends Thread {
-        private MergeThreadRunnable exceptionRunnable;
-        private MergeThreadReloader reloadData;
+    public class MergeThread<T> extends Thread {
+        // actions of the merge
+        private final MergeThreadRunnable<T> exceptionRunnable;
+        private MergeThreadReloader<T> reloadData;
         private Runnable preload;
-        private Lock lock;
-        private boolean restart;
+        // the data returned by the reloadData reloader
+        private T data;
+        // if the merge is a restarting one
+        private final boolean restart;
+        // lock for MergeRunnableStopPoint#debugWaitForEvent()
         private Lock debugLock;
 
-        private MergeThread(MergeThreadRunnable run, MergeThreadReloader reloadData) {
+        private MergeThread(MergeThreadRunnable<T> run, MergeThreadReloader<T> reloadData) {
             this(null, run, reloadData);
         }
-        private MergeThread(Runnable preload, MergeThreadRunnable run, MergeThreadReloader reloadData) {
+        private MergeThread(Runnable preload, MergeThreadRunnable<T> run, MergeThreadReloader<T> reloadData) {
             this(run, true);
             this.reloadData = reloadData;
             this.preload = preload;
         }
 
-        private MergeThread(MergeThreadRunnable run, boolean restart) {
+        private MergeThread(MergeThreadRunnable<T> run, boolean restart) {
             super("MergeThread");
             this.exceptionRunnable = run;
             this.restart = restart;
         }
 
+        /**
+         * preload the data of the merge
+         */
         public void preLoad() {
             if (preload != null)
                 preload.run();
@@ -205,7 +253,7 @@ public class MergeRunnable {
         @Override
         public void run() {
             try {
-                this.exceptionRunnable.run(restart, lock);
+                this.exceptionRunnable.run(restart, data);
             } catch (IOException e) {
                 synchronized (MergeRunnable.this) {
                     hybridStore.setMerging(false);
@@ -226,18 +274,28 @@ public class MergeRunnable {
         @Override
         public synchronized void start() {
             if (MergeRunnableStopPoint.debug) {
+                // create a lock to use the method MergeRunnableStopPoint#debugWaitForEvent()
                 debugLastMergeException = null;
                 debugLock = MERGE_THREAD_LOCK_MANAGER.createLock("thread");
             }
-            if (reloadData != null)
-                lock = reloadData.reload();
+            if (reloadData != null) {
+                // reload the data if required
+                data = reloadData.reload();
+            }
+            // start the thread
             super.start();
         }
     }
 
-    private final HybridStoreFiles hybridStoreFiles;
+    // the store
     private final HybridStore hybridStore;
+    // the files to use
+    private final HybridStoreFiles hybridStoreFiles;
 
+    /**
+     * create a merge runnable handler
+     * @param hybridStore the store to handle
+     */
     public MergeRunnable(HybridStore hybridStore) {
         this.hybridStore = hybridStore;
         this.hybridStoreFiles = hybridStore.getHybridStoreFiles();
@@ -251,6 +309,21 @@ public class MergeRunnable {
      */
     private Lock createConnectionLock(String alias) {
         Lock l = hybridStore.lockToPreventNewConnections.createLock(alias);
+
+        if (MergeRunnableStopPoint.debug) {
+            MergeRunnableStopPoint.setLastLock(l);
+        }
+
+        return l;
+    }
+    /**
+     * create a lock to prevent new update
+     *
+     * @param alias alias for logs
+     * @return the {@link Lock}
+     */
+    private Lock createUpdateLock(String alias) {
+        Lock l = hybridStore.lockToPreventNewUpdate.createLock(alias);
 
         if (MergeRunnableStopPoint.debug) {
             MergeRunnableStopPoint.setLastLock(l);
@@ -290,28 +363,38 @@ public class MergeRunnable {
         hybridStore.locksHoldByConnections.waitForActiveLocks();
         logger.debug("All connections completed.");
     }
+    /**
+     * wait all active updates locks
+     *
+     * @throws InterruptedException
+     */
+    private void waitForActiveUpdates() throws InterruptedException {
+        logger.debug("Waiting for updates...");
+        hybridStore.locksHoldByUpdates.waitForActiveLocks();
+        logger.debug("All updates completed.");
+    }
 
     /**
-     * @return a new thread to merge
+     * @return a new thread to merge the store
      */
-    public MergeThread createThread() {
-        return new MergeThread(this::step1, false);
+    public MergeThread<?> createThread() {
+        return new MergeThread<>(this::step1, false);
     }
 
     /**
      * @return an optional thread to restart a previous merge (if any)
      */
-    public Optional<MergeThread> createRestartThread() {
+    public Optional<MergeThread<?>> createRestartThread() {
         // @todo: check previous step with into previousMergeFile, return a thread with the runStep
         int step = getRestartStep();
         logger.debug("Restart step: {}", step);
         switch (step) {
             case 0:
-                return Optional.of(new MergeThread(this::step1, this::reloadDataFromStep1));
+                return Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
             case 2:
-                return Optional.of(new MergeThread(this::step2, this::reloadDataFromStep2));
+                return Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
             case 3:
-                return Optional.of(new MergeThread(this::preloadStep3, this::step3, this::reloadDataFromStep3));
+                return Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
             default:
                 return Optional.empty();
         }
@@ -348,6 +431,11 @@ public class MergeRunnable {
         Files.delete(Paths.get(hybridStoreFiles.getPreviousMergeFile()));
     }
 
+    /**
+     * (debug), sleep for seconds s if seconds != -1
+     * @param seconds the number of seconds to sleep
+     * @param title the title in the debug logs
+     */
     private void sleep(int seconds, String title) {
         if (seconds != -1) {
             try {
@@ -360,10 +448,21 @@ public class MergeRunnable {
         }
     }
 
+    /**
+     * reload previous data from step 1
+     * @return previous data from step 2
+     */
     private Lock reloadDataFromStep1() {
-        return createConnectionLock("switch-lock");
+        return createUpdateLock("step1-lock");
     }
 
+    /**
+     * start the merge at step1
+     * @param restarting if we are restarting from step 1 or not
+     * @param switchLock the return value or {@link #reloadDataFromStep1()}
+     * @throws InterruptedException for wait exception
+     * @throws IOException for file exception
+     */
     private synchronized void step1(boolean restarting, Lock switchLock) throws InterruptedException, IOException {
         logger.info("Start Merge process...");
         markRestartStepCompleted(0);
@@ -371,27 +470,38 @@ public class MergeRunnable {
         debugStepPoint(MergeRunnableStopPoint.STEP1_START);
 
         logger.debug("Start Step 1");
+
+        // if we aren't restarting, create the lock, otherwise switchLock already contains the update lock
         if (!restarting) {
-            switchLock = createConnectionLock("switch-lock");
+            switchLock = createUpdateLock("step1-lock");
         }
         // create a lock so that new incoming connections don't do anything
         // wait for all running updates to finish
-        waitForActiveConnections();
+        waitForActiveUpdates();
 
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP1);
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT1);
+
         // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
         hybridStore.initTempDump(restarting);
         hybridStore.initTempDeleteArray();
 
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP2);
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT2);
+
         // mark in the store that the merge process started
         hybridStore.setMerging(true);
 
         sleep(extendsTimeMergeBeginning, "extendsTimeMergeBeginning");
         debugStepPoint(MergeRunnableStopPoint.STEP1_OLD_SLEEP_BEFORE_SWITCH);
 
-        // switching the stores
+
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT3);
+
+        // switch the store to freeze it
         this.hybridStore.switchStore = !this.hybridStore.switchStore;
+
+        debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT4);
 
         // reset the count of triples to 0 after switching the stores
         this.hybridStore.setTriplesCount(0);
@@ -419,6 +529,10 @@ public class MergeRunnable {
         step2(false, null);
     }
 
+    /**
+     * reload previous data from step 2
+     * @return previous data of step 2
+     */
     private Lock reloadDataFromStep2() {
         // @todo: reload data from step 1
         hybridStore.initTempDump(true);
@@ -427,6 +541,13 @@ public class MergeRunnable {
         return null;
     }
 
+    /**
+     * start the merge at step2
+     * @param restarting if we are restarting from step 2 or not
+     * @param lock the return value or {@link #reloadDataFromStep2()}
+     * @throws InterruptedException for wait exception
+     * @throws IOException for file exception
+     */
     private synchronized void step2(boolean restarting, Lock lock) throws InterruptedException, IOException {
         debugStepPoint(MergeRunnableStopPoint.STEP2_START);
         // diff hdt indexes...
@@ -457,6 +578,10 @@ public class MergeRunnable {
         step3(false, null);
     }
 
+    /**
+     * return value for {@link #getStep3SubStep()}
+     * @see #getStep3SubStep()
+     */
     private enum Step3SubStep {
         AFTER_INDEX_V11_RENAME,
         AFTER_INDEX_RENAME,
@@ -466,6 +591,9 @@ public class MergeRunnable {
         BEFORE_ALL
     }
 
+    /**
+     * @return the sub step of the {@link #step3(boolean, Lock)} method
+     */
     private Step3SubStep getStep3SubStep() {
 
         boolean existsOldTripleDeleteTempArr = existsOld(hybridStoreFiles.getTripleDeleteTempArr());
@@ -493,6 +621,9 @@ public class MergeRunnable {
         return Step3SubStep.BEFORE_ALL;
     }
 
+    /**
+     * preload data for step 3 if restarting
+     */
     private void preloadStep3() {
         deleteIfExists(hybridStoreFiles.getTripleDeleteArr());
 
@@ -516,6 +647,10 @@ public class MergeRunnable {
         }
     }
 
+    /**
+     * reload previous data from step 3
+     * @return previous data of step 3
+     */
     private Lock reloadDataFromStep3() {
         hybridStore.initTempDump(true);
         hybridStore.initTempDeleteArray();
@@ -524,6 +659,13 @@ public class MergeRunnable {
         return createConnectionLock("translate-lock");
     }
 
+    /**
+     * start the merge at step3
+     * @param restarting if we are restarting from step 3 or not
+     * @param lock the return value or {@link #reloadDataFromStep3()}
+     * @throws InterruptedException for wait exception
+     * @throws IOException for file exception
+     */
     private synchronized void step3(boolean restarting, Lock lock) throws InterruptedException, IOException {
         logger.debug("Start Step 3");
         debugStepPoint(MergeRunnableStopPoint.STEP3_START);
