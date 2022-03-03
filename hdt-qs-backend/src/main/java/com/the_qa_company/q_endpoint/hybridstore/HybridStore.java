@@ -302,10 +302,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     @Override
     protected void shutDownInternal() throws SailException {
-        logger.info("Shutdown A");
-        this.nativeStoreA.shutDown();
-        logger.info("Shutdown B");
-        this.nativeStoreB.shutDown();
         // check also that the merge thread is finished
         logger.info("Shutdown merge");
         try {
@@ -315,6 +311,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        logger.info("Shutdown A");
+        this.nativeStoreA.shutDown();
+        logger.info("Shutdown B");
+        this.nativeStoreB.shutDown();
         logger.info("Shutdown done");
     }
 
@@ -410,6 +410,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void initTempDeleteArray() {
         this.tempdeleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
                 hybridStoreFiles.getTripleDeleteTempArr());
+        this.tempdeleteBitMap.force(false);
     }
 
     /**
