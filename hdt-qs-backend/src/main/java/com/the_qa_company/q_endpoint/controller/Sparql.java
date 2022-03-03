@@ -393,7 +393,12 @@ public class Sparql {
         File tempFile = new File(filename);
         // the compression will not fit in memory, cat the files in chunks and use hdtCat
 
-        FileTripleIterator it = new FileTripleIterator(RDFStreamUtils.readRDFStreamAsTripleStringIterator(inputStream, RDFFormat.NTRIPLES, true), chunkSize);
+        // uncompress the file if required
+        InputStream fileStream = RDFStreamUtils.uncompressedStream(inputStream, filename);
+        // get a triple iterator for this stream
+        Iterator<TripleString> tripleIterator = RDFStreamUtils.readRDFStreamAsTripleStringIterator(fileStream, RDFFormat.NTRIPLES, true);
+        // split this triple iterator to filed triple iterator
+        FileTripleIterator it = new FileTripleIterator(tripleIterator, chunkSize);
 
         int file = 0;
         String lastFile = null;
