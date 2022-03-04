@@ -1,21 +1,10 @@
 package com.the_qa_company.q_endpoint.controller;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
-import com.google.code.externalsorting.csv.CsvExternalSort;
-import com.google.code.externalsorting.csv.CsvSortOptions;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
 import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
-import com.the_qa_company.q_endpoint.utils.MapIterator;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.datatypes.xsd.impl.RDFLangString;
-import org.apache.jena.graph.Node;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriterFactory;
@@ -45,13 +34,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -113,6 +104,14 @@ public class Sparql {
             "PREFIX prv: <http://www.wikidata.org/prop/reference/value/>\n" +
             "PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>\n" +
             "PREFIX wdno: <http://www.wikidata.org/prop/novalue/> \n";
+
+    void clearHybridStore(String location) {
+        if (model.containsKey(location)) {
+            model.remove(location);
+            hybridStore.shutDown();
+            hybridStore = null;
+        }
+    }
 
     void initializeHybridStore(String location) throws Exception {
         if (!model.containsKey(location)) {
@@ -355,7 +354,6 @@ public class Sparql {
 
             RDFNotation notation = RDFNotation.guess(filename);
             if (notation == RDFNotation.NTRIPLES) {
-//                compressToHdtWithSplit(input, filename, hdtOutput, spec);
                 compressToHdt(input, baseURI, filename, hdtOutput, spec);
             } else {
                 Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
@@ -363,6 +361,7 @@ public class Sparql {
                 hdt.saveToHDT(hdtOutput, null);
             }
 
+            clearHybridStore(locationHdt);
             initializeHybridStore(locationHdt);
             return ResponseEntity.status(HttpStatus.OK).body("File was loaded successfully...\n");
         } catch (Exception e) {
