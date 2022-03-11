@@ -130,6 +130,18 @@ public class Sparql {
             "PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>\n" +
             "PREFIX wdno: <http://www.wikidata.org/prop/novalue/> \n";
 
+    void clearHybridStore(String location) throws IOException {
+        if (model.containsKey(location)) {
+            logger.info("Clear old store");
+            model.remove(location);
+            repository.shutDown();
+            hybridStore = null;
+            luceneSail = null;
+            repository = null;
+        }
+        FileUtils.deleteRecursively(Paths.get(locationNative));
+    }
+
     void initializeHybridStore(String location) throws Exception {
         if (!model.containsKey(location)) {
             model.put(location, null);
@@ -159,7 +171,6 @@ public class Sparql {
             luceneSail.initialize();
             repository = new SailRepository(luceneSail);
             repository.init();
-//            luceneSail.reindex();
         }
     }
 
@@ -389,11 +400,8 @@ public class Sparql {
             HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, notation, spec, null);
             hdt.saveToHDT(hdtOutput, null);
             initializeHybridStore(locationHdt);
+            luceneSail.reindex();
             return "File was loaded successfully...\n";
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
