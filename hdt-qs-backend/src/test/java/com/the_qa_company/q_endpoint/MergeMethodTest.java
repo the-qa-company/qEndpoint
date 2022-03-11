@@ -1,7 +1,11 @@
 package com.the_qa_company.q_endpoint;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
 import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.sail.SailConnection;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,10 +34,9 @@ public class MergeMethodTest {
 		File root = tempDir.newFolder();
 		// create stores dirs
 		File nativeStore = new File(root, "native-store");
-		nativeStore.mkdirs();
+		Assert.assertTrue(nativeStore.mkdirs());
 		File hdtStore = new File(root, "hdt-store");
-		hdtStore.mkdirs();
-		File countFile = new File(root, "count");
+		Assert.assertTrue(hdtStore.mkdirs());
 
 		// the number of triples we need
 		int count = 4;
@@ -47,11 +50,40 @@ public class MergeMethodTest {
 		store = new HybridStore(
 				hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
 		);
+
+	}
+
+	private void addMockElements(int number) {
+		ValueFactory vf = store.getValueFactory();
+		try (SailConnection connection = store.getConnection()) {
+			connection.begin();
+			for (int id = 0; id < number; id++) {
+				connection.addStatement(
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testNat" + id),
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "id"+id)
+				);
+			}
+			connection.commit();
+		}
 	}
 
 	@Test
-	public void noThresholdTest() {
+	public void noThresholdTest() throws InterruptedException {
+		int elements = 20;
+		addMockElements(elements);
+		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
 		store.mergeStore();
+		try {
+			store.mergeStore();
+			Assert.fail("mergeStore() should crash after a merge");
+		} catch (Exception e) {
+			// good
+		}
+		MergeRunnable.debugWaitMerge();
+		store.mergeStore();
+		Assert.assertFalse(store.isMergeTriggered);
+		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
 	}
 
 }
