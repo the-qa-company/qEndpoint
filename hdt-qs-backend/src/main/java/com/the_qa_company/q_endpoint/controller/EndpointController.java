@@ -123,4 +123,9 @@ public class EndpointController {
     public ResponseEntity<Sparql.MergeRequestResult> mergeStore() throws Exception {
         return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
     }
+
+    @GetMapping("/is_merging")
+    public ResponseEntity<Sparql.IsMergingResult> isMerging() throws Exception {
+        return ResponseEntity.status(HttpStatus.OK).body(sparql.isMerging());
+    }
 }

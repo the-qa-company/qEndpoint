@@ -52,7 +52,6 @@ import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class MergeRequestResult {
         private final boolean completed;
 
@@ -62,6 +61,17 @@ public class Sparql {
 
         public boolean isCompleted() {
             return completed;
+        }
+    }
+    public static class IsMergingResult {
+        private final boolean merging;
+
+        public IsMergingResult(boolean merging) {
+            this.merging = merging;
+        }
+
+        public boolean isMerging() {
+            return merging;
         }
     }
 
@@ -162,6 +172,11 @@ public class Sparql {
         initializeHybridStore(locationHdt);
         this.hybridStore.mergeStore();
         return new MergeRequestResult(true);
+    }
+
+    public IsMergingResult isMerging() throws Exception {
+        initializeHybridStore(locationHdt);
+        return new IsMergingResult(hybridStore.isMergeTriggered);
     }
 
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
