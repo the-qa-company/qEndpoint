@@ -193,6 +193,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdtConverter = new HDTConverter(this);
     }
 
+    /**
+     * set the threshold before a merge is automatically made.
+     * @param threshold the threshold, 0 for disabling the automatic merge
+     */
     public void setThreshold(int threshold) {
         this.threshold = threshold;
     }
@@ -249,6 +253,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
+    /**
+     * @return the threshold before a store merge, a non-positive value means that the automatic merge is disabled
+     */
     public int getThreshold() {
         return threshold;
     }
@@ -656,24 +663,46 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
+    /**
+     * Ask for a merge of the store.
+     * @return true if the merge was launched, false otherwise
+     */
+    public boolean mergeStore() {
+        return mergeStore(true);
+    }
+
+    private synchronized boolean mergeStore(boolean warn) {
+        if (isMergeTriggered) {
+            if (warn) {
+                logger.warn("A merge was triggered, but the store is already merging");
+            }
+            return false; // ignore
+        }
+
+        logger.info("Merging..." + triplesCount);
+
+        this.isMergeTriggered = true;
+        logger.debug("START MERGE");
+        mergerThread = mergeRunnable.createThread();
+        mergerThread.start();
+        logger.debug("MERGE THREAD LAUNCHED");
+
+        return true;
+    }
+
     // @todo: this can be dangerous, what if it is called 2 times, then two threads will start which will overlap each other, only one should be allowed, no?
     // should not be called from the outside because it's internals, the case is handled in the HybridStoreConnection when
     // the store is being merged we don't call it again..
     // starts the merging process to merge the delta into HDT
+
+    /**
+     * merge the store if required, would not do anything if {@link #getThreshold()} returns a non-positive number
+     */
     public void mergeIfRequired() {
         logger.debug("--------------: triplesCount=" + triplesCount);
         // Merge only if threshold in native store exceeded and not merging with hdt
-        if (triplesCount >= getThreshold() && !isMergeTriggered) {
-            logger.info("Merging..." + triplesCount);
-            try {
-                this.isMergeTriggered = true;
-                logger.debug("START MERGE");
-                mergerThread = mergeRunnable.createThread();
-                mergerThread.start();
-                logger.debug("MERGE THREAD LAUNCHED");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        if (getThreshold() >= 0 && triplesCount >= getThreshold()) {
+            mergeStore(false);
         }
     }
 
