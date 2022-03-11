@@ -120,11 +120,7 @@ public class EndpointController {
     }
 
     @GetMapping("/merge")
-    public ResponseEntity<Boolean> mergeStore() {
-        try {
-            return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
-        }
+    public ResponseEntity<Sparql.MergeRequestResult> mergeStore() throws Exception {
+        return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
     }
 }

@@ -1,8 +1,8 @@
 package com.the_qa_company.q_endpoint.controller;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -52,6 +52,19 @@ import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class MergeRequestResult {
+        private final boolean completed;
+
+        public MergeRequestResult(boolean completed) {
+            this.completed = completed;
+        }
+
+        public boolean isCompleted() {
+            return completed;
+        }
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
     private final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
@@ -145,9 +158,10 @@ public class Sparql {
      * @return see {@link com.the_qa_company.q_endpoint.hybridstore.HybridStore#mergeStore()} return value
      * @throws Exception if the store can't be merged or init
      */
-    public boolean askForAMerge() throws Exception {
+    public MergeRequestResult askForAMerge() throws Exception{
         initializeHybridStore(locationHdt);
-        return this.hybridStore.mergeStore();
+        this.hybridStore.mergeStore();
+        return new MergeRequestResult(true);
     }
 
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
