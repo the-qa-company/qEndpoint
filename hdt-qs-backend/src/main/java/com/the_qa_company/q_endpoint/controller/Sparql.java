@@ -140,6 +140,16 @@ public class Sparql {
         }
     }
 
+    /**
+     * ask for a merge of the hybrid store
+     * @return see {@link com.the_qa_company.q_endpoint.hybridstore.HybridStore#mergeStore()} return value
+     * @throws Exception if the store can't be merged or init
+     */
+    public boolean askForAMerge() throws Exception {
+        initializeHybridStore(locationHdt);
+        return this.hybridStore.mergeStore();
+    }
+
     public String executeJson(String sparqlQuery, int timeout) throws Exception {
         initializeHybridStore(locationHdt);
 
