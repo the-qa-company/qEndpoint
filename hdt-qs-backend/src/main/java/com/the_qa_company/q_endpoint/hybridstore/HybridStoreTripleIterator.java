@@ -56,7 +56,7 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
             Value newPred = hybridStore.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
             Value newObject = hybridStore.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
             next =  hybridTripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
-            logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
+            //logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
             return true;
         }
         return false;
