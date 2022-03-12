@@ -365,9 +365,9 @@ public class MergeRunnable {
      * @throws InterruptedException
      */
     private void waitForActiveConnections() throws InterruptedException {
-        logger.debug("Waiting for connections...");
+        logger.info("Waiting for connections...");
         hybridStore.locksHoldByConnections.waitForActiveLocks();
-        logger.debug("All connections completed.");
+        logger.info("All connections completed.");
     }
     /**
      * wait all active updates locks
@@ -375,9 +375,9 @@ public class MergeRunnable {
      * @throws InterruptedException
      */
     private void waitForActiveUpdates() throws InterruptedException {
-        logger.debug("Waiting for updates...");
+        logger.info("Waiting for updates...");
         hybridStore.locksHoldByUpdates.waitForActiveLocks();
-        logger.debug("All updates completed.");
+        logger.info("All updates completed.");
     }
 
     /**
