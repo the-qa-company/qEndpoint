@@ -749,6 +749,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
+    public long countTriplesNativeStore() {
+        try (SailConnection connectionA = getNativeStoreA().getConnection()) {
+            try (SailConnection connectionB = getNativeStoreB().getConnection()) {
+                return connectionA.size() + connectionB.size();
+            }
+        }
+    }
+
     public void flushWrites() throws IOException {
         getDeleteBitMap().force(true);
         if (isMerging()) {
