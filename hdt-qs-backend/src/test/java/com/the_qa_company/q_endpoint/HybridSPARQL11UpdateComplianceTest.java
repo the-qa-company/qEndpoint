@@ -7,9 +7,9 @@ import java.util.Map;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;

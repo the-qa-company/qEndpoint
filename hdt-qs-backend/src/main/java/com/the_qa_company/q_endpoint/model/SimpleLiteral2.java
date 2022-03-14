@@ -2,17 +2,17 @@ package com.the_qa_company.q_endpoint.model;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 
+import javax.xml.datatype.XMLGregorianCalendar;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Optional;
-
-import javax.xml.datatype.XMLGregorianCalendar;
 
 public class SimpleLiteral2 implements Literal {
     private static final long serialVersionUID = -1649571784782592271L;
@@ -25,7 +25,7 @@ public class SimpleLiteral2 implements Literal {
 
     protected SimpleLiteral2(String label) {
         this.setLabel(label);
-        this.setDatatype(XMLSchema.STRING);
+        this.setDatatype(XSD.STRING);
     }
 
     protected SimpleLiteral2(String label, String language) {
@@ -39,7 +39,7 @@ public class SimpleLiteral2 implements Literal {
             throw new IllegalArgumentException("datatype rdf:langString requires a language tag");
         } else {
             if (datatype == null) {
-                datatype = XMLSchema.STRING;
+                datatype = XSD.STRING;
             }
 
             this.setDatatype(datatype);
@@ -108,7 +108,7 @@ public class SimpleLiteral2 implements Literal {
             sb.append('"').append(this.label).append('"');
             sb.append('@').append(this.language);
             return sb.toString();
-        } else if (!XMLSchema.STRING.equals(this.datatype) && this.datatype != null) {
+        } else if (!XSD.STRING.equals(this.datatype) && this.datatype != null) {
             sb = new StringBuilder(this.label.length() + this.datatype.stringValue().length() + 6);
             sb.append('"').append(this.label).append('"');
             sb.append("^^<").append(this.datatype.toString()).append(">");
@@ -162,5 +162,10 @@ public class SimpleLiteral2 implements Literal {
 
     public XMLGregorianCalendar calendarValue() {
         return XMLDatatypeUtil.parseCalendar(this.getLabel());
+    }
+
+    @Override
+    public CoreDatatype getCoreDatatype() {
+        return CoreDatatype.from(getDatatype());
     }
 }

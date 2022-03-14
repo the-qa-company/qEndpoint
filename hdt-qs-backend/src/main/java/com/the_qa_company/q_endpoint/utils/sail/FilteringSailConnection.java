@@ -1,8 +1,8 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.utils.sail.filter.SailFilter;
-import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.common.transaction.IsolationLevel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;

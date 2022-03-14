@@ -12,7 +12,7 @@
     <version>1.0.7-SNAPSHOT</version>
 
     <properties>
-        <rdf4j.version>3.7.4</rdf4j.version>
+        <rdf4j.version>4.0.0-SNAPSHOT</rdf4j.version>
     </properties>
 
     <dependencies>
@@ -35,11 +35,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.rdfhdt</groupId>
-            <artifactId>hdt-java-core</artifactId>
-            <version>2.1.3-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-storage</artifactId>
             <version>${rdf4j.version}</version>
@@ -60,6 +55,11 @@
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-sparql-testsuite</artifactId>
             <version>${rdf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.rdfhdt</groupId>
+            <artifactId>hdt-java-core</artifactId>
+            <version>2.1.3-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>

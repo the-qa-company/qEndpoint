@@ -1,7 +1,7 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.utils.sail.filter.SailFilter;
-import org.eclipse.rdf4j.IsolationLevel;
+import org.eclipse.rdf4j.common.transaction.IsolationLevel;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
@@ -52,7 +52,7 @@ public class FilteringSail implements Sail {
 	}
 
 	@Override
-	public void initialize() throws SailException {
+	public void init() throws SailException {
 		onYesSail.init();
 	}
 

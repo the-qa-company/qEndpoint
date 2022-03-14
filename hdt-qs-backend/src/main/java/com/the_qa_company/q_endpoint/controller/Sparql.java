@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
+import com.the_qa_company.q_endpoint.utils.FileUtils;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -168,7 +169,7 @@ public class Sparql {
             luceneSail.setParameter(LuceneSail.WKT_FIELDS, "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127");
             luceneSail.setBaseSail(hybridStore);
             luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
-            luceneSail.initialize();
+            luceneSail.init();
             repository = new SailRepository(luceneSail);
             repository.init();
         }
