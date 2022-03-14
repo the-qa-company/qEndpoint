@@ -4,6 +4,7 @@ import com.the_qa_company.q_endpoint.model.HybridStoreValueFactory;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import com.the_qa_company.q_endpoint.utils.CloseSafeHDT;
+import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -750,7 +751,15 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
      * @return true if the size of the store is at least number, false otherwise
      */
     public boolean isNativeStoreContainsAtLeast(long number) {
-        try (SailConnection connection = getNativeStoreA().getConnection()) {
+        try {
+            lockToPreventNewConnections.waitForActiveLocks();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+        Lock lock = locksHoldByConnections.createLock("count-lock");
+
+        try (SailConnection connection = getChangingStore().getConnection()) {
             // https://github.com/eclipse/rdf4j/discussions/3734
 //            return connection.size() >= number;
             try (CloseableIteration<? extends Statement, SailException> it = connection.getStatements(
@@ -764,6 +773,8 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                 }
                 return true;
             }
+        } finally {
+            lock.release();
         }
     }
 

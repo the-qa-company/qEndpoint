@@ -47,26 +47,39 @@ public class MergeMethodTest {
 
 	}
 
-	private void addMockElements(int number, int idf) {
+	private void addMockElements(int number, String determinant) {
 		ValueFactory vf = store.getValueFactory();
 		try (SailConnection connection = store.getConnection()) {
 			connection.begin();
 			for (int id = 0; id < number; id++) {
 				connection.addStatement(
-						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testNat" + id + "-" + idf),
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, determinant + "-" + id),
 						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "id"+id + "-" + idf)
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "id" + id + "-" + determinant)
 				);
 			}
 			connection.commit();
 		}
 	}
 
+	private boolean sizeLowerThan(long size) {
+		return !store.isNativeStoreContainsAtLeast(size);
+	}
+
+	private boolean sizeGreaterThan(long size) {
+		return store.isNativeStoreContainsAtLeast(size + 1);
+	}
+
+	private void assertSizeEquals(long size) {
+		Assert.assertFalse("store size lower than " + size, sizeLowerThan(size));
+		Assert.assertFalse("store size greater than " + size, sizeGreaterThan(size));
+	}
+
 	@Test
 	public void noThresholdTest() throws InterruptedException {
 		int elements = 20;
-		addMockElements(elements, 0);
-		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
+		addMockElements(elements, "test");
+		assertSizeEquals(elements);
 		store.mergeStore();
 		try {
 			store.mergeStore();
@@ -77,13 +90,13 @@ public class MergeMethodTest {
 		MergeRunnable.debugWaitMerge();
 		store.mergeStore();
 		Assert.assertFalse(store.isMergeTriggered);
-		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
+		assertSizeEquals(0);
 	}
 
 	@Test
 	public void multiMergeTest() throws InterruptedException {
 		int elements = 20;
-		addMockElements(elements, 1);
+		addMockElements(elements, "test1");
 		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
 		store.mergeStore();
 		try {
@@ -95,7 +108,7 @@ public class MergeMethodTest {
 		MergeRunnable.debugWaitMerge();
 		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
 
-		addMockElements(elements, 2);
+		addMockElements(elements, "test2");
 		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
 		store.mergeStore();
 		try {
@@ -107,7 +120,7 @@ public class MergeMethodTest {
 		MergeRunnable.debugWaitMerge();
 		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
 
-		addMockElements(elements, 3);
+		addMockElements(elements, "test3");
 		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
 		store.mergeStore();
 		try {
@@ -120,4 +133,37 @@ public class MergeMethodTest {
 		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
 	}
 
+	@Test
+	public void atLeastMethodTest() throws InterruptedException {
+		int elements = 20;
+
+		// test that we have the right count after and before an add (no merging)
+		assertSizeEquals(0);
+		addMockElements(elements, "test_pre_merge");
+		assertSizeEquals(elements); // test_pre_merge * elements
+
+		// stop at the step2_start step
+		MergeRunnableStopPoint.STEP2_START.debugLock();
+		MergeRunnableStopPoint.STEP2_START.debugLockTest();
+
+		// trigger the store merge
+		store.mergeStore();
+
+		MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
+		{
+			// test that we have the right count after and before an add (while merging)
+			assertSizeEquals(0);
+			addMockElements(elements, "test_merge");
+			assertSizeEquals(elements);
+		}
+		MergeRunnableStopPoint.STEP2_START.debugUnlockTest();
+
+		// wait for the end of the merge
+		MergeRunnable.debugWaitMerge();
+
+		// test that we have the right count after and before an add (after merging)
+		assertSizeEquals(elements); // test_merge * elements
+		addMockElements(elements, "test_after_merge");
+		assertSizeEquals(elements * 2); // test_merge * elements + test_after_merge * elements
+	}
 }
