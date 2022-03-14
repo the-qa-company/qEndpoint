@@ -321,7 +321,7 @@ public class HybridStoreTest {
             RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
             int count = 0;
             while (sts.hasNext()) {
-//                    System.out.println(sts.next());
+                sts.next();
                 count++;
             }
             // 1 triple hdt, 2 triples native a, 1 triple native b -1 triple removed from hdt
@@ -332,7 +332,7 @@ public class HybridStoreTest {
             sts = connection.getStatements(null, null, null, true);
             count = 0;
             while (sts.hasNext()) {
-//                    System.out.println(sts.next());
+                sts.next();
                 count++;
             }
             // 2 triples hdt, 0 triples native a, 1 triple native b
