@@ -2,7 +2,7 @@ stages:
   - build
   - deploy
 
-build:
+build-gitlab:
   stage: build
   script:
     - echo "Building docker container"
@@ -14,6 +14,21 @@ build:
     - docker push $CI_REGISTRY/d063520/hdtsparqlendpoint
   only:
     - master
+
+build-hub:
+  stage: build
+  script:
+    - echo "Building docker container"
+    - docker logout
+    - docker build -t qacompany/hdt-query-service .
+    - echo "Login to docker hub"
+    - docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+    - echo "Pushing container to registry"
+    - docker push
+    - docker logout
+  only:
+    - master
+
 deploy:
   stage: deploy
   image: maven:3.6-jdk-11
