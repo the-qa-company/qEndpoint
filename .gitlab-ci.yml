@@ -24,7 +24,7 @@ build-hub:
     - echo "Login to docker hub"
     - docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
     - echo "Pushing container to registry"
-    - docker push
+    - docker push qacompany/hdt-query-service:latest
     - docker logout
   only:
     - master
