@@ -24,7 +24,7 @@ import java.util.function.Function;
 public class FilteringSail implements NotifyingSail {
 	private File dataDir;
 	private final NotifyingSail onYesSail;
-	private final MultiInputSail onNoSail;
+	private final MultiInputFilteringSail onNoSail;
 	private final Function<SailConnection, SailFilter> filter;
 
 	/**
@@ -38,7 +38,7 @@ public class FilteringSail implements NotifyingSail {
 	public FilteringSail(NotifyingSail onYesSail, NotifyingSail onNoSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
 		Objects.requireNonNull(onNoSail, "onNoSail can't be null!");
 		this.onYesSail = Objects.requireNonNull(onYesSail, "onYesSail can't be null!");
-		this.onNoSail = new MultiInputSail(onNoSail);
+		this.onNoSail = new MultiInputFilteringSail(onNoSail, this);
 		endSail.accept(this.onNoSail);
 		this.filter = Objects.requireNonNull(filter, "filter can't be null!");
 	}
@@ -85,12 +85,12 @@ public class FilteringSail implements NotifyingSail {
 
 	@Override
 	public void addSailChangedListener(SailChangedListener listener) {
-
+		onYesSail.addSailChangedListener(listener);
 	}
 
 	@Override
 	public void removeSailChangedListener(SailChangedListener listener) {
-
+		onYesSail.removeSailChangedListener(listener);
 	}
 
 	@Override

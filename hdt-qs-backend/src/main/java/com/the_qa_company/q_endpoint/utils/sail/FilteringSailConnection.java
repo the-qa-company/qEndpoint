@@ -21,12 +21,11 @@ import org.eclipse.rdf4j.sail.UpdateContext;
 import java.util.Objects;
 
 public class FilteringSailConnection implements NotifyingSailConnection {
-
 	private final NotifyingSailConnection connectionIfYes;
-	private final NotifyingSailConnection connectionIfNo;
+	private final MultiInputFilteringSailConnection connectionIfNo;
 	private final SailFilter filter;
 
-	public FilteringSailConnection(NotifyingSailConnection connectionIfYes, NotifyingSailConnection connectionIfNo, FilteringSail sail) {
+	public FilteringSailConnection(NotifyingSailConnection connectionIfYes, MultiInputFilteringSailConnection connectionIfNo, FilteringSail sail) {
 		this.connectionIfYes = Objects.requireNonNull(connectionIfYes, "connectionIfYes can't be null!");
 		this.connectionIfNo = Objects.requireNonNull(connectionIfNo, "connectionIfNo can't be null!");
 		this.filter = Objects.requireNonNull(sail, "sail can't be null!").getFilter();
@@ -181,10 +180,16 @@ public class FilteringSailConnection implements NotifyingSailConnection {
 	@Override
 	public void addConnectionListener(SailConnectionListener listener) {
 		connectionIfYes.addConnectionListener(listener);
+		connectionIfNo.addBypassConnectionListener(listener);
 	}
 
 	@Override
 	public void removeConnectionListener(SailConnectionListener listener) {
 		connectionIfYes.removeConnectionListener(listener);
+		connectionIfNo.removeBypassConnectionListener(listener);
+	}
+
+	public SailFilter getFilter() {
+		return filter;
 	}
 }

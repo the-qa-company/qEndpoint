@@ -26,18 +26,20 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
  *
  * @author Antoine Willerval
  */
-public class MultiInputSail extends NotifyingSailWrapper {
+class MultiInputFilteringSail extends NotifyingSailWrapper {
 	private final LockManager lockManager = new LockManager();
 	private Lock lock;
-	private NotifyingSailConnection lastConnection;
+	private MultiInputFilteringSailConnection lastConnection;
+	private final FilteringSail filteringSail;
 
 	/**
 	 * Creates a new MultiInputSail object that wraps the supplied connection.
 	 *
 	 * @param wrappedSail the sail to allow multiple sail
 	 */
-	public MultiInputSail(NotifyingSail wrappedSail) {
+	public MultiInputFilteringSail(NotifyingSail wrappedSail, FilteringSail filteringSail) {
 		super(wrappedSail);
+		this.filteringSail = filteringSail;
 	}
 
 	/**
@@ -53,11 +55,11 @@ public class MultiInputSail extends NotifyingSailWrapper {
 
 		lock = lockManager.createLock("");
 
-		lastConnection = getBaseSail().getConnection();
+		lastConnection = new MultiInputFilteringSailConnection(getBaseSail().getConnection());
 	}
 
 	@Override
-	public synchronized NotifyingSailConnection getConnection() throws SailException {
+	public synchronized MultiInputFilteringSailConnection getConnection() throws SailException {
 		checkCreatingConnectionStarted();
 		return lastConnection;
 	}
@@ -68,6 +70,7 @@ public class MultiInputSail extends NotifyingSailWrapper {
 	 */
 	public synchronized void completeCreatingConnection() throws SailException {
 		checkCreatingConnectionStarted();
+		lastConnection.setFilter(filteringSail.getFilter());
 		lock.release();
 		lastConnection = null;
 	}
@@ -76,5 +79,9 @@ public class MultiInputSail extends NotifyingSailWrapper {
 		if (lastConnection == null) {
 			throw new SailException("The MultiInputSail wasn't started!");
 		}
+	}
+
+	public FilteringSail getFilteringSail() {
+		return filteringSail;
 	}
 }

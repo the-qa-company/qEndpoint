@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 /**
  * Class to test sail implementations
+ *
  * @author Antoine Willerval
  */
 public abstract class SailTest {
@@ -111,6 +112,7 @@ public abstract class SailTest {
 
 	/**
 	 * override to define the HDT, by default create an empty HDT
+	 *
 	 * @param indexLocation the wanted hdt file location
 	 * @throws IOException io exception
 	 */
@@ -122,6 +124,7 @@ public abstract class SailTest {
 
 	/**
 	 * define the sail with the hybridstore
+	 *
 	 * @param hybridStore the store to use as a triple source
 	 * @return sail
 	 */
@@ -157,7 +160,8 @@ public abstract class SailTest {
 
 	/**
 	 * make a SELECT and assert the results
-	 * @param query the query to select
+	 *
+	 * @param query            the query to select
 	 * @param exceptedElements the results to assert
 	 */
 	protected void assertSelect(String query, SelectResultRow... exceptedElements) {
@@ -187,14 +191,14 @@ public abstract class SailTest {
 					// no matching row for the current BindingSet
 					Assert.fail(
 							"Can't find a row for the result: " + set + "\n"
-							+ rows.stream().map(SelectResultRow::toString).collect(Collectors.joining("\n"))
+									+ rows.stream().map(SelectResultRow::toString).collect(Collectors.joining("\n"))
 					);
 				}
 
 				// missing rows?
 				Assert.assertTrue(
 						"Missing rows: \n"
-						+ rows.stream().map(SelectResultRow::toString).collect(Collectors.joining("\n")),
+								+ rows.stream().map(SelectResultRow::toString).collect(Collectors.joining("\n")),
 						rows.isEmpty()
 				);
 			}
@@ -257,6 +261,7 @@ public abstract class SailTest {
 
 	/**
 	 * define a row for a result
+	 *
 	 * @author Antoine Willerval
 	 */
 	protected static class SelectResultRow {
@@ -264,8 +269,9 @@ public abstract class SailTest {
 
 		/**
 		 * define an excepted value for this object name
+		 *
 		 * @param object the object name
-		 * @param value the excepted value
+		 * @param value  the excepted value
 		 * @return this
 		 */
 		public SelectResultRow withValue(String object, Value value) {
@@ -275,17 +281,20 @@ public abstract class SailTest {
 
 		/**
 		 * define an excepted IRI for this object name
-		 * @param object the object name
+		 *
+		 * @param object  the object name
 		 * @param iriName the excepted IRI name (the IRI = ex:$iriName)
 		 * @return this
 		 */
 		public SelectResultRow withIRI(String object, String iriName) {
 			return withValue(object, iri(iriName));
 		}
+
 		/**
 		 * define an excepted IRI for this object name
+		 *
 		 * @param object the object name
-		 * @param iri the excepted IRI
+		 * @param iri    the excepted IRI
 		 * @return this
 		 */
 		public SelectResultRow withIRI(String object, IRI iri) {
@@ -294,8 +303,9 @@ public abstract class SailTest {
 
 		/**
 		 * define an excepted literal for this object name
+		 *
 		 * @param object the object name
-		 * @param value the excepted literal value
+		 * @param value  the excepted literal value
 		 * @return this
 		 */
 		public SelectResultRow withLiteral(String object, String value) {
@@ -304,8 +314,9 @@ public abstract class SailTest {
 
 		/**
 		 * define an excepted literal for this object name
-		 * @param object the object name
-		 * @param value the excepted literal value
+		 *
+		 * @param object   the object name
+		 * @param value    the excepted literal value
 		 * @param language the excepted language for the literal
 		 * @return this
 		 */
@@ -315,6 +326,7 @@ public abstract class SailTest {
 
 		/**
 		 * add the object (s, p, o) with the elements of a statement
+		 *
 		 * @param statement the statement
 		 * @return this
 		 */
@@ -326,6 +338,7 @@ public abstract class SailTest {
 
 		/**
 		 * test if this row match a {@link org.eclipse.rdf4j.query.BindingSet}
+		 *
 		 * @param set the set
 		 * @return true if this row match the set, false otherwise
 		 */
@@ -354,6 +367,95 @@ public abstract class SailTest {
 			return values.entrySet().stream()
 					.map(e -> "\"" + e.getKey() + "\": " + e.getValue())
 					.collect(Collectors.joining(", ", "{", "}"));
+		}
+	}
+
+	/**
+	 * Class to create a Lucene SELECT WHERE clause
+	 * @author Antoine Willerval
+	 */
+	protected static class LuceneSelectWhereBuilder {
+		private final String resultObject;
+		private final String query;
+		private String indexId;
+		private String property;
+		private String scoreObject;
+		private String snippetObject;
+
+		/**
+		 * create a lucene select where builder
+		 * @param resultObject the subject of the query
+		 * @param query the text query
+		 */
+		public LuceneSelectWhereBuilder(String resultObject, String query) {
+			this.resultObject = resultObject;
+			this.query = query;
+		}
+
+		/**
+		 * set search:indexid
+		 * @param indexId the index id
+		 * @return this
+		 */
+		public LuceneSelectWhereBuilder withIndexId(String indexId) {
+			this.indexId = indexId;
+			return this;
+		}
+
+		/**
+		 * set search:property
+		 * @param property the property
+		 * @return this
+		 */
+		public LuceneSelectWhereBuilder withProperty(String property) {
+			this.property = property;
+			return this;
+		}
+
+		/**
+		 * set search:score
+		 * @param scoreObject the score object
+		 * @return this
+		 */
+		public LuceneSelectWhereBuilder withScoreObject(String scoreObject) {
+			this.scoreObject = scoreObject;
+			return this;
+		}
+
+		/**
+		 * set search:snippet
+		 * @param snippetObject the snippet object
+		 * @return this
+		 */
+		public LuceneSelectWhereBuilder withSnippetObject(String snippetObject) {
+			this.snippetObject = snippetObject;
+			return this;
+		}
+
+		/**
+		 * build the query
+		 * @return query
+		 */
+		public String build() {
+			String s =
+					"?" + resultObject + " search:matches [\n"
+							+ "  search:query '" + query.replaceAll("'", "\\'") + "';\n";
+
+			if (indexId != null) {
+				s += "  search:indexid " + indexId + " ;\n";
+			}
+			if (property != null) {
+				s += "  search:property " + property + " ;\n";
+			}
+
+			if (scoreObject != null) {
+				s += "  search:score ?" + scoreObject + " ;\n";
+			}
+			if (snippetObject != null) {
+				s += "  search:snippet ?" + snippetObject + " ;\n";
+			}
+
+			return s + "].";
 		}
 	}
 }
