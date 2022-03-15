@@ -7,4 +7,4 @@ else
         && wget --progress=bar:force:noscroll -O /home/app/data/hdt-store/index.hdt.index.v1-1 https://qanswer-svc4.univ-st-etienne.fr/index_big.hdt.index.v1-1
 fi
 echo "Starting HDT Sparql Service..."
-java -Dspring.config.location=file:///home/app/application-prod.properties -jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
+java -Xmx"$1" -Dspring.config.location=file:///home/app/application-prod.properties -jar /usr/local/lib/hdtSparqlEndpoint-*-SNAPSHOT.jar
