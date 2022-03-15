@@ -172,6 +172,7 @@ public class HybridStoreConnection extends SailSourceConnection {
                     newObj,
                     contexts
             );
+            notifyStatementAdded(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
 
 //            // modify the bitmaps if the IRIs used are in HDT
             this.hybridStore.modifyBitmaps(subjectID, predicateID, objectID);
@@ -366,6 +367,7 @@ public class HybridStoreConnection extends SailSourceConnection {
         } else {
             this.getCurrentConnectionWrite().removeStatement(op, newSubj, newPred, newObj, contexts);
         }
+        notifyStatementRemoved(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
 //        this.hybridStore.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
