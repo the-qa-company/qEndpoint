@@ -32,7 +32,7 @@ public class LanguageSailFilter implements SailFilter {
 	}
 
 	private boolean handleValue(Value obj) {
-		if (!obj.isLiteral()) {
+		if (obj == null || !obj.isLiteral()) {
 			return false;
 		}
 

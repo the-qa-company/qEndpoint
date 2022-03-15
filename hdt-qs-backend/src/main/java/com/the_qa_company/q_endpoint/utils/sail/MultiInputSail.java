@@ -2,10 +2,10 @@ package com.the_qa_company.q_endpoint.utils.sail;
 
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
-import org.eclipse.rdf4j.sail.Sail;
-import org.eclipse.rdf4j.sail.SailConnection;
+import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailException;
-import org.eclipse.rdf4j.sail.helpers.SailWrapper;
+import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 
 /**
  * A sail to create multiple Connection input points.
@@ -26,17 +26,17 @@ import org.eclipse.rdf4j.sail.helpers.SailWrapper;
  *
  * @author Antoine Willerval
  */
-public class MultiInputSail extends SailWrapper {
+public class MultiInputSail extends NotifyingSailWrapper {
 	private final LockManager lockManager = new LockManager();
 	private Lock lock;
-	private SailConnection lastConnection;
+	private NotifyingSailConnection lastConnection;
 
 	/**
 	 * Creates a new MultiInputSail object that wraps the supplied connection.
 	 *
 	 * @param wrappedSail the sail to allow multiple sail
 	 */
-	public MultiInputSail(Sail wrappedSail) {
+	public MultiInputSail(NotifyingSail wrappedSail) {
 		super(wrappedSail);
 	}
 
@@ -57,7 +57,7 @@ public class MultiInputSail extends SailWrapper {
 	}
 
 	@Override
-	public synchronized SailConnection getConnection() throws SailException {
+	public synchronized NotifyingSailConnection getConnection() throws SailException {
 		checkCreatingConnectionStarted();
 		return lastConnection;
 	}

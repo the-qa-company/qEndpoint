@@ -3,7 +3,10 @@ package com.the_qa_company.q_endpoint.utils.sail;
 import com.the_qa_company.q_endpoint.utils.sail.filter.SailFilter;
 import org.eclipse.rdf4j.common.transaction.IsolationLevel;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.Sail;
+import org.eclipse.rdf4j.sail.SailChangedListener;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 
@@ -12,16 +15,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Filtering sail to bypass a or multiple sails
  *
  * @author Antoine Willerval
  */
-public class FilteringSail implements Sail {
+public class FilteringSail implements NotifyingSail {
 	private File dataDir;
-	private final Sail onYesSail;
+	private final NotifyingSail onYesSail;
 	private final MultiInputSail onNoSail;
 	private final Function<SailConnection, SailFilter> filter;
 
@@ -33,11 +35,11 @@ public class FilteringSail implements Sail {
 	 * @param endSail   a consumer to set the end sail of the onYesSail
 	 * @param filter    the filter
 	 */
-	public FilteringSail(Sail onYesSail, Sail onNoSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
+	public FilteringSail(NotifyingSail onYesSail, NotifyingSail onNoSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
 		Objects.requireNonNull(onNoSail, "onNoSail can't be null!");
 		this.onYesSail = Objects.requireNonNull(onYesSail, "onYesSail can't be null!");
 		this.onNoSail = new MultiInputSail(onNoSail);
-		endSail.accept(onNoSail);
+		endSail.accept(this.onNoSail);
 		this.filter = Objects.requireNonNull(filter, "filter can't be null!");
 	}
 
@@ -67,10 +69,10 @@ public class FilteringSail implements Sail {
 	}
 
 	@Override
-	public SailConnection getConnection() throws SailException {
+	public NotifyingSailConnection getConnection() throws SailException {
 		onNoSail.startCreatingConnection();
 
-		SailConnection connection = new FilteringSailConnection(
+		NotifyingSailConnection connection = new FilteringSailConnection(
 				onYesSail.getConnection(),
 				onNoSail.getConnection(),
 				this
@@ -79,6 +81,16 @@ public class FilteringSail implements Sail {
 		onNoSail.completeCreatingConnection();
 
 		return connection;
+	}
+
+	@Override
+	public void addSailChangedListener(SailChangedListener listener) {
+
+	}
+
+	@Override
+	public void removeSailChangedListener(SailChangedListener listener) {
+
 	}
 
 	@Override

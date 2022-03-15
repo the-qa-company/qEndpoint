@@ -12,20 +12,21 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
-import org.eclipse.rdf4j.sail.SailConnection;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
+import org.eclipse.rdf4j.sail.SailConnectionListener;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.UnknownSailTransactionStateException;
 import org.eclipse.rdf4j.sail.UpdateContext;
 
 import java.util.Objects;
 
-public class FilteringSailConnection implements SailConnection {
+public class FilteringSailConnection implements NotifyingSailConnection {
 
-	private final SailConnection connectionIfYes;
-	private final SailConnection connectionIfNo;
+	private final NotifyingSailConnection connectionIfYes;
+	private final NotifyingSailConnection connectionIfNo;
 	private final SailFilter filter;
 
-	public FilteringSailConnection(SailConnection connectionIfYes, SailConnection connectionIfNo, FilteringSail sail) {
+	public FilteringSailConnection(NotifyingSailConnection connectionIfYes, NotifyingSailConnection connectionIfNo, FilteringSail sail) {
 		this.connectionIfYes = Objects.requireNonNull(connectionIfYes, "connectionIfYes can't be null!");
 		this.connectionIfNo = Objects.requireNonNull(connectionIfNo, "connectionIfNo can't be null!");
 		this.filter = Objects.requireNonNull(sail, "sail can't be null!").getFilter();
@@ -86,7 +87,7 @@ public class FilteringSailConnection implements SailConnection {
 
 	@Override
 	public void prepare() throws SailException {
-		connectionIfYes.flush();
+		connectionIfYes.prepare();
 	}
 
 	@Override
@@ -175,5 +176,15 @@ public class FilteringSailConnection implements SailConnection {
 	@Override
 	public boolean pendingRemovals() {
 		return connectionIfYes.pendingRemovals();
+	}
+
+	@Override
+	public void addConnectionListener(SailConnectionListener listener) {
+		connectionIfYes.addConnectionListener(listener);
+	}
+
+	@Override
+	public void removeConnectionListener(SailConnectionListener listener) {
+		connectionIfYes.removeConnectionListener(listener);
 	}
 }
