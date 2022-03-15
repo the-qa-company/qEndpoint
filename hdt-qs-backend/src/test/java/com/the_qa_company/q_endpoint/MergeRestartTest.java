@@ -693,7 +693,7 @@ public class MergeRestartTest {
      * @param store the store, can be null to avoid printing the bitmap
      * @throws NotFoundException if we can't search in the HDT
      */
-    private void printHDT(HDT hdt, HybridStore store) throws NotFoundException {
+    public static void printHDT(HDT hdt, HybridStore store) throws NotFoundException {
         IteratorTripleString it = hdt.search("", "", "");
         logger.debug("HDT: ");
         while (it.hasNext()) {
@@ -798,7 +798,7 @@ public class MergeRestartTest {
      * @param testElements n
      * @return the hdt
      */
-    private HDT createTestHDT(String fileName, HDTSpecification spec, int testElements) {
+    public static HDT createTestHDT(String fileName, HDTSpecification spec, int testElements) {
         try {
             File inputFile = new File(fileName);
             String baseURI = inputFile.getAbsolutePath();

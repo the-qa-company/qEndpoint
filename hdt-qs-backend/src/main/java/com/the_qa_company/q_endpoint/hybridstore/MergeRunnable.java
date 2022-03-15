@@ -112,7 +112,9 @@ public class MergeRunnable {
         MERGE_THREAD_LOCK_MANAGER.waitForActiveLocks();
         if (debugLastMergeException != null) {
             if (!(debugLastMergeException instanceof MergeRunnableStopPoint.MergeRunnableStopException)) {
-                throw new RuntimeException(debugLastMergeException);
+                Exception old = debugLastMergeException;
+                debugLastMergeException = null;
+                throw new RuntimeException(old);
             }
         }
     }
@@ -135,8 +137,8 @@ public class MergeRunnable {
             Files.delete(Paths.get(file));
         } catch (IOException e) {
             logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
-            e.printStackTrace();
-//            throw new RuntimeException(e);
+            if (MergeRunnableStopPoint.debug)
+                throw new RuntimeException(e);
         }
     }
 
@@ -149,8 +151,8 @@ public class MergeRunnable {
             Files.deleteIfExists(Paths.get(file));
         } catch (IOException e) {
             logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
-            e.printStackTrace();
-//            throw new RuntimeException(e);
+            if (MergeRunnableStopPoint.debug)
+                throw new RuntimeException(e);
         }
     }
 
@@ -208,8 +210,8 @@ public class MergeRunnable {
             Files.move(Paths.get(oldFile), Paths.get(newFile));
         } catch (IOException e) {
             logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
-            e.printStackTrace();
-//            throw new RuntimeException(e);
+            if (MergeRunnableStopPoint.debug)
+                throw new RuntimeException(e);
         }
     }
 
@@ -275,7 +277,11 @@ public class MergeRunnable {
         public synchronized void start() {
             if (MergeRunnableStopPoint.debug) {
                 // create a lock to use the method MergeRunnableStopPoint#debugWaitForEvent()
-                debugLastMergeException = null;
+                if (debugLastMergeException != null && !(debugLastMergeException instanceof MergeRunnableStopPoint.MergeRunnableStopException)) {
+                    Exception old = debugLastMergeException;
+                    debugLastMergeException = null;
+                    throw new RuntimeException("old exception not triggered", old);
+                }
                 debugLock = MERGE_THREAD_LOCK_MANAGER.createLock("thread");
             }
             if (reloadData != null) {
@@ -359,9 +365,9 @@ public class MergeRunnable {
      * @throws InterruptedException
      */
     private void waitForActiveConnections() throws InterruptedException {
-        logger.debug("Waiting for connections...");
+        logger.info("Waiting for connections...");
         hybridStore.locksHoldByConnections.waitForActiveLocks();
-        logger.debug("All connections completed.");
+        logger.info("All connections completed.");
     }
     /**
      * wait all active updates locks
@@ -369,9 +375,9 @@ public class MergeRunnable {
      * @throws InterruptedException
      */
     private void waitForActiveUpdates() throws InterruptedException {
-        logger.debug("Waiting for updates...");
+        logger.info("Waiting for updates...");
         hybridStore.locksHoldByUpdates.waitForActiveLocks();
-        logger.debug("All updates completed.");
+        logger.info("All updates completed.");
     }
 
     /**
@@ -687,6 +693,14 @@ public class MergeRunnable {
 
         this.hybridStore.resetDeleteArray(newHdt);
         newHdt.close();
+
+
+        Path hdtIndexV11 = Paths.get(hybridStoreFiles.getHDTIndexV11());
+        // if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so we create a mock index file
+        // (ignored by RDF-HDT)
+        if (!Files.exists(hdtIndexV11)) {
+            Files.writeString(hdtIndexV11, "");
+        }
 
         // rename new hdt to old hdt name so that they are replaces
         // BEFORE_ALL

@@ -287,7 +287,7 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     @Override
     protected void closeInternal() throws SailException {
-        logger.info("Number of times native store was called:" + this.tripleSource.getCount());
+        logger.debug("Number of times native store was called:" + this.tripleSource.getCount());
         if (isWriteConnection) {
             try {
                 hybridStore.flushWrites();

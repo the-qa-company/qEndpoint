@@ -6,6 +6,7 @@ import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -193,6 +194,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.hdtConverter = new HDTConverter(this);
     }
 
+    /**
+     * set the threshold before a merge is automatically made.
+     * @param threshold the threshold, 0 for disabling the automatic merge
+     */
     public void setThreshold(int threshold) {
         this.threshold = threshold;
     }
@@ -249,6 +254,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
+    /**
+     * @return the threshold before a store merge, a non-positive value means that the automatic merge is disabled
+     */
     public int getThreshold() {
         return threshold;
     }
@@ -302,10 +310,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     @Override
     protected void shutDownInternal() throws SailException {
-        logger.info("Shutdown A");
-        this.nativeStoreA.shutDown();
-        logger.info("Shutdown B");
-        this.nativeStoreB.shutDown();
         // check also that the merge thread is finished
         logger.info("Shutdown merge");
         try {
@@ -315,6 +319,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        logger.info("Shutdown A");
+        this.nativeStoreA.shutDown();
+        logger.info("Shutdown B");
+        this.nativeStoreB.shutDown();
         logger.info("Shutdown done");
     }
 
@@ -410,6 +418,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     public void initTempDeleteArray() {
         this.tempdeleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
                 hybridStoreFiles.getTripleDeleteTempArr());
+        this.tempdeleteBitMap.force(false);
     }
 
     /**
@@ -655,23 +664,95 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
+    /**
+     * Ask for a merge of the store.
+     * @return true if the merge was launched, false otherwise
+     */
+    public void mergeStore() throws MergeStartException {
+        mergeStore(true);
+    }
+
+    private void failOrWarn(boolean fail, String msg) throws MergeStartException {
+        if (fail) {
+            throw new MergeStartException(msg);
+        } else {
+            logger.warn("{}", msg);
+        }
+    }
+
+    private synchronized void mergeStore(boolean fail) throws MergeStartException{
+        // check that no merge is already triggered
+        if (isMergeTriggered) {
+            failOrWarn(fail,"A merge was triggered, but the store is already merging!");
+            return; // ignore
+        }
+
+        // check that the native store isn't empty
+        if (!isNativeStoreContainsAtLeast(1)) {
+            return;
+        }
+
+        logger.info("Merging..." + triplesCount);
+
+        try {
+            this.isMergeTriggered = true;
+            logger.debug("START MERGE");
+            mergerThread = mergeRunnable.createThread();
+            mergerThread.start();
+            logger.debug("MERGE THREAD LAUNCHED");
+        } catch (Exception e) {
+            throw new MergeStartException("Crash while starting the merge", e);
+        }
+    }
+
     // @todo: this can be dangerous, what if it is called 2 times, then two threads will start which will overlap each other, only one should be allowed, no?
     // should not be called from the outside because it's internals, the case is handled in the HybridStoreConnection when
     // the store is being merged we don't call it again..
     // starts the merging process to merge the delta into HDT
+
+    /**
+     * merge the store if required, would not do anything if {@link #getThreshold()} returns a non-positive number
+     */
     public void mergeIfRequired() {
         logger.debug("--------------: triplesCount=" + triplesCount);
         // Merge only if threshold in native store exceeded and not merging with hdt
-        if (triplesCount >= getThreshold() && !isMergeTriggered) {
-            logger.info("Merging..." + triplesCount);
+        if (getThreshold() >= 0 && triplesCount >= getThreshold()) {
             try {
-                this.isMergeTriggered = true;
-                logger.debug("START MERGE");
-                mergerThread = mergeRunnable.createThread();
-                mergerThread.start();
-                logger.debug("MERGE THREAD LAUNCHED");
-            } catch (Exception e) {
+                mergeStore(false);
+            } catch (MergeStartException e) {
                 e.printStackTrace();
+                // ignore exception
+            }
+        }
+    }
+
+    /**
+     * test if the native store contains at least a certain number of triples
+     * @param number the number of triples to at least have
+     * @return true if the size of the store is at least number, false otherwise
+     */
+    public boolean isNativeStoreContainsAtLeast(long number) {
+        try (SailConnection connection = getNativeStoreA().getConnection()) {
+            // https://github.com/eclipse/rdf4j/discussions/3734
+//            return connection.size() >= number;
+            try (CloseableIteration<? extends Statement, SailException> it = connection.getStatements(
+                    null, null, null, false
+            )) {
+                for (long i = 0; i < number; i++) {
+                    if (!it.hasNext()) {
+                        return false;
+                    }
+                    it.next();
+                }
+                return true;
+            }
+        }
+    }
+
+    public long countTriplesNativeStore() {
+        try (SailConnection connectionA = getNativeStoreA().getConnection()) {
+            try (SailConnection connectionB = getNativeStoreB().getConnection()) {
+                return connectionA.size() + connectionB.size();
             }
         }
     }

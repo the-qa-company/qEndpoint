@@ -83,7 +83,7 @@ public class BitArrayDisk {
         int log = 0;
 
         while (v != 0) {
-            v >>= 1;
+            v >>>= 1;
             log++;
         }
 
