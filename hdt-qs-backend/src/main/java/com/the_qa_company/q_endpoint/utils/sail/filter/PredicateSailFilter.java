@@ -16,6 +16,10 @@ import org.eclipse.rdf4j.sail.UpdateContext;
 public class PredicateSailFilter implements SailFilter {
 	private final IRI predicate;
 
+	/**
+	 * filter a sail with a predicate
+	 * @param predicate the predicate to filter
+	 */
 	public PredicateSailFilter(IRI predicate) {
 		this.predicate = predicate;
 	}

@@ -17,6 +17,7 @@ import java.util.Map;
 
 /**
  * {@link SailFilter} implementation to filter subject by type
+ * @author Antoine Willerval
  */
 public class TypeSailFilter implements SailFilter {
 	private final Map<Resource, Value> typeBuffer;
@@ -25,10 +26,23 @@ public class TypeSailFilter implements SailFilter {
 	private final Value object;
 	private final SailConnection subConnection;
 
+	/**
+	 * create a type sail filter
+	 * @param subConnection the connection to fetch data
+	 * @param predicate the predicate to define the type
+	 * @param object the type object
+	 */
 	public TypeSailFilter(SailConnection subConnection, IRI predicate, Value object) {
 		this(null, subConnection, predicate, object);
 	}
-	
+
+	/**
+	 * create a type sail filter with a buffer to store the type of the subjects
+	 * @param typeBuffer the buffer to store the subjects' type
+	 * @param subConnection the connection to fetch data
+	 * @param predicate the predicate to define the type
+	 * @param object the type object
+	 */
 	public TypeSailFilter(Map<Resource, Value> typeBuffer, SailConnection subConnection, IRI predicate, Value object) {
 		this.typeBuffer = typeBuffer;
 		this.subConnection = subConnection;
@@ -36,12 +50,21 @@ public class TypeSailFilter implements SailFilter {
 		this.object = object;
 	}
 
+	/**
+	 * is the type of this subject filtered?
+	 * @param subj the subject to try
+	 * @return true if we have the triple (?subj predicate object) in the subConnection, false otherwise
+	 */
 	private boolean isSubjectOfType(Resource subj) {
 		Boolean typeContainer = typeContainedBuffer.get(subj);
 
+		// did we already saw this subject in the connection?
 		if (typeContainer == null) {
+			// use the type buffer if given
 			Value type = typeBuffer == null ? null : typeBuffer.get(subj);
+			// did we already saw the type in the connection?
 			if (type == null) {
+				// query the type
 				try (CloseableIteration<? extends Statement, SailException> it = subConnection.getStatements(subj, predicate, null, false)) {
 					if (it.hasNext()) {
 						type = it.next().getObject();
@@ -49,14 +72,18 @@ public class TypeSailFilter implements SailFilter {
 							return false;
 						}
 
+						// if we can buffer it, we buffer it
 						if (typeBuffer != null) {
 							typeBuffer.put(subj, type);
 						}
 					} else {
+						// no matching triple
+						typeContainedBuffer.put(subj, false);
 						return false;
 					}
 				}
 			}
+			// test the selected type
 			typeContainer = type.equals(object);
 			typeContainedBuffer.put(subj, typeContainer);
 		}
@@ -66,6 +93,7 @@ public class TypeSailFilter implements SailFilter {
 
 	@Override
 	public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		// ignore type triple and buffer the type
 		if (pred.equals(predicate)) {
 			if (typeBuffer != null) {
 				typeBuffer.put(subj, obj);
@@ -78,6 +106,7 @@ public class TypeSailFilter implements SailFilter {
 
 	@Override
 	public boolean shouldHandleRemove(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		// ignore type triple and buffer the type
 		if (pred.equals(predicate)) {
 			if (typeBuffer != null) {
 				typeBuffer.remove(subj);
