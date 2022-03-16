@@ -1,6 +1,7 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.utils.sail.filter.SailFilter;
+import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.common.transaction.IsolationLevel;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.NotifyingSail;
@@ -27,6 +28,26 @@ public class FilteringSail implements NotifyingSail {
 	private final MultiInputFilteringSail onNoSail;
 	private final Function<SailConnection, SailFilter> filter;
 
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param onNoSail  the sail if the filter returns false
+	 * @param filter    the filter building method (if connection required)
+	 */
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail onNoSail, Function<SailConnection, SailFilter> filter) {
+		this(onYesSail.getSail(), onNoSail, onYesSail.getSailConsumer(), filter);
+	}
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param onNoSail  the sail if the filter returns false
+	 * @param filter    the filter building method
+	 */
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail onNoSail, SailFilter filter) {
+		this(onYesSail.getSail(), onNoSail, onYesSail.getSailConsumer(), filter);
+	}
 	/**
 	 * create a filtering sail.
 	 *

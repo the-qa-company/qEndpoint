@@ -2,6 +2,9 @@ package com.the_qa_company.q_endpoint.utils.sail.filter;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.sail.FilteringSail;
+import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
+import com.the_qa_company.q_endpoint.utils.sail.linked.SimpleLinkedSail;
+import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.q_endpoint.utils.sail.SailTest;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.Sail;
@@ -17,15 +20,14 @@ public class LanguageFilterTest extends SailTest {
 
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
-		LuceneSail luceneSail = new LuceneSail();
-		luceneSail.setParameter(LuceneSail.LUCENE_DIR_KEY,
-				hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index");
-		luceneSail.setParameter(LuceneSail.INDEX_CLASS_KEY, LuceneSail.DEFAULT_INDEX_CLASS);
-		luceneSail.setParameter(LuceneSail.INDEX_ID, NAMESPACE + "fr_lucene");
-		luceneSail.setEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE);
+		LinkedSail<LuceneSail> luceneSail = new LuceneSailBuilder()
+				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index")
+				.withId(NAMESPACE + "fr_lucene")
+				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
+				.buildLinked();
 		// basic implementation
 		filter = new LanguageSailFilter("fr", false, true);
-		return new FilteringSail(luceneSail, hybridStore, luceneSail::setBaseSail, filter);
+		return new FilteringSail(luceneSail, hybridStore, filter);
 	}
 
 	@Test

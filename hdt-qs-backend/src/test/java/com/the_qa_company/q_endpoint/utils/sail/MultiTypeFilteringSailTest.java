@@ -1,6 +1,8 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
+import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
@@ -11,18 +13,18 @@ public class MultiTypeFilteringSailTest extends SailTest {
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
 		// lucene sail to index the type 1 subject literals
-		LuceneSail luceneSail1 = new LuceneSailBuilder()
+		LinkedSail<LuceneSail> luceneSail1 = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index1")
 				.withId(NAMESPACE + "lucene1")
 				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
-				.build();
+				.buildLinked();
 
 		// lucene sail to index the type 2 subject literals
-		LuceneSail luceneSail2 = new LuceneSailBuilder()
+		LinkedSail<LuceneSail> luceneSail2 = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index2")
 				.withId(NAMESPACE + "lucene2")
 				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
-				.build();
+				.buildLinked();
 
 		// config the multi type filtering sail
 		return new MultiTypeFilteringSail(
@@ -30,13 +32,11 @@ public class MultiTypeFilteringSailTest extends SailTest {
 				iri("typeof"),
 				new MultiTypeFilteringSail.TypedSail(
 						luceneSail1,
-						iri("type1"),
-						luceneSail1::setBaseSail
+						iri("type1")
 				),
 				new MultiTypeFilteringSail.TypedSail(
 						luceneSail2,
-						iri("type2"),
-						luceneSail2::setBaseSail
+						iri("type2")
 				)
 		);
 	}

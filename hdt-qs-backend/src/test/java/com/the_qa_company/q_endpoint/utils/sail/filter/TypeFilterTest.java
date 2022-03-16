@@ -2,8 +2,9 @@ package com.the_qa_company.q_endpoint.utils.sail.filter;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.sail.FilteringSail;
-import com.the_qa_company.q_endpoint.utils.sail.LuceneSailBuilder;
 import com.the_qa_company.q_endpoint.utils.sail.SailTest;
+import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
+import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
@@ -18,17 +19,16 @@ public class TypeFilterTest extends SailTest {
 
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
-		LuceneSail luceneSail = new LuceneSailBuilder()
+		LinkedSail<LuceneSail> luceneSail = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index")
 				.withId(NAMESPACE + "lucene")
 				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
-				.build();
+				.buildLinked();
 		filterBuilder = (connection -> new TypeSailFilter(connection, iri("oftype"), iri("mytype1")));
 		// basic implementation
 		return new FilteringSail(
 				luceneSail,
 				hybridStore,
-				luceneSail::setBaseSail,
 				// use the apply and not filterBuilder to allow update of the builder
 				connection -> filterBuilder.apply(connection)
 		);
