@@ -11,20 +11,18 @@ public class MultiTypeFilteringSailTest extends SailTest {
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
 		// lucene sail to index the type 1 subject literals
-		LuceneSail luceneSail1 = new LuceneSail();
-		luceneSail1.setParameter(LuceneSail.LUCENE_DIR_KEY,
-				hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index1");
-		luceneSail1.setParameter(LuceneSail.INDEX_CLASS_KEY, LuceneSail.DEFAULT_INDEX_CLASS);
-		luceneSail1.setParameter(LuceneSail.INDEX_ID, NAMESPACE + "lucene1");
-		luceneSail1.setEvaluationMode(TupleFunctionEvaluationMode.NATIVE);
+		LuceneSail luceneSail1 = new LuceneSailBuilder()
+				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index1")
+				.withId(NAMESPACE + "lucene1")
+				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
+				.build();
 
 		// lucene sail to index the type 2 subject literals
-		LuceneSail luceneSail2 = new LuceneSail();
-		luceneSail2.setParameter(LuceneSail.LUCENE_DIR_KEY,
-				hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index2");
-		luceneSail2.setParameter(LuceneSail.INDEX_CLASS_KEY, LuceneSail.DEFAULT_INDEX_CLASS);
-		luceneSail2.setParameter(LuceneSail.INDEX_ID, NAMESPACE + "lucene2");
-		luceneSail2.setEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE);
+		LuceneSail luceneSail2 = new LuceneSailBuilder()
+				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index2")
+				.withId(NAMESPACE + "lucene2")
+				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
+				.build();
 
 		// config the multi type filtering sail
 		return new MultiTypeFilteringSail(
@@ -122,6 +120,7 @@ public class MultiTypeFilteringSailTest extends SailTest {
 						.withValue("r2", stmt2.getSubject())
 		);
 	}
+
 	@Test
 	public void splitIndexingTest() {
 		Statement type1 = VF.createStatement(iri("a"), iri("typeof"), iri("type1"));
