@@ -1,4 +1,4 @@
-package com.the_qa_company.q_endpoint.utils.sail.filter;
+package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.HybridStoreTest;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
@@ -303,6 +303,8 @@ public abstract class SailTest {
 	 */
 	protected static class SelectResultRow {
 		private final Map<String, Value> values = new HashMap<>();
+
+		public SelectResultRow() {}
 
 		/**
 		 * define an excepted value for this object name

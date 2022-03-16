@@ -2,6 +2,7 @@ package com.the_qa_company.q_endpoint.utils.sail.filter;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.sail.FilteringSail;
+import com.the_qa_company.q_endpoint.utils.sail.SailTest;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
