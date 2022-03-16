@@ -14,6 +14,7 @@ public class LanguageFilterTest extends SailTest {
 	 * the filter to test
 	 */
 	private LanguageSailFilter filter;
+
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
 		LuceneSail luceneSail = new LuceneSail();
@@ -46,14 +47,13 @@ public class LanguageFilterTest extends SailTest {
 		);
 
 		assertSelect(
-				joinLines(
-						"SELECT * {",
-						new LuceneSelectWhereBuilder("subj", "text").withIndexId("ex:fr_lucene").build(),
-						"}"
-				),
+				new LuceneSelectWhereBuilder("subj", "text")
+						.withIndexId("ex:fr_lucene").
+						buildWithSelectWhereClause(),
 				new SelectResultRow().withValue("subj", lit1.getSubject())
 		);
 	}
+
 	@Test
 	public void languageNoLangInjectionTest() {
 		filter.setAcceptNoLanguageLiterals(true);
@@ -74,11 +74,9 @@ public class LanguageFilterTest extends SailTest {
 		);
 
 		assertSelect(
-				joinLines(
-						"SELECT * {",
-						new LuceneSelectWhereBuilder("subj", "text").withIndexId("ex:fr_lucene").build(),
-						"}"
-				),
+				new LuceneSelectWhereBuilder("subj", "text")
+						.withIndexId("ex:fr_lucene")
+						.buildWithSelectWhereClause(),
 				new SelectResultRow().withValue("subj", lit1.getSubject()),
 				new SelectResultRow().withValue("subj", lit3.getSubject())
 		);
@@ -105,21 +103,17 @@ public class LanguageFilterTest extends SailTest {
 
 		// no expression allowed, it shouldn't pass by the lucene sail
 		assertSelect(
-				joinLines(
-						"SELECT * {",
-						new LuceneSelectWhereBuilder("subj", "text").withIndexId("ex:fr_lucene").build(),
-						"}"
-				)
+				new LuceneSelectWhereBuilder("subj", "text")
+						.withIndexId("ex:fr_lucene")
+						.buildWithSelectWhereClause()
 		);
 
 		// enable expression, now we can  pass by the lucene sail to query it
 		filter.setShouldHandleExpression(true);
 		assertSelect(
-				joinLines(
-						"SELECT * {",
-						new LuceneSelectWhereBuilder("subj", "text").withIndexId("ex:fr_lucene").build(),
-						"}"
-				),
+				new LuceneSelectWhereBuilder("subj", "text")
+						.withIndexId("ex:fr_lucene")
+						.buildWithSelectWhereClause(),
 				new SelectResultRow().withValue("subj", lit1.getSubject())
 		);
 	}

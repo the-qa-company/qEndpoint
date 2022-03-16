@@ -87,6 +87,7 @@ public abstract class SailTest {
 
 	/**
 	 * convert a value (IRI or literal) to a NT string representation
+	 *
 	 * @param value the value
 	 * @return string
 	 */
@@ -111,6 +112,7 @@ public abstract class SailTest {
 
 	/**
 	 * convert a statement of IRI or literal to a NT string representation
+	 *
 	 * @param statement the statement
 	 * @return string
 	 */
@@ -304,7 +306,8 @@ public abstract class SailTest {
 	protected static class SelectResultRow {
 		private final Map<String, Value> values = new HashMap<>();
 
-		public SelectResultRow() {}
+		public SelectResultRow() {
+		}
 
 		/**
 		 * define an excepted value for this object name
@@ -411,6 +414,7 @@ public abstract class SailTest {
 
 	/**
 	 * Class to create a Lucene SELECT WHERE clause
+	 *
 	 * @author Antoine Willerval
 	 */
 	protected static class LuceneSelectWhereBuilder {
@@ -423,8 +427,9 @@ public abstract class SailTest {
 
 		/**
 		 * create a lucene select where builder
+		 *
 		 * @param resultObject the subject of the query
-		 * @param query the text query
+		 * @param query        the text query
 		 */
 		public LuceneSelectWhereBuilder(String resultObject, String query) {
 			this.resultObject = resultObject;
@@ -433,6 +438,7 @@ public abstract class SailTest {
 
 		/**
 		 * set search:indexid
+		 *
 		 * @param indexId the index id
 		 * @return this
 		 */
@@ -443,6 +449,7 @@ public abstract class SailTest {
 
 		/**
 		 * set search:property
+		 *
 		 * @param property the property
 		 * @return this
 		 */
@@ -453,6 +460,7 @@ public abstract class SailTest {
 
 		/**
 		 * set search:score
+		 *
 		 * @param scoreObject the score object
 		 * @return this
 		 */
@@ -463,6 +471,7 @@ public abstract class SailTest {
 
 		/**
 		 * set search:snippet
+		 *
 		 * @param snippetObject the snippet object
 		 * @return this
 		 */
@@ -473,6 +482,7 @@ public abstract class SailTest {
 
 		/**
 		 * build the query
+		 *
 		 * @return query
 		 */
 		public String build() {
@@ -495,6 +505,24 @@ public abstract class SailTest {
 			}
 
 			return s + "].";
+		}
+
+		/**
+		 * build the query with a SELECT (objects) clause
+		 * @param objects the object to get, empty for *
+		 * @return query
+		 */
+		public String buildWithSelectWhereClause(String... objects) {
+			String objectToGet;
+
+			if (objects.length == 0) {
+				objectToGet = "*";
+			} else {
+				objectToGet = Arrays.stream(objects)
+						.map(s -> "?" + s)
+						.collect(Collectors.joining(" "));
+			}
+			return joinLines("SELECT " + objectToGet + " {", build(), "}");
 		}
 	}
 }
