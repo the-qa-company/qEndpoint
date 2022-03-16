@@ -48,6 +48,16 @@ public class LanguageSailFilter implements SailFilter {
 	}
 
 	@Override
+	public boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return handleValue(obj);
+	}
+
+	@Override
+	public boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return handleValue(obj);
+	}
+
+	@Override
 	public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
 		return handleValue(obj);
 	}

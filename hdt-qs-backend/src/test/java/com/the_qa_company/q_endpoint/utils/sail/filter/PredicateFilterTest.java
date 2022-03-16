@@ -94,6 +94,16 @@ public class PredicateFilterTest extends SailTest {
 						.buildWithSelectWhereClause()
 		);
 
+		remove(
+				stmt4
+		);
+		assertSelect(
+				new LuceneSelectWhereBuilder("r", "text")
+						.withIndexId("ex:lucene")
+						.buildWithSelectWhereClause(),
+				new SelectResultRow().withValue("r", stmt1.getSubject())
+		);
+
 	}
 
 }

@@ -37,6 +37,25 @@ public interface SailFilter {
 	 * @return if the filter should send this request to the yes(true) or no(false) connection
 	 */
 	boolean shouldHandleRemove(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts);
+	/**
+	 * test if an add operation should pass the filter
+	 * @param subj the subject of the add statement
+	 * @param pred the predicate of the add statement
+	 * @param obj the object of the add statement
+	 * @param contexts the contexts of the add statement
+	 * @return if the filter should send this request to the yes(true) or no(false) connection
+	 */
+	boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts);
+
+	/**
+	 * test if a remove operation should pass the filter
+	 * @param subj the subject of the add statement
+	 * @param pred the predicate of the add statement
+	 * @param obj the object of the add statement
+	 * @param contexts the contexts of the add statement
+	 * @return if the filter should send this request to the yes(true) or no(false) connection
+	 */
+	boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts);
 
 	/**
 	 * test if a get operation should pass the filter
@@ -80,6 +99,22 @@ public interface SailFilter {
 				return operation.apply(
 						that.shouldHandleRemove(op, subj, pred, obj, contexts),
 						other.shouldHandleRemove(op, subj, pred, obj, contexts)
+				);
+			}
+
+			@Override
+			public boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts) {
+				return operation.apply(
+						that.shouldHandleNotifyAdd(subj, pred, obj, contexts),
+						other.shouldHandleNotifyAdd(subj, pred, obj, contexts)
+				);
+			}
+
+			@Override
+			public boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts) {
+				return operation.apply(
+						that.shouldHandleNotifyRemove(subj, pred, obj, contexts),
+						other.shouldHandleNotifyRemove(subj, pred, obj, contexts)
 				);
 			}
 

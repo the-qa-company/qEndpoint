@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * {@link SailFilter} implementation to filter subject by type
+ * {@link SailFilter} implementation to filter subject by type when adding by notification
  * @author Antoine Willerval
  */
 public class TypeSailFilter implements SailFilter {
@@ -92,7 +92,7 @@ public class TypeSailFilter implements SailFilter {
 	}
 
 	@Override
-	public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+	public boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts) {
 		// ignore type triple and buffer the type
 		if (pred.equals(predicate)) {
 			if (typeBuffer != null) {
@@ -105,7 +105,12 @@ public class TypeSailFilter implements SailFilter {
 	}
 
 	@Override
-	public boolean shouldHandleRemove(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+	public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return false;
+	}
+
+	@Override
+	public boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts) {
 		// ignore type triple and buffer the type
 		if (pred.equals(predicate)) {
 			if (typeBuffer != null) {
@@ -115,7 +120,12 @@ public class TypeSailFilter implements SailFilter {
 			typeContainedBuffer.put(subj, false);
 			return false;
 		}
-		return isSubjectOfType(subj);
+		return true;
+	}
+
+	@Override
+	public boolean shouldHandleRemove(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return false;
 	}
 
 	@Override

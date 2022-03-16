@@ -31,8 +31,7 @@ class MultiInputFilteringSailConnection extends NotifyingSailConnectionWrapper  
 
 			@Override
 			public void statementAdded(Statement st) {
-				if (filter.shouldHandleAdd(
-						null,
+				if (filter.shouldHandleNotifyAdd(
 						st.getSubject(),
 						st.getPredicate(),
 						st.getObject(),
@@ -54,8 +53,7 @@ class MultiInputFilteringSailConnection extends NotifyingSailConnectionWrapper  
 
 			@Override
 			public void statementRemoved(Statement st) {
-				if (filter.shouldHandleRemove(
-						null,
+				if (filter.shouldHandleNotifyRemove(
 						st.getSubject(),
 						st.getPredicate(),
 						st.getObject(),

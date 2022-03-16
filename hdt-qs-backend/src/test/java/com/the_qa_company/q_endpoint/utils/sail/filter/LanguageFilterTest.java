@@ -116,5 +116,14 @@ public class LanguageFilterTest extends SailTest {
 						.buildWithSelectWhereClause(),
 				new SelectResultRow().withValue("subj", lit1.getSubject())
 		);
+
+		remove(
+				lit1
+		);
+		assertSelect(
+				new LuceneSelectWhereBuilder("subj", "text")
+						.withIndexId("ex:fr_lucene")
+						.buildWithSelectWhereClause()
+		);
 	}
 }

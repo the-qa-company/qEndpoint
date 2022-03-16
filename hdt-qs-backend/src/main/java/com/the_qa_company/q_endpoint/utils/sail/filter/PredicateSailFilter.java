@@ -35,6 +35,16 @@ public class PredicateSailFilter implements SailFilter {
 	}
 
 	@Override
+	public boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return predicate.equals(pred);
+	}
+
+	@Override
+	public boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return predicate.equals(pred);
+	}
+
+	@Override
 	public boolean shouldHandleGet(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) {
 		return predicate.equals(pred);
 	}
