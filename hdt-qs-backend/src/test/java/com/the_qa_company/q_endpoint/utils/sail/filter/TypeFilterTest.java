@@ -22,7 +22,7 @@ public class TypeFilterTest extends SailTest {
 		LinkedSail<LuceneSail> luceneSail = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index")
 				.withId(NAMESPACE + "lucene")
-				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
+				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
 				.buildLinked();
 		filterBuilder = (connection -> new TypeSailFilter(connection, iri("oftype"), iri("mytype1")));
 		// basic implementation

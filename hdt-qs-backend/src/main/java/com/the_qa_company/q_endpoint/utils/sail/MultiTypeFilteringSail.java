@@ -12,7 +12,9 @@ import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -24,7 +26,7 @@ import java.util.function.Consumer;
 public class MultiTypeFilteringSail extends NotifyingSailWrapper implements LinkedSail<MultiTypeFilteringSail> {
 	private Map<Resource, Value> lastTypeBuffer;
 	private NotifyingSail tripleSourceSail;
-	private final TypedSail[] types;
+	private final List<TypedSail> types;
 	private final IRI predicate;
 
 	/**
@@ -35,6 +37,16 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 	 * @param types            the typed sail to redirect
 	 */
 	public MultiTypeFilteringSail(NotifyingSail tripleSourceSail, IRI predicate, TypedSail... types) {
+		this(tripleSourceSail, predicate, Arrays.asList(types));
+	}
+	/**
+	 * create a sail to filter multiple sails by their type
+	 *
+	 * @param tripleSourceSail the source to put bellow all the typed sail
+	 * @param predicate        the predicate to define the type of a subject
+	 * @param types            the typed sail to redirect
+	 */
+	public MultiTypeFilteringSail(NotifyingSail tripleSourceSail, IRI predicate, List<TypedSail> types) {
 		super();
 		this.types = types;
 		this.predicate = predicate;
@@ -52,6 +64,17 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 	 * @param types            the typed sail to redirect
 	 */
 	public MultiTypeFilteringSail(IRI predicate, TypedSail... types) {
+		this(predicate, Arrays.asList(types));
+	}
+	/**
+	 * create a sail to filter multiple sails by their type without triple source, use
+	 * {@link #setBaseSail(org.eclipse.rdf4j.sail.Sail)} or
+	 * {@link #setTripleSourceSail(org.eclipse.rdf4j.sail.NotifyingSail)} to set the source
+	 *
+	 * @param predicate        the predicate to define the type of a subject
+	 * @param types            the typed sail to redirect
+	 */
+	public MultiTypeFilteringSail(IRI predicate, List<TypedSail> types) {
 		this(null, predicate, types);
 	}
 
@@ -64,8 +87,8 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 
 		NotifyingSail baseSail = tripleSourceSail;
 		// inverse loop to link the last element to the source
-		for (int i = types.length - 1; i >= 0; i--) {
-			TypedSail type = types[i];
+		for (int i = types.size() - 1; i >= 0; i--) {
+			TypedSail type = types.get(i);
 			baseSail = new FilteringSail(type, baseSail,
 					(connection) -> new TypeSailFilter(
 							lastTypeBuffer, connection, predicate, type.getType()

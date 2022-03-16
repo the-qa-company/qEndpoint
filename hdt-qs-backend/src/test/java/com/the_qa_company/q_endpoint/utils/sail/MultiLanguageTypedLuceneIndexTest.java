@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 	private final String[] languages = {
@@ -18,6 +19,13 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 			"de",
 			"es"
 	};
+
+	private final String[] types = {
+			"type1",
+			"type2",
+			"type3"
+	};
+
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
 		// the multiple language to link
@@ -29,41 +37,23 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 				new MultiTypeFilteringSail(
 						// type IRI to define the type
 						iri("typeof"),
-						// redirection of the type ex:type1
-						new MultiTypeFilteringSail.TypedSail(
-								// link each language sails
-								SimpleLinkedSail.linkSails(
-										Arrays.stream(languages).map(language ->
-												new LuceneSailBuilder()
-														.withDir(dir + "1-" + language)
-														.withId(NAMESPACE + "lucene1_" + language)
-														.withLanguageFiltering(language)
-														.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
-														.build()
+						Arrays.stream(types).map(type ->
+								// redirection of the type ex:type1
+								new MultiTypeFilteringSail.TypedSail(
+										// link each language sails
+										SimpleLinkedSail.linkSails(
+												Arrays.stream(languages).map(language ->
+														new LuceneSailBuilder()
+																.withDir(dir + type + "-" + language)
+																.withId(NAMESPACE + "lucene1_" + language)
+																.withLanguageFiltering(language)
+																.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
+																.build()
+												),
+												LuceneSail::setBaseSail
 										),
-										LuceneSail::setBaseSail,
-										null
-								),
-								iri("type1")
-						),
-						// redirection of the type ex:type2
-						new MultiTypeFilteringSail.TypedSail(
-								// link each language sails
-								SimpleLinkedSail.linkSails(
-										Arrays.stream(languages).map(language ->
-												new LuceneSailBuilder()
-														.withDir(dir + "2-" + language)
-														.withId(NAMESPACE + "lucene2_" + language)
-														.withLanguageFiltering(language)
-														.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
-														.build()
-										),
-										LuceneSail::setBaseSail,
-										// the last LuceneSail mode should be TripleSource to optimize the queries
-										sail -> sail.setEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
-								),
-								iri("type2")
-						)
+										iri(type)
+								)).collect(Collectors.toList())
 				),
 				hybridStore,
 				new PredicateSailFilter(iri("text"))
@@ -73,6 +63,32 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 
 	@Test
 	public void multiLanguageTypedIndexTest() {
+		add(
+				VF.createStatement(iri("a"), iri("typeof"), iri("type1")),
+				VF.createStatement(iri("a"), iri("prop"), iri("b"))
+		);
+		for (String lang : languages) {
+			add(VF.createStatement(iri("a"), iri("text"), VF.createLiteral("text a", lang)));
+		}
 
+		add(
+				VF.createStatement(iri("b"), iri("typeof"), iri("type1"))
+		);
+
+		for (String lang : languages) {
+			add(VF.createStatement(iri("b"), iri("text"), VF.createLiteral("text b", lang)));
+		}
+
+		add(
+
+				VF.createStatement(iri("c"), iri("typeof"), iri("type2"))
+		);
+
+		for (String lang : languages) {
+			add(VF.createStatement(iri("c"), iri("text"), VF.createLiteral("text c", lang)));
+		}
+
+		for (String lang : languages) {
+		}
 	}
 }

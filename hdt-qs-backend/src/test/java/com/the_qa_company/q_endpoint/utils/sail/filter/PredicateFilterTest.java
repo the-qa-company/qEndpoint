@@ -21,7 +21,7 @@ public class PredicateFilterTest extends SailTest {
 		LuceneSail luceneSail = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index")
 				.withId(NAMESPACE + "lucene")
-				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
+				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
 				.build();
 		// basic implementation
 		filter = new PredicateSailFilter(iri("p"));

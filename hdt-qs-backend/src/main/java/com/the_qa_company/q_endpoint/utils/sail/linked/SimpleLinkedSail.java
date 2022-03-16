@@ -25,8 +25,8 @@ public class SimpleLinkedSail<S extends Sail> implements LinkedSail<S> {
 	 * @param <S>         the sails type
 	 * @return the linked sail
 	 */
-	public static <S extends Sail> LinkedSail<S> linkSails(List<S> sails, BiConsumer<S, Sail> chainMethod, Consumer<S> lastAction) {
-		return linkSails(sails.stream(), chainMethod, lastAction);
+	public static <S extends Sail> LinkedSail<S> linkSails(List<S> sails, BiConsumer<S, Sail> chainMethod) {
+		return linkSails(sails.stream(), chainMethod);
 	}
 
 	/**
@@ -38,7 +38,7 @@ public class SimpleLinkedSail<S extends Sail> implements LinkedSail<S> {
 	 * @param <S>         the sails type
 	 * @return the linked sail
 	 */
-	public static <S extends Sail> LinkedSail<S> linkSails(Stream<S> sails, BiConsumer<S, Sail> chainMethod, Consumer<S> lastAction) {
+	public static <S extends Sail> LinkedSail<S> linkSails(Stream<S> sails, BiConsumer<S, Sail> chainMethod) {
 		Iterator<S> it = sails.iterator();
 
 		if (!it.hasNext()) {
@@ -55,10 +55,6 @@ public class SimpleLinkedSail<S extends Sail> implements LinkedSail<S> {
 			last = next;
 		}
 		final S lastNode = last;
-
-		if (lastAction != null) {
-			lastAction.accept(lastNode);
-		}
 
 		// chain the last sail with the future next sail
 		return new SimpleLinkedSail<>(first, (sail) -> chainMethod.accept(lastNode, sail));

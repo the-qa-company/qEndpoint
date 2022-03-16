@@ -23,7 +23,7 @@ public class MultiTypeFilteringSailTest extends SailTest {
 		LinkedSail<LuceneSail> luceneSail2 = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index2")
 				.withId(NAMESPACE + "lucene2")
-				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
+				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
 				.buildLinked();
 
 		// config the multi type filtering sail

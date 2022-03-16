@@ -23,7 +23,7 @@ public class LanguageFilterTest extends SailTest {
 		LinkedSail<LuceneSail> luceneSail = new LuceneSailBuilder()
 				.withDir(hybridStore.getHybridStoreFiles().getLocationNative() + "lucene-index")
 				.withId(NAMESPACE + "fr_lucene")
-				.withEvaluationMode(TupleFunctionEvaluationMode.TRIPLE_SOURCE)
+				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
 				.buildLinked();
 		// basic implementation
 		filter = new LanguageSailFilter("fr", false, true);
