@@ -33,7 +33,7 @@ public class FilteringSail implements NotifyingSail {
 	 * @param onYesSail the sail if the filter returns true
 	 * @param onNoSail  the sail if the filter returns false
 	 * @param endSail   a consumer to set the end sail of the onYesSail
-	 * @param filter    the filter
+	 * @param filter    the filter building method (if connection required)
 	 */
 	public FilteringSail(NotifyingSail onYesSail, NotifyingSail onNoSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
 		Objects.requireNonNull(onNoSail, "onNoSail can't be null!");
@@ -41,6 +41,18 @@ public class FilteringSail implements NotifyingSail {
 		this.onNoSail = new MultiInputFilteringSail(onNoSail, this);
 		endSail.accept(this.onNoSail);
 		this.filter = Objects.requireNonNull(filter, "filter can't be null!");
+	}
+
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param onNoSail  the sail if the filter returns false
+	 * @param endSail   a consumer to set the end sail of the onYesSail
+	 * @param filter    the filter
+	 */
+	public FilteringSail(NotifyingSail onYesSail, NotifyingSail onNoSail, Consumer<Sail> endSail, SailFilter filter) {
+		this(onYesSail, onNoSail, endSail, co -> filter);
 	}
 
 	@Override

@@ -17,9 +17,9 @@ import java.util.Optional;
  * @author Antoine Willerval
  */
 public class LanguageSailFilter implements SailFilter {
-	private final String language;
-	private final boolean acceptNoLanguageLiterals;
-	private final boolean shouldHandleExpression;
+	private String language;
+	private boolean acceptNoLanguageLiterals;
+	private boolean shouldHandleExpression;
 
 	public LanguageSailFilter(String language, boolean acceptNoLanguageLiterals, boolean shouldHandleExpression) {
 		this.language = language;
@@ -65,5 +65,29 @@ public class LanguageSailFilter implements SailFilter {
 	@Override
 	public boolean shouldHandleExpression(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) {
 		return shouldHandleExpression;
+	}
+
+	public String getLanguage() {
+		return language;
+	}
+
+	public boolean isAcceptNoLanguageLiterals() {
+		return acceptNoLanguageLiterals;
+	}
+
+	public boolean isShouldHandleExpression() {
+		return shouldHandleExpression;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
+	public void setAcceptNoLanguageLiterals(boolean acceptNoLanguageLiterals) {
+		this.acceptNoLanguageLiterals = acceptNoLanguageLiterals;
+	}
+
+	public void setShouldHandleExpression(boolean shouldHandleExpression) {
+		this.shouldHandleExpression = shouldHandleExpression;
 	}
 }

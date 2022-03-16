@@ -14,7 +14,7 @@ import org.eclipse.rdf4j.sail.UpdateContext;
  * @author Antoine Willerval
  */
 public class PredicateSailFilter implements SailFilter {
-	private final IRI predicate;
+	private IRI predicate;
 
 	/**
 	 * filter a sail with a predicate
@@ -42,5 +42,13 @@ public class PredicateSailFilter implements SailFilter {
 	@Override
 	public boolean shouldHandleExpression(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) {
 		return true;
+	}
+
+	public void setPredicate(IRI predicate) {
+		this.predicate = predicate;
+	}
+
+	public IRI getPredicate() {
+		return predicate;
 	}
 }

@@ -3,9 +3,11 @@ package com.the_qa_company.q_endpoint.utils.sail.filter;
 import com.the_qa_company.q_endpoint.HybridStoreTest;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
@@ -46,7 +48,7 @@ public abstract class SailTest {
 	/**
 	 * ex: namespace
 	 */
-	protected static final String NAMESPACE = "http://example.org/";
+	public static final String NAMESPACE = "http://example.org/";
 	/**
 	 * basic prefixes, search:, rdfs: and ex:
 	 */
@@ -57,7 +59,7 @@ public abstract class SailTest {
 	/**
 	 * basic SPO query "SELECT * {?s ?p ?o}"
 	 */
-	protected static final String SPO_QUERY = "SELECT * {?s ?p ?o}";
+	public static final String SPO_QUERY = "SELECT * {?s ?p ?o}";
 	/**
 	 * Value factory
 	 */
@@ -79,8 +81,43 @@ public abstract class SailTest {
 	 * @param lines the lines
 	 * @return the joined lines
 	 */
-	protected static String joinLines(String... lines) {
+	public static String joinLines(String... lines) {
 		return String.join("\n", lines);
+	}
+
+	/**
+	 * convert a value (IRI or literal) to a NT string representation
+	 * @param value the value
+	 * @return string
+	 */
+	public static String asNT(Value value) {
+		if (value.isLiteral()) {
+			Literal lit = (Literal) value;
+			CoreDatatype type = lit.getCoreDatatype();
+			if (type == CoreDatatype.RDF.LANGSTRING) {
+				return "'" + lit.getLabel() + "'" + lit.getLanguage().map(l -> "@" + l).orElse("");
+			} else if (type != CoreDatatype.NONE) {
+				return "'" + lit.getLabel() + "'^^<" + type.getIri() + ">";
+			} else {
+				return "'" + lit.getLabel() + "'";
+			}
+		}
+
+		if (value.isIRI()) {
+			return "<" + value + ">";
+		}
+		throw new RuntimeException("Can't convert " + value + " to ttl");
+	}
+
+	/**
+	 * convert a statement of IRI or literal to a NT string representation
+	 * @param statement the statement
+	 * @return string
+	 */
+	public static String asNT(Statement statement) {
+		return asNT(statement.getSubject()) + " "
+				+ asNT(statement.getPredicate()) + " "
+				+ asNT(statement.getObject());
 	}
 
 	@Rule
