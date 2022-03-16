@@ -4,12 +4,15 @@ import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.sail.filter.PredicateSailFilter;
 import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.q_endpoint.utils.sail.linked.SimpleLinkedSail;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class MultiLanguageTypedLuceneIndexTest extends SailTest {
@@ -45,7 +48,7 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 												Arrays.stream(languages).map(language ->
 														new LuceneSailBuilder()
 																.withDir(dir + type + "-" + language)
-																.withId(NAMESPACE + "lucene1_" + language)
+																.withId(NAMESPACE + "lucene" + type + "_" + language)
 																.withLanguageFiltering(language)
 																.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
 																.build()
@@ -61,34 +64,100 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 		);
 	}
 
+	private void injectTriples() {
+		int index = 0;
+		try (SailRepositoryConnection connection = repository.getConnection()) {
+			connection.begin();
+			for (String type : types) {
+				for (String lang : languages) {
+					connection.add(
+							VF.createStatement(
+									iri("subj" + index),
+									iri("typeof"),
+									iri(type)
+							)
+					);
+					connection.add(
+							VF.createStatement(
+									iri("subj" + index),
+									iri("text"),
+									VF.createLiteral(type + lang + index, lang)
+							)
+					);
+					index++;
+				}
+			}
+			connection.commit();
+		}
+
+		logger.debug("add {} subjects to test, with {} types and {} languages", index, types.length, languages.length);
+	}
+
 	@Test
 	public void multiLanguageTypedIndexTest() {
-		add(
-				VF.createStatement(iri("a"), iri("typeof"), iri("type1")),
-				VF.createStatement(iri("a"), iri("prop"), iri("b"))
-		);
-		for (String lang : languages) {
-			add(VF.createStatement(iri("a"), iri("text"), VF.createLiteral("text a", lang)));
+		injectTriples();
+
+		int index = 0;
+
+		for (String type : types) {
+			for (String lang : languages) {
+				for (String type2 : types) {
+					for (String lang2 : languages) {
+						if (type2.equals(type) && lang.equals(lang2)) {
+							continue;
+						}
+
+						assertSelect(
+								new LuceneSelectWhereBuilder("r", type + lang + index)
+										.withIndexId("ex:lucene" + type2 + "_" + lang2)
+										.buildWithSelectWhereClause()
+						);
+					}
+				}
+
+				assertSelect(
+						new LuceneSelectWhereBuilder("r", type + lang + index)
+								.withIndexId("ex:lucene" + type + "_" + lang)
+								.buildWithSelectWhereClause(),
+						new SelectResultRow().withValue("r", iri("subj" + index))
+				);
+				index++;
+			}
 		}
 
-		add(
-				VF.createStatement(iri("b"), iri("typeof"), iri("type1"))
-		);
+	}
 
-		for (String lang : languages) {
-			add(VF.createStatement(iri("b"), iri("text"), VF.createLiteral("text b", lang)));
+	@Test
+	public void multiLanguageTypedIndexOneRequestTest() {
+		injectTriples();
+
+		int index = 0;
+
+		List<String> queries = new ArrayList<>();
+		List<SelectResultRow> rows = new ArrayList<>();
+
+		for (String type : types) {
+			for (String lang : languages) {
+				queries.add(
+						new LuceneSelectWhereBuilder("r" + index, type + lang + index)
+								.withIndexId("ex:lucene" + type + "_" + lang)
+								.build()
+				);
+				rows.add(
+						new SelectResultRow()
+								.withValue("r" + index, iri("subj" + index))
+				);
+				index++;
+			}
 		}
 
-		add(
+		assertSelect(
+				joinLines(
+						"SELECT * {",
+						queries.stream().map(q -> "{ " + q + " }").collect(Collectors.joining("UNION")),
+						"}"
+				),
+				rows.toArray(SelectResultRow[]::new));
 
-				VF.createStatement(iri("c"), iri("typeof"), iri("type2"))
-		);
-
-		for (String lang : languages) {
-			add(VF.createStatement(iri("c"), iri("text"), VF.createLiteral("text c", lang)));
-		}
-
-		for (String lang : languages) {
-		}
 	}
 }
