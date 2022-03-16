@@ -28,6 +28,7 @@ build-hub:
     - docker logout
   only:
     - master
+  when: manual
 
 deploy:
   stage: deploy
