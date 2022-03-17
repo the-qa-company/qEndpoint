@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sail.Sail;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,6 +26,7 @@ import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,9 +129,17 @@ public abstract class SailTest {
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected SailRepository repository;
 	protected HDTSpecification spec;
+	protected StopWatch watch;
+	private int addCount = 0;
+	private int removeCount = 0;
+	private int selectCount = 0;
 
 	@Before
 	public void setup() throws IOException {
+		watch = new StopWatch();
+		addCount = 0;
+		removeCount = 0;
+		selectCount = 0;
 		spec = new HDTSpecification();
 		spec.set("tempDictionary.impl", DictionaryFactory.MOD_DICT_IMPL_MULT_HASH);
 		spec.set("dictionary.type", DictionaryFactory.DICTIONARY_TYPE_MULTI_OBJECTS);
@@ -147,6 +157,19 @@ public abstract class SailTest {
 
 		repository = new SailRepository(store);
 		repository.init();
+		logger.info("Setup the repository in {}", watch.stopAndShow());
+		watch.reset();
+	}
+
+	@After
+	public void complete() {
+		logger.info(
+				"Completed S/A/R : {}/{}/{} in {}",
+				selectCount,
+				addCount,
+				removeCount,
+				watch.stopAndShow()
+		);
 	}
 
 	/**
@@ -182,6 +205,7 @@ public abstract class SailTest {
 			}
 			connection.commit();
 		}
+		addCount += statements.length;
 	}
 
 	/**
@@ -195,6 +219,7 @@ public abstract class SailTest {
 				connection.remove(statement);
 			}
 		}
+		removeCount += statements.length;
 	}
 
 	/**
@@ -242,6 +267,7 @@ public abstract class SailTest {
 				);
 			}
 		}
+		++selectCount;
 	}
 
 	/**
@@ -268,6 +294,12 @@ public abstract class SailTest {
 				stmt2,
 				stmt3
 		);
+
+		logger.info(
+				"added 3 statement to test in {}",
+				watch.stopAndShow()
+		);
+		watch.reset();
 
 		assertSelect(
 				SPO_QUERY,

@@ -1,6 +1,7 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.utils.sail.filter.LuceneMatchExprSailFilter;
 import com.the_qa_company.q_endpoint.utils.sail.filter.PredicateSailFilter;
 import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.q_endpoint.utils.sail.linked.SimpleLinkedSail;
@@ -11,23 +12,19 @@ import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class MultiLanguageTypedLuceneIndexTest extends SailTest {
-	private final String[] languages = {
-			"fr",
-			"en",
-			"de",
-			"es"
-	};
-
-	private final String[] types = {
-			"type1",
-			"type2",
-			"type3"
-	};
+	private static final List<String> languages = IntStream
+			.range(0, 27)
+			.mapToObj(i -> "l" + i)
+			.collect(Collectors.toList());
+	private static final List<String> types = IntStream
+			.range(0, 2)
+			.mapToObj(i -> "type" + i)
+			.collect(Collectors.toList());
 
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
@@ -40,12 +37,12 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 				new MultiTypeFilteringSail(
 						// type IRI to define the type
 						iri("typeof"),
-						Arrays.stream(types).map(type ->
+						types.stream().map(type ->
 								// redirection of the type ex:type1
 								new MultiTypeFilteringSail.TypedSail(
 										// link each language sails
 										SimpleLinkedSail.linkSails(
-												Arrays.stream(languages).map(language ->
+												languages.stream().map(language ->
 														new LuceneSailBuilder()
 																.withDir(dir + type + "-" + language)
 																.withId(NAMESPACE + "lucene" + type + "_" + language)
@@ -61,6 +58,7 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 				hybridStore,
 				new PredicateSailFilter(iri("text"))
 						.or(new PredicateSailFilter(iri("typeof")))
+						.and(new LuceneMatchExprSailFilter())
 		);
 	}
 
@@ -90,13 +88,19 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 			connection.commit();
 		}
 
-		logger.debug("add {} subjects to test, with {} types and {} languages", index, types.length, languages.length);
+		logger.info(
+				"added {} subjects to test, with {} types and {} languages in {}",
+				index,
+				types.size(),
+				languages.size(),
+				watch.stopAndShow()
+		);
+		watch.reset();
 	}
 
 	@Test
 	public void multiLanguageTypedIndexTest() {
 		injectTriples();
-
 		int index = 0;
 
 		for (String type : types) {
@@ -124,13 +128,11 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 				index++;
 			}
 		}
-
 	}
 
 	@Test
-	public void multiLanguageTypedIndexOneRequestTest() {
+	public void multiLanguageTypedIndexOneRequestUnionTest() {
 		injectTriples();
-
 		int index = 0;
 
 		List<String> queries = new ArrayList<>();
@@ -158,6 +160,36 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 						"}"
 				),
 				rows.toArray(SelectResultRow[]::new));
+
+	}
+
+	@Test
+	public void multiLanguageTypedIndexOneRequestJoinTest() {
+		injectTriples();
+		int index = 0;
+
+		List<String> queries = new ArrayList<>();
+		SelectResultRow row = new SelectResultRow();
+
+		for (String type : types) {
+			for (String lang : languages) {
+				queries.add(
+						new LuceneSelectWhereBuilder("r" + index, type + lang + index)
+								.withIndexId("ex:lucene" + type + "_" + lang)
+								.build()
+				);
+				row.withValue("r" + index, iri("subj" + index));
+				index++;
+			}
+		}
+
+		assertSelect(
+				joinLines(
+						"SELECT * {",
+						String.join("\n", queries),
+						"}"
+				),
+				row);
 
 	}
 }
