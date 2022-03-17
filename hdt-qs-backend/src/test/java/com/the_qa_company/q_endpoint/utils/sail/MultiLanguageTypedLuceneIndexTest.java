@@ -1,6 +1,8 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
+import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
 import com.the_qa_company.q_endpoint.utils.sail.filter.LuceneMatchExprSailFilter;
 import com.the_qa_company.q_endpoint.utils.sail.filter.PredicateSailFilter;
 import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
@@ -10,21 +12,51 @@ import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@RunWith(Parameterized.class)
 public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 	private static final List<String> languages = IntStream
-			.range(0, 27)
-			.mapToObj(i -> "l" + i)
+			.range(0, 2)
+			.mapToObj(MultiLanguageTypedLuceneIndexTest::stringNameOfInt)
 			.collect(Collectors.toList());
 	private static final List<String> types = IntStream
 			.range(0, 2)
-			.mapToObj(i -> "type" + i)
+			.mapToObj(MultiLanguageTypedLuceneIndexTest::stringNameOfInt)
 			.collect(Collectors.toList());
+
+	/**
+	 * create a lowercase name from a number, to create string without any number in it
+	 * @param i id
+	 * @return string
+	 */
+	private static String stringNameOfInt(int i) {
+		String table = "abcdefghijklmnopqrstuvwxyz";
+		StringBuilder out = new StringBuilder();
+		int c = i;
+		do {
+			out.append(table.charAt(c % table.length()));
+			c /= table.length();
+		} while (c != 0);
+		return out.toString();
+	}
+
+	@Parameterized.Parameters(name = "WithMerge {0}")
+	public static Collection<Object> params() {
+		return Arrays.asList(false, true);
+	}
+	private final boolean mergeBefore;
+	public MultiLanguageTypedLuceneIndexTest(boolean mergeBefore) {
+		this.mergeBefore = mergeBefore;
+	}
 
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
@@ -96,6 +128,20 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 				watch.stopAndShow()
 		);
 		watch.reset();
+
+		if (mergeBefore) {
+			MergeRunnableStopPoint.debug = true;
+
+			hybridStore.mergeStore();
+
+			try {
+				MergeRunnable.debugWaitMerge();
+			} catch (InterruptedException e) {
+				throw new AssertionError("Can't wait merge", e);
+			}
+			MergeRunnableStopPoint.debug = false;
+
+		}
 	}
 
 	@Test

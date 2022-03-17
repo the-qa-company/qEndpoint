@@ -130,6 +130,7 @@ public abstract class SailTest {
 	protected SailRepository repository;
 	protected HDTSpecification spec;
 	protected StopWatch watch;
+	protected HybridStore hybridStore;
 	private int addCount = 0;
 	private int removeCount = 0;
 	private int selectCount = 0;
@@ -148,9 +149,9 @@ public abstract class SailTest {
 
 		configHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME);
 
-		HybridStore hybridStore = new HybridStore(
+		hybridStore = new HybridStore(
 				hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec,
-				nativeStore.getAbsolutePath() + "/", true
+				nativeStore.getAbsolutePath() + "/", false
 		);
 
 		Sail store = configStore(hybridStore);
