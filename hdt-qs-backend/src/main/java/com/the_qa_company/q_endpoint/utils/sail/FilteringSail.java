@@ -22,58 +22,109 @@ import java.util.function.Function;
  *
  * @author Antoine Willerval
  */
-public class FilteringSail implements NotifyingSail {
+public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	private File dataDir;
 	private final NotifyingSail onYesSail;
-	private final MultiInputFilteringSail onNoSail;
+	private final Consumer<Sail> endSail;
 	private final Function<SailConnection, SailFilter> filter;
+	private MultiInputFilteringSail onNoSail;
 
 	/**
 	 * create a filtering sail.
 	 *
 	 * @param onYesSail the sail if the filter returns true
-	 * @param onNoSail  the sail if the filter returns false
+	 * @param sourceSail  the sail if the filter returns false
 	 * @param filter    the filter building method (if connection required)
 	 */
-	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail onNoSail, Function<SailConnection, SailFilter> filter) {
-		this(onYesSail.getSail(), onNoSail, onYesSail.getSailConsumer(), filter);
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail sourceSail, Function<SailConnection, SailFilter> filter) {
+		this(onYesSail.getSail(), sourceSail, onYesSail.getSailConsumer(), filter);
 	}
 	/**
 	 * create a filtering sail.
 	 *
 	 * @param onYesSail the sail if the filter returns true
-	 * @param onNoSail  the sail if the filter returns false
+	 * @param sourceSail  the sail if the filter returns false
 	 * @param filter    the filter building method
 	 */
-	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail onNoSail, SailFilter filter) {
-		this(onYesSail.getSail(), onNoSail, onYesSail.getSailConsumer(), filter);
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail sourceSail, SailFilter filter) {
+		this(onYesSail.getSail(), sourceSail, onYesSail.getSailConsumer(), filter);
 	}
 	/**
 	 * create a filtering sail.
 	 *
 	 * @param onYesSail the sail if the filter returns true
-	 * @param onNoSail  the sail if the filter returns false
+	 * @param sourceSail  the sail if the filter returns false
 	 * @param endSail   a consumer to set the end sail of the onYesSail
 	 * @param filter    the filter building method (if connection required)
 	 */
-	public FilteringSail(NotifyingSail onYesSail, NotifyingSail onNoSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
-		Objects.requireNonNull(onNoSail, "onNoSail can't be null!");
+	public FilteringSail(NotifyingSail onYesSail, NotifyingSail sourceSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
 		this.onYesSail = Objects.requireNonNull(onYesSail, "onYesSail can't be null!");
-		this.onNoSail = new MultiInputFilteringSail(onNoSail, this);
-		endSail.accept(this.onNoSail);
+		this.endSail = endSail;
 		this.filter = Objects.requireNonNull(filter, "filter can't be null!");
+		if (sourceSail != null) {
+			setSourceSail(sourceSail);
+		}
 	}
 
 	/**
 	 * create a filtering sail.
 	 *
 	 * @param onYesSail the sail if the filter returns true
-	 * @param onNoSail  the sail if the filter returns false
+	 * @param sourceSail  the sail if the filter returns false
 	 * @param endSail   a consumer to set the end sail of the onYesSail
 	 * @param filter    the filter
 	 */
-	public FilteringSail(NotifyingSail onYesSail, NotifyingSail onNoSail, Consumer<Sail> endSail, SailFilter filter) {
-		this(onYesSail, onNoSail, endSail, co -> filter);
+	public FilteringSail(NotifyingSail onYesSail, NotifyingSail sourceSail, Consumer<Sail> endSail, SailFilter filter) {
+		this(onYesSail, sourceSail, endSail, co -> filter);
+	}
+
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param filter    the filter building method (if connection required)
+	 */
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, Function<SailConnection, SailFilter> filter) {
+		this(onYesSail.getSail(), null, onYesSail.getSailConsumer(), filter);
+	}
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param filter    the filter building method
+	 */
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, SailFilter filter) {
+		this(onYesSail.getSail(), null, onYesSail.getSailConsumer(), filter);
+	}
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param endSail   a consumer to set the end sail of the onYesSail
+	 * @param filter    the filter building method (if connection required)
+	 */
+	public FilteringSail(NotifyingSail onYesSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
+		this(onYesSail, null, endSail, filter);
+	}
+
+	/**
+	 * create a filtering sail.
+	 *
+	 * @param onYesSail the sail if the filter returns true
+	 * @param endSail   a consumer to set the end sail of the onYesSail
+	 * @param filter    the filter
+	 */
+	public FilteringSail(NotifyingSail onYesSail, Consumer<Sail> endSail, SailFilter filter) {
+		this(onYesSail, null, endSail, co -> filter);
+	}
+
+	public void setSourceSail(NotifyingSail sourceSail) {
+		this.onNoSail = new MultiInputFilteringSail(sourceSail, this);
+		endSail.accept(this.onNoSail);
+	}
+
+	public void setBaseSail(Sail sail) {
+		setSourceSail((NotifyingSail) sail);
 	}
 
 	@Override
@@ -163,4 +214,13 @@ public class FilteringSail implements NotifyingSail {
 		return onYesSail.getDefaultIsolationLevel();
 	}
 
+	@Override
+	public FilteringSail getSail() {
+		return this;
+	}
+
+	@Override
+	public Consumer<Sail> getSailConsumer() {
+		return this::setBaseSail;
+	}
 }
