@@ -24,7 +24,9 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SailCompilerTest {
 	@Rule
@@ -54,13 +56,18 @@ public class SailCompilerTest {
 		return new LoadData(compiledSail, compiler, locationNative);
 	}
 
+
 	private void assertLuceneSail(Sail sail, String indexId, String dir, String luceneLang) {
+		assertLuceneSail(sail, indexId, dir, luceneLang, new LuceneParam());
+	}
+	private void assertLuceneSail(Sail sail, String indexId, String dir, String luceneLang, LuceneParam param) {
 		Assert.assertTrue(sail instanceof LuceneSail);
 		LuceneSail luceneSail = (LuceneSail) sail;
 		Assert.assertEquals(indexId, luceneSail.getParameter(LuceneSail.INDEX_ID));
 		Assert.assertEquals(dir, luceneSail.getParameter(LuceneSail.LUCENE_DIR_KEY));
 		Assert.assertEquals(TupleFunctionEvaluationMode.NATIVE, luceneSail.getEvaluationMode());
 		Assert.assertEquals(luceneLang, luceneSail.getParameter(LuceneSail.INDEXEDLANG));
+		param.assertParams(luceneSail);
 	}
 
 	@Test
@@ -205,21 +212,24 @@ public class SailCompilerTest {
 				chain,
 				SailTest.NAMESPACE + "luceneIndex_fr_type1",
 				data.compiler.parseDir("${locationNative}lucene_fr_type1"),
-				"fr"
+				"fr",
+				new LuceneParam().with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127")
 		);
 		chain = ((LuceneSail) chain).getBaseSail();
 		assertLuceneSail(
 				chain,
 				SailTest.NAMESPACE + "luceneIndex_de_type1",
 				data.compiler.parseDir("${locationNative}lucene_de_type1"),
-				"de"
+				"de",
+				new LuceneParam().with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127")
 		);
 		chain = ((LuceneSail) chain).getBaseSail();
 		assertLuceneSail(
 				chain,
 				SailTest.NAMESPACE + "luceneIndex_es_type1",
 				data.compiler.parseDir("${locationNative}lucene_es_type1"),
-				"es"
+				"es",
+				new LuceneParam().with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127")
 		);
 		chain = ((LuceneSail) chain).getBaseSail();
 		Assert.assertFalse(chain instanceof LuceneSail);
@@ -232,21 +242,24 @@ public class SailCompilerTest {
 				chain,
 				SailTest.NAMESPACE + "luceneIndex_fr_type2",
 				data.compiler.parseDir("${locationNative}lucene_fr_type2"),
-				"fr"
+				"fr",
+				new LuceneParam().with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127")
 		);
 		chain = ((LuceneSail) chain).getBaseSail();
 		assertLuceneSail(
 				chain,
 				SailTest.NAMESPACE + "luceneIndex_de_type2",
 				data.compiler.parseDir("${locationNative}lucene_de_type2"),
-				"de"
+				"de",
+				new LuceneParam().with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127")
 		);
 		chain = ((LuceneSail) chain).getBaseSail();
 		assertLuceneSail(
 				chain,
 				SailTest.NAMESPACE + "luceneIndex_es_type2",
 				data.compiler.parseDir("${locationNative}lucene_es_type2"),
-				"es"
+				"es",
+				new LuceneParam().with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127")
 		);
 		chain = ((LuceneSail) chain).getBaseSail();
 		Assert.assertFalse(chain instanceof LuceneSail);
@@ -268,6 +281,16 @@ public class SailCompilerTest {
 			this.sail = sail;
 			this.compiler = compiler;
 			this.nativeDirectory = nativeDirectory;
+		}
+	}
+	private static class LuceneParam {
+		private final Map<String, String> map = new HashMap<>();
+		public LuceneParam with(String key, String value) {
+			map.put(key, value);
+			return this;
+		}
+		public void assertParams(LuceneSail sail) {
+			map.forEach((key, value) -> Assert.assertEquals(value, sail.getParameter(key)));
 		}
 	}
 }

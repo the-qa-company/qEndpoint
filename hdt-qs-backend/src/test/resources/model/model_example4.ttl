@@ -45,6 +45,10 @@ my:lucenesail_fr_type1 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_fr_type1 ;
                        mdlc:luceneLang "fr" ;
                        mdlc:dirLocation "${locationNative}lucene_fr_type1" ;
+                       mdlc:luceneParam [
+                           mdlc:paramKey "wktFields" ;
+                           mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
+                       ];
                        mdlc:luceneEvalMode "NATIVE".
 
 # Lucene Index for the my:type1 / @de literals
@@ -52,6 +56,10 @@ my:lucenesail_de_type1 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_de_type1 ;
                        mdlc:luceneLang "de" ;
                        mdlc:dirLocation "${locationNative}lucene_de_type1" ;
+                       mdlc:luceneParam [
+                           mdlc:paramKey "wktFields" ;
+                           mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
+                       ];
                        mdlc:luceneEvalMode "NATIVE".
 
 # Lucene Index for the my:type1 / @es literals
@@ -59,6 +67,10 @@ my:lucenesail_es_type1 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_es_type1 ;
                        mdlc:luceneLang "es" ;
                        mdlc:dirLocation "${locationNative}lucene_es_type1" ;
+                       mdlc:luceneParam [
+                           mdlc:paramKey "wktFields" ;
+                           mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
+                       ];
                        mdlc:luceneEvalMode "NATIVE".
 
 # Chain the Lucene indexes
@@ -78,6 +90,10 @@ my:lucenesail_fr_type2 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_fr_type2 ;
                        mdlc:luceneLang "fr" ;
                        mdlc:dirLocation "${locationNative}lucene_fr_type2" ;
+                       mdlc:luceneParam [
+                           mdlc:paramKey "wktFields" ;
+                           mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
+                       ];
                        mdlc:luceneEvalMode "NATIVE".
 
 # Lucene Index for the my:type2 / @de literals
@@ -85,6 +101,10 @@ my:lucenesail_de_type2 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_de_type2 ;
                        mdlc:luceneLang "de" ;
                        mdlc:dirLocation "${locationNative}lucene_de_type2" ;
+                       mdlc:luceneParam [
+                           mdlc:paramKey "wktFields" ;
+                           mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
+                       ];
                        mdlc:luceneEvalMode "NATIVE".
 
 # Lucene Index for the my:type2 / @es literals
@@ -92,6 +112,10 @@ my:lucenesail_es_type2 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_es_type2 ;
                        mdlc:luceneLang "es" ;
                        mdlc:dirLocation "${locationNative}lucene_es_type2" ;
+                       mdlc:luceneParam [
+                           mdlc:paramKey "wktFields" ;
+                           mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
+                       ];
                        mdlc:luceneEvalMode "NATIVE".
 
 # Chain the Lucene indexes
