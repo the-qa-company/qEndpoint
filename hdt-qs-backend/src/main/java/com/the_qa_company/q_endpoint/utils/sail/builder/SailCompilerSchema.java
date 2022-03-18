@@ -34,7 +34,7 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:paramValue
 	 */
-	public static final IRI PARAM_VALUE = iri("paramLink", "Describe a parameter value");
+	public static final IRI PARAM_VALUE = iri("paramValue", "Describe a parameter value");
 	/**
 	 * mdlc:paramLink
 	 */
@@ -118,7 +118,8 @@ public class SailCompilerSchema {
 
 	private static IRI iri(String name, String desc) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
-		DESC.put(iri, desc);
+		String old = DESC.put(iri, desc);
+		assert old == null : "Iri already registered: " + iri;
 		return iri;
 	}
 
