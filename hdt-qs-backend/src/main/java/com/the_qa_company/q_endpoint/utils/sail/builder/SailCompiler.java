@@ -18,7 +18,7 @@ import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.sail.NotifyingSail;
-import org.eclipse.rdf4j.sail.NotifyingSailConnection;
+import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -74,7 +74,7 @@ public class SailCompiler {
 		}
 		throw new SailCompilerException(value + " can't be converted to a Literal!");
 	}
-	private final MemoryStore store = new MemoryStore();
+	private Sail store;
 	private final Map<IRI, LinkedSailCompiler> compilers = new HashMap<>();
 	private final Map<String, String> dirStrings = new HashMap<>();
 
@@ -86,13 +86,14 @@ public class SailCompiler {
 	}
 
 	/**
-	 * load a RDF file describing the model
+	 * load a RDF file describing the model into a new store
 	 *
 	 * @param stream the stream to the rdf file
 	 * @param format the format of the file
 	 * @throws IOException can't read the stream
 	 */
 	public void load(InputStream stream, RDFFormat format) throws IOException {
+		setStore(new MemoryStore());
 		RDFParser parser = Rio.createParser(format);
 		try (SailConnection connection = store.getConnection()) {
 			connection.begin();
@@ -108,7 +109,7 @@ public class SailCompiler {
 	}
 
 	/**
-	 * load a RDF file describing the model
+	 * load a RDF file describing the model into a new store
 	 *
 	 * @param rdfFile the rdf file
 	 * @throws IOException can't read the stream
@@ -122,6 +123,19 @@ public class SailCompiler {
 		}
 	}
 
+	/**
+	 * set this store to compile the model
+	 * @param store the store
+	 */
+	public void setStore(Sail store) {
+		this.store = store;
+	}
+
+	/**
+	 * register a {@link #asDir(org.eclipse.rdf4j.model.Value)} directory value
+	 * @param name value key
+	 * @param value value
+	 */
 	public void registerDirString(String name, String value) {
 		if (!DIR_OPT.matcher("${"+name+"}").matches()) {
 			throw new IllegalArgumentException("Dir key should respect the pattern " + DIR_OPT);
@@ -218,6 +232,10 @@ public class SailCompiler {
 		return sail.getSail();
 	}
 
+	/**
+	 * A exception linked with the model compilation
+	 * @author Antoine Willerval
+	 */
 	public static class SailCompilerException extends RuntimeException {
 		public SailCompilerException(String message) {
 			super(message);
@@ -228,14 +246,24 @@ public class SailCompiler {
 		}
 	}
 
+	/**
+	 * Reader to read the nodes
+	 * @author Antoine Willerval
+	 */
 	public class SailCompilerReader implements Closeable {
-		private final NotifyingSailConnection connection;
+		private final SailConnection connection;
 
-		private SailCompilerReader() {
+		private SailCompilerReader() throws SailCompilerException {
+			if (store == null) {
+				throw new SailCompilerException("No store defined!");
+			}
 			connection = store.getConnection();
 			connection.begin();
 		}
 
+		/**
+		 * @return the sail compiler linked with this reader
+		 */
 		public SailCompiler getSailCompiler() {
 			return SailCompiler.this;
 		}
