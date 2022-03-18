@@ -109,6 +109,14 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 		return tripleSourceSail;
 	}
 
+	public IRI getPredicate() {
+		return predicate;
+	}
+
+	public List<TypedSail> getTypes() {
+		return types;
+	}
+
 	@Override
 	public synchronized NotifyingSailConnection getConnection() throws SailException {
 		lastTypeBuffer = new HashMap<>();

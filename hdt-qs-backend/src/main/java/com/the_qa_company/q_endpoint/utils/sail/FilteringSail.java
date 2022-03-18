@@ -206,7 +206,16 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 */
 	public SailFilter getFilter() throws SailException {
 		onNoSail.checkCreatingConnectionStarted();
-		return Objects.requireNonNull(filter.apply(onNoSail.getConnection()), "Created filter is null!");
+		return getFilter(onNoSail.getConnection());
+	}
+
+	/**
+	 * create a filter, can be used for the same connection
+	 * @param connection the connection to build the filter
+	 * @return filter
+	 */
+	public SailFilter getFilter(SailConnection connection) throws SailException {
+		return Objects.requireNonNull(filter.apply(connection), "Created filter is null!");
 	}
 
 	@Override

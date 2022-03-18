@@ -1,5 +1,5 @@
 @prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
-@prefix my: <http://example.org/#> .
+@prefix my: <http://example.org/> .
 @prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
 
 # Describe the main node to use: my:mainNode
