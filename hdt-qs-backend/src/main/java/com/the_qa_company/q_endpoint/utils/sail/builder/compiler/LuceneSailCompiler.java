@@ -9,13 +9,25 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
+import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.lucene.LuceneSailSchema;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LuceneSailCompiler extends LinkedSailCompiler {
+	private final Set<LuceneSail> sails = new HashSet<>();
 	public LuceneSailCompiler() {
 		super(SailCompilerSchema.LUCENE_TYPE);
+	}
+
+	public void reset() {
+		sails.clear();
+	}
+
+	public Set<LuceneSail> getSails() {
+		return sails;
 	}
 
 	@Override
@@ -56,6 +68,8 @@ public class LuceneSailCompiler extends LinkedSailCompiler {
 					builder.withParameter(key, value);
 				});
 
-		return builder.buildLinked();
+		LinkedSail<LuceneSail> lucene = builder.buildLinked();
+		sails.add(lucene.getSail());
+		return lucene;
 	}
 }
