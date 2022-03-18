@@ -4,6 +4,7 @@ import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.FilterLinkedSai
 import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LinkedSailCompiler;
 import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LinkedSailLinkedSailCompiler;
 import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LuceneSailCompiler;
+import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.MultiFilterLinkedSailCompiler;
 import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
@@ -81,6 +82,7 @@ public class SailCompiler {
 		registerCustomCompiler(new FilterLinkedSailCompiler());
 		registerCustomCompiler(new LinkedSailLinkedSailCompiler());
 		registerCustomCompiler(new LuceneSailCompiler());
+		registerCustomCompiler(new MultiFilterLinkedSailCompiler());
 	}
 
 	/**
@@ -304,7 +306,7 @@ public class SailCompiler {
 			List<Value> values = new ArrayList<>();
 			try (CloseableIteration<? extends Statement, SailException> it =
 						 connection.getStatements(subject, predicate, null, false)) {
-				it.stream().forEach(s -> values.add(s.getPredicate()));
+				it.stream().forEach(s -> values.add(s.getObject()));
 			}
 			return values;
 		}

@@ -1,0 +1,55 @@
+@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
+@prefix my: <http://example.org/#> .
+@prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
+
+mdlc:main mdlc:node my:mainNode .
+
+
+#		return new FilteringSail(
+#				// a filter to filter the type of the subjects
+#				new MultiTypeFilteringSail(
+#						// type IRI to define the type
+#						iri("typeof"),
+#						types.stream().map(type ->
+#								// redirection of the type ex:type1
+#								new MultiTypeFilteringSail.TypedSail(
+#										// link each language sails
+#										SimpleLinkedSail.linkSails(
+#												languages.stream().map(language ->
+#														new LuceneSailBuilder()
+#																.withDir(dir + type + "-" + language)
+#																.withId(NAMESPACE + "lucene" + type + "_" + language)
+#																.withLanguageFiltering(language)
+#																.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
+#																.build()
+#												),
+#												LuceneSail::setBaseSail
+#										),
+#										iri(type)
+#								)).collect(Collectors.toList())
+#				),
+#				hybridStore,
+#				new PredicateSailFilter(iri("text"))
+#						.or(new PredicateSailFilter(iri("typeof")))
+#						.and(new LuceneMatchExprSailFilter())
+#		);
+
+my:mainNode mdlc:type mdlc:filterNode ;
+            mdlc:paramFilter [
+                 mdlc:type mdlc:typeFilterLuceneExp ;
+                 mdlc:paramFilterAnd [
+                     mdlc:type mdlc:predicateFilter ;
+                     mdlc:typeFilterPredicate my:text ;
+                     mdlc:paramFilterOr [
+                         mdlc:type mdlc:predicateFilter ;
+                         mdlc:typeFilterPredicate my:typeof ;
+                     ]
+                 ]
+            ];
+            mdlc:paramLink my:lucenesail1 .
+
+my:lucenesail1 mdlc:type mdlc:luceneNode ;
+               search:indexid my:luceneIndex1 ;
+               mdlc:dirLocation "${locationNative}lucene1" ;
+               mdlc:luceneEvalMode "NATIVE".
+

@@ -80,6 +80,10 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI PARAM_FILTER_TYPE_TYPE_OBJECT = iri("typeFilterObject", "Describe the predicate type type param object");
 	/**
+	 * mdlc:typeFilterLuceneExp
+	 */
+	public static final IRI PARAM_FILTER_TYPE_LUCENE_EXP = iri("typeFilterLuceneExp", "Describe the lucene exp predicate type");
+	/**
 	 * mdlc:filterNode
 	 */
 	public static final IRI FILTER_TYPE = iri("filterNode", "Describe the type Filter");

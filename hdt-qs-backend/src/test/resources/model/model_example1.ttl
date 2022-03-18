@@ -6,6 +6,6 @@ mdlc:main mdlc:node my:mainNode .
 
 my:mainNode mdlc:type mdlc:luceneNode ;
             search:indexid my:luceneIndex1 ;
-            search:dirLocation "${locationNative}lucene1" ;
+            mdlc:dirLocation "${locationNative}lucene1" ;
             mdlc:luceneEvalMode "NATIVE".
 

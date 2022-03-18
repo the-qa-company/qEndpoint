@@ -1,5 +1,9 @@
 package com.the_qa_company.q_endpoint.utils.sail.builder;
 
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -28,11 +32,25 @@ public class SailCompilerTest {
 
 		MemoryStore source = new MemoryStore();
 		NotifyingSail compiledSail = compiler.compile(source);
+
+
+		ValueFactory vf = SimpleValueFactory.getInstance();
+
+		SailRepository repo = new SailRepository(compiledSail);
+		repo.init();
+		try (SailRepositoryConnection connection = repo.getConnection()) {
+			connection.add(vf.createStatement(vf.createIRI("http://aaa"), vf.createIRI("http://bbb"), vf.createIRI("http://ccc")));
+		}
 	}
 
 	@Test
-	public void loadModelTest() throws IOException, SailCompiler.SailCompilerException {
-		loadFile("model/model_example.ttl");
+	public void loadModel1Test() throws IOException, SailCompiler.SailCompilerException {
+		loadFile("model/model_example1.ttl");
+	}
+
+	@Test
+	public void loadModel2Test() throws IOException, SailCompiler.SailCompilerException {
+		loadFile("model/model_example2.ttl");
 	}
 
 	@Test
