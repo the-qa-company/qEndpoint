@@ -12,7 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -51,6 +50,16 @@ public class SailCompilerTest {
 	@Test
 	public void loadModel2Test() throws IOException, SailCompiler.SailCompilerException {
 		loadFile("model/model_example2.ttl");
+	}
+
+	@Test
+	public void loadModel3Test() throws IOException, SailCompiler.SailCompilerException {
+		loadFile("model/model_example3.ttl");
+	}
+
+	@Test
+	public void loadModel4Test() throws IOException, SailCompiler.SailCompilerException {
+		loadFile("model/model_example4.ttl");
 	}
 
 	@Test

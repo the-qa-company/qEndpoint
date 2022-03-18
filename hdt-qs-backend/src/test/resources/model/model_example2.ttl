@@ -4,36 +4,6 @@
 
 mdlc:main mdlc:node my:mainNode .
 
-
-#		return new FilteringSail(
-#				// a filter to filter the type of the subjects
-#				new MultiTypeFilteringSail(
-#						// type IRI to define the type
-#						iri("typeof"),
-#						types.stream().map(type ->
-#								// redirection of the type ex:type1
-#								new MultiTypeFilteringSail.TypedSail(
-#										// link each language sails
-#										SimpleLinkedSail.linkSails(
-#												languages.stream().map(language ->
-#														new LuceneSailBuilder()
-#																.withDir(dir + type + "-" + language)
-#																.withId(NAMESPACE + "lucene" + type + "_" + language)
-#																.withLanguageFiltering(language)
-#																.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
-#																.build()
-#												),
-#												LuceneSail::setBaseSail
-#										),
-#										iri(type)
-#								)).collect(Collectors.toList())
-#				),
-#				hybridStore,
-#				new PredicateSailFilter(iri("text"))
-#						.or(new PredicateSailFilter(iri("typeof")))
-#						.and(new LuceneMatchExprSailFilter())
-#		);
-
 my:mainNode mdlc:type mdlc:filterNode ;
             mdlc:paramFilter [
                  mdlc:type mdlc:typeFilterLuceneExp ;

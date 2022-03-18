@@ -23,7 +23,9 @@ public class MultiFilterLinkedSailCompiler extends LinkedSailCompiler {
 				SailCompiler.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE)),
 				reader.search(rnode, SailCompilerSchema.NODE).stream()
 						.map(rsnode -> typedSailOf(
-								reader.compileNode(rsnode),
+								reader.compileNode(
+										reader.searchOne(SailCompiler.asResource(rsnode), SailCompilerSchema.NODE)
+								),
 								SailCompiler.asIRI(
 										reader.searchOne(
 												SailCompiler.asResource(rsnode),
