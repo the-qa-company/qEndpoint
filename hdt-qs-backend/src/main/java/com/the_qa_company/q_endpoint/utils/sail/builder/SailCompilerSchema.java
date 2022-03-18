@@ -112,6 +112,10 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI LUCENE_TYPE_PARAM = iri("luceneParam", "Describe a Lucene param");
 	/**
+	 * mdlc:luceneReindexQuery
+	 */
+	public static final IRI LUCENE_TYPE_REINDEX_QUERY = iri("luceneReindexQuery", "Describe the Lucene reindex query");
+	/**
 	 * mdlc:dirLocation
 	 */
 	public static final IRI DIR_LOCATION = iri("dirLocation", "Describe a directory");

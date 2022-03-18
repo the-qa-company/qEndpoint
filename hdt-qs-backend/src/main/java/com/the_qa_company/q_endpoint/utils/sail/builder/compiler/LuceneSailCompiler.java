@@ -44,6 +44,10 @@ public class LuceneSailCompiler extends LinkedSailCompiler {
 				.map(reader.getSailCompiler()::asDir)
 				.ifPresent(builder::withDir);
 
+		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_REINDEX_QUERY)
+				.map(SailCompiler::asLitString)
+				.ifPresent(builder::withReindexQuery);
+
 		reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_PARAM).stream()
 				.map(SailCompiler::asResource)
 				.forEach(rsnode -> {

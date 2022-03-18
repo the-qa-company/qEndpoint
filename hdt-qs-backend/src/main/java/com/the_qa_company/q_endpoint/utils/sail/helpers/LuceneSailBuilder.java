@@ -67,6 +67,16 @@ public class LuceneSailBuilder {
 	}
 
 	/**
+	 * set the query reindexing query
+	 * @param query the query
+	 * @return this
+	 */
+	public LuceneSailBuilder withReindexQuery(String query) {
+		sail.setReindexQuery(query);
+		return this;
+	}
+
+	/**
 	 * build the sail, can't be called twice
 	 * @return the sail
 	 */
