@@ -1,0 +1,11 @@
+@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
+@prefix my: <http://example.org/#> .
+@prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
+
+mdlc:main mdlc:node my:mainNode .
+
+my:mainNode mdlc:type mdlc:luceneNode ;
+            search:indexid my:luceneIndex1 ;
+            search:dirLocation "${locationNative}lucene1" ;
+            mdlc:luceneEvalMode "NATIVE".
+

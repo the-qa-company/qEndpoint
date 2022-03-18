@@ -1,5 +1,6 @@
 package com.the_qa_company.q_endpoint.utils.sail.linked;
 
+import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.helpers.SailWrapper;
 
@@ -21,7 +22,6 @@ public class SimpleLinkedSail<S extends Sail> implements LinkedSail<S> {
 	 *
 	 * @param sails       the sails to link
 	 * @param chainMethod the link method
-	 * @param lastAction  the action to apply to the last sail (null for no action)
 	 * @param <S>         the sails type
 	 * @return the linked sail
 	 */
@@ -34,7 +34,6 @@ public class SimpleLinkedSail<S extends Sail> implements LinkedSail<S> {
 	 *
 	 * @param sails       the sails to link
 	 * @param chainMethod the link method
-	 * @param lastAction  the action to apply to the last sail (null for no action)
 	 * @param <S>         the sails type
 	 * @return the linked sail
 	 */
@@ -58,6 +57,34 @@ public class SimpleLinkedSail<S extends Sail> implements LinkedSail<S> {
 
 		// chain the last sail with the future next sail
 		return new SimpleLinkedSail<>(first, (sail) -> chainMethod.accept(lastNode, sail));
+	}
+
+	/**
+	 * create linked sails from sails
+	 *
+	 * @param sails       the sails to link
+	 * @return the linked sail
+	 */
+	public static <LS extends LinkedSail<? extends NotifyingSail>> LinkedSail<? extends NotifyingSail> linkSails(Stream<LS> sails) {
+		Iterator<LS> it = sails.iterator();
+
+		if (!it.hasNext()) {
+			throw new IllegalArgumentException("empty sails");
+		}
+
+		LS first = it.next();
+		LS last = first;
+
+		// chain the sails
+		while (it.hasNext()) {
+			LS next = it.next();
+			last.getSailConsumer().accept(next.getSail());
+			last = next;
+		}
+		final LS lastNode = last;
+
+		// chain the last sail with the future next sail
+		return new SimpleLinkedSail<>(first.getSail(), (sail) -> lastNode.getSailConsumer().accept(sail));
 	}
 
 	/**
