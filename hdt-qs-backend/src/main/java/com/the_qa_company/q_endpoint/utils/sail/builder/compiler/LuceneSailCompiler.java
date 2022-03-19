@@ -44,27 +44,30 @@ public class LuceneSailCompiler extends LinkedSailCompiler {
 		List<Value> languages = reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_LANG);
 
 		if (!languages.isEmpty()) {
-			builder.withLanguageFiltering(languages.stream().map(SailCompiler::asLitString).toArray(String[]::new));
+			builder.withLanguageFiltering(languages.stream()
+					.map(reader.getSailCompiler()::asLitString)
+					.toArray(String[]::new)
+			);
 		}
 
 		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_EVAL_MODE)
-				.map(SailCompiler::asLitString)
+				.map(reader.getSailCompiler()::asLitString)
 				.map(TupleFunctionEvaluationMode::valueOf)
 				.ifPresent(builder::withEvaluationMode);
 
 		reader.searchOneOpt(rnode, SailCompilerSchema.DIR_LOCATION)
-				.map(reader.getSailCompiler()::asDir)
+				.map(reader.getSailCompiler()::asLitString)
 				.ifPresent(builder::withDir);
 
 		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_REINDEX_QUERY)
-				.map(SailCompiler::asLitString)
+				.map(reader.getSailCompiler()::asLitString)
 				.ifPresent(builder::withReindexQuery);
 
 		reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_PARAM).stream()
 				.map(SailCompiler::asResource)
 				.forEach(rsnode -> {
-					String key = SailCompiler.asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_KEY));
-					String value = SailCompiler.asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_VALUE));
+					String key = reader.getSailCompiler().asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_KEY));
+					String value = reader.getSailCompiler().asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_VALUE));
 					builder.withParameter(key, value);
 				});
 

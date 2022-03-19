@@ -272,6 +272,25 @@ public class SailCompilerTest {
 		Assert.assertEquals("Dir string not parsed", "I love my cat", compiler.parseDir("I love ${myKey}"));
 	}
 
+	@Test
+	public void parsedStringTest() throws SailCompiler.SailCompilerException, IOException {
+		SailCompiler compiler = new SailCompiler();
+
+		try (InputStream is = getClass().getClassLoader().getResourceAsStream("model/model_param.ttl")) {
+			compiler.load(is, Rio.getParserFormatForFileName("model/model_param.ttl").orElseThrow());
+		}
+
+		MemoryStore source = new MemoryStore();
+		compiler.compile(source);
+		Assert.assertEquals(
+				"aaa my value bbb my value 2",
+				compiler.asLitString(SimpleValueFactory.getInstance().createLiteral(
+						"aaa ${test} bbb ${test2}",
+						SailCompilerSchema.PARSED_STRING_DATATYPE
+				))
+		);
+	}
+
 	private static class LoadData {
 		NotifyingSail sail;
 		SailCompiler compiler;

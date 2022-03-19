@@ -82,7 +82,7 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 			PredicateSailFilter filter = new PredicateSailFilter(predicate);
 			function = connection -> filter;
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE)) {
-			String lang = SailCompiler.asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG));
+			String lang = reader.getSailCompiler().asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG));
 			boolean acceptNoLanguageLiterals = reader.searchOneOpt(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_NO_LANG_LIT).isPresent();
 			LanguageSailFilter filter = new LanguageSailFilter(lang, acceptNoLanguageLiterals);
 			function = connection -> filter;

@@ -5,7 +5,7 @@
 mdlc:main mdlc:node my:mainNode .
 
 my:mainNode mdlc:type mdlc:luceneNode ;
-            mdlc:dirLocation "${locationNative}lucene" ;
+            mdlc:dirLocation "${locationNative}lucene"^^mdlc:parsedString ;
             mdlc:luceneParam [
                 mdlc:paramKey "wktFields" ;
                 mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;

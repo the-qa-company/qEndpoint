@@ -20,6 +20,6 @@ my:mainNode mdlc:type mdlc:filterNode ;
 
 my:lucenesail1 mdlc:type mdlc:luceneNode ;
                search:indexid my:luceneIndex1 ;
-               mdlc:dirLocation "${locationNative}lucene1" ;
+               mdlc:dirLocation "${locationNative}lucene1"^^mdlc:parsedString ;
                mdlc:luceneEvalMode "NATIVE".
 

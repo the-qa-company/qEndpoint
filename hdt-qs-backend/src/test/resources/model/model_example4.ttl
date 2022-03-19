@@ -44,7 +44,7 @@ my:multiTypeFilter mdlc:type mdlc:multiFilterNode ;
 my:lucenesail_fr_type1 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_fr_type1 ;
                        mdlc:luceneLang "fr" ;
-                       mdlc:dirLocation "${locationNative}lucene_fr_type1" ;
+                       mdlc:dirLocation "${locationNative}lucene_fr_type1"^^mdlc:parsedString ;
                        mdlc:luceneParam [
                            mdlc:paramKey "wktFields" ;
                            mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
@@ -55,7 +55,7 @@ my:lucenesail_fr_type1 mdlc:type mdlc:luceneNode ;
 my:lucenesail_de_type1 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_de_type1 ;
                        mdlc:luceneLang "de" ;
-                       mdlc:dirLocation "${locationNative}lucene_de_type1" ;
+                       mdlc:dirLocation "${locationNative}lucene_de_type1"^^mdlc:parsedString ;
                        mdlc:luceneParam [
                            mdlc:paramKey "wktFields" ;
                            mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
@@ -66,7 +66,7 @@ my:lucenesail_de_type1 mdlc:type mdlc:luceneNode ;
 my:lucenesail_es_type1 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_es_type1 ;
                        mdlc:luceneLang "es" ;
-                       mdlc:dirLocation "${locationNative}lucene_es_type1" ;
+                       mdlc:dirLocation "${locationNative}lucene_es_type1"^^mdlc:parsedString ;
                        mdlc:luceneParam [
                            mdlc:paramKey "wktFields" ;
                            mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
@@ -89,7 +89,7 @@ my:lucenechain1 mdlc:type mdlc:linkedSailNode ;
 my:lucenesail_fr_type2 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_fr_type2 ;
                        mdlc:luceneLang "fr" ;
-                       mdlc:dirLocation "${locationNative}lucene_fr_type2" ;
+                       mdlc:dirLocation "${locationNative}lucene_fr_type2"^^mdlc:parsedString ;
                        mdlc:luceneParam [
                            mdlc:paramKey "wktFields" ;
                            mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
@@ -100,7 +100,7 @@ my:lucenesail_fr_type2 mdlc:type mdlc:luceneNode ;
 my:lucenesail_de_type2 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_de_type2 ;
                        mdlc:luceneLang "de" ;
-                       mdlc:dirLocation "${locationNative}lucene_de_type2" ;
+                       mdlc:dirLocation "${locationNative}lucene_de_type2"^^mdlc:parsedString ;
                        mdlc:luceneParam [
                            mdlc:paramKey "wktFields" ;
                            mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;
@@ -111,7 +111,7 @@ my:lucenesail_de_type2 mdlc:type mdlc:luceneNode ;
 my:lucenesail_es_type2 mdlc:type mdlc:luceneNode ;
                        search:indexid my:luceneIndex_es_type2 ;
                        mdlc:luceneLang "es" ;
-                       mdlc:dirLocation "${locationNative}lucene_es_type2" ;
+                       mdlc:dirLocation "${locationNative}lucene_es_type2"^^mdlc:parsedString ;
                        mdlc:luceneParam [
                            mdlc:paramKey "wktFields" ;
                            mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ;

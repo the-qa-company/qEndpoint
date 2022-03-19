@@ -26,19 +26,19 @@ my:mainNode mdlc:type mdlc:filterNode ;
 my:lucenesail_fr mdlc:type mdlc:luceneNode ;
                  search:indexid my:luceneIndex_fr ;
                  mdlc:luceneLang "fr" ;
-                 mdlc:dirLocation "${locationNative}lucene1" ;
+                 mdlc:dirLocation "${locationNative}lucene1"^^mdlc:parsedString ;
                  mdlc:luceneEvalMode "NATIVE".
 
 my:lucenesail_de mdlc:type mdlc:luceneNode ;
                  search:indexid my:luceneIndex_de ;
                  mdlc:luceneLang "de" ;
-                 mdlc:dirLocation "${locationNative}lucene2" ;
+                 mdlc:dirLocation "${locationNative}lucene2"^^mdlc:parsedString ;
                  mdlc:luceneEvalMode "NATIVE".
 
 my:lucenesail_es mdlc:type mdlc:luceneNode ;
                  search:indexid my:luceneIndex_es ;
                  mdlc:luceneLang "es" ;
-                 mdlc:dirLocation "${locationNative}lucene3" ;
+                 mdlc:dirLocation "${locationNative}lucene3"^^mdlc:parsedString ;
                  mdlc:luceneEvalMode "NATIVE".
 
 my:lucenechain1 mdlc:type mdlc:linkedSailNode ;

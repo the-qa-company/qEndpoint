@@ -36,6 +36,14 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI PARAM_VALUE = iri("paramValue", "Describe a parameter value");
 	/**
+	 * mdlc:dirParam
+	 */
+	public static final IRI PARSED_STRING_PARAM = iri("parsedStringParam", "Describe a parsed string param");
+	/**
+	 * mdlc:parsedString
+	 */
+	public static final IRI PARSED_STRING_DATATYPE = iri("parsedString", "Describe a parsed string datatype");
+	/**
 	 * mdlc:paramLink
 	 */
 	public static final IRI PARAM_LINK = iri("paramLink", "Describe a node param linked sails");

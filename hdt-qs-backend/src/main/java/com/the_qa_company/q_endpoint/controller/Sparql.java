@@ -167,6 +167,7 @@ public class Sparql {
 			}
 
 			SailCompiler compiler = new SailCompiler();
+			compiler.registerDirString("locationNative", locationNative);
 			LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) compiler.getCompiler(SailCompilerSchema.LUCENE_TYPE);
 			luceneCompiler.reset();
 			InputStream stream;

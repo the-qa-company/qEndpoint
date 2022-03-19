@@ -37,7 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SailCompiler {
-	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([a-zA-Z_]+)}");
+	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([a-zA-Z_0-9]+)}");
 	/**
 	 * convert a {@link org.eclipse.rdf4j.model.Value} to an {@link org.eclipse.rdf4j.model.IRI}
 	 * @param value the value
@@ -61,18 +61,6 @@ public class SailCompiler {
 			return (Resource) value;
 		}
 		throw new SailCompilerException(value + " can't be converted to a Resource!");
-	}
-	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to a String
-	 * @param value the value
-	 * @return the string
-	 * @throws SailCompilerException if this value isn't of the right type
-	 */
-	public static String asLitString(Value value) throws SailCompilerException {
-		if (value.isLiteral()) {
-			return ((Literal) value).getLabel();
-		}
-		throw new SailCompilerException(value + " can't be converted to a Literal!");
 	}
 	private Sail store;
 	private final Map<IRI, LinkedSailCompiler> compilers = new HashMap<>();
@@ -132,7 +120,8 @@ public class SailCompiler {
 	}
 
 	/**
-	 * register a {@link #asDir(org.eclipse.rdf4j.model.Value)} directory value
+	 * register a {@link com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema#PARSED_STRING_DATATYPE}
+	 * parsed value
 	 * @param name value key
 	 * @param value value
 	 */
@@ -144,13 +133,22 @@ public class SailCompiler {
 	}
 
 	/**
-	 * parse a directory and add {@literal ${key}} into value from {@link #registerDirString(String, String)}
-	 * @param dir the directory value to parse
-	 * @return the parsed dir
-	 * @throws SailCompilerException if a value can't be found
+	 * convert a {@link org.eclipse.rdf4j.model.Value} to a String
+	 * @param value the value
+	 * @return the string
+	 * @throws SailCompilerException if this value isn't of the right type
 	 */
-	public String asDir(Value dir) throws SailCompilerException {
-		return parseDir(asLitString(dir));
+	public String asLitString(Value value) throws SailCompilerException {
+		if (value.isLiteral()) {
+			Literal lit = (Literal) value;
+			String label = lit.getLabel();
+			if (SailCompilerSchema.PARSED_STRING_DATATYPE.equals(lit.getDatatype())) {
+				return parseDir(label);
+			} else {
+				return label;
+			}
+		}
+		throw new SailCompilerException(value + " can't be converted to a Literal!");
 	}
 	/**
 	 * parse a directory and add {@literal ${key}} into value from {@link #registerDirString(String, String)}
@@ -218,6 +216,15 @@ public class SailCompiler {
 	public NotifyingSail compile(NotifyingSail source) throws SailCompilerException {
 		LinkedSail<? extends NotifyingSail> sail;
 		try (SailCompilerReader reader = new SailCompilerReader()) {
+			// read parsedString properties
+			reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.PARSED_STRING_PARAM)
+					.stream().map(SailCompiler::asResource)
+					.forEach(rnode -> {
+						String key = asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_KEY));
+						String value = asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_VALUE));
+						dirStrings.put(key, value);
+					});
+
 			Optional<Value> node = reader.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.NODE);
 			if (node.isEmpty()) {
 				return source;
