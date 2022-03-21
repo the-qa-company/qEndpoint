@@ -179,8 +179,12 @@ public class Sparql {
 				Files.delete(Paths.get(tempRDF.getAbsolutePath()));
 			}
 
+			hybridStore = new HybridStore(locationHdt, hdtIndexName, spec, locationNative, false);
+			hybridStore.setThreshold(threshold);
+			logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
+
 			SailCompiler compiler = new SailCompiler();
-			compiler.registerDirString("locationNative", locationNative);
+			compiler.registerDirObject(hybridStore.getHybridStoreFiles());
 			LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) compiler.getCompiler(SailCompilerSchema.LUCENE_TYPE);
 			luceneCompiler.reset();
 			InputStream stream;
@@ -195,10 +199,6 @@ public class Sparql {
 			try (InputStream fstream = stream) {
 				compiler.load(fstream, Rio.getParserFormatForFileName(repoModel).orElseThrow());
 			}
-
-			hybridStore = new HybridStore(locationHdt, hdtIndexName, spec, locationNative, false);
-			hybridStore.setThreshold(threshold);
-			logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
 
 			repository = new SailRepository(compiler.compile(hybridStore));
 			repository.init();

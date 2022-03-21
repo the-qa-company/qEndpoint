@@ -1,5 +1,6 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
+import com.the_qa_company.q_endpoint.utils.sail.builder.ParsedStringValue;
 import org.rdfhdt.hdt.hdt.HDTVersion;
 
 /**
@@ -45,6 +46,7 @@ public class HybridStoreFiles {
     /**
      * @return the hdt storage dir
      */
+    @ParsedStringValue("locationHDT")
     public String getLocationHdt() {
         return locationHdt;
     }
@@ -52,6 +54,7 @@ public class HybridStoreFiles {
     /**
      * @return the native storage dir
      */
+    @ParsedStringValue("locationNative")
     public String getLocationNative() {
         return locationNative;
     }
@@ -59,6 +62,7 @@ public class HybridStoreFiles {
     /**
      * @return the native store A dir
      */
+    @ParsedStringValue("nativeStore.A")
     public String getNativeStoreA() {
         return locationNative + "A";
     }
@@ -66,6 +70,7 @@ public class HybridStoreFiles {
     /**
      * @return the native store B dir
      */
+    @ParsedStringValue("nativeStore.B")
     public String getNativeStoreB() {
         return locationNative + "B";
     }
@@ -73,6 +78,7 @@ public class HybridStoreFiles {
     /**
      * @return the native store check file
      */
+    @ParsedStringValue("nativeStore.which_store")
     public String getWhichStore() {
         return locationNative + "which_store.check";
     }
@@ -80,6 +86,7 @@ public class HybridStoreFiles {
     /**
      * @return the temp triples file
      */
+    @ParsedStringValue("hybridstore.tempTriples")
     public String getTempTriples() {
         return locationNative + "tempTriples.nt";
     }
@@ -87,6 +94,7 @@ public class HybridStoreFiles {
     /**
      * @return the HDT bit subject (X) file
      */
+    @ParsedStringValue("hybridstore.bitX")
     public String getHDTBitX() {
         return locationHdt + "bitX";
     }
@@ -94,6 +102,7 @@ public class HybridStoreFiles {
     /**
      * @return the HDT bit predicate (Y) file
      */
+    @ParsedStringValue("hybridstore.bitY")
     public String getHDTBitY() {
         return locationHdt + "bitY";
     }
@@ -101,6 +110,7 @@ public class HybridStoreFiles {
     /**
      * @return the HDT bit objects (Z) file
      */
+    @ParsedStringValue("hybridstore.bitZ")
     public String getHDTBitZ() {
         return locationHdt + "bitZ";
     }
@@ -108,6 +118,7 @@ public class HybridStoreFiles {
     /**
      * @return the HDT file
      */
+    @ParsedStringValue("hdt.location")
     public String getHDTIndex() {
         return getHDTIndex(locationHdt, hdtIndexName);
     }
@@ -115,6 +126,7 @@ public class HybridStoreFiles {
     /**
      * @return the HDT file with HDT version
      */
+    @ParsedStringValue("hdt.indexLocation")
     public String getHDTIndexV11() {
         return getHDTIndexV11(locationHdt, hdtIndexName);
     }
@@ -122,6 +134,7 @@ public class HybridStoreFiles {
     /**
      * @return the new HDT file
      */
+    @ParsedStringValue("hdt.new.location")
     public String getHDTNewIndex() {
         return locationHdt + hdtIndexName + ".new.hdt";
     }
@@ -129,6 +142,7 @@ public class HybridStoreFiles {
     /**
      * @return the diff HDT file
      */
+    @ParsedStringValue("hdt.new.diffLocation")
     public String getHDTNewIndexDiff() {
         return locationHdt + hdtIndexName + ".diff.new.hdt";
     }
@@ -136,6 +150,7 @@ public class HybridStoreFiles {
     /**
      * @return the new HDT file with HDT version
      */
+    @ParsedStringValue("hdt.new.diffIndexLocation")
     public String getHDTNewIndexV11() {
         return locationHdt + hdtIndexName + ".new.hdt" + HDTVersion.get_index_suffix("-");
     }
@@ -143,6 +158,7 @@ public class HybridStoreFiles {
     /**
      * @return the delete triple {@link com.the_qa_company.q_endpoint.utils.BitArrayDisk} file
      */
+    @ParsedStringValue("hybridstore.deleteBitmap")
     public String getTripleDeleteArr() {
         return this.locationHdt + "triples-delete.arr";
     }
@@ -150,6 +166,7 @@ public class HybridStoreFiles {
     /**
      * @return the temp delete triple {@link com.the_qa_company.q_endpoint.utils.BitArrayDisk} file
      */
+    @ParsedStringValue("hybridstore.tempDeleteBitmap")
     public String getTripleDeleteTempArr() {
         return this.locationHdt + "triples-delete-temp.arr";
     }
@@ -157,6 +174,7 @@ public class HybridStoreFiles {
     /**
      * @return the copy delete triple {@link com.the_qa_company.q_endpoint.utils.BitArrayDisk} file
      */
+    @ParsedStringValue("hybridstore.tempDeleteBitmapCopy")
     public String getTripleDeleteCopyArr() {
         return this.locationHdt + "triples-delete-cpy.arr";
     }
@@ -164,6 +182,7 @@ public class HybridStoreFiles {
     /**
      * @return the temp RDF delete file
      */
+    @ParsedStringValue("hybridstore.tempRDFOutput")
     public String getRDFTempOutput() {
         return locationHdt + "temp.nt";
     }
@@ -171,6 +190,7 @@ public class HybridStoreFiles {
     /**
      * @return the temp HDT file
      */
+    @ParsedStringValue("hybridstore.tempHDTOutput")
     public String getHDTTempOutput() {
         return locationHdt + "temp.hdt";
     }
@@ -178,6 +198,7 @@ public class HybridStoreFiles {
     /**
      * @return the previous merge file marker
      */
+    @ParsedStringValue("hybridstore.previousMerge")
     public String getPreviousMergeFile() {
         return locationHdt + "previous_merge";
     }

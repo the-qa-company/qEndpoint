@@ -40,7 +40,7 @@ public class SailCompilerTest {
 			compiler.load(is, Rio.getParserFormatForFileName(fileName).orElseThrow());
 		}
 
-		compiler.registerDirString("locationNative", locationNative);
+		compiler.registerDirObject(new ParsedStringObject(locationNative));
 
 		MemoryStore source = new MemoryStore();
 		NotifyingSail compiledSail = compiler.compile(source);
@@ -297,6 +297,14 @@ public class SailCompilerTest {
 		);
 	}
 
+	@Test
+	public void objectParsingTest() {
+		SailCompiler compiler = new SailCompiler();
+		compiler.registerDirObject(new ParsedStringObject("testLocation"));
+		Assert.assertEquals("testLocation", compiler.parseDir("${locationNative}"));
+
+	}
+
 	private static class LoadData {
 		NotifyingSail sail;
 		SailCompiler compiler;
@@ -317,5 +325,19 @@ public class SailCompilerTest {
 		public void assertParams(LuceneSail sail) {
 			map.forEach((key, value) -> Assert.assertEquals(value, sail.getParameter(key)));
 		}
+	}
+
+	private static class ParsedStringObject {
+		private final String locationNative;
+
+		public ParsedStringObject(String locationNative) {
+			this.locationNative = locationNative;
+		}
+
+		@ParsedStringValue("locationNative")
+		public String getLocationNative() {
+			return locationNative;
+		}
+
 	}
 }

@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,6 +132,24 @@ public class SailCompiler {
 			throw new IllegalArgumentException("Dir key should respect the pattern " + DIR_OPT);
 		}
 		dirStrings.put(name, value);
+	}
+
+	/**
+	 * load every method annotated with {@link com.the_qa_company.q_endpoint.utils.sail.builder.ParsedStringValue} in
+	 * an object.
+	 * @param object the object to read
+	 */
+	public void registerDirObject(Object object) {
+		for (Method m : object.getClass().getDeclaredMethods()) {
+			ParsedStringValue value = m.getAnnotation(ParsedStringValue.class);
+			if (value != null) {
+				try {
+					registerDirString(value.value(), String.valueOf(m.invoke(object)));
+				} catch (IllegalAccessException | InvocationTargetException e) {
+					throw new IllegalArgumentException("Can't read the value of the method " + m.getName(), e);
+				}
+			}
+		}
 	}
 
 	/**
