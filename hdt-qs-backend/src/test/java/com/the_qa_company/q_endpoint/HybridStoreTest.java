@@ -411,9 +411,9 @@ public class HybridStoreTest {
     }
 
     @Test
-    public void rdf4jUsedWorkflow() {
+    public void rdf4jUsedWorkflow() throws IOException {
         // not really a test, more code workflow that is used internally as one store and that can be used to debug
-        File dir = new File("./tests/native-store/A");
+        File dir = new File(tempDir.newFolder("native-store"), "A");
         try {
             FileUtils.deleteDirectory(dir);
         } catch (IOException e) {

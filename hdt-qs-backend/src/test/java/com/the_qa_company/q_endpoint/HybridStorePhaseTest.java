@@ -54,17 +54,10 @@ public class HybridStorePhaseTest {
         HDTSpecification spec = new HDTSpecification();
 //        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         logger.info("Initialize the store ... ");
-        File nativeStore = new File("tests/native-store/");
-        boolean b = FileSystemUtils.deleteRecursively(nativeStore);
-        nativeStore.mkdirs();
-        File hdtStore = new File("tests/hdt-store/");
-        FileSystemUtils.deleteRecursively(hdtStore);
-        hdtStore.mkdirs();
-        File tmp = new File("tests/hdt-store/temp.nt");
-        tmp.delete();
-        tmp.createNewFile();
-        String path = "/Users/alyhdr/Downloads/test/";
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex("tests/hdt-store/temp.nt", true, false, spec);
+        File nativeStore = tempDir.newFolder("native-store");
+        File hdtStore = tempDir.newFolder("hdt-store/");
+        File tmp = new File(hdtStore, "temp.nt");
+        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tmp.getAbsolutePath(), true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
         store = new HybridStore(

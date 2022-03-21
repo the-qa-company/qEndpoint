@@ -23,22 +23,23 @@ import java.io.IOException;
 public class Utility {
 
     public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException {
-        return createTempHdtIndex(fileName.newFile().getAbsolutePath(), empty, isBig, spec);
+        return createTempHdtIndex(new File(fileName.newFile() + ".nt").getAbsolutePath(), empty, isBig, spec);
     }
 
 
     public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec) {
         try {
-            String rdfInput = "temp.nt";
             File inputFile = new File(fileName);
             if (!empty) {
                 if (!isBig)
                     writeTempRDF(inputFile);
                 else
                     writeBigIndex(inputFile);
+            } else {
+                inputFile.createNewFile();
             }
             String baseURI = inputFile.getAbsolutePath();
-            RDFNotation notation = RDFNotation.guess(rdfInput);
+            RDFNotation notation = RDFNotation.guess(fileName);
             HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(), baseURI, notation, spec, null);
             return HDTManager.indexedHDT(hdt, null);
         } catch (IOException e) {
