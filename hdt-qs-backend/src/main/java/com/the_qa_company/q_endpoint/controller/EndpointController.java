@@ -1,23 +1,21 @@
 package com.the_qa_company.q_endpoint.controller;
 
+import org.apache.tomcat.util.http.fileupload.MultipartStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.security.Principal;
+import java.util.Arrays;
+import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3001")
 @RestController
@@ -101,18 +99,85 @@ public class EndpointController {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
     }
+    private String extractBoundary(HttpServletRequest request) {
+        String boundaryHeader = "boundary=";
+        int i = request.getContentType().indexOf(boundaryHeader)+
+                boundaryHeader.length();
+        return request.getContentType().substring(i);
+    }
 
-    @PostMapping(value = "/load")
-    public ResponseEntity<String> clearData(
-            @RequestParam(value = "file") final MultipartFile file) {
+    private String[][] readContentDispositionHeader(String header) {
+        return Arrays.stream(header.split("\n|\r"))
+                .filter(s -> !s.isEmpty())
+                .filter(s -> s.startsWith("Content-Disposition: "))
+                .map(s -> s.substring("Content-Disposition: ".length()))
+                .flatMap(s -> Arrays.stream(s.split("; ")))
+                .map(s -> s.split("=", 2))
+                .toArray(String[][]::new);
+    }
 
+    @PostMapping(value = "/load", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> clearData(HttpServletRequest request) {
+        String boundary = extractBoundary(request);
         try {
-            logger.info("Tryind to index " + file.getOriginalFilename());
-            InputStream inputStream = file.getInputStream();
-            String s = sparql.loadFile(inputStream, file.getOriginalFilename());
-            if (s.equals("error"))
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
-            return ResponseEntity.status(HttpStatus.OK).body(s);
+            MultipartStream multipartStream = new MultipartStream(request.getInputStream(),
+                    boundary.getBytes(), 1024, null);
+            boolean nextPart = multipartStream.skipPreamble();
+            while(nextPart) {
+                String header = multipartStream.readHeaders();
+                String[][] cdHeader = readContentDispositionHeader(header);
+
+                if (cdHeader.length == 0) {
+                    nextPart = multipartStream.readBoundary();
+                    continue; // not content-disposition header
+                }
+
+                String name = Arrays.stream(cdHeader)
+                        .filter(s -> s[0].equals("name"))
+                        .map(s -> s[1])
+                        .map(s -> s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)
+                        .findFirst()
+                        .orElse(null);
+
+                if (name == null || !name.equals("file")){
+                    nextPart = multipartStream.readBoundary();
+                    continue; // not the file field
+                }
+
+                String filename = Arrays.stream(cdHeader)
+                        .filter(s -> s[0].equals("filename"))
+                        .map(s -> s[1])
+                        .map(s -> s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)
+                        .findFirst()
+                        .orElse(null);
+
+                PipedInputStream pipedInputStream = new PipedInputStream();
+                PipedOutputStream pipedOutputStream = new PipedOutputStream();
+                pipedInputStream.connect(pipedOutputStream);
+                Thread readingThread = new Thread(() -> {
+                    try {
+                        multipartStream.readBodyData(pipedOutputStream);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            pipedOutputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                readingThread.start();
+
+                logger.info("Trying to index {}", filename);
+                ResponseEntity<String> out = sparql.loadFile(pipedInputStream, filename);
+                try {
+                    readingThread.join();
+                } catch (InterruptedException e) {
+                    //
+                }
+                return out;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -127,5 +192,9 @@ public class EndpointController {
     @GetMapping("/is_merging")
     public ResponseEntity<Sparql.IsMergingResult> isMerging() throws Exception {
         return ResponseEntity.status(HttpStatus.OK).body(sparql.isMerging());
+    }
+    @GetMapping("/")
+    public ResponseEntity<String> home() {
+        return ResponseEntity.status(HttpStatus.OK).body("ok");
     }
 }
