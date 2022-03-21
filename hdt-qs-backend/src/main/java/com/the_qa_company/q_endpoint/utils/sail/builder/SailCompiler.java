@@ -37,7 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SailCompiler {
-	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([a-zA-Z_0-9]+)}");
+	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([^}]+)}");
 	/**
 	 * convert a {@link org.eclipse.rdf4j.model.Value} to an {@link org.eclipse.rdf4j.model.IRI}
 	 * @param value the value
