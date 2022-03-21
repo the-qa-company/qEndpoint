@@ -272,6 +272,12 @@ public class SailCompilerTest {
 		Assert.assertEquals("Dir string not parsed", "I love my cat", compiler.parseDir("I love ${myKey}"));
 	}
 
+	@Test(expected = SailCompiler.SailCompilerException.class)
+	public void dirCompileNoKeyFailTest() throws SailCompiler.SailCompilerException {
+		SailCompiler compiler = new SailCompiler();
+		compiler.parseDir("I love ${myKey}");
+	}
+
 	@Test
 	public void parsedStringTest() throws SailCompiler.SailCompilerException, IOException {
 		SailCompiler compiler = new SailCompiler();
