@@ -753,7 +753,7 @@ public class MergeRunnable {
             File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
             theDir.mkdirs();
             String location = theDir.getAbsolutePath() + "/";
-            BitArrayDisk deleteBitmap = new BitArrayDisk(-1, new File(bitArray));
+            BitArrayDisk deleteBitmap = new BitArrayDisk(hybridStore.getHdt().getTriples().getNumberOfElements(), new File(bitArray));
             // @todo: should we not use the already mapped HDT file instead of remapping
             HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, deleteBitmap, this.hybridStore.getHDTSpec(), null);
             hdt.saveToHDT(hdtOutput, null);

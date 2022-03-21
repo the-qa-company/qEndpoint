@@ -532,8 +532,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                         if (next.hasNext()) {
                             next.next();
                             long newIndex = next.getLastTriplePosition();
-                            if (newIndex > 0)
-                                newDeleteArray.set(newIndex - 1, true);
+                            newDeleteArray.set(newIndex, true);
                         }
                     }
                 }
@@ -572,10 +571,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                     Statement st = res.next();
                     IteratorTripleString search = this.hdt.search(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());
                     if (search.hasNext()) {
-                        TripleString next = search.next();
+                        search.next();
                         long index = search.getLastTriplePosition();
                         if (index > 0)
-                            this.deleteBitMap.set(index - 1, true);
+                            this.deleteBitMap.set(index, true);
                     }
                 }
             } catch (RDF4JException | NotFoundException e) {
