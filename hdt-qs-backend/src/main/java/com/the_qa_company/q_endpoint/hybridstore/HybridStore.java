@@ -469,7 +469,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         for (long i = 0; i < tempdeleteBitMap.getNumBits(); i++) {
             if (tempdeleteBitMap.access(i)) { // means that a triple has been deleted during merge
                 // find the deleted triple in the old HDT index
-                TripleID tripleID = this.hdt.getTriples().findTriple(i + 1);
+                TripleID tripleID = this.hdt.getTriples().findTriple(i);
                 if (tripleID.isValid()) {
                     long oldSubject = tripleID.getSubject();
                     long oldPredicate = tripleID.getPredicate();

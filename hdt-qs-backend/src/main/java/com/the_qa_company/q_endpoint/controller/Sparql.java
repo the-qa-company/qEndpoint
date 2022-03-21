@@ -116,7 +116,7 @@ public class Sparql {
 
 	private HybridStore hybridStore;
 	private final Set<LuceneSail> luceneSails = new HashSet<>();
-	private SailRepository repository;
+	SailRepository repository;
 
 	public static int count = 0;
 	public static int countEquals = 0;

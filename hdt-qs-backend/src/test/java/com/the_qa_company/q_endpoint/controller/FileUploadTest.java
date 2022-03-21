@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,6 +90,11 @@ public class FileUploadTest {
         } catch (IOException e) {
             //
         }
+    }
+
+    @After
+    public void complete() {
+        sparql.repository.shutDown();
     }
 
     private InputStream stream(String file) {
