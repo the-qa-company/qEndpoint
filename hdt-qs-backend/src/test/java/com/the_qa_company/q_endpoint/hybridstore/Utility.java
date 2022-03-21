@@ -1,4 +1,4 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.hybridstore;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;

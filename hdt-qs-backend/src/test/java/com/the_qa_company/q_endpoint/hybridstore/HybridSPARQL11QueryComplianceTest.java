@@ -1,7 +1,9 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
+import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
+import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -64,7 +66,7 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
         HDTSpecification spec = new HDTSpecification();
         spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         if (this.hdt == null)
-            hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+            hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
 
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);

@@ -15,6 +15,25 @@ public class BitArrayDisk implements ModifiableBitmap {
     protected final static int LOGW = 6;
     protected final static int W = 64;
 
+    /**
+     * compute the number of the highest bit of a value
+     * @param value the value
+     * @return the number of the highest bit of value
+     */
+    static int log2(long value) {
+        if (value == 0) {
+            return 0; // Wrong, but it's private
+        }
+        long v = value;
+        int log = 0;
+
+        while (v != 0) {
+            v >>>= 1;
+            log++;
+        }
+
+        return log;
+    }
     protected long numbits;
     protected long allBits;
     protected long[] words;
@@ -72,26 +91,6 @@ public class BitArrayDisk implements ModifiableBitmap {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * compute the number of the highest bit of a value
-     * @param value the value
-     * @return the number of the highest bit of value
-     */
-    private int log2(long value) {
-        if (value == 0) {
-            return 0; // Wrong, but it's private
-        }
-        long v = value;
-        int log = 0;
-
-        while (v != 0) {
-            v >>>= 1;
-            log++;
-        }
-
-        return log;
     }
 
     /**

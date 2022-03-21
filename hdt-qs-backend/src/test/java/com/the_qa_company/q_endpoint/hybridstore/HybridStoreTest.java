@@ -1,9 +1,4 @@
-package com.the_qa_company.q_endpoint;
-
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
-import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
-import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
+package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
@@ -24,7 +19,6 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -37,7 +31,11 @@ import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -83,7 +81,7 @@ public class HybridStoreTest {
         try {
             File nativeStore = tempDir.newFolder("native-store");
             File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+            HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
             assert hdt != null;
             hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
             HybridStore hybridStore = new HybridStore(
@@ -100,7 +98,7 @@ public class HybridStoreTest {
     public void testGetConneciton() throws IOException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         HybridStore hybridStore = new HybridStore(
@@ -115,7 +113,7 @@ public class HybridStoreTest {
     public void testSailRepository() throws IOException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         SailRepository hybridStore = new SailRepository(
@@ -130,7 +128,7 @@ public class HybridStoreTest {
     public void testGetSailRepositoryConnection() throws IOException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         SailRepository hybridStore = new SailRepository(
@@ -150,7 +148,7 @@ public class HybridStoreTest {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
 
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         HybridStore hybridStore = new HybridStore(
@@ -179,7 +177,7 @@ public class HybridStoreTest {
     public void testAddStatement() throws IOException, NotFoundException, InterruptedException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -207,7 +205,7 @@ public class HybridStoreTest {
     public void testMerge() throws InterruptedException, IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -265,7 +263,7 @@ public class HybridStoreTest {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
 
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, true, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
 //            printHDT(hdt);
@@ -347,7 +345,7 @@ public class HybridStoreTest {
 
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -381,7 +379,7 @@ public class HybridStoreTest {
     public void testCommonNativeAndHdt() throws IOException, NotFoundException, InterruptedException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -554,7 +552,7 @@ public class HybridStoreTest {
     public void testIndexGradually() throws InterruptedException, IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -597,7 +595,7 @@ public class HybridStoreTest {
     public void testDelete() throws InterruptedException, NotFoundException, IOException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -634,7 +632,7 @@ public class HybridStoreTest {
     public void testIDsConversion() throws IOException, NotFoundException, InterruptedException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         System.out.println("HDT content");
@@ -685,7 +683,7 @@ public class HybridStoreTest {
     public void testDeleteWhileMerge() throws IOException, NotFoundException, InterruptedException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -727,7 +725,7 @@ public class HybridStoreTest {
     public void sparqlTest() throws IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -768,7 +766,7 @@ public class HybridStoreTest {
     public void sparqlDeleteTest() throws IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -812,7 +810,7 @@ public class HybridStoreTest {
     public void sparqlDeleteAllTest() throws IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -844,7 +842,7 @@ public class HybridStoreTest {
     public void sparqlJoinTest() throws IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
@@ -892,7 +890,7 @@ public class HybridStoreTest {
         StopWatch stopWatch = StopWatch.createStarted();
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, false, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);

@@ -1,8 +1,5 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
-import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -14,7 +11,11 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
@@ -28,7 +29,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.BiConsumer;
 

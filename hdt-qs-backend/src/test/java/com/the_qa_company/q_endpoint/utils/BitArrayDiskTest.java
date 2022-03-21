@@ -1,6 +1,4 @@
-package com.the_qa_company.q_endpoint;
-
-import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
+package com.the_qa_company.q_endpoint.utils;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -75,28 +73,13 @@ public class BitArrayDiskTest {
         }
     }
 
-    private int log2(long value) {
-        if (value == 0) {
-            return 0; // Wrong, but it's private
-        }
-        long v = value;
-        int log = 0;
-
-        while (v != 0) {
-            v >>>= 1;
-            log++;
-        }
-
-        return log;
-    }
-
     @Test
     public void testLog2() {
-        Assert.assertEquals(64, log2(-1));
+        Assert.assertEquals(64, BitArrayDisk.log2(-1));
         for (int i = 0; i < 64; i++) {
-            Assert.assertEquals(i + 1, log2(1L << i));
+            Assert.assertEquals(i + 1, BitArrayDisk.log2(1L << i));
         }
 
-        Assert.assertEquals(64, log2(-42L));
+        Assert.assertEquals(64, BitArrayDisk.log2(-42L));
     }
 }

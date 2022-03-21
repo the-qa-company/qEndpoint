@@ -1,30 +1,18 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-
-import org.apache.commons.io.FileDeleteStrategy;
-import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,16 +20,14 @@ import org.springframework.boot.test.context.ConfigFileApplicationContextInitial
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
-@SpringBootTest(classes = HybridStorePhaseTest.class)
 public class HybridStorePhaseTest {
     private static final Logger logger = LoggerFactory.getLogger(HybridStorePhaseTest.class);
 
@@ -57,7 +43,7 @@ public class HybridStorePhaseTest {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store/");
         File tmp = new File(hdtStore, "temp.nt");
-        HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tmp.getAbsolutePath(), true, false, spec);
+        HDT hdt = Utility.createTempHdtIndex(tmp.getAbsolutePath(), true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
         store = new HybridStore(

@@ -1,2 +1,0 @@
-GET http://localhost:12345/api/endpoint/sparql?query=SELECT (<http://qanswer.eu/function/parse_date>(?o, "dd-MM-yyyy") as ?date) WHERE {<http://vocabulary.semantic-web.at/cocktails/f3000285-36b0-4ffe-af90-740c2dd8fff5> <http://purl.org/dc/terms/created> ?o } LIMIT 100
-Accept: application/json

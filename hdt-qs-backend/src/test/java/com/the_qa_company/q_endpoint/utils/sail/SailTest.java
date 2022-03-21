@@ -1,7 +1,8 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
-import com.the_qa_company.q_endpoint.HybridStoreTest;
+import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -180,7 +181,7 @@ public abstract class SailTest {
 	 * @throws IOException io exception
 	 */
 	protected void configHDT(String indexLocation) throws IOException {
-		HDT hdt = com.the_qa_company.q_endpoint.Utility.createTempHdtIndex(tempDir, true, false, spec);
+		HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
 		assert hdt != null;
 		hdt.saveToHDT(indexLocation, null);
 	}

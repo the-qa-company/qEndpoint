@@ -1,13 +1,12 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 
+import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
+import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;

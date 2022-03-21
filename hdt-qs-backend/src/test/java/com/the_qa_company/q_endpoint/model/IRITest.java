@@ -1,14 +1,10 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.model;
 
-import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
+import com.the_qa_company.q_endpoint.hybridstore.Utility;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,9 +13,7 @@ import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.options.HDTSpecification;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
 
 public class IRITest {
 

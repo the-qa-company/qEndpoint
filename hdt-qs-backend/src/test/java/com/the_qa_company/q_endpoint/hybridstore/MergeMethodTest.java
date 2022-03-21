@@ -1,8 +1,5 @@
-package com.the_qa_company.q_endpoint;
+package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-import com.the_qa_company.q_endpoint.hybridstore.MergeRunnable;
-import com.the_qa_company.q_endpoint.hybridstore.MergeRunnableStopPoint;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.junit.Assert;
