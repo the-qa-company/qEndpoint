@@ -1,0 +1,45 @@
+@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
+@prefix my: <http://example.org/> .
+@prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
+
+mdlc:main mdlc:node my:mainNode .
+
+my:mainNode mdlc:type mdlc:filterNode ;
+            mdlc:paramFilter [
+                 mdlc:type mdlc:typeFilterLuceneExp ;
+                 mdlc:paramFilterAnd [
+                     mdlc:type mdlc:predicateFilter ;
+                     mdlc:typeFilterPredicate my:text ;
+                     mdlc:paramFilterOr [
+                         mdlc:type mdlc:predicateFilter ;
+                         mdlc:typeFilterPredicate my:typeof ;
+                     ]
+                 ]
+            ];
+            mdlc:paramLink my:lucenechain1 .
+
+##
+#  Lucene Chain
+#  -> fr-de-es
+##
+
+my:lucenesail_fr mdlc:type mdlc:luceneNode ;
+                 search:indexid my:luceneIndex_fr ;
+                 mdlc:luceneLang "fr" ;
+                 mdlc:dirLocation "${locationNative}lucene1"^^mdlc:parsedString ;
+                 mdlc:luceneEvalMode "NATIVE".
+
+my:lucenesail_de mdlc:type mdlc:luceneNode ;
+                 search:indexid my:luceneIndex_de ;
+                 mdlc:luceneLang "de" ;
+                 mdlc:dirLocation "${locationNative}lucene2"^^mdlc:parsedString ;
+                 mdlc:luceneEvalMode "NATIVE".
+
+my:lucenesail_es mdlc:type mdlc:luceneNode ;
+                 search:indexid my:luceneIndex_es ;
+                 mdlc:luceneLang "es" ;
+                 mdlc:dirLocation "${locationNative}lucene3"^^mdlc:parsedString ;
+                 mdlc:luceneEvalMode "NATIVE".
+
+my:lucenechain1 mdlc:type mdlc:linkedSailNode ;
+                mdlc:node my:lucenesail_fr, my:lucenesail_de, my:lucenesail_es .

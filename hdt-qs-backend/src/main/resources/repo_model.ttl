@@ -1,0 +1,24 @@
+@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
+@prefix my: <http://example.org/> .
+@prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
+
+# Describe the main node to use: my:mainNode
+mdlc:main mdlc:node my:mainNode ;
+          mdlc:parsedStringParam [
+                                     mdlc:paramKey "luceneEvalMode" ;
+                                     mdlc:paramValue "NATIVE"
+                                 ] , [
+                                     mdlc:paramKey "luceneWktFields" ;
+                                     mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"
+                                 ] .
+
+
+my:mainNode mdlc:type mdlc:luceneNode ;
+            mdlc:dirLocation "${locationNative}lucene"^^mdlc:parsedString ;
+            mdlc:luceneParam [
+                mdlc:paramKey "wktFields" ;
+                mdlc:paramValue "${luceneWktFields}"^^mdlc:parsedString ;
+            ] ;
+            mdlc:luceneReindexQuery "SELECT * {?s ?p ?o}" ;
+            mdlc:luceneEvalMode "${luceneEvalMode}"^^mdlc:parsedString.
+

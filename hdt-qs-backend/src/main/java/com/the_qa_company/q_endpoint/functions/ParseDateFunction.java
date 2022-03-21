@@ -24,6 +24,7 @@ public class ParseDateFunction implements Function {
      * return the URI 'http://qanswer.eu/function/parse_date' as a
      * String
      */
+    @Override
     public String getURI() {
         return NAMESPACE + "parse_date";
     }
@@ -36,6 +37,7 @@ public class ParseDateFunction implements Function {
      *         if more than two argument is supplied or if the supplied argument
      *         is not a literal of the right type.
      */
+    @Override
     public Value evaluate(ValueFactory valueFactory, Value... args)
             throws ValueExprEvaluationException {
         if (args.length != 2) {

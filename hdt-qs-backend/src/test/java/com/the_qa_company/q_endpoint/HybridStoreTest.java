@@ -8,7 +8,7 @@ import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -48,6 +48,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -320,7 +321,7 @@ public class HybridStoreTest {
             RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
             int count = 0;
             while (sts.hasNext()) {
-//                    System.out.println(sts.next());
+                sts.next();
                 count++;
             }
             // 1 triple hdt, 2 triples native a, 1 triple native b -1 triple removed from hdt
@@ -331,7 +332,7 @@ public class HybridStoreTest {
             sts = connection.getStatements(null, null, null, true);
             count = 0;
             while (sts.hasNext()) {
-//                    System.out.println(sts.next());
+                sts.next();
                 count++;
             }
             // 2 triples hdt, 0 triples native a, 1 triple native b
@@ -568,7 +569,7 @@ public class HybridStoreTest {
             InputStream inputStream = new FileInputStream(classLoader.getResource("cocktails.nt").getFile());
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser)) {
+            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
                 int count = 1;
                 ArrayList<Statement> stmtsAdded = new ArrayList<>();
                 while (res.hasNext()) {

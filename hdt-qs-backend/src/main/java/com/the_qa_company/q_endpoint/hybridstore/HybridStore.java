@@ -3,9 +3,8 @@ package com.the_qa_company.q_endpoint.hybridstore;
 import com.the_qa_company.q_endpoint.model.HybridStoreValueFactory;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
-
-import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
+import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -51,6 +50,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -566,7 +566,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             InputStream inputStream = new FileInputStream(hybridStoreFiles.getTempTriples());
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser)) {
+            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
                 while (res.hasNext()) {
                     Statement st = res.next();
                     IteratorTripleString search = this.hdt.searchWithId(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());

@@ -35,6 +35,9 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
 
     @Override
     public boolean hasNext() {
+        if (next != null) {
+            return true;
+        }
         // iterate over the result of hdt
         if (iterator != null) {
             while (iterator.hasNext()) {
@@ -43,7 +46,9 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
                     Resource subject = hybridStore.getHdtConverter().IdToSubjectHDTResource(tripleID.getSubject());
                     IRI predicate = hybridStore.getHdtConverter().IdToPredicateHDTResource(tripleID.getPredicate());
                     Value object = hybridStore.getHdtConverter().IdToObjectHDTResource(tripleID.getObject());
-                    logger.trace("HDT {} {} {} ",subject.stringValue(), predicate.stringValue(),object.stringValue());
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("From HDT   {} {} {} ", subject.stringValue(), predicate.stringValue(), object.stringValue());
+                    }
                     next = hybridTripleSource.getValueFactory().createStatement(subject, predicate, object);
                     return true;
                 }
@@ -56,7 +61,9 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
             Value newPred = hybridStore.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
             Value newObject = hybridStore.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
             next =  hybridTripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
-            //logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
+                if (logger.isTraceEnabled()) {
+                logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
+            }
             return true;
         }
         return false;
@@ -64,7 +71,11 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
 
     @Override
     public Statement next() {
+        if (!hasNext()) {
+            return null;
+        }
         Statement stm = hybridTripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(), next.getObject(), next.getContext());
+        next = null;
         return stm;
     }
 }

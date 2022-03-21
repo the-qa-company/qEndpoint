@@ -183,8 +183,12 @@ public enum MergeRunnableStopPoint {
             Runtime.getRuntime().halt(-1);
         }
         disableRequest = true;
-        if (lastLock != null)
-            lastLock.release();
+        if (lastLock != null) {
+            if (lastLock.isActive()) {
+                lastLock.release();
+            }
+            lastLock = null;
+        }
         throw e;
     }
 

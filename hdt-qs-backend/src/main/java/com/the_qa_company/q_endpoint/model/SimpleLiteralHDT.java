@@ -11,19 +11,19 @@ package com.the_qa_company.q_endpoint.model;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
+import javax.xml.datatype.XMLGregorianCalendar;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Optional;
-
-import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
  * A implementation of the {@link Literal} interface for HDT.
@@ -117,22 +117,25 @@ public class SimpleLiteralHDT implements Literal {
             } catch (IllegalArgumentException e) {
                 // @todo: this should be fixed, it is for example happening for Select ?o where { <http://www.wikidata.org/entity/Q29709019> ?p ?o} over wikidata
                 label = "";
-                datatype = XMLSchema.STRING;
+                datatype = XSD.STRING;
             }
         }
     }
 
+    @Override
     public String getLabel() {
         parseLiteral();
         return label;
     }
 
+    @Override
     public Optional<String> getLanguage() {
         parseLiteral();
         // System.out.println("Language "+ language);
         return Optional.ofNullable(language);
     }
 
+    @Override
     public IRI getDatatype() {
         parseLiteral();
         return datatype;
@@ -194,7 +197,7 @@ public class SimpleLiteralHDT implements Literal {
             sb.append('"').append(label).append('"');
             sb.append('@').append(language);
             return sb.toString();
-        } else if (XMLSchema.STRING.equals(datatype) || datatype == null) {
+        } else if (XSD.STRING.equals(datatype) || datatype == null) {
             StringBuilder sb = new StringBuilder(label.length() + 2);
             sb.append('"').append(label).append('"');
             return sb.toString();
@@ -210,48 +213,64 @@ public class SimpleLiteralHDT implements Literal {
         return hdtID;
     }
 
+    @Override
     public String stringValue() {
         return getLabel();
     }
 
+    @Override
     public boolean booleanValue() {
         return XMLDatatypeUtil.parseBoolean(getLabel());
     }
 
+    @Override
     public byte byteValue() {
         return XMLDatatypeUtil.parseByte(getLabel());
     }
 
+    @Override
     public short shortValue() {
         return XMLDatatypeUtil.parseShort(getLabel());
     }
 
+    @Override
     public int intValue() {
         // System.out.println("PARSE "+XMLDatatypeUtil.parseInt(getLabel()));
         return XMLDatatypeUtil.parseInt(getLabel());
     }
 
+    @Override
     public long longValue() {
         return XMLDatatypeUtil.parseLong(getLabel());
     }
 
+    @Override
     public float floatValue() {
         return XMLDatatypeUtil.parseFloat(getLabel());
     }
 
+    @Override
     public double doubleValue() {
         return XMLDatatypeUtil.parseDouble(getLabel());
     }
 
+    @Override
     public BigInteger integerValue() {
         return XMLDatatypeUtil.parseInteger(getLabel());
     }
 
+    @Override
     public BigDecimal decimalValue() {
         return XMLDatatypeUtil.parseDecimal(getLabel());
     }
 
+    @Override
     public XMLGregorianCalendar calendarValue() {
         return XMLDatatypeUtil.parseCalendar(getLabel());
+    }
+
+    @Override
+    public CoreDatatype getCoreDatatype() {
+        return CoreDatatype.from(getDatatype());
     }
 }
