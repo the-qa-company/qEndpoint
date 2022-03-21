@@ -112,7 +112,7 @@ public class HybridTripleSource implements TripleSource {
             logger.debug("Searching over HDT {} {} {}",subjectID, predicateID, objectID);
             TripleID t = new TripleID(subjectID, predicateID, objectID);
             // search with the ID to check if the triples has been deleted
-            iterator = this.hybridStore.getHdt().getTriples().searchWithId(t);
+            iterator = this.hybridStore.getHdt().getTriples().search(t);
         } else {// no need to search over hdt
             iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
         }

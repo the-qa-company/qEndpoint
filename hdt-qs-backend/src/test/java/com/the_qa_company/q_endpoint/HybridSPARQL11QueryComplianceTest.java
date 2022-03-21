@@ -103,13 +103,7 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
 
                 HDTSpecification spec = new HDTSpecification();
 
-                if (file.getName().endsWith("rdf")) {
-                    hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.RDFXML, spec, null);
-                } else if (file.getName().endsWith("ttl")) {
-                    hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.TURTLE, spec, null);
-                } else if (file.getName().endsWith("nt")) {
-                    hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.wdaqua.eu/qa", RDFNotation.NTRIPLES, spec, null);
-                }
+                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec, null);
                 assert hdt != null;
                 hdt.search("", "", "").forEachRemaining(System.out::println);
             }

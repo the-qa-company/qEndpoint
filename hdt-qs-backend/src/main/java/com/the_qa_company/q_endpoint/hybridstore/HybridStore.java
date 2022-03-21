@@ -130,7 +130,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         Optional<MergeRunnable.MergeThread<?>> mergeThread = mergeRunnable.createRestartThread();
         mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
 
-        HDT hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec);
+        HDT hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec, null);
 //        this.nativeStoreA = new MemoryStore();
 //        this.nativeStoreB = new MemoryStore();
 //        this.nativeStoreA.setDefaultIsolationLevel(IsolationLevels.NONE);
@@ -466,10 +466,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         boolean debugCache = true;
 
         // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
-        for (long i = 0; i < tempdeleteBitMap.getNumbits(); i++) {
+        for (long i = 0; i < tempdeleteBitMap.getNumBits(); i++) {
             if (tempdeleteBitMap.access(i)) { // means that a triple has been deleted during merge
                 // find the deleted triple in the old HDT index
-                TripleID tripleID = this.hdt.getTriples().find(i + 1);
+                TripleID tripleID = this.hdt.getTriples().findTriple(i + 1);
                 if (tripleID.isValid()) {
                     long oldSubject = tripleID.getSubject();
                     long oldPredicate = tripleID.getPredicate();
@@ -528,9 +528,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                     TripleID triple = new TripleID(subject, predicate, object);
 
                     if (!triple.isNoMatch()) {
-                        IteratorTripleID next = newHdt.getTriples().searchWithId(triple);
+                        IteratorTripleID next = newHdt.getTriples().search(triple);
                         if (next.hasNext()) {
-                            long newIndex = next.next().getIndex();
+                            next.next();
+                            long newIndex = next.getLastTriplePosition();
                             if (newIndex > 0)
                                 newDeleteArray.set(newIndex - 1, true);
                         }
@@ -569,10 +570,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
             try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
                 while (res.hasNext()) {
                     Statement st = res.next();
-                    IteratorTripleString search = this.hdt.searchWithId(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());
+                    IteratorTripleString search = this.hdt.search(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());
                     if (search.hasNext()) {
                         TripleString next = search.next();
-                        long index = next.getIndex();
+                        long index = search.getLastTriplePosition();
                         if (index > 0)
                             this.deleteBitMap.set(index - 1, true);
                     }

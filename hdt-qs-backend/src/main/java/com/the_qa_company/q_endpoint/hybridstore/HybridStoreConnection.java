@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.sail.UnknownSailTransactionStateException;
 import org.eclipse.rdf4j.sail.UpdateContext;
 import org.eclipse.rdf4j.sail.base.SailSourceConnection;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.TripleID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -388,15 +389,12 @@ public class HybridStoreConnection extends SailSourceConnection {
 
     private boolean tripleExistInHDT(TripleID tripleID) {
 
-        Iterator<TripleID> iter = hybridStore.getHdt().getTriples().searchWithId(tripleID);
+        IteratorTripleID iter = hybridStore.getHdt().getTriples().search(tripleID);
         // if iterator is empty then the given triple 't' doesn't exist in HDT
         if (iter.hasNext()) {
-            TripleID next = iter.next();
-            long index = next.getIndex();
-            if (index != 0) {
-                boolean res = !this.hybridStore.getDeleteBitMap().access(index - 1);
-                return res;
-            }
+            iter.next();
+            long index = iter.getLastTriplePosition();
+            return !this.hybridStore.getDeleteBitMap().access(index);
         }
         return false;
     }
@@ -404,15 +402,15 @@ public class HybridStoreConnection extends SailSourceConnection {
     private void assignBitMapDeletes(TripleID tripleID, Resource subj, IRI pred, Value obj) throws SailException {
 
         if (tripleID.getSubject() != -1 && tripleID.getPredicate() != -1 && tripleID.getObject() != -1) {
-            Iterator<TripleID> iter = hybridStore.getHdt().getTriples().searchWithId(tripleID);
-            long index = -1;
+            IteratorTripleID iter = hybridStore.getHdt().getTriples().search(tripleID);
 
-            if (iter.hasNext())
-                index = iter.next().getIndex();
-            if (index != -1) {
-                this.hybridStore.getDeleteBitMap().set(index - 1, true);
+            if (iter.hasNext()) {
+                iter.next();
+                long index = iter.getLastTriplePosition();
+
+                this.hybridStore.getDeleteBitMap().set(index, true);
                 if (this.hybridStore.isMerging())
-                    this.hybridStore.getTempDeleteBitMap().set(index - 1, true);
+                    this.hybridStore.getTempDeleteBitMap().set(index, true);
             }
         } else {
             // @todo: why is this important?

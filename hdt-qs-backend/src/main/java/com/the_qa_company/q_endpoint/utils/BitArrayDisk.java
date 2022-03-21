@@ -1,12 +1,16 @@
 package com.the_qa_company.q_endpoint.utils;
 
 import org.eclipse.rdf4j.common.io.NioFile;
+import org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap;
+import org.rdfhdt.hdt.listener.ProgressListener;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 
-public class BitArrayDisk {
+public class BitArrayDisk implements ModifiableBitmap {
 
     protected final static int LOGW = 6;
     protected final static int W = 64;
@@ -144,6 +148,7 @@ public class BitArrayDisk {
         return (int) (bitIndex >>> LOGW);
     }
 
+    @Override
     public boolean access(long bitIndex) {
         if (bitIndex < 0)
             throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
@@ -164,6 +169,7 @@ public class BitArrayDisk {
         }
     }
 
+    @Override
     public void set(long bitIndex, boolean value) {
         indexUpToDate = false;
         if (bitIndex < 0)
@@ -181,6 +187,11 @@ public class BitArrayDisk {
         this.numbits = Math.max(this.numbits, bitIndex + 1);
         if (!inMemory)
             writeToDisk(words[wordIndex], wordIndex);
+    }
+
+    @Override
+    public void append(boolean value) {
+        set(numbits, value);
     }
 
     private void writeToDisk(long l, int wordIndex) {
@@ -232,6 +243,7 @@ public class BitArrayDisk {
         indexUpToDate = true;
     }
 
+    @Override
     public long rank1(long pos) {
         if (pos < 0) {
             return 0;
@@ -261,11 +273,63 @@ public class BitArrayDisk {
         return superBlockRank + blockRank + chunkRank;
     }
 
+    @Override
+    public long rank0(long pos) {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public long selectPrev1(long start) {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public long selectNext1(long start) {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public long select0(long n) {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public long select1(long n) {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
     public long countOnes() {
         return rank1(numbits);
     }
 
-    public long getNumbits() {
+    @Override
+    public long countZeros() {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public long getSizeBytes() {
+        return words.length * 8L;
+    }
+
+    @Override
+    public void save(OutputStream output, ProgressListener listener) throws IOException {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public void load(InputStream input, ProgressListener listener) throws IOException {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public String getType() {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public long getNumBits() {
         return numbits;
     }
 
@@ -319,7 +383,7 @@ public class BitArrayDisk {
 
     public String printInfo() {
         return "numWords:" + getNumWords() +
-                ", numbits: " + getNumbits() +
+                ", numbits: " + getNumBits() +
                 ", ones: " + countOnes() +
                 (inMemory ? ", inMemory: true" : "\nfile: " + output.getFile().getAbsolutePath()) +
                 (allBits <= 20 ? "\nbits: " + toString(true) : "");
