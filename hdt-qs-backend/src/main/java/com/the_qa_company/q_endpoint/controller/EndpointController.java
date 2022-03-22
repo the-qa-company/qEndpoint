@@ -7,7 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -15,7 +22,6 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3001")
 @RestController
@@ -24,7 +30,7 @@ public class EndpointController {
     private static final Logger logger = LoggerFactory.getLogger(EndpointController.class);
 
     @Autowired
-    private Sparql sparql;
+    Sparql sparql;
 
     @RequestMapping(value = "/sparql")
     public ResponseEntity<String> sparqlEndpoint(
@@ -107,7 +113,7 @@ public class EndpointController {
     }
 
     private String[][] readContentDispositionHeader(String header) {
-        return Arrays.stream(header.split("\n|\r"))
+        return Arrays.stream(header.split("[\n\r]"))
                 .filter(s -> !s.isEmpty())
                 .filter(s -> s.startsWith("Content-Disposition: "))
                 .map(s -> s.substring("Content-Disposition: ".length()))

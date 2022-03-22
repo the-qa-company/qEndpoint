@@ -11,6 +11,11 @@ public class FileUtils {
     private FileUtils() {
     }
 
+    /**
+     * delete a path recursively
+     * @param path the path to delete
+     * @throws IOException in case of error
+     */
     public static void deleteRecursively(Path path) throws IOException {
         Files.walkFileTree(path, new FileVisitor<>() {
             @Override
