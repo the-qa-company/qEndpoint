@@ -17,7 +17,7 @@ import java.util.Iterator;
 
 public class VariableToIdSubstitution implements QueryOptimizer {
 
-    private HDT hdt;
+    private final HDT hdt;
 
     public VariableToIdSubstitution(HDT hdt) {
         this.hdt = hdt;
@@ -34,7 +34,6 @@ public class VariableToIdSubstitution implements QueryOptimizer {
         @Override
         public void meet(Var var) {
             if (var.isAnonymous() && var.hasValue()) {
-                QueryModelNode parent = var.getParentNode();
                 String iriString = var.getValue().toString();
                 long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
                 int position = -1;
@@ -67,10 +66,8 @@ public class VariableToIdSubstitution implements QueryOptimizer {
 
         @Override
         public void meet(BindingSetAssignment bindings) {
-            Iterator<BindingSet> bindingSetIterable = bindings.getBindingSets().iterator();
-            while (bindingSetIterable.hasNext()) {
-                BindingSet binding = bindingSetIterable.next();
-                Iterator<String> bindingNamesIterator = binding.getBindingNames().iterator();
+            for (BindingSet binding : bindings.getBindingSets()) {
+                binding.getBindingNames().iterator();
             }
         }
     }

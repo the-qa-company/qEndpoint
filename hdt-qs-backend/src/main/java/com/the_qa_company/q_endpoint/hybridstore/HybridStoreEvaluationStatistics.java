@@ -5,8 +5,8 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 
 public class HybridStoreEvaluationStatistics extends EvaluationStatistics {
 
-    private HDTEvaluationStatistics hdtEvaluationStatistics;
-    private EvaluationStatistics nativeEvaluationStatistics;
+    private final HDTEvaluationStatistics hdtEvaluationStatistics;
+    private final EvaluationStatistics nativeEvaluationStatistics;
 
     public HybridStoreEvaluationStatistics(HDTEvaluationStatistics hdtEvaluationStatistics,
                                            EvaluationStatistics nativeEvaluationStatistics) {

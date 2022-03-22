@@ -20,9 +20,6 @@ public class SimpleLiteral2 implements Literal {
     private String language;
     private IRI datatype;
 
-    protected SimpleLiteral2() {
-    }
-
     protected SimpleLiteral2(String label) {
         this.setLabel(label);
         this.setDatatype(XSD.STRING);
@@ -87,10 +84,10 @@ public class SimpleLiteral2 implements Literal {
             } else if (!this.datatype.equals(other.getDatatype())) {
                 return false;
             } else if (this.getLanguage().isPresent() && other.getLanguage().isPresent()) {
-                return ((String) this.getLanguage().get())
-                        .equalsIgnoreCase((String) other.getLanguage().get());
+                return (this.getLanguage().get())
+                        .equalsIgnoreCase(other.getLanguage().get());
             } else {
-                return !this.getLanguage().isPresent() && !other.getLanguage().isPresent();
+                return this.getLanguage().isEmpty() && other.getLanguage().isEmpty();
             }
         } else {
             return false;

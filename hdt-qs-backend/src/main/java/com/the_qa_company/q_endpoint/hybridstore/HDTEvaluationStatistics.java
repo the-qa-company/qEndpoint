@@ -1,8 +1,5 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.hybridstore.HDTConverter;
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -12,7 +9,7 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.rdfhdt.hdt.triples.TripleID;
 
 public class HDTEvaluationStatistics extends EvaluationStatistics {
-    private HybridStore hybridStore;
+    private final HybridStore hybridStore;
 
     public HDTEvaluationStatistics(HybridStore hybridStore) {
         this.hybridStore = hybridStore;

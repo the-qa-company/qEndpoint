@@ -31,8 +31,8 @@ import org.rdfhdt.hdt.hdt.HDT;
  */
 public class HybridStoreValueFactory extends AbstractValueFactory {
 
-    private HDT hdt;
-    private ValueFactory valueFactory;
+    private final HDT hdt;
+    private final ValueFactory valueFactory;
 
     /*--------------*
      * Constructors *
@@ -42,7 +42,7 @@ public class HybridStoreValueFactory extends AbstractValueFactory {
         super();
         this.hdt = hdt;
         // @todo: this should be changed and the value factory of the store should be used
-        this.valueFactory = SimpleValueFactory.getInstance();;
+        this.valueFactory = SimpleValueFactory.getInstance();
     }
 
     /*---------*

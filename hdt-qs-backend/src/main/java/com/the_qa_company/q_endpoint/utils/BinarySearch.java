@@ -7,7 +7,7 @@ import org.rdfhdt.hdt.util.string.CharSequenceComparator;
 // Small util to find literals in the dictionary using binary search
 
 public class BinarySearch {
-    private static CharSequenceComparator comparator = new CharSequenceComparator();
+    private static final CharSequenceComparator COMPARATOR = new CharSequenceComparator();
 
     // FIRST occurrence of " in the dictionary between the indexes low and high, if not found return
     // -1
@@ -17,10 +17,10 @@ public class BinarySearch {
             int c = -1;
             if (mid != 1) {
                 String s = dictionary.idToString(mid - 1, TripleComponentRole.OBJECT).toString();
-                c = comparator.compare(string, s.substring(0, Math.min(s.length(), string.length())));
+                c = COMPARATOR.compare(string, s.substring(0, Math.min(s.length(), string.length())));
             }
             String s = dictionary.idToString(mid, TripleComponentRole.OBJECT).toString();
-            int c2 = comparator.compare(string, s.substring(0, Math.min(s.length(), string.length())));
+            int c2 = COMPARATOR.compare(string, s.substring(0, Math.min(s.length(), string.length())));
             if ((mid == 1 || c != 0) && c2 == 0) return mid;
             else if (c > 0) return first(dictionary, (mid + 1), high, string);
             else return first(dictionary, low, (mid - 1), string);
@@ -35,7 +35,7 @@ public class BinarySearch {
             int c = -1;
             if (mid != n) {
                 c =
-                        comparator.compare(
+                        COMPARATOR.compare(
                                 string,
                                 dictionary
                                         .idToString(mid + 1, TripleComponentRole.OBJECT)
@@ -43,7 +43,7 @@ public class BinarySearch {
                                         .subSequence(0, 1));
             }
             int c2 =
-                    comparator.compare(
+                    COMPARATOR.compare(
                             string,
                             dictionary.idToString(mid, TripleComponentRole.OBJECT).toString().subSequence(0, 1));
             //            System.out.println("c"+c);

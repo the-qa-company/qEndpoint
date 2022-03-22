@@ -16,10 +16,10 @@ import java.util.Iterator;
 public class HybridStoreTripleIterator implements Iterator<Statement> {
     private static final Logger logger = LoggerFactory.getLogger(HybridStoreTripleIterator.class);
 
-    private HybridStore hybridStore;
-    private HybridTripleSource hybridTripleSource;
-    private IteratorTripleID iterator;
-    private CloseableIteration<? extends Statement, SailException> repositoryResult;
+    private final HybridStore hybridStore;
+    private final HybridTripleSource hybridTripleSource;
+    private final IteratorTripleID iterator;
+    private final CloseableIteration<? extends Statement, SailException> repositoryResult;
 
     public HybridStoreTripleIterator(HybridStore hybridStore, HybridTripleSource hybridTripleSource, IteratorTripleID iter,
                                      CloseableIteration<? extends Statement,
@@ -59,9 +59,9 @@ public class HybridStoreTripleIterator implements Iterator<Statement> {
         if (this.repositoryResult != null && this.repositoryResult.hasNext()) {
             Statement stm = repositoryResult.next();
             Resource newSubj = hybridStore.getHdtConverter().rdf4jToHdtIDsubject(stm.getSubject());
-            Value newPred = hybridStore.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
+            IRI newPred = hybridStore.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
             Value newObject = hybridStore.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
-            next =  hybridTripleSource.getValueFactory().createStatement(newSubj, (IRI) newPred, newObject, stm.getContext());
+            next =  hybridTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject, stm.getContext());
                 if (logger.isTraceEnabled()) {
                 logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
             }

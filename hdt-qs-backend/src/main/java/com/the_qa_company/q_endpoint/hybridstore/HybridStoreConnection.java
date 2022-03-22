@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class HybridStoreConnection extends SailSourceConnection {
@@ -43,9 +41,9 @@ public class HybridStoreConnection extends SailSourceConnection {
     SailConnection connB_read;
     SailConnection connA_write;
     SailConnection connB_write;
-    private Lock connectionLock;
+    private final long debugId;
+    private final Lock connectionLock;
     private Lock updateLock;
-    private long debugId;
 
     public HybridStoreConnection(HybridStore hybridStore) {
         super(hybridStore, hybridStore.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());

@@ -1,7 +1,6 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
-
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -46,8 +45,8 @@ public class MergeRunnable {
          *
          * @param restarting if the step is restarting
          * @param data       if restarting == true, the return value of {@link MergeThreadReloader#reload()}
-         * @throws InterruptedException
-         * @throws IOException
+         * @throws InterruptedException in case of interruption
+         * @throws IOException in case of IO error
          */
         void run(boolean restarting, T data) throws InterruptedException, IOException;
     }
@@ -107,7 +106,7 @@ public class MergeRunnable {
     /**
      * wait for the merge to complete, if the merge was stopped because of an exception
      * (except with {@link #setStopPoint(MergeRunnableStopPoint)} exception), it is thrown inside a RuntimeException
-     * @throws InterruptedException
+     * @throws InterruptedException in case of interruption
      */
     public static void debugWaitMerge() throws InterruptedException {
         MERGE_THREAD_LOCK_MANAGER.waitForActiveLocks();
@@ -311,11 +310,10 @@ public class MergeRunnable {
     /**
      * create a lock to prevent new connection
      *
-     * @param alias alias for logs
      * @return the {@link Lock}
      */
-    private Lock createConnectionLock(String alias) {
-        Lock l = hybridStore.lockToPreventNewConnections.createLock(alias);
+    private Lock createConnectionLock() {
+        Lock l = hybridStore.lockToPreventNewConnections.createLock("translate-lock");
 
         if (MergeRunnableStopPoint.debug) {
             MergeRunnableStopPoint.setLastLock(l);
@@ -326,11 +324,10 @@ public class MergeRunnable {
     /**
      * create a lock to prevent new update
      *
-     * @param alias alias for logs
      * @return the {@link Lock}
      */
-    private Lock createUpdateLock(String alias) {
-        Lock l = hybridStore.lockToPreventNewUpdate.createLock(alias);
+    private Lock createUpdateLock() {
+        Lock l = hybridStore.lockToPreventNewUpdate.createLock("step1-lock");
 
         if (MergeRunnableStopPoint.debug) {
             MergeRunnableStopPoint.setLastLock(l);
@@ -363,7 +360,7 @@ public class MergeRunnable {
     /**
      * wait all active connection locks
      *
-     * @throws InterruptedException
+     * @throws InterruptedException in case of interruption
      */
     private void waitForActiveConnections() throws InterruptedException {
         logger.info("Waiting for connections...");
@@ -373,7 +370,7 @@ public class MergeRunnable {
     /**
      * wait all active updates locks
      *
-     * @throws InterruptedException
+     * @throws InterruptedException in case of interruption
      */
     private void waitForActiveUpdates() throws InterruptedException {
         logger.info("Waiting for updates...");
@@ -460,7 +457,7 @@ public class MergeRunnable {
      * @return previous data from step 2
      */
     private Lock reloadDataFromStep1() {
-        return createUpdateLock("step1-lock");
+        return createUpdateLock();
     }
 
     /**
@@ -480,7 +477,7 @@ public class MergeRunnable {
 
         // if we aren't restarting, create the lock, otherwise switchLock already contains the update lock
         if (!restarting) {
-            switchLock = createUpdateLock("step1-lock");
+            switchLock = createUpdateLock();
         }
         // create a lock so that new incoming connections don't do anything
         // wait for all running updates to finish
@@ -663,7 +660,7 @@ public class MergeRunnable {
         hybridStore.initTempDeleteArray();
         hybridStore.setMerging(true);
 
-        return createConnectionLock("translate-lock");
+        return createConnectionLock();
     }
 
     /**
@@ -685,7 +682,7 @@ public class MergeRunnable {
         // create a lock so that new incoming connections don't do anything
         Lock translateLock;
         if (!restarting) {
-            translateLock = createConnectionLock("translate-lock");
+            translateLock = createConnectionLock();
             // wait for all running updates to finish
             waitForActiveConnections();
         } else {
@@ -719,7 +716,7 @@ public class MergeRunnable {
         // AFTER_INDEX_V11_RENAME
 
         HDT tempHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), this.hybridStore.getHDTSpec(), null);
-        convertOldToNew(this.hybridStore.getHdt(), tempHdt);
+        convertOldToNew(tempHdt);
         this.hybridStore.resetHDT(tempHdt);
 
         // mark the triples as deleted from the temp file stored while merge
@@ -751,7 +748,7 @@ public class MergeRunnable {
         try {
             File hdtOutputFile = new File(hdtOutput);
             File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
-            theDir.mkdirs();
+            Files.createDirectories(theDir.toPath());
             String location = theDir.getAbsolutePath() + "/";
             BitArrayDisk deleteBitmap = new BitArrayDisk(hybridStore.getHdt().getTriples().getNumberOfElements(), new File(bitArray));
             // @todo: should we not use the already mapped HDT file instead of remapping
@@ -773,7 +770,7 @@ public class MergeRunnable {
         try {
             File file = new File(hdtOutput);
             File theDir = new File(file.getAbsolutePath() + "_tmp");
-            theDir.mkdirs();
+            Files.createDirectories(theDir.toPath());
             String location = theDir.getAbsolutePath() + "/";
             logger.info(location);
             logger.info(hdtInput1);
@@ -787,7 +784,7 @@ public class MergeRunnable {
             logger.info("HDT saved to file in: " + sw.stopAndShow());
             Files.delete(Paths.get(location + "dictionary"));
             Files.delete(Paths.get(location + "triples"));
-            theDir.delete();
+            Files.delete(theDir.toPath());
             Files.deleteIfExists(Paths.get(hdtInput1));
             Files.deleteIfExists(Paths.get(hdtInput1 + HDTVersion.get_index_suffix("-")));
         } catch (Exception e) {
@@ -814,9 +811,7 @@ public class MergeRunnable {
     }
 
     private void writeTempFile(RepositoryConnection connection, String file) {
-        FileOutputStream out = null;
-        try {
-            out = new FileOutputStream(file);
+        try (FileOutputStream out = new FileOutputStream(file)) {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             RepositoryResult<Statement> repositoryResult =
                     connection.getStatements(null, null, null, false);
@@ -843,14 +838,13 @@ public class MergeRunnable {
                 writer.handleStatement(stmConverted);
             }
             writer.endRDF();
-            out.close();
         } catch (IOException e) {
             e.printStackTrace();
             hybridStore.setMerging(false);
         }
     }
 
-    private void convertOldToNew(HDT oldHDT, HDT newHDT) {
+    private void convertOldToNew(HDT newHDT) {
         logger.info("Started converting IDs in the merge store");
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();

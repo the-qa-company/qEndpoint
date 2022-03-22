@@ -1,7 +1,6 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
 import com.the_qa_company.q_endpoint.utils.VariableToIdSubstitution;
-
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
@@ -34,8 +33,6 @@ import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.impl.AbstractParserQuery;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
@@ -43,18 +40,15 @@ import java.util.ArrayList;
 // @todo: are there any changes in this class except that the evaluationStatistics is using the CombinedEvaluationStatistics?
 // yes
 public class HybridQueryPreparer extends AbstractQueryPreparer {
-    private static final Logger logger = LoggerFactory.getLogger(HybridQueryPreparer.class);
 
-    HDT hdt;
     private final EvaluationStatistics evaluationStatistics;
     private final HybridTripleSource tripleSource;
-    private HybridStore hybridStore;
+    private final HDT hdt;
 
     public HybridQueryPreparer(HybridStore hybridStore, HybridTripleSource tripleSource) {
         super(tripleSource);
         this.tripleSource = tripleSource;
-        this.hybridStore = hybridStore;
-        hdt = this.hybridStore.getHdt();
+        hdt = hybridStore.getHdt();
 
         evaluationStatistics = new HybridStoreEvaluationStatistics(new HDTEvaluationStatistics(hybridStore),
                 hybridStore.getCurrentSaliStore().getEvaluationStatistics());
@@ -125,7 +119,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
         public TupleQueryResult evaluate() throws QueryEvaluationException {
             CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter1 = null;
             CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter2 = null;
-            IteratingTupleQueryResult result = null;
+            IteratingTupleQueryResult result;
             boolean allGood = false;
 
             IteratingTupleQueryResult var6;
@@ -141,24 +135,18 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
                 bindingsIter2 = this.enforceMaxQueryTime(bindingsIter1);
                 result =
                         new IteratingTupleQueryResult(
-                                new ArrayList(tupleExpr.getBindingNames()), bindingsIter2);
+                                new ArrayList<>(tupleExpr.getBindingNames()), bindingsIter2);
                 allGood = true;
                 var6 = result;
             } finally {
                 if (!allGood) {
                     try {
-                        if (result != null) {
-                            result.close();
+                        if (bindingsIter2 != null) {
+                            bindingsIter2.close();
                         }
                     } finally {
-                        try {
-                            if (bindingsIter2 != null) {
-                                bindingsIter2.close();
-                            }
-                        } finally {
-                            if (bindingsIter1 != null) {
-                                bindingsIter1.close();
-                            }
+                        if (bindingsIter1 != null) {
+                            bindingsIter1.close();
                         }
                     }
                 }

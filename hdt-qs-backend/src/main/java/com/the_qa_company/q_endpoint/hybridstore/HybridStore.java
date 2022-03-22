@@ -39,7 +39,6 @@ import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.triples.TripleID;
-import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +53,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
@@ -78,7 +78,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // bitmap used to mark deleted triples in HDT during a merge operation
     private BitArrayDisk tempdeleteBitMap;
     // setting to put the delete map only in memory, i.e don't write to disk
-    private boolean inMemDeletes;
+    private final boolean inMemDeletes;
 
     // bitmaps used to mark if the subject, predicate, object elements in HDT are used in the rdf4j delta store
     private BitArrayDisk bitX;
@@ -131,14 +131,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
 
         HDT hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec, null);
-//        this.nativeStoreA = new MemoryStore();
-//        this.nativeStoreB = new MemoryStore();
-//        this.nativeStoreA.setDefaultIsolationLevel(IsolationLevels.NONE);
-//        this.nativeStoreB.setDefaultIsolationLevel(IsolationLevels.NONE);
         this.nativeStoreA = new NativeStore(new File(getHybridStoreFiles().getNativeStoreA()), "spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(getHybridStoreFiles().getNativeStoreB()), "spoc,posc,cosp");
 
-        (new File(getHybridStoreFiles().getLocationNative())).mkdirs();
+        Files.createDirectories(Path.of(getHybridStoreFiles().getLocationNative()));
         this.checkFile = new File(getHybridStoreFiles().getWhichStore());
         // init the store before creating the check store file
         if (MergeRunnableStopPoint.debug) {
@@ -285,19 +281,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     // force access to the store via reflection, the library does not allow directly since the method is protected
     public SailStore getCurrentSaliStore() {
-        Method method = null;
         try {
-            method = getChangingStore().getClass().getDeclaredMethod("getSailStore");
+            Sail sail = getChangingStore();
+            Method method = sail.getClass().getDeclaredMethod("getSailStore");
             method.setAccessible(true);
-            return (SailStore) method.invoke(getChangingStore());
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            return (SailStore) method.invoke(sail);
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new Error("Can't getCurrentSaliStore", e);
         }
-        return null;
     }
 
     public HDT getHdt() {
@@ -427,16 +418,13 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
      * @param isRestarting if we should append to previous data
      */
     public void initTempDump(boolean isRestarting) {
-        FileOutputStream out = null;
         try {
             File file = new File(hybridStoreFiles.getTempTriples());
             if (!file.exists())
-                file.createNewFile();
-            out = new FileOutputStream(file, isRestarting);
+                Files.createFile(file.toPath());
+            FileOutputStream out = new FileOutputStream(file, isRestarting);
             this.rdfWriterTempTriples = new NTriplesWriter(out);
             this.rdfWriterTempTriples.startRDF();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -463,7 +451,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         int debugSavedObject = 0;
         int debugTotal = 0;
         StopWatch watch = new StopWatch();
-        boolean debugCache = true;
 
         // iterate over the temp array, convert the triples and mark it as deleted in the new HDT file
         for (long i = 0; i < tempdeleteBitMap.getNumBits(); i++) {
@@ -637,11 +624,9 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
         if (object != -1 && object != 0) {
             if (object <= this.hdt.getDictionary().getNshared()) {
-                if (!this.getBitX().access(object - 1))
-                    return false;
+                return this.getBitX().access(object - 1);
             } else {
-                if (!this.getBitZ().access(object - hdt.getDictionary().getNshared() - 1))
-                    return false;
+                return this.getBitZ().access(object - hdt.getDictionary().getNshared() - 1);
             }
         }
         return true;
@@ -666,7 +651,6 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     /**
      * Ask for a merge of the store.
-     * @return true if the merge was launched, false otherwise
      */
     public void mergeStore() throws MergeStartException {
         mergeStore(true);
@@ -803,26 +787,26 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     public int getExtendsTimeMergeBeginning() {
-        return getMergeRunnable().getExtendsTimeMergeBeginning();
+        return MergeRunnable.getExtendsTimeMergeBeginning();
     }
 
     public int getExtendsTimeMergeBeginningAfterSwitch() {
-        return getMergeRunnable().getExtendsTimeMergeBeginningAfterSwitch();
+        return MergeRunnable.getExtendsTimeMergeBeginningAfterSwitch();
     }
 
     public int getExtendsTimeMergeEnd() {
-        return getMergeRunnable().getExtendsTimeMergeEnd();
+        return MergeRunnable.getExtendsTimeMergeEnd();
     }
 
     public void setExtendsTimeMergeBeginning(int extendsTimeMergeBeginning) {
-        getMergeRunnable().setExtendsTimeMergeBeginning(extendsTimeMergeBeginning);
+        MergeRunnable.setExtendsTimeMergeBeginning(extendsTimeMergeBeginning);
     }
 
     public void setExtendsTimeMergeBeginningAfterSwitch(int extendsTimeMergeBeginningAfterSwitch) {
-        getMergeRunnable().setExtendsTimeMergeBeginningAfterSwitch(extendsTimeMergeBeginningAfterSwitch);
+        MergeRunnable.setExtendsTimeMergeBeginningAfterSwitch(extendsTimeMergeBeginningAfterSwitch);
     }
 
     public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
-        getMergeRunnable().setExtendsTimeMergeEnd(extendsTimeMergeEnd);
+        MergeRunnable.setExtendsTimeMergeEnd(extendsTimeMergeEnd);
     }
 }

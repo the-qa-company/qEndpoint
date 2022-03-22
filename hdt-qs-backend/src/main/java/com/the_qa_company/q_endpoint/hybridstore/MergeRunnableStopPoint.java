@@ -99,16 +99,6 @@ public enum MergeRunnableStopPoint {
     }
 
     /**
-     * unlock all the locks
-     */
-    public static void unlockAllLocks() {
-        for (MergeRunnableStopPoint point: values()) {
-            point.debugUnlock();
-            point.debugUnlockTest();
-        }
-    }
-
-    /**
      * set the last (update/read) lock during the merge
      * @param lastLock the last lock created
      */
@@ -144,15 +134,15 @@ public enum MergeRunnableStopPoint {
     /**
      * the description of the stop point
      */
-    private String description;
+    private final String description;
     /**
      * locker to wait for a step to end
      */
-    private LockManager lockManager;
+    private final LockManager lockManager;
     /**
      * lock to wait for a step to continue
      */
-    private LockManager lockManagerTest;
+    private final LockManager lockManagerTest;
     /**
      * lock to wait for a step to end
      */

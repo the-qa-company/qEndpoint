@@ -6,8 +6,8 @@ import org.eclipse.rdf4j.sail.SailException;
 
 public class CombinedNativeStoreResult implements CloseableIteration<Statement, SailException> {
 
-    private CloseableIteration<? extends Statement, SailException> repositoryResult1;
-    private CloseableIteration<? extends Statement, SailException> repositoryResult2;
+    private final CloseableIteration<? extends Statement, SailException> repositoryResult1;
+    private final CloseableIteration<? extends Statement, SailException> repositoryResult2;
 
     public CombinedNativeStoreResult(CloseableIteration<? extends Statement, SailException> repositoryResult1,
                                      CloseableIteration<? extends Statement, SailException> repositoryResult2) {
@@ -22,19 +22,22 @@ public class CombinedNativeStoreResult implements CloseableIteration<Statement, 
 
     @Override
     public Statement next() {
-        if (repositoryResult1.hasNext())
+        if (repositoryResult1.hasNext()) {
             return this.repositoryResult1.next();
-        else if (repositoryResult2.hasNext())
+        }
+        if (repositoryResult2.hasNext()) {
             return this.repositoryResult2.next();
+        }
         return null;
     }
 
     @Override
     public void remove() throws SailException {
-        if (repositoryResult1.hasNext()){
+        if (repositoryResult1.hasNext()) {
             repositoryResult1.remove();
-        } else if (repositoryResult2.hasNext())
+        } else if (repositoryResult2.hasNext()) {
             repositoryResult2.remove();
+        }
     }
 
     @Override

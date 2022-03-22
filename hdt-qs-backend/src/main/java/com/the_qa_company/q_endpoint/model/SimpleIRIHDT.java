@@ -15,7 +15,7 @@ public class SimpleIRIHDT extends AbstractIRI {
     public static final byte OBJECT_POS = 3;
     public static final byte SHARED_POS = 4;
 
-    private HDT hdt;
+    private final HDT hdt;
     private int postion;
     private long id;
     private String iriString;
@@ -80,13 +80,13 @@ public class SimpleIRIHDT extends AbstractIRI {
                                 this.id,
                                 TripleComponentRole.OBJECT);
                 if (charSequence == null) {
-                    System.out.println("NULL for ID: " + id);
+                    throw new NullPointerException("NULL for ID: " + id);
                 }
                 return charSequence.toString();
             } else if (this.postion == PREDICATE_POS) {
                 CharSequence charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
                 if (charSequence == null) {
-                    System.out.println("NULL for ID: " + id);
+                    throw new NullPointerException("NULL for ID: " + id);
                 }
                 return charSequence.toString();
             } else {
@@ -160,7 +160,9 @@ public class SimpleIRIHDT extends AbstractIRI {
     }
 
     public void convertToNonHDTIRI() {
-        toString(); // force to create the iriString field
+        if (iriString == null){
+            iriString = stringValue();
+        }
         this.id = -1;
     }
 }

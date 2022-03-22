@@ -20,9 +20,9 @@ import org.rdfhdt.hdt.hdt.HDT;
 //
 // this class makes the conversion between the different types resources
 public class HDTConverter {
-    private HybridStore hybridStore;
-    private HDT hdt;
-    private ValueFactory valueFactory = new MemValueFactory();
+    private final HybridStore hybridStore;
+    private final HDT hdt;
+    private final ValueFactory valueFactory = new MemValueFactory();
 
     public HDTConverter(HybridStore hybridStore) {
         this.hybridStore = hybridStore;
@@ -31,37 +31,34 @@ public class HDTConverter {
 
     // method to get the ID of a resource
     public long subjectToID(Resource subj) {
-        if (subj != null) {
-            // if it is a HDT IRI we do not need to make a full conversion, we already have the IDs
-            if (subj instanceof SimpleIRIHDT) {
-                long id = ((SimpleIRIHDT) subj).getId();
-                long position = ((SimpleIRIHDT) subj).getPostion();
-                if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
-                    return id;
-                }
-                String translate = "";
-                if (position == SimpleIRIHDT.PREDICATE_POS) {
-                    translate =
-                            hdt.getDictionary()
-                                    .idToString(id,
-                                            TripleComponentRole.PREDICATE)
-                                    .toString();
-                } else if (position == SimpleIRIHDT.OBJECT_POS) {
-                    translate =
-                            hdt.getDictionary()
-                                    .idToString(id,
-                                            TripleComponentRole.OBJECT)
-                                    .toString();
-                }
-                id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
-                return id;
-            } else {
-                long id = this.hdt.getDictionary().stringToId(subj.toString(), TripleComponentRole.SUBJECT);
-                return id;
-            }
-        } else {
+        if (subj == null) {
             return 0;
         }
+        if (!(subj instanceof SimpleIRIHDT)) {
+            return this.hdt.getDictionary().stringToId(subj.toString(), TripleComponentRole.SUBJECT);
+        }
+        // if it is a HDT IRI we do not need to make a full conversion, we already have the IDs
+        long id = ((SimpleIRIHDT) subj).getId();
+        long position = ((SimpleIRIHDT) subj).getPostion();
+        if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
+            return id;
+        }
+        String translate = "";
+        if (position == SimpleIRIHDT.PREDICATE_POS) {
+            translate =
+                    hdt.getDictionary()
+                            .idToString(id,
+                                    TripleComponentRole.PREDICATE)
+                            .toString();
+        } else if (position == SimpleIRIHDT.OBJECT_POS) {
+            translate =
+                    hdt.getDictionary()
+                            .idToString(id,
+                                    TripleComponentRole.OBJECT)
+                            .toString();
+        }
+        id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
+        return id;
     }
 
     public long predicateToID(IRI pred) {
@@ -170,12 +167,12 @@ public class HDTConverter {
     public IRI rdf4jToHdtIDpredicate(IRI pred) {
         String iriString = pred.toString();
         if (iriString.startsWith(("http://hdt.org/"))) {
-            long id = -1;
-            int position = -1;
+            long id;
             iriString = iriString.replace("http://hdt.org/", "");
             if (iriString.startsWith("P")) {
                 id = Long.parseLong(iriString.substring(1));
-                position = SimpleIRIHDT.PREDICATE_POS;
+            } else {
+                id = -1;
             }
             return IdToPredicateHDTResource(id);
         }
@@ -184,14 +181,15 @@ public class HDTConverter {
 
     public Value rdf4jToHdtIDobject(Value object) {
         String iriString = object.toString();
-        long id = -1;
-        int position = -1;
         if (iriString.startsWith(("http://hdt.org/"))) {
             iriString = iriString.replace("http://hdt.org/", "");
+            long id;
             if (iriString.startsWith("SO")) {
                 id = Long.parseLong(iriString.substring(2));
             } else if (iriString.startsWith("O")) {
                 id = Long.parseLong(iriString.substring(1));
+            } else {
+                id = -1;
             }
             return IdToObjectHDTResource(id);
         }

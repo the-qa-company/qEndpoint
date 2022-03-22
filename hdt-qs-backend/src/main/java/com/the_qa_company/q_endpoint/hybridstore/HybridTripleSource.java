@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 public class HybridTripleSource implements TripleSource {
     private static final Logger logger = LoggerFactory.getLogger(HybridTripleSource.class);
     private final HybridStore hybridStore;
-    ValueFactory tempFactory;
     private long numberOfCurrentTriples;
     // count the number of times rdf4j is called within a triple pattern..
     // only for debugging ...
@@ -131,8 +130,7 @@ public class HybridTripleSource implements TripleSource {
 
             @Override
             public Statement next() throws QueryEvaluationException {
-                Statement stm = tripleWithDeleteIter.next();
-                return stm;
+                return tripleWithDeleteIter.next();
             }
 
             @Override

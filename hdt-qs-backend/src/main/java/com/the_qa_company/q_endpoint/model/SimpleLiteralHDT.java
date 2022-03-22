@@ -15,7 +15,6 @@ import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
@@ -47,7 +46,7 @@ public class SimpleLiteralHDT implements Literal {
      */
     private HDT hdt;
 
-    private ValueFactory valueFactory;
+    private final ValueFactory valueFactory;
 
     /**
      * The literal's hdt ID.
@@ -73,9 +72,6 @@ public class SimpleLiteralHDT implements Literal {
      * Constructors *
      *--------------*/
 
-    protected SimpleLiteralHDT() {
-    }
-
     /**
      * Creates a new plain literal with the supplied label.
      *
@@ -97,19 +93,15 @@ public class SimpleLiteralHDT implements Literal {
     }
 
     protected void setHdtID(long id) {
-        Objects.requireNonNull(id, "Literal label cannot be null");
         this.hdtID = id;
     }
 
     protected void parseLiteral() {
         if (label == null) {
-//       System.out.println("Parse lietral "+hdtID + " -- " + hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString());
             try {
                 String literal = hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString();
                 Literal l = LiteralParser.parseLiteral(literal, valueFactory);
                 label = l.getLabel();
-//        System.out.println("Parsed literal "+label);
-//        System.out.println("Label from HDT:"+literal);
                 if (l.getLanguage().isPresent()) {
                     language = l.getLanguage().get();
                 }
@@ -167,11 +159,7 @@ public class SimpleLiteralHDT implements Literal {
                 return getLanguage().get().equalsIgnoreCase(other.getLanguage().get());
             }
             // If only one has a language, then return false
-            else if (getLanguage().isPresent() || other.getLanguage().isPresent()) {
-                return false;
-            }
-
-            return true;
+            return getLanguage().isEmpty() && other.getLanguage().isEmpty();
         }
 
         return false;
@@ -187,25 +175,19 @@ public class SimpleLiteralHDT implements Literal {
      * Returns the label of the literal with its language or datatype. Note that this method does not
      * escape the quoted label.
      *
-     * @see NTriplesUtil#toNTriplesString(Literal)
+     * @see org.eclipse.rdf4j.rio.helpers.NTriplesUtil#toNTriplesString(Literal)
      */
     @Override
     public String toString() {
         getLabel();
         if (Literals.isLanguageLiteral(this)) {
-            StringBuilder sb = new StringBuilder(label.length() + language.length() + 3);
-            sb.append('"').append(label).append('"');
-            sb.append('@').append(language);
-            return sb.toString();
+            return '"' + label + '"' +
+                    '@' + language;
         } else if (XSD.STRING.equals(datatype) || datatype == null) {
-            StringBuilder sb = new StringBuilder(label.length() + 2);
-            sb.append('"').append(label).append('"');
-            return sb.toString();
+            return '"' + label + '"';
         } else {
-            StringBuilder sb = new StringBuilder(label.length() + datatype.stringValue().length() + 6);
-            sb.append('"').append(label).append('"');
-            sb.append("^^<").append(datatype.toString()).append(">");
-            return sb.toString();
+            return '"' + label + '"' +
+                    "^^<" + datatype + ">";
         }
     }
 

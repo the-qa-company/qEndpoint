@@ -29,8 +29,8 @@ public class HDTProps {
                         hdt.getDictionary().getNobjects(),
                         hdt.getDictionary().getNobjects(),
                         "\"");
-        long start = 0;
-        long end = -1;
+        long start;
+        long end;
         // if the dictionay is spliting the objects to sections - we just have to look in the
         // NO_DATATYPE section for the blank nodes range
         if (hdt.getDictionary() instanceof MultipleSectionDictionary) {

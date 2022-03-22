@@ -2,7 +2,6 @@ package com.the_qa_company.q_endpoint.utils;
 
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.function.Consumer;
 
 public class PipedIterator<T> implements Iterator<T> {
     public static class PipedIteratorException extends RuntimeException {
