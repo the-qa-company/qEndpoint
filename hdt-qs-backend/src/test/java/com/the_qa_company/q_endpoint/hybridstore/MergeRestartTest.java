@@ -132,9 +132,9 @@ public class MergeRestartTest {
 
         // create stores dirs
         File nativeStore = new File(root, "native-store");
-        nativeStore.mkdirs();
+        Assert.assertTrue("hdtStore directory already exists!", nativeStore.mkdirs());
         File hdtStore = new File(root, "hdt-store");
-        hdtStore.mkdirs();
+        Assert.assertTrue("hdtStore directory already exists!", hdtStore.mkdirs());
         File countFile = new File(root, "count");
 
         // the number of triples we need
@@ -178,31 +178,29 @@ public class MergeRestartTest {
 
             // try basic actions before the merge step 1 starts
             MergeRunnableStopPoint.STEP1_START.debugWaitForEvent();
-            if (stopPoint.ordinal() >= MergeRunnableStopPoint.STEP1_START.ordinal()) {
-                // remove a triple from the RDF
-                executeTestRemoveRDF(countFile, hybridStore, 1, --count);
-                ++step;
+            // remove a triple from the RDF
+            executeTestRemoveRDF(countFile, hybridStore, 1, --count);
+            ++step;
 
-                // test if the count is correct
-                executeTestCount(countFile, hybridStore, store);
-                ++step;
+            // test if the count is correct
+            executeTestCount(countFile, hybridStore, store);
+            ++step;
 
-                // remove a triple from the HDT
-                executeTestRemoveHDT(countFile, hybridStore, 1, --count);
-                ++step;
+            // remove a triple from the HDT
+            executeTestRemoveHDT(countFile, hybridStore, 1, --count);
+            ++step;
 
-                // no duplicate test
-                executeTestAddRDF(countFile, hybridStore, 4, count);
-                executeTestAddHDT(countFile, hybridStore, 4, count);
+            // no duplicate test
+            executeTestAddRDF(countFile, hybridStore, 4, count);
+            executeTestAddHDT(countFile, hybridStore, 4, count);
 
-                // show the bitmap and the file value
-                logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
-                logger.debug("STEP1_TEST_BITMAP0n: {}",
-                        new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr").printInfo());
-                // test if the count is correct
-                executeTestCount(countFile, hybridStore, store);
-                ++step;
-            }
+            // show the bitmap and the file value
+            logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
+            logger.debug("STEP1_TEST_BITMAP0n: {}",
+                    new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr").printInfo());
+            // test if the count is correct
+            executeTestCount(countFile, hybridStore, store);
+            ++step;
             MergeRunnableStopPoint.STEP1_START.debugUnlockTest();
 
             MergeRunnableStopPoint.STEP1_TEST_SELECT1.debugWaitForEvent();

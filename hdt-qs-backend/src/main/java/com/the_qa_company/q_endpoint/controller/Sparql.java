@@ -92,7 +92,7 @@ public class Sparql {
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
-	private final HashMap<String, RepositoryConnection> model = new HashMap<>();
+	final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
 	// to test the chunk development of stream
     public long debugMaxChunkSize = -1;
@@ -114,8 +114,8 @@ public class Sparql {
 	@Value("${repoModel}")
 	private String repoModel;
 
-	private HybridStore hybridStore;
-	private final Set<LuceneSail> luceneSails = new HashSet<>();
+	HybridStore hybridStore;
+	final Set<LuceneSail> luceneSails = new HashSet<>();
 	SailRepository repository;
 
 	public static int count = 0;

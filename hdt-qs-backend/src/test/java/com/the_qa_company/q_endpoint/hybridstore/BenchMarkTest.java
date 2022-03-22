@@ -1,9 +1,5 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-
-import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
-import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -15,76 +11,72 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class BenchMarkTest {
+    private static final Logger logger = LoggerFactory.getLogger(BenchMarkTest.class);
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
     @Test
-    public void benchmarkDelete() {
-        try {
-            StopWatch stopWatch = StopWatch.createStarted();
-            File nativeStore = tempDir.newFolder("native-store");
-            File hdtStore = tempDir.newFolder("hdt-store");
-            HDTSpecification spec = new HDTSpecification();
-            spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-            HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
-            assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
-            //printHDT(hdt);
-            SailRepository hybridStore = new SailRepository(
-                    new HybridStore(
-                            hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-                    ));
-            try (SailRepositoryConnection connection = hybridStore.getConnection()) {
-                stopWatch.stop();
-                int count = 100000;
-                ValueFactory vf = connection.getValueFactory();
-                String ex = "http://example.com/";
+    public void benchmarkDelete() throws IOException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        File nativeStore = tempDir.newFolder("native-store");
+        File hdtStore = tempDir.newFolder("hdt-store");
+        HDTSpecification spec = new HDTSpecification();
+        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
+        assert hdt != null;
+        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HybridStoreTest.HDT_INDEX_NAME, null);
+        //printHDT(hdt);
+        SailRepository hybridStore = new SailRepository(
+                new HybridStore(
+                        hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
+                ));
+        try (SailRepositoryConnection connection = hybridStore.getConnection()) {
+            stopWatch.stop();
+            int count = 100000;
+            ValueFactory vf = connection.getValueFactory();
+            stopWatch = StopWatch.createStarted();
+            RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true);
+            while (statements.hasNext())
+                statements.next();
+            stopWatch.stop();
+            logger.debug("Time to query all initially: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+            for (int i = 0; i < 10; i++) {
                 stopWatch = StopWatch.createStarted();
-                RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true);
-                while (statements.hasNext())
-                    statements.next();
-                stopWatch.stop();
-                System.out.println("Time to query all initialiy: " + stopWatch.getTime(TimeUnit.MILLISECONDS));
-
-                for (int i = 0; i < 10; i++) {
-                    stopWatch = StopWatch.createStarted();
-                    connection.begin();
-                    for (int j = count * i + 1; j <= count * (i + 1); j++) {
-                        connection.remove(Utility.getFakeStatement(vf, j));
-                    }
-                    connection.commit();
-                    assert hdt != null;
-                    System.out.println("# remaining triples:" + (hdt.getTriples().getNumberOfElements() - count * (i + 1)));
-                    stopWatch.stop();
-                    System.out.println("Time to delete: " + stopWatch.getTime(TimeUnit.MILLISECONDS));
-
-                    stopWatch = StopWatch.createStarted();
-                    statements = connection.getStatements(null, null, null, true);
-                    int c = 0;
-                    while (statements.hasNext()) {
-                        statements.next();
-                        c++;
-                    }
-                    stopWatch.stop();
-                    System.out.println("Time to query all: " + stopWatch.getTime(TimeUnit.MILLISECONDS));
-                    System.out.println("Count:" + c);
-                    assertEquals(connection.size(), hdt.getTriples().getNumberOfElements() - count * (i + 1));
-                    System.out.println("---------------------------------------");
+                connection.begin();
+                for (int j = count * i + 1; j <= count * (i + 1); j++) {
+                    connection.remove(Utility.getFakeStatement(vf, j));
                 }
-                System.out.println("Number of remaining triples: " + connection.size());
-                assertEquals(0, connection.size());
+                connection.commit();
+                logger.debug("# remaining triples: {}", (hdt.getTriples().getNumberOfElements() - count * (i + 1)));
+                stopWatch.stop();
+                logger.debug("Time to delete: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+                stopWatch = StopWatch.createStarted();
+                statements = connection.getStatements(null, null, null, true);
+                int c = 0;
+                while (statements.hasNext()) {
+                    statements.next();
+                    c++;
+                }
+                stopWatch.stop();
+                logger.debug("Time to query all: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
+                logger.debug("Count: {}", c);
+                assertEquals(connection.size(), hdt.getTriples().getNumberOfElements() - count * (i + 1));
+                logger.debug("---------------------------------------");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("Catched Exception");
+            logger.debug("Number of remaining triples: {}", connection.size());
+            assertEquals(0, connection.size());
         }
     }
 

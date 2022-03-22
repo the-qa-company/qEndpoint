@@ -1,9 +1,5 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-
-import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
-import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -11,11 +7,16 @@ import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryCom
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.enums.RDFNotation;
+import org.rdfhdt.hdt.exceptions.NotFoundException;
+import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,9 +26,10 @@ import java.util.List;
  * @author Ali Haidar
  */
 public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	private static final Logger logger = LoggerFactory.getLogger(HybridSPARQL11QueryComplianceTest.class);
 
     public HybridSPARQL11QueryComplianceTest(String displayName, String testURI, String name, String queryFileURL,
-                                             String resultFileURL, Dataset dataset, boolean ordered) {
+                                             String resultFileURL, Dataset dataset, boolean ordered) throws ParserException, NotFoundException, IOException {
         super(displayName, testURI, name, queryFileURL, resultFileURL, null, ordered);
         setUpHDT(dataset);
         List<String> testToIgnore = new ArrayList<>();
@@ -75,8 +77,7 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
                 hdtStore.getAbsolutePath() + "/", HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
         );
 //        hybridStore.setThreshold(2);
-        SailRepository repository = new SailRepository(hybridStore);
-        return repository;
+        return new SailRepository(hybridStore);
     }
 
     @Override
@@ -86,31 +87,30 @@ public class HybridSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTe
 
     HDT hdt;
 
-    private void setUpHDT(Dataset dataset) {
-        try {
-            if (dataset != null) {
-                String x = dataset.getDefaultGraphs().toString();
-                if (x.equals("[]")) {
-                    x = dataset.getNamedGraphs().toString();
-                }
-                String str = x.substring(x.lastIndexOf("!") + 1).replace("]", "");
-
-                URL url = SPARQL11QueryComplianceTest.class.getResource(str);
-                File tmpDir = new File("test");
-                if (!tmpDir.isDirectory()) {
-                    tmpDir.mkdir();
-                }
-                JarURLConnection con = (JarURLConnection) url.openConnection();
-                File file = new File(tmpDir, con.getEntryName());
-
-                HDTSpecification spec = new HDTSpecification();
-
-                hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec, null);
-                assert hdt != null;
-                hdt.search("", "", "").forEachRemaining(System.out::println);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    private void setUpHDT(Dataset dataset) throws IOException, ParserException, NotFoundException {
+        if (dataset == null) {
+            return;
         }
+
+		String x = dataset.getDefaultGraphs().toString();
+		if (x.equals("[]")) {
+			x = dataset.getNamedGraphs().toString();
+		}
+		String str = x.substring(x.lastIndexOf("!") + 1).replace("]", "");
+
+		URL url = SPARQL11QueryComplianceTest.class.getResource(str);
+		File tmpDir = new File("test");
+		if (tmpDir.mkdirs()) {
+			logger.debug("{} dir created.", tmpDir);
+		}
+		assert url != null;
+		JarURLConnection con = (JarURLConnection) url.openConnection();
+		File file = new File(tmpDir, con.getEntryName());
+
+		HDTSpecification spec = new HDTSpecification();
+
+		hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec, null);
+		assert hdt != null;
+		hdt.search("", "", "").forEachRemaining(System.out::println);
     }
 }

@@ -1,13 +1,5 @@
 package com.the_qa_company.q_endpoint.hybridstore;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
-import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
-import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -16,6 +8,11 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.options.HDTSpecification;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Test SPARQL 1.1 Update functionality on a native store.
@@ -56,8 +53,7 @@ public class HybridSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompliance
         );
 //        hybridStore.setThreshold(2);
 
-        SailRepository repository = new SailRepository(hybridStore);
-        return repository;
+        return new SailRepository(hybridStore);
 //        return new DatasetRepository(new SailRepository(new NativeStore(tempDir.newFolder(), "spoc")));
     }
 

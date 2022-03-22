@@ -27,27 +27,27 @@ public class Utility {
     }
 
 
-    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec) {
-        try {
-            File inputFile = new File(fileName);
-            if (!empty) {
-                if (!isBig)
-                    writeTempRDF(inputFile);
-                else
-                    writeBigIndex(inputFile);
-            } else {
-                inputFile.createNewFile();
+    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException{
+        File inputFile = new File(fileName);
+        if (!empty) {
+            if (!isBig)
+                writeTempRDF(inputFile);
+            else
+                writeBigIndex(inputFile);
+        } else {
+            if (!inputFile.createNewFile()) {
+                throw new IOException("Can't create new empty file for hdt " + fileName);
             }
-            String baseURI = inputFile.getAbsolutePath();
-            RDFNotation notation = RDFNotation.guess(fileName);
-            HDT hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(), baseURI, notation, spec, null);
-            return HDTManager.indexedHDT(hdt, null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserException e) {
-            e.printStackTrace();
         }
-        return null;
+        String baseURI = inputFile.getAbsolutePath();
+        RDFNotation notation = RDFNotation.guess(fileName);
+        HDT hdt;
+        try {
+            hdt = HDTManager.generateHDT(inputFile.getAbsolutePath(), baseURI, notation, spec, null);
+        } catch (ParserException e) {
+            throw new IOException("Can't generate hdt", e);
+        }
+        return HDTManager.indexedHDT(hdt, null);
     }
 
     public static final int SUBJECTS = 1000;
@@ -87,28 +87,21 @@ public class Utility {
         //*/
     }
 
-    private static void writeBigIndex(File file) {
-        FileOutputStream out = null;
+    private static void writeBigIndex(File file) throws IOException{
         ValueFactory vf = new MemValueFactory();
-        try {
-            out = new FileOutputStream(file);
+        try (FileOutputStream out = new FileOutputStream(file)) {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             writer.startRDF();
             for (int i = 1; i <= COUNT; i++) {
                 writer.handleStatement(getFakeStatement(vf, i - 1));
             }
             writer.endRDF();
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
-    public static void writeTempRDF(File file) {
-        FileOutputStream out = null;
+    public static void writeTempRDF(File file) throws IOException {
         ValueFactory vf = new MemValueFactory();
-        try {
-            out = new FileOutputStream(file);
+        try (FileOutputStream out = new FileOutputStream(file)) {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
             writer.startRDF();
             String ex = "http://example.com/";
@@ -116,9 +109,6 @@ public class Utility {
             Statement stm = vf.createStatement(guo, RDF.TYPE, FOAF.PERSON);
             writer.handleStatement(stm);
             writer.endRDF();
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }

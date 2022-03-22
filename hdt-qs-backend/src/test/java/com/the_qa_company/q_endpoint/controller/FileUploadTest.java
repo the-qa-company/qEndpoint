@@ -13,6 +13,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
@@ -23,31 +25,16 @@ import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
 public class FileUploadTest {
-    private static final Field SPARQL_MODEL;
-    private static final Field SPARQL_HYBRID_STORE;
-
-    static {
-        try {
-            SPARQL_MODEL = Sparql.class.getDeclaredField("model");
-            SPARQL_HYBRID_STORE = Sparql.class.getDeclaredField("hybridStore");
-            SPARQL_MODEL.setAccessible(true);
-            SPARQL_HYBRID_STORE.setAccessible(true);
-        } catch (Exception e) {
-            throw new Error(e);
-        }
-    }
-
+    private static final Logger logger = LoggerFactory.getLogger(FileUploadTest.class);
     @Autowired
     Sparql sparql;
 
@@ -60,19 +47,10 @@ public class FileUploadTest {
     @Value("${locationNative}")
     String locationNative;
 
-
-    private HybridStore getHybridStore() {
-        try {
-            return (HybridStore) SPARQL_HYBRID_STORE.get(sparql);
-        } catch (IllegalAccessException e) {
-            throw new Error(e);
-        }
-    }
-
     @Before
-    public void setup() throws IllegalAccessException {
+    public void setup() {
         // clear map to recreate hybrid store
-        ((Map<?, ?>) SPARQL_MODEL.get(sparql)).clear();
+        sparql.model.clear();
 
         // remove previous data
         try {
@@ -115,7 +93,7 @@ public class FileUploadTest {
     }
 
     private void assertAllHDTLoaded(String file) throws IOException {
-        HybridStore store = getHybridStore();
+        HybridStore store = sparql.hybridStore;
         SailRepository sailRepository = new SailRepository(store);
         List<Statement> statementList = new ArrayList<>();
         RDFStreamUtils.readRDFStream(stream(file), RDFFormat.NTRIPLES, true, statement -> {
@@ -142,6 +120,7 @@ public class FileUploadTest {
                         + "), not in " + file, statementList.remove(next));
                 while (statementList.remove(next)) {
                     // remove duplicates
+                    logger.trace("removed duplicate of {}", next);
                 }
             }
         }

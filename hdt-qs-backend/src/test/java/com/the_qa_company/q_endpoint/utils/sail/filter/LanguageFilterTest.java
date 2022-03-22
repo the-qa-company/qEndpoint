@@ -2,10 +2,9 @@ package com.the_qa_company.q_endpoint.utils.sail.filter;
 
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.sail.FilteringSail;
-import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
-import com.the_qa_company.q_endpoint.utils.sail.linked.SimpleLinkedSail;
-import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.q_endpoint.utils.sail.SailTest;
+import com.the_qa_company.q_endpoint.utils.sail.helpers.LuceneSailBuilder;
+import com.the_qa_company.q_endpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;

@@ -32,6 +32,7 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -41,12 +42,15 @@ import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -55,9 +59,11 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class HybridStoreTest {
+    private static final Logger logger = LoggerFactory.getLogger(HybridStoreTest.class);
     public static final String HDT_INDEX_NAME = "index_tst.hdt";
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
@@ -77,25 +83,7 @@ public class HybridStoreTest {
     }
 
     @Test
-    public void testInstantiate() {
-        try {
-            File nativeStore = tempDir.newFolder("native-store");
-            File hdtStore = tempDir.newFolder("hdt-store");
-            HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
-            assert hdt != null;
-            hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-            HybridStore hybridStore = new HybridStore(
-                    hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-            );
-            hybridStore.shutDown();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testGetConneciton() throws IOException {
+    public void testInstantiate() throws IOException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
@@ -104,8 +92,21 @@ public class HybridStoreTest {
         HybridStore hybridStore = new HybridStore(
                 hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
         );
-        try (SailConnection connection = hybridStore.getConnection()) {
-        }
+        hybridStore.shutDown();
+    }
+
+    @Test
+    public void testGetConnection() throws IOException {
+        File nativeStore = tempDir.newFolder("native-store");
+        File hdtStore = tempDir.newFolder("hdt-store");
+        HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
+        assert hdt != null;
+        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
+        HybridStore hybridStore = new HybridStore(
+                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
+        );
+        SailConnection connection = hybridStore.getConnection();
+        connection.close();
         hybridStore.shutDown();
     }
 
@@ -174,7 +175,7 @@ public class HybridStoreTest {
     }
 
     @Test
-    public void testAddStatement() throws IOException, NotFoundException, InterruptedException {
+    public void testAddStatement() throws IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
@@ -376,7 +377,7 @@ public class HybridStoreTest {
     }
 
     @Test
-    public void testCommonNativeAndHdt() throws IOException, NotFoundException, InterruptedException {
+    public void testCommonNativeAndHdt() throws IOException, NotFoundException {
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store");
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
@@ -417,7 +418,9 @@ public class HybridStoreTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        dir.mkdirs();
+        if (dir.mkdirs()) {
+            logger.debug("{} created.", dir);
+        }
         NativeStore nativeStore = new NativeStore(dir, "spoc,posc,cosp");
 
         NotifyingSailConnection connection = nativeStore.getConnection();
@@ -443,74 +446,14 @@ public class HybridStoreTest {
         TupleQuery tupleQuery1 = connection2.prepareTupleQuery(sparqlQuery);
         TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
 
-        assertEquals(true,tupleQueryResult.hasNext());
+        assertTrue(tupleQueryResult.hasNext());
 
         if (tupleQueryResult.hasNext()){
             tupleQueryResult.stream().iterator().forEachRemaining(System.out::println);
         }
     }
 
-    //    @Test
-//    public void testMisc(){
-//        try {
-//            File nativeStore = tempDir.newFolder("native-store");
-//            File hdtStore = tempDir.newFolder("hdt-store");
-//            HDT hdt = Utility.createTempHdtIndex(tempDir, true,false);
-//            assert hdt != null;
-//            hdt.saveToHDT(hdtStore.getAbsolutePath()+"/"+HybridStoreTest.HDT_INDEX_NAME,null);
-//            printHDT(hdt);
-//            HybridStore store = new HybridStore(
-//                    hdtStore.getAbsolutePath()+"/",HybridStoreTest.HDT_INDEX_NAME,spec,nativeStore.getAbsolutePath()+"/",false
-//            );
-//            //store.setThreshold(1);
-//            SailRepository hybridStore = new SailRepository(store);
-//
-//
-//            try (RepositoryConnection connection = hybridStore.getConnection()) {
-//                ValueFactory vf = connection.getValueFactory();
-//                String ex = "http://example.com/";
-//                IRI ali = vf.createIRI(ex, "Ali");
-//                connection.add(ali, RDF.TYPE, FOAF.PERSON);
-//                IRI dennis = vf.createIRI(ex, "Dennis");
-//                connection.add(dennis, vf.createIRI(ex,"has"), ali);
-//                //Thread.sleep(2000);
-//                // query everything of type PERSON
-//                GraphQuery tupleQuery = connection.prepareGraphQuery(String.join("\n", "",
-//                        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-//                        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
-//                        "PREFIX ex: <http://example.com/>",
-//                        "construct where {",
-//                        "	ex:Guo rdf:type ?o .",
-//                        "	?s rdf:type ?o .",
-//
-//                        "}"));
-//
-//                GraphQueryResult evaluate = tupleQuery.evaluate();
-//                int count = 0;
-//                while (evaluate.hasNext())
-//                {
-//                    count++;
-//                    System.out.println(evaluate.next());
-//                }
-//                assertEquals(2, count);
-////                RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
-////                int count = 0;
-////                while (sts.hasNext()){
-////                    System.out.println(sts.next());
-////                    count++;
-////                }
-////                assertEquals(3, count);
-//                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME));
-//                Files.deleteIfExists(Paths.get(HybridStoreTest.HDT_INDEX_NAME + ".index.v1-1"));
-//                Files.deleteIfExists(Paths.get("index.nt"));
-//
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            fail("Exception found !");
-//        }
-//    }
-    private class StatementComparator implements Comparator<Statement> {
+    private static class StatementComparator implements Comparator<Statement> {
 
         @Override
         public int compare(Statement o1, Statement o2) {
@@ -564,7 +507,9 @@ public class HybridStoreTest {
 
         try (RepositoryConnection connection = hybridStore.getConnection()) {
             ClassLoader classLoader = getClass().getClassLoader();
-            InputStream inputStream = new FileInputStream(classLoader.getResource("cocktails.nt").getFile());
+            URL cocktails = classLoader.getResource("cocktails.nt");
+            Assert.assertNotNull(cocktails);
+            InputStream inputStream = new FileInputStream(cocktails.getFile());
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
             try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
@@ -717,7 +662,6 @@ public class HybridStoreTest {
                 System.out.println(s.toString());
             }
             assertEquals(3, statements.size());
-            connection.close();
         }
     }
 

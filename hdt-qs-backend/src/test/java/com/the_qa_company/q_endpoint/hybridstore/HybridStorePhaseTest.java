@@ -11,15 +11,10 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,20 +56,20 @@ public class HybridStorePhaseTest {
 
         logger.info("Insert some data");
         int numbeOfTriples = 500;
-        String sparqlQuery = "INSERT DATA { ";
+        StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  <http://o" + i + "> . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
         }
-        sparqlQuery += "} ";
+        sparqlQuery.append("} ");
         RepositoryConnection connection = hybridStore.getConnection();
-        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.commit();
 
         logger.info("QUERY 1");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
             TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
             assertTrue(tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
@@ -84,31 +79,31 @@ public class HybridStorePhaseTest {
         }
         logger.info("QUERY 2");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery = "SELECT ?p WHERE { <http://s" + i + ">  ?p  <http://o" + i + "> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            sparqlQuery = new StringBuilder("SELECT ?p WHERE { <http://s" + i + ">  ?p  <http://o" + i + "> . } ");
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
             TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-            assertEquals(true, tupleQueryResult.hasNext());
+            assertTrue(tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
                 BindingSet b = tupleQueryResult.next();
                 assertEquals("http://p" + i, b.getBinding("p").getValue().toString());
             }
         }
         logger.info("DELETE");
-        sparqlQuery = "DELETE DATA { ";
+        sparqlQuery = new StringBuilder("DELETE DATA { ");
         for (int i = 0; i < 10; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  <http://o" + i + "> . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
         }
-        sparqlQuery += "} ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery.append("} ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.commit();
 
         logger.info("QUERY");
         for (int i = 10; i < numbeOfTriples; i++) {
-            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
             TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-            assertEquals(true, tupleQueryResult.hasNext());
+            assertTrue(tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
                 BindingSet b = tupleQueryResult.next();
                 assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
@@ -117,10 +112,10 @@ public class HybridStorePhaseTest {
 
         logger.info("QUERY");
         for (int i = 10; i < numbeOfTriples; i++) {
-            sparqlQuery = "SELECT ?p WHERE { <http://s" + i + ">  ?p  <http://o" + i + "> . } ";
-            TupleQuery tupleQuery2 = connection.prepareTupleQuery(sparqlQuery);
+            sparqlQuery = new StringBuilder("SELECT ?p WHERE { <http://s" + i + ">  ?p  <http://o" + i + "> . } ");
+            TupleQuery tupleQuery2 = connection.prepareTupleQuery(sparqlQuery.toString());
             TupleQueryResult tupleQueryResult2 = tupleQuery2.evaluate();
-            assertEquals(true, tupleQueryResult2.hasNext());
+            assertTrue(tupleQueryResult2.hasNext());
             while (tupleQueryResult2.hasNext()) {
                 BindingSet b = tupleQueryResult2.next();
                 assertEquals("http://p" + i, b.getBinding("p").getValue().toString());
@@ -140,13 +135,13 @@ public class HybridStorePhaseTest {
 
         logger.info("Insert some data");
         int numbeOfTriples = 500;
-        String sparqlQuery = "INSERT DATA { ";
+        StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  <http://o" + i + "> . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
         }
-        sparqlQuery += "} ";
+        sparqlQuery.append("} ");
         RepositoryConnection connection = hybridStore.getConnection();
-        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.commit();
 
@@ -155,18 +150,18 @@ public class HybridStorePhaseTest {
         // START MERGE
         // artificially rise the time to merge to 5 seconds
         store.setExtendsTimeMergeBeginningAfterSwitch(2);
-        sparqlQuery = "INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s130>  <http://p130>  <http://o130> . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.close();
         Thread.sleep(500);
-        assertEquals(true,store.isMerging());
+        assertTrue(store.isMerging());
 
         logger.info("QUERY 1");
         connection = hybridStore.getConnection();
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
             TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
             assertTrue(tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
@@ -176,16 +171,16 @@ public class HybridStorePhaseTest {
         }
 
         logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o600> . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s600>  <http://p600>  <http://o600> . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
-        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o130> . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s600>  <http://p600>  <http://o130> . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
-        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  \"my_name\" . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s600>  <http://p600>  \"my_name\" . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
         connection.commit();
@@ -193,8 +188,8 @@ public class HybridStorePhaseTest {
         Thread.sleep(5000);
 
         logger.info("QUERY");
-        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ";
-        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ");
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
         TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult.hasNext());
         while (tupleQueryResult.hasNext()) {
@@ -202,8 +197,8 @@ public class HybridStorePhaseTest {
             assertEquals("http://s600", b.getBinding("s").getValue().toString());
         }
 
-        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o130> . } ";
-        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o130> . } ");
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
         tupleQueryResult = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult.hasNext());
         while (tupleQueryResult.hasNext()) {
@@ -211,8 +206,8 @@ public class HybridStorePhaseTest {
             assertEquals("http://s600", b.getBinding("s").getValue().toString());
         }
 
-        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  \"my_name\" . } ";
-        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  \"my_name\" . } ");
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
         tupleQueryResult = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult.hasNext());
         while (tupleQueryResult.hasNext()) {
@@ -234,20 +229,20 @@ public class HybridStorePhaseTest {
 
         logger.info("Insert some data");
         int numbeOfTriples = 150;
-        String sparqlQuery = "INSERT DATA { ";
+        StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  <http://o" + i + "> . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
         }
-        sparqlQuery += "} ";
+        sparqlQuery.append("} ");
         RepositoryConnection connection = hybridStore.getConnection();
-        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.commit();
 
         // START MERGE
         logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s600>  <http://p600>  <http://o600> . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s600>  <http://p600>  <http://o600> . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
         // WAIT MERGE TO FINISH
@@ -255,8 +250,8 @@ public class HybridStorePhaseTest {
 
         logger.info("QUERY 1");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery = "SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ";
-            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+            sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
             TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
             assertTrue(tupleQueryResult.hasNext());
             while (tupleQueryResult.hasNext()) {
@@ -268,8 +263,8 @@ public class HybridStorePhaseTest {
 
 
         logger.info("QUERY");
-        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ";
-        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ");
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
         TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult.hasNext());
         while (tupleQueryResult.hasNext()) {
@@ -278,13 +273,13 @@ public class HybridStorePhaseTest {
         }
 
         logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s700>  <http://p700>  <http://o700> . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s700>  <http://p700>  <http://o700> . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
         logger.info("QUERY");
-        sparqlQuery = "SELECT ?s WHERE { ?s  <http://p700>  <http://o700> . } ";
-        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p700>  <http://o700> . } ");
+        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
         TupleQueryResult tupleQueryResult2 = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult2.hasNext());
         while (tupleQueryResult2.hasNext()) {
@@ -307,40 +302,40 @@ public class HybridStorePhaseTest {
 
         logger.info("Insert some data");
         int numbeOfTriples = 100;
-        String sparqlQuery = "INSERT DATA { ";
+        StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  \""+i+"\"@pl . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i).append("\"@pl . ");
         }
-        sparqlQuery += "} ";
+        sparqlQuery.append("} ");
         RepositoryConnection connection = hybridStore.getConnection();
-        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
+        Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.commit();
 
         // START MERGE
         logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
         // WAIT MERGE TO FINISH
         Thread.sleep(2000);
 
         logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s0>  <http://p0>  \"0\"@pl . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
+        sparqlQuery = new StringBuilder("INSERT DATA { <http://s0>  <http://p0>  \"0\"@pl . } ");
+        tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
 
         logger.info("QUERY");
-        sparqlQuery = "SELECT ?o WHERE { <http://s0>  ?p  ?o . } ";
-        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
+        sparqlQuery = new StringBuilder("SELECT ?o WHERE { <http://s0>  ?p  ?o . } ");
+        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
         TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
         assertTrue(tupleQueryResult.hasNext());
         BindingSet b = tupleQueryResult.next();
         System.out.println(b.getBinding("o").getValue().toString());
         assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
-        assertTrue(!tupleQueryResult.hasNext());
+        assertFalse(tupleQueryResult.hasNext());
 
         connection.close();
 
@@ -358,70 +353,64 @@ public class HybridStorePhaseTest {
 
         logger.info("Insert some data");
         int numbeOfTriples = 100;
-        String sparqlQuery = "INSERT DATA { ";
+        StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  \""+i+"\"@pl . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i).append("\"@pl . ");
         }
-        sparqlQuery += "} ";
-        RepositoryConnection connection = hybridStore.getConnection();
-        Update tupleQuery = connection.prepareUpdate(sparqlQuery);
-        tupleQuery.execute();
-        connection.commit();
-        // START MERGE
-        logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
-        tupleQuery.execute();
-        connection.commit();
-        connection.close();
+        sparqlQuery.append("} ");
+        try (RepositoryConnection connection = hybridStore.getConnection()) {
+            Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
+            tupleQuery.execute();
+            connection.commit();
+            // START MERGE
+            logger.info("INSERT");
+            sparqlQuery = new StringBuilder("INSERT DATA { <http://s100>  <http://p100>  \"100\"@pl . } ");
+            tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
+            tupleQuery.execute();
+            connection.commit();
+        }
 
         logger.info("Wait for the previous merge to finish");
         Thread.sleep(3000);
 
-        sparqlQuery = "INSERT DATA { ";
+        sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 101; i < numbeOfTriples + 101; i++) {
-            sparqlQuery += "	<http://s" + i + ">  <http://p" + i + ">  \""+i+"\"@pl . ";
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i).append("\"@pl . ");
         }
-        sparqlQuery += "} ";
-        connection = hybridStore.getConnection();
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
-        tupleQuery.execute();
-        connection.commit();
+        sparqlQuery.append("} ");
+        try (RepositoryConnection connection = hybridStore.getConnection()) {
+            Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
+            tupleQuery.execute();
+            connection.commit();
 
-        // 2nd merge should happen here..
-        logger.info("INSERT");
-        sparqlQuery = "INSERT DATA { <http://s200>  <http://p1>  \"1\"@pl . } ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
-        tupleQuery.execute();
-        connection.close();
+            // 2nd merge should happen here..
+            logger.info("INSERT");
+            sparqlQuery = new StringBuilder("INSERT DATA { <http://s200>  <http://p1>  \"1\"@pl . } ");
+            tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
+            tupleQuery.execute();
+        }
 
 
         System.out.println("Triples with s200: ");
-        connection = hybridStore.getConnection();
-        sparqlQuery = "SELECT * WHERE { <http://s200>  ?p  ?o . } ";
-        TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-        TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-        //tupleQueryResult.stream().forEach(System.out::println);
+        try (RepositoryConnection connection = hybridStore.getConnection()) {
+            sparqlQuery = new StringBuilder("SELECT * WHERE { <http://s200>  ?p  ?o . } ");
+            TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
+            tupleQuery1.evaluate();
 
-        logger.info("DELETE");
-        sparqlQuery = "DELETE { ?s <http://p1> ?o } where { ?s  <http://p1>  ?o .} ";
-        tupleQuery = connection.prepareUpdate(sparqlQuery);
-        tupleQuery.execute();
+            logger.info("DELETE");
+            sparqlQuery = new StringBuilder("DELETE { ?s <http://p1> ?o } where { ?s  <http://p1>  ?o .} ");
+            Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
+            tupleQuery.execute();
 
 
-        logger.info("QUERY");
-        sparqlQuery = "SELECT * WHERE { <http://s200>  <http://p1>  \"1\"@pl . } ";
-        tupleQuery1 = connection.prepareTupleQuery(sparqlQuery);
-        tupleQueryResult = tupleQuery1.evaluate();
-        assertFalse(tupleQueryResult.hasNext());
-//        BindingSet b = tupleQueryResult.next();
-//        System.out.println(b.getBinding("o").getValue().toString());
-//        assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
-//        assertTrue(!tupleQueryResult.hasNext());
-
-        connection.close();
-
-        logger.info("SHUTTING DOWN");
-        hybridStore.shutDown();
+            logger.info("QUERY");
+            sparqlQuery = new StringBuilder("SELECT * WHERE { <http://s200>  <http://p1>  \"1\"@pl . } ");
+            tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
+            TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
+            assertFalse(tupleQueryResult.hasNext());
+        } finally {
+            logger.info("SHUTTING DOWN");
+            hybridStore.shutDown();
+        }
     }
 }

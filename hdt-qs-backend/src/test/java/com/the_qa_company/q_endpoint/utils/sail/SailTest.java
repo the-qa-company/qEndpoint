@@ -1,14 +1,12 @@
 package com.the_qa_company.q_endpoint.utils.sail;
 
-import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.hybridstore.HybridStoreTest;
 import com.the_qa_company.q_endpoint.hybridstore.Utility;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
@@ -86,43 +84,6 @@ public abstract class SailTest {
 	 */
 	public static String joinLines(String... lines) {
 		return String.join("\n", lines);
-	}
-
-	/**
-	 * convert a value (IRI or literal) to a NT string representation
-	 *
-	 * @param value the value
-	 * @return string
-	 */
-	public static String asNT(Value value) {
-		if (value.isLiteral()) {
-			Literal lit = (Literal) value;
-			CoreDatatype type = lit.getCoreDatatype();
-			if (type == CoreDatatype.RDF.LANGSTRING) {
-				return "'" + lit.getLabel() + "'" + lit.getLanguage().map(l -> "@" + l).orElse("");
-			} else if (type != CoreDatatype.NONE) {
-				return "'" + lit.getLabel() + "'^^<" + type.getIri() + ">";
-			} else {
-				return "'" + lit.getLabel() + "'";
-			}
-		}
-
-		if (value.isIRI()) {
-			return "<" + value + ">";
-		}
-		throw new RuntimeException("Can't convert " + value + " to ttl");
-	}
-
-	/**
-	 * convert a statement of IRI or literal to a NT string representation
-	 *
-	 * @param statement the statement
-	 * @return string
-	 */
-	public static String asNT(Statement statement) {
-		return asNT(statement.getSubject()) + " "
-				+ asNT(statement.getPredicate()) + " "
-				+ asNT(statement.getObject());
 	}
 
 	@Rule
@@ -378,29 +339,6 @@ public abstract class SailTest {
 		}
 
 		/**
-		 * define an excepted literal for this object name
-		 *
-		 * @param object the object name
-		 * @param value  the excepted literal value
-		 * @return this
-		 */
-		public SelectResultRow withLiteral(String object, String value) {
-			return withValue(object, VF.createLiteral(value));
-		}
-
-		/**
-		 * define an excepted literal for this object name
-		 *
-		 * @param object   the object name
-		 * @param value    the excepted literal value
-		 * @param language the excepted language for the literal
-		 * @return this
-		 */
-		public SelectResultRow withLiteral(String object, String value, String language) {
-			return withValue(object, VF.createLiteral(value, language));
-		}
-
-		/**
 		 * add the object (s, p, o) with the elements of a statement
 		 *
 		 * @param statement the statement
@@ -456,8 +394,6 @@ public abstract class SailTest {
 		private final String query;
 		private String indexId;
 		private String property;
-		private String scoreObject;
-		private String snippetObject;
 
 		/**
 		 * create a lucene select where builder
@@ -493,28 +429,6 @@ public abstract class SailTest {
 		}
 
 		/**
-		 * set search:score
-		 *
-		 * @param scoreObject the score object
-		 * @return this
-		 */
-		public LuceneSelectWhereBuilder withScoreObject(String scoreObject) {
-			this.scoreObject = scoreObject;
-			return this;
-		}
-
-		/**
-		 * set search:snippet
-		 *
-		 * @param snippetObject the snippet object
-		 * @return this
-		 */
-		public LuceneSelectWhereBuilder withSnippetObject(String snippetObject) {
-			this.snippetObject = snippetObject;
-			return this;
-		}
-
-		/**
 		 * build the query
 		 *
 		 * @return query
@@ -529,13 +443,6 @@ public abstract class SailTest {
 			}
 			if (property != null) {
 				s += "  search:property " + property + " ;\n";
-			}
-
-			if (scoreObject != null) {
-				s += "  search:score ?" + scoreObject + " ;\n";
-			}
-			if (snippetObject != null) {
-				s += "  search:snippet ?" + snippetObject + " ;\n";
 			}
 
 			return s + "].";
