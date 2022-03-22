@@ -7,18 +7,20 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.ValueExprEvaluationException;
-import org.eclipse.rdf4j.query.algebra.evaluation.function.Function;
 import org.eclipse.rdf4j.query.algebra.evaluation.function.TupleFunction;
-import org.eclipse.rdf4j.spin.function.InverseMagicProperty;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 public class Split implements TupleFunction {
-
+    /**
+     * function's URI
+     */
+    public static final String URI = "http://qanswer.eu/function/split";
     @Override
     public String getURI() {
-        return "http://qanswer.eu/function/split";
+        return URI;
     }
 
     @Override
@@ -34,12 +36,11 @@ public class Split implements TupleFunction {
         if (!(args[1] instanceof Literal)) {
             throw new ValueExprEvaluationException("Second list element must be a literal");
         }
-        final String s = ((Literal) args[0]).stringValue();
-        final String regex = ((Literal) args[1]).stringValue();
+        final String s = args[0].stringValue();
+        final String regex = args[1].stringValue();
         final String[] parts = s.split(regex);
-        return new CloseableIteratorIteration(
-                new Iterator<Value>() {
-
+        return new CloseableIteratorIteration<>(
+                new Iterator<>() {
                     int pos = 0;
 
                     @Override
@@ -48,8 +49,8 @@ public class Split implements TupleFunction {
                     }
 
                     @Override
-                    public Value next() {
-                        return valueFactory.createLiteral(parts[pos++]);
+                    public List<Value> next() {
+                        return Collections.singletonList(valueFactory.createLiteral(parts[pos++]));
                     }
 
                     @Override

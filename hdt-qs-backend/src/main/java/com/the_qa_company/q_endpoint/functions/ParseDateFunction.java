@@ -19,6 +19,7 @@ public class ParseDateFunction implements Function {
 
     // define a constant for the namespace of our custom function
     public static final String NAMESPACE = "http://qanswer.eu/function/";
+    public static final String URI = NAMESPACE + "parse_date";
 
     /**
      * return the URI 'http://qanswer.eu/function/parse_date' as a
@@ -26,7 +27,7 @@ public class ParseDateFunction implements Function {
      */
     @Override
     public String getURI() {
-        return NAMESPACE + "parse_date";
+        return URI;
     }
 
     /**
@@ -48,35 +49,14 @@ public class ParseDateFunction implements Function {
         }
         Value arg1 = args[0];
         Value arg2 = args[1];
-        if ((arg2 instanceof Literal)) {
-            if (((Literal)arg1).getDatatype().toString().equals("http://www.w3.org/2001/XMLSchema#dateTime")){
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
-                try {
-                    Date date = simpleDateFormat.parse(((Literal)arg1).getLabel());
-                    simpleDateFormat = new SimpleDateFormat(((Literal)arg2).getLabel());
-                    return valueFactory.createLiteral(simpleDateFormat.format(date));
-                } catch (ParseException e) {
-                    throw new ValueExprEvaluationException(
-                            "Cannot parse date: " + arg2);
-                }
-            } else if (((Literal)arg1).getDatatype().toString().equals("http://www.w3.org/2001/XMLSchema#date")){
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                try {
-                    Date date = simpleDateFormat.parse(((Literal)arg1).getLabel());
-                    simpleDateFormat = new SimpleDateFormat(((Literal)arg2).getLabel());
-                    return valueFactory.createLiteral(simpleDateFormat.format(date));
-                } catch (ParseException e) {
-                    throw new ValueExprEvaluationException(
-                            "Cannot parse date: " + arg2);
-                }
-            } else {
-                throw new ValueExprEvaluationException(
-                        "invalid argument (expect an xsd:date or xsd:dateTime): " + arg1);
-            }
-
+        if (arg1 instanceof Literal && arg2 instanceof Literal) {
+            Literal date = (Literal)arg1;
+            Literal format = (Literal)arg2;
+            SimpleDateFormat formatter = new SimpleDateFormat(format.getLabel());
+            String value = formatter.format(date.calendarValue().toGregorianCalendar().getTime());
+            return valueFactory.createLiteral(value);
         } else {
-            throw new ValueExprEvaluationException(
-                    "Invalid argument (expect an xsd:date or xsd:dateTime): " + arg1);
+            throw new ValueExprEvaluationException("Both arguments must be literals");
         }
     }
 }

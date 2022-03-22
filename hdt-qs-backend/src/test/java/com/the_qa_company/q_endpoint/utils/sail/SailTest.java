@@ -53,7 +53,7 @@ public abstract class SailTest {
 	/**
 	 * basic prefixes, search:, rdfs: and ex:
 	 */
-	private static final String PREFIXES = joinLines(
+	public static final String PREFIXES = joinLines(
 			"PREFIX search: <http://www.openrdf.org/contrib/lucenesail#>",
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>",
 			"PREFIX ex: <" + NAMESPACE + ">");
