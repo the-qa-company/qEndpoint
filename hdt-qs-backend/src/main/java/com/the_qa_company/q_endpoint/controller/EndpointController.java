@@ -22,6 +22,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 @CrossOrigin(origins = "http://localhost:3001")
 @RestController
@@ -42,7 +43,7 @@ public class EndpointController {
             @RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
             @RequestBody(required = false) String body)
-            throws Exception {
+            throws IOException {
         logger.info("New query");
 //        logger.info("Query {} timeout {} update query {} body {} ", query, timeout, updateQuery, body);
 
@@ -95,7 +96,7 @@ public class EndpointController {
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
             @RequestParam(value = "timeout", defaultValue = "5") int timeout,
             Principal principal)
-            throws Exception {
+            throws IOException {
         logger.info("Query " + query);
         logger.info("timeout: " + timeout);
         if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
@@ -123,80 +124,82 @@ public class EndpointController {
     }
 
     @PostMapping(value = "/load", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> clearData(HttpServletRequest request) {
+    public ResponseEntity<Sparql.LoadFileResult> clearData(HttpServletRequest request) throws IOException {
         String boundary = extractBoundary(request);
-        try {
-            MultipartStream multipartStream = new MultipartStream(request.getInputStream(),
-                    boundary.getBytes(), 1024, null);
-            boolean nextPart = multipartStream.skipPreamble();
-            while(nextPart) {
-                String header = multipartStream.readHeaders();
-                String[][] cdHeader = readContentDispositionHeader(header);
+        MultipartStream multipartStream = new MultipartStream(request.getInputStream(),
+                boundary.getBytes(), 1024, null);
+        boolean nextPart = multipartStream.skipPreamble();
+        while(nextPart) {
+            String header = multipartStream.readHeaders();
+            String[][] cdHeader = readContentDispositionHeader(header);
 
-                if (cdHeader.length == 0) {
-                    nextPart = multipartStream.readBoundary();
-                    continue; // not content-disposition header
-                }
-
-                String name = Arrays.stream(cdHeader)
-                        .filter(s -> s[0].equals("name"))
-                        .map(s -> s[1])
-                        .map(s -> s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)
-                        .findFirst()
-                        .orElse(null);
-
-                if (name == null || !name.equals("file")){
-                    nextPart = multipartStream.readBoundary();
-                    continue; // not the file field
-                }
-
-                String filename = Arrays.stream(cdHeader)
-                        .filter(s -> s[0].equals("filename"))
-                        .map(s -> s[1])
-                        .map(s -> s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)
-                        .findFirst()
-                        .orElse(null);
-
-                PipedInputStream pipedInputStream = new PipedInputStream();
-                PipedOutputStream pipedOutputStream = new PipedOutputStream();
-                pipedInputStream.connect(pipedOutputStream);
-                Thread readingThread = new Thread(() -> {
-                    try {
-                        multipartStream.readBodyData(pipedOutputStream);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        try {
-                            pipedOutputStream.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-                readingThread.start();
-
-                logger.info("Trying to index {}", filename);
-                ResponseEntity<String> out = sparql.loadFile(pipedInputStream, filename);
-                try {
-                    readingThread.join();
-                } catch (InterruptedException e) {
-                    //
-                }
-                return out;
+            if (cdHeader.length == 0) {
+                nextPart = multipartStream.readBoundary();
+                continue; // not content-disposition header
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            String name = Arrays.stream(cdHeader)
+                    .filter(s -> s[0].equals("name"))
+                    .map(s -> s[1])
+                    .map(s -> s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)
+                    .findFirst()
+                    .orElse(null);
+
+            if (name == null || !name.equals("file")){
+                nextPart = multipartStream.readBoundary();
+                continue; // not the file field
+            }
+
+            String filename = Arrays.stream(cdHeader)
+                    .filter(s -> s[0].equals("filename"))
+                    .map(s -> s[1])
+                    .map(s -> s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)
+                    .findFirst()
+                    .orElse(null);
+
+            PipedInputStream pipedInputStream = new PipedInputStream();
+            PipedOutputStream pipedOutputStream = new PipedOutputStream();
+            pipedInputStream.connect(pipedOutputStream);
+            AtomicReference<IOException> exception = new AtomicReference<>(null);
+            Thread readingThread = new Thread(() -> {
+                try {
+                    multipartStream.readBodyData(pipedOutputStream);
+                } catch (IOException e) {
+                    exception.set(e);
+                } finally {
+                    try {
+                        pipedOutputStream.close();
+                    } catch (IOException e) {
+                        exception.set(e);
+                    }
+                }
+            }, "ClearDataReadThread");
+            readingThread.start();
+
+            logger.info("Trying to index {}", filename);
+            Sparql.LoadFileResult out = sparql.loadFile(pipedInputStream, filename);
+            try {
+                readingThread.join();
+            } catch (InterruptedException e) {
+                //
+            }
+            // throw IOException of the read thread if required
+            IOException e = exception.get();
+            if (e != null) {
+                throw e;
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(out);
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
+        throw new IllegalArgumentException("no stream field");
     }
 
     @GetMapping("/merge")
-    public ResponseEntity<Sparql.MergeRequestResult> mergeStore() throws Exception {
+    public ResponseEntity<Sparql.MergeRequestResult> mergeStore() throws IOException {
         return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
     }
 
     @GetMapping("/is_merging")
-    public ResponseEntity<Sparql.IsMergingResult> isMerging() throws Exception {
+    public ResponseEntity<Sparql.IsMergingResult> isMerging() throws IOException {
         return ResponseEntity.status(HttpStatus.OK).body(sparql.isMerging());
     }
     @GetMapping("/")

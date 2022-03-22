@@ -43,8 +43,6 @@ import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -86,6 +84,22 @@ public class Sparql {
 
 		public boolean isMerging() {
 			return merging;
+		}
+	}
+
+	public static class LoadFileResult {
+		private boolean loaded;
+
+		public LoadFileResult(boolean loaded) {
+			this.loaded = loaded;
+		}
+
+		public boolean isLoaded() {
+			return loaded;
+		}
+
+		public void setLoaded(boolean loaded) {
+			this.loaded = loaded;
 		}
 	}
 
@@ -161,7 +175,7 @@ public class Sparql {
 		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
 
-	void initializeHybridStore(String location) throws Exception {
+	void initializeHybridStore(String location) throws IOException {
 		if (!model.containsKey(location)) {
 			model.put(location, null);
 			HDTSpecification spec = new HDTSpecification();
@@ -172,8 +186,12 @@ public class Sparql {
 				File tempRDF = new File(location + "tmp_index.nt");
 				Files.createDirectories(tempRDF.getParentFile().toPath());
 				Files.createFile(tempRDF.toPath());
-				HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec, null);
-				hdt.saveToHDT(hdtFile.getPath(), null);
+				try {
+					HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec, null);
+					hdt.saveToHDT(hdtFile.getPath(), null);
+				} catch (ParserException e) {
+					throw new IOException("Can't parse the RDF file", e);
+				}
 				Files.delete(Paths.get(tempRDF.getAbsolutePath()));
 			}
 
@@ -210,20 +228,24 @@ public class Sparql {
 	 * ask for a merge of the hybrid store
 	 *
 	 * @return see {@link com.the_qa_company.q_endpoint.hybridstore.HybridStore#mergeStore()} return value
-	 * @throws Exception if the store can't be merged or init
+	 * @throws IOException if the store can't be merged or init
 	 */
-	public MergeRequestResult askForAMerge() throws Exception {
+	public MergeRequestResult askForAMerge() throws IOException {
 		initializeHybridStore(locationHdt);
 		this.hybridStore.mergeStore();
 		return new MergeRequestResult(true);
 	}
 
-	public IsMergingResult isMerging() throws Exception {
+	/**
+	 * @return if the store is merging
+	 * @throws IOException if the store can't be merged or init
+	 */
+	public IsMergingResult isMerging() throws IOException {
 		initializeHybridStore(locationHdt);
 		return new IsMergingResult(hybridStore.isMergeTriggered);
 	}
 
-	public String executeJson(String sparqlQuery, int timeout) throws Exception {
+	public String executeJson(String sparqlQuery, int timeout) throws IOException {
 		initializeHybridStore(locationHdt);
 
 		try (RepositoryConnection connection = repository.getConnection()) {
@@ -266,7 +288,7 @@ public class Sparql {
 		}
 	}
 
-	public String executeXML(String sparqlQuery, int timeout) throws Exception {
+	public String executeXML(String sparqlQuery, int timeout) throws IOException {
 		logger.info("Json " + sparqlQuery);
 		initializeHybridStore(locationHdt);
 
@@ -300,7 +322,7 @@ public class Sparql {
 		}
 	}
 
-	public String executeBinary(String sparqlQuery, int timeout) throws Exception {
+	public String executeBinary(String sparqlQuery, int timeout) throws IOException {
 		initializeHybridStore(locationHdt);
 
 		sparqlQuery = sparqlPrefixes + sparqlQuery;
@@ -343,7 +365,7 @@ public class Sparql {
 		}
 	}
 
-	public String executeUpdate(String sparqlQuery, int timeout) throws Exception {
+	public String executeUpdate(String sparqlQuery, int timeout) throws IOException {
 		initializeHybridStore(locationHdt);
 		//logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = sparqlPrefixes + sparqlQuery;
@@ -362,7 +384,7 @@ public class Sparql {
 		}
 	}
 
-	public String executeTurtle(String sparqlQuery, int timeout) throws Exception {
+	public String executeTurtle(String sparqlQuery, int timeout) throws IOException {
 		logger.info("Turtle " + sparqlQuery);
 		System.out.println("TURTLE !!!!!!!!!!!!");
 		initializeHybridStore(locationHdt);
@@ -385,40 +407,44 @@ public class Sparql {
 		}
 	}
 
-	public ResponseEntity<String> loadFile(InputStream input, String filename) {
+	public LoadFileResult loadFile(InputStream input, String filename) throws IOException {
 		String rdfInput = locationHdt + filename;
 		String hdtOutput = HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName);
 		String baseURI = "file://" + rdfInput;
-		try {
-			Files.createDirectories(Paths.get(locationHdt));
-			Files.deleteIfExists(Paths.get(hdtOutput));
-			Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-			HDTSpecification spec = new HDTSpecification();
-			spec.setOptions(hdtSpec);
+		Files.createDirectories(Paths.get(locationHdt));
+		Files.deleteIfExists(Paths.get(hdtOutput));
+		Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-			RDFNotation notation = RDFNotation.guess(filename);
-			if (notation == RDFNotation.NTRIPLES) {
-				compressToHdt(input, baseURI, filename, hdtOutput, spec);
-			} else {
-				Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
+		HDTSpecification spec = new HDTSpecification();
+		spec.setOptions(hdtSpec);
+
+		RDFNotation notation = RDFNotation.guess(filename);
+		if (notation == RDFNotation.NTRIPLES) {
+			compressToHdt(input, baseURI, filename, hdtOutput, spec);
+		} else {
+			Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
+			try {
 				HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, notation, spec, null);
 				hdt.saveToHDT(hdtOutput, null);
+			} catch (ParserException e) {
+				throw new IOException("Can't parse the RDF file", e);
 			}
+		}
 
-			clearHybridStore(locationHdt);
-			initializeHybridStore(locationHdt);
+		clearHybridStore(locationHdt);
+		initializeHybridStore(locationHdt);
+		try {
 			for (LuceneSail sail : luceneSails) {
 				sail.reindex();
 			}
-			return ResponseEntity.status(HttpStatus.OK).body("File was loaded successfully...\n");
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new RuntimeException("Can't reindex the lucene sail(s)!", e);
 		}
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File was not loaded...\n");
+		return new LoadFileResult(true);
 	}
 
-	private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation, HDTSpecification specs) throws IOException, ParserException {
+	private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation, HDTSpecification specs) throws IOException {
 		/* Maximum amount of memory the JVM will attempt to use */
 		long maxMemory = Runtime.getRuntime().maxMemory();
 		long chunkSize =
@@ -451,11 +477,16 @@ public class Sparql {
 		String lastFile = null;
 		while (it.hasNewFile()) {
 			logger.info("Compressing #" + file);
-			HDT hdtDump = HDTManager.generateHDT(it, baseURI, specs, null);
 			String hdtOutput = new File(tempFile.getParent(), tempFile.getName() + "."
 					+ String.format("%03d", file) + ".hdt").getAbsolutePath();
-			hdtDump.saveToHDT(hdtOutput, null);
-			hdtDump.close();
+			try {
+				HDT hdtDump = HDTManager.generateHDT(it, baseURI, specs, null);
+				hdtDump.saveToHDT(hdtOutput, null);
+				hdtDump.close();
+			} catch (ParserException e) {
+				throw new IOException("Can't parse the RDF file", e);
+			}
+
 			System.gc();
 			logger.info("Competed into " + hdtOutput);
 			if (file > 0) {
