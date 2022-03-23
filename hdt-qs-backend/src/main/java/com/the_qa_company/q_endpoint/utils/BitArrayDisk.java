@@ -10,6 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+/**
+ * Implementation of {@link org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap} write on disk
+ */
 public class BitArrayDisk implements ModifiableBitmap {
 
     protected final static int LOGW = 6;
@@ -53,16 +56,30 @@ public class BitArrayDisk implements ModifiableBitmap {
     private boolean inMemory = false;
 
 
+    /**
+     * create a on disk bit array
+     * @param nbits the number of bits to allocate
+     * @param location the array location
+     */
     public BitArrayDisk(long nbits, String location) {
         this(nbits, new File(location));
     }
 
+    /**
+     * create a in memory bit array, can be switch to a on disk bit array with {@link #changeToInDisk(java.io.File)}
+     * @param nbits the number of bits to allocate
+     */
     public BitArrayDisk(long nbits) {
         this.numbits = 0;
         this.inMemory = true;
         initWordsArray(nbits);
     }
 
+    /**
+     * create a on disk bit array
+     * @param nbits the number of bits to allocate
+     * @param file the array location
+     */
     public BitArrayDisk(long nbits, File file) {
         this.numbits = 0;
         try {

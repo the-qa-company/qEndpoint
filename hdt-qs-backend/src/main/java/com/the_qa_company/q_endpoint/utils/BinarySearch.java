@@ -4,13 +4,20 @@ import org.rdfhdt.hdt.dictionary.Dictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.util.string.CharSequenceComparator;
 
-// Small util to find literals in the dictionary using binary search
-
+/**
+ * Small utility class to find literals in the dictionary using binary search
+ */
 public class BinarySearch {
     private static final CharSequenceComparator COMPARATOR = new CharSequenceComparator();
 
-    // FIRST occurrence of " in the dictionary between the indexes low and high, if not found return
-    // -1
+    /**
+     * FIRST occurrence of " in the dictionary between the indexes low and high
+     * @param dictionary the dictionary to search
+     * @param low the lowest index
+     * @param high the highest index
+     * @param string the string to search
+     * @return the index, or -1 for not found
+     */
     public static long first(Dictionary dictionary, long low, long high, String string) {
         if (high >= low) {
             long mid = low + (high - low) / 2;
@@ -28,7 +35,15 @@ public class BinarySearch {
         return -1;
     }
 
-    // LAST occurrence of " in the dictionary between the indexes low and high, if not found return -1
+    /**
+     * LAST occurrence of " in the dictionary between the indexes low and high
+     * @param dictionary the dictionary to search
+     * @param low the lowest index
+     * @param high the highest index
+     * @param n n
+     * @param string the string to search
+     * @return the index, or -1 for not found
+     */
     public static long last(Dictionary dictionary, long low, long high, long n, String string) {
         if (high >= low) {
             long mid = low + (high - low) / 2;

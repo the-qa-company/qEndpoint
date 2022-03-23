@@ -10,6 +10,10 @@ import org.eclipse.rdf4j.sail.NotifyingSail;
 
 import java.util.stream.Collectors;
 
+/**
+ * a linked sail compiler to create a multi-filter sail
+ * @author Antoine Willerval
+ */
 public class MultiFilterLinkedSailCompiler extends LinkedSailCompiler {
 	public MultiFilterLinkedSailCompiler() {
 		super(SailCompilerSchema.MULTI_FILTER_TYPE);

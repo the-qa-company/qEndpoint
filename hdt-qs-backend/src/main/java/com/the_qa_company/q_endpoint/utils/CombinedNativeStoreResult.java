@@ -4,11 +4,20 @@ import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.SailException;
 
+/**
+ * Combine two statement CloseableIterations into one CloseableIteration
+ * @author Ali Haidar
+ */
 public class CombinedNativeStoreResult implements CloseableIteration<Statement, SailException> {
 
     private final CloseableIteration<? extends Statement, SailException> repositoryResult1;
     private final CloseableIteration<? extends Statement, SailException> repositoryResult2;
 
+    /**
+     * create a combined CloseableIteration
+     * @param repositoryResult1 the first iteration of element
+     * @param repositoryResult2 the second iterator of element
+     */
     public CombinedNativeStoreResult(CloseableIteration<? extends Statement, SailException> repositoryResult1,
                                      CloseableIteration<? extends Statement, SailException> repositoryResult2) {
         this.repositoryResult1 = repositoryResult1;

@@ -5,6 +5,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * an annotation to describe a value for the
+ * {@link com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema#PARSED_STRING_DATATYPE}, it should be put
+ * on a method returning a string and without parameters, the methods with this annotation would be called once the
+ * {@link com.the_qa_company.q_endpoint.utils.sail.builder.SailCompiler#registerDirObject(Object)} method is called.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ParsedStringValue {

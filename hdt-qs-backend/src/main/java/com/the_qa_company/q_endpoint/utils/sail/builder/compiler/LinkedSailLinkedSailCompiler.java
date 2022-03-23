@@ -10,6 +10,10 @@ import org.eclipse.rdf4j.sail.NotifyingSail;
 
 import java.util.List;
 
+/**
+ * a linked sail compiler to link multiple linked sail
+ * @author Antoine Willerval
+ */
 public class LinkedSailLinkedSailCompiler extends LinkedSailCompiler {
 	public LinkedSailLinkedSailCompiler() {
 		super(SailCompilerSchema.LINKED_SAIL_TYPE);

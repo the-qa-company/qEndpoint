@@ -12,6 +12,9 @@ import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 public class LuceneSailBuilder {
 	private LuceneSail sail;
 
+	/**
+	 * create a builder with default config
+	 */
 	public LuceneSailBuilder() {
 		// default config
 		sail = new LuceneSail();

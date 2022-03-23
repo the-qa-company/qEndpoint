@@ -68,6 +68,9 @@ public class SailCompiler {
 	private final Map<IRI, LinkedSailCompiler> compilers = new HashMap<>();
 	private final Map<String, String> dirStrings = new HashMap<>();
 
+	/**
+	 * create a compiler with default LinkedSailCompilers
+	 */
 	public SailCompiler() {
 		registerCustomCompiler(new FilterLinkedSailCompiler());
 		registerCustomCompiler(new LinkedSailLinkedSailCompiler());
@@ -144,6 +147,9 @@ public class SailCompiler {
 			ParsedStringValue value = m.getAnnotation(ParsedStringValue.class);
 			if (value != null) {
 				try {
+					if (m.getParameterCount() != 0) {
+						throw new IllegalArgumentException("The count of parameters on the method " + m.getName() + "isn't 0");
+					}
 					registerDirString(value.value(), String.valueOf(m.invoke(object)));
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new IllegalArgumentException("Can't read the value of the method " + m.getName(), e);

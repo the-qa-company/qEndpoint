@@ -18,6 +18,10 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import java.util.List;
 import java.util.function.Function;
 
+/**
+ * a linked sail compiler to create filtering sail
+ * @author Antoine Willerval
+ */
 public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 	public FilterLinkedSailCompiler() {
 		super(SailCompilerSchema.FILTER_TYPE);

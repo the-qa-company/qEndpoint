@@ -7,6 +7,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+/**
+ * Iterator to split an iterator stream into multiple files, the iterator return {@link #hasNext()} == true once the
+ * first file is returned, then the {@link #hasNewFile()} should be called to check if another file can be created and
+ * re-allow {@link #hasNext()} to return true
+ * @author Antoine Willerval
+ */
 public class FileTripleIterator implements Iterator<TripleString> {
     private final Iterator<TripleString> it;
     private final long maxSize;
@@ -14,6 +20,11 @@ public class FileTripleIterator implements Iterator<TripleString> {
     private TripleString next;
     private boolean stop = false;
 
+    /**
+     * create a file triple iterator from a TripleString stream and a max size
+     * @param it the triple iterator
+     * @param maxSize the maximum size of each file, this size is estimated, so files can be bigger.
+     */
     public FileTripleIterator(Iterator<TripleString> it, long maxSize) {
         this.it = it;
         this.maxSize = maxSize;

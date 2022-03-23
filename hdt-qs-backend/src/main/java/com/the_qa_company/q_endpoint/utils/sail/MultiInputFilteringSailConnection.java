@@ -10,6 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ *
+ * @author Antoine Willerval
+ */
 class MultiInputFilteringSailConnection extends NotifyingSailConnectionWrapper  {
 	private final List<SailConnectionListener> yesListeners = new ArrayList<>();
 	private final List<SailConnectionListener> noListeners = new ArrayList<>();

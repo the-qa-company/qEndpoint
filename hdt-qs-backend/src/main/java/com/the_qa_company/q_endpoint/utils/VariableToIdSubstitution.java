@@ -15,10 +15,18 @@ import org.rdfhdt.hdt.hdt.HDT;
 
 import java.util.Iterator;
 
+/**
+ * QueryOptimizer to replace Var by IRIHDT Var in a query
+ * @author Dennis Diefenbach
+ */
 public class VariableToIdSubstitution implements QueryOptimizer {
 
     private final HDT hdt;
 
+    /**
+     * create the optimizer
+     * @param hdt the hdt to get the ids
+     */
     public VariableToIdSubstitution(HDT hdt) {
         this.hdt = hdt;
     }

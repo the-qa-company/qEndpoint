@@ -8,6 +8,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Schema describing the model compiler nodes,
+ * {@literal @prefix mdlc: <http://the-qa-company.com/modelcompiler/>}
+ * @author Antoine Willerval
+ */
 public class SailCompilerSchema {
 	private static final ValueFactory VF = SimpleValueFactory.getInstance();
 	private static final Map<IRI, String> DESC = new HashMap<>();
@@ -135,6 +140,9 @@ public class SailCompilerSchema {
 		return iri;
 	}
 
+	/**
+	 * @return a description map indexed by IRI
+	 */
 	public static Map<IRI, String> getDescriptions() {
 		return Collections.unmodifiableMap(DESC);
 	}

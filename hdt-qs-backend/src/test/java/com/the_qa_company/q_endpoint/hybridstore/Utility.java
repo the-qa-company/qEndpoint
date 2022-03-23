@@ -22,11 +22,29 @@ import java.io.IOException;
 
 public class Utility {
 
+    /**
+     * create a temporary HDT Index
+     * @param fileName the temporaryFolder to create the temp file
+     * @param empty if the HDT should be empty?
+     * @param isBig if the HDT should be big?
+     * @param spec the HDTOptions to put to the HDT
+     * @return HDT
+     * @throws IOException io error
+     */
     public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException {
         return createTempHdtIndex(new File(fileName.newFile() + ".nt").getAbsolutePath(), empty, isBig, spec);
     }
 
 
+    /**
+     * create a temporary HDT Index
+     * @param fileName the temp file name to create the temp rdf file
+     * @param empty if the HDT should be empty?
+     * @param isBig if the HDT should be big?
+     * @param spec the HDTOptions to put to the HDT
+     * @return HDT
+     * @throws IOException io error
+     */
     public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException{
         File inputFile = new File(fileName);
         if (!empty) {
@@ -50,10 +68,25 @@ public class Utility {
         return HDTManager.indexedHDT(hdt, null);
     }
 
+    /**
+     * the number of subjects for big hdt
+     */
     public static final int SUBJECTS = 1000;
+    /**
+     * the number of predicates for big hdt
+     */
     public static final int PREDICATES = 1000;
+    /**
+     * the number of objects for big hdt
+     */
     public static final int OBJECTS = 100;
+    /**
+     * the number of triples for big hdt
+     */
     public static final int COUNT = SUBJECTS * PREDICATES;
+    /**
+     * the number ex: namespace
+     */
     public static final String EXAMPLE_NAMESPACE = "http://example.com/";
 
     /**
@@ -99,7 +132,7 @@ public class Utility {
         }
     }
 
-    public static void writeTempRDF(File file) throws IOException {
+    private static void writeTempRDF(File file) throws IOException {
         ValueFactory vf = new MemValueFactory();
         try (FileOutputStream out = new FileOutputStream(file)) {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);

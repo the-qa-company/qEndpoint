@@ -7,10 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 
+/**
+ * Utility class to manage files
+ * @author Antoine Willerval
+ */
 public class FileUtils {
-    private FileUtils() {
-    }
-
     /**
      * delete a path recursively
      * @param path the path to delete
@@ -40,5 +41,8 @@ public class FileUtils {
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    private FileUtils() {
     }
 }

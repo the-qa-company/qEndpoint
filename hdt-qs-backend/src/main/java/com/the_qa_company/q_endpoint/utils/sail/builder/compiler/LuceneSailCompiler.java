@@ -16,6 +16,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * a linked sail compiler to create lucene sails
+ * @author Antoine Willerval
+ */
 public class LuceneSailCompiler extends LinkedSailCompiler {
 	private final Set<LuceneSail> sails = new HashSet<>();
 	public LuceneSailCompiler() {

@@ -20,7 +20,7 @@ import org.eclipse.rdf4j.sail.UpdateContext;
 
 import java.util.Objects;
 
-public class FilteringSailConnection implements NotifyingSailConnection {
+class FilteringSailConnection implements NotifyingSailConnection {
 	private final NotifyingSailConnection connectionIfYes;
 	private final MultiInputFilteringSailConnection connectionIfNo;
 	private final SailFilter filter;
@@ -189,6 +189,9 @@ public class FilteringSailConnection implements NotifyingSailConnection {
 		connectionIfNo.removeBypassConnectionListener(listener);
 	}
 
+	/**
+	 * @return the filter of the connection
+	 */
 	public SailFilter getFilter() {
 		return filter;
 	}
