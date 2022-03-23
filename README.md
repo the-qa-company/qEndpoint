@@ -1,9 +1,16 @@
+# QEndpoint
+
+- [SPARQL EndPoint/Backend](hdt-qs-backend/README.md)
+- [SPARQL Frontend](hdt-qs-frontend/README.md)
+- [Endpoint benchmark](hdt-qs-benchmark/README.md)
+
 ## How to run the wikibase updater
 
-- Clone this repository of the hdt-sparql-endpoint from this link: https://gitlab.the-qa-company.com/D063520/hdtsparqlendpoint.git
-- Compile the project using this command: `mvn clean install -DskipTests -s ci_settings.xml`
-- Put the hdt index in the hdt-store directory ( it should be index.hdt)
-- Start the attached jar for the wikibase updater by running 
+- Clone the QEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
+- Compile the project using this command: `mvn clean install -DskipTests`
+- Put the hdt index in the hdt-store directory (by default index_dev.hdt)
+- Start the attached jar for the wikibase updater by running
+
 ```
 java -cp target/wikidata-query-tools-*-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update --sparqlUrl http://localhost:1234/api/endpoint/sparql --wikibaseHost https://linkedopendata.eu/ --wikibaseUrl https://linkedopendata.eu/ --conceptUri https://linkedopendata.eu/ --wikibaseScheme https --entityNamespaces 120,122
 ```
