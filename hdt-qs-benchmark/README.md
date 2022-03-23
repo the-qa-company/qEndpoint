@@ -3,12 +3,12 @@
 # Sparql Endpoint Benchmark
 
 - [Sparql Endpoint Benchmark](#sparql-endpoint-benchmark)
-  - [Download BSBM script](#download-bsbm-script)
+  - [Run BSBM benchmark](#run-bsbm-benchmark)
 
-## Download BSBM script
+## Run BSBM benchmark
 
-Download the tool to create the dataset by doing the download script
+Run the benchmark with the command
 
 ```bash
-./download_bsbm.sh
+./benchmark.sh
 ```
