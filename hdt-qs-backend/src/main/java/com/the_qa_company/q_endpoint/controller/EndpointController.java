@@ -15,12 +15,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebInputException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.security.Principal;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,7 +35,7 @@ public class EndpointController {
     Sparql sparql;
 
     @RequestMapping(value = "/sparql")
-    public ResponseEntity<String> sparqlEndpoint(
+    public void sparqlEndpoint(
             @RequestParam(value = "query", required = false) final String query,
             @RequestParam(value = "update", required = false) final String updateQuery,
             @RequestParam(value = "format", defaultValue = "json") final String format,
@@ -42,69 +43,40 @@ public class EndpointController {
             @RequestHeader(value = "timeout", defaultValue = "300") int timeout,
             @RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
-            @RequestBody(required = false) String body)
+            @RequestBody(required = false) String body,
+            HttpServletResponse response
+    )
             throws IOException {
+        response.getOutputStream();
         logger.info("New query");
-//        logger.info("Query {} timeout {} update query {} body {} ", query, timeout, updateQuery, body);
 
         if (query != null) {
-            if (acceptHeader.contains("application/sparql-results+json")) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .header("Content-Type", "application/sparql-results+json")
-                        .body(sparql.executeJson(query, timeout));
-            }
-            if (acceptHeader.contains("application/sparql-results+xml")) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .header("Content-Type", "application/sparql-results+xml")
-                        .body(sparql.executeXML(query, timeout));
-            }
-            if (acceptHeader.contains("application/x-binary-rdf-results-table")) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .header("Content-Type", "application/x-binary-rdf-results-table")
-                        .body(sparql.executeBinary(query, timeout));
-            }
-            if (format.equals("turtle") || acceptHeader.contains("text/turtle")) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .header("Content-Type", "application/sparql-results+json")
-                        .body(sparql.executeTurtle(query, timeout));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
-
+            sparql.execute(query, timeout, acceptHeader, response::setContentType, response.getOutputStream());
+        } else if (body != null && content.equals("application/sparql-query")) {
+			sparql.execute(body, timeout, acceptHeader, response::setContentType, response.getOutputStream());
+		} else if (updateQuery != null) {
+			sparql.executeUpdate(updateQuery, timeout, response.getOutputStream());
+		} else if (body != null) {
+			sparql.executeUpdate(body, timeout, response.getOutputStream());
         } else {
-            if (body != null && content.equals("application/sparql-query")) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .header("Content-Type", "application/sparql-results+json")
-                        .body(sparql.executeJson(body, timeout));
-            }
-            if (updateQuery != null) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .body(sparql.executeUpdate(updateQuery, timeout));
-            } else {
-                if (body != null) {
-                    return ResponseEntity.status(HttpStatus.OK)
-                            .body(sparql.executeUpdate(body, timeout));
-                }
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Query not specified");
-            }
+            throw new ServerWebInputException("Query not specified");
         }
     }
 
     @RequestMapping(value = "/update")
-    public ResponseEntity<String> sparqlUpdate(
+    public void sparqlUpdate(
             @RequestParam(value = "query") final String query,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
             @RequestParam(value = "timeout", defaultValue = "5") int timeout,
-            Principal principal)
+			HttpServletResponse response)
             throws IOException {
         logger.info("Query " + query);
         logger.info("timeout: " + timeout);
-        if (format.equals("json") || acceptHeader.contains("application/sparql-results+json")) {
-            return ResponseEntity.status(HttpStatus.OK)
-                    .header("Content-Type", "application/sparql-results+json")
-                    .body(sparql.executeUpdate(query, timeout));
+        if (format.equals("json")) {
+			sparql.executeUpdate(query, timeout, response.getOutputStream());
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Format not supported");
+		throw new ServerWebInputException("Format not supported");
     }
     private String extractBoundary(HttpServletRequest request) {
         String boundaryHeader = "boundary=";

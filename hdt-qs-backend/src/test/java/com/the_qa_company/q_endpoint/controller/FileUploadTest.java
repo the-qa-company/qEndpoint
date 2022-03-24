@@ -3,16 +3,26 @@ package com.the_qa_company.q_endpoint.controller;
 import com.the_qa_company.q_endpoint.Application;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,21 +30,36 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestContextManager;
 import org.springframework.util.FileSystemUtils;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
-@RunWith(SpringRunner.class)
+@RunWith(Parameterized.class)
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
 public class FileUploadTest {
+    public static final String COKTAILS_NT = "cocktails.nt";
     private static final Logger logger = LoggerFactory.getLogger(FileUploadTest.class);
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object> params() {
+        return new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+    }
+
     @Autowired
     Sparql sparql;
 
@@ -47,8 +72,37 @@ public class FileUploadTest {
     @Value("${locationNative}")
     String locationNative;
 
+    private final String fileName;
+    private final RDFFormat format;
+
+    public FileUploadTest(RDFFormat format) throws IOException {
+        this.format = format;
+        RDFFormat originalFormat = Rio.getParserFormatForFileName(COKTAILS_NT).orElseThrow();
+
+        RDFParser parser = Rio.createParser(originalFormat);
+        Path testDir = Paths.get("tests", "testrdf");
+        Files.createDirectories(testDir);
+        Path RDFFile = testDir.resolve(COKTAILS_NT + "." + format.getDefaultFileExtension());
+        if (!Files.exists(RDFFile)) {
+            try (
+                    OutputStream os = new FileOutputStream(RDFFile.toFile());
+                    InputStream is = stream(COKTAILS_NT)
+            ) {
+                RDFWriter writer = Rio.createWriter(format, os);
+                parser.setRDFHandler(writer);
+                parser.parse(is);
+            }
+        }
+
+        fileName = RDFFile.toFile().getAbsolutePath();
+    }
+
     @Before
-    public void setup() {
+    public void setup() throws Exception {
+        // init spring runner
+        TestContextManager testContextManager = new TestContextManager(getClass());
+        testContextManager.prepareTestInstance(this);
+
         // clear map to recreate hybrid store
         sparql.model.clear();
 
@@ -78,10 +132,12 @@ public class FileUploadTest {
     private InputStream stream(String file) {
         return Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(file), "file can't be found!");
     }
+    private InputStream streamOut(String file) throws FileNotFoundException {
+        return new FileInputStream(file);
+    }
 
     private long fileSize(String file) throws IOException {
-        InputStream testNt = stream(file);
-        assert testNt != null;
+        InputStream testNt = streamOut(file);
         byte[] buff = new byte[1024];
 
         long r;
@@ -92,18 +148,57 @@ public class FileUploadTest {
         return size;
     }
 
-    private void assertAllHDTLoaded(String file) throws IOException {
+    private String clearSpaces(String text) {
+        return text.matches("(\\s|[\\n\\r])*") ? "" : text;
+    }
+
+    private org.eclipse.rdf4j.model.Value clearSpaces(ValueFactory vf, org.eclipse.rdf4j.model.Value value) {
+        if (!value.isLiteral()) {
+            return value;
+        }
+        Literal lit = (Literal) value;
+        IRI dt = lit.getDatatype();
+        if (dt.equals(XSD.STRING)) {
+            return vf.createLiteral(clearSpaces(lit.stringValue()));
+        } else if (dt.equals(RDF.LANGSTRING)) {
+            return vf.createLiteral(clearSpaces(lit.stringValue()), lit.getLanguage().orElseThrow());
+        }
+        return lit;
+    }
+
+    private void assertAllHDTLoaded() throws IOException {
         HybridStore store = sparql.hybridStore;
         SailRepository sailRepository = new SailRepository(store);
         List<Statement> statementList = new ArrayList<>();
-        RDFStreamUtils.readRDFStream(stream(file), RDFFormat.NTRIPLES, true, statement -> {
-                    if (
-                            statement.getSubject().isBNode()
-                                    || statement.getObject().isBNode())
-                        return;
+        Consumer<Statement> consumer;
+        // fix because RDFXML can't handle empty spaces literals
+        if (format == RDFFormat.RDFXML) {
+            consumer = statement -> {
+                if (
+                        statement.getSubject().isBNode()
+                                || statement.getObject().isBNode())
+                    return;
+                org.eclipse.rdf4j.model.Value v = clearSpaces(store.getValueFactory(), statement.getObject());
+                if (v != statement.getObject()) {
+                    statementList.add(store.getValueFactory().createStatement(
+                            statement.getSubject(),
+                            statement.getPredicate(),
+                            v
+                    ));
+                } else {
                     statementList.add(statement);
                 }
-        );
+            };
+        } else {
+            consumer = statement -> {
+                if (
+                        statement.getSubject().isBNode()
+                                || statement.getObject().isBNode())
+                    return;
+                statementList.add(statement);
+            };
+        }
+        RDFStreamUtils.readRDFStream(stream(COKTAILS_NT), RDFFormat.NTRIPLES, true, consumer);
 
         try (SailRepositoryConnection connection = sailRepository.getConnection()) {
             RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false);
@@ -117,7 +212,7 @@ public class FileUploadTest {
                         next.getSubject().toString() + ", " +
                         next.getPredicate().toString() + ", " +
                         next.getObject().toString()
-                        + "), not in " + file, statementList.remove(next));
+                        + "), not in " + COKTAILS_NT, statementList.remove(next));
                 while (statementList.remove(next)) {
                     // remove duplicates
                     logger.trace("removed duplicate of {}", next);
@@ -128,42 +223,28 @@ public class FileUploadTest {
             for (Statement statement : statementList) {
                 System.err.println(statement);
             }
-            Assert.fail(file + "contains more triples than the HybridStore");
+            Assert.fail(COKTAILS_NT + " contains more triples than the HybridStore");
         }
     }
 
     @Test
     public void loadNoSplitTest() throws IOException {
-        String fileName = "cocktails.nt";
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
 
-        sparql.loadFile(stream(fileName), fileName);
+        sparql.loadFile(streamOut(fileName), fileName);
 
 
-        assertAllHDTLoaded(fileName);
-    }
-
-    @Test
-    public void loadNoNTSplitTest() throws IOException {
-        String fileName = "cocktails.nt";
-        long size = fileSize(fileName);
-        sparql.debugMaxChunkSize = size / 10;
-
-        // use ttl file because nt c ttl to avoid split
-        sparql.loadFile(stream(fileName), fileName + ".ttl");
-
-        assertAllHDTLoaded(fileName);
+        assertAllHDTLoaded();
     }
 
     @Test
     public void loadSplitTest() throws IOException {
-        String fileName = "cocktails.nt";
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
 
-        sparql.loadFile(stream(fileName), fileName);
+        sparql.loadFile(streamOut(fileName), fileName);
 
-        assertAllHDTLoaded(fileName);
+        assertAllHDTLoaded();
     }
 }

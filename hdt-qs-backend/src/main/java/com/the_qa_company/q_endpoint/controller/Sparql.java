@@ -5,25 +5,27 @@ import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStoreFiles;
 import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
 import com.the_qa_company.q_endpoint.utils.FileUtils;
+import com.the_qa_company.q_endpoint.utils.FormatUtils;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompiler;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema;
 import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LuceneSailCompiler;
+import jakarta.json.Json;
+import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResultHandler;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
-import org.eclipse.rdf4j.query.resultio.binary.BinaryQueryResultWriterFactory;
-import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
-import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
+import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriter;
+import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
@@ -44,21 +46,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebInputException;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 @Component
@@ -109,35 +111,35 @@ public class Sparql {
 	public static int countEquals = 0;
 
 	private static final String sparqlPrefixes = String.join("\n",
-					"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-					"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>",
-					"PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>",
-					"PREFIX dct: <http://purl.org/dc/terms/>",
-					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>",
-					"PREFIX owl: <http://www.w3.org/2002/07/owl#>",
-					"PREFIX wikibase: <http://wikiba.se/ontology#>",
-					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>",
-					"PREFIX cc: <http://creativecommons.org/ns#>",
-					"PREFIX geo: <http://www.opengis.net/ont/geosparql#>",
-					"PREFIX prov: <http://www.w3.org/ns/prov#>",
-					"PREFIX wd: <http://www.wikidata.org/entity/>",
-					"PREFIX data: <https://www.wikidata.org/wiki/Special:EntityData/>",
-					"PREFIX s: <http://www.wikidata.org/entity/statement/>",
-					"PREFIX ref: <http://www.wikidata.org/reference/>",
-					"PREFIX v: <http://www.wikidata.org/value/>",
-					"PREFIX wdt: <http://www.wikidata.org/prop/direct/>",
-					"PREFIX wdtn: <http://www.wikidata.org/prop/direct-normalized/>",
-					"PREFIX p: <http://www.wikidata.org/prop/>",
-					"PREFIX ps: <http://www.wikidata.org/prop/statement/>",
-					"PREFIX psv: <http://www.wikidata.org/prop/statement/value/>",
-					"PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>",
-					"PREFIX pq: <http://www.wikidata.org/prop/qualifier/>",
-					"PREFIX pqv: <http://www.wikidata.org/prop/qualifier/value/>",
-					"PREFIX pqn: <http://www.wikidata.org/prop/qualifier/value-normalized/>",
-					"PREFIX pr: <http://www.wikidata.org/prop/reference/>",
-					"PREFIX prv: <http://www.wikidata.org/prop/reference/value/>",
-					"PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>",
-					"PREFIX wdno: <http://www.wikidata.org/prop/novalue/> ");
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+			"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>",
+			"PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>",
+			"PREFIX dct: <http://purl.org/dc/terms/>",
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>",
+			"PREFIX owl: <http://www.w3.org/2002/07/owl#>",
+			"PREFIX wikibase: <http://wikiba.se/ontology#>",
+			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>",
+			"PREFIX cc: <http://creativecommons.org/ns#>",
+			"PREFIX geo: <http://www.opengis.net/ont/geosparql#>",
+			"PREFIX prov: <http://www.w3.org/ns/prov#>",
+			"PREFIX wd: <http://www.wikidata.org/entity/>",
+			"PREFIX data: <https://www.wikidata.org/wiki/Special:EntityData/>",
+			"PREFIX s: <http://www.wikidata.org/entity/statement/>",
+			"PREFIX ref: <http://www.wikidata.org/reference/>",
+			"PREFIX v: <http://www.wikidata.org/value/>",
+			"PREFIX wdt: <http://www.wikidata.org/prop/direct/>",
+			"PREFIX wdtn: <http://www.wikidata.org/prop/direct-normalized/>",
+			"PREFIX p: <http://www.wikidata.org/prop/>",
+			"PREFIX ps: <http://www.wikidata.org/prop/statement/>",
+			"PREFIX psv: <http://www.wikidata.org/prop/statement/value/>",
+			"PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>",
+			"PREFIX pq: <http://www.wikidata.org/prop/qualifier/>",
+			"PREFIX pqv: <http://www.wikidata.org/prop/qualifier/value/>",
+			"PREFIX pqn: <http://www.wikidata.org/prop/qualifier/value-normalized/>",
+			"PREFIX pr: <http://www.wikidata.org/prop/reference/>",
+			"PREFIX prv: <http://www.wikidata.org/prop/reference/value/>",
+			"PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>",
+			"PREFIX wdno: <http://www.wikidata.org/prop/novalue/> ");
 	final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
 	// to test the chunk development of stream
@@ -245,7 +247,7 @@ public class Sparql {
 		return new IsMergingResult(hybridStore.isMergeTriggered);
 	}
 
-	public String executeJson(String sparqlQuery, int timeout) throws IOException {
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter, OutputStream out) throws IOException {
 		initializeHybridStore(locationHdt);
 
 		try (RepositoryConnection connection = repository.getConnection()) {
@@ -259,113 +261,53 @@ public class Sparql {
 
 			if (parsedQuery instanceof ParsedTupleQuery) {
 				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				TupleQueryResultHandler writer = new SPARQLResultsJSONWriter(out);
+				QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader)
+						.orElseThrow(() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
+				mimeSetter.accept(format.getDefaultMIMEType());
+				TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance()
+						.get(format)
+						.orElseThrow()
+						.getWriter(out);
 				query.setMaxExecutionTime(timeout);
 				try {
 					query.evaluate(writer);
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
 					q.printStackTrace();
-					return "{\"timeout\":" + timeout + "}";
+					throw new RuntimeException(q);
 				}
-				return out.toString();
 			} else if (parsedQuery instanceof ParsedBooleanQuery) {
 				BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
-				if (query.evaluate()) {
-					connection.close();
-					return "{ \"head\" : { } , \"boolean\" : true }";
-				} else {
-					connection.close();
-					return "{ \"head\" : { } , \"boolean\" : false }";
-				}
-
-			} else {
-				System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
-				return "Bad Request : query not supported ";
-			}
-		}
-	}
-
-	public String executeXML(String sparqlQuery, int timeout) throws IOException {
-		logger.info("Json " + sparqlQuery);
-		initializeHybridStore(locationHdt);
-
-		ParsedQuery parsedQuery =
-				QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-
-
-		try (RepositoryConnection connection = repository.getConnection()) {
-			if (parsedQuery instanceof ParsedTupleQuery) {
-				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				TupleQueryResultHandler writer = new SPARQLResultsXMLWriter(out);
+				QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader)
+						.orElseThrow(() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
+				mimeSetter.accept(format.getDefaultMIMEType());
+				TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance()
+						.get(format)
+						.orElseThrow()
+						.getWriter(out);
 				query.setMaxExecutionTime(timeout);
+				writer.handleBoolean(query.evaluate());
+				connection.close();
+			} else if (parsedQuery instanceof ParsedGraphQuery) {
+				GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
+				RDFFormat format = FormatUtils.getRDFWriterFormat(acceptHeader)
+						.orElseThrow(() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
+				mimeSetter.accept(format.getDefaultMIMEType());
+				RDFHandler handler = Rio.createWriter(format, out);
 				try {
-					query.evaluate(writer);
+					query.evaluate(handler);
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
-				}
-				return out.toString(StandardCharsets.UTF_8);
-			} else if (parsedQuery instanceof ParsedBooleanQuery) {
-				BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
-				if (query.evaluate()) {
-					return "{ \"head\" : { } , \"boolean\" : true }";
-				} else {
-					return "{ \"head\" : { } , \"boolean\" : false }";
+					q.printStackTrace();
+					throw new RuntimeException(q);
 				}
 			} else {
-				System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
-				return "Bad Request : query not supported ";
+				throw new ServerWebInputException("query not supported");
 			}
 		}
 	}
 
-	public String executeBinary(String sparqlQuery, int timeout) throws IOException {
-		initializeHybridStore(locationHdt);
-
-		sparqlQuery = sparqlPrefixes + sparqlQuery;
-
-		//logger.info("Json " + sparqlQuery);
-
-		ParsedQuery parsedQuery =
-				QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-		try (RepositoryConnection connection = repository.getConnection()) {
-			if (parsedQuery instanceof ParsedTupleQuery) {
-
-				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				TupleQueryResultHandler writer = new BinaryQueryResultWriterFactory().getWriter(out);
-				query.setMaxExecutionTime(timeout);
-
-				Stopwatch stopwatch = Stopwatch.createStarted();
-				try {
-					query.evaluate(writer);
-				} catch (QueryEvaluationException q) {
-					logger.error("This exception was caught [" + q + "]");
-				} finally {
-					connection.close();
-				}
-				stopwatch.stop(); // optional
-				logger.info("Time elapsed to execute tuple query: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-				return out.toString(StandardCharsets.UTF_8);
-			} else if (parsedQuery instanceof ParsedBooleanQuery) {
-				BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
-				if (query.evaluate()) {
-					return "{ \"head\" : { } , \"boolean\" : true }";
-				} else {
-					return "{ \"head\" : { } , \"boolean\" : false }";
-				}
-			} else {
-				System.out.println("Not knowledge-base yet: query is neither a SELECT nor an ASK");
-				return "Bad Request : query not supported ";
-			}
-		}
-	}
-
-	public String executeUpdate(String sparqlQuery, int timeout) throws IOException {
+	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) throws IOException {
 		initializeHybridStore(locationHdt);
 		//logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = sparqlPrefixes + sparqlQuery;
@@ -380,30 +322,9 @@ public class Sparql {
 			preparedUpdate.execute();
 			stopwatch.stop(); // optional
 			logger.info("Time elapsed to execute update query: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-			return "OK";
-		}
-	}
-
-	public String executeTurtle(String sparqlQuery, int timeout) throws IOException {
-		logger.info("Turtle " + sparqlQuery);
-		System.out.println("TURTLE !!!!!!!!!!!!");
-		initializeHybridStore(locationHdt);
-		ParsedQuery parsedQuery =
-				QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-		System.out.println(parsedQuery.getClass());
-		try (RepositoryConnection connection = repository.getConnection()) {
-			if (parsedQuery instanceof ParsedGraphQuery) {
-				GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				RDFHandler turtleWriter = Rio.createWriter(RDFFormat.TURTLE, out);
-				query.evaluate(turtleWriter);
-				query.setMaxExecutionTime(timeout);
-				connection.close();
-				return out.toString(StandardCharsets.UTF_8);
-			} else {
-				System.out.println("Not knowledgebase yet: query is not construct");
+			try (JsonGenerator gen = Json.createGenerator(out)) {
+				gen.writeStartObject().write("ok", true).writeEnd();
 			}
-			return null;
 		}
 	}
 
@@ -419,18 +340,7 @@ public class Sparql {
 		HDTSpecification spec = new HDTSpecification();
 		spec.setOptions(hdtSpec);
 
-		RDFNotation notation = RDFNotation.guess(filename);
-		if (notation == RDFNotation.NTRIPLES) {
-			compressToHdt(input, baseURI, filename, hdtOutput, spec);
-		} else {
-			Files.copy(input, Paths.get(locationHdt + filename), StandardCopyOption.REPLACE_EXISTING);
-			try {
-				HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, notation, spec, null);
-				hdt.saveToHDT(hdtOutput, null);
-			} catch (ParserException e) {
-				throw new IOException("Can't parse the RDF file", e);
-			}
-		}
+		compressToHdt(input, baseURI, filename, hdtOutput, spec);
 
 		clearHybridStore(locationHdt);
 		initializeHybridStore(locationHdt);
@@ -469,7 +379,12 @@ public class Sparql {
 		// uncompress the file if required
 		InputStream fileStream = RDFStreamUtils.uncompressedStream(inputStream, filename);
 		// get a triple iterator for this stream
-		Iterator<TripleString> tripleIterator = RDFStreamUtils.readRDFStreamAsTripleStringIterator(fileStream, RDFFormat.NTRIPLES, true);
+		Iterator<TripleString> tripleIterator = RDFStreamUtils.readRDFStreamAsTripleStringIterator(
+				fileStream,
+				Rio.getParserFormatForFileName(filename)
+						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename)),
+				true
+		);
 		// split this triple iterator to filed triple iterator
 		FileTripleIterator it = new FileTripleIterator(tripleIterator, chunkSize);
 
