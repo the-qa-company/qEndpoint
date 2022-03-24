@@ -13,6 +13,8 @@ import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LuceneSailCompi
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -62,7 +64,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -167,6 +168,9 @@ public class Sparql {
 	@Value("${repoModel}")
 	private String repoModel;
 
+	IRI storageMode = SailCompilerSchema.HYBRIDSTORE_STORAGE;
+	int rdf4jSplitUpdate = 1000;
+
 	HybridStore hybridStore;
 	final Set<LuceneSail> luceneSails = new HashSet<>();
 	SailRepository repository;
@@ -225,12 +229,24 @@ public class Sparql {
 
 			NotifyingSail source;
 
-			IRI storageMode;
 			try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
 				storageMode = reader
 						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE)
 						.map(SailCompiler::asIRI)
 						.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
+				rdf4jSplitUpdate = reader
+						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE)
+						.map(v -> (Literal) v)
+						.stream().mapToInt(v -> {
+							if (!v.getCoreDatatype().asXSDDatatype().orElseThrow().isIntegerDatatype()) {
+								throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be an integer");
+							}
+							int i = v.intValue();
+							if (i >= 2) {
+								throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be a positive integer");
+							}
+							return i;
+						}).findAny().orElse(1000);
 			}
 
 			if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
@@ -364,11 +380,16 @@ public class Sparql {
 
 		HDTSpecification spec = new HDTSpecification();
 		spec.setOptions(hdtSpec);
+		if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+			compressToHdt(input, baseURI, filename, hdtOutput, spec);
 
-		compressToHdt(input, baseURI, filename, hdtOutput, spec);
-
-		clearHybridStore(locationHdt);
-		initializeHybridStore(locationHdt);
+			clearHybridStore(locationHdt);
+			initializeHybridStore(locationHdt);
+		} else {
+			clearHybridStore(locationHdt);
+			initializeHybridStore(locationHdt);
+			sendUpdates(input, baseURI, filename);
+		}
 		try {
 			for (LuceneSail sail : luceneSails) {
 				sail.reindex();
@@ -461,6 +482,36 @@ public class Sparql {
 			Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdtdictionary"));
 			Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
 		}
+		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
+	}
+
+	private void sendUpdates(InputStream inputStream, String baseURI, String filename) throws IOException {
+		StopWatch timeWatch = new StopWatch();
+
+		// uncompress the file if required
+		InputStream fileStream = RDFStreamUtils.uncompressedStream(inputStream, filename);
+		// get a triple iterator for this stream
+		Iterator<Statement> it = RDFStreamUtils.readRDFStreamAsIterator(
+				fileStream,
+				Rio.getParserFormatForFileName(filename)
+						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename)),
+				true
+		);
+
+		while (it.hasNext()) {
+			try (RepositoryConnection connection = repository.getConnection()) {
+				connection.begin();
+				for (int i = 0; i < rdf4jSplitUpdate; i++) {
+					Statement stmt = it.next();
+					connection.add(stmt);
+					if (!it.hasNext()) {
+						break;
+					}
+				}
+				connection.commit();
+			}
+		}
+
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
 	}
 

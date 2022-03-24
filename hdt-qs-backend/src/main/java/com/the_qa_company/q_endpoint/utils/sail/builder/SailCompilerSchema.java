@@ -148,6 +148,10 @@ public class SailCompilerSchema {
 	 * mdlc:memoryStoreStorage
 	 */
 	public static final IRI MEMORYSTORE_STORAGE = iri("memoryStoreStorage", "The storage mode memory store");
+	/**
+	 * mdlc:rdfStoreSplit
+	 */
+	public static final IRI RDF_STORE_SPLIT_STORAGE = iri("rdfStoreSplit", "The storage load split update count");
 	private static IRI iri(String name, String desc) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
 		String old = DESC.put(iri, desc);
