@@ -12,6 +12,7 @@ import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema;
 import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LuceneSailCompiler;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -34,7 +35,10 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -58,6 +62,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -218,7 +223,27 @@ public class Sparql {
 				compiler.load(fstream, Rio.getParserFormatForFileName(repoModel).orElseThrow());
 			}
 
-			repository = new SailRepository(compiler.compile(hybridStore));
+			NotifyingSail source;
+
+			IRI storageMode;
+			try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
+				storageMode = reader
+						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE)
+						.map(SailCompiler::asIRI)
+						.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
+			}
+
+			if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+				source = hybridStore;
+			} else if (storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
+				source = new NativeStore(new File(hybridStore.getHybridStoreFiles().getLocationNative(), "nativeglobal"));
+			} else if (storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
+				source = new MemoryStore();
+			} else {
+				throw new RuntimeException("Bad storage mode: " + storageMode);
+			}
+
+			repository = new SailRepository(compiler.compile(source));
 			repository.init();
 
 			luceneSails.clear();

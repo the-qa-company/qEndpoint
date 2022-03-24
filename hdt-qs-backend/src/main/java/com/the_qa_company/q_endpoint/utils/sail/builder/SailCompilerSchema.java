@@ -132,7 +132,22 @@ public class SailCompilerSchema {
 	 * mdlc:dirLocation
 	 */
 	public static final IRI DIR_LOCATION = iri("dirLocation", "Describe a directory");
-
+	/**
+	 * mdlc:storageMode
+	 */
+	public static final IRI STORAGE_MODE = iri("storageMode", "The storage mode");
+	/**
+	 * mdlc:hybridStoreStorage
+	 */
+	public static final IRI HYBRIDSTORE_STORAGE = iri("hybridStoreStorage", "The storage mode hybrid store");
+	/**
+	 * mdlc:nativeStoreStorage
+	 */
+	public static final IRI NATIVESTORE_STORAGE = iri("nativeStoreStorage", "The storage mode native store");
+	/**
+	 * mdlc:memoryStoreStorage
+	 */
+	public static final IRI MEMORYSTORE_STORAGE = iri("memoryStoreStorage", "The storage mode memory store");
 	private static IRI iri(String name, String desc) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
 		String old = DESC.put(iri, desc);

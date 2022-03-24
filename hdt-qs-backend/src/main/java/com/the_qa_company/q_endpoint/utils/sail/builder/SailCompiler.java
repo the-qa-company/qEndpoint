@@ -266,6 +266,13 @@ public class SailCompiler {
 	}
 
 	/**
+	 * @return a reader
+	 */
+	public SailCompilerReader getReader() {
+		return new SailCompilerReader();
+	}
+
+	/**
 	 * A exception linked with the model compilation
 	 * @author Antoine Willerval
 	 */
