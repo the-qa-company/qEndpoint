@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
 # URL of the endpoint
-ENDPOINTURL=$(cat ./endpointurl.txt)
+ENDPOINTURL=http://127.0.0.1:1234/api/endpoint
 
 SPARQL_URL=$ENDPOINTURL/sparql
 UPDATE_URL=$ENDPOINTURL/update
+LOAD_URL=$ENDPOINTURL/load
 OUTPUT=output
+RESULTS=results
 
-echo "(Re)create data dir..."
+echo "(Re)create result dir..."
+mkdir -p "$RESULTS"
 
 echo "Downloading BSBM..."
 # Download the tool to generate the file
@@ -26,19 +29,8 @@ cd bsbmtools
 
 OUTPUT_IN=../$OUTPUT
 
-for SIZE in 10000 50000 100000
+for SIZE in 10000 50000 100000 500000
 do
-    # Clear the ENDPOINT
-    if [ "$(curl "$UPDATE_URL" \
-                --data-urlencode 'query=DELETE WHERE { ?s ?p ?o }' \
-                -H 'accept: application/sparql-results+json' 2>/dev/null)" = "OK" ]
-    then
-        echo "Endpoint flushed"
-    else 
-        1>&2 echo "Can't clear the endpoint"
-        exit -1
-    fi
-
     echo "Generating $OUTPUT/dataset$SIZE..."
     # Remove previous dataset
     rm -rf "$OUTPUT_IN"
@@ -52,6 +44,16 @@ do
                 -fn "$OUTPUT_IN/dataset$SIZE" \
     | tail -n 1
 
+    if curl "$LOAD_URL" \
+                 -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
+    then
+        echo "NT file Loaded"
+    else 
+        1>&2 echo "Can't load the NT file"
+        exit -1
+    fi
+
+
     # Test the dataset
     if ! ./testdriver \
                       -ucf usecases/explore/sparql.txt \
@@ -63,6 +65,8 @@ do
         1>&2 echo "Can't test dataset$SIZE"
         exit -1
     fi
+
+    mv "benchmark_result.xml" "../$RESULTS/benchmark_result_$SIZE.xml"
 
     # Remove the dataset
     rm -rf "$OUTPUT_IN"
