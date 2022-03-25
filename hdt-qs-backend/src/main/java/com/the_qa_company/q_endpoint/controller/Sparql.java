@@ -59,7 +59,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -169,6 +171,7 @@ public class Sparql {
 	private String repoModel;
 
 	IRI storageMode = SailCompilerSchema.HYBRIDSTORE_STORAGE;
+	IRI passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
 	int rdf4jSplitUpdate = 1000;
 
 	HybridStore hybridStore;
@@ -229,11 +232,20 @@ public class Sparql {
 
 			NotifyingSail source;
 
+			// read configs
 			try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
-				storageMode = reader
-						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE)
-						.map(SailCompiler::asIRI)
-						.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
+				storageMode = SailCompilerSchema.throwIfNotStorageMode(
+						reader
+							.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE)
+							.map(SailCompiler::asIRI)
+							.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE)
+				);
+				passMode = SailCompilerSchema.throwIfNotPassMode(
+						reader
+								.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE)
+								.map(SailCompiler::asIRI)
+								.orElse(SailCompilerSchema.HDT_TWO_PASS_MODE)
+				);
 				rdf4jSplitUpdate = reader
 						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE)
 						.map(v -> (Literal) v)
@@ -249,6 +261,7 @@ public class Sparql {
 						}).findAny().orElse(1000);
 			}
 
+			// set the storage
 			if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
 				source = hybridStore;
 			} else if (storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
@@ -259,6 +272,7 @@ public class Sparql {
 				throw new RuntimeException("Bad storage mode: " + storageMode);
 			}
 
+			// compile the storage sail
 			repository = new SailRepository(compiler.compile(source));
 			repository.init();
 
@@ -440,13 +454,8 @@ public class Sparql {
 			logger.info("Compressing #" + file);
 			String hdtOutput = new File(tempFile.getParent(), tempFile.getName() + "."
 					+ String.format("%03d", file) + ".hdt").getAbsolutePath();
-			try {
-				HDT hdtDump = HDTManager.generateHDT(it, baseURI, specs, null);
-				hdtDump.saveToHDT(hdtOutput, null);
-				hdtDump.close();
-			} catch (ParserException e) {
-				throw new IOException("Can't parse the RDF file", e);
-			}
+
+			generateHDT(it, baseURI, specs, hdtOutput);
 
 			System.gc();
 			logger.info("Competed into " + hdtOutput);
@@ -515,4 +524,38 @@ public class Sparql {
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
 	}
 
+	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTSpecification spec, String hdtOutput) throws IOException {
+		if (passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+			// dump the file to the disk to allow 2 passes
+			Path tempNTFile = Paths.get(hdtOutput + "-tmp.nt");
+			logger.info("Create TEMP NT file '{}'", tempNTFile);
+			try {
+				try (PrintWriter stream = new PrintWriter(tempNTFile.toFile())) {
+					while (it.hasNext()) {
+						TripleString ts = it.next();
+						ts.dumpNtriple(stream);
+					}
+				}
+				logger.info("NT file created, generating HDT...");
+				try {
+					HDT hdtDump = HDTManager.generateHDT(tempNTFile.toFile().getAbsolutePath(), baseURI, RDFNotation.NTRIPLES, spec, null);
+					hdtDump.saveToHDT(hdtOutput, null);
+					hdtDump.close();
+				} catch (ParserException e) {
+					throw new IOException("Can't generate HDT", e);
+				}
+			} finally {
+				Files.deleteIfExists(tempNTFile);
+			}
+		} else {
+			// directly use the TripleString stream to generate the HDT
+			try {
+				HDT hdtDump = HDTManager.generateHDT(it, baseURI, spec, null);
+				hdtDump.saveToHDT(hdtOutput, null);
+				hdtDump.close();
+			} catch (ParserException e) {
+				throw new IOException("Can't generate HDT", e);
+			}
+		}
+	}
 }

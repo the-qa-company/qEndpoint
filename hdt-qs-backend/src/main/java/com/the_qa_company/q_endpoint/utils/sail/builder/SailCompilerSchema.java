@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Schema describing the model compiler nodes,
@@ -148,15 +149,57 @@ public class SailCompilerSchema {
 	 * mdlc:memoryStoreStorage
 	 */
 	public static final IRI MEMORYSTORE_STORAGE = iri("memoryStoreStorage", "The storage mode memory store");
+	private static final Set<IRI> STORAGES = Set.of(HYBRIDSTORE_STORAGE, NATIVESTORE_STORAGE, MEMORYSTORE_STORAGE);
 	/**
 	 * mdlc:rdfStoreSplit
 	 */
 	public static final IRI RDF_STORE_SPLIT_STORAGE = iri("rdfStoreSplit", "The storage load split update count");
+	/**
+	 * mdlc:hdtPassMode
+	 */
+	public static final IRI HDT_PASS_MODE = iri("hdtPassMode", "The mode to parse the Triple flux");
+	/**
+	 * mdlc:hdtOnePassMode
+	 */
+	public static final IRI HDT_ONE_PASS_MODE = iri("hdtOnePassMode", "The mode to parse the Triple flux in one pass, reduce disk usage");
+	/**
+	 * mdlc:hdtTwoPassMode
+	 */
+	public static final IRI HDT_TWO_PASS_MODE = iri("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage");
+
+	private static final Set<IRI> PASS_MODES = Set.of(HDT_ONE_PASS_MODE, HDT_TWO_PASS_MODE);
+
 	private static IRI iri(String name, String desc) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
 		String old = DESC.put(iri, desc);
 		assert old == null : "Iri already registered: " + iri;
 		return iri;
+	}
+
+	/**
+	 * throw an exception if the iri isn't a HDT pass mode
+	 * @param mode the iri
+	 * @return the iri
+	 * @throws SailCompiler.SailCompilerException if the iri isn't a pass mode
+	 */
+	public static IRI throwIfNotPassMode(IRI mode) throws SailCompiler.SailCompilerException {
+		if (PASS_MODES.contains(mode)) {
+			return mode;
+		}
+		throw new SailCompiler.SailCompilerException(mode + " isn't a pass mode!");
+	}
+
+	/**
+	 * throw an exception if the iri isn't a storage mode
+	 * @param mode the iri
+	 * @return the iri
+	 * @throws SailCompiler.SailCompilerException if the iri isn't a storage mode
+	 */
+	public static IRI throwIfNotStorageMode(IRI mode) throws SailCompiler.SailCompilerException {
+		if (STORAGES.contains(mode)) {
+			return mode;
+		}
+		throw new SailCompiler.SailCompilerException(mode + " isn't a storage mode!");
 	}
 
 	/**

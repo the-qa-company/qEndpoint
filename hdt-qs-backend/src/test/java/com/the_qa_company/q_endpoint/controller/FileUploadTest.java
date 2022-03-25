@@ -3,6 +3,7 @@ package com.the_qa_company.q_endpoint.controller;
 import com.the_qa_company.q_endpoint.Application;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
+import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -206,7 +207,9 @@ public class FileUploadTest {
                 Statement next = sts.next();
                 if (
                         next.getSubject().isBNode()
-                                || next.getObject().isBNode())
+                                || next.getObject().isBNode()
+                                || next.getSubject().toString().startsWith("_:")
+                                || next.getObject().toString().startsWith("_:"))
                     continue;
                 Assert.assertTrue("Statement (" +
                         next.getSubject().toString() + ", " +
@@ -228,9 +231,10 @@ public class FileUploadTest {
     }
 
     @Test
-    public void loadNoSplitTest() throws IOException {
+    public void loadNoSplitOnePassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
+        sparql.passMode = SailCompilerSchema.HDT_ONE_PASS_MODE;
 
         sparql.loadFile(streamOut(fileName), fileName);
 
@@ -239,9 +243,32 @@ public class FileUploadTest {
     }
 
     @Test
-    public void loadSplitTest() throws IOException {
+    public void loadSplitOnePassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
+        sparql.passMode = SailCompilerSchema.HDT_ONE_PASS_MODE;
+
+        sparql.loadFile(streamOut(fileName), fileName);
+
+        assertAllHDTLoaded();
+    }
+    @Test
+    public void loadNoSplitTwoPassTest() throws IOException {
+        long size = fileSize(fileName);
+        sparql.debugMaxChunkSize = size + 1;
+        sparql.passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
+
+        sparql.loadFile(streamOut(fileName), fileName);
+
+
+        assertAllHDTLoaded();
+    }
+
+    @Test
+    public void loadSplitTwoPassTest() throws IOException {
+        long size = fileSize(fileName);
+        sparql.debugMaxChunkSize = size / 10;
+        sparql.passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
 
         sparql.loadFile(streamOut(fileName), fileName);
 
