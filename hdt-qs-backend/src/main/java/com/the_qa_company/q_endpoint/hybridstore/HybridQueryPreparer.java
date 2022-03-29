@@ -28,6 +28,7 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.OrderLimitOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryJoinOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryModelNormalizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.SameTermFilterOptimizer;
+import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.impl.AbstractParserQuery;
@@ -44,14 +45,45 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
     private final EvaluationStatistics evaluationStatistics;
     private final HybridTripleSource tripleSource;
     private final HDT hdt;
+    private boolean trackResultSize;
+    private boolean cloneTupleExpression;
+    private boolean trackTime;
 
     public HybridQueryPreparer(HybridStore hybridStore, HybridTripleSource tripleSource) {
         super(tripleSource);
         this.tripleSource = tripleSource;
         hdt = hybridStore.getHdt();
+        cloneTupleExpression = true;
 
         evaluationStatistics = new HybridStoreEvaluationStatistics(new HDTEvaluationStatistics(hybridStore),
                 hybridStore.getCurrentSaliStore().getEvaluationStatistics());
+    }
+
+    public void setExplanationLevel(Explanation.Level level) {
+        if (level == null) {
+            this.cloneTupleExpression = true;
+            this.trackResultSize = false;
+            this.trackTime = false;
+            return;
+        }
+
+        switch(level) {
+            case Timed:
+                this.trackTime = true;
+                this.trackResultSize = true;
+                this.cloneTupleExpression = false;
+                break;
+            case Executed:
+                this.trackResultSize = true;
+                this.cloneTupleExpression = false;
+                break;
+            case Optimized:
+                this.cloneTupleExpression = false;
+            case Unoptimized:
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported query explanation level: " + level);
+        }
     }
 
     @Override
@@ -67,12 +99,24 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
             boolean includeInferred,
             int maxExecutionTime)
             throws QueryEvaluationException {
+
+        if (this.cloneTupleExpression) {
+            tupleExpr = tupleExpr.clone();
+        }
         if (!(tupleExpr instanceof QueryRoot)) {
             tupleExpr = new QueryRoot(tupleExpr);
         }
         EvaluationStrategy strategy =
                 new ExtendedEvaluationStrategy(
                         getTripleSource(), dataset, new SPARQLServiceResolver(), 0L, evaluationStatistics);
+
+        if (this.trackResultSize) {
+            strategy.setTrackResultSize(this.trackResultSize);
+        }
+
+        if (this.trackTime) {
+            strategy.setTrackTime(this.trackTime);
+        }
 
         new VariableToIdSubstitution(hdt).optimize(tupleExpr, dataset, bindings);
         new BindingAssigner().optimize(tupleExpr, dataset, bindings);

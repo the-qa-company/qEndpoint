@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
@@ -50,6 +51,7 @@ import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebInputException;
@@ -178,6 +180,11 @@ public class Sparql {
 	final Set<LuceneSail> luceneSails = new HashSet<>();
 	SailRepository repository;
 
+	@Autowired
+	public void init() throws IOException {
+		initializeHybridStore(locationHdt);
+	}
+
 	void clearHybridStore(String location) throws IOException {
 		if (model.containsKey(location)) {
 			logger.info("Clear old store");
@@ -254,7 +261,7 @@ public class Sparql {
 								throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be an integer");
 							}
 							int i = v.intValue();
-							if (i >= 2) {
+							if (i < 2) {
 								throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be a positive integer");
 							}
 							return i;
@@ -287,8 +294,7 @@ public class Sparql {
 	 * @return see {@link com.the_qa_company.q_endpoint.hybridstore.HybridStore#mergeStore()} return value
 	 * @throws IOException if the store can't be merged or init
 	 */
-	public MergeRequestResult askForAMerge() throws IOException {
-		initializeHybridStore(locationHdt);
+	public MergeRequestResult askForAMerge() {
 		this.hybridStore.mergeStore();
 		return new MergeRequestResult(true);
 	}
@@ -298,13 +304,10 @@ public class Sparql {
 	 * @throws IOException if the store can't be merged or init
 	 */
 	public IsMergingResult isMerging() throws IOException {
-		initializeHybridStore(locationHdt);
 		return new IsMergingResult(hybridStore.isMergeTriggered);
 	}
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter, OutputStream out) throws IOException {
-		initializeHybridStore(locationHdt);
-
 		try (RepositoryConnection connection = repository.getConnection()) {
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			//sparqlQuery = sparqlPrefixes+sparqlQuery;
@@ -362,8 +365,7 @@ public class Sparql {
 		}
 	}
 
-	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) throws IOException {
-		initializeHybridStore(locationHdt);
+	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
 		//logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = sparqlPrefixes + sparqlQuery;
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");

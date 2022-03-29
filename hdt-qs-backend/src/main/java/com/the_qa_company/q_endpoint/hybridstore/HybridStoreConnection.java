@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
+import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -83,8 +84,17 @@ public class HybridStoreConnection extends SailSourceConnection {
     // for SPARQL queries
     @Override
     protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
-        // TODO: check max execution time
         return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
+    }
+
+    @Override
+    public Explanation explain(Explanation.Level level, TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred, int timeoutSeconds) {
+        try {
+            queryPreparer.setExplanationLevel(level);
+            return super.explain(level, tupleExpr, dataset, bindings, includeInferred, timeoutSeconds);
+        } finally {
+            queryPreparer.setExplanationLevel(null);
+        }
     }
 
     // USED from connection get api not SPARQL
