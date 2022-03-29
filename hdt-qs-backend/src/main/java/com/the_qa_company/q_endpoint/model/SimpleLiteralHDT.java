@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
@@ -23,6 +24,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Optional;
+
+import static org.eclipse.rdf4j.rio.helpers.NTriplesUtil.parseURI;
 
 /**
  * A implementation of the {@link Literal} interface for HDT.
@@ -61,12 +64,14 @@ public class SimpleLiteralHDT implements Literal {
     /**
      * The literal's language tag.
      */
-    private String language;
+    private Optional<String> language;
 
     /**
      * The literal's datatype.
      */
     private IRI datatype;
+
+    private CoreDatatype coreDatatype;
 
     /*--------------*
      * Constructors *
@@ -96,19 +101,77 @@ public class SimpleLiteralHDT implements Literal {
         this.hdtID = id;
     }
 
+    protected void parseDatatype() {
+        if (datatype == null) {
+            String datatype = hdt.getDictionary().dataTypeOfId(hdtID);
+            this.datatype = NTriplesUtil.parseURI(datatype, valueFactory);
+        }
+    }
+
+    private static int lastIndexOfQuote(CharSequence seq) {
+        for (int i = seq.length() - 1; i >= 0; --i) {
+            if (seq.charAt(i) == '"') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    static int indexOf(CharSequence seq, CharSequence s, int start) {
+        int n = seq.length() - s.length() + 1;
+        loop:
+        for (int i = start; i < n; i++) {
+            for (int j = 0; j < s.length(); j++) {
+                if (seq.charAt(i + j) != s.charAt(j)) {
+                    continue loop;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+    static int indexOf(CharSequence seq, char c, int start) {
+        for (int i = start; i < seq.length(); i++) {
+            if (seq.charAt(i) == c) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     protected void parseLiteral() {
         if (label == null) {
             try {
-                String literal = hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT).toString();
-                Literal l = LiteralParser.parseLiteral(literal, valueFactory);
-                label = l.getLabel();
-                if (l.getLanguage().isPresent()) {
-                    language = l.getLanguage().get();
+                CharSequence literal = hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT);
+                if (literal.length() > 0 && literal.charAt(0) == '"') {
+                    int endLabelIdx = lastIndexOfQuote(literal);
+                    if (endLabelIdx != -1) {
+                        int startLangIdx = indexOf(literal, '@', endLabelIdx + 1);
+                        int startDtIdx = indexOf(literal, "^^", endLabelIdx + 1);
+                        if (startLangIdx != -1 && startDtIdx != -1) {
+                            throw new IllegalArgumentException("Literals can not have both a language and a datatype");
+                        }
+
+                        label = literal.subSequence(1, endLabelIdx).toString();
+                        //label = unescapeString(label);
+                        if (startLangIdx != -1) {
+                            datatype = CoreDatatype.RDF.LANGSTRING.getIri();
+                            language = Optional.of(literal.subSequence(startLangIdx + 1, literal.length()).toString());
+                        } else if (startDtIdx != -1) {
+                            if (datatype == null) {
+                                datatype = parseURI(literal.subSequence(startDtIdx + 2, literal.length()).toString(), valueFactory);
+                            }
+                            language = Optional.empty();
+                        } else {
+                            language = Optional.empty();
+                            datatype = XSD.STRING;
+                        }
+                    }
                 }
-                datatype = l.getDatatype();
             } catch (IllegalArgumentException e) {
                 // @todo: this should be fixed, it is for example happening for Select ?o where { <http://www.wikidata.org/entity/Q29709019> ?p ?o} over wikidata
                 label = "";
+                language = Optional.empty();
                 datatype = XSD.STRING;
             }
         }
@@ -123,13 +186,12 @@ public class SimpleLiteralHDT implements Literal {
     @Override
     public Optional<String> getLanguage() {
         parseLiteral();
-        // System.out.println("Language "+ language);
-        return Optional.ofNullable(language);
+        return language;
     }
 
     @Override
     public IRI getDatatype() {
-        parseLiteral();
+        parseDatatype();
         return datatype;
     }
 
@@ -137,29 +199,26 @@ public class SimpleLiteralHDT implements Literal {
     @Override
     public boolean equals(Object o) {
         //TODO: This can be probably done more efficielnty
-        parseLiteral();
         if (this == o) {
             return true;
         }
 
-        if (o instanceof Literal) {
+        if (o instanceof SimpleLiteralHDT) {
+            return ((SimpleLiteralHDT) o).getHdtID() == getHdtID();
+        } else if (o instanceof Literal) {
             Literal other = (Literal) o;
 
-            // Compare labels
-            if (!label.equals(other.getLabel())) {
-                return false;
-            }
-
             // Compare datatypes
-            if (!datatype.equals(other.getDatatype())) {
+            if (!getDatatype().equals(other.getDatatype())) {
                 return false;
             }
 
-            if (getLanguage().isPresent() && other.getLanguage().isPresent()) {
-                return getLanguage().get().equalsIgnoreCase(other.getLanguage().get());
+            // Compare labels
+            if (!getLabel().equals(other.getLabel())) {
+                return false;
             }
-            // If only one has a language, then return false
-            return getLanguage().isEmpty() && other.getLanguage().isEmpty();
+
+            return getLanguage().equals(other.getLanguage());
         }
 
         return false;
@@ -253,6 +312,9 @@ public class SimpleLiteralHDT implements Literal {
 
     @Override
     public CoreDatatype getCoreDatatype() {
-        return CoreDatatype.from(getDatatype());
+        if (coreDatatype == null) {
+            coreDatatype = CoreDatatype.from(getDatatype());
+        }
+        return coreDatatype;
     }
 }

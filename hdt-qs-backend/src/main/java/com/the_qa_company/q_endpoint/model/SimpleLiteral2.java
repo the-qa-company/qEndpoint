@@ -19,6 +19,7 @@ public class SimpleLiteral2 implements Literal {
     private String label;
     private String language;
     private IRI datatype;
+    private CoreDatatype coreDatatype;
 
     protected SimpleLiteral2(String label) {
         this.setLabel(label);
@@ -163,6 +164,9 @@ public class SimpleLiteral2 implements Literal {
 
     @Override
     public CoreDatatype getCoreDatatype() {
-        return CoreDatatype.from(getDatatype());
+        if (coreDatatype == null) {
+            coreDatatype = CoreDatatype.from(getDatatype());
+        }
+        return coreDatatype;
     }
 }
