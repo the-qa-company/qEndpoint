@@ -21,7 +21,6 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
@@ -173,6 +172,7 @@ public class Sparql {
 	private String repoModel;
 
 	IRI storageMode = SailCompilerSchema.HYBRIDSTORE_STORAGE;
+	IRI hdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
 	IRI passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
 	int rdf4jSplitUpdate = 1000;
 
@@ -216,12 +216,10 @@ public class Sparql {
 				Files.delete(Paths.get(tempRDF.getAbsolutePath()));
 			}
 
-			hybridStore = new HybridStore(locationHdt, hdtIndexName, spec, locationNative, false);
-			hybridStore.setThreshold(threshold);
-			logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
+			HybridStoreFiles files = new HybridStoreFiles(locationNative, locationHdt, hdtIndexName);
 
 			SailCompiler compiler = new SailCompiler();
-			compiler.registerDirObject(hybridStore.getHybridStoreFiles());
+			compiler.registerDirObject(files);
 			LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) compiler.getCompiler(SailCompilerSchema.LUCENE_TYPE);
 			luceneCompiler.reset();
 			InputStream stream;
@@ -266,13 +264,22 @@ public class Sparql {
 							}
 							return i;
 						}).findAny().orElse(1000);
+				hdtReadMode = SailCompilerSchema.throwIfNotReadMode(
+						reader
+								.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE)
+								.map(SailCompiler::asIRI)
+								.orElse(SailCompilerSchema.HDT_READ_MODE_MAP)
+				);
 			}
 
 			// set the storage
 			if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+				hybridStore = new HybridStore(files, spec, false, hdtReadMode.equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
+				hybridStore.setThreshold(threshold);
+				logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
 				source = hybridStore;
 			} else if (storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
-				source = new NativeStore(new File(hybridStore.getHybridStoreFiles().getLocationNative(), "nativeglobal"));
+				source = new NativeStore(new File(files.getLocationNative(), "nativeglobal"));
 			} else if (storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
 				source = new MemoryStore();
 			} else {
@@ -292,9 +299,11 @@ public class Sparql {
 	 * ask for a merge of the hybrid store
 	 *
 	 * @return see {@link com.the_qa_company.q_endpoint.hybridstore.HybridStore#mergeStore()} return value
-	 * @throws IOException if the store can't be merged or init
 	 */
 	public MergeRequestResult askForAMerge() {
+		if (hybridStore == null) {
+			throw new ServerWebInputException("No hybrid store, bad config?");
+		}
 		this.hybridStore.mergeStore();
 		return new MergeRequestResult(true);
 	}
@@ -304,6 +313,9 @@ public class Sparql {
 	 * @throws IOException if the store can't be merged or init
 	 */
 	public IsMergingResult isMerging() throws IOException {
+		if (hybridStore == null) {
+			throw new ServerWebInputException("No hybrid store, bad config?");
+		}
 		return new IsMergingResult(hybridStore.isMergeTriggered);
 	}
 

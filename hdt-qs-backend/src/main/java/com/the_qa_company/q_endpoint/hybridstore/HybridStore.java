@@ -79,6 +79,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     private BitArrayDisk tempdeleteBitMap;
     // setting to put the delete map only in memory, i.e don't write to disk
     private final boolean inMemDeletes;
+    private final boolean loadIntoMemory;
 
     // bitmaps used to mark if the subject, predicate, object elements in HDT are used in the rdf4j delta store
     private BitArrayDisk bitX;
@@ -123,14 +124,21 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
     }
 
-    public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
-        this.hybridStoreFiles = new HybridStoreFiles(locationNative, locationHdt, hdtIndexName);
+    public HybridStore(HybridStoreFiles files, HDTSpecification spec, boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
+        this.hybridStoreFiles = files;
+        this.loadIntoMemory = loadIntoMemory;
         this.mergeRunnable = new MergeRunnable(this);
         logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
         Optional<MergeRunnable.MergeThread<?>> mergeThread = mergeRunnable.createRestartThread();
         mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
+        HDT hdt;
 
-        HDT hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec, null);
+        if (loadIntoMemory) {
+            hdt = HDTManager.loadIndexedHDT(hybridStoreFiles.getHDTIndex(), null, spec);
+        } else {
+            hdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), spec, null);
+        }
+
         this.nativeStoreA = new NativeStore(new File(getHybridStoreFiles().getNativeStoreA()), "spoc,posc,cosp");
         this.nativeStoreB = new NativeStore(new File(getHybridStoreFiles().getNativeStoreB()), "spoc,posc,cosp");
 
@@ -169,6 +177,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         SailConnection connection = getChangingStore().getConnection();
         this.triplesCount = connection.size();
         connection.close();
+    }
+
+    public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
+        this(new HybridStoreFiles(locationNative, locationHdt, hdtIndexName), spec, inMemDeletes, loadIntoMemory);
+    }
+
+    public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
+        this(locationNative, locationHdt, spec, hdtIndexName, inMemDeletes, false);
     }
 
 
@@ -315,6 +331,10 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         logger.info("Shutdown B");
         this.nativeStoreB.shutDown();
         logger.info("Shutdown done");
+    }
+
+    public boolean isLoadIntoMemory() {
+        return loadIntoMemory;
     }
 
     @Override

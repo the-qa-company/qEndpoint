@@ -715,7 +715,14 @@ public class MergeRunnable {
         rename(hybridStoreFiles.getHDTNewIndexV11(), hybridStoreFiles.getHDTIndexV11());
         // AFTER_INDEX_V11_RENAME
 
-        HDT tempHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), this.hybridStore.getHDTSpec(), null);
+        HDT tempHdt;
+
+        if (hybridStore.isLoadIntoMemory()) {
+            tempHdt = HDTManager.loadIndexedHDT(hybridStoreFiles.getHDTIndex(), null, this.hybridStore.getHDTSpec());
+        } else {
+            tempHdt = HDTManager.mapIndexedHDT(hybridStoreFiles.getHDTIndex(), this.hybridStore.getHDTSpec(), null);
+        }
+
         convertOldToNew(tempHdt);
         this.hybridStore.resetHDT(tempHdt);
 

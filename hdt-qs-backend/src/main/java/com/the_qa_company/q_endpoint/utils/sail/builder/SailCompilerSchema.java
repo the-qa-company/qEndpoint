@@ -149,7 +149,22 @@ public class SailCompilerSchema {
 	 * mdlc:memoryStoreStorage
 	 */
 	public static final IRI MEMORYSTORE_STORAGE = iri("memoryStoreStorage", "The storage mode memory store");
+
 	private static final Set<IRI> STORAGES = Set.of(HYBRIDSTORE_STORAGE, NATIVESTORE_STORAGE, MEMORYSTORE_STORAGE);
+	/**
+	 * mdlc:hdtReadMode
+	 */
+	public static final IRI HDT_READ_MODE = iri("hdtReadMode", "The hdt reading mode");
+	/**
+	 * mdlc:hdtLoadReadMode
+	 */
+	public static final IRI HDT_READ_MODE_LOAD = iri("hdtLoadReadMode", "The hdt load reading mode, load the full HDT into memory");
+	/**
+	 * mdlc:hdtMapReadMode
+	 */
+	public static final IRI HDT_READ_MODE_MAP = iri("hdtMapReadMode", "The hdt load reading mode, map the HDT into memory (default)");
+
+	private static final Set<IRI> READ_MODES = Set.of(HDT_READ_MODE_LOAD, HDT_READ_MODE_MAP);
 	/**
 	 * mdlc:rdfStoreSplit
 	 */
@@ -197,6 +212,18 @@ public class SailCompilerSchema {
 	 */
 	public static IRI throwIfNotStorageMode(IRI mode) throws SailCompiler.SailCompilerException {
 		if (STORAGES.contains(mode)) {
+			return mode;
+		}
+		throw new SailCompiler.SailCompilerException(mode + " isn't a storage mode!");
+	}
+	/**
+	 * throw an exception if the iri isn't a hdt read mode
+	 * @param mode the iri
+	 * @return the iri
+	 * @throws SailCompiler.SailCompilerException if the iri isn't a hdt read mode
+	 */
+	public static IRI throwIfNotReadMode(IRI mode) throws SailCompiler.SailCompilerException {
+		if (READ_MODES.contains(mode)) {
 			return mode;
 		}
 		throw new SailCompiler.SailCompilerException(mode + " isn't a storage mode!");
