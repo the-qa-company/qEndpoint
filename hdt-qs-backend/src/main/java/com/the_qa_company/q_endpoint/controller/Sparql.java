@@ -341,6 +341,7 @@ public class Sparql {
 				query.setMaxExecutionTime(timeout);
 				try {
 					query.evaluate(writer);
+					 // System.out.println(query.explain(org.eclipse.rdf4j.query.explanation.Explanation.Level.Timed));
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
 					q.printStackTrace();
