@@ -3,13 +3,15 @@ package com.the_qa_company.q_endpoint.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * a worker to
- * @param <T>
+ * a worker to parse tree operation
+ * @param <T> the type used in the tree
+ * @author Antoine Willerval
  */
 public class TreeWorker<T> {
 	private static final AtomicInteger JOB_ID_NAME = new AtomicInteger();
@@ -20,31 +22,62 @@ public class TreeWorker<T> {
 	private Worker fetchJob = null;
 	private final List<Element> elements = new ArrayList<>();
 	private final Worker[] workers;
+	private boolean started = false;
 	private boolean done = false;
 	private TreeWorkerException throwable;
 
+	/**
+	 * create a tree worker
+	 * @param catFunction the function to cat 2 nodes
+	 * @param baseLevelSupplier the supplier to get base nodes
+	 * @param delete the delete method to delete data in case of error, can be null if no delete is required
+	 * @throws TreeWorkerException if the tree worker can't be created
+	 * @throws java.lang.NullPointerException if catFunction or baseLevelSupplier is null
+	 */
 	public TreeWorker(TreeWorkerCat<T> catFunction, Supplier<T> baseLevelSupplier, Consumer<T> delete) throws TreeWorkerException {
 		this(catFunction, baseLevelSupplier, delete, Runtime.getRuntime().availableProcessors());
 	}
 
+	/**
+	 * create a tree worker
+	 * @param catFunction the function to cat 2 nodes
+	 * @param baseLevelSupplier the supplier to get base nodes
+	 * @param delete the delete method to delete data in case of error, can be null if no delete is required
+	 * @param workers the number of workers to use
+	 * @throws TreeWorkerException if the tree worker can't be created
+	 * @throws java.lang.NullPointerException if catFunction or baseLevelSupplier is null
+	 */
 	public TreeWorker(TreeWorkerCat<T> catFunction, Supplier<T> baseLevelSupplier, Consumer<T> delete, int workers) throws TreeWorkerException {
-		this.catFunction = catFunction;
-		this.baseLevelSupplier = baseLevelSupplier;
-		this.delete = delete;
+		this.catFunction = Objects.requireNonNull(catFunction, "catFunction can't be null!");
+		this.baseLevelSupplier = Objects.requireNonNull(baseLevelSupplier, "baseLevelSupplier can't be null!");
+		if (delete == null) {
+			this.delete = (t) -> {};
+		} else {
+			this.delete = delete;
+		}
 		if (workers <= 0) {
-			throw new IllegalArgumentException("worker count can't be <= 0!");
+			throw new TreeWorkerException("worker count can't be <= 0!");
 		}
 		T t = baseLevelSupplier.get();
 		if (t == null) {
 			throw new TreeWorkerException("no base element!");
 		}
 		elements.add(new Element(t, 0));
+		this.workers = new TreeWorker.Worker[workers];
+		for (int i = 0; i < this.workers.length; i++) {
+			this.workers[i] = new Worker();
+		}
+	}
+
+	public void start() {
 		synchronized (elements) {
-			this.workers = new TreeWorker.Worker[workers];
-			for (int i = 0; i < this.workers.length; i++) {
-				this.workers[i] = new Worker();
-				this.workers[i].start();
+			if (started) {
+				throw new IllegalArgumentException("TreeWorker already started!");
 			}
+			for (Worker worker : this.workers) {
+				worker.start();
+			}
+			started = true;
 		}
 	}
 
@@ -54,14 +87,20 @@ public class TreeWorker<T> {
 		}
 	}
 
-	public T waitToComplete() throws TreeWorkerException {
+	/**
+	 * wait for the tree worker to complete
+	 * @return the last element
+	 * @throws TreeWorkerException if an error occurred in a worker
+	 * @throws InterruptedException in case of interruption
+	 */
+	public T waitToComplete() throws TreeWorkerException, InterruptedException {
 		try {
 			for (Worker w: workers) {
 				w.join();
 			}
 		} catch (InterruptedException e) {
 			clearData();
-			throw new TreeWorkerException(e);
+			throw e;
 		}
 
 		if (throwable != null) {
@@ -80,7 +119,7 @@ public class TreeWorker<T> {
 		return elements.get(0).t;
 	}
 
-	private TreeWorkerJob getJob(Worker worker) throws InterruptedException {
+	private TreeWorkerJob getJob(Worker worker) throws InterruptedException, TreeWorkerException {
 		while (true) {
 			synchronized (elements) {
 				if (done) {
@@ -119,7 +158,7 @@ public class TreeWorker<T> {
 		}
 	}
 
-	public Tuple searchDir(int start, int direction, int min) {
+	private Tuple searchDir(int start, int direction, int min) {
 		if (direction < 0) {
 			for (int i = start; i >= 0; i--) {
 				Tuple tuple = searchAtLevel(i);
@@ -138,7 +177,7 @@ public class TreeWorker<T> {
 		return null;
 	}
 
-	public Tuple searchAtLevel(int level) {
+	private Tuple searchAtLevel(int level) {
 		synchronized (elements) {
 			Element old = null;
 			for (Element e: elements) {
@@ -154,11 +193,19 @@ public class TreeWorker<T> {
 		}
 	}
 
+	/**
+	 * cat function to merge two elements
+	 * @param <T> the elements type
+	 * @author Antoine Willerval
+	 */
 	@FunctionalInterface
 	public interface TreeWorkerCat<T> {
 		T construct(T a, T b);
 	}
 
+	/**
+	 * @return if the worker is completed
+	 */
 	public boolean isCompleted() {
 		synchronized (elements) {
 			return (done && elements.size() == 1) || throwable != null;
@@ -183,12 +230,16 @@ public class TreeWorker<T> {
 			this.b = b;
 		}
 
-		public void remove() {
+		public void remove() throws TreeWorkerException{
 			if (a != null) {
-				elements.remove(a);
+				if (!elements.remove(a)) {
+					throw new TreeWorkerException("Can't remove a from elements!");
+				}
 			}
 			if (b != null) {
-				elements.remove(b);
+				if (!elements.remove(b)) {
+					throw new TreeWorkerException("Can't remove b from elements!");
+				}
 			}
 		}
 
@@ -289,7 +340,11 @@ public class TreeWorker<T> {
 						job.clear();
 					}
 					synchronized (elements) {
-						throwable = new TreeWorkerException(t);
+						if (t instanceof TreeWorkerException) {
+							throwable = (TreeWorkerException) t;
+						} else {
+							throwable = new TreeWorkerException(t);
+						}
 						elements.notifyAll();
 					}
 				}
@@ -297,7 +352,11 @@ public class TreeWorker<T> {
 		}
 	}
 
-	private static class TreeWorkerException extends Exception {
+	/**
+	 * An exception in the tree worker
+	 * @author Antoine Willerval
+	 */
+	public static class TreeWorkerException extends Exception {
 		public TreeWorkerException(Throwable cause) {
 			super(cause);
 		}
