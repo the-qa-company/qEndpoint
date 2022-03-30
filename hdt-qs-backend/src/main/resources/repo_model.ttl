@@ -5,7 +5,7 @@
 # Describe the main node to use: my:mainNode
 mdlc:main mdlc:node my:mainNode ;
           mdlc:storageMode mdlc:hybridStoreStorage ;
-          mdlc:hdtReadMode mdlc: hdtLoadReadMode ;
+          mdlc:hdtReadMode mdlc:hdtLoadReadMode ;
           mdlc:rdfStoreSplit 1000 ;
           mdlc:parsedStringParam [
                                      mdlc:paramKey "luceneEvalMode" ;
