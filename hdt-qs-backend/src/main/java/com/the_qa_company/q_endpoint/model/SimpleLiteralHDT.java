@@ -104,7 +104,11 @@ public class SimpleLiteralHDT implements Literal {
     protected void parseDatatype() {
         if (datatype == null) {
             String datatype = hdt.getDictionary().dataTypeOfId(hdtID);
-            this.datatype = NTriplesUtil.parseURI(datatype, valueFactory);
+            if (datatype.isEmpty()) {
+                parseLiteral(); // we need to check if it is a LANGSTRING or not
+            } else {
+                this.datatype = NTriplesUtil.parseURI(datatype, valueFactory);
+            }
         }
     }
 
@@ -276,7 +280,6 @@ public class SimpleLiteralHDT implements Literal {
 
     @Override
     public int intValue() {
-        // System.out.println("PARSE "+XMLDatatypeUtil.parseInt(getLabel()));
         return XMLDatatypeUtil.parseInt(getLabel());
     }
 
