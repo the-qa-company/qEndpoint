@@ -10,16 +10,23 @@ OUTPUT=output
 RUN=run
 RESULTS=results
 JAVA_MAX_MEM=6G
+RUN_HS=false
+RUN_NS=true
+CSV=$RESULTS/results.csv
 
 trap "echo 'EXITING...'; exit -1" INT
 trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT
 
-./build_endpoint.sh $RUN
+#./build_endpoint.sh $RUN
+mkdir -p $RUN
+cp endpoint.jar $RUN
 
 echo "(Re)create result dir..."
 mkdir -p "$RESULTS"
 mkdir -p "$RESULTS/nativestore"
 mkdir -p "$RESULTS/hybridstore"
+
+touch "$CSV"
 
 echo "Downloading BSBM..."
 # Download the tool to generate the file
@@ -36,7 +43,11 @@ fi
 # set into bsbm tool suite
 
 OUTPUT_IN=../$OUTPUT
+CSV_IN=../$RESULTS/results.csv
 cd bsbmtools
+
+if $RUN_HS
+then
 
 echo ""
 echo "---------------------------------"
@@ -57,8 +68,7 @@ trap "echo 'killing HDT EP';kill -KILL $HDT_EP_PID" EXIT INT
 
 cd ..
 cd bsbmtools
-
-for SIZE in 10000 50000 100000 200000 500000
+for SIZE in 10000 50000 100000 200000
 do
     echo "Generating $OUTPUT/dataset$SIZE..."
     # Remove previous dataset
@@ -66,12 +76,12 @@ do
     mkdir -p "$OUTPUT_IN"
 
     # Generate the dataset
-    ./generate \
+    TRIPLES_COUNT=$(./generate \
                 -s nt \
                 -pc $SIZE \
                 -dir "$OUTPUT_IN/data$SIZE" \
                 -fn "$OUTPUT_IN/dataset$SIZE" \
-    | tail -n 1
+    | tail -n 1 | cut -w -f 1)
 
     if curl "$LOAD_URL" \
                  -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
@@ -82,6 +92,11 @@ do
         exit -1
     fi
 
+    HDT_SIZE=$(du run/hdt-store | tail -n 1 | cut -w -f 1)
+    NS_SIZE=$(du run/hdt-store | tail -n 1 | cut -w -f 1)
+
+    echo "HYBRID,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
     # Test the dataset
     if ! ./testdriver \
@@ -105,6 +120,10 @@ echo "kill HDT ENDPOINT"
 
 kill -KILL $HDT_EP_PID
 
+fi
+
+if $RUN_NS
+then
 
 echo ""
 echo "---------------------------------"
@@ -136,12 +155,12 @@ do
     mkdir -p "$OUTPUT_IN"
 
     # Generate the dataset
-    ./generate \
+    TRIPLES_COUNT=$(./generate \
                 -s nt \
                 -pc $SIZE \
                 -dir "$OUTPUT_IN/data$SIZE" \
                 -fn "$OUTPUT_IN/dataset$SIZE" \
-    | tail -n 1
+    | tail -n 1 | cut -w -f 1)
 
     if curl "$LOAD_URL" \
                  -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
@@ -151,6 +170,12 @@ do
         1>&2 echo "Can't load the NT file"
         exit -1
     fi
+
+    HDT_SIZE=0
+    NS_SIZE=$(du run/hdt-store | tail -n 1 | cut -w -f 1)
+
+    echo "NATIVE,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
 
     # Test the dataset
@@ -171,6 +196,7 @@ do
     rm -rf "$OUTPUT_IN"
 done
 
+fi
 
 echo "kill NS ENDPOINT"
 kill -KILL $NATIVE_EP_PID
