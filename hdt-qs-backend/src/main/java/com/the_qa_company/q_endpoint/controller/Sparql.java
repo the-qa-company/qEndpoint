@@ -138,13 +138,23 @@ public class Sparql {
 			this.completed = completed;
 		}
 
-		public boolean isCompleted() {
-			return completed;
-		}
-	}
+        public boolean isCompleted() {
+            return completed;
+        }
+    }
+    public static class LuceneIndexRequestResult {
+        private final boolean completed;
 
-	public static class IsMergingResult {
-		private final boolean merging;
+        public LuceneIndexRequestResult(boolean completed) {
+            this.completed = completed;
+        }
+
+        public boolean isCompleted() {
+            return completed;
+        }
+    }
+    public static class IsMergingResult {
+        private final boolean merging;
 
 		public IsMergingResult(boolean merging) {
 			this.merging = merging;
@@ -431,6 +441,13 @@ public class Sparql {
 		}
 		return new IsMergingResult(hybridStore.isMergeTriggered);
 	}
+    public LuceneIndexRequestResult reindexLucene() throws Exception {
+        initializeHybridStore(locationHdt, true);
+		for (LuceneSail sail : luceneSails) {
+			sail.reindex();
+		}
+        return new LuceneIndexRequestResult(true);
+    }
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter, OutputStream out) throws IOException {
 		waitLoading(1);

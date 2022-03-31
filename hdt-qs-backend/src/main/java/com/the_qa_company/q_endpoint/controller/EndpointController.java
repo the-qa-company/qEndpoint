@@ -171,6 +171,11 @@ public class EndpointController {
         return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
     }
 
+    @GetMapping("/reindex")
+    public ResponseEntity<Sparql.LuceneIndexRequestResult> reindex() throws Exception {
+        return ResponseEntity.status(HttpStatus.OK).body(sparql.reindexLucene());
+    }
+
     @GetMapping("/is_merging")
     public ResponseEntity<Sparql.IsMergingResult> isMerging() throws IOException {
         return ResponseEntity.status(HttpStatus.OK).body(sparql.isMerging());
