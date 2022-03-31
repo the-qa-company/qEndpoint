@@ -2,3 +2,4 @@ bsbmtools
 output
 endpoint.jar
 run
+internal_*.sh

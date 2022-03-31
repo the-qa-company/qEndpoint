@@ -9,8 +9,9 @@ LOAD_URL=$ENDPOINTURL/load
 OUTPUT=output
 RUN=run
 RESULTS=results
-JAVA_MAX_MEM=6G
-RUN_HS=false
+JAVA_MAX_MEM=32G
+RUN_HS_LOADED=true
+RUN_HS_MAPPED=true
 RUN_NS=true
 CSV=$RESULTS/results.csv
 
@@ -18,13 +19,9 @@ trap "echo 'EXITING...'; exit -1" INT
 trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT
 
 #./build_endpoint.sh $RUN
-mkdir -p $RUN
-cp endpoint.jar $RUN
 
 echo "(Re)create result dir..."
 mkdir -p "$RESULTS"
-mkdir -p "$RESULTS/nativestore"
-mkdir -p "$RESULTS/hybridstore"
 
 touch "$CSV"
 
@@ -46,25 +43,32 @@ OUTPUT_IN=../$OUTPUT
 CSV_IN=../$RESULTS/results.csv
 cd bsbmtools
 
-if $RUN_HS
+if $RUN_HS_LOADED
 then
 
 echo ""
-echo "---------------------------------"
-echo "--- RUN HYBRIDSTORE BENCHMARK ---"
-echo "---------------------------------"
+echo "----------------------------------------"
+echo "--- RUN HYBRIDSTORE MAPPED BENCHMARK ---"
+echo "----------------------------------------"
 echo ""
 
 cd ..
+
+mkdir -p "$RESULTS/hybridstore/map"
+
+rm -rf $RUN
+mkdir -p $RUN
+cp endpoint.jar $RUN
+
 cp application.properties "$RUN/application.properties"
 
-echo "repoModel=../models/model_hs.ttl" >> "$RUN/application.properties"
+echo "repoModel=../models/model_hs_map.ttl" >> "$RUN/application.properties"
 
 cd $RUN
 java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
 
-HDT_EP_PID=$!
-trap "echo 'killing HDT EP';kill -KILL $HDT_EP_PID" EXIT INT
+HDT_EP_PID_MAP=$!
+trap "echo 'killing HDT EP';kill -KILL $HDT_EP_PID_MAP" EXIT INT
 
 cd ..
 cd bsbmtools
@@ -81,7 +85,7 @@ do
                 -pc $SIZE \
                 -dir "$OUTPUT_IN/data$SIZE" \
                 -fn "$OUTPUT_IN/dataset$SIZE" \
-    | tail -n 1 | cut -w -f 1)
+    | tail -n 1 | cut -d " " -f 1)
 
     if curl "$LOAD_URL" \
                  -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
@@ -92,10 +96,10 @@ do
         exit -1
     fi
 
-    HDT_SIZE=$(du run/hdt-store | tail -n 1 | cut -w -f 1)
-    NS_SIZE=$(du run/hdt-store | tail -n 1 | cut -w -f 1)
+    HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+    NS_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
 
-    echo "HYBRID,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "HYBRID,MAP,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
     echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
     # Test the dataset
@@ -110,7 +114,7 @@ do
         exit -1
     fi
 
-    mv "benchmark_result.xml" "../$RESULTS/hybridstore/benchmark_result_$SIZE.xml"
+    mv "benchmark_result.xml" "../$RESULTS/hybridstore/map/benchmark_result_$SIZE.xml"
 
     # Remove the dataset
     rm -rf "$OUTPUT_IN"
@@ -118,7 +122,91 @@ done
 
 echo "kill HDT ENDPOINT"
 
-kill -KILL $HDT_EP_PID
+kill -KILL $HDT_EP_PID_MAP
+
+fi
+cd bsbmtools
+
+if $RUN_HS_LOADED
+then
+
+echo ""
+echo "----------------------------------------"
+echo "--- RUN HYBRIDSTORE LOADED BENCHMARK ---"
+echo "----------------------------------------"
+echo ""
+
+cd ..
+
+mkdir -p "$RESULTS/hybridstore/map"
+
+rm -rf $RUN
+mkdir -p $RUN
+cp endpoint.jar $RUN
+
+cp application.properties "$RUN/application.properties"
+
+echo "repoModel=../models/model_hs_load.ttl" >> "$RUN/application.properties"
+
+cd $RUN
+java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
+
+HDT_EP_PID_LOAD=$!
+trap "echo 'killing HDT EP';kill -KILL $HDT_EP_PID_LOAD" EXIT INT
+
+cd ..
+cd bsbmtools
+for SIZE in 10000 50000 100000 200000
+do
+    echo "Generating $OUTPUT/dataset$SIZE..."
+    # Remove previous dataset
+    rm -rf "$OUTPUT_IN"
+    mkdir -p "$OUTPUT_IN"
+
+    # Generate the dataset
+    TRIPLES_COUNT=$(./generate \
+                -s nt \
+                -pc $SIZE \
+                -dir "$OUTPUT_IN/data$SIZE" \
+                -fn "$OUTPUT_IN/dataset$SIZE" \
+    | tail -n 1 | cut -d " " -f 1)
+
+    if curl "$LOAD_URL" \
+                 -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
+    then
+        echo "NT file Loaded"
+    else
+        1>&2 echo "Can't load the NT file"
+        exit -1
+    fi
+
+    HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+    NS_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+
+    echo "HYBRID,LOAD,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
+
+    # Test the dataset
+    if ! ./testdriver \
+                      -ucf usecases/explore/sparql.txt \
+                      -u "$UPDATE_URL" \
+                      -udataset "$OUTPUT_IN/dataset$SIZE.nt" \
+                      -idir "$OUTPUT_IN/data$SIZE" \
+                      "$SPARQL_URL"
+    then
+        1>&2 echo "Can't test dataset$SIZE"
+        exit -1
+    fi
+
+    mv "benchmark_result.xml" "../$RESULTS/hybridstore/load/benchmark_result_$SIZE.xml"
+
+    # Remove the dataset
+    rm -rf "$OUTPUT_IN"
+done
+
+echo "kill HDT ENDPOINT"
+
+kill -KILL $HDT_EP_PID_LOAD
 
 fi
 
@@ -126,12 +214,18 @@ if $RUN_NS
 then
 
 echo ""
-echo "---------------------------------"
-echo "--- RUN NATIVESTORE BENCHMARK ---"
-echo "---------------------------------"
+echo "----------------------------------------"
+echo "------ RUN NATIVESTORE BENCHMARK -------"
+echo "----------------------------------------"
 echo ""
 
 cd ..
+
+mkdir -p "$RESULTS/nativestore"
+
+rm -rf $RUN
+mkdir -p $RUN
+cp endpoint.jar $RUN
 
 cp application.properties "$RUN/application.properties"
 
@@ -160,7 +254,7 @@ do
                 -pc $SIZE \
                 -dir "$OUTPUT_IN/data$SIZE" \
                 -fn "$OUTPUT_IN/dataset$SIZE" \
-    | tail -n 1 | cut -w -f 1)
+    | tail -n 1 | cut -d " " -f 1)
 
     if curl "$LOAD_URL" \
                  -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
@@ -172,9 +266,9 @@ do
     fi
 
     HDT_SIZE=0
-    NS_SIZE=$(du run/hdt-store | tail -n 1 | cut -w -f 1)
+    NS_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
 
-    echo "NATIVE,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "NATIVE,DEFAULT,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
     echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
 
