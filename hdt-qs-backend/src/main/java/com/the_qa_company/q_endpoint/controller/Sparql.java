@@ -274,6 +274,9 @@ public class Sparql {
 
 			// set the storage
 			if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+				if (passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+					spec.set("loader.type", "two-pass");
+				}
 				hybridStore = new HybridStore(files, spec, false, hdtReadMode.equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
 				hybridStore.setThreshold(threshold);
 				logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
@@ -407,9 +410,12 @@ public class Sparql {
 		Files.deleteIfExists(Paths.get(hdtOutput));
 		Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-		HDTSpecification spec = new HDTSpecification();
-		spec.setOptions(hdtSpec);
 		if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+			HDTSpecification spec = new HDTSpecification();
+			spec.setOptions(hdtSpec);
+			if (passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+				spec.set("loader.type", "two-pass");
+			}
 			compressToHdt(input, baseURI, filename, hdtOutput, spec);
 
 			clearHybridStore(locationHdt);
@@ -429,19 +435,22 @@ public class Sparql {
 		return new LoadFileResult(true);
 	}
 
-	private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation, HDTSpecification specs) throws IOException {
-		/* Maximum amount of memory the JVM will attempt to use */
+	/**
+	 * @return a theoretical maximum amount of memory the JVM will attempt to use
+	 */
+	static long getMaxChunkSize() {
 		long maxMemory = Runtime.getRuntime().maxMemory();
-		long chunkSize =
-				(long) Math.floor((maxMemory - 1024 * 1024 * 1024) * 0.85)
-				//128*1024
-				;
+		logger.info("Maximal available memory {}", maxMemory);
+		return (long) ((maxMemory - 1024 * 1024 * 1024) * 0.25);
+	}
+
+	private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation, HDTSpecification specs) throws IOException {
+		long chunkSize = getMaxChunkSize();
 
 		if (debugMaxChunkSize > 0) {
 			assert debugMaxChunkSize < chunkSize : "debugMaxChunkSize can't be higher than chunkSize";
 			chunkSize = debugMaxChunkSize;
 		}
-		logger.info("Maximal available memory {}", maxMemory);
 		File hdtParentFile = new File(hdtLocation).getParentFile();
 		String hdtParent = hdtParentFile.getAbsolutePath();
 		Files.createDirectories(hdtParentFile.toPath());

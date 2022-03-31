@@ -2,6 +2,7 @@ package com.the_qa_company.q_endpoint.controller;
 
 import com.the_qa_company.q_endpoint.Application;
 import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
+import com.the_qa_company.q_endpoint.utils.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema;
 import org.eclipse.rdf4j.model.IRI;
@@ -21,6 +22,7 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -167,7 +169,10 @@ public class FileUploadTest {
         return lit;
     }
 
-    private void assertAllHDTLoaded() throws IOException {
+    private void assertAllCoktailsHDTLoaded() throws IOException {
+        assertAllTriplesHDTLoaded(stream(COKTAILS_NT), COKTAILS_NT);
+    }
+    private void assertAllTriplesHDTLoaded(InputStream stream, String fileName) throws IOException {
         HybridStore store = sparql.hybridStore;
         SailRepository sailRepository = new SailRepository(store);
         List<Statement> statementList = new ArrayList<>();
@@ -199,7 +204,7 @@ public class FileUploadTest {
                 statementList.add(statement);
             };
         }
-        RDFStreamUtils.readRDFStream(stream(COKTAILS_NT), RDFFormat.NTRIPLES, true, consumer);
+        RDFStreamUtils.readRDFStream(stream, Rio.getParserFormatForFileName(fileName).orElseThrow(), true, consumer);
 
         try (SailRepositoryConnection connection = sailRepository.getConnection()) {
             RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false);
@@ -215,7 +220,7 @@ public class FileUploadTest {
                         next.getSubject().toString() + ", " +
                         next.getPredicate().toString() + ", " +
                         next.getObject().toString()
-                        + "), not in " + COKTAILS_NT, statementList.remove(next));
+                        + "), not in " + fileName, statementList.remove(next));
                 while (statementList.remove(next)) {
                     // remove duplicates
                     logger.trace("removed duplicate of {}", next);
@@ -226,7 +231,7 @@ public class FileUploadTest {
             for (Statement statement : statementList) {
                 System.err.println(statement);
             }
-            Assert.fail(COKTAILS_NT + " contains more triples than the HybridStore");
+            Assert.fail(fileName + " contains more triples than the HybridStore");
         }
     }
 
@@ -239,7 +244,7 @@ public class FileUploadTest {
         sparql.loadFile(streamOut(fileName), fileName);
 
 
-        assertAllHDTLoaded();
+        assertAllCoktailsHDTLoaded();
     }
 
     @Test
@@ -250,7 +255,7 @@ public class FileUploadTest {
 
         sparql.loadFile(streamOut(fileName), fileName);
 
-        assertAllHDTLoaded();
+        assertAllCoktailsHDTLoaded();
     }
     @Test
     public void loadNoSplitTwoPassTest() throws IOException {
@@ -261,7 +266,7 @@ public class FileUploadTest {
         sparql.loadFile(streamOut(fileName), fileName);
 
 
-        assertAllHDTLoaded();
+        assertAllCoktailsHDTLoaded();
     }
 
     @Test
@@ -272,6 +277,24 @@ public class FileUploadTest {
 
         sparql.loadFile(streamOut(fileName), fileName);
 
-        assertAllHDTLoaded();
+        assertAllCoktailsHDTLoaded();
     }
+
+    @Test
+    public void loadLargeTest() throws IOException {
+        long size = Sparql.getMaxChunkSize() * 10;
+        LargeFakeDataSetStreamSupplier supplier = new LargeFakeDataSetStreamSupplier(size, 42);
+        sparql.loadFile(
+                supplier.createRDFStream(format),
+                "fake." + format.getDefaultFileExtension()
+        );
+
+        supplier.reset();
+
+        assertAllTriplesHDTLoaded(
+                supplier.createRDFStream(format),
+                "fake." + format.getDefaultFileExtension()
+        );
+    }
+
 }

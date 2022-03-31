@@ -3,7 +3,7 @@ package com.the_qa_company.q_endpoint.utils;
 import org.rdfhdt.hdt.triples.TripleString;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
@@ -14,6 +14,15 @@ import java.util.function.Consumer;
  * @author Antoine Willerval
  */
 public class FileTripleIterator implements Iterator<TripleString> {
+    private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
+
+    static long estimateTripleSize(TripleString triple) {
+        try {
+            return triple.asNtriple().toString().getBytes(DEFAULT_CHARSET).length;
+        } catch (IOException e) {
+            throw new RuntimeException("Can't estimate the size of the triple " + triple, e);
+        }
+    }
     private final Iterator<TripleString> it;
     private final long maxSize;
     private long currentSize = 0L;
@@ -28,14 +37,6 @@ public class FileTripleIterator implements Iterator<TripleString> {
     public FileTripleIterator(Iterator<TripleString> it, long maxSize) {
         this.it = it;
         this.maxSize = maxSize;
-    }
-
-    private long estimateTripleSize(TripleString triple) {
-        try {
-            return triple.asNtriple().toString().getBytes(StandardCharsets.UTF_8).length;
-        } catch (IOException e) {
-            throw new RuntimeException("Can't estimate the size of the triple " + triple, e);
-        }
     }
 
     @Override
@@ -63,6 +64,9 @@ public class FileTripleIterator implements Iterator<TripleString> {
 
     @Override
     public TripleString next() {
+        if (!hasNext()) {
+            return null;
+        }
         TripleString t = next;
         next = null;
         return t;

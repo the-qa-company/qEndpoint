@@ -38,7 +38,7 @@ public class MultiLanguageTypedLuceneIndexTest extends SailTest {
 	 * @param i id
 	 * @return string
 	 */
-	private static String stringNameOfInt(int i) {
+	public static String stringNameOfInt(int i) {
 		String table = "abcdefghijklmnopqrstuvwxyz";
 		StringBuilder out = new StringBuilder();
 		int c = i;
