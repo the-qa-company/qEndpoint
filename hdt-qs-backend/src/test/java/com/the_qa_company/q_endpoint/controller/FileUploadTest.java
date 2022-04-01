@@ -281,6 +281,7 @@ public class FileUploadTest {
     }
 
     @Test
+    @Ignore("large test")
     public void loadLargeTest() throws IOException {
         long size = Sparql.getMaxChunkSize() * 10;
         LargeFakeDataSetStreamSupplier supplier = new LargeFakeDataSetStreamSupplier(size, 42);
