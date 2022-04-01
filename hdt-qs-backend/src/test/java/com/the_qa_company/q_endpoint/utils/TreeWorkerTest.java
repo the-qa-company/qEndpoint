@@ -2,8 +2,12 @@ package com.the_qa_company.q_endpoint.utils;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -12,7 +16,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+@RunWith(Parameterized.class)
 public class TreeWorkerTest {
+	@Parameterized.Parameters(name = "test {0} worker(s)")
+	public static Collection<Object> params() {
+		return Arrays.asList(1, 8);
+	}
 	private static class SyncSupplierTest implements Supplier<Integer> {
 		private final int max;
 		private final long sleep;
@@ -30,11 +39,7 @@ public class TreeWorkerTest {
 				Assert.assertFalse(inUse);
 				inUse = true;
 			}
-			try {
-				Thread.sleep(sleep);
-			} catch (InterruptedException e) {
-				throw new AssertionError("Interruption", e);
-			}
+			sleepOrThrow(sleep);
 			synchronized (this) {
 				Assert.assertTrue(inUse);
 				inUse = false;
@@ -69,13 +74,19 @@ public class TreeWorkerTest {
 		}
 	}
 
+	private final int workers;
+
+	public TreeWorkerTest(int workers) {
+		this.workers = workers;
+	}
+
 	@Test
 	public void syncSupplierTest() throws InterruptedException, TreeWorker.TreeWorkerException {
 		TreeWorker.TreeWorkerCat<Integer> cat = Integer::sum;
 		int max = 10;
 		Supplier<Integer> supplier = new SyncSupplierTest(max, 20L);
 
-		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null);
+		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null, workers);
 		worker.start();
 		Integer result = worker.waitToComplete();
 		Assert.assertTrue(worker.isCompleted());
@@ -90,7 +101,7 @@ public class TreeWorkerTest {
 		Supplier<Integer> supplier = new SyncSupplierTest(max, 20L);
 
 		// should crash because the supplier won't return any value to merge
-		new TreeWorker<>(cat, supplier, null);
+		new TreeWorker<>(cat, supplier, null, workers);
 	}
 
 	@Test
@@ -99,7 +110,7 @@ public class TreeWorkerTest {
 		int max = 1;
 		Supplier<Integer> supplier = new SyncSupplierTest(max, 20L);
 
-		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null);
+		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null, workers);
 		worker.start();
 		Integer result = worker.waitToComplete();
 		Assert.assertTrue(worker.isCompleted());
@@ -116,7 +127,7 @@ public class TreeWorkerTest {
 		int max = 1;
 		Supplier<Integer> supplier = new SyncSupplierTest(max, 20L);
 
-		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null);
+		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null, workers);
 		worker.start();
 		try {
 			worker.waitToComplete();
@@ -132,7 +143,7 @@ public class TreeWorkerTest {
 		int max = 1 << 5;
 		Supplier<Integer> supplier = new SyncSupplierTest(max, 2L);
 
-		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null);
+		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null, workers);
 		worker.start();
 		Integer result = worker.waitToComplete();
 		Assert.assertTrue(worker.isCompleted());
@@ -147,7 +158,7 @@ public class TreeWorkerTest {
 		int max = 1 << 5 - 1;
 		Supplier<Integer> supplier = new SyncSupplierTest(max, 2L);
 
-		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null);
+		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, null, workers);
 		worker.start();
 		Integer result = worker.waitToComplete();
 		Assert.assertTrue(worker.isCompleted());
@@ -187,7 +198,7 @@ public class TreeWorkerTest {
 
 		Consumer<Integer> delete = elements::remove;
 
-		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, delete);
+		TreeWorker<Integer> worker = new TreeWorker<>(cat, supplier, delete, workers);
 		worker.start();
 		Integer result = worker.waitToComplete();
 		Assert.assertTrue(worker.isCompleted());
@@ -200,7 +211,7 @@ public class TreeWorkerTest {
 	@Test
 	public void mergeSortTest() throws TreeWorker.TreeWorkerException, InterruptedException {
 		Random rnd = new Random(42);
-		int count = 100;
+		int count = 20;
 		List<Integer> values = new ArrayList<>();
 		List<Integer> lst = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
@@ -240,6 +251,7 @@ public class TreeWorkerTest {
 					}
 					List<Integer> tst = new ArrayList<>(l);
 					tst.sort(Integer::compareTo);
+					sleepOrThrow(25);
 					Assert.assertEquals(tst, l);
 					return l;
 				},
@@ -252,15 +264,24 @@ public class TreeWorkerTest {
 						}
 						List<Integer> l = new ArrayList<>();
 						l.add(values.get(index++));
+						sleepOrThrow(25);
 						return l;
 					}
 				},
-				null
+				null, workers
 		);
 		worker.start();
 		List<Integer> result = worker.waitToComplete();
 		// test O(n log(n))
 		Assert.assertTrue(com.call <= count * BitArrayDisk.log2(count));
 		Assert.assertEquals(lst, result);
+	}
+
+	private static void sleepOrThrow(long time) {
+		try {
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+			throw new AssertionError("Interruption", e);
+		}
 	}
 }

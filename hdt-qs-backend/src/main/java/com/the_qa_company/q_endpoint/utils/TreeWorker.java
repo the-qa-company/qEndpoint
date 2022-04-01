@@ -19,9 +19,11 @@ public class TreeWorker<T> {
 	private final Supplier<T> baseLevelSupplier;
 	private final Consumer<T> delete;
 	private int maxLevel = 0;
-	private Worker fetchJob = null;
+	private final Object WAITING_SYNC = new Object() {
+	};
+	private int workerWaiting = 0;
 	private final List<Element> elements = new ArrayList<>();
-	private final Worker[] workers;
+	private final List<Worker> workers;
 	private boolean started = false;
 	private boolean done = false;
 	private TreeWorkerException throwable;
@@ -63,9 +65,9 @@ public class TreeWorker<T> {
 			throw new TreeWorkerException("no base element!");
 		}
 		elements.add(new Element(t, 0));
-		this.workers = new TreeWorker.Worker[workers];
-		for (int i = 0; i < this.workers.length; i++) {
-			this.workers[i] = new Worker();
+		this.workers = new ArrayList<>(workers);
+		for (int i = 0; i < workers; i++) {
+			this.workers.add(new Worker());
 		}
 	}
 
@@ -119,43 +121,14 @@ public class TreeWorker<T> {
 		return elements.get(0).t;
 	}
 
-	private TreeWorkerJob getJob(Worker worker) throws InterruptedException, TreeWorkerException {
-		while (true) {
-			synchronized (elements) {
-				if (done) {
-					if (elements.size() == 1) {
-						return null; // end, no ascend/merge required
-					}
-					Tuple w = searchDir(0, 1, 1);
-					if (w == null) {
-						return null; // end
-					} else {
-						w.remove();
-						if (w.size() == 1) {
-							return new Ascend(w.a);
-						} else { //size == 2
-							return new Merge(w.a, w.b);
-						}
-					}
-				} else {
-					Tuple w = searchDir(maxLevel, -1, 2);
-					if (w == null) {
-						if (fetchJob == null) {
-							fetchJob = worker;
-							return new Fetch();
-						} else {
-							elements.wait();
-							if (throwable != null) {
-								return null; // end before waiting
-							}
-						}
-					} else {
-						w.remove();
-						return new Merge(w.a, w.b);
-					}
-				}
+	private int countLevel(int level) {
+		int c = 0;
+		for (Element e: elements) {
+			if (e.level == level) {
+				c++;
 			}
 		}
+		return c;
 	}
 
 	private Tuple searchDir(int start, int direction, int min) {
@@ -208,7 +181,7 @@ public class TreeWorker<T> {
 	 */
 	public boolean isCompleted() {
 		synchronized (elements) {
-			return (done && elements.size() == 1) || throwable != null;
+			return (done && elements.size() <= 1) || throwable != null;
 		}
 	}
 
@@ -259,19 +232,24 @@ public class TreeWorker<T> {
 		void clear() {
 		}
 	}
-
+	private final Object FETCH_SYNC = new Object() {
+	};
 	private class Fetch extends TreeWorkerJob {
 		@Override
 		public void runJob() {
-			T t = baseLevelSupplier.get();
-			synchronized (elements) {
-				if (t == null) {
-					done = true;
-				} else {
-					elements.add(new Element(t, 0));
+			synchronized (FETCH_SYNC) {
+				if (done) {
+					return; // another fetch job won
 				}
-				fetchJob = null;
-				elements.notifyAll();
+				T t = baseLevelSupplier.get();
+				synchronized (elements) {
+					if (t == null) {
+						done = true;
+					} else {
+						elements.add(new Element(t, 0));
+					}
+					elements.notifyAll();
+				}
 			}
 		}
 	}
@@ -300,27 +278,6 @@ public class TreeWorker<T> {
 		}
 	}
 
-	private class Ascend extends TreeWorkerJob {
-		Element e;
-
-		public Ascend(Element e) {
-			this.e = e;
-		}
-
-		@Override
-		public void runJob() {
-			synchronized (elements) {
-				e.level++;
-				elements.add(e);
-				maxLevel = Math.max(maxLevel, e.level);
-			}
-		}
-		@Override
-		void clear() {
-			delete.accept(e.t);
-		}
-	}
-
 	private class Worker extends Thread {
 		public Worker() {
 			super("JobWorker#" + JOB_ID_NAME.incrementAndGet());
@@ -331,9 +288,23 @@ public class TreeWorker<T> {
 			while (!isCompleted()) {
 				TreeWorkerJob job = null;
 				try {
-					job = getJob(this);
-					if (job != null) {
-						job.runJob();
+					synchronized (WAITING_SYNC) {
+						job = getJob();
+						if (job == null) {
+							if (isCompleted()) {
+								return;
+							}
+							workerWaiting++;
+							WAITING_SYNC.wait();
+							--workerWaiting;
+							continue;
+						}
+					}
+					job.runJob();
+					synchronized (WAITING_SYNC) {
+						if (workerWaiting > 0) {
+							WAITING_SYNC.notify();
+						}
 					}
 				} catch (Throwable t) {
 					if (job != null) {
@@ -346,6 +317,42 @@ public class TreeWorker<T> {
 							throwable = new TreeWorkerException(t);
 						}
 						elements.notifyAll();
+					}
+					synchronized (WAITING_SYNC) {
+						WAITING_SYNC.notifyAll();
+					}
+				}
+			}
+		}
+
+		private TreeWorkerJob getJob() throws TreeWorkerException {
+			synchronized (elements) {
+				while (true) {
+					if (done) {
+						if (elements.size() == 1) {
+							return null; // end, no ascend/merge required
+						}
+						Tuple w = searchDir(0, 1, 1);
+						if (w == null) {
+							return null; // size == 0 end
+						} else if (w.size() == 1) {
+							w.a.level++;
+						} else { //size == 2
+							w.remove();
+							return new Merge(w.a, w.b);
+						}
+					} else {
+						int level0 = countLevel(0);
+						if (workers.size() != 1 && level0 < workers.size() / 2) {
+							return new Fetch();
+						}
+						Tuple w = searchDir(maxLevel, -1, 2);
+						if (w == null) {
+							return new Fetch();
+						} else {
+							w.remove();
+							return new Merge(w.a, w.b);
+						}
 					}
 				}
 			}
