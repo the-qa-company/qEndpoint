@@ -439,9 +439,10 @@ public class Sparql {
 	 * @return a theoretical maximum amount of memory the JVM will attempt to use
 	 */
 	static long getMaxChunkSize() {
-		long maxMemory = Runtime.getRuntime().maxMemory();
-		logger.info("Maximal available memory {}", maxMemory);
-		return (long) ((maxMemory - 1024 * 1024 * 1024) * 0.25);
+		Runtime runtime = Runtime.getRuntime();
+		long presFreeMemory = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * 0.25 * 0.85);
+		logger.info("Maximal available memory {}", presFreeMemory);
+		return presFreeMemory;
 	}
 
 	private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation, HDTSpecification specs) throws IOException {

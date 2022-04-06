@@ -724,7 +724,7 @@ public class MergeRunnable {
         }
 
         convertOldToNew(tempHdt);
-        this.hybridStore.resetHDT(tempHdt);
+        this.hybridStore.resetHDT(tempHdt, true);
 
         // mark the triples as deleted from the temp file stored while merge
         this.hybridStore.markDeletedTempTriples();

@@ -3,6 +3,7 @@ package com.the_qa_company.q_endpoint.hybridstore;
 import com.the_qa_company.q_endpoint.model.HybridStoreValueFactory;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
 import com.the_qa_company.q_endpoint.utils.BitArrayDisk;
+import com.the_qa_company.q_endpoint.utils.CloseSafeHDT;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -45,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,7 +59,7 @@ import java.util.Optional;
 public class HybridStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
     private static final Logger logger = LoggerFactory.getLogger(HybridStore.class);
     // HDT file containing the data
-    private HDT hdt;
+    private CloseSafeHDT hdt;
     // specs of the HDT file
     private HDTSpecification spec;
     private HDTConverter hdtConverter;
@@ -151,7 +151,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         this.nativeStoreA.init();
         this.nativeStoreB.init();
         checkWhichStore();
-        resetHDT(hdt);
+        resetHDT(hdt, false);
         this.valueFactory = new HybridStoreValueFactory(hdt);
         this.threshold = 100000;
 
@@ -184,7 +184,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     public HybridStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
-        this(locationNative, locationHdt, spec, hdtIndexName, inMemDeletes, false);
+        this(locationHdt, hdtIndexName, spec, locationNative, inMemDeletes, false);
     }
 
 
@@ -198,7 +198,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         }
     }
 
-    public void resetHDT(HDT hdt) {
+    public void resetHDT(HDT hdt, boolean closeOld) {
+        if (closeOld && this.hdt != null) {
+            try {
+                this.hdt.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         this.setHdt(hdt);
         this.setHdtProps(new HDTProps(hdt));
         initNativeStoreDictionary(this.hdt);
@@ -312,7 +319,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     public void setHdt(HDT hdt) {
-        this.hdt = hdt;
+        if (hdt instanceof CloseSafeHDT) {
+            this.hdt = (CloseSafeHDT) hdt;
+        } else {
+            this.hdt = new CloseSafeHDT(hdt);
+        }
     }
 
     @Override
@@ -324,6 +335,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                 mergerThread.join();
             }
         } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        try {
+            hdt.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         logger.info("Shutdown A");

@@ -73,6 +73,8 @@ public class SimpleLiteralHDT implements Literal {
 
     private CoreDatatype coreDatatype;
 
+    private final boolean optimizeDatatype;
+
     /*--------------*
      * Constructors *
      *--------------*/
@@ -82,10 +84,11 @@ public class SimpleLiteralHDT implements Literal {
      *
      * @param hdt The hdt file in which the literal is contained, must not be <tt>null</tt>.
      */
-    public SimpleLiteralHDT(HDT hdt, long id, ValueFactory factory) {
+    public SimpleLiteralHDT(HDT hdt, long id, ValueFactory factory, boolean optimizeDatatype) {
         setHdt(hdt);
         setHdtID(id);
         valueFactory = factory;
+        this.optimizeDatatype = optimizeDatatype;
     }
 
     /*---------*
@@ -102,6 +105,10 @@ public class SimpleLiteralHDT implements Literal {
     }
 
     protected void parseDatatype() {
+        if (!optimizeDatatype) {
+            parseLiteral();
+            return;
+        }
         if (datatype == null) {
             String datatype = hdt.getDictionary().dataTypeOfId(hdtID);
             if (datatype.isEmpty()) {

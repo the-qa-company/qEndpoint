@@ -9,6 +9,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
+import org.rdfhdt.hdt.dictionary.impl.MultipleSectionDictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
@@ -23,10 +24,12 @@ public class HDTConverter {
     private final HybridStore hybridStore;
     private final HDT hdt;
     private final ValueFactory valueFactory = new MemValueFactory();
+    private final boolean optimizeDatatype;
 
     public HDTConverter(HybridStore hybridStore) {
         this.hybridStore = hybridStore;
         this.hdt = hybridStore.getHdt();
+        this.optimizeDatatype = hdt.getDictionary() instanceof MultipleSectionDictionary;
     }
 
     // method to get the ID of a resource
@@ -217,7 +220,7 @@ public class HDTConverter {
 
     public Value IdToObjectHDTResource(long objectID){
         if (objectID >= hybridStore.getHdtProps().getStartLiteral() && objectID <= hybridStore.getHdtProps().getEndLiteral()) {
-            return new SimpleLiteralHDT(hybridStore.getHdt(), objectID, hybridStore.getValueFactory());
+            return new SimpleLiteralHDT(hybridStore.getHdt(), objectID, hybridStore.getValueFactory(), optimizeDatatype);
         } else if ((objectID >= hybridStore.getHdtProps().getStartBlankObjects()
                 && objectID <= hybridStore.getHdtProps().getEndBlankObjects())
                 || (objectID >= hybridStore.getHdtProps().getStartBlankShared()
