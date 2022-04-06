@@ -197,6 +197,23 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI HDT_TWO_PASS_MODE = HDT_PASS_MODE_PROPERTY.createValue("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage");
 
+	/**
+	 * mdlc:debug property
+	 */
+	public static final Property DEBUG_PROPERTY = property("debug", "debug predicate");
+	/**
+	 * mdlc:debug
+	 */
+	public static final IRI DEBUG = DEBUG_PROPERTY.getIri();
+	/**
+	 * mdlc:debugShowTime
+	 */
+	public static final IRI DEBUG_SHOW_TIME = DEBUG_PROPERTY.createValue("debugShowTime", "Show exec time of query");
+	/**
+	 * mdlc:debugShowPlan
+	 */
+	public static final IRI DEBUG_SHOW_PLAN = DEBUG_PROPERTY.createValue("debugShowPlan", "Show query plans");
+
 	private static IRI iri(String name, String desc) {
 		return property(name, desc).getIri();
 	}

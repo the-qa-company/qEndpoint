@@ -1,4 +1,5 @@
 @prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
 
 mdlc:main mdlc:storageMode mdlc:hybridStoreStorage ;
-          mdlc:hdtReadMode mdlc:hdtLoadReadMode .
+          mdlc:hdtReadMode mdlc:hdtLoadReadMode ;
+          mdlc:debug mdlc:debugShowPlan .

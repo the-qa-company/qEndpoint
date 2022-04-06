@@ -1,5 +1,6 @@
 @prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
 
 mdlc:main mdlc:storageMode mdlc:nativeStoreStorage ;
-          mdlc:rdfStoreSplit 1000 .
+          mdlc:rdfStoreSplit 1000 ;
+          mdlc:debug mdlc:debugShowPlan .
           

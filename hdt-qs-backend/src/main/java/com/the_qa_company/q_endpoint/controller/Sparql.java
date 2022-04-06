@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
@@ -75,6 +76,22 @@ import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
+	static class DebugOptions {
+		boolean debugShowTime;
+		boolean debugShowPlans;
+
+		public void add(IRI iri) {
+			SailCompilerSchema.DEBUG_PROPERTY.throwIfNotValidValue(iri);
+
+			if (SailCompilerSchema.DEBUG_SHOW_TIME.equals(iri)) {
+				debugShowTime = true;
+			} else if (SailCompilerSchema.DEBUG_SHOW_PLAN.equals(iri)) {
+				debugShowPlans = true;
+			} else {
+				throw new SailCompiler.SailCompilerException("not implemented: " + iri);
+			}
+		}
+	}
 	public static class MergeRequestResult {
 		private final boolean completed;
 
@@ -180,6 +197,7 @@ public class Sparql {
 	HybridStore hybridStore;
 	final Set<LuceneSail> luceneSails = new HashSet<>();
 	SailRepository repository;
+	DebugOptions options;
 
 	@Autowired
 	public void init() throws IOException {
@@ -239,6 +257,7 @@ public class Sparql {
 			NotifyingSail source;
 
 			// read configs
+			options = new DebugOptions();
 			try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
 				storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY)
 								.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
@@ -259,6 +278,10 @@ public class Sparql {
 						}).findAny().orElse(1000);
 				hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY)
 								.orElse(SailCompilerSchema.HDT_READ_MODE_MAP);
+				reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.DEBUG)
+						.stream()
+						.map(SailCompiler::asIRI)
+						.forEach(options::add);
 			}
 
 			// set the storage
@@ -325,6 +348,10 @@ public class Sparql {
 			ParsedQuery parsedQuery =
 					QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
 
+			if (options.debugShowPlans) {
+				System.out.println(parsedQuery);
+			}
+
 			if (parsedQuery instanceof ParsedTupleQuery) {
 				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
 				QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader)
@@ -337,7 +364,9 @@ public class Sparql {
 				query.setMaxExecutionTime(timeout);
 				try {
 					query.evaluate(writer);
-					 // System.out.println(query.explain(org.eclipse.rdf4j.query.explanation.Explanation.Level.Timed));
+					if (options.debugShowTime) {
+						System.out.println(query.explain(Explanation.Level.Timed));
+					}
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
 					q.printStackTrace();
