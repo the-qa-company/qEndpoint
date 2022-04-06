@@ -21,3 +21,5 @@ Run the benchmark with the command
 - `dataset100000` = `34,872,182`
 - `dataset200000` = `69,494,080`
 - `dataset500000` = `173,526,449`
+- `dataset1000000` = `346M`
+- `dataset5000000` = `1.7B`

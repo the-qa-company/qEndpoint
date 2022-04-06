@@ -41,7 +41,14 @@ fi
 
 OUTPUT_IN=../$OUTPUT
 CSV_IN=../$RESULTS/results.csv
+
 cd bsbmtools
+
+if [ -f "results.csv" ]
+then
+    mv $CSV_IN "$CSV_IN$(date '+%Y-%m-%d-%H:%M:%S').csv"
+fi
+touch $CSV_IN
 
 if $RUN_HS_LOADED
 then
@@ -97,9 +104,9 @@ do
     fi
 
     HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
-    NS_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+    NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
 
-    echo "HYBRID,MAP,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "HYBRID,MAP,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
     echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
     # Test the dataset
@@ -181,9 +188,9 @@ do
     fi
 
     HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
-    NS_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+    NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
 
-    echo "HYBRID,LOAD,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "HYBRID,LOAD,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
     echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
     # Test the dataset
@@ -266,9 +273,9 @@ do
     fi
 
     HDT_SIZE=0
-    NS_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+    NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
 
-    echo "NATIVE,DEFAULT,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> CSV_IN
+    echo "NATIVE,DEFAULT,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
     echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
 
