@@ -38,6 +38,7 @@ import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
@@ -239,18 +240,10 @@ public class Sparql {
 
 			// read configs
 			try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
-				storageMode = SailCompilerSchema.throwIfNotStorageMode(
-						reader
-							.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE)
-							.map(SailCompiler::asIRI)
-							.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE)
-				);
-				passMode = SailCompilerSchema.throwIfNotPassMode(
-						reader
-								.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE)
-								.map(SailCompiler::asIRI)
-								.orElse(SailCompilerSchema.HDT_TWO_PASS_MODE)
-				);
+				storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY)
+								.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
+				passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY)
+								.orElse(SailCompilerSchema.HDT_TWO_PASS_MODE);
 				rdf4jSplitUpdate = reader
 						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE)
 						.map(v -> (Literal) v)
@@ -264,12 +257,8 @@ public class Sparql {
 							}
 							return i;
 						}).findAny().orElse(1000);
-				hdtReadMode = SailCompilerSchema.throwIfNotReadMode(
-						reader
-								.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE)
-								.map(SailCompiler::asIRI)
-								.orElse(SailCompilerSchema.HDT_READ_MODE_MAP)
-				);
+				hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY)
+								.orElse(SailCompilerSchema.HDT_READ_MODE_MAP);
 			}
 
 			// set the storage
@@ -285,9 +274,13 @@ public class Sparql {
 				source = new NativeStore(new File(files.getLocationNative(), "nativeglobal"));
 			} else if (storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
 				source = new MemoryStore();
+			} else if (storageMode.equals(SailCompilerSchema.LMDB_STORAGE)) {
+				source = new LmdbStore(new File(files.getLocationNative(), "lmdb"));
 			} else {
 				throw new RuntimeException("Bad storage mode: " + storageMode);
 			}
+
+			logger.info("Using storage mode {}.", storageMode);
 
 			// compile the storage sail
 			repository = new SailRepository(compiler.compile(source));

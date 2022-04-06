@@ -13,6 +13,7 @@ JAVA_MAX_MEM=32G
 RUN_HS_LOADED=true
 RUN_HS_MAPPED=true
 RUN_NS=true
+RUN_LMDB=true
 CSV=$RESULTS/results.csv
 
 trap "echo 'EXITING...'; exit -1" INT
@@ -103,11 +104,12 @@ do
         exit -1
     fi
 
+    RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
     HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
     NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
 
-    echo "HYBRID,MAP,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
-    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
+    echo "HYBRID,MAP,$SIZE,$TRIPLES_COUNT,$RUN_SIZE,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
     # Test the dataset
     if ! ./testdriver \
@@ -187,11 +189,12 @@ do
         exit -1
     fi
 
+    RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
     HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
     NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
 
-    echo "HYBRID,LOAD,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
-    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
+    echo "HYBRID,LOAD,$SIZE,$TRIPLES_COUNT,$RUN_SIZE,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
     # Test the dataset
     if ! ./testdriver \
@@ -272,11 +275,12 @@ do
         exit -1
     fi
 
+    RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
     HDT_SIZE=0
     NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
 
-    echo "NATIVE,DEFAULT,$SIZE,$TRIPLES_COUNT,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
-    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
+    echo "NATIVE,DEFAULT,$SIZE,$TRIPLES_COUNT,$RUN_SIZE,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
 
 
     # Test the dataset
@@ -297,9 +301,97 @@ do
     rm -rf "$OUTPUT_IN"
 done
 
-fi
 
 echo "kill NS ENDPOINT"
 kill -KILL $NATIVE_EP_PID
+
+fi
+
+if $RUN_LMDB
+then
+
+echo ""
+echo "----------------------------------------"
+echo "------    RUN LMDB BENCHMARK     -------"
+echo "----------------------------------------"
+echo ""
+
+cd ..
+
+mkdir -p "$RESULTS/lmdb"
+
+rm -rf $RUN
+mkdir -p $RUN
+cp endpoint.jar $RUN
+
+cp application.properties "$RUN/application.properties"
+
+echo "repoModel=../models/model_lmdb.ttl" >> "$RUN/application.properties"
+
+cd $RUN
+java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
+
+LMDB_EP_PID=$!
+trap "echo 'killing LMDB EP';kill -KILL $LMDB_EP_PID" EXIT INT
+
+cd ..
+
+cd bsbmtools
+
+for SIZE in 10000 50000 100000 200000
+do
+    echo "Generating $OUTPUT/dataset$SIZE..."
+    # Remove previous dataset
+    rm -rf "$OUTPUT_IN"
+    mkdir -p "$OUTPUT_IN"
+
+    # Generate the dataset
+    TRIPLES_COUNT=$(./generate \
+                -s nt \
+                -pc $SIZE \
+                -dir "$OUTPUT_IN/data$SIZE" \
+                -fn "$OUTPUT_IN/dataset$SIZE" \
+    | tail -n 1 | cut -d " " -f 1)
+
+    if curl "$LOAD_URL" \
+                 -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
+    then
+        echo "NT file Loaded"
+    else
+        1>&2 echo "Can't load the NT file"
+        exit -1
+    fi
+
+    RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
+    HDT_SIZE=0
+    NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
+
+    echo "LMDB,DEFAULT,$SIZE,$TRIPLES_COUNT,$RUN_SIZE,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
+    echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
+
+
+    # Test the dataset
+    if ! ./testdriver \
+                      -ucf usecases/explore/sparql.txt \
+                      -u "$UPDATE_URL" \
+                      -udataset "$OUTPUT_IN/dataset$SIZE.nt" \
+                      -idir "$OUTPUT_IN/data$SIZE" \
+                      "$SPARQL_URL"
+    then
+        1>&2 echo "Can't test dataset$SIZE"
+        exit -1
+    fi
+
+    mv "benchmark_result.xml" "../$RESULTS/lmdb/benchmark_result_$SIZE.xml"
+
+    # Remove the dataset
+    rm -rf "$OUTPUT_IN"
+done
+
+
+echo "kill LMDB ENDPOINT"
+kill -KILL $LMDB_EP_PID
+
+fi
 
 echo "Benchmark done :)"

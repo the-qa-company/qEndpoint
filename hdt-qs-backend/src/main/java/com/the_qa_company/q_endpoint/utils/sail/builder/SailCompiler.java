@@ -365,6 +365,19 @@ public class SailCompiler {
 		}
 
 		/**
+		 * search for a property value in the graph
+		 * @param subject the subject to read
+		 * @param property the property to read and check values
+		 * @return the value
+		 * @throws SailCompilerException if the value isn't a valid value for this property
+		 */
+		public Optional<IRI> searchPropertyValue(Resource subject, SailCompilerSchema.Property property) throws SailCompilerException {
+			return searchOneOpt(subject, property.getIri())
+					.map(SailCompiler::asIRI)
+					.map(property::throwIfNotValidValue);
+		}
+
+		/**
 		 * search for the statements with this subject and predicate
 		 * @param subject the subject
 		 * @param predicate the predicate

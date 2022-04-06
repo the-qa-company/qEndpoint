@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,7 +17,7 @@ import java.util.Set;
  */
 public class SailCompilerSchema {
 	private static final ValueFactory VF = SimpleValueFactory.getInstance();
-	private static final Map<IRI, String> DESC = new HashMap<>();
+	private static final Map<IRI, Property> DESC = new HashMap<>();
 	/**
 	 * {@literal @prefix mdlc: <http://the-qa-company.com/modelcompiler/>}
 	 */
@@ -136,106 +137,142 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:storageMode
 	 */
-	public static final IRI STORAGE_MODE = iri("storageMode", "The storage mode");
+	public static final Property STORAGE_MODE_PROPERTY = property("storageMode", "The storage mode");
+	/**
+	 * mdlc:storageMode
+	 */
+	public static final IRI STORAGE_MODE = STORAGE_MODE_PROPERTY.getIri();
 	/**
 	 * mdlc:hybridStoreStorage
 	 */
-	public static final IRI HYBRIDSTORE_STORAGE = iri("hybridStoreStorage", "The storage mode hybrid store");
+	public static final IRI HYBRIDSTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("hybridStoreStorage", "The storage mode hybrid store");
 	/**
 	 * mdlc:nativeStoreStorage
 	 */
-	public static final IRI NATIVESTORE_STORAGE = iri("nativeStoreStorage", "The storage mode native store");
+	public static final IRI NATIVESTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("nativeStoreStorage", "The storage mode native store");
 	/**
 	 * mdlc:memoryStoreStorage
 	 */
-	public static final IRI MEMORYSTORE_STORAGE = iri("memoryStoreStorage", "The storage mode memory store");
-
-	private static final Set<IRI> STORAGES = Set.of(HYBRIDSTORE_STORAGE, NATIVESTORE_STORAGE, MEMORYSTORE_STORAGE);
+	public static final IRI MEMORYSTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("memoryStoreStorage", "The storage mode memory store");
 	/**
-	 * mdlc:hdtReadMode
+	 * mdlc:lmdbStoreStorage
 	 */
-	public static final IRI HDT_READ_MODE = iri("hdtReadMode", "The hdt reading mode");
+	public static final IRI LMDB_STORAGE = STORAGE_MODE_PROPERTY.createValue("lmdbStoreStorage", "The storage mode lmdb");
+
+	/**
+	 * mdlc:hdtReadMode PROPERTY
+	 */
+	public static final Property HDT_READ_MODE_PROPERTY = property("hdtReadMode", "The hdt reading mode");
+	/**
+	 * mdlc:hdtReadMode PROPERTY
+	 */
+	public static final IRI HDT_READ_MODE = HDT_READ_MODE_PROPERTY.getIri();
 	/**
 	 * mdlc:hdtLoadReadMode
 	 */
-	public static final IRI HDT_READ_MODE_LOAD = iri("hdtLoadReadMode", "The hdt load reading mode, load the full HDT into memory");
+	public static final IRI HDT_READ_MODE_LOAD = HDT_READ_MODE_PROPERTY.createValue("hdtLoadReadMode", "The hdt load reading mode, load the full HDT into memory");
 	/**
 	 * mdlc:hdtMapReadMode
 	 */
-	public static final IRI HDT_READ_MODE_MAP = iri("hdtMapReadMode", "The hdt load reading mode, map the HDT into memory (default)");
+	public static final IRI HDT_READ_MODE_MAP = HDT_READ_MODE_PROPERTY.createValue("hdtMapReadMode", "The hdt load reading mode, map the HDT into memory (default)");
 
-	private static final Set<IRI> READ_MODES = Set.of(HDT_READ_MODE_LOAD, HDT_READ_MODE_MAP);
 	/**
 	 * mdlc:rdfStoreSplit
 	 */
 	public static final IRI RDF_STORE_SPLIT_STORAGE = iri("rdfStoreSplit", "The storage load split update count");
 	/**
+	 * mdlc:hdtPassMode property
+	 */
+	public static final Property HDT_PASS_MODE_PROPERTY = property("hdtPassMode", "The mode to parse the Triple flux");
+	/**
 	 * mdlc:hdtPassMode
 	 */
-	public static final IRI HDT_PASS_MODE = iri("hdtPassMode", "The mode to parse the Triple flux");
+	public static final IRI HDT_PASS_MODE = HDT_PASS_MODE_PROPERTY.getIri();
 	/**
 	 * mdlc:hdtOnePassMode
 	 */
-	public static final IRI HDT_ONE_PASS_MODE = iri("hdtOnePassMode", "The mode to parse the Triple flux in one pass, reduce disk usage");
+	public static final IRI HDT_ONE_PASS_MODE = HDT_PASS_MODE_PROPERTY.createValue("hdtOnePassMode", "The mode to parse the Triple flux in one pass, reduce disk usage");
 	/**
 	 * mdlc:hdtTwoPassMode
 	 */
-	public static final IRI HDT_TWO_PASS_MODE = iri("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage");
-
-	private static final Set<IRI> PASS_MODES = Set.of(HDT_ONE_PASS_MODE, HDT_TWO_PASS_MODE);
+	public static final IRI HDT_TWO_PASS_MODE = HDT_PASS_MODE_PROPERTY.createValue("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage");
 
 	private static IRI iri(String name, String desc) {
+		return property(name, desc).getIri();
+	}
+
+	private static Property property(String name, String desc) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
-		String old = DESC.put(iri, desc);
+		Property prop = new Property(iri, desc);
+		Property old = DESC.put(iri, prop);
 		assert old == null : "Iri already registered: " + iri;
-		return iri;
-	}
-
-	/**
-	 * throw an exception if the iri isn't a HDT pass mode
-	 * @param mode the iri
-	 * @return the iri
-	 * @throws SailCompiler.SailCompilerException if the iri isn't a pass mode
-	 */
-	public static IRI throwIfNotPassMode(IRI mode) throws SailCompiler.SailCompilerException {
-		if (PASS_MODES.contains(mode)) {
-			return mode;
-		}
-		throw new SailCompiler.SailCompilerException(mode + " isn't a pass mode!");
-	}
-
-	/**
-	 * throw an exception if the iri isn't a storage mode
-	 * @param mode the iri
-	 * @return the iri
-	 * @throws SailCompiler.SailCompilerException if the iri isn't a storage mode
-	 */
-	public static IRI throwIfNotStorageMode(IRI mode) throws SailCompiler.SailCompilerException {
-		if (STORAGES.contains(mode)) {
-			return mode;
-		}
-		throw new SailCompiler.SailCompilerException(mode + " isn't a storage mode!");
-	}
-	/**
-	 * throw an exception if the iri isn't a hdt read mode
-	 * @param mode the iri
-	 * @return the iri
-	 * @throws SailCompiler.SailCompilerException if the iri isn't a hdt read mode
-	 */
-	public static IRI throwIfNotReadMode(IRI mode) throws SailCompiler.SailCompilerException {
-		if (READ_MODES.contains(mode)) {
-			return mode;
-		}
-		throw new SailCompiler.SailCompilerException(mode + " isn't a storage mode!");
+		return prop;
 	}
 
 	/**
 	 * @return a description map indexed by IRI
 	 */
-	public static Map<IRI, String> getDescriptions() {
+	public static Map<IRI, Property> getDescriptions() {
 		return Collections.unmodifiableMap(DESC);
 	}
 
 	private SailCompilerSchema() {
+	}
+
+	/**
+	 * A property predicate in the schema
+	 */
+	public static class Property {
+		private final IRI iri;
+		private final String description;
+		private final Set<IRI> values;
+
+		private Property(IRI iri, String description) {
+			this.iri = iri;
+			this.description = description;
+			this.values = new HashSet<>();
+		}
+
+		private IRI createValue(IRI value) {
+			values.add(value);
+			return value;
+		}
+		private IRI createValue(String name, String description) {
+			return createValue(iri(name, description));
+		}
+
+		/**
+		 * @return the associate predicate iri
+		 */
+		public IRI getIri() {
+			return iri;
+		}
+
+		/**
+		 * @return the description
+		 */
+		public String getDescription() {
+			return description;
+		}
+
+		/**
+		 * @return the valid values for this predicate
+		 */
+		public Set<IRI> getValues() {
+			return Collections.unmodifiableSet(values);
+		}
+
+		/**
+		 * throw if an iri isn't in the valid values
+		 * @param iri the iri to test
+		 * @return the iri
+		 * @throws SailCompiler.SailCompilerException if the iri isn't valid
+		 */
+		public IRI throwIfNotValidValue(IRI iri) throws SailCompiler.SailCompilerException {
+			if (values.contains(iri)) {
+				return iri;
+			}
+			throw new SailCompiler.SailCompilerException(iri + " is not a valid value for the property " + iri);
+		}
 	}
 }

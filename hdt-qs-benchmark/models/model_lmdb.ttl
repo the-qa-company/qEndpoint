@@ -1,0 +1,5 @@
+@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
+
+mdlc:main mdlc:storageMode mdlc:lmdbStoreStorage ;
+          mdlc:rdfStoreSplit 1000 .
+          
