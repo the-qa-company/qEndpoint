@@ -15,6 +15,8 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.eclipse.rdf4j.rio.RDFWriter;
@@ -92,7 +94,7 @@ public class FileUploadTest {
                     InputStream is = stream(COKTAILS_NT)
             ) {
                 RDFWriter writer = Rio.createWriter(format, os);
-                parser.setRDFHandler(writer);
+                parser.setRDFHandler(noBNode(writer));
                 parser.parse(is);
             }
         }
@@ -298,4 +300,38 @@ public class FileUploadTest {
         );
     }
 
+    private RDFHandler noBNode(RDFHandler handler) {
+        return new RDFHandler() {
+            @Override
+            public void startRDF() throws RDFHandlerException {
+                handler.startRDF();
+            }
+
+            @Override
+            public void endRDF() throws RDFHandlerException {
+                handler.endRDF();
+            }
+
+            @Override
+            public void handleNamespace(String s, String s1) throws RDFHandlerException {
+                handler.handleNamespace(s, s1);
+            }
+
+            @Override
+            public void handleStatement(Statement statement) throws RDFHandlerException {
+                if (
+                        statement.getSubject().isBNode()
+                                || statement.getObject().isBNode()
+                                || statement.getPredicate().isBNode()
+                )
+                    return;
+                handler.handleStatement(statement);
+            }
+
+            @Override
+            public void handleComment(String s) throws RDFHandlerException {
+                handler.handleComment(s);
+            }
+        };
+    }
 }
