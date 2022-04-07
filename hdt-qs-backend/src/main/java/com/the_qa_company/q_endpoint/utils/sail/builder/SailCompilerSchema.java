@@ -198,21 +198,29 @@ public class SailCompilerSchema {
 	public static final IRI HDT_TWO_PASS_MODE = HDT_PASS_MODE_PROPERTY.createValue("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage");
 
 	/**
-	 * mdlc:debug property
+	 * mdlc:option property
 	 */
-	public static final Property DEBUG_PROPERTY = property("debug", "debug predicate");
+	public static final Property OPTION_PROPERTY = property("option", "option predicate");
 	/**
-	 * mdlc:debug
+	 * mdlc:option
 	 */
-	public static final IRI DEBUG = DEBUG_PROPERTY.getIri();
+	public static final IRI OPTION = OPTION_PROPERTY.getIri();
 	/**
 	 * mdlc:debugShowTime
 	 */
-	public static final IRI DEBUG_SHOW_TIME = DEBUG_PROPERTY.createValue("debugShowTime", "Show exec time of query");
+	public static final IRI DEBUG_SHOW_TIME = OPTION_PROPERTY.createValue("debugShowTime", "Show exec time of query");
 	/**
 	 * mdlc:debugShowPlan
 	 */
-	public static final IRI DEBUG_SHOW_PLAN = DEBUG_PROPERTY.createValue("debugShowPlan", "Show query plans");
+	public static final IRI DEBUG_SHOW_PLAN = OPTION_PROPERTY.createValue("debugShowPlan", "Show query plans");
+	/**
+	 * mdlc:debugDisableOptionReloading
+	 */
+	public static final IRI DEBUG_DISABLE_OPTION_RELOADING = OPTION_PROPERTY.createValue("debugDisableOptionReloading", "Disable option reloading");
+	/**
+	 * mdlc:noOptimization
+	 */
+	public static final IRI NO_OPTIMIZATION = OPTION_PROPERTY.createValue("noOptimization", "Disable optimization for native stores");
 
 	private static IRI iri(String name, String desc) {
 		return property(name, desc).getIri();

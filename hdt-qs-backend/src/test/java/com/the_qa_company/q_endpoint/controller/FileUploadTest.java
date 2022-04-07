@@ -57,6 +57,9 @@ import java.util.function.Consumer;
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
 public class FileUploadTest {
+    public static void debugDisableLoading(Sparql sparql, boolean disableLoading) {
+        sparql.options.debugDisableLoading = disableLoading;
+    }
     public static final String COKTAILS_NT = "cocktails.nt";
     private static final Logger logger = LoggerFactory.getLogger(FileUploadTest.class);
 
@@ -241,7 +244,7 @@ public class FileUploadTest {
     public void loadNoSplitOnePassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
-        sparql.passMode = SailCompilerSchema.HDT_ONE_PASS_MODE;
+        sparql.options.passMode = SailCompilerSchema.HDT_ONE_PASS_MODE;
 
         sparql.loadFile(streamOut(fileName), fileName);
 
@@ -253,7 +256,7 @@ public class FileUploadTest {
     public void loadSplitOnePassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
-        sparql.passMode = SailCompilerSchema.HDT_ONE_PASS_MODE;
+        sparql.options.passMode = SailCompilerSchema.HDT_ONE_PASS_MODE;
 
         sparql.loadFile(streamOut(fileName), fileName);
 
@@ -263,7 +266,7 @@ public class FileUploadTest {
     public void loadNoSplitTwoPassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
-        sparql.passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
+        sparql.options.passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
 
         sparql.loadFile(streamOut(fileName), fileName);
 
@@ -275,7 +278,7 @@ public class FileUploadTest {
     public void loadSplitTwoPassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
-        sparql.passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
+        sparql.options.passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
 
         sparql.loadFile(streamOut(fileName), fileName);
 

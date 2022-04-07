@@ -7,8 +7,8 @@ mdlc:main mdlc:node my:mainNode ;
           mdlc:storageMode mdlc:hybridStoreStorage ;
           mdlc:hdtReadMode mdlc:hdtLoadReadMode ;
           mdlc:rdfStoreSplit 1000 ;
-          mdlc:debug mdlc:debugShowTime ;
-          mdlc:debug mdlc:debugShowPlan ;
+          mdlc:option mdlc:debugShowTime ;
+          mdlc:option mdlc:debugShowPlan ;
           mdlc:parsedStringParam [
                                      mdlc:paramKey "luceneEvalMode" ;
                                      mdlc:paramValue "NATIVE"

@@ -7,6 +7,7 @@ import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
 import com.the_qa_company.q_endpoint.utils.FileUtils;
 import com.the_qa_company.q_endpoint.utils.FormatUtils;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
+import com.the_qa_company.q_endpoint.utils.sail.OptimizingSail;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompiler;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema;
 import com.the_qa_company.q_endpoint.utils.sail.builder.compiler.LuceneSailCompiler;
@@ -76,18 +77,50 @@ import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
-	static class DebugOptions {
+	static class Options {
+		/**
+		 * disable the loading of the config
+		 */
+		boolean debugDisableLoading;
+
 		boolean debugShowTime;
 		boolean debugShowPlans;
+		boolean optimization;
+		IRI storageMode;
+		IRI hdtReadMode;
+		IRI passMode;
+		int rdf4jSplitUpdate;
+
+		Options() {
+			clear();
+		}
+
+		public void clear() {
+			if (debugDisableLoading) {
+				return;
+			}
+			debugShowTime = false;
+			debugShowPlans = false;
+			optimization = true;
+			storageMode = SailCompilerSchema.HYBRIDSTORE_STORAGE;
+			hdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
+			passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
+			rdf4jSplitUpdate = 1000;
+		}
 
 		public void add(IRI iri) {
-			SailCompilerSchema.DEBUG_PROPERTY.throwIfNotValidValue(iri);
+			SailCompilerSchema.OPTION_PROPERTY.throwIfNotValidValue(iri);
 
 			if (SailCompilerSchema.DEBUG_SHOW_TIME.equals(iri)) {
 				debugShowTime = true;
 			} else if (SailCompilerSchema.DEBUG_SHOW_PLAN.equals(iri)) {
 				debugShowPlans = true;
+			} else if (SailCompilerSchema.NO_OPTIMIZATION.equals(iri)) {
+				optimization = false;
+			} else if (SailCompilerSchema.DEBUG_DISABLE_OPTION_RELOADING.equals(iri)) {
+				debugDisableLoading = true;
 			} else {
+
 				throw new SailCompiler.SailCompilerException("not implemented: " + iri);
 			}
 		}
@@ -189,15 +222,10 @@ public class Sparql {
 	@Value("${repoModel}")
 	private String repoModel;
 
-	IRI storageMode = SailCompilerSchema.HYBRIDSTORE_STORAGE;
-	IRI hdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
-	IRI passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
-	int rdf4jSplitUpdate = 1000;
-
 	HybridStore hybridStore;
 	final Set<LuceneSail> luceneSails = new HashSet<>();
 	SailRepository repository;
-	DebugOptions options;
+	Options options = new Options();
 
 	@Autowired
 	public void init() throws IOException {
@@ -257,53 +285,70 @@ public class Sparql {
 			NotifyingSail source;
 
 			// read configs
-			options = new DebugOptions();
-			try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
-				storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY)
-								.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
-				passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY)
-								.orElse(SailCompilerSchema.HDT_TWO_PASS_MODE);
-				rdf4jSplitUpdate = reader
-						.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE)
-						.map(v -> (Literal) v)
-						.stream().mapToInt(v -> {
-							if (!v.getCoreDatatype().asXSDDatatype().orElseThrow().isIntegerDatatype()) {
-								throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be an integer");
-							}
-							int i = v.intValue();
-							if (i < 2) {
-								throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be a positive integer");
-							}
-							return i;
-						}).findAny().orElse(1000);
-				hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY)
-								.orElse(SailCompilerSchema.HDT_READ_MODE_MAP);
-				reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.DEBUG)
-						.stream()
-						.map(SailCompiler::asIRI)
-						.forEach(options::add);
+			if (!options.debugDisableLoading) {
+				options.clear();
+				try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
+					options.storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY)
+							.orElse(SailCompilerSchema.HYBRIDSTORE_STORAGE);
+					options.passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY)
+							.orElse(SailCompilerSchema.HDT_TWO_PASS_MODE);
+					options.rdf4jSplitUpdate = reader
+							.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE)
+							.map(v -> (Literal) v)
+							.stream().mapToInt(v -> {
+								if (!v.getCoreDatatype().asXSDDatatype().orElseThrow().isIntegerDatatype()) {
+									throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be an integer");
+								}
+								int i = v.intValue();
+								if (i < 2) {
+									throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be a positive integer");
+								}
+								return i;
+							}).findAny().orElse(1000);
+					options.hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY)
+							.orElse(SailCompilerSchema.HDT_READ_MODE_MAP);
+					reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.OPTION)
+							.stream()
+							.map(SailCompiler::asIRI)
+							.forEach(options::add);
+				}
 			}
 
 			// set the storage
-			if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
-				if (passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+			if (options.storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+				if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 					spec.set("loader.type", "two-pass");
 				}
-				hybridStore = new HybridStore(files, spec, false, hdtReadMode.equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
+				hybridStore = new HybridStore(files, spec, false, options.hdtReadMode.equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
 				hybridStore.setThreshold(threshold);
 				logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
 				source = hybridStore;
-			} else if (storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
-				source = new NativeStore(new File(files.getLocationNative(), "nativeglobal"));
-			} else if (storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
-				source = new MemoryStore();
-			} else if (storageMode.equals(SailCompilerSchema.LMDB_STORAGE)) {
-				source = new LmdbStore(new File(files.getLocationNative(), "lmdb"));
+			} else if (options.storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
+				NativeStore store = new NativeStore(new File(files.getLocationNative(), "nativeglobal"));
+				if (options.optimization) {
+					source = new OptimizingSail(store, store::getFederatedServiceResolver);
+				} else {
+					source = store;
+				}
+			} else if (options.storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
+				MemoryStore store = new MemoryStore();
+				if (options.optimization) {
+					source = new OptimizingSail(store, store::getFederatedServiceResolver);
+				} else {
+					source = store;
+				}
+			} else if (options.storageMode.equals(SailCompilerSchema.LMDB_STORAGE)) {
+				LmdbStore store = new LmdbStore(new File(files.getLocationNative(), "lmdb"));
+				if (options.optimization) {
+					source = new OptimizingSail(store, store::getFederatedServiceResolver);
+				} else {
+					source = store;
+				}
 			} else {
-				throw new RuntimeException("Bad storage mode: " + storageMode);
+				throw new RuntimeException("Bad storage mode: " + options.storageMode);
 			}
 
-			logger.info("Using storage mode {}.", storageMode);
+			logger.info("Using storage mode {}, optimized: {}.", options.storageMode, options.optimization);
 
 			// compile the storage sail
 			repository = new SailRepository(compiler.compile(source));
@@ -432,10 +477,10 @@ public class Sparql {
 		Files.deleteIfExists(Paths.get(hdtOutput));
 		Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-		if (storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+		if (options.storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
 			HDTSpecification spec = new HDTSpecification();
 			spec.setOptions(hdtSpec);
-			if (passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+			if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 				spec.set("loader.type", "two-pass");
 			}
 			compressToHdt(input, baseURI, filename, hdtOutput, spec);
@@ -557,7 +602,7 @@ public class Sparql {
 		while (it.hasNext()) {
 			try (RepositoryConnection connection = repository.getConnection()) {
 				connection.begin();
-				for (int i = 0; i < rdf4jSplitUpdate; i++) {
+				for (int i = 0; i < options.rdf4jSplitUpdate; i++) {
 					Statement stmt = it.next();
 					connection.add(stmt);
 					if (!it.hasNext()) {
@@ -572,7 +617,7 @@ public class Sparql {
 	}
 
 	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTSpecification spec, String hdtOutput) throws IOException {
-		if (passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+		if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 			// dump the file to the disk to allow 2 passes
 			Path tempNTFile = Paths.get(hdtOutput + "-tmp.nt");
 			logger.info("Create TEMP NT file '{}'", tempNTFile);

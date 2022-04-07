@@ -4,6 +4,7 @@
 
 # Describe the main node to use: my:mainNode
 mdlc:main mdlc:node my:mainNode ;
+          mdlc:option mdlc:debugDisableOptionReloading ;
           mdlc:parsedStringParam [
                                      mdlc:paramKey "luceneEvalMode" ;
                                      mdlc:paramValue "NATIVE"

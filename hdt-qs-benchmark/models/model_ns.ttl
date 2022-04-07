@@ -2,5 +2,5 @@
 
 mdlc:main mdlc:storageMode mdlc:nativeStoreStorage ;
           mdlc:rdfStoreSplit 1000 ;
-          mdlc:debug mdlc:debugShowPlan .
+          mdlc:option mdlc:debugShowPlan .
           

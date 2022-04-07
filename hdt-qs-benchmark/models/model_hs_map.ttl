@@ -2,4 +2,4 @@
 
 mdlc:main mdlc:storageMode mdlc:hybridStoreStorage ;
           mdlc:hdtReadMode mdlc:hdtMapReadMode ;
-          mdlc:debug mdlc:debugShowPlan .
+          mdlc:option mdlc:debugShowPlan .
