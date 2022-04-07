@@ -47,15 +47,15 @@ public class MergeMethodTest {
 
 	}
 
-	private void addMockElements(int number) {
+	private void addMockElements(int number, int idf) {
 		ValueFactory vf = store.getValueFactory();
 		try (SailConnection connection = store.getConnection()) {
 			connection.begin();
 			for (int id = 0; id < number; id++) {
 				connection.addStatement(
-						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testNat" + id),
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testNat" + id + "-" + idf),
 						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "id"+id)
+						vf.createIRI(Utility.EXAMPLE_NAMESPACE, "id"+id + "-" + idf)
 				);
 			}
 			connection.commit();
@@ -65,7 +65,7 @@ public class MergeMethodTest {
 	@Test
 	public void noThresholdTest() throws InterruptedException {
 		int elements = 20;
-		addMockElements(elements);
+		addMockElements(elements, 0);
 		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
 		store.mergeStore();
 		try {
@@ -77,6 +77,46 @@ public class MergeMethodTest {
 		MergeRunnable.debugWaitMerge();
 		store.mergeStore();
 		Assert.assertFalse(store.isMergeTriggered);
+		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
+	}
+
+	@Test
+	public void multiMergeTest() throws InterruptedException {
+		int elements = 20;
+		addMockElements(elements, 1);
+		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
+		store.mergeStore();
+		try {
+			store.mergeStore();
+			Assert.fail("mergeStore() should crash after a merge");
+		} catch (Exception e) {
+			// good
+		}
+		MergeRunnable.debugWaitMerge();
+		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
+
+		addMockElements(elements, 2);
+		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
+		store.mergeStore();
+		try {
+			store.mergeStore();
+			Assert.fail("mergeStore() should crash after a merge");
+		} catch (Exception e) {
+			// good
+		}
+		MergeRunnable.debugWaitMerge();
+		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
+
+		addMockElements(elements, 3);
+		Assert.assertTrue(store.isNativeStoreContainsAtLeast(elements));
+		store.mergeStore();
+		try {
+			store.mergeStore();
+			Assert.fail("mergeStore() should crash after a merge");
+		} catch (Exception e) {
+			// good
+		}
+		MergeRunnable.debugWaitMerge();
 		Assert.assertFalse(store.isNativeStoreContainsAtLeast(1));
 	}
 
