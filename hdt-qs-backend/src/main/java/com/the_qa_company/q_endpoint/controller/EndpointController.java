@@ -75,8 +75,9 @@ public class EndpointController {
         logger.info("timeout: " + timeout);
         if (format.equals("json")) {
 			sparql.executeUpdate(query, timeout, response.getOutputStream());
+        } else {
+            throw new ServerWebInputException("Format not supported");
         }
-		throw new ServerWebInputException("Format not supported");
     }
     private String extractBoundary(HttpServletRequest request) {
         String boundaryHeader = "boundary=";
