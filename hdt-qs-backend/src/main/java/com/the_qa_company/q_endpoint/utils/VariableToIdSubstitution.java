@@ -1,11 +1,11 @@
 package com.the_qa_company.q_endpoint.utils;
 
+import com.the_qa_company.q_endpoint.hybridstore.HDTConverter;
+import com.the_qa_company.q_endpoint.hybridstore.HybridStore;
 import com.the_qa_company.q_endpoint.model.SimpleIRIHDT;
-
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.algebra.BindingSetAssignment;
-import org.eclipse.rdf4j.query.algebra.QueryModelNode;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.Var;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizer;
@@ -13,22 +13,22 @@ import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
-import java.util.Iterator;
-
 /**
  * QueryOptimizer to replace Var by IRIHDT Var in a query
  * @author Dennis Diefenbach
  */
 public class VariableToIdSubstitution implements QueryOptimizer {
 
+    private final HDTConverter converter;
     private final HDT hdt;
 
     /**
      * create the optimizer
-     * @param hdt the hdt to get the ids
+     * @param store the hybridstore to get the hdt
      */
-    public VariableToIdSubstitution(HDT hdt) {
-        this.hdt = hdt;
+    public VariableToIdSubstitution(HybridStore store) {
+        this.hdt = store.getHdt();
+        this.converter = store.getHdtConverter();
     }
 
     @Override
@@ -44,7 +44,7 @@ public class VariableToIdSubstitution implements QueryOptimizer {
             if (var.isAnonymous() && var.hasValue()) {
                 String iriString = var.getValue().toString();
                 long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
-                int position = -1;
+                int position;
                 if (id != -1) {
                     if (id <= hdt.getDictionary().getNshared()) {
                         position = SimpleIRIHDT.SHARED_POS;
@@ -52,22 +52,16 @@ public class VariableToIdSubstitution implements QueryOptimizer {
                         position = SimpleIRIHDT.SUBJECT_POS;
                     }
                 } else {
-                    id =
-                            hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
+                    id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
                     if (id != -1) {
                         position = SimpleIRIHDT.OBJECT_POS;
                     } else {
-                        id =
-                                hdt.getDictionary()
-                                        .stringToId(iriString, TripleComponentRole.PREDICATE);
-                        if (id != -1) {
-                            position = SimpleIRIHDT.PREDICATE_POS;
-                        }
+                        id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.PREDICATE);
+                        position = SimpleIRIHDT.PREDICATE_POS;
                     }
                 }
                 if (id != -1) {
-
-                    var.setValue(new SimpleIRIHDT(hdt, position, id));
+                    var.setValue(converter.idToHDTValue(id, position));
                 }
             }
         }

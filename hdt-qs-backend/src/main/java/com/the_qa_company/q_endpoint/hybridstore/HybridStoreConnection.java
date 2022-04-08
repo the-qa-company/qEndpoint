@@ -163,15 +163,17 @@ public class HybridStoreConnection extends SailSourceConnection {
             // check if we need to search over the other native connection
             if (hybridStore.isMerging()) {
                 if (hybridStore.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-                    CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead().getStatements(
+                    try (CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead().getStatements(
                             newSubj,
                             newPred,
                             newObj,
                             false,
                             contexts
-                    );
-                    if (other.hasNext())
-                        return;
+                    )) {
+                        if (other.hasNext()) {
+                            return;
+                        }
+                    }
                 }
             }
             // here we need uris using the internal IDs

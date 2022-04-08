@@ -271,4 +271,18 @@ public class HDTConverter {
         }
         return newObj;
     }
+
+    public Value idToHDTValue(long id, int position) {
+        switch (position) {
+            case SimpleIRIHDT.SUBJECT_POS:
+            case SimpleIRIHDT.SHARED_POS:
+                return IdToSubjectHDTResource(id);
+            case SimpleIRIHDT.PREDICATE_POS:
+                return IdToPredicateHDTResource(id);
+            case SimpleIRIHDT.OBJECT_POS:
+                return IdToObjectHDTResource(id);
+            default:
+                throw new IllegalArgumentException("bad position: " + position);
+        }
+    }
 }

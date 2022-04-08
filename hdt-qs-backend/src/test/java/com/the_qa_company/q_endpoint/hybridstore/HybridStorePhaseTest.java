@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -32,6 +33,7 @@ public class HybridStorePhaseTest {
 
     @Before
     public void setUp() throws IOException {
+        MergeRunnableStopPoint.debug = true;
         HDTSpecification spec = new HDTSpecification();
 //        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         logger.info("Initialize the store ... ");
@@ -44,6 +46,10 @@ public class HybridStorePhaseTest {
         store = new HybridStore(
                 hdtStore.getAbsolutePath() + "/",HybridStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
         );
+    }
+    @After
+    public void complete() {
+        MergeRunnableStopPoint.debug = false;
     }
 
     @Test
@@ -398,7 +404,7 @@ public class HybridStorePhaseTest {
             tupleQuery1.evaluate();
 
             logger.info("DELETE");
-            sparqlQuery = new StringBuilder("DELETE { ?s <http://p1> ?o } where { ?s  <http://p1>  ?o .} ");
+            sparqlQuery = new StringBuilder("DELETE { ?s <http://p1> ?o } WHERE { ?s  <http://p1>  ?o .} ");
             Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
             tupleQuery.execute();
 

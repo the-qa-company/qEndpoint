@@ -99,7 +99,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     // threshold above which the merge process is starting
     private int threshold;
 
-    ValueFactory valueFactory;
+    HybridStoreValueFactory valueFactory;
 
     private NTriplesWriter rdfWriterTempTriples;
 
@@ -222,12 +222,12 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     // init the delete array upon the first start of the store
-    public void initDeleteArray() {
+    private void initDeleteArray() {
         if (this.inMemDeletes)
-            this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements());
+            setDeleteBitMap(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements()));
         else {
             // @todo: these should be recovered from the file if it is there
-            this.deleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), hybridStoreFiles.getTripleDeleteArr());
+            setDeleteBitMap(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), hybridStoreFiles.getTripleDeleteArr()));
         }
     }
 
@@ -362,11 +362,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
     }
 
     @Override
-    public ValueFactory getValueFactory() {
+    public HybridStoreValueFactory getValueFactory() {
         return this.valueFactory;
     }
 
-    public void setValueFactory(ValueFactory valueFactory) {
+    public void setValueFactory(HybridStoreValueFactory valueFactory) {
         this.valueFactory = valueFactory;
     }
 
@@ -585,8 +585,7 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
 
     public void markDeletedTempTriples() {
         this.rdfWriterTempTriples.endRDF();
-        try {
-            InputStream inputStream = new FileInputStream(hybridStoreFiles.getTempTriples());
+        try (InputStream inputStream = new FileInputStream(hybridStoreFiles.getTempTriples())) {
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
             try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
@@ -596,16 +595,14 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
                     if (search.hasNext()) {
                         search.next();
                         long index = search.getLastTriplePosition();
-                        if (index > 0)
+                        if (index >= 0) {
                             this.deleteBitMap.set(index, true);
+                        }
                     }
                 }
             } catch (RDF4JException | NotFoundException e) {
                 // handle unrecoverable error
                 e.printStackTrace();
-            } finally {
-                inputStream.close();
-                //Files.deleteIfExists(Paths.get(locationNative+"tempTriples.nt"));
             }
         } catch (IOException e) {
             e.printStackTrace();

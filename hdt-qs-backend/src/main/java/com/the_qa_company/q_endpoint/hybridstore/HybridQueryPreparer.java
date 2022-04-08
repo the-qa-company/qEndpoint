@@ -44,7 +44,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
 
     private final EvaluationStatistics evaluationStatistics;
     private final HybridTripleSource tripleSource;
-    private final HDT hdt;
+    private final HybridStore hybridStore;
     private boolean trackResultSize;
     private boolean cloneTupleExpression;
     private boolean trackTime;
@@ -52,7 +52,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
     public HybridQueryPreparer(HybridStore hybridStore, HybridTripleSource tripleSource) {
         super(tripleSource);
         this.tripleSource = tripleSource;
-        hdt = hybridStore.getHdt();
+        this.hybridStore = hybridStore;
         cloneTupleExpression = true;
 
         evaluationStatistics = new HybridStoreEvaluationStatistics(new HDTEvaluationStatistics(hybridStore),
@@ -118,7 +118,7 @@ public class HybridQueryPreparer extends AbstractQueryPreparer {
             strategy.setTrackTime(this.trackTime);
         }
 
-        new VariableToIdSubstitution(hdt).optimize(tupleExpr, dataset, bindings);
+        new VariableToIdSubstitution(hybridStore).optimize(tupleExpr, dataset, bindings);
         new BindingAssigner().optimize(tupleExpr, dataset, bindings);
         new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
         new CompareOptimizer().optimize(tupleExpr, dataset, bindings);
