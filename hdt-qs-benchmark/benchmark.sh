@@ -28,7 +28,7 @@ touch "$CSV"
 
 echo "Downloading BSBM..."
 # Download the tool to generate the file
-if [ ! -f "bsbmtools" ]
+if [ -d "bsbmtools" ]
 then
     echo "bsbmtools already installed, to delete it run 'rm -r bsbmtools'"
 else 
@@ -147,7 +147,7 @@ echo ""
 
 cd ..
 
-mkdir -p "$RESULTS/hybridstore/map"
+mkdir -p "$RESULTS/hybridstore/load"
 
 rm -rf $RUN
 mkdir -p $RUN
