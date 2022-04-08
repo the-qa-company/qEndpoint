@@ -2,5 +2,5 @@
 
 mdlc:main mdlc:storageMode mdlc:lmdbStoreStorage ;
           mdlc:rdfStoreSplit 1000 ;
-          mdlc:option mdlc:debugShowPlan .
+          mdlc:option mdlc:debugShowQueryResultCount .
           

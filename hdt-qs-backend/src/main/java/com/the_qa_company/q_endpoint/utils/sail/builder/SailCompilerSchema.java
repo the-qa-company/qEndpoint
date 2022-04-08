@@ -218,6 +218,10 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI DEBUG_DISABLE_OPTION_RELOADING = OPTION_PROPERTY.createValue("debugDisableOptionReloading", "Disable option reloading");
 	/**
+	 * mdlc:debugShowQueryResultCount
+	 */
+	public static final IRI DEBUG_SHOW_QUERY_RESULT_COUNT = OPTION_PROPERTY.createValue("debugShowQueryResultCount", "Show query count");
+	/**
 	 * mdlc:noOptimization
 	 */
 	public static final IRI NO_OPTIMIZATION = OPTION_PROPERTY.createValue("noOptimization", "Disable optimization for native stores");

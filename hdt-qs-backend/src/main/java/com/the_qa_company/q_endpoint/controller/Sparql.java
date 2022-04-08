@@ -7,6 +7,8 @@ import com.the_qa_company.q_endpoint.utils.FileTripleIterator;
 import com.the_qa_company.q_endpoint.utils.FileUtils;
 import com.the_qa_company.q_endpoint.utils.FormatUtils;
 import com.the_qa_company.q_endpoint.utils.RDFStreamUtils;
+import com.the_qa_company.q_endpoint.utils.rdf.QueryResultCounter;
+import com.the_qa_company.q_endpoint.utils.rdf.RDFHandlerCounter;
 import com.the_qa_company.q_endpoint.utils.sail.OptimizingSail;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompiler;
 import com.the_qa_company.q_endpoint.utils.sail.builder.SailCompilerSchema;
@@ -21,6 +23,7 @@ import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResultHandler;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
@@ -85,6 +88,7 @@ public class Sparql {
 
 		boolean debugShowTime;
 		boolean debugShowPlans;
+		boolean debugShowCount;
 		boolean optimization;
 		IRI storageMode;
 		IRI hdtReadMode;
@@ -102,6 +106,7 @@ public class Sparql {
 			debugShowTime = false;
 			debugShowPlans = false;
 			optimization = true;
+			debugShowCount = false;
 			storageMode = SailCompilerSchema.HYBRIDSTORE_STORAGE;
 			hdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
 			passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
@@ -119,8 +124,9 @@ public class Sparql {
 				optimization = false;
 			} else if (SailCompilerSchema.DEBUG_DISABLE_OPTION_RELOADING.equals(iri)) {
 				debugDisableLoading = true;
+			} else if (SailCompilerSchema.DEBUG_SHOW_QUERY_RESULT_COUNT.equals(iri)) {
+				debugShowCount = true;
 			} else {
-
 				throw new SailCompiler.SailCompilerException("not implemented: " + iri);
 			}
 		}
@@ -402,13 +408,19 @@ public class Sparql {
 				QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader)
 						.orElseThrow(() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
 				mimeSetter.accept(format.getDefaultMIMEType());
-				TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance()
+				TupleQueryResultHandler writer = TupleQueryResultWriterRegistry.getInstance()
 						.get(format)
 						.orElseThrow()
 						.getWriter(out);
 				query.setMaxExecutionTime(timeout);
 				try {
+					if (options.debugShowCount) {
+						writer = new QueryResultCounter(writer);
+					}
 					query.evaluate(writer);
+					if (options.debugShowCount) {
+						logger.info("Complete query with {} triples", ((QueryResultCounter) writer).getCount());
+					}
 					if (options.debugShowTime) {
 						System.out.println(query.explain(Explanation.Level.Timed));
 					}
@@ -436,7 +448,13 @@ public class Sparql {
 				mimeSetter.accept(format.getDefaultMIMEType());
 				RDFHandler handler = Rio.createWriter(format, out);
 				try {
+					if (options.debugShowCount) {
+						handler = new RDFHandlerCounter(handler);
+					}
 					query.evaluate(handler);
+					if (options.debugShowCount) {
+						logger.info("Complete query with {} triples", ((RDFHandlerCounter) handler).getCount());
+					}
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
 					q.printStackTrace();
