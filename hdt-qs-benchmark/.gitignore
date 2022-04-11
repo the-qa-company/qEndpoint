@@ -3,3 +3,6 @@ output
 endpoint.jar
 run
 internal_*.sh
+test
+
+results.tar.gz
