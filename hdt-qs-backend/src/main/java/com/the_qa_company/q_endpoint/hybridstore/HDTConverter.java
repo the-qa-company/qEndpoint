@@ -123,6 +123,8 @@ public class HDTConverter {
                                     .toString();
                 }
                 return hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
+            } else if (obj instanceof SimpleLiteralHDT) {
+                return ((SimpleLiteralHDT) obj).getHdtID();
             } else {
                 return this.hdt.getDictionary().stringToId(obj.toString(), TripleComponentRole.OBJECT);
             }
