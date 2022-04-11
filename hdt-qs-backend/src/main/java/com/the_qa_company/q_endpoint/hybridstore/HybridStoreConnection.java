@@ -15,7 +15,9 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
+import org.eclipse.rdf4j.sail.SailConnectionListener;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.SailReadOnlyException;
 import org.eclipse.rdf4j.sail.UnknownSailTransactionStateException;
@@ -38,10 +40,10 @@ public class HybridStoreConnection extends SailSourceConnection {
     private final HybridQueryPreparer queryPreparer;
     private boolean isWriteConnection = false;
     HybridStore hybridStore;
-    SailConnection connA_read;
-    SailConnection connB_read;
-    SailConnection connA_write;
-    SailConnection connB_write;
+    NotifyingSailConnection connA_read;
+    NotifyingSailConnection connB_read;
+    NotifyingSailConnection connA_write;
+    NotifyingSailConnection connB_write;
     private final long debugId;
     private final Lock connectionLock;
     private Lock updateLock;
@@ -64,6 +66,23 @@ public class HybridStoreConnection extends SailSourceConnection {
         this.connB_read = hybridStore.getNativeStoreB().getConnection();
         this.connA_write = hybridStore.getNativeStoreA().getConnection();
         this.connB_write = hybridStore.getNativeStoreB().getConnection();
+
+        SailConnectionListener listener = new SailConnectionListener() {
+            @Override
+            public void statementAdded(Statement statement) {
+                HybridStoreConnection.this.notifyStatementAdded(statement);
+            }
+
+            @Override
+            public void statementRemoved(Statement statement) {
+                HybridStoreConnection.this.notifyStatementRemoved(statement);
+            }
+        };
+        this.connA_read.addConnectionListener(listener);
+        this.connB_read.addConnectionListener(listener);
+        this.connA_write.addConnectionListener(listener);
+        this.connB_write.addConnectionListener(listener);
+
         // each hybridStoreConnection has a triple source ( ideally it should be in the query preparer as in rdf4j..)
         this.tripleSource = new HybridTripleSource(this, hybridStore);
         this.queryPreparer = new HybridQueryPreparer(hybridStore, tripleSource);
@@ -183,7 +202,6 @@ public class HybridStoreConnection extends SailSourceConnection {
                     newObj,
                     contexts
             );
-            notifyStatementAdded(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
 
 //            // modify the bitmaps if the IRIs used are in HDT
             this.hybridStore.modifyBitmaps(subjectID, predicateID, objectID);
@@ -378,7 +396,6 @@ public class HybridStoreConnection extends SailSourceConnection {
         } else {
             this.getCurrentConnectionWrite().removeStatement(op, newSubj, newPred, newObj, contexts);
         }
-        notifyStatementRemoved(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
 //        this.hybridStore.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
@@ -418,9 +435,12 @@ public class HybridStoreConnection extends SailSourceConnection {
                 iter.next();
                 long index = iter.getLastTriplePosition();
 
-                this.hybridStore.getDeleteBitMap().set(index, true);
-                if (this.hybridStore.isMerging())
-                    this.hybridStore.getTempDeleteBitMap().set(index, true);
+                if (!this.hybridStore.getDeleteBitMap().access(index)) {
+                    this.hybridStore.getDeleteBitMap().set(index, true);
+                    if (this.hybridStore.isMerging())
+                        this.hybridStore.getTempDeleteBitMap().set(index, true);
+                    notifyStatementRemoved(this.hybridStore.getValueFactory().createStatement(subj, pred, obj));
+                }
             }
         } else {
             // @todo: why is this important?

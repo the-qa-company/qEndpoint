@@ -24,6 +24,7 @@ import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
+import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
@@ -407,11 +408,11 @@ public class HybridStore extends AbstractNotifyingSail implements FederatedServi
         isMerging = merging;
     }
 
-    public Sail getNativeStoreA() {
+    public NotifyingSail getNativeStoreA() {
         return nativeStoreA;
     }
 
-    public Sail getNativeStoreB() {
+    public NotifyingSail getNativeStoreB() {
         return nativeStoreB;
     }
 
