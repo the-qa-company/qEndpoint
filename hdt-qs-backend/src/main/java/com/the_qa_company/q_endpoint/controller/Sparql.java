@@ -525,7 +525,7 @@ public class Sparql {
 	 */
 	static long getMaxChunkSize() {
 		Runtime runtime = Runtime.getRuntime();
-		long presFreeMemory = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * 0.25 * 0.85);
+		long presFreeMemory = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * 0.125 * 0.85);
 		logger.info("Maximal available memory {}", presFreeMemory);
 		return presFreeMemory;
 	}
