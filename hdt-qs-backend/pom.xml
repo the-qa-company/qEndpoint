@@ -12,7 +12,7 @@
     <version>1.0.7-SNAPSHOT</version>
 
     <properties>
-        <rdf4j.version>4.0.0-SNAPSHOT</rdf4j.version>
+        <rdf4j.version>4.0.0-M3</rdf4j.version>
         <lwjgl.version>3.3.0</lwjgl.version>
     </properties>
 

@@ -8,18 +8,18 @@ RUN_HS_LOADED=true
 RUN_HS_MAPPED=true
 RUN_NS=true
 RUN_LMDB=true
-UPDATE_TEST=false
+UPDATE_TEST=true
 GENERATOR_PARAMS=
 TESTDRIVER_PARAMS=
-TESTS_NUMBERS="500000 1000000 2000000 5000000 10000000"
-# TESTS_NUMBERS="1000 2000 3000"
+# TESTS_NUMBERS="500000 1000000 2000000 5000000 10000000"
+TESTS_NUMBERS="1000 2000 3000"
 TIMEOUT_SECOND=$((3600 * 24))
 SPARQL_URL=$ENDPOINTURL/sparql
 UPDATE_URL=$ENDPOINTURL/update
 LOAD_URL=$ENDPOINTURL/load
-OUTPUT=output
-RUN=run
-RESULTS=results
+OUTPUT=output_lubm
+RUN=run_lubm
+RESULTS=results_lubm
 CSV=$RESULTS/results.csv
 
 trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT INT SIGUSR1
@@ -38,7 +38,7 @@ function runtest {
     echo "----------------------------------------"
     echo ""
     
-    cd ..
+    cd ../..
     
     mkdir -p "$RESULTS/$RESULTS_XML"
     
@@ -50,7 +50,7 @@ function runtest {
     
     echo "repoModel=../models/$RDF_MODEL.ttl" >> "$RUN/application.properties"
     
-    cd bsbmtools
+    cd lubmtools/gen
     for SIZE in $TESTS_NUMBERS
     do
         echo "Generating $OUTPUT/dataset$SIZE..."
@@ -58,7 +58,7 @@ function runtest {
         rm -rf "$OUTPUT_IN"
         mkdir -p "$OUTPUT_IN"
         
-        cd ../$RUN
+        cd ../../$RUN
         java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
         HDT_EP_PID_MAP=$!
         
@@ -66,9 +66,9 @@ function runtest {
         
         sleep 4
         
-        cd ../bsbmtools
+        cd ../lubmtools/gen
         
-        ../timeoutkill.sh $HDT_EP_PID_MAP "$MODE-$READING" $TIMEOUT_SECOND &
+        ../../timeoutkill.sh $HDT_EP_PID_MAP "$MODE-$READING" $TIMEOUT_SECOND &
         TIMEOUT_PID=$!
         trap "echo 'killing EP';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID" EXIT
         trap "echo 'killing EP';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID; exit -1" INT SIGUSR1
@@ -99,6 +99,8 @@ function runtest {
         
         echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, update: $UPDATE_TEST"
         
+        cd ../test
+        
         # Test the dataset
         if ! ./testdriver \
         -ucf usecases/explore/sparql.txt \
@@ -115,9 +117,9 @@ function runtest {
             return
         fi
         
-        RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
-        HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
-        NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
+        RUN_SIZE=$(du ../../$RUN | tail -n 1 | cut -f 1)
+        HDT_SIZE=$(du ../../$RUN/hdt-store | tail -n 1 | cut -f 1)
+        NS_SIZE=$(du ../../$RUN/native-store | tail -n 1 | cut -f 1)
         RESULTS_XML_FILE="$RESULTS_XML/benchmark_result_$SIZE.xml"
         
         echo "Completed test with runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
@@ -141,24 +143,41 @@ function runtest {
 echo "(Re)create result dir..."
 mkdir -p "$RESULTS"
 
-echo "Downloading BSBM..."
+echo "Downloading LUBM..."
 # Download the tool to generate the file
-if [ -d "bsbmtools" ]
+if [ -d "lubmtools" ]
 then
-    echo "bsbmtools already installed, to delete it run 'rm -r bsbmtools'"
+    echo "lubmtools already installed, to delete it run 'rm -r lubmtools'"
 else
-    curl https://phoenixnap.dl.sourceforge.net/project/bsbmtools/bsbmtools/bsbmtools-0.2/bsbmtools-v0.2.zip --output bsmtools.zip
-    unzip bsmtools.zip
-    rm bsmtools.zip
-    mv bsbmtools-0.2 bsbmtools
+    mkdir -p lubmtools/gen
+    mkdir -p lubmtools/test
+    echo "LUBM - Downloading zips..."
+    curl http://swat.cse.lehigh.edu/projects/lubm/GeneratorLinuxFix.zip --output lubmtools/generator.zip
+    curl http://swat.cse.lehigh.edu/projects/lubm/uba1.7.zip --output lubmtools/gen.zip
+    curl http://swat.cse.lehigh.edu/projects/lubm/ubt1.1.zip --output lubmtools/test.zip
+    echo "LUBM - Extracting..."
+    unzip lubmtools/gen.zip -d lubmtools/gen
+    unzip lubmtools/test.zip -d lubmtools/test
+    
+    echo "LUBM - Patch paths..."
+    unzip lubmtools/generator.zip -d lubmtools
+    mv ./lubmtools/Generator.java ./lubmtools/gen/src/edu/lehigh/swat/bench/uba/Generator.java
+    cd lubmtools/gen
+    echo "LUBM - Patch paths - Clear"
+    rm -rf classes
+    echo "LUBM - Patch paths - Compile"
+    javac ./src/edu/lehigh/swat/bench/uba/* -d ./classes/
+    cd ../..
+    echo "LUBM - Cleaning..."
+    rm lubmtools/gen.zip lubmtools/test.zip lubmtools/generator.zip
 fi
 
-# set into bsbm tool suite
+# set into lubmtools tool suite
 
-OUTPUT_IN=../$OUTPUT
-CSV_IN=../$RESULTS/results.csv
+OUTPUT_IN=../../$OUTPUT
+CSV_IN=../../$RESULTS/results.csv
 
-cd bsbmtools
+cd lubmtools/gen
 
 if [ -f $CSV_IN ]
 then

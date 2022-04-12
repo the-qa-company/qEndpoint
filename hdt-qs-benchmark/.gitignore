@@ -1,8 +1,20 @@
 bsbmtools
+lubmtools
 output
 endpoint.jar
 run
 internal_*.sh
 test
-
+timeoutkill.tmp
+temp.tar.gz
 results.tar.gz
+
+# output files
+output.err
+output.out
+
+# backup
+results2
+results3
+results4
+results5
