@@ -2,7 +2,8 @@ param(
     $Result = "results",
     $OutputFile = "results.md",
     $Fields = @("qps", "executecount"),
-    $GlobalFields = @("qmph", "totalruntime")
+    $GlobalFields = @("qmph", "totalruntime"),
+    $ResultCSV = "results.csv"
 )
 
 # map to get the size of a file
@@ -28,6 +29,9 @@ function PrettyNB ($n) {
     }
     return "$([int]($c * 10) / 10)$($script:SizeUnit[$i])";
 }
+
+
+$resultCSVData = cat $ResultCSV | ConvertFrom-Csv -Header @("store", "mode", "uid", "triples", "runSize", "hdtSize", "nativeSize")
 
 $XMLFiles = (Get-ChildItem -File -Recurse $Result) | ForEach-Object {
     $xmlfile = [XML](Get-Content ($_.FullName))
@@ -60,10 +64,10 @@ foreach ($Field in $Fields) {
 
 Write-Output "# Global field"
 Write-Output ""
-Write-Output "| File | Size | $($GlobalFields -join ' | ') |"
+Write-Output "| File | Size (triples) | $($GlobalFields -join ' | ') |"
 Write-Output "| ---- | ---- | $(($GlobalFields | ForEach-Object {" -- "}) -join ' | ') |"
 foreach ($XMLFile in $XMLFiles) {
-    Write-Output "| $($XMLFile.file) | $(PrettyNB $XMLFile.size) | $(($GlobalFields | ForEach-Object {
+    Write-Output "| $($XMLFile.file) | $(PrettyNB $XMLFile.size)t | $(($GlobalFields | ForEach-Object {
         return $XMLFile.xml.querymix.$_
     }) -join ' | ') |"
 }
