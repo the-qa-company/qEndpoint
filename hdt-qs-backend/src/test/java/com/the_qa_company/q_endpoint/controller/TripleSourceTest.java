@@ -78,14 +78,14 @@ public class TripleSourceTest {
 	@Test
 	public void optimizedTest() throws IOException {
 		sparql.clearHybridStore(locationHdt);
-		sparql.initializeHybridStore(locationHdt);
+		sparql.initializeHybridStore(locationHdt, true);
 	}
 	@Test
 	public void noOptimizedTest() throws IOException {
 		sparql.options.optimization = false;
 
 		sparql.clearHybridStore(locationHdt);
-		sparql.initializeHybridStore(locationHdt);
+		sparql.initializeHybridStore(locationHdt, true);
 
 		sparql.options.optimization = true;
 	}

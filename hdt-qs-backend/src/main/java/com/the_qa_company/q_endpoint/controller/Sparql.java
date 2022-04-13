@@ -232,13 +232,53 @@ public class Sparql {
 	final Set<LuceneSail> luceneSails = new HashSet<>();
 	SailRepository repository;
 	Options options = new Options();
+	final Object storeLock = new Object() {
+	};
+	boolean loading = false;
+	int queries;
+
+	void waitLoading(int query) {
+		synchronized (storeLock) {
+			while (loading || (query == 0 && queries != 0)) {
+				try {
+					storeLock.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					return;
+				}
+			}
+		}
+	}
+
+	void startLoading() {
+		synchronized (storeLock) {
+			loading = true;
+		}
+	}
+	void completeLoading() {
+		synchronized (storeLock) {
+			this.loading = false;
+			storeLock.notifyAll();
+		}
+	}
+
+	void completeQuery() {
+		synchronized (storeLock) {
+			queries--;
+			assert queries >= 0;
+			if (queries == 0) {
+				storeLock.notifyAll();
+			}
+		}
+	}
 
 	@Autowired
 	public void init() throws IOException {
-		initializeHybridStore(locationHdt);
+		initializeHybridStore(locationHdt, true);
 	}
 
 	void clearHybridStore(String location) throws IOException {
+		startLoading();
 		if (model.containsKey(location)) {
 			logger.info("Clear old store");
 			model.remove(location);
@@ -249,7 +289,7 @@ public class Sparql {
 		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
 
-	void initializeHybridStore(String location) throws IOException {
+	void initializeHybridStore(String location, boolean finishLoading) throws IOException {
 		if (!model.containsKey(location)) {
 			model.put(location, null);
 			HDTSpecification spec = new HDTSpecification();
@@ -363,6 +403,9 @@ public class Sparql {
 			luceneSails.clear();
 			luceneSails.addAll(luceneCompiler.getSails());
 		}
+		if (finishLoading) {
+			completeLoading();
+		}
 	}
 
 	/**
@@ -390,6 +433,7 @@ public class Sparql {
 	}
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter, OutputStream out) throws IOException {
+		waitLoading(1);
 		try (RepositoryConnection connection = repository.getConnection()) {
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			//sparqlQuery = sparqlPrefixes+sparqlQuery;
@@ -463,6 +507,8 @@ public class Sparql {
 			} else {
 				throw new ServerWebInputException("query not supported");
 			}
+		} finally {
+			completeQuery();
 		}
 	}
 
@@ -470,6 +516,7 @@ public class Sparql {
 		//logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = sparqlPrefixes + sparqlQuery;
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
+		waitLoading(1);
 		try (SailRepositoryConnection connection = repository.getConnection()) {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
@@ -483,39 +530,47 @@ public class Sparql {
 			try (JsonGenerator gen = Json.createGenerator(out)) {
 				gen.writeStartObject().write("ok", true).writeEnd();
 			}
+		} finally {
+			completeQuery();
 		}
 	}
 
 	public LoadFileResult loadFile(InputStream input, String filename) throws IOException {
-		String rdfInput = locationHdt + filename;
-		String hdtOutput = HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName);
-		String baseURI = "file://" + rdfInput;
-
-		Files.createDirectories(Paths.get(locationHdt));
-		Files.deleteIfExists(Paths.get(hdtOutput));
-		Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
-
-		if (options.storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
-			HDTSpecification spec = new HDTSpecification();
-			spec.setOptions(hdtSpec);
-			if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
-				spec.set("loader.type", "two-pass");
-			}
-			compressToHdt(input, baseURI, filename, hdtOutput, spec);
-
-			clearHybridStore(locationHdt);
-			initializeHybridStore(locationHdt);
-		} else {
-			clearHybridStore(locationHdt);
-			initializeHybridStore(locationHdt);
-			sendUpdates(input, baseURI, filename);
-		}
+		// wait previous loading
+		waitLoading(0);
 		try {
-			for (LuceneSail sail : luceneSails) {
-				sail.reindex();
+			String rdfInput = locationHdt + filename;
+			String hdtOutput = HybridStoreFiles.getHDTIndex(locationHdt, hdtIndexName);
+			String baseURI = "file://" + rdfInput;
+
+			Files.createDirectories(Paths.get(locationHdt));
+			Files.deleteIfExists(Paths.get(hdtOutput));
+			Files.deleteIfExists(Paths.get(HybridStoreFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
+
+			if (options.storageMode.equals(SailCompilerSchema.HYBRIDSTORE_STORAGE)) {
+				clearHybridStore(locationHdt);
+				HDTSpecification spec = new HDTSpecification();
+				spec.setOptions(hdtSpec);
+				if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+					spec.set("loader.type", "two-pass");
+				}
+				compressToHdt(input, baseURI, filename, hdtOutput, spec);
+
+				initializeHybridStore(locationHdt, false);
+			} else {
+				clearHybridStore(locationHdt);
+				initializeHybridStore(locationHdt, false);
+				sendUpdates(input, baseURI, filename);
 			}
-		} catch (Exception e) {
-			throw new RuntimeException("Can't reindex the lucene sail(s)!", e);
+			try {
+				for (LuceneSail sail : luceneSails) {
+					sail.reindex();
+				}
+			} catch (Exception e) {
+				throw new RuntimeException("Can't reindex the lucene sail(s)!", e);
+			}
+		} finally {
+			completeLoading();
 		}
 		return new LoadFileResult(true);
 	}
