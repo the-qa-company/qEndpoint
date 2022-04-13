@@ -64,4 +64,4 @@ RUN  apt-get update \
 
 COPY loadData.sh .
 RUN chmod +x loadData.sh
-CMD ./loadData.sh $MEM_SIZE
+CMD ["/bin/sh", "-c", "./loadData.sh $MEM_SIZE"]
