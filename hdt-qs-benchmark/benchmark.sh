@@ -42,14 +42,6 @@ function runtest {
     
     mkdir -p "$RESULTS/$RESULTS_XML"
     
-    rm -rf $RUN
-    mkdir -p $RUN
-    cp endpoint.jar $RUN
-    
-    cp application.properties "$RUN/application.properties"
-    
-    echo "repoModel=../models/$RDF_MODEL.ttl" >> "$RUN/application.properties"
-    
     cd bsbmtools
     for SIZE in $TESTS_NUMBERS
     do
@@ -58,7 +50,17 @@ function runtest {
         rm -rf "$OUTPUT_IN"
         mkdir -p "$OUTPUT_IN"
         
-        cd ../$RUN
+        cd ..
+        
+        rm -rf $RUN
+        mkdir -p $RUN
+        cp endpoint.jar $RUN
+        
+        cp application.properties "$RUN/application.properties"
+        
+        echo "repoModel=../models/$RDF_MODEL.ttl" >> "$RUN/application.properties"
+        
+        cd $RUN
         java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
         HDT_EP_PID_MAP=$!
         
