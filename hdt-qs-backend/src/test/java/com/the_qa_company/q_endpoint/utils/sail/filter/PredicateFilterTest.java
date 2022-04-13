@@ -25,7 +25,7 @@ public class PredicateFilterTest extends SailTest {
 				.build();
 		// basic implementation
 		filter = new PredicateSailFilter(iri("p"));
-		return new FilteringSail(luceneSail, hybridStore, luceneSail::setBaseSail, connection -> filter);
+		return new FilteringSail(luceneSail, hybridStore, luceneSail::setBaseSail, (sail, connection) -> filter);
 	}
 
 	@Test

@@ -90,8 +90,8 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 		for (int i = types.size() - 1; i >= 0; i--) {
 			TypedSail type = types.get(i);
 			baseSail = new FilteringSail(type, baseSail,
-					(connection) -> new TypeSailFilter(
-							lastTypeBuffer, connection, predicate, type.getType()
+					(sail, connection) -> new TypeSailFilter(
+							lastTypeBuffer, sail, predicate, type.getType()
 					)
 			);
 		}

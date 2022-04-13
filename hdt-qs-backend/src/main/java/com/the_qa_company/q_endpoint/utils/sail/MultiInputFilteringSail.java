@@ -3,6 +3,7 @@ package com.the_qa_company.q_endpoint.utils.sail;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 
@@ -25,7 +26,7 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
  *
  * @author Antoine Willerval
  */
-class MultiInputFilteringSail extends NotifyingSailWrapper {
+public class MultiInputFilteringSail extends NotifyingSailWrapper {
 	private final LockManager lockManager = new LockManager();
 	private Lock lock;
 	private MultiInputFilteringSailConnection lastConnection;
@@ -36,7 +37,7 @@ class MultiInputFilteringSail extends NotifyingSailWrapper {
 	 *
 	 * @param wrappedSail the sail to allow multiple sail
 	 */
-	public MultiInputFilteringSail(NotifyingSail wrappedSail, FilteringSail filteringSail) {
+	MultiInputFilteringSail(NotifyingSail wrappedSail, FilteringSail filteringSail) {
 		super(wrappedSail);
 		this.filteringSail = filteringSail;
 	}
@@ -61,6 +62,14 @@ class MultiInputFilteringSail extends NotifyingSailWrapper {
 	public synchronized MultiInputFilteringSailConnection getConnection() throws SailException {
 		checkCreatingConnectionStarted();
 		return lastConnection;
+	}
+
+	/**
+	 * @return a connection bypassing the filtering
+	 * @throws SailException same as {@link org.eclipse.rdf4j.sail.Sail#getConnection()}
+	 */
+	public NotifyingSailConnection getConnectionInternal() throws SailException {
+		return super.getConnection();
 	}
 
 	/**

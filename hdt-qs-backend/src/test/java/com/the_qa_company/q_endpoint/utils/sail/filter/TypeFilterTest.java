@@ -12,10 +12,10 @@ import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.junit.Test;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public class TypeFilterTest extends SailTest {
-	private Function<SailConnection, SailFilter> filterBuilder;
+	private BiFunction<FilteringSail, SailConnection, SailFilter> filterBuilder;
 
 	@Override
 	protected Sail configStore(HybridStore hybridStore) {
@@ -24,13 +24,13 @@ public class TypeFilterTest extends SailTest {
 				.withId(NAMESPACE + "lucene")
 				.withEvaluationMode(TupleFunctionEvaluationMode.NATIVE)
 				.buildLinked();
-		filterBuilder = (connection -> new TypeSailFilter(connection, iri("oftype"), iri("mytype1")));
+		filterBuilder = ((sail, connection) -> new TypeSailFilter(sail, iri("oftype"), iri("mytype1")));
 		// basic implementation
 		return new FilteringSail(
 				luceneSail,
 				hybridStore,
 				// use the apply and not filterBuilder to allow update of the builder
-				connection -> filterBuilder.apply(connection)
+				(sail, connection) -> filterBuilder.apply(sail, connection)
 		);
 	}
 
@@ -57,11 +57,11 @@ public class TypeFilterTest extends SailTest {
 				new SelectResultRow().withValue("r", stmt1.getSubject())
 		);
 
-		final Function<SailConnection, SailFilter> oldFilterBuilder = filterBuilder;
+		final BiFunction<FilteringSail, SailConnection, SailFilter> oldFilterBuilder = filterBuilder;
 		filterBuilder =
-				(connection ->
-						oldFilterBuilder.apply(connection)
-								.or(new TypeSailFilter(connection, iri("oftype"), iri("mytype3")))
+				((sail, connection) ->
+						oldFilterBuilder.apply(sail, connection)
+								.or(new TypeSailFilter(sail, iri("oftype"), iri("mytype3")))
 				);
 
 		add(
@@ -103,12 +103,12 @@ public class TypeFilterTest extends SailTest {
 				new SelectResultRow().withValue("r", stmt1.getSubject())
 		);
 
-		final Function<SailConnection, SailFilter> oldFilterBuilder = filterBuilder;
+		final BiFunction<FilteringSail, SailConnection, SailFilter> oldFilterBuilder = filterBuilder;
 		filterBuilder =
-				(connection ->
+				((sail, connection) ->
 						oldFilterBuilder
-								.apply(connection) // previous type filter
-								.or(new TypeSailFilter(connection, iri("oftype"), iri("mytype3")))
+								.apply(sail, connection) // previous type filter
+								.or(new TypeSailFilter(sail, iri("oftype"), iri("mytype3")))
 				);
 
 		add(stmttype3);

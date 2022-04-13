@@ -14,8 +14,8 @@ import org.eclipse.rdf4j.sail.SailException;
 import java.io.File;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Filtering sail to bypass a or multiple sails
@@ -26,7 +26,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	private File dataDir;
 	private final NotifyingSail onYesSail;
 	private final Consumer<Sail> endSail;
-	private final Function<SailConnection, SailFilter> filter;
+	private final BiFunction<FilteringSail, SailConnection, SailFilter> filter;
 	private MultiInputFilteringSail onNoSail;
 
 	/**
@@ -36,7 +36,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @param sourceSail  the sail if the filter returns false
 	 * @param filter    the filter building method (if connection required)
 	 */
-	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail sourceSail, Function<SailConnection, SailFilter> filter) {
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, NotifyingSail sourceSail, BiFunction<FilteringSail, SailConnection, SailFilter> filter) {
 		this(onYesSail.getSail(), sourceSail, onYesSail.getSailConsumer(), filter);
 	}
 	/**
@@ -57,7 +57,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @param endSail   a consumer to set the end sail of the onYesSail
 	 * @param filter    the filter building method (if connection required)
 	 */
-	public FilteringSail(NotifyingSail onYesSail, NotifyingSail sourceSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
+	public FilteringSail(NotifyingSail onYesSail, NotifyingSail sourceSail, Consumer<Sail> endSail, BiFunction<FilteringSail, SailConnection, SailFilter> filter) {
 		this.onYesSail = Objects.requireNonNull(onYesSail, "onYesSail can't be null!");
 		this.endSail = endSail;
 		this.filter = Objects.requireNonNull(filter, "filter can't be null!");
@@ -75,7 +75,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @param filter    the filter
 	 */
 	public FilteringSail(NotifyingSail onYesSail, NotifyingSail sourceSail, Consumer<Sail> endSail, SailFilter filter) {
-		this(onYesSail, sourceSail, endSail, co -> filter);
+		this(onYesSail, sourceSail, endSail, (sail, conn) -> filter);
 	}
 
 	/**
@@ -84,7 +84,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @param onYesSail the sail if the filter returns true
 	 * @param filter    the filter building method (if connection required)
 	 */
-	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, Function<SailConnection, SailFilter> filter) {
+	public FilteringSail(LinkedSail<? extends NotifyingSail> onYesSail, BiFunction<FilteringSail, SailConnection, SailFilter> filter) {
 		this(onYesSail.getSail(), null, onYesSail.getSailConsumer(), filter);
 	}
 	/**
@@ -103,7 +103,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @param endSail   a consumer to set the end sail of the onYesSail
 	 * @param filter    the filter building method (if connection required)
 	 */
-	public FilteringSail(NotifyingSail onYesSail, Consumer<Sail> endSail, Function<SailConnection, SailFilter> filter) {
+	public FilteringSail(NotifyingSail onYesSail, Consumer<Sail> endSail, BiFunction<FilteringSail, SailConnection, SailFilter> filter) {
 		this(onYesSail, null, endSail, filter);
 	}
 
@@ -115,7 +115,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @param filter    the filter
 	 */
 	public FilteringSail(NotifyingSail onYesSail, Consumer<Sail> endSail, SailFilter filter) {
-		this(onYesSail, null, endSail, co -> filter);
+		this(onYesSail, null, endSail, (sail, conn) -> filter);
 	}
 
 	public void setSourceSail(NotifyingSail sourceSail) {
@@ -153,7 +153,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	}
 
 	@Override
-	public NotifyingSailConnection getConnection() throws SailException {
+	public synchronized NotifyingSailConnection getConnection() throws SailException {
 		onNoSail.startCreatingConnection();
 
 		NotifyingSailConnection connection = new FilteringSailConnection(
@@ -190,7 +190,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	/**
 	 * @return the sail if the filter returns false
 	 */
-	public Sail getOnNoSail() {
+	public MultiInputFilteringSail getOnNoSail() {
 		return onNoSail;
 	}
 
@@ -215,7 +215,7 @@ public class FilteringSail implements NotifyingSail, LinkedSail<FilteringSail> {
 	 * @return filter
 	 */
 	public SailFilter getFilter(SailConnection connection) throws SailException {
-		return Objects.requireNonNull(filter.apply(connection), "Created filter is null!");
+		return Objects.requireNonNull(filter.apply(this, connection), "Created filter is null!");
 	}
 
 	@Override

@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.SailConnection;
 
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -45,24 +46,24 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 	 * @return the filter build with and/or method
 	 * @throws SailCompiler.SailCompilerException compiler error
 	 */
-	private Function<SailConnection, SailFilter> combineCompileFilter(SailCompiler.SailCompilerReader reader, Resource rnode,
-																	  Function<SailConnection, SailFilter> function)
+	private BiFunction<FilteringSail, SailConnection, SailFilter> combineCompileFilter(SailCompiler.SailCompilerReader reader, Resource rnode,
+																	  BiFunction<FilteringSail, SailConnection, SailFilter> function)
 			throws SailCompiler.SailCompilerException {
 		List<Value> predicatesAnd = reader.search(rnode, SailCompilerSchema.PARAM_FILTER_AND);
 		List<Value> predicatesOr = reader.search(rnode, SailCompilerSchema.PARAM_FILTER_OR);
 
 		for (Value snode : predicatesAnd) {
 			Resource rsnode = SailCompiler.asResource(snode);
-			Function<SailConnection, SailFilter> f1 = function;
-			Function<SailConnection, SailFilter> f2 = compileFilter(reader, rsnode);
-			function = connection -> f1.apply(connection).and(f2.apply(connection));
+			BiFunction<FilteringSail, SailConnection, SailFilter> f1 = function;
+			BiFunction<FilteringSail, SailConnection, SailFilter> f2 = compileFilter(reader, rsnode);
+			function = (sail, connection) -> f1.apply(sail, connection).and(f2.apply(sail, connection));
 		}
 
 		for (Value snode : predicatesOr) {
 			Resource rsnode = SailCompiler.asResource(snode);
-			Function<SailConnection, SailFilter> f1 = function;
-			Function<SailConnection, SailFilter> f2 = compileFilter(reader, rsnode);
-			function = connection -> f1.apply(connection).or(f2.apply(connection));
+			BiFunction<FilteringSail, SailConnection, SailFilter> f1 = function;
+			BiFunction<FilteringSail, SailConnection, SailFilter> f2 = compileFilter(reader, rsnode);
+			function = (sail, connection) -> f1.apply(sail, connection).or(f2.apply(sail, connection));
 		}
 
 		return function;
@@ -76,27 +77,27 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 	 * @return filter builder function
 	 * @throws SailCompiler.SailCompilerException compiler error
 	 */
-	private Function<SailConnection, SailFilter> compileFilter(SailCompiler.SailCompilerReader reader, Resource rnode)
+	private BiFunction<FilteringSail, SailConnection, SailFilter> compileFilter(SailCompiler.SailCompilerReader reader, Resource rnode)
 			throws SailCompiler.SailCompilerException {
 		IRI type = SailCompiler.asIRI(reader.searchOne(rnode, SailCompilerSchema.TYPE));
-		Function<SailConnection, SailFilter> function;
+		BiFunction<FilteringSail, SailConnection, SailFilter> function;
 
 		if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_PREDICATE)) {
 			IRI predicate = SailCompiler.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE));
 			PredicateSailFilter filter = new PredicateSailFilter(predicate);
-			function = connection -> filter;
+			function = (sail, connection) -> filter;
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE)) {
 			String lang = reader.getSailCompiler().asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG));
 			boolean acceptNoLanguageLiterals = reader.searchOneOpt(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_NO_LANG_LIT).isPresent();
 			LanguageSailFilter filter = new LanguageSailFilter(lang, acceptNoLanguageLiterals);
-			function = connection -> filter;
+			function = (sail, connection) -> filter;
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_TYPE)) {
 			IRI predicate = SailCompiler.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE));
 			Value object = reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT);
-			function = connection -> new TypeSailFilter(connection, predicate, object);
+			function = (sail, connection) -> new TypeSailFilter(sail, predicate, object);
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LUCENE_EXP)) {
 			LuceneMatchExprSailFilter filter = new LuceneMatchExprSailFilter();
-			function = connection -> filter;
+			function = (sail, connection) -> filter;
 		} else {
 			throw new SailCompiler.SailCompilerException("Can't find the filter type " + type);
 		}

@@ -1,5 +1,6 @@
 package com.the_qa_company.q_endpoint.utils.sail.filter;
 
+import com.the_qa_company.q_endpoint.utils.sail.FilteringSail;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -28,24 +29,24 @@ public class TypeSailFilter implements SailFilter {
 
 	/**
 	 * create a type sail filter
-	 * @param subConnection the connection to fetch data
+	 * @param filteringSail the connection to fetch data
 	 * @param predicate the predicate to define the type
 	 * @param object the type object
 	 */
-	public TypeSailFilter(SailConnection subConnection, IRI predicate, Value object) {
-		this(null, subConnection, predicate, object);
+	public TypeSailFilter(FilteringSail filteringSail, IRI predicate, Value object) {
+		this(null, filteringSail, predicate, object);
 	}
 
 	/**
 	 * create a type sail filter with a buffer to store the type of the subjects
 	 * @param typeBuffer the buffer to store the subjects' type
-	 * @param subConnection the connection to fetch data
+	 * @param filteringSail the connection to fetch data
 	 * @param predicate the predicate to define the type
 	 * @param object the type object
 	 */
-	public TypeSailFilter(Map<Resource, Value> typeBuffer, SailConnection subConnection, IRI predicate, Value object) {
+	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate, Value object) {
 		this.typeBuffer = typeBuffer;
-		this.subConnection = subConnection;
+		this.subConnection = filteringSail.getOnNoSail().getConnectionInternal();
 		this.predicate = predicate;
 		this.object = object;
 	}
@@ -106,6 +107,7 @@ public class TypeSailFilter implements SailFilter {
 
 	@Override
 	public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		isSubjectOfType(subj); // prepare connection if required
 		return false;
 	}
 
