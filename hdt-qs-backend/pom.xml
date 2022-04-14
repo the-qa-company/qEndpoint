@@ -156,7 +156,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.the_qa_company.q_endpoint.Application</mainClass>
+                    <mainClass>com.the_qa_company.qendpoint.Application</mainClass>
                         <classifier>exec</classifier>
                 </configuration>
                 <executions>
