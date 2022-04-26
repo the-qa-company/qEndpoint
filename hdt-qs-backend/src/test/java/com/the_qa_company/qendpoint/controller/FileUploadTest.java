@@ -133,8 +133,8 @@ public class FileUploadTest {
     }
 
     @After
-    public void complete() {
-        sparql.repository.shutDown();
+    public void complete() throws IOException {
+        sparql.clearEndpointStore(locationHdt);
     }
 
     private InputStream stream(String file) {
