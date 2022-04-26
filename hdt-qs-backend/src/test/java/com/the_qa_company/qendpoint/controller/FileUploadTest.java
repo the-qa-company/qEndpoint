@@ -241,6 +241,7 @@ public class FileUploadTest {
     }
 
     @Test
+    @Ignore("skip")
     public void loadNoSplitOnePassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
@@ -253,6 +254,7 @@ public class FileUploadTest {
     }
 
     @Test
+    @Ignore("skip")
     public void loadSplitOnePassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
