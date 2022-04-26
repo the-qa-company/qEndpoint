@@ -4,11 +4,17 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Schema describing the model compiler nodes,
@@ -17,11 +23,16 @@ import java.util.Set;
  */
 public class SailCompilerSchema {
 	private static final ValueFactory VF = SimpleValueFactory.getInstance();
-	private static final Map<IRI, Property> DESC = new HashMap<>();
+	private static final Comparator<IRI> IRI_COMPARATOR = (iri1, iri2) -> iri1.toString().compareToIgnoreCase(iri2.toString());
+	private static final Map<IRI, Property> DESC = new TreeMap<>(IRI_COMPARATOR);
 	/**
 	 * {@literal @prefix mdlc: <http://the-qa-company.com/modelcompiler/>}
 	 */
 	public static final String COMPILER_NAMESPACE = "http://the-qa-company.com/modelcompiler/";
+	/**
+	 * prefix used in the description
+	 */
+	public static final String PREFIX = "mdlc:";
 	/**
 	 * mdlc:main
 	 */
@@ -145,7 +156,7 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:endpointStoreStorage
 	 */
-	public static final IRI ENDPOINTSTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("endpointStoreStorage", "The storage mode hybrid store");
+	public static final IRI ENDPOINTSTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("endpointStoreStorage", "The storage mode endpoint store");
 	/**
 	 * mdlc:nativeStoreStorage
 	 */
@@ -232,10 +243,71 @@ public class SailCompilerSchema {
 
 	private static Property property(String name, String desc) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
-		Property prop = new Property(iri, desc);
+		Property prop = new Property(iri, desc, PREFIX + name);
 		Property old = DESC.put(iri, prop);
 		assert old == null : "Iri already registered: " + iri;
 		return prop;
+	}
+
+	private static String mdEscapeLink(String title) {
+		return title.toLowerCase(Locale.ROOT).replaceAll("[:]", "");
+	}
+
+	/**
+	 * convert the descriptions in {@link #getDescriptions()} into Markdown and write it into a stream
+	 * @param stream stream to write the markdown
+	 */
+	public static void writeToMarkdown(OutputStream stream) {
+		PrintWriter w = new PrintWriter(stream, true);
+
+		// write header and table of content
+		w.println("# Sail compiler schema");
+		w.println();
+		w.println("```turtle");
+		w.println("@prefix " + PREFIX + " <" + COMPILER_NAMESPACE + ">");
+		w.println("```");
+		w.println();
+
+		for (Property property : getDescriptions().values()) {
+			w.println("- [``" + property.getTitle() + "``](#" + mdEscapeLink(property.getTitle()) + ")");
+		}
+		w.println();
+
+		// write body
+		for (Property property : getDescriptions().values()) {
+			w.println("## `" + property.getTitle() + "`");
+			w.println();
+			w.println("**IRI**: [" + property.getIri() + "](" + property.getIri() + ")");
+			w.println();
+			w.println("### Description");
+			w.println();
+			w.println(property.getDescription());
+			w.println();
+			Set<IRI> values = property.getValues();
+			if (!values.isEmpty()) {
+				w.println("### Values");
+				w.println();
+				w.println("Usable value(s) for this property:");
+				w.println();
+				for (IRI value : values) {
+					Property valueProp = getDescriptions().getOrDefault(value, null);
+					if (valueProp == null) {
+						w.println("- [" + value + "](" + value + ")");
+					} else {
+						w.println("- [" + valueProp.getTitle() + "](#" + mdEscapeLink(valueProp.getTitle()) + ")");
+					}
+				}
+				w.println();
+			}
+			w.println("---");
+			w.println("");
+		}
+	}
+
+	public static void main(String[] args) throws IOException {
+		try (FileOutputStream out = new FileOutputStream("COMPILER_SCHEMA.MD")) {
+			writeToMarkdown(out);
+		}
 	}
 
 	/**
@@ -253,13 +325,19 @@ public class SailCompilerSchema {
 	 */
 	public static class Property {
 		private final IRI iri;
+		private final String title;
 		private final String description;
 		private final Set<IRI> values;
 
-		private Property(IRI iri, String description) {
+		private Property(IRI iri, String description, String title) {
 			this.iri = iri;
+			this.title = title;
 			this.description = description;
-			this.values = new HashSet<>();
+			this.values = new TreeSet<>(IRI_COMPARATOR);
+		}
+
+		public String getTitle() {
+			return title;
 		}
 
 		private IRI createValue(IRI value) {

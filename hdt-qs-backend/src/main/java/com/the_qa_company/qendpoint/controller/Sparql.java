@@ -249,7 +249,7 @@ public class Sparql {
 
 	void waitLoading(int query) {
 		synchronized (storeLock) {
-			while (loading || (query == 0 && queries != 0)) {
+			while ((query != 0 && loading) || (query == 0 && queries != 0)) {
 				try {
 					storeLock.wait();
 				} catch (InterruptedException e) {
@@ -257,6 +257,7 @@ public class Sparql {
 					return;
 				}
 			}
+			this.queries += query;
 		}
 	}
 
