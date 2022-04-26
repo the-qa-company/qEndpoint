@@ -263,6 +263,7 @@ public class FileUploadTest {
         assertAllCoktailsHDTLoaded();
     }
     @Test
+    @Ignore("skip")
     public void loadNoSplitTwoPassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size + 1;
@@ -275,6 +276,7 @@ public class FileUploadTest {
     }
 
     @Test
+    @Ignore("skip")
     public void loadSplitTwoPassTest() throws IOException {
         long size = fileSize(fileName);
         sparql.debugMaxChunkSize = size / 10;
