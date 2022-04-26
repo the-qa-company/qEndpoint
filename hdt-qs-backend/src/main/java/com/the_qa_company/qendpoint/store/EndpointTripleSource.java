@@ -74,7 +74,7 @@ public class EndpointTripleSource implements TripleSource {
             newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("SEARCH "+newSubj+" - "+ newPred + " - " + newObj);
+        logger.debug("SEARCH {} {} {}",newSubj, newPred, newObj);
 
 
         // check if we need to search over the delta and if yes, search
