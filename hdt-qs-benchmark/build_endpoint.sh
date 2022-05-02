@@ -10,7 +10,7 @@ mkdir -p $1
 
 cd ../hdt-qs-backend
 
-mvn clean install -DskipTests
+mvn clean install -DskipTests -U
 
 cd ../hdt-qs-benchmark
 

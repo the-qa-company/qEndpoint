@@ -3,24 +3,58 @@
 # URL of the endpoint
 ENDPOINTURL=http://127.0.0.1:1236/api/endpoint
 
-JAVA_MAX_MEM=32G
-RUN_HS_LOADED=true
-RUN_HS_MAPPED=true
+# test to run
+RUN_HS_LOADED=false
+RUN_HS_MAPPED=false
 RUN_NS=true
-RUN_LMDB=true
-UPDATE_TEST=false
+RUN_LMDB=false
+# test modes: "update", "bi", "explore"
+RUN_MODE=explore
+# params for the generator/testdriver
 GENERATOR_PARAMS=
 TESTDRIVER_PARAMS=
-TESTS_NUMBERS="500000 1000000 2000000 5000000 10000000"
-# TESTS_NUMBERS="1000 2000 3000"
-TIMEOUT_SECOND=$((3600 * 24))
+# BSBM products count (separate with spaces)
+TESTS_NUMBERS="2000000"
+# Max memory for the Endpoint
+JAVA_MAX_MEM=32G
+# Timeout before killing the EP
+TIMEOUT_SECOND=$((3600 * 128))
+
+# Endpoint URL
 SPARQL_URL=$ENDPOINTURL/sparql
 UPDATE_URL=$ENDPOINTURL/update
 LOAD_URL=$ENDPOINTURL/load
+
+# Directories/Output file
 OUTPUT=output
 RUN=run
-RESULTS=results
 CSV=$RESULTS/results.csv
+
+
+case "${RUN_MODE}" in
+    update)
+        echo "update MODE"
+        RESULTS=results_update
+        USECASES=exploreAndUpdate
+        RUNOUT=run_out_upt
+    ;;
+    bi)
+        echo "BI MODE"
+        RESULTS=results_bi
+        USECASES=businessIntelligence
+        RUNOUT=run_bi
+    ;;
+    explore)
+        echo "EXPLORE"
+        RESULTS=results_explore
+        USECASES=explore
+        RUNOUT=run_out
+    ;;
+    *)
+        echo "BAD MODE: $RUN_MODE"
+        exit -1
+    ;;
+esac
 
 trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT INT SIGUSR1
 
@@ -63,6 +97,7 @@ function runtest {
         cd $RUN
         java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
         HDT_EP_PID_MAP=$!
+        echo "PID ENDPOINT:  $HDT_EP_PID_MAP"
         
         echo "Waiting for SPRING to load..."
         
@@ -72,8 +107,23 @@ function runtest {
         
         ../timeoutkill.sh $HDT_EP_PID_MAP "$MODE-$READING" $TIMEOUT_SECOND &
         TIMEOUT_PID=$!
-        trap "echo 'killing EP';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID" EXIT
-        trap "echo 'killing EP';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID; exit -1" INT SIGUSR1
+        echo "PID TIMEOUT: $TIMEOUT_PID"
+        trap "echo 'killing EP EXIT';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID" EXIT
+        trap "echo 'killing EP INT/SIGUSR1';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID; exit -1" INT SIGUSR1
+        
+        GENERATOR_PARAMS_IN=$GENERATOR_PARAMS
+        TESTDRIVER_PARAMS_IN=$TESTDRIVER_PARAMS
+        
+        case "${RUN_MODE}" in
+            update)
+                GENERATOR_PARAMS_IN=$GENERATOR_PARAMS_IN  -ud
+            ;;
+            bi)
+                TESTDRIVER_PARAMS_IN=$TESTDRIVER_PARAMS_IN –w 25 –runs 10
+            ;;
+            *)
+            ;;
+        esac
         
         # Generate the dataset
         TRIPLES_COUNT=$(./generate \
@@ -81,33 +131,32 @@ function runtest {
             -pc $SIZE \
             -dir "$OUTPUT_IN/data$SIZE" \
             -fn "$OUTPUT_IN/dataset$SIZE" \
-            $GENERATOR_PARAMS \
+            $GENERATOR_PARAMS_IN \
         | tail -n 1 | cut -d " " -f 1)
         
-        if ! $UPDATE_TEST
+        echo "Start sending files with $TRIPLES_COUNT triples"
+        
+        if curl "$LOAD_URL" \
+        -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
         then
-            if curl "$LOAD_URL" \
-            -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
-            then
-                echo "NT file Loaded"
-            else
-                1>&2 echo "Can't load the NT file"
-                kill -KILL $HDT_EP_PID_MAP
-                kill -SIGUSR1 $TIMEOUT_PID
-                rm -rf "$OUTPUT_IN"
-                return
-            fi
+            echo "NT file Loaded"
+        else
+            echo "Can't load the NT file"
+            kill -KILL $HDT_EP_PID_MAP
+            kill -SIGUSR1 $TIMEOUT_PID
+            rm -rf "$OUTPUT_IN"
+            return
         fi
         
         echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, update: $UPDATE_TEST"
         
         # Test the dataset
         if ! ./testdriver \
-        -ucf usecases/explore/sparql.txt \
+        -ucf usecases/$USECASES/sparql.txt \
         -u "$UPDATE_URL" \
-        -udataset "$OUTPUT_IN/dataset$SIZE.nt" \
+        -udataset "dataset_update.nt" \
         -idir "$OUTPUT_IN/data$SIZE" \
-        $TESTDRIVER_PARAMS \
+        $TESTDRIVER_PARAMS_IN \
         "$SPARQL_URL"
         then
             1>&2 echo "Can't test dataset$SIZE"
@@ -133,6 +182,9 @@ function runtest {
         kill -KILL $HDT_EP_PID_MAP
         
         # Remove the dataset
+        rm -rf "../$RUNOUT/$RESULTS_XML"
+        mkdir -p "../$RUNOUT/$RESULTS_XML"
+        mv "../$RUN" "../$RUNOUT/$RESULTS_XML"
         rm -rf "$OUTPUT_IN"
     done
     
@@ -160,6 +212,8 @@ fi
 OUTPUT_IN=../$OUTPUT
 CSV_IN=../$RESULTS/results.csv
 
+mkdir -p $RUNOUT
+
 cd bsbmtools
 
 if [ -f $CSV_IN ]
@@ -168,7 +222,7 @@ then
 fi
 echo "store,mode,file,uid,triples,runSize,hdtSize,nativeSize" > "$CSV_IN"
 
-if $RUN_HS_LOADED
+if $RUN_HS_MAPPED
 then
     runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map"
 fi
