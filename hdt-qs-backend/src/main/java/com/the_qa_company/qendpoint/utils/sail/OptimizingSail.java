@@ -65,7 +65,8 @@ public class OptimizingSail extends NotifyingSailWrapper {
 			(new QueryModelNormalizer()).optimize(tupleExpr, dataset, bindings);
 			(new QueryJoinOptimizer(new TupleFunctionEvaluationStatistics())).optimize(tupleExpr, dataset, bindings);
 			(new IterativeEvaluationOptimizer()).optimize(tupleExpr, dataset, bindings);
-			(new FilterOptimizer()).optimize(tupleExpr, dataset, bindings);
+			// FIXME: remove comment
+			// (new FilterOptimizer()).optimize(tupleExpr, dataset, bindings);
 			(new OrderLimitOptimizer()).optimize(tupleExpr, dataset, bindings);
 
 			try {

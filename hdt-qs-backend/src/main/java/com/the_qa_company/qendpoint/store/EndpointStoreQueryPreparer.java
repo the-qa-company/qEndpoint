@@ -127,6 +127,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
         new QueryModelNormalizer().optimize(tupleExpr, dataset, bindings);
         new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
         new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
+        // FIXME: remove comment
         // new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
         new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
 

@@ -456,7 +456,7 @@ public class Sparql {
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			//sparqlQuery = sparqlPrefixes+sparqlQuery;
 
-			logger.info("Running given sparql query: " + sparqlQuery);
+			logger.info("Running given sparql query: {}", sparqlQuery);
 
 			ParsedQuery parsedQuery =
 					QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
@@ -690,19 +690,29 @@ public class Sparql {
 				true
 		);
 
+		long triples = 0;
+		long total = 0;
 		while (it.hasNext()) {
 			try (RepositoryConnection connection = repository.getConnection()) {
 				connection.begin();
 				for (int i = 0; i < options.rdf4jSplitUpdate; i++) {
 					Statement stmt = it.next();
 					connection.add(stmt);
+					triples++;
 					if (!it.hasNext()) {
 						break;
 					}
 				}
 				connection.commit();
 			}
+			if (triples >= 100_000L) {
+				total += triples;
+				logger.info("loaded {} triples (+{}), {}", total, triples, timeWatch.stopAndShow());
+				triples = 0;
+			}
 		}
+		total += triples;
+		logger.info("loaded {} triples (+{})", total, triples);
 
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
 	}

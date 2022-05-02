@@ -47,7 +47,6 @@ public class EndpointController {
             HttpServletResponse response
     )
             throws IOException {
-        response.getOutputStream();
         logger.info("New query");
 
         if (query != null) {
