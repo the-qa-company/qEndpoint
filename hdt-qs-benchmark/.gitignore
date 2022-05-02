@@ -12,6 +12,7 @@ results.tar.gz
 # output files
 output.err
 output.out
+run_old
 
 # backup
 results2

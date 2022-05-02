@@ -14,4 +14,4 @@ mvn clean install -DskipTests -U
 
 cd ../hdt-qs-benchmark
 
-cp ../hdt-qs-backend/target/hdtSparqlEndpoint-*-SNAPSHOT-exec.jar $1/endpoint.jar
+cp ../hdt-qs-backend/target/hdtSparqlEndpoint-*-exec.jar $1/endpoint.jar
