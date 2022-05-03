@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # URL/PORT of the endpoint
-PORT=1240
+PORT=1241
 ENDPOINTURL="http://127.0.0.1:$PORT/api/endpoint"
 
 # tests to run
@@ -30,7 +30,7 @@ ENDPOINT_JAR=endpoint.jar
 # Max memory for the Endpoint
 JAVA_MAX_MEM=32G
 # Time to wait for the endpoint to start (in seconds)
-ENDPOINT_WAIT=4
+ENDPOINT_WAIT=15
 
 # Endpoint URL
 #   Param in the UPDATE query GET method
@@ -202,8 +202,8 @@ function runtest {
         -uqp $UPDATE_PARAM \
         -udataset $DATASET_LOCATION \
         -idir "$OUTPUT_IN/data$SIZE" \
-        –w $WARMUP_RUN \
-        –runs $QUERY_MIX_RUNS \
+        -w $WARMUP_RUN \
+        -runs $QUERY_MIX_RUNS \
         $TESTDRIVER_PARAMS_IN \
         "$SPARQL_URL"
         then
