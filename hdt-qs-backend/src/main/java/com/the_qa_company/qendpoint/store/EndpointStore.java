@@ -77,6 +77,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
     // bitmap to mark which triples in HDT were deleted
     private BitArrayDisk deleteBitMap;
     // bitmap used to mark deleted triples in HDT during a merge operation
+    // FIXME: is this needed?
     private BitArrayDisk tempdeleteBitMap;
     // setting to put the delete map only in memory, i.e don't write to disk
     private final boolean inMemDeletes;
