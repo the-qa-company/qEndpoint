@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # URL/PORT of the endpoint
-PORT=1241
+PORT=1245
 ENDPOINTURL="http://127.0.0.1:$PORT/api/endpoint"
 
 # tests to run
@@ -178,11 +178,11 @@ function runtest {
             $GENERATOR_PARAMS_IN \
         | tail -n 1 | cut -d " " -f 1)
         
-        echo "Start sending $DATASET_LOCATION file with $TRIPLES_COUNT triples"
+        echo "Start sending $OUTPUT_IN/dataset$SIZE file with $TRIPLES_COUNT triples"
         
         # Send the dataset to the endpoint
         if curl "$LOAD_URL" \
-        -F "file=@$DATASET_LOCATION"
+        -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
         then
             echo "NT file Loaded"
         else
@@ -210,13 +210,16 @@ function runtest {
             1>&2 echo "Can't test dataset$SIZE"
             kill -KILL $HDT_EP_PID_MAP
             kill -SIGUSR1 $TIMEOUT_PID
+            rm -rf "../$RUNOUT/$RESULTS_XML/$SIZE"
+            mkdir -p "../$RUNOUT/$RESULTS_XML/$SIZE"
+            mv "../$RUN" "../$RUNOUT/$RESULTS_XML/$SIZE"
             return
         fi
         
         # compute stats for the CSV
-        RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
-        HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
-        NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
+        RUN_SIZE=$(du -h ../$RUN | tail -n 1 | cut -f 1)
+        HDT_SIZE=$(du -h ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+        NS_SIZE=$(du -h ../$RUN/native-store | tail -n 1 | cut -f 1)
         RESULTS_XML_FILE="$RESULTS_XML/benchmark_result_$SIZE.xml"
         
         echo "Completed test with runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
@@ -231,9 +234,9 @@ function runtest {
         kill -KILL $HDT_EP_PID_MAP
         
         # Remove the dataset
-        rm -rf "../$RUNOUT/$RESULTS_XML"
-        mkdir -p "../$RUNOUT/$RESULTS_XML"
-        mv "../$RUN" "../$RUNOUT/$RESULTS_XML"
+        rm -rf "../$RUNOUT/$RESULTS_XML/$SIZE"
+        mkdir -p "../$RUNOUT/$RESULTS_XML/$SIZE"
+        mv "../$RUN" "../$RUNOUT/$RESULTS_XML/$SIZE"
         rm -rf "$OUTPUT_IN"
     done
     
