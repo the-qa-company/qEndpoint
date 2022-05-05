@@ -16,7 +16,6 @@ import com.the_qa_company.qendpoint.utils.sail.builder.compiler.LuceneSailCompil
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -345,25 +344,10 @@ public class Sparql {
 			if (!options.debugDisableLoading) {
 				options.clear();
 				try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
-					options.storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY)
-							.orElse(SailCompilerSchema.ENDPOINTSTORE_STORAGE);
-					options.passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY)
-							.orElse(SailCompilerSchema.HDT_TWO_PASS_MODE);
-					options.rdf4jSplitUpdate = reader
-							.searchOneOpt(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE)
-							.map(v -> (Literal) v)
-							.stream().mapToInt(v -> {
-								if (!v.getCoreDatatype().asXSDDatatype().orElseThrow().isIntegerDatatype()) {
-									throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be an integer");
-								}
-								int i = v.intValue();
-								if (i < 2) {
-									throw new SailCompiler.SailCompilerException(SailCompilerSchema.RDF_STORE_SPLIT_STORAGE + " value should be a positive integer");
-								}
-								return i;
-							}).findAny().orElse(1000);
-					options.hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY)
-							.orElse(SailCompilerSchema.HDT_READ_MODE_MAP);
+					options.storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY);
+					options.passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY);
+					options.rdf4jSplitUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE);
+					options.hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY);
 					reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.OPTION)
 							.stream()
 							.map(SailCompiler::asIRI)

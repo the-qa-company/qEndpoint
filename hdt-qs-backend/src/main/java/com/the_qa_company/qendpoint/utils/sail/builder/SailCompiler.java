@@ -371,10 +371,10 @@ public class SailCompiler {
 		 * @return the value
 		 * @throws SailCompilerException if the value isn't a valid value for this property
 		 */
-		public Optional<IRI> searchPropertyValue(Resource subject, SailCompilerSchema.Property property) throws SailCompilerException {
+		public <T> T searchPropertyValue(Resource subject, SailCompilerSchema.Property<T, ? extends SailCompilerSchema.ValueHandler<T>> property) throws SailCompilerException {
 			return searchOneOpt(subject, property.getIri())
-					.map(SailCompiler::asIRI)
-					.map(property::throwIfNotValidValue);
+					.map(property::throwIfNotValidValue)
+					.orElseGet(property.getHandler()::defaultValue);
 		}
 
 		/**

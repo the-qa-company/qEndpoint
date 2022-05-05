@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class TripleSourceTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<Object> params() {
-		return SailCompilerSchema.STORAGE_MODE_PROPERTY.getValues().stream()
+		return SailCompilerSchema.STORAGE_MODE_PROPERTY.getHandler().getValues().stream()
 				.map(iri -> (Object) iri)
 				.collect(Collectors.toList());
 	}

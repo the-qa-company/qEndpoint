@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.utils.sail.builder;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
@@ -19,12 +21,13 @@ import java.util.TreeSet;
 /**
  * Schema describing the model compiler nodes,
  * {@literal @prefix mdlc: <http://the-qa-company.com/modelcompiler/>}
+ *
  * @author Antoine Willerval
  */
 public class SailCompilerSchema {
 	private static final ValueFactory VF = SimpleValueFactory.getInstance();
 	private static final Comparator<IRI> IRI_COMPARATOR = (iri1, iri2) -> iri1.toString().compareToIgnoreCase(iri2.toString());
-	private static final Map<IRI, Property> DESC = new TreeMap<>(IRI_COMPARATOR);
+	private static final Map<IRI, Property<?, ?>> DESC = new TreeMap<>(IRI_COMPARATOR);
 	/**
 	 * {@literal @prefix mdlc: <http://the-qa-company.com/modelcompiler/>}
 	 */
@@ -148,7 +151,7 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:storageMode
 	 */
-	public static final Property STORAGE_MODE_PROPERTY = property("storageMode", "The storage mode");
+	public static final Property<IRI, IRITypeValueHandler> STORAGE_MODE_PROPERTY = propertyIri("storageMode", "The storage mode");
 	/**
 	 * mdlc:storageMode
 	 */
@@ -156,24 +159,24 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:endpointStoreStorage
 	 */
-	public static final IRI ENDPOINTSTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("endpointStoreStorage", "The storage mode endpoint store");
+	public static final IRI ENDPOINTSTORE_STORAGE = STORAGE_MODE_PROPERTY.getHandler().createValue("endpointStoreStorage", "The storage mode endpoint store", true);
 	/**
 	 * mdlc:nativeStoreStorage
 	 */
-	public static final IRI NATIVESTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("nativeStoreStorage", "The storage mode native store");
+	public static final IRI NATIVESTORE_STORAGE = STORAGE_MODE_PROPERTY.getHandler().createValue("nativeStoreStorage", "The storage mode native store");
 	/**
 	 * mdlc:memoryStoreStorage
 	 */
-	public static final IRI MEMORYSTORE_STORAGE = STORAGE_MODE_PROPERTY.createValue("memoryStoreStorage", "The storage mode memory store");
+	public static final IRI MEMORYSTORE_STORAGE = STORAGE_MODE_PROPERTY.getHandler().createValue("memoryStoreStorage", "The storage mode memory store");
 	/**
 	 * mdlc:lmdbStoreStorage
 	 */
-	public static final IRI LMDB_STORAGE = STORAGE_MODE_PROPERTY.createValue("lmdbStoreStorage", "The storage mode lmdb");
+	public static final IRI LMDB_STORAGE = STORAGE_MODE_PROPERTY.getHandler().createValue("lmdbStoreStorage", "The storage mode lmdb");
 
 	/**
 	 * mdlc:hdtReadMode PROPERTY
 	 */
-	public static final Property HDT_READ_MODE_PROPERTY = property("hdtReadMode", "The hdt reading mode");
+	public static final Property<IRI, IRITypeValueHandler> HDT_READ_MODE_PROPERTY = propertyIri("hdtReadMode", "The hdt reading mode");
 	/**
 	 * mdlc:hdtReadMode PROPERTY
 	 */
@@ -181,20 +184,20 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:hdtLoadReadMode
 	 */
-	public static final IRI HDT_READ_MODE_LOAD = HDT_READ_MODE_PROPERTY.createValue("hdtLoadReadMode", "The hdt load reading mode, load the full HDT into memory");
+	public static final IRI HDT_READ_MODE_LOAD = HDT_READ_MODE_PROPERTY.getHandler().createValue("hdtLoadReadMode", "The hdt load reading mode, load the full HDT into memory");
 	/**
 	 * mdlc:hdtMapReadMode
 	 */
-	public static final IRI HDT_READ_MODE_MAP = HDT_READ_MODE_PROPERTY.createValue("hdtMapReadMode", "The hdt load reading mode, map the HDT into memory (default)");
+	public static final IRI HDT_READ_MODE_MAP = HDT_READ_MODE_PROPERTY.getHandler().createValue("hdtMapReadMode", "The hdt load reading mode, map the HDT into memory", true);
 
 	/**
 	 * mdlc:rdfStoreSplit
 	 */
-	public static final IRI RDF_STORE_SPLIT_STORAGE = iri("rdfStoreSplit", "The storage load split update count");
+	public static final Property<Integer, NumberTypeValueHandler> RDF_STORE_SPLIT_STORAGE = propertyInt("rdfStoreSplit", "The storage load split update count", 1000, 1);
 	/**
 	 * mdlc:hdtPassMode property
 	 */
-	public static final Property HDT_PASS_MODE_PROPERTY = property("hdtPassMode", "The mode to parse the Triple flux");
+	public static final Property<IRI, IRITypeValueHandler> HDT_PASS_MODE_PROPERTY = propertyIri("hdtPassMode", "The mode to parse the Triple flux");
 	/**
 	 * mdlc:hdtPassMode
 	 */
@@ -202,16 +205,16 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:hdtOnePassMode
 	 */
-	public static final IRI HDT_ONE_PASS_MODE = HDT_PASS_MODE_PROPERTY.createValue("hdtOnePassMode", "The mode to parse the Triple flux in one pass, reduce disk usage");
+	public static final IRI HDT_ONE_PASS_MODE = HDT_PASS_MODE_PROPERTY.getHandler().createValue("hdtOnePassMode", "The mode to parse the Triple flux in one pass, reduce disk usage");
 	/**
 	 * mdlc:hdtTwoPassMode
 	 */
-	public static final IRI HDT_TWO_PASS_MODE = HDT_PASS_MODE_PROPERTY.createValue("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage");
+	public static final IRI HDT_TWO_PASS_MODE = HDT_PASS_MODE_PROPERTY.getHandler().createValue("hdtTwoPassMode", "The mode to parse the Triple flux in two passes, reduce time usage", true);
 
 	/**
 	 * mdlc:option property
 	 */
-	public static final Property OPTION_PROPERTY = property("option", "option predicate");
+	public static final Property<IRI, IRITypeValueHandler> OPTION_PROPERTY = propertyIri("option", "option predicate");
 	/**
 	 * mdlc:option
 	 */
@@ -219,32 +222,52 @@ public class SailCompilerSchema {
 	/**
 	 * mdlc:debugShowTime
 	 */
-	public static final IRI DEBUG_SHOW_TIME = OPTION_PROPERTY.createValue("debugShowTime", "Show exec time of query");
+	public static final IRI DEBUG_SHOW_TIME = OPTION_PROPERTY.getHandler().createValue("debugShowTime", "Show exec time of query");
 	/**
 	 * mdlc:debugShowPlan
 	 */
-	public static final IRI DEBUG_SHOW_PLAN = OPTION_PROPERTY.createValue("debugShowPlan", "Show query plans");
+	public static final IRI DEBUG_SHOW_PLAN = OPTION_PROPERTY.getHandler().createValue("debugShowPlan", "Show query plans");
 	/**
 	 * mdlc:debugDisableOptionReloading
 	 */
-	public static final IRI DEBUG_DISABLE_OPTION_RELOADING = OPTION_PROPERTY.createValue("debugDisableOptionReloading", "Disable option reloading");
+	public static final IRI DEBUG_DISABLE_OPTION_RELOADING = OPTION_PROPERTY.getHandler().createValue("debugDisableOptionReloading", "Disable option reloading");
 	/**
 	 * mdlc:debugShowQueryResultCount
 	 */
-	public static final IRI DEBUG_SHOW_QUERY_RESULT_COUNT = OPTION_PROPERTY.createValue("debugShowQueryResultCount", "Show query count");
+	public static final IRI DEBUG_SHOW_QUERY_RESULT_COUNT = OPTION_PROPERTY.getHandler().createValue("debugShowQueryResultCount", "Show query count");
 	/**
 	 * mdlc:noOptimization
 	 */
-	public static final IRI NO_OPTIMIZATION = OPTION_PROPERTY.createValue("noOptimization", "Disable optimization for native stores");
+	public static final IRI NO_OPTIMIZATION = OPTION_PROPERTY.getHandler().createValue("noOptimization", "Disable optimization for native stores");
 
 	private static IRI iri(String name, String desc) {
-		return property(name, desc).getIri();
+		return propertyVoid(name, desc).getIri();
 	}
 
-	private static Property property(String name, String desc) {
+	private static Property<IRI, IRITypeValueHandler> propertyIri(String name, String desc) {
+		return property(name, desc, new IRITypeValueHandler());
+	}
+
+	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc, int defaultValue) {
+		return property(name, desc, new NumberTypeValueHandler(defaultValue));
+	}
+
+	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc, int defaultValue, int min) {
+		return property(name, desc, new NumberTypeValueHandler(defaultValue).withMin(min));
+	}
+
+	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc, int defaultValue, int min, int max) {
+		return property(name, desc, new NumberTypeValueHandler(defaultValue).withRange(min, max));
+	}
+
+	private static Property<Value, ValueHandler<Value>> propertyVoid(String name, String desc) {
+		return property(name, desc, ValueHandler.id());
+	}
+
+	private static <T, H extends ValueHandler<T>> Property<T, H> property(String name, String desc, H handler) {
 		IRI iri = VF.createIRI(COMPILER_NAMESPACE + name);
-		Property prop = new Property(iri, desc, PREFIX + name);
-		Property old = DESC.put(iri, prop);
+		Property<T, H> prop = new Property<>(iri, desc, PREFIX + name, handler);
+		Property<?, ?> old = DESC.put(iri, prop);
 		assert old == null : "Iri already registered: " + iri;
 		return prop;
 	}
@@ -255,6 +278,7 @@ public class SailCompilerSchema {
 
 	/**
 	 * convert the descriptions in {@link #getDescriptions()} into Markdown and write it into a stream
+	 *
 	 * @param stream stream to write the markdown
 	 */
 	public static void writeToMarkdown(OutputStream stream) {
@@ -268,13 +292,13 @@ public class SailCompilerSchema {
 		w.println("```");
 		w.println();
 
-		for (Property property : getDescriptions().values()) {
+		for (Property<?, ?> property : getDescriptions().values()) {
 			w.println("- [``" + property.getTitle() + "``](#" + mdEscapeLink(property.getTitle()) + ")");
 		}
 		w.println();
 
 		// write body
-		for (Property property : getDescriptions().values()) {
+		for (Property<?, ?> property : getDescriptions().values()) {
 			w.println("## `" + property.getTitle() + "`");
 			w.println();
 			w.println("**IRI**: [" + property.getIri() + "](" + property.getIri() + ")");
@@ -283,19 +307,48 @@ public class SailCompilerSchema {
 			w.println();
 			w.println(property.getDescription());
 			w.println();
-			Set<IRI> values = property.getValues();
-			if (!values.isEmpty()) {
-				w.println("### Values");
-				w.println();
-				w.println("Usable value(s) for this property:");
-				w.println();
-				for (IRI value : values) {
-					Property valueProp = getDescriptions().getOrDefault(value, null);
-					if (valueProp == null) {
-						w.println("- [" + value + "](" + value + ")");
-					} else {
-						w.println("- [" + valueProp.getTitle() + "](#" + mdEscapeLink(valueProp.getTitle()) + ")");
+
+			if (property.getHandler() instanceof IRITypeValueHandler) {
+				Set<IRI> values = ((IRITypeValueHandler) property.getHandler()).getValues();
+				if (!values.isEmpty()) {
+					w.println("### Values");
+					w.println();
+					IRI defaultValue = ((IRITypeValueHandler) property.getHandler()).defaultValue;
+					if (defaultValue != null) {
+						Property<?, ?> defaultValueProp = getDescriptions().getOrDefault(defaultValue, null);
+						if (defaultValueProp == null) {
+							w.println("Default value: [" + defaultValue + "](" + defaultValue + ")");
+						} else {
+							w.println("Default value: [" + defaultValueProp.getTitle() + "](#" + mdEscapeLink(defaultValueProp.getTitle()) + ")");
+						}
+						w.println();
 					}
+					w.println("Usable value(s) for this property:");
+					w.println();
+					for (IRI value : values) {
+						Property<?, ?> valueProp = getDescriptions().getOrDefault(value, null);
+						if (valueProp == null) {
+							w.println("- [" + value + "](" + value + ")");
+						} else {
+							w.println("- [" + valueProp.getTitle() + "](#" + mdEscapeLink(valueProp.getTitle()) + ")");
+						}
+					}
+					w.println();
+				}
+			} else if (property.getHandler() instanceof NumberTypeValueHandler) {
+				w.println("### Value");
+				w.println();
+				w.println("Number value");
+				w.println();
+				NumberTypeValueHandler h = (NumberTypeValueHandler) property.getHandler();
+
+				w.println("- default value: " + h.defaultValue());
+
+				if (h.min != Integer.MIN_VALUE) {
+					w.println("- min value: " + h.getMin());
+				}
+				if (h.max != Integer.MAX_VALUE) {
+					w.println("- max value: " + h.getMax());
 				}
 				w.println();
 			}
@@ -313,7 +366,7 @@ public class SailCompilerSchema {
 	/**
 	 * @return a description map indexed by IRI
 	 */
-	public static Map<IRI, Property> getDescriptions() {
+	public static Map<IRI, Property<?, ?>> getDescriptions() {
 		return Collections.unmodifiableMap(DESC);
 	}
 
@@ -323,29 +376,26 @@ public class SailCompilerSchema {
 	/**
 	 * A property predicate in the schema
 	 */
-	public static class Property {
+	public static class Property<V, T extends ValueHandler<V>> {
 		private final IRI iri;
 		private final String title;
 		private final String description;
-		private final Set<IRI> values;
+		private final T handler;
 
-		private Property(IRI iri, String description, String title) {
+		private Property(IRI iri, String description, String title, T handler) {
 			this.iri = iri;
 			this.title = title;
 			this.description = description;
-			this.values = new TreeSet<>(IRI_COMPARATOR);
+			this.handler = handler;
+			handler.setParent(this);
 		}
 
 		public String getTitle() {
 			return title;
 		}
 
-		private IRI createValue(IRI value) {
-			values.add(value);
-			return value;
-		}
-		private IRI createValue(String name, String description) {
-			return createValue(iri(name, description));
+		public T getHandler() {
+			return handler;
 		}
 
 		/**
@@ -363,23 +413,170 @@ public class SailCompilerSchema {
 		}
 
 		/**
+		 * throw if an value isn't in the valid values
+		 *
+		 * @param value the value to test
+		 * @return the value
+		 * @throws SailCompiler.SailCompilerException if the value isn't valid
+		 */
+		public V throwIfNotValidValue(Value value) throws SailCompiler.SailCompilerException {
+			return handler.validate(value);
+		}
+	}
+
+	/**
+	 * value handler for a property
+	 *
+	 * @param <T> the output value
+	 */
+	public interface ValueHandler<T> {
+		static ValueHandler<Value> id() {
+			return v -> v;
+		}
+
+		/**
+		 * validate and return the converted value
+		 *
+		 * @param v the value to check
+		 * @return the converted value
+		 * @throws SailCompiler.SailCompilerException if the value isn't valid
+		 */
+		T validate(Value v) throws SailCompiler.SailCompilerException;
+
+		default T defaultValue() {
+			throw new SailCompiler.SailCompilerException("No default value for this property");
+		}
+
+		default void setParent(Property<T, ? extends ValueHandler<T>> p) {
+		}
+	}
+
+	public static class IRITypeValueHandler implements ValueHandler<IRI> {
+		private Property<IRI, ? extends ValueHandler<IRI>> parent;
+		private final Set<IRI> values;
+		private IRI defaultValue;
+
+		public IRITypeValueHandler() {
+			this.values = new TreeSet<>(IRI_COMPARATOR);
+		}
+
+		@Override
+		public void setParent(Property<IRI, ? extends ValueHandler<IRI>> p) {
+			assert parent == null : "parent can't be null";
+			parent = p;
+		}
+
+		private IRI createValue(IRI value) {
+			return createValue(value, false);
+		}
+
+		private IRI createValue(String name, String description) {
+			return createValue(iri(name, description));
+		}
+
+		private IRI createValue(IRI value, boolean defaultValue) {
+			values.add(value);
+			if (defaultValue) {
+				if (this.defaultValue != null) {
+					throw new IllegalArgumentException("default value already defined");
+				}
+				this.defaultValue = value;
+			}
+			return value;
+		}
+
+		@Override
+		public IRI defaultValue() {
+			return defaultValue;
+		}
+
+		private IRI createValue(String name, String description, boolean defaultValue) {
+			return createValue(iri(name, description), defaultValue);
+		}
+
+		/**
 		 * @return the valid values for this predicate
 		 */
 		public Set<IRI> getValues() {
 			return Collections.unmodifiableSet(values);
 		}
 
-		/**
-		 * throw if an iri isn't in the valid values
-		 * @param iri the iri to test
-		 * @return the iri
-		 * @throws SailCompiler.SailCompilerException if the iri isn't valid
-		 */
-		public IRI throwIfNotValidValue(IRI iri) throws SailCompiler.SailCompilerException {
-			if (values.contains(iri)) {
-				return iri;
+		@Override
+		public IRI validate(Value v) throws SailCompiler.SailCompilerException {
+			if (!(v instanceof IRI)) {
+				throw new SailCompiler.SailCompilerException(v + " is not a valid iri value for the property " + parent);
 			}
-			throw new SailCompiler.SailCompilerException(iri + " is not a valid value for the property " + iri);
+			if (values.contains(v)) {
+				return (IRI) v;
+			}
+			throw new SailCompiler.SailCompilerException(v + " is not a valid value for the property " + parent);
+		}
+
+
+	}
+
+	public static class NumberTypeValueHandler implements ValueHandler<Integer> {
+		private Property<Integer, ? extends ValueHandler<Integer>> parent;
+		private int min = Integer.MIN_VALUE;
+		private int max = Integer.MAX_VALUE;
+		private final int defaultValue;
+
+		public NumberTypeValueHandler(int defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		public int getMax() {
+			return max;
+		}
+
+		public int getMin() {
+			return min;
+		}
+
+		@Override
+		public void setParent(Property<Integer, ? extends ValueHandler<Integer>> p) {
+			if (parent != null) {
+				throw new IllegalArgumentException("parent not null");
+			}
+			parent = p;
+		}
+
+		public NumberTypeValueHandler withMax(int max) {
+			this.max = max;
+			return this;
+		}
+
+		public NumberTypeValueHandler withMin(int min) {
+			this.min = min;
+			return this;
+		}
+
+		public NumberTypeValueHandler withRange(int min, int max) {
+			return withMin(min).withMax(max);
+		}
+
+		@Override
+		public Integer validate(Value v) throws SailCompiler.SailCompilerException {
+			if (!(v instanceof Literal)) {
+				throw new SailCompiler.SailCompilerException(v + " is not a valid literal value for the property " + parent);
+			}
+			Literal l = (Literal) v;
+			if (!l.getCoreDatatype().asXSDDatatype().orElseThrow(
+					() -> new SailCompiler.SailCompilerException(l + " is not a valid number xsd literal for the property " + parent)
+			).isIntegerDatatype()) {
+				throw new SailCompiler.SailCompilerException(l + " is not a valid number literal for the property " + parent);
+			}
+			int value = ((Literal) v).intValue();
+
+			if (value > max || value < min) {
+				throw new SailCompiler.SailCompilerException(l + " out of range(" + min + ", " + max + ") for the property " + parent);
+			}
+			return value;
+		}
+
+		@Override
+		public Integer defaultValue() {
+			return defaultValue;
 		}
 	}
 }
