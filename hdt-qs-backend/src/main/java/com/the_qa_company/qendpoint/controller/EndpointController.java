@@ -40,7 +40,7 @@ public class EndpointController {
             @RequestParam(value = "update", required = false) final String updateQuery,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            @RequestHeader(value = "timeout", defaultValue = "300") int timeout,
+            @RequestHeader(value = "timeout", defaultValue = "500") int timeout,
             @RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
             @RequestBody(required = false) String body,
@@ -67,7 +67,7 @@ public class EndpointController {
             @RequestParam(value = "query") final String query,
             @RequestParam(value = "format", defaultValue = "json") final String format,
             @RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-            @RequestParam(value = "timeout", defaultValue = "5") int timeout,
+            @RequestParam(value = "timeout", defaultValue = "500") int timeout,
 			HttpServletResponse response)
             throws IOException {
         logger.info("Query " + query);

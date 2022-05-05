@@ -1,28 +1,52 @@
 #!/usr/bin/env bash
 
-# URL of the endpoint
-ENDPOINTURL=http://127.0.0.1:1236/api/endpoint
+# TODO: read explore, write load/merge
 
-JAVA_MAX_MEM=32G
+# URL/PORT of the endpoint
+PORT=1241
+ENDPOINTURL="http://127.0.0.1:$PORT/api/endpoint"
+
+# tests to run
+# - use Endpoint store HDT LOAD method?
 RUN_HS_LOADED=true
+# - use Endpoint store HDT MAP method?
 RUN_HS_MAPPED=true
-RUN_NS=true
-RUN_LMDB=true
-UPDATE_TEST=true
-GENERATOR_PARAMS=
-TESTDRIVER_PARAMS=
-# TESTS_NUMBERS="500000 1000000 2000000 5000000 10000000"
-TESTS_NUMBERS="1000 2000 3000"
-TIMEOUT_SECOND=$((3600 * 24))
+
+HDT_LOCATIONS="index_dev.hdt index_dev2.hdt"
+
+# Rebuild the endpoint at each start of the benchmark
+REBUILD_ENDPOINT=false
+# Endpoint jar file
+ENDPOINT_JAR=endpoint.jar
+# Max memory for the Endpoint
+JAVA_MAX_MEM=32G
+# Time to wait for the endpoint to start (in seconds)
+ENDPOINT_WAIT=15
+
+# BSBM products count (separate with spaces)
+TESTS_NUMBERS="10000"
+# Timeout before killing the EP (in seconds)
+TIMEOUT_SECOND=$((3600 * 24 * 7))
+
+# Endpoint URL
+#   Param in the UPDATE query GET method
+UPDATE_PARAM=query
 SPARQL_URL=$ENDPOINTURL/sparql
 UPDATE_URL=$ENDPOINTURL/update
 LOAD_URL=$ENDPOINTURL/load
-OUTPUT=output_lubm
-RUN=run_lubm
-RESULTS=results_lubm
-CSV=$RESULTS/results.csv
 
-trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT INT SIGUSR1
+# run directory
+RUN=run
+# old run directory
+RUN_OLD=run_old_lubm
+# csv stats file
+CSV_FILE=results.csv
+# results directory
+RESULT_DIRECTORY=results_lubm
+
+RUNOUT=$RUN_OLD
+RESULTS=$RESULT_DIRECTORY
+CSV=$RESULTS/$CSV_FILE
 
 # Usage:   runtest MODE READING RESULTS_XML RDF_MODEL
 # Example: runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map"
@@ -38,93 +62,65 @@ function runtest {
     echo "----------------------------------------"
     echo ""
     
-    cd ../..
+    cd ..
     
     mkdir -p "$RESULTS/$RESULTS_XML"
     
-    rm -rf $RUN
-    mkdir -p $RUN
-    cp endpoint.jar $RUN
-    
-    cp application.properties "$RUN/application.properties"
-    
-    echo "repoModel=../models/$RDF_MODEL.ttl" >> "$RUN/application.properties"
-    
-    cd lubmtools/gen
-    for SIZE in $TESTS_NUMBERS
+    cd bsbmtools
+    for HDT_LOCATION in $HDT_LOCATIONS
     do
-        echo "Generating $OUTPUT/dataset$SIZE..."
+        echo "Generating $HDT_LOCATION..."
         # Remove previous dataset
-        rm -rf "$OUTPUT_IN"
-        mkdir -p "$OUTPUT_IN"
         
-        cd ../../$RUN
-        java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar endpoint.jar &
+        cd ..
+        
+        rm -rf $RUN
+        mkdir -p $RUN
+        cp $ENDPOINT_JAR $RUN
+        
+        # config endpoint
+        cp application.properties "$RUN/application.properties"
+        # write port
+        echo "server.port=$PORT" >> "$RUN/application.properties"
+        # write model to use
+        echo "repoModel=../models/$RDF_MODEL.ttl" >> "$RUN/application.properties"
+        
+        
+        # Start ENDPOINT
+        cd $RUN
+        java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar $ENDPOINT_JAR &
         HDT_EP_PID_MAP=$!
+        echo "PID ENDPOINT:  $HDT_EP_PID_MAP"
         
         echo "Waiting for SPRING to load..."
         
-        sleep 4
+        sleep $ENDPOINT_WAIT
         
-        cd ../lubmtools/gen
+        cd ../bsbmtools
         
-        ../../timeoutkill.sh $HDT_EP_PID_MAP "$MODE-$READING" $TIMEOUT_SECOND &
+        # Start timeout for the EP
+        
+        ../timeoutkill.sh $HDT_EP_PID_MAP "$MODE-$READING" $TIMEOUT_SECOND &
         TIMEOUT_PID=$!
-        trap "echo 'killing EP';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID" EXIT
-        trap "echo 'killing EP';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID; exit -1" INT SIGUSR1
+        echo "PID TIMEOUT: $TIMEOUT_PID"
         
-        # Generate the dataset
-        TRIPLES_COUNT=$(./generate \
-            -s nt \
-            -pc $SIZE \
-            -dir "$OUTPUT_IN/data$SIZE" \
-            -fn "$OUTPUT_IN/dataset$SIZE" \
-            $GENERATOR_PARAMS \
-        | tail -n 1 | cut -d " " -f 1)
+        # Setup traps to kill everything
+        trap "echo 'killing EP EXIT';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID" EXIT
+        trap "echo 'killing EP INT/SIGUSR1';kill -KILL $HDT_EP_PID_MAP; kill -SIGUSR1 $TIMEOUT_PID; exit -1" INT SIGUSR1
         
-        if ! $UPDATE_TEST
-        then
-            if curl "$LOAD_URL" \
-            -F "file=@$OUTPUT_IN/dataset$SIZE.nt"
-            then
-                echo "NT file Loaded"
-            else
-                1>&2 echo "Can't load the NT file"
-                kill -KILL $HDT_EP_PID_MAP
-                kill -SIGUSR1 $TIMEOUT_PID
-                rm -rf "$OUTPUT_IN"
-                return
-            fi
-        fi
         
-        echo "Start testing NT file '$SIZE' size: $TRIPLES_COUNT, update: $UPDATE_TEST"
+        echo "Start testing NT file '$HDT_LOCATION' size: $TRIPLES_COUNT, update: $UPDATE_TEST"
         
-        cd ../test
-        
-        # Test the dataset
-        if ! ./testdriver \
-        -ucf usecases/explore/sparql.txt \
-        -u "$UPDATE_URL" \
-        -udataset "$OUTPUT_IN/dataset$SIZE.nt" \
-        -idir "$OUTPUT_IN/data$SIZE" \
-        $TESTDRIVER_PARAMS \
-        "$SPARQL_URL"
-        then
-            1>&2 echo "Can't test dataset$SIZE"
-            kill -KILL $HDT_EP_PID_MAP
-            kill -SIGUSR1 $TIMEOUT_PID
-            rm -rf "$OUTPUT_IN"
-            return
-        fi
-        
-        RUN_SIZE=$(du ../../$RUN | tail -n 1 | cut -f 1)
-        HDT_SIZE=$(du ../../$RUN/hdt-store | tail -n 1 | cut -f 1)
-        NS_SIZE=$(du ../../$RUN/native-store | tail -n 1 | cut -f 1)
-        RESULTS_XML_FILE="$RESULTS_XML/benchmark_result_$SIZE.xml"
+        # compute stats for the CSV
+        RUN_SIZE=$(du ../$RUN | tail -n 1 | cut -f 1)
+        HDT_SIZE=$(du ../$RUN/hdt-store | tail -n 1 | cut -f 1)
+        NS_SIZE=$(du ../$RUN/native-store | tail -n 1 | cut -f 1)
+        RESULTS_XML_FILE="$RESULTS_XML/result_$HDT_LOCATION.log"
         
         echo "Completed test with runSize: $RUN_SIZE hdtSize: $HDT_SIZE, nativeStoreSize: $NS_SIZE"
         echo "$MODE,$READING,$RESULTS_XML_FILE,$SIZE,$TRIPLES_COUNT,$RUN_SIZE,$HDT_SIZE,$NS_SIZE" >> $CSV_IN
         
+        echo "Write results into $RESULTS/$RESULTS_XML_FILE"
         mv "benchmark_result.xml" "../$RESULTS/$RESULTS_XML_FILE"
         
         echo "kill ENDPOINT and timeout"
@@ -133,59 +129,43 @@ function runtest {
         kill -KILL $HDT_EP_PID_MAP
         
         # Remove the dataset
-        rm -rf "$OUTPUT_IN"
+        rm -rf "../$RUN"
     done
     
 }
 
-#./build_endpoint.sh $RUN
+if $REBUILD_ENDPOINT
+then
+    ./build_endpoint.sh .
+elif [ ! -e "$ENDPOINT_JAR" ]
+then
+    echo "$ENDPOINT_JAR doesn't exists, building a new one"
+    ./build_endpoint.sh .
+fi
 
 echo "(Re)create result dir..."
 mkdir -p "$RESULTS"
 
-echo "Downloading LUBM..."
-# Download the tool to generate the file
-if [ -d "lubmtools" ]
-then
-    echo "lubmtools already installed, to delete it run 'rm -r lubmtools'"
-else
-    mkdir -p lubmtools/gen
-    mkdir -p lubmtools/test
-    echo "LUBM - Downloading zips..."
-    curl http://swat.cse.lehigh.edu/projects/lubm/GeneratorLinuxFix.zip --output lubmtools/generator.zip
-    curl http://swat.cse.lehigh.edu/projects/lubm/uba1.7.zip --output lubmtools/gen.zip
-    curl http://swat.cse.lehigh.edu/projects/lubm/ubt1.1.zip --output lubmtools/test.zip
-    echo "LUBM - Extracting..."
-    unzip lubmtools/gen.zip -d lubmtools/gen
-    unzip lubmtools/test.zip -d lubmtools/test
-    
-    echo "LUBM - Patch paths..."
-    unzip lubmtools/generator.zip -d lubmtools
-    mv ./lubmtools/Generator.java ./lubmtools/gen/src/edu/lehigh/swat/bench/uba/Generator.java
-    cd lubmtools/gen
-    echo "LUBM - Patch paths - Clear"
-    rm -rf classes
-    echo "LUBM - Patch paths - Compile"
-    javac ./src/edu/lehigh/swat/bench/uba/* -d ./classes/
-    cd ../..
-    echo "LUBM - Cleaning..."
-    rm lubmtools/gen.zip lubmtools/test.zip lubmtools/generator.zip
-fi
+# set into bsbm tool suite
 
-# set into lubmtools tool suite
+CSV_IN=../$RESULTS/$CSV_FILE
 
-OUTPUT_IN=../../$OUTPUT
-CSV_IN=../../$RESULTS/results.csv
+mkdir -p $RUNOUT
 
-cd lubmtools/gen
+cd bsbmtools
+
+# Backup old CSV data
 
 if [ -f $CSV_IN ]
 then
     mv $CSV_IN "$CSV_IN$(date '+%Y-%m-%d-%H:%M:%S').csv"
 fi
+
+# Write CSV header
+
 echo "store,mode,file,uid,triples,runSize,hdtSize,nativeSize" > "$CSV_IN"
 
-if $RUN_HS_LOADED
+if $RUN_HS_MAPPED
 then
     runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map"
 fi
@@ -194,17 +174,6 @@ if $RUN_HS_LOADED
 then
     runtest "HYBRID" "LOAD" "hybridstore/load" "model_hs_load"
     
-fi
-
-if $RUN_NS
-then
-    runtest "NATIVE" "DEFAULT" "nativestore" "model_ns"
-    
-fi
-
-if $RUN_LMDB
-then
-    runtest "LMDB" "DEFAULT" "lmdb" "model_lmdb"
 fi
 
 echo "Benchmark done :)"

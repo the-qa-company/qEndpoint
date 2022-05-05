@@ -8,6 +8,6 @@ else
 fi
 
 echo "-- $FILE --"
-grep --color=auto -i -n -G "\(RUN .* BENCHMARK\)\|\(OutOfMemoryError\|Exception\)\|\(generating output\)\|\(Benchmark done\)\|\(APPLICATION FAILED TO START\)" $FILE
+grep -v "^<" $FILE | grep --color=auto -i -n -G "\(RUN .* BENCHMARK\)\|\(OutOfMemoryError\|Exception\)\|\(generating output\)\|\(Benchmark done\)\|\(APPLICATION FAILED TO START\)"
 echo "------------------"
 ps ux | grep --color=auto -i -G "\(COMMAND\)\|\(./benchmark.sh\)\|\(endpoint.jar\)"
