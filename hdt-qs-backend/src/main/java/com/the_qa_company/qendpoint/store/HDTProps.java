@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.utils.BinarySearch;
 
 import org.rdfhdt.hdt.dictionary.impl.MultipleSectionDictionary;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
 public class HDTProps {
@@ -14,6 +15,9 @@ public class HDTProps {
     private final long startBlankShared;
     private final long endBlankShared;
 
+    private final long startBlankSubjects;
+    private final long endBlankSubjects;
+
     public HDTProps(HDT hdt) {
 
         this.startLiteral =
@@ -21,14 +25,16 @@ public class HDTProps {
                         hdt.getDictionary(),
                         hdt.getDictionary().getNshared() + 1,
                         hdt.getDictionary().getNobjects(),
-                        "\"");
+                        "\"",
+                        TripleComponentRole.OBJECT);
         this.endLiteral =
                 BinarySearch.last(
                         hdt.getDictionary(),
                         hdt.getDictionary().getNshared() + 1,
                         hdt.getDictionary().getNobjects(),
                         hdt.getDictionary().getNobjects(),
-                        "\"");
+                        "\"",
+                        TripleComponentRole.OBJECT);
         long start;
         long end;
         // if the dictionay is spliting the objects to sections - we just have to look in the
@@ -51,26 +57,50 @@ public class HDTProps {
                 hdt.getDictionary(),
                 start,
                 end,
-                "_");
+                "_",
+                TripleComponentRole.OBJECT);
         this.endBlankObjects = BinarySearch.last(
                 hdt.getDictionary(),
                 start,
                 end,
                 end,
-                "_");
+                "_",
+                TripleComponentRole.OBJECT);
 
         // we need as well the range of the blank nodes in the shared section of the dictionary
         // in order to distinguish them from URIs at query time. (could be used in inserts and deletes as well)
         // like INSERT { ?s1 rdfs:type ex:Person } where { ?s rdfs:label "Ali" . }
 
-        this.startBlankShared = BinarySearch.first(hdt.getDictionary(), 1, hdt.getDictionary().getShared().getNumberOfElements(), "_");
+        this.startBlankShared = BinarySearch.first(
+                hdt.getDictionary(),
+                1,
+                hdt.getDictionary().getShared().getNumberOfElements(),
+                "_",
+                TripleComponentRole.OBJECT
+        );
         this.endBlankShared = BinarySearch.last(
                 hdt.getDictionary(),
                 1,
                 hdt.getDictionary().getShared().getNumberOfElements(),
                 hdt.getDictionary().getShared().getNumberOfElements(),
-                "_");
-
+                "_",
+                TripleComponentRole.OBJECT
+        );
+        // use binary search to check the start and the end of blank nodes
+        // where items are sorted lexicographically
+        this.startBlankSubjects = BinarySearch.first(
+                hdt.getDictionary(),
+                hdt.getDictionary().getNshared() + 1,
+                hdt.getDictionary().getNsubjects(),
+                "_",
+                TripleComponentRole.SUBJECT);
+        this.endBlankSubjects = BinarySearch.last(
+                hdt.getDictionary(),
+                hdt.getDictionary().getNshared() + 1,
+                hdt.getDictionary().getNsubjects(),
+                hdt.getDictionary().getNsubjects(),
+                "_",
+                TripleComponentRole.SUBJECT);
     }
 
     public long getEndLiteral() {
@@ -95,5 +125,13 @@ public class HDTProps {
 
     public long getStartBlankObjects() {
         return startBlankObjects;
+    }
+
+    public long getStartBlankSubjects() {
+        return startBlankSubjects;
+    }
+
+    public long getEndBlankSubjects() {
+        return endBlankSubjects;
     }
 }

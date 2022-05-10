@@ -208,8 +208,10 @@ public class HDTConverter {
 
     // @todo: create blank node of type HDT
     public Resource IdToSubjectHDTResource(long subjectID){
-        if (subjectID >= endpoint.getHdtProps().getStartBlankShared()
-                && subjectID <= endpoint.getHdtProps().getEndBlankShared()) {
+        if ((subjectID >= endpoint.getHdtProps().getStartBlankShared()
+                && subjectID <= endpoint.getHdtProps().getEndBlankShared())
+        || (subjectID >= endpoint.getHdtProps().getStartBlankSubjects()
+                && subjectID <= endpoint.getHdtProps().getEndBlankSubjects())) {
             return valueFactory.createBNode(
                     removeBNodeHeader(hdt.getDictionary().idToString(subjectID, TripleComponentRole.SUBJECT).toString()));
         } else {
