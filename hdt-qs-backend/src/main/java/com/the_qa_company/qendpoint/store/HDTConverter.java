@@ -201,12 +201,17 @@ public class HDTConverter {
         return object;
     }
 
+    private String removeBNodeHeader(String s) {
+        assert s.startsWith("_:");
+        return s.substring(2);
+    }
+
     // @todo: create blank node of type HDT
     public Resource IdToSubjectHDTResource(long subjectID){
         if (subjectID >= endpoint.getHdtProps().getStartBlankShared()
                 && subjectID <= endpoint.getHdtProps().getEndBlankShared()) {
             return valueFactory.createBNode(
-                    hdt.getDictionary().idToString(subjectID, TripleComponentRole.SUBJECT).toString());
+                    removeBNodeHeader(hdt.getDictionary().idToString(subjectID, TripleComponentRole.SUBJECT).toString()));
         } else {
             if (subjectID <= hdt.getDictionary().getNshared()) {
                 return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, subjectID);
@@ -229,7 +234,7 @@ public class HDTConverter {
                 && objectID <= endpoint.getHdtProps().getEndBlankShared())
         ) {
             return endpoint.getValueFactory().createBNode(
-                    endpoint.getHdt().getDictionary().idToString(objectID, TripleComponentRole.OBJECT).toString());
+                    removeBNodeHeader(endpoint.getHdt().getDictionary().idToString(objectID, TripleComponentRole.OBJECT).toString()));
         } else {
             if (objectID <= endpoint.getHdt().getDictionary().getNshared()) {
                 return new SimpleIRIHDT(endpoint.getHdt(), SimpleIRIHDT.SHARED_POS, objectID);
