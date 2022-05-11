@@ -5,32 +5,31 @@ import com.the_qa_company.qendpoint.compiler.sail.LinkedSailCompiler;
 import com.the_qa_company.qendpoint.compiler.sail.LinkedSailLinkedSailCompiler;
 import com.the_qa_company.qendpoint.compiler.sail.LuceneSailCompiler;
 import com.the_qa_company.qendpoint.compiler.sail.MultiFilterLinkedSailCompiler;
+import com.the_qa_company.qendpoint.compiler.source.EmptyTripleSourceGetter;
+import com.the_qa_company.qendpoint.compiler.source.ModelTripleSourceGetter;
+import com.the_qa_company.qendpoint.compiler.source.SailTripleSourceModel;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandlerException;
-import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.Sail;
-import org.eclipse.rdf4j.sail.SailConnection;
-import org.eclipse.rdf4j.sail.SailException;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +75,7 @@ public class SailCompiler {
 		throw new SailCompilerException(value + " can't be converted to a Resource!");
 	}
 
-	private Sail store = new MemoryStore();
+	private TripleSourceModel store = new EmptyTripleSourceGetter();
 	private final Map<IRI, LinkedSailCompiler> compilers = new HashMap<>();
 	private final Map<String, String> dirStrings = new HashMap<>();
 
@@ -98,19 +97,7 @@ public class SailCompiler {
 	 * @throws IOException can't read the stream
 	 */
 	public void load(InputStream stream, RDFFormat format) throws IOException {
-		setStore(new MemoryStore());
-		RDFParser parser = Rio.createParser(format);
-		try (SailConnection connection = store.getConnection()) {
-			connection.begin();
-			parser.setRDFHandler(new AbstractRDFHandler() {
-				@Override
-				public void handleStatement(Statement st) throws RDFHandlerException {
-					connection.addStatement(st.getSubject(), st.getPredicate(), st.getObject());
-				}
-			});
-			parser.parse(stream);
-			connection.commit();
-		}
+		load(Rio.parse(stream, format));
 	}
 
 	/**
@@ -120,7 +107,17 @@ public class SailCompiler {
 	 * @throws IOException can't read the stream
 	 */
 	public void load(Sail store) throws IOException {
-		setStore(store);
+		setStore(new SailTripleSourceModel(store));
+	}
+
+	/**
+	 * load a sail describing the model
+	 *
+	 * @param store the store to fetch the model information
+	 * @throws IOException can't read the stream
+	 */
+	public void load(Model store) throws IOException {
+		setStore(new ModelTripleSourceGetter(store));
 	}
 
 	/**
@@ -129,11 +126,11 @@ public class SailCompiler {
 	 * @param rdfFile the rdf file
 	 * @throws IOException can't read the stream
 	 */
-	public void load(File rdfFile) throws IOException {
-		RDFFormat format = Rio.getParserFormatForFileName(rdfFile.getName())
+	public void load(Path rdfFile) throws IOException {
+		RDFFormat format = Rio.getParserFormatForFileName(rdfFile.getFileName().toString())
 				.orElseThrow(() -> new IllegalArgumentException("Can't find parser for file: " + rdfFile));
 
-		try (InputStream stream = new FileInputStream(rdfFile)) {
+		try (InputStream stream = new BufferedInputStream(Files.newInputStream(rdfFile))) {
 			load(stream, format);
 		}
 	}
@@ -143,10 +140,7 @@ public class SailCompiler {
 	 *
 	 * @param store the store
 	 */
-	public void setStore(Sail store) {
-		if (this.store != null) {
-			this.store.shutDown();
-		}
+	public void setStore(TripleSourceModel store) {
 		this.store = store;
 	}
 
@@ -317,6 +311,10 @@ public class SailCompiler {
 			super(message);
 		}
 
+		public SailCompilerException(Throwable cause) {
+			super(cause);
+		}
+
 		public SailCompilerException(String message, Throwable cause) {
 			super(message, cause);
 		}
@@ -328,14 +326,13 @@ public class SailCompiler {
 	 * @author Antoine Willerval
 	 */
 	public class SailCompilerReader implements AutoCloseable {
-		private final SailConnection connection;
+		private final TripleSourceGetter connection;
 
 		private SailCompilerReader() throws SailCompilerException {
 			if (store == null) {
 				throw new SailCompilerException("No store defined!");
 			}
-			connection = store.getConnection();
-			connection.begin();
+			connection = store.getGetter();
 		}
 
 		/**
@@ -368,8 +365,8 @@ public class SailCompiler {
 		 */
 		public Value searchOne(Resource subject, IRI predicate) throws SailCompilerException {
 			Value out;
-			try (CloseableIteration<? extends Statement, SailException> it =
-						 connection.getStatements(subject, predicate, null, false)) {
+			try (CloseableIteration<? extends Statement, SailCompilerException> it =
+						 connection.getStatements(subject, predicate, null)) {
 				if (!it.hasNext()) {
 					throw new SailCompilerException("Can't find statements for the query (" + subject + ", " + predicate + ", ???)!");
 				}
@@ -391,8 +388,8 @@ public class SailCompiler {
 		 */
 		public Optional<Value> searchOneOpt(Resource subject, IRI predicate) throws SailCompilerException {
 			Value out;
-			try (CloseableIteration<? extends Statement, SailException> it =
-						 connection.getStatements(subject, predicate, null, false)) {
+			try (CloseableIteration<? extends Statement, SailCompilerException> it =
+						 connection.getStatements(subject, predicate, null)) {
 				if (!it.hasNext()) {
 					return Optional.empty();
 				}
@@ -427,8 +424,8 @@ public class SailCompiler {
 		 */
 		public List<Value> search(Resource subject, IRI predicate) {
 			List<Value> values = new ArrayList<>();
-			try (CloseableIteration<? extends Statement, SailException> it =
-						 connection.getStatements(subject, predicate, null, false)) {
+			try (CloseableIteration<? extends Statement, SailCompilerException> it =
+						 connection.getStatements(subject, predicate, null)) {
 				it.stream().forEach(s -> values.add(s.getObject()));
 			}
 			return values;
@@ -436,15 +433,7 @@ public class SailCompiler {
 
 		@Override
 		public void close() throws SailCompilerException {
-			try {
-				try {
-					connection.commit();
-				} finally {
-					connection.close();
-				}
-			} catch (SailException e) {
-				throw new SailCompilerException("Can't close the compiler reader", e);
-			}
+			connection.close();
 		}
 	}
 }

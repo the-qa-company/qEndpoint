@@ -163,7 +163,7 @@ public class CompiledSail extends SailWrapper {
 		private InputStream configRDFStream;
 		private boolean shouldCloseConfigRDFStream;
 		private RDFFormat configRDFStreamFormat;
-		private File configRDFFile;
+		private Path configRDFFile;
 		private Sail configSail;
 		private NotifyingSail sourceSail;
 		private EndpointFiles endpointFiles;
@@ -181,7 +181,7 @@ public class CompiledSail extends SailWrapper {
 		 * @param close                 if the compiler should close the stream after reading
 		 * @return this
 		 * @throws java.lang.NullPointerException a parameter is null
-		 * @see #withConfig(java.io.File)
+		 * @see #withConfig(java.nio.file.Path)
 		 * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
 		 */
 		public CompiledSailCompiler withConfig(InputStream configRDFStream, RDFFormat configRDFStreamFormat, boolean close) {
@@ -200,7 +200,7 @@ public class CompiledSail extends SailWrapper {
 		 * @see #withConfig(java.io.InputStream, org.eclipse.rdf4j.rio.RDFFormat, boolean)
 		 * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
 		 */
-		public CompiledSailCompiler withConfig(File configRDFFile) {
+		public CompiledSailCompiler withConfig(Path configRDFFile) {
 			this.configRDFFile = Objects.requireNonNull(configRDFFile, "configRDFFile can't be null!");
 			return this;
 		}
@@ -216,7 +216,7 @@ public class CompiledSail extends SailWrapper {
 		 * @return this
 		 * @throws java.lang.NullPointerException a parameter is null
 		 * @see #withConfig(java.io.InputStream, org.eclipse.rdf4j.rio.RDFFormat, boolean)
-		 * @see #withConfig(java.io.File)
+		 * @see #withConfig(java.nio.file.Path)
 		 */
 		public CompiledSailCompiler withConfig(Sail configSail) {
 			this.configSail = Objects.requireNonNull(configSail, "configSail can't be null!");
