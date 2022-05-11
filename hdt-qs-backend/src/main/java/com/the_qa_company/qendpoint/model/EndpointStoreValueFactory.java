@@ -7,6 +7,7 @@
  */
 package com.the_qa_company.qendpoint.model;
 
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
@@ -48,6 +49,33 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
     /*---------*
      * Methods *
      *---------*/
+
+    @Override
+    public BNode createBNode(String nodeID) {
+        String bnodeStr = "_:" + nodeID;
+        // give priority to predicates to avoid reified triples...
+        // not a nice fix, but we assume that we don't support reification
+        long id = hdt.getDictionary().stringToId(bnodeStr, TripleComponentRole.SUBJECT);
+        int position = -1;
+        if (id != -1) {
+            if (id <= hdt.getDictionary().getNshared()) {
+                position = SimpleIRIHDT.SHARED_POS;
+            } else {
+                position = SimpleIRIHDT.SUBJECT_POS;
+            }
+        } else {
+            // not in subject position, then check in object position
+            id = hdt.getDictionary().stringToId(bnodeStr, TripleComponentRole.OBJECT);
+            if (id != -1) {
+                position = SimpleIRIHDT.OBJECT_POS;
+            }
+        }
+        if (id != -1) {
+            return new SimpleBNodeHDT(hdt, position, id);
+        } else {
+            return valueFactory.createBNode(nodeID);
+        }
+    }
 
     @Override
     public IRI createIRI(String iri) {

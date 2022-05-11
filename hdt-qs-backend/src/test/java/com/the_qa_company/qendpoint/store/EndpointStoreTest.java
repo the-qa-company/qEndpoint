@@ -1,10 +1,12 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -39,9 +41,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
+import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
+import org.rdfhdt.hdt.triples.TripleString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +57,10 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -866,6 +873,64 @@ public class EndpointStoreTest {
             Files.deleteIfExists(Paths.get("index.nt"));
 
         }
+
+    }
+
+    @Test
+    public void bnodeTest() throws ParserException, IOException {
+        Path dir = tempDir.newFolder().toPath();
+		Path nativeStore = dir.resolve("native");
+		Path hdtStore = dir.resolve("hdt");
+		Files.createDirectories(hdtStore);
+        try (HDT hdt = HDTManager.generateHDT(
+                List.of(
+                        new TripleString("_:aaaa", "http://pppp", "\"aaaa\"^^<http://type>")
+                ).iterator(),
+                Utility.EXAMPLE_NAMESPACE,
+                spec,
+                null
+        )) {
+            hdt.saveToHDT(hdtStore.resolve("test.hdt").toAbsolutePath().toString(), null);
+        }
+
+		EndpointStore store = new EndpointStore(
+				new EndpointFiles(
+						nativeStore,
+						hdtStore,
+						"test.hdt"
+				),
+				spec,
+				false,
+				true
+		);
+        HDTConverter converter = store.getHdtConverter();
+        Resource bnode = converter.IdToSubjectHDTResource(1L);
+        Assert.assertTrue(bnode instanceof BNode);
+        Assert.assertTrue(bnode instanceof SimpleBNodeHDT);
+        Assert.assertEquals(1L, ((SimpleBNodeHDT) bnode).getHdtId());
+        Assert.assertEquals("aaaa", ((BNode) bnode).getID());
+        Assert.assertEquals("_:aaaa", bnode.toString());
+		SailRepository repo = new SailRepository(store);
+		try (SailRepositoryConnection connection = repo.getConnection()) {
+
+            ValueFactory vf = connection.getValueFactory();
+
+            System.out.println(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "test"));
+			try (RepositoryResult<Statement> result = connection.getStatements(
+					vf.createBNode("aaaa"),
+					vf.createIRI("http://pppp"),
+					vf.createLiteral(
+							"aaaa",
+							vf.createIRI("http://type")
+					)
+			)) {
+				Assert.assertTrue(result.hasNext());
+				result.next();
+				Assert.assertFalse(result.hasNext());
+			}
+		} finally {
+			repo.shutDown();
+		}
 
     }
 

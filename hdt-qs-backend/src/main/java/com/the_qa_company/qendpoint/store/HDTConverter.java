@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.model.SimpleLiteralHDT;
 
@@ -153,7 +154,6 @@ public class HDTConverter {
         }
     }
 
-    // @todo: the case of creating literal or blank node should be considered
     public Resource rdf4jToHdtIDsubject(Resource subj) {
         String iriString = subj.toString();
         long id = -1;
@@ -201,19 +201,16 @@ public class HDTConverter {
         return object;
     }
 
-    private String removeBNodeHeader(String s) {
-        assert s.startsWith("_:");
-        return s.substring(2);
-    }
-
-    // @todo: create blank node of type HDT
     public Resource IdToSubjectHDTResource(long subjectID){
         if ((subjectID >= endpoint.getHdtProps().getStartBlankShared()
                 && subjectID <= endpoint.getHdtProps().getEndBlankShared())
         || (subjectID >= endpoint.getHdtProps().getStartBlankSubjects()
                 && subjectID <= endpoint.getHdtProps().getEndBlankSubjects())) {
-            return valueFactory.createBNode(
-                    removeBNodeHeader(hdt.getDictionary().idToString(subjectID, TripleComponentRole.SUBJECT).toString()));
+            if (subjectID <= hdt.getDictionary().getNshared()) {
+                return new SimpleBNodeHDT(hdt, SimpleIRIHDT.SHARED_POS, subjectID);
+            } else {
+                return new SimpleBNodeHDT(hdt, SimpleIRIHDT.SUBJECT_POS, subjectID);
+            }
         } else {
             if (subjectID <= hdt.getDictionary().getNshared()) {
                 return new SimpleIRIHDT(hdt, SimpleIRIHDT.SHARED_POS, subjectID);
@@ -235,8 +232,11 @@ public class HDTConverter {
                 || (objectID >= endpoint.getHdtProps().getStartBlankShared()
                 && objectID <= endpoint.getHdtProps().getEndBlankShared())
         ) {
-            return endpoint.getValueFactory().createBNode(
-                    removeBNodeHeader(endpoint.getHdt().getDictionary().idToString(objectID, TripleComponentRole.OBJECT).toString()));
+            if (objectID <= hdt.getDictionary().getNshared()) {
+                return new SimpleBNodeHDT(hdt, SimpleIRIHDT.SHARED_POS, objectID);
+            } else {
+                return new SimpleBNodeHDT(hdt, SimpleIRIHDT.OBJECT_POS, objectID);
+            }
         } else {
             if (objectID <= endpoint.getHdt().getDictionary().getNshared()) {
                 return new SimpleIRIHDT(endpoint.getHdt(), SimpleIRIHDT.SHARED_POS, objectID);
