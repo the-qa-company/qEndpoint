@@ -1,10 +1,10 @@
-package com.the_qa_company.qendpoint.utils.sail.builder;
+package com.the_qa_company.qendpoint.compiler;
 
-import com.the_qa_company.qendpoint.utils.sail.builder.compiler.FilterLinkedSailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.compiler.LinkedSailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.compiler.LinkedSailLinkedSailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.compiler.LuceneSailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.compiler.MultiFilterLinkedSailCompiler;
+import com.the_qa_company.qendpoint.compiler.sail.FilterLinkedSailCompiler;
+import com.the_qa_company.qendpoint.compiler.sail.LinkedSailCompiler;
+import com.the_qa_company.qendpoint.compiler.sail.LinkedSailLinkedSailCompiler;
+import com.the_qa_company.qendpoint.compiler.sail.LuceneSailCompiler;
+import com.the_qa_company.qendpoint.compiler.sail.MultiFilterLinkedSailCompiler;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
@@ -22,8 +22,9 @@ import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,10 +39,18 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * A class to build a sail from an RDF config file
+ *
+ * @author Antoine Willerval
+ */
 public class SailCompiler {
+	private static final Logger logger = LoggerFactory.getLogger(SailCompiler.class);
 	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([^}]+)}");
+
 	/**
 	 * convert a {@link org.eclipse.rdf4j.model.Value} to an {@link org.eclipse.rdf4j.model.IRI}
+	 *
 	 * @param value the value
 	 * @return the iri
 	 * @throws SailCompilerException if this value isn't of the right type
@@ -52,8 +61,10 @@ public class SailCompiler {
 		}
 		throw new SailCompilerException(value + " can't be converted to an IRI!");
 	}
+
 	/**
 	 * convert a {@link org.eclipse.rdf4j.model.Value} to a {@link org.eclipse.rdf4j.model.Resource}
+	 *
 	 * @param value the value
 	 * @return the resource
 	 * @throws SailCompilerException if this value isn't of the right type
@@ -64,12 +75,13 @@ public class SailCompiler {
 		}
 		throw new SailCompilerException(value + " can't be converted to a Resource!");
 	}
-	private Sail store;
+
+	private Sail store = new MemoryStore();
 	private final Map<IRI, LinkedSailCompiler> compilers = new HashMap<>();
 	private final Map<String, String> dirStrings = new HashMap<>();
 
 	/**
-	 * create a compiler with default LinkedSailCompilers
+	 * create a sail with default LinkedSailCompilers
 	 */
 	public SailCompiler() {
 		registerCustomCompiler(new FilterLinkedSailCompiler());
@@ -102,6 +114,16 @@ public class SailCompiler {
 	}
 
 	/**
+	 * load a sail describing the model
+	 *
+	 * @param store the store to fetch the model information
+	 * @throws IOException can't read the stream
+	 */
+	public void load(Sail store) throws IOException {
+		setStore(store);
+	}
+
+	/**
 	 * load a RDF file describing the model into a new store
 	 *
 	 * @param rdfFile the rdf file
@@ -118,28 +140,34 @@ public class SailCompiler {
 
 	/**
 	 * set this store to compile the model
+	 *
 	 * @param store the store
 	 */
 	public void setStore(Sail store) {
+		if (this.store != null) {
+			this.store.shutDown();
+		}
 		this.store = store;
 	}
 
 	/**
-	 * register a {@link com.the_qa_company.qendpoint.utils.sail.builder.SailCompilerSchema#PARSED_STRING_DATATYPE}
+	 * register a {@link SailCompilerSchema#PARSED_STRING_DATATYPE}
 	 * parsed value
-	 * @param name value key
+	 *
+	 * @param name  value key
 	 * @param value value
 	 */
 	public void registerDirString(String name, String value) {
-		if (!DIR_OPT.matcher("${"+name+"}").matches()) {
+		if (!DIR_OPT.matcher("${" + name + "}").matches()) {
 			throw new IllegalArgumentException("Dir key should respect the pattern " + DIR_OPT);
 		}
 		dirStrings.put(name, value);
 	}
 
 	/**
-	 * load every method annotated with {@link com.the_qa_company.qendpoint.utils.sail.builder.ParsedStringValue} in
+	 * load every method annotated with {@link ParsedStringValue} in
 	 * an object.
+	 *
 	 * @param object the object to read
 	 */
 	public void registerDirObject(Object object) {
@@ -150,7 +178,10 @@ public class SailCompiler {
 					if (m.getParameterCount() != 0) {
 						throw new IllegalArgumentException("The count of parameters on the method " + m.getName() + "isn't 0");
 					}
-					registerDirString(value.value(), String.valueOf(m.invoke(object)));
+					String key = value.value();
+					String val = String.valueOf(m.invoke(object));
+					logger.debug("registering dir value: {}={}", key, val);
+					registerDirString(key, val);
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new IllegalArgumentException("Can't read the value of the method " + m.getName(), e);
 				}
@@ -160,6 +191,7 @@ public class SailCompiler {
 
 	/**
 	 * convert a {@link org.eclipse.rdf4j.model.Value} to a String
+	 *
 	 * @param value the value
 	 * @return the string
 	 * @throws SailCompilerException if this value isn't of the right type
@@ -176,8 +208,10 @@ public class SailCompiler {
 		}
 		throw new SailCompilerException(value + " can't be converted to a Literal!");
 	}
+
 	/**
 	 * parse a directory and add {@literal ${key}} into value from {@link #registerDirString(String, String)}
+	 *
 	 * @param dir the directory string to parse
 	 * @return the parsed dir
 	 * @throws SailCompilerException if a value can't be found
@@ -212,32 +246,35 @@ public class SailCompiler {
 	}
 
 	/**
-	 * register a LinkedSail sub compiler
-	 * @param compiler the compiler
+	 * register a LinkedSail sub sail
+	 *
+	 * @param compiler the sail
 	 */
 	public void registerCustomCompiler(LinkedSailCompiler compiler) {
 		compilers.put(compiler.getIri(), compiler);
 	}
 
 	/**
-	 * get a compiler for a particular IRI
+	 * get a sail for a particular IRI
+	 *
 	 * @param iri the type iri
-	 * @return the compiler
-	 * @throws SailCompilerException if the compiler can't be found
+	 * @return the sail
+	 * @throws SailCompilerException if the sail can't be found
 	 */
 	public LinkedSailCompiler getCompiler(IRI iri) throws SailCompilerException {
 		LinkedSailCompiler compiler = compilers.get(iri);
 		if (compiler == null) {
-			throw new SailCompilerException("Can't find a compiler for the name " + iri);
+			throw new SailCompilerException("Can't find a sail for the name " + iri);
 		}
 		return compiler;
 	}
 
 	/**
 	 * compile the read file from a source, if no main node is defined, the source is returned
+	 *
 	 * @param source the triple source to pipe to the model
 	 * @return the sail for this model piped to the source or the source if no main node is described
-	 * @throws SailCompilerException compiler error
+	 * @throws SailCompilerException sail error
 	 */
 	public NotifyingSail compile(NotifyingSail source) throws SailCompilerException {
 		LinkedSail<? extends NotifyingSail> sail;
@@ -257,8 +294,6 @@ public class SailCompiler {
 			}
 
 			sail = reader.compileNode(node.get());
-		} catch (IOException e) {
-			throw new SailCompilerException("Error while compiling the sail!", e);
 		}
 
 		sail.getSailConsumer().accept(source);
@@ -274,6 +309,7 @@ public class SailCompiler {
 
 	/**
 	 * A exception linked with the model compilation
+	 *
 	 * @author Antoine Willerval
 	 */
 	public static class SailCompilerException extends RuntimeException {
@@ -288,9 +324,10 @@ public class SailCompiler {
 
 	/**
 	 * Reader to read the nodes
+	 *
 	 * @author Antoine Willerval
 	 */
-	public class SailCompilerReader implements Closeable {
+	public class SailCompilerReader implements AutoCloseable {
 		private final SailConnection connection;
 
 		private SailCompilerReader() throws SailCompilerException {
@@ -302,7 +339,7 @@ public class SailCompiler {
 		}
 
 		/**
-		 * @return the sail compiler linked with this reader
+		 * @return the sail sail linked with this reader
 		 */
 		public SailCompiler getSailCompiler() {
 			return SailCompiler.this;
@@ -310,9 +347,10 @@ public class SailCompiler {
 
 		/**
 		 * construct a node from a value
+		 *
 		 * @param node the describing node
 		 * @return the sail
-		 * @throws SailCompilerException compiler error
+		 * @throws SailCompilerException sail error
 		 */
 		public LinkedSail<? extends NotifyingSail> compileNode(Value node) throws SailCompilerException {
 			Resource rnode = asResource(node);
@@ -322,7 +360,8 @@ public class SailCompiler {
 
 		/**
 		 * search for exactly one statement with this subject and predicate
-		 * @param subject the subject
+		 *
+		 * @param subject   the subject
 		 * @param predicate the predicate
 		 * @return the value
 		 * @throws SailCompilerException can't find the triple
@@ -344,7 +383,8 @@ public class SailCompiler {
 
 		/**
 		 * search for exactly one or zero statement with this subject and predicate
-		 * @param subject the subject
+		 *
+		 * @param subject   the subject
 		 * @param predicate the predicate
 		 * @return the value
 		 * @throws SailCompilerException can't find the triple
@@ -366,7 +406,8 @@ public class SailCompiler {
 
 		/**
 		 * search for a property value in the graph
-		 * @param subject the subject to read
+		 *
+		 * @param subject  the subject to read
 		 * @param property the property to read and check values
 		 * @return the value
 		 * @throws SailCompilerException if the value isn't a valid value for this property
@@ -379,7 +420,8 @@ public class SailCompiler {
 
 		/**
 		 * search for the statements with this subject and predicate
-		 * @param subject the subject
+		 *
+		 * @param subject   the subject
 		 * @param predicate the predicate
 		 * @return the values
 		 */
@@ -393,9 +435,16 @@ public class SailCompiler {
 		}
 
 		@Override
-		public void close() throws IOException {
-			connection.commit();
-			connection.close();
+		public void close() throws SailCompilerException {
+			try {
+				try {
+					connection.commit();
+				} finally {
+					connection.close();
+				}
+			} catch (SailException e) {
+				throw new SailCompilerException("Can't close the compiler reader", e);
+			}
 		}
 	}
 }

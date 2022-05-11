@@ -1,4 +1,4 @@
-package com.the_qa_company.qendpoint.utils.sail.builder;
+package com.the_qa_company.qendpoint.compiler;
 
 import com.the_qa_company.qendpoint.utils.sail.FilteringSail;
 import com.the_qa_company.qendpoint.utils.sail.MultiTypeFilteringSail;

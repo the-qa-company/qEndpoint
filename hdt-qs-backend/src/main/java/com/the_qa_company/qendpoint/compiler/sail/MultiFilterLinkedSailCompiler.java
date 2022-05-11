@@ -1,8 +1,8 @@
-package com.the_qa_company.qendpoint.utils.sail.builder.compiler;
+package com.the_qa_company.qendpoint.compiler.sail;
 
 import com.the_qa_company.qendpoint.utils.sail.MultiTypeFilteringSail;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompilerSchema;
+import com.the_qa_company.qendpoint.compiler.SailCompiler;
+import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -11,7 +11,7 @@ import org.eclipse.rdf4j.sail.NotifyingSail;
 import java.util.stream.Collectors;
 
 /**
- * a linked sail compiler to create a multi-filter sail
+ * a linked sail sail to create a multi-filter sail
  * @author Antoine Willerval
  */
 public class MultiFilterLinkedSailCompiler extends LinkedSailCompiler {

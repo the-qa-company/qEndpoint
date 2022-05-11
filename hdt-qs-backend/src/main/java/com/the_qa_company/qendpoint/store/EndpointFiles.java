@@ -1,7 +1,9 @@
 package com.the_qa_company.qendpoint.store;
 
-import com.the_qa_company.qendpoint.utils.sail.builder.ParsedStringValue;
+import com.the_qa_company.qendpoint.compiler.ParsedStringValue;
 import org.rdfhdt.hdt.hdt.HDTVersion;
+
+import java.nio.file.Path;
 
 /**
  * store the files used by the endpoint store
@@ -40,6 +42,17 @@ public class EndpointFiles {
     public EndpointFiles(String locationNative, String locationHdt, String hdtIndexName) {
         this.locationNative = locationNative;
         this.locationHdt = locationHdt;
+        this.hdtIndexName = hdtIndexName;
+    }
+    /**
+     * create a file getter for a store
+     * @param locationNative the native storage dir
+     * @param locationHdt the hdt storage dir
+     * @param hdtIndexName the hdt index name
+     */
+    public EndpointFiles(Path locationNative, Path locationHdt, String hdtIndexName) {
+        this.locationNative = locationNative.toAbsolutePath() + "/";
+        this.locationHdt = locationHdt.toAbsolutePath() + "/";
         this.hdtIndexName = hdtIndexName;
     }
 

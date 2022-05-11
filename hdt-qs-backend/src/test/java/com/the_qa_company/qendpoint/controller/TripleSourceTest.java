@@ -1,8 +1,10 @@
 package com.the_qa_company.qendpoint.controller;
 
 import com.the_qa_company.qendpoint.Application;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompilerSchema;
+import com.the_qa_company.qendpoint.compiler.DebugOptionTestUtils;
+import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import org.eclipse.rdf4j.model.IRI;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +45,8 @@ public class TripleSourceTest {
 	@Value("${locationNative}")
 	String locationNative;
 
+	private Runnable storageModeUnset;
+
 	private final IRI mode;
 	public TripleSourceTest(IRI mode) {
 		this.mode = mode;
@@ -55,7 +59,7 @@ public class TripleSourceTest {
 
 		// clear map to recreate endpoint store
 		sparql.model.clear();
-		sparql.options.storageMode = mode;
+		storageModeUnset = DebugOptionTestUtils.setStorageMode(mode);
 
 		// remove previous data
 		try {
@@ -74,19 +78,27 @@ public class TripleSourceTest {
 			//
 		}
 	}
+	@After
+	public void complete() {
+		storageModeUnset.run();
+	}
 
 	@Test
 	public void optimizedTest() throws IOException {
+		Runnable op = DebugOptionTestUtils.setOptimization(true);
+
 		sparql.clearEndpointStore(locationHdt);
 		sparql.initializeEndpointStore(locationHdt, true);
+
+		op.run();
 	}
 	@Test
 	public void noOptimizedTest() throws IOException {
-		sparql.options.optimization = false;
+		Runnable op = DebugOptionTestUtils.setOptimization(false);
 
 		sparql.clearEndpointStore(locationHdt);
 		sparql.initializeEndpointStore(locationHdt, true);
 
-		sparql.options.optimization = true;
+		op.run();
 	}
 }

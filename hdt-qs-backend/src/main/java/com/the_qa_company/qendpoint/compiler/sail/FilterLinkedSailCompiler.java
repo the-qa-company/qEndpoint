@@ -1,8 +1,8 @@
-package com.the_qa_company.qendpoint.utils.sail.builder.compiler;
+package com.the_qa_company.qendpoint.compiler.sail;
 
 import com.the_qa_company.qendpoint.utils.sail.FilteringSail;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompilerSchema;
+import com.the_qa_company.qendpoint.compiler.SailCompiler;
+import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.utils.sail.filter.LanguageSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.LuceneMatchExprSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.PredicateSailFilter;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 /**
- * a linked sail compiler to create filtering sail
+ * a linked sail sail to create filtering sail
  * @author Antoine Willerval
  */
 public class FilterLinkedSailCompiler extends LinkedSailCompiler {
@@ -43,7 +43,7 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 	 * @param rnode    the filter node
 	 * @param function the filter builder
 	 * @return the filter build with and/or method
-	 * @throws SailCompiler.SailCompilerException compiler error
+	 * @throws SailCompiler.SailCompilerException sail error
 	 */
 	private BiFunction<FilteringSail, SailConnection, SailFilter> combineCompileFilter(SailCompiler.SailCompilerReader reader, Resource rnode,
 																	  BiFunction<FilteringSail, SailConnection, SailFilter> function)
@@ -74,7 +74,7 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 	 * @param reader the reader
 	 * @param rnode  the filter node
 	 * @return filter builder function
-	 * @throws SailCompiler.SailCompilerException compiler error
+	 * @throws SailCompiler.SailCompilerException sail error
 	 */
 	private BiFunction<FilteringSail, SailConnection, SailFilter> compileFilter(SailCompiler.SailCompilerReader reader, Resource rnode)
 			throws SailCompiler.SailCompilerException {

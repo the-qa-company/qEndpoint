@@ -1,6 +1,9 @@
 package com.the_qa_company.qendpoint.controller;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.compiler.CompiledSail;
+import com.the_qa_company.qendpoint.compiler.CompiledSailOptions;
+import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
@@ -9,13 +12,8 @@ import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
-import com.the_qa_company.qendpoint.utils.sail.OptimizingSail;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompilerSchema;
-import com.the_qa_company.qendpoint.utils.sail.builder.compiler.LuceneSailCompiler;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -42,10 +40,6 @@ import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSail;
-import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
-import org.eclipse.rdf4j.sail.lucene.LuceneSail;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
@@ -70,66 +64,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
-	static class Options {
-		/**
-		 * disable the loading of the config
-		 */
-		boolean debugDisableLoading;
-
-		boolean debugShowTime;
-		boolean debugShowPlans;
-		boolean debugShowCount;
-		boolean optimization;
-		IRI storageMode;
-		IRI hdtReadMode;
-		IRI passMode;
-		int rdf4jSplitUpdate;
-
-		Options() {
-			clear();
-		}
-
-		public void clear() {
-			if (debugDisableLoading) {
-				return;
-			}
-			debugShowTime = false;
-			debugShowPlans = false;
-			optimization = true;
-			debugShowCount = false;
-			storageMode = SailCompilerSchema.ENDPOINTSTORE_STORAGE;
-			hdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
-			passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
-			rdf4jSplitUpdate = 1000;
-		}
-
-		public void add(IRI iri) {
-			SailCompilerSchema.OPTION_PROPERTY.throwIfNotValidValue(iri);
-
-			if (SailCompilerSchema.DEBUG_SHOW_TIME.equals(iri)) {
-				debugShowTime = true;
-			} else if (SailCompilerSchema.DEBUG_SHOW_PLAN.equals(iri)) {
-				debugShowPlans = true;
-			} else if (SailCompilerSchema.NO_OPTIMIZATION.equals(iri)) {
-				optimization = false;
-			} else if (SailCompilerSchema.DEBUG_DISABLE_OPTION_RELOADING.equals(iri)) {
-				debugDisableLoading = true;
-			} else if (SailCompilerSchema.DEBUG_SHOW_QUERY_RESULT_COUNT.equals(iri)) {
-				debugShowCount = true;
-			} else {
-				throw new SailCompiler.SailCompilerException("not implemented: " + iri);
-			}
-		}
-	}
 	public static class MergeRequestResult {
 		private final boolean completed;
 
@@ -238,9 +179,8 @@ public class Sparql {
 	private String repoModel;
 
 	EndpointStore endpoint;
-	final Set<LuceneSail> luceneSails = new HashSet<>();
+	CompiledSail compiledSail;
 	SailRepository repository;
-	Options options = new Options();
 	final Object storeLock = new Object() {
 	};
 	boolean loading = false;
@@ -319,12 +259,10 @@ public class Sparql {
 				Files.delete(Paths.get(tempRDF.getAbsolutePath()));
 			}
 
-			EndpointFiles files = new EndpointFiles(locationNative, locationHdt, hdtIndexName);
+			// keep the config in application.properties
+			CompiledSailOptions.setDefaultEndpointThreshold(threshold);
 
-			SailCompiler compiler = new SailCompiler();
-			compiler.registerDirObject(files);
-			LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) compiler.getCompiler(SailCompilerSchema.LUCENE_TYPE);
-			luceneCompiler.reset();
+			EndpointFiles files = new EndpointFiles(locationNative, locationHdt, hdtIndexName);
 			InputStream stream;
 			try {
 				stream = new FileInputStream(repoModel);
@@ -334,69 +272,22 @@ public class Sparql {
 					throw e;
 				}
 			}
-			try (InputStream fstream = stream) {
-				compiler.load(fstream, Rio.getParserFormatForFileName(repoModel).orElseThrow());
+
+
+			compiledSail = CompiledSail.compiler()
+					.withConfig(stream, Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
+					.withEndpointFiles(files)
+					.withHDTSpec(spec)
+					.compile();
+
+			NotifyingSail source = compiledSail.getSource();
+
+			if (source instanceof EndpointStore) {
+				endpoint = (EndpointStore) source;
 			}
 
-			NotifyingSail source;
-
-			// read configs
-			if (!options.debugDisableLoading) {
-				options.clear();
-				try (SailCompiler.SailCompilerReader reader = compiler.getReader()) {
-					options.storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY);
-					options.passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY);
-					options.rdf4jSplitUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.RDF_STORE_SPLIT_STORAGE);
-					options.hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY);
-					reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.OPTION)
-							.stream()
-							.map(SailCompiler::asIRI)
-							.forEach(options::add);
-				}
-			}
-
-			// set the storage
-			if (options.storageMode.equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
-				if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
-					spec.set("loader.type", "two-pass");
-				}
-				endpoint = new EndpointStore(files, spec, false, options.hdtReadMode.equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
-				endpoint.setThreshold(threshold);
-				logger.info("Threshold for triples in Native RDF store: " + threshold + " triples");
-				source = endpoint;
-			} else if (options.storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
-				NativeStore store = new NativeStore(new File(files.getLocationNative(), "nativeglobal"));
-				if (options.optimization) {
-					source = new OptimizingSail(store, store::getFederatedServiceResolver);
-				} else {
-					source = store;
-				}
-			} else if (options.storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
-				MemoryStore store = new MemoryStore();
-				if (options.optimization) {
-					source = new OptimizingSail(store, store::getFederatedServiceResolver);
-				} else {
-					source = store;
-				}
-			} else if (options.storageMode.equals(SailCompilerSchema.LMDB_STORAGE)) {
-				LmdbStore store = new LmdbStore(new File(files.getLocationNative(), "lmdb"));
-				if (options.optimization) {
-					source = new OptimizingSail(store, store::getFederatedServiceResolver);
-				} else {
-					source = store;
-				}
-			} else {
-				throw new RuntimeException("Bad storage mode: " + options.storageMode);
-			}
-
-			logger.info("Using storage mode {}, optimized: {}.", options.storageMode, options.optimization);
-
-			// compile the storage sail
-			repository = new SailRepository(compiler.compile(source));
+			repository = new SailRepository(compiledSail);
 			repository.init();
-
-			luceneSails.clear();
-			luceneSails.addAll(luceneCompiler.getSails());
 		}
 		if (finishLoading) {
 			completeLoading();
@@ -410,7 +301,7 @@ public class Sparql {
 	 */
 	public MergeRequestResult askForAMerge() {
 		if (endpoint == null) {
-			throw new ServerWebInputException("No enpoint store, bad config?");
+			throw new ServerWebInputException("No endpoint store, bad config?");
 		}
 		this.endpoint.mergeStore();
 		return new MergeRequestResult(true);
@@ -428,9 +319,7 @@ public class Sparql {
 	}
     public LuceneIndexRequestResult reindexLucene() throws Exception {
         initializeEndpointStore(locationHdt, true);
-		for (LuceneSail sail : luceneSails) {
-			sail.reindex();
-		}
+		compiledSail.reindexLuceneSails();
         return new LuceneIndexRequestResult(true);
     }
 
@@ -445,7 +334,7 @@ public class Sparql {
 			ParsedQuery parsedQuery =
 					QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
 
-			if (options.debugShowPlans) {
+			if (compiledSail.getOptions().isDebugShowPlans()) {
 				System.out.println(parsedQuery);
 			}
 
@@ -460,14 +349,14 @@ public class Sparql {
 						.getWriter(out);
 				query.setMaxExecutionTime(timeout);
 				try {
-					if (options.debugShowCount) {
+					if (compiledSail.getOptions().isDebugShowCount()) {
 						writer = new QueryResultCounter(writer);
 					}
 					query.evaluate(writer);
-					if (options.debugShowCount) {
+					if (compiledSail.getOptions().isDebugShowCount()) {
 						logger.info("Complete query with {} triples", ((QueryResultCounter) writer).getCount());
 					}
-					if (options.debugShowTime) {
+					if (compiledSail.getOptions().isDebugShowTime()) {
 						System.out.println(query.explain(Explanation.Level.Timed));
 					}
 				} catch (QueryEvaluationException q) {
@@ -494,11 +383,11 @@ public class Sparql {
 				mimeSetter.accept(format.getDefaultMIMEType());
 				RDFHandler handler = Rio.createWriter(format, out);
 				try {
-					if (options.debugShowCount) {
+					if (compiledSail.getOptions().isDebugShowCount()) {
 						handler = new RDFHandlerCounter(handler);
 					}
 					query.evaluate(handler);
-					if (options.debugShowCount) {
+					if (compiledSail.getOptions().isDebugShowCount()) {
 						logger.info("Complete query with {} triples", ((RDFHandlerCounter) handler).getCount());
 					}
 				} catch (QueryEvaluationException q) {
@@ -549,11 +438,11 @@ public class Sparql {
 			Files.deleteIfExists(Paths.get(hdtOutput));
 			Files.deleteIfExists(Paths.get(EndpointFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-			if (options.storageMode.equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
+			if (compiledSail.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				clearEndpointStore(locationHdt);
 				HDTSpecification spec = new HDTSpecification();
 				spec.setOptions(hdtSpec);
-				if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+				if (compiledSail.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 					spec.set("loader.type", "two-pass");
 				}
 				compressToHdt(input, baseURI, filename, hdtOutput, spec);
@@ -565,9 +454,7 @@ public class Sparql {
 				sendUpdates(input, baseURI, filename);
 			}
 			try {
-				for (LuceneSail sail : luceneSails) {
-					sail.reindex();
-				}
+				compiledSail.reindexLuceneSails();
 			} catch (Exception e) {
 				throw new RuntimeException("Can't reindex the lucene sail(s)!", e);
 			}
@@ -679,7 +566,7 @@ public class Sparql {
 		while (it.hasNext()) {
 			try (RepositoryConnection connection = repository.getConnection()) {
 				connection.begin();
-				for (int i = 0; i < options.rdf4jSplitUpdate; i++) {
+				for (int i = 0; i < compiledSail.getOptions().getRdf4jSplitUpdate(); i++) {
 					Statement stmt = it.next();
 					connection.add(stmt);
 					triples++;
@@ -702,7 +589,7 @@ public class Sparql {
 	}
 
 	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTSpecification spec, String hdtOutput) throws IOException {
-		if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+		if (compiledSail.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 			// dump the file to the disk to allow 2 passes
 			Path tempNTFile = Paths.get(hdtOutput + "-tmp.nt");
 			logger.info("Create TEMP NT file '{}'", tempNTFile);

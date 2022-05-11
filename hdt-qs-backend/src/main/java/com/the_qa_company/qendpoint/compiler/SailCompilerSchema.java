@@ -1,4 +1,4 @@
-package com.the_qa_company.qendpoint.utils.sail.builder;
+package com.the_qa_company.qendpoint.compiler;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -19,7 +19,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Schema describing the model compiler nodes,
+ * Schema describing the model sail nodes,
  * {@literal @prefix mdlc: <http://the-qa-company.com/modelcompiler/>}
  *
  * @author Antoine Willerval
@@ -194,6 +194,11 @@ public class SailCompilerSchema {
 	 * mdlc:rdfStoreSplit
 	 */
 	public static final Property<Integer, NumberTypeValueHandler> RDF_STORE_SPLIT_STORAGE = propertyInt("rdfStoreSplit", "The storage load split update count", 1000, 1);
+
+	/**
+	 * mdlc:endpointThreshold
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> ENDPOINT_THRESHOLD = propertyInt("endpointThreshold", "The threshold before merging the endpoint", 1_000_000, 0);
 	/**
 	 * mdlc:hdtPassMode property
 	 */
@@ -285,7 +290,7 @@ public class SailCompilerSchema {
 		PrintWriter w = new PrintWriter(stream, true);
 
 		// write header and table of content
-		w.println("# Sail compiler schema");
+		w.println("# Sail sail schema");
 		w.println();
 		w.println("```turtle");
 		w.println("@prefix " + PREFIX + " <" + COMPILER_NAMESPACE + ">");

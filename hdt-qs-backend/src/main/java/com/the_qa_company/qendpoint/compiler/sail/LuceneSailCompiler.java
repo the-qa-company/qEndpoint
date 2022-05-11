@@ -1,7 +1,7 @@
-package com.the_qa_company.qendpoint.utils.sail.builder.compiler;
+package com.the_qa_company.qendpoint.compiler.sail;
 
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompiler;
-import com.the_qa_company.qendpoint.utils.sail.builder.SailCompilerSchema;
+import com.the_qa_company.qendpoint.compiler.SailCompiler;
+import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.model.IRI;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * a linked sail compiler to create lucene sails
+ * a linked sail sail to create lucene sails
  * @author Antoine Willerval
  */
 public class LuceneSailCompiler extends LinkedSailCompiler {
