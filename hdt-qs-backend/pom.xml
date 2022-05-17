@@ -9,11 +9,20 @@
 
     <groupId>com.the_qa_company</groupId>
     <artifactId>hdtSparqlEndpoint</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 
     <properties>
-        <rdf4j.version>4.0.0-M3</rdf4j.version>
-        <lwjgl.version>3.3.0</lwjgl.version>
+        <java.source.version>11</java.source.version>
+        <java.target.version>11</java.target.version>
+
+        <common_codec.version>1.15</common_codec.version>
+        <json_simple.version>1.1.1</json_simple.version>
+        <junit.version>4.13</junit.version>
+        <lwjgl.version>3.3.1</lwjgl.version>
+        <rdf4j.version>4.0.0</rdf4j.version>
+        <rdfhdt.version>3.0.2</rdfhdt.version>
+        <spring.version>2.6.7</spring.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -34,14 +43,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <version>2.6.1</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- v1.15 is needed for Jena 3.14+ - copied from org.apache.jena:jena:pom -->
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.15</version>
+            <version>${common_codec.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
@@ -60,11 +69,6 @@
             <artifactId>lwjgl-lmdb</artifactId>
             <version>${lwjgl.version}</version>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-lmdb</artifactId>
-            <version>${lwjgl.version}</version>
         </dependency>
         <dependency>
             <groupId>org.lwjgl</groupId>
@@ -133,13 +137,13 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
-            <version>1.1.1</version>
+            <version>${json_simple.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
@@ -149,7 +153,7 @@
         <dependency>
             <groupId>org.rdfhdt</groupId>
             <artifactId>hdt-java-core</artifactId>
-            <version>3.0.2</version>
+            <version>${rdfhdt.version}</version>
         </dependency>
     </dependencies>
     <build>
@@ -172,8 +176,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>${java.source.version}</source>
+                    <target>${java.target.version}</target>
+
                 </configuration>
             </plugin>
         </plugins>
