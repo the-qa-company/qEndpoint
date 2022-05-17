@@ -82,7 +82,8 @@ public class SimpleLiteralHDT implements Literal {
     /**
      * Creates a new plain literal with the supplied label.
      *
-     * @param hdt The hdt file in which the literal is contained, must not be <tt>null</tt>.
+     * @param hdt
+     *            The hdt file in which the literal is contained, must not be <tt>null</tt>.
      */
     public SimpleLiteralHDT(HDT hdt, long id, ValueFactory factory, boolean optimizeDatatype) {
         setHdt(hdt);
@@ -130,8 +131,7 @@ public class SimpleLiteralHDT implements Literal {
 
     static int indexOf(CharSequence seq, CharSequence s, int start) {
         int n = seq.length() - s.length() + 1;
-        loop:
-        for (int i = start; i < n; i++) {
+        loop: for (int i = start; i < n; i++) {
             for (int j = 0; j < s.length(); j++) {
                 if (seq.charAt(i + j) != s.charAt(j)) {
                     continue loop;
@@ -141,6 +141,7 @@ public class SimpleLiteralHDT implements Literal {
         }
         return -1;
     }
+
     static int indexOf(CharSequence seq, char c, int start) {
         for (int i = start; i < seq.length(); i++) {
             if (seq.charAt(i) == c) {
@@ -164,13 +165,14 @@ public class SimpleLiteralHDT implements Literal {
                         }
 
                         label = literal.subSequence(1, endLabelIdx).toString();
-                        //label = unescapeString(label);
+                        // label = unescapeString(label);
                         if (startLangIdx != -1) {
                             datatype = CoreDatatype.RDF.LANGSTRING.getIri();
                             language = Optional.of(literal.subSequence(startLangIdx + 1, literal.length()).toString());
                         } else if (startDtIdx != -1) {
                             if (datatype == null) {
-                                datatype = parseURI(literal.subSequence(startDtIdx + 2, literal.length()).toString(), valueFactory);
+                                datatype = parseURI(literal.subSequence(startDtIdx + 2, literal.length()).toString(),
+                                        valueFactory);
                             }
                             language = Optional.empty();
                         } else {
@@ -180,7 +182,8 @@ public class SimpleLiteralHDT implements Literal {
                     }
                 }
             } catch (IllegalArgumentException e) {
-                // @todo: this should be fixed, it is for example happening for Select ?o where { <http://www.wikidata.org/entity/Q29709019> ?p ?o} over wikidata
+                // @todo: this should be fixed, it is for example happening for Select ?o where {
+                // <http://www.wikidata.org/entity/Q29709019> ?p ?o} over wikidata
                 label = "";
                 language = Optional.empty();
                 datatype = XSD.STRING;
@@ -209,7 +212,7 @@ public class SimpleLiteralHDT implements Literal {
     // Overrides Object.equals(Object), implements Literal.equals(Object)
     @Override
     public boolean equals(Object o) {
-        //TODO: This can be probably done more efficielnty
+        // TODO: This can be probably done more efficielnty
         if (this == o) {
             return true;
         }
@@ -242,8 +245,8 @@ public class SimpleLiteralHDT implements Literal {
     }
 
     /**
-     * Returns the label of the literal with its language or datatype. Note that this method does not
-     * escape the quoted label.
+     * Returns the label of the literal with its language or datatype. Note that this method does not escape the quoted
+     * label.
      *
      * @see org.eclipse.rdf4j.rio.helpers.NTriplesUtil#toNTriplesString(Literal)
      */
@@ -251,13 +254,11 @@ public class SimpleLiteralHDT implements Literal {
     public String toString() {
         getLabel();
         if (Literals.isLanguageLiteral(this)) {
-            return '"' + label + '"' +
-                    '@' + language;
+            return '"' + label + '"' + '@' + language;
         } else if (XSD.STRING.equals(datatype) || datatype == null) {
             return '"' + label + '"';
         } else {
-            return '"' + label + '"' +
-                    "^^<" + datatype + ">";
+            return '"' + label + '"' + "^^<" + datatype + ">";
         }
     }
 

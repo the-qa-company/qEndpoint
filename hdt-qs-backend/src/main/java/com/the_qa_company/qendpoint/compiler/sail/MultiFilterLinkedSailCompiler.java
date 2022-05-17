@@ -12,36 +12,32 @@ import java.util.stream.Collectors;
 
 /**
  * a linked sail sail to create a multi-filter sail
+ *
  * @author Antoine Willerval
  */
 public class MultiFilterLinkedSailCompiler extends LinkedSailCompiler {
-	public MultiFilterLinkedSailCompiler() {
-		super(SailCompilerSchema.MULTI_FILTER_TYPE);
-	}
+    public MultiFilterLinkedSailCompiler() {
+        super(SailCompilerSchema.MULTI_FILTER_TYPE);
+    }
 
-	@Override
-	public LinkedSail<? extends NotifyingSail> compileWithParam(SailCompiler.SailCompilerReader reader, Resource rnode)
-			throws SailCompiler.SailCompilerException {
+    @Override
+    public LinkedSail<? extends NotifyingSail> compileWithParam(SailCompiler.SailCompilerReader reader, Resource rnode)
+            throws SailCompiler.SailCompilerException {
 
-		return new MultiTypeFilteringSail(
-				SailCompiler.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE)),
-				reader.search(rnode, SailCompilerSchema.NODE).stream()
-						.map(rsnode -> typedSailOf(
-								reader.compileNode(
-										reader.searchOne(SailCompiler.asResource(rsnode), SailCompilerSchema.NODE)
-								),
-								SailCompiler.asIRI(
-										reader.searchOne(
-												SailCompiler.asResource(rsnode),
-												SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT
-										)
-								)
-						)).collect(Collectors.toList())
+        return new MultiTypeFilteringSail(
+                SailCompiler.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE)),
+                reader.search(rnode, SailCompilerSchema.NODE).stream()
+                        .map(rsnode -> typedSailOf(
+                                reader.compileNode(
+                                        reader.searchOne(SailCompiler.asResource(rsnode), SailCompilerSchema.NODE)),
+                                SailCompiler.asIRI(reader.searchOne(SailCompiler.asResource(rsnode),
+                                        SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT))))
+                        .collect(Collectors.toList())
 
-		);
-	}
+        );
+    }
 
-	public MultiTypeFilteringSail.TypedSail typedSailOf(LinkedSail<? extends NotifyingSail> sail, IRI type) {
-		return new MultiTypeFilteringSail.TypedSail(sail, type);
-	}
+    public MultiTypeFilteringSail.TypedSail typedSailOf(LinkedSail<? extends NotifyingSail> sail, IRI type) {
+        return new MultiTypeFilteringSail.TypedSail(sail, type);
+    }
 }

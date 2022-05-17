@@ -26,14 +26,17 @@ import java.util.List;
  * @author Ali Haidar
  */
 public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
-	private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
     public EndpointSPARQL11QueryComplianceTest(String displayName, String testURI, String name, String queryFileURL,
-											   String resultFileURL, Dataset dataset, boolean ordered) throws ParserException, NotFoundException, IOException {
+            String resultFileURL, Dataset dataset, boolean ordered)
+            throws ParserException, NotFoundException, IOException {
         super(displayName, testURI, name, queryFileURL, resultFileURL, null, ordered);
         setUpHDT(dataset);
         List<String> testToIgnore = new ArrayList<>();
-        // @todo these tests are failing and should not, they are skipped so that we can be sure that we see when currently passing tests are not failing. Many of these tests are not so problematic since we do not support named graphs anyway
+        // @todo these tests are failing and should not, they are skipped so that we can be sure that we see when
+        // currently passing tests are not failing. Many of these tests are not so problematic since we do not support
+        // named graphs anyway
         testToIgnore.add("constructwhere02 - CONSTRUCT WHERE");
         testToIgnore.add("constructwhere03 - CONSTRUCT WHERE");
         testToIgnore.add("constructwhere04 - CONSTRUCT WHERE");
@@ -73,10 +76,9 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 
-        endpoint = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-        );
-//        endpoint.setThreshold(2);
+        endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", true);
+        // endpoint.setThreshold(2);
         return new SailRepository(endpoint);
     }
 
@@ -92,25 +94,26 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
             return;
         }
 
-		String x = dataset.getDefaultGraphs().toString();
-		if (x.equals("[]")) {
-			x = dataset.getNamedGraphs().toString();
-		}
-		String str = x.substring(x.lastIndexOf("!") + 1).replace("]", "");
+        String x = dataset.getDefaultGraphs().toString();
+        if (x.equals("[]")) {
+            x = dataset.getNamedGraphs().toString();
+        }
+        String str = x.substring(x.lastIndexOf("!") + 1).replace("]", "");
 
-		URL url = SPARQL11QueryComplianceTest.class.getResource(str);
-		File tmpDir = new File("test");
-		if (tmpDir.mkdirs()) {
-			logger.debug("{} dir created.", tmpDir);
-		}
-		assert url != null;
-		JarURLConnection con = (JarURLConnection) url.openConnection();
-		File file = new File(tmpDir, con.getEntryName());
+        URL url = SPARQL11QueryComplianceTest.class.getResource(str);
+        File tmpDir = new File("test");
+        if (tmpDir.mkdirs()) {
+            logger.debug("{} dir created.", tmpDir);
+        }
+        assert url != null;
+        JarURLConnection con = (JarURLConnection) url.openConnection();
+        File file = new File(tmpDir, con.getEntryName());
 
-		HDTSpecification spec = new HDTSpecification();
+        HDTSpecification spec = new HDTSpecification();
 
-		hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec, null);
-		assert hdt != null;
-		hdt.search("", "", "").forEachRemaining(System.out::println);
+        hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec,
+                null);
+        assert hdt != null;
+        hdt.search("", "", "").forEachRemaining(System.out::println);
     }
 }

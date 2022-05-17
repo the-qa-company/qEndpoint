@@ -20,7 +20,10 @@ public class BitArrayDisk implements ModifiableBitmap {
 
     /**
      * compute the number of the highest bit of a value
-     * @param value the value
+     *
+     * @param value
+     *            the value
+     *
      * @return the number of the highest bit of value
      */
     static int log2(long value) {
@@ -37,6 +40,7 @@ public class BitArrayDisk implements ModifiableBitmap {
 
         return log;
     }
+
     protected long numbits;
     protected long allBits;
     protected long[] words;
@@ -55,11 +59,13 @@ public class BitArrayDisk implements ModifiableBitmap {
     // only for testing we don't necessarily need to store the array on disk
     private boolean inMemory = false;
 
-
     /**
      * create a on disk bit array
-     * @param nbits the number of bits to allocate
-     * @param location the array location
+     *
+     * @param nbits
+     *            the number of bits to allocate
+     * @param location
+     *            the array location
      */
     public BitArrayDisk(long nbits, String location) {
         this(nbits, new File(location));
@@ -67,7 +73,9 @@ public class BitArrayDisk implements ModifiableBitmap {
 
     /**
      * create a in memory bit array, can be switch to a on disk bit array with {@link #changeToInDisk(java.io.File)}
-     * @param nbits the number of bits to allocate
+     *
+     * @param nbits
+     *            the number of bits to allocate
      */
     public BitArrayDisk(long nbits) {
         this.numbits = 0;
@@ -77,8 +85,11 @@ public class BitArrayDisk implements ModifiableBitmap {
 
     /**
      * create a on disk bit array
-     * @param nbits the number of bits to allocate
-     * @param file the array location
+     *
+     * @param nbits
+     *            the number of bits to allocate
+     * @param file
+     *            the array location
      */
     public BitArrayDisk(long nbits, File file) {
         this.numbits = 0;
@@ -91,12 +102,14 @@ public class BitArrayDisk implements ModifiableBitmap {
     }
 
     /**
-     * convert this {@link BitArrayDisk} memory instance to a file instance, only works with
-     * instance created with {@link BitArrayDisk#BitArrayDisk(long)}.
-     * @param file the file to use
+     * convert this {@link BitArrayDisk} memory instance to a file instance, only works with instance created with
+     * {@link BitArrayDisk#BitArrayDisk(long)}.
+     *
+     * @param file
+     *            the file to use
      */
     public void changeToInDisk(File file) {
-        assert inMemory: "the BitArray should be in memory";
+        assert inMemory : "the BitArray should be in memory";
         inMemory = false;
         try {
             this.output = new NioFile(file);
@@ -112,7 +125,9 @@ public class BitArrayDisk implements ModifiableBitmap {
 
     /**
      * write inside the output file the number of words
-     * @throws IOException if the write can be done
+     *
+     * @throws IOException
+     *             if the write can be done
      */
     private void writeBits() throws IOException {
         // write the length of the array in the beginning
@@ -353,7 +368,6 @@ public class BitArrayDisk implements ModifiableBitmap {
         return this.words.length;
     }
 
-
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
@@ -398,10 +412,8 @@ public class BitArrayDisk implements ModifiableBitmap {
     }
 
     public String printInfo() {
-        return "numWords:" + getNumWords() +
-                ", numbits: " + getNumBits() +
-                ", ones: " + countOnes() +
-                (inMemory ? ", inMemory: true" : "\nfile: " + output.getFile().getAbsolutePath()) +
-                (allBits <= 20 ? "\nbits: " + toString(true) : "");
+        return "numWords:" + getNumWords() + ", numbits: " + getNumBits() + ", ones: " + countOnes()
+                + (inMemory ? ", inMemory: true" : "\nfile: " + output.getFile().getAbsolutePath())
+                + (allBits <= 20 ? "\nbits: " + toString(true) : "");
     }
 }

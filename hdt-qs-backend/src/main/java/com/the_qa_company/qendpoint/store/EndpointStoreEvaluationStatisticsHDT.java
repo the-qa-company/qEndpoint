@@ -37,13 +37,13 @@ public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
 
             if (subId == 0 && predId == 0 && objId == 0) {
                 /*
-                apparently we got all variables in the triple so we'll not search the whole knowledge base
-                to get the cardinality so put we put a high card to put this triple on last in the ordering scenario
-                */
+                 * apparently we got all variables in the triple so we'll not search the whole knowledge base to get the
+                 * cardinality so put we put a high card to put this triple on last in the ordering scenario
+                 */
                 cardinality = Double.MAX_VALUE;
             } else {
-                cardinality =
-                        endpoint.getHdt().getTriples().search(new TripleID(subId, predId, objId)).estimatedNumResults();
+                cardinality = endpoint.getHdt().getTriples().search(new TripleID(subId, predId, objId))
+                        .estimatedNumResults();
             }
             return cardinality;
         }

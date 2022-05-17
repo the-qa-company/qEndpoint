@@ -100,7 +100,9 @@ public enum MergeRunnableStopPoint {
 
     /**
      * set the last (update/read) lock during the merge
-     * @param lastLock the last lock created
+     *
+     * @param lastLock
+     *            the last lock created
      */
     static void setLastLock(Lock lastLock) {
         MergeRunnableStopPoint.lastLock = lastLock;
@@ -120,7 +122,7 @@ public enum MergeRunnableStopPoint {
      */
     public class MergeRunnableStopException extends MergeRunnableException {
         public MergeRunnableStopException() {
-            super("crashing merge at point: "+ name().toLowerCase() + " (" + description + ")");
+            super("crashing merge at point: " + name().toLowerCase() + " (" + description + ")");
         }
 
         /**
@@ -159,7 +161,8 @@ public enum MergeRunnableStopPoint {
     }
 
     /**
-     * @throws MergeRunnableStopException to crash the MergeRunnable
+     * @throws MergeRunnableStopException
+     *             to crash the MergeRunnable
      */
     public void debugThrowStop() {
         MergeRunnableStopException e = new MergeRunnableStopException();
@@ -223,8 +226,8 @@ public enum MergeRunnableStopPoint {
     }
 
     /**
-     * Debug mode only, unlock the lock to continue the merge, a call to {@link #debugLockTest()}
-     * should be made before the merge
+     * Debug mode only, unlock the lock to continue the merge, a call to {@link #debugLockTest()} should be made before
+     * the merge
      */
     public void debugUnlockTest() {
         if (lockTest != null) {

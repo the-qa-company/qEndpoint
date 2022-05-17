@@ -15,6 +15,7 @@ import org.rdfhdt.hdt.hdt.HDT;
 
 /**
  * QueryOptimizer to replace Var by IRIHDT Var in a query
+ *
  * @author Dennis Diefenbach
  */
 public class VariableToIdSubstitution implements QueryOptimizer {
@@ -24,7 +25,9 @@ public class VariableToIdSubstitution implements QueryOptimizer {
 
     /**
      * create the optimizer
-     * @param store the store to get the hdt
+     *
+     * @param store
+     *            the store to get the hdt
      */
     public VariableToIdSubstitution(EndpointStore store) {
         this.hdt = store.getHdt();

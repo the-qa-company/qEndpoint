@@ -90,10 +90,7 @@ public class FileUploadTest {
         Files.createDirectories(testDir);
         Path RDFFile = testDir.resolve(COKTAILS_NT + "." + format.getDefaultFileExtension());
         if (!Files.exists(RDFFile)) {
-            try (
-                    OutputStream os = new FileOutputStream(RDFFile.toFile());
-                    InputStream is = stream(COKTAILS_NT)
-            ) {
+            try (OutputStream os = new FileOutputStream(RDFFile.toFile()); InputStream is = stream(COKTAILS_NT)) {
                 RDFWriter writer = Rio.createWriter(format, os);
                 parser.setRDFHandler(noBNode(writer));
                 parser.parse(is);
@@ -138,6 +135,7 @@ public class FileUploadTest {
     private InputStream stream(String file) {
         return Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(file), "file can't be found!");
     }
+
     private InputStream streamOut(String file) throws FileNotFoundException {
         return new FileInputStream(file);
     }
@@ -175,6 +173,7 @@ public class FileUploadTest {
     private void assertAllCoktailsHDTLoaded() throws IOException {
         assertAllTriplesHDTLoaded(stream(COKTAILS_NT), COKTAILS_NT);
     }
+
     private void assertAllTriplesHDTLoaded(InputStream stream, String fileName) throws IOException {
         EndpointStore store = sparql.endpoint;
         SailRepository sailRepository = new SailRepository(store);
@@ -183,26 +182,19 @@ public class FileUploadTest {
         // fix because RDFXML can't handle empty spaces literals
         if (format == RDFFormat.RDFXML) {
             consumer = statement -> {
-                if (
-                        statement.getSubject().isBNode()
-                                || statement.getObject().isBNode())
+                if (statement.getSubject().isBNode() || statement.getObject().isBNode())
                     return;
                 org.eclipse.rdf4j.model.Value v = clearSpaces(store.getValueFactory(), statement.getObject());
                 if (v != statement.getObject()) {
-                    statementList.add(store.getValueFactory().createStatement(
-                            statement.getSubject(),
-                            statement.getPredicate(),
-                            v
-                    ));
+                    statementList.add(store.getValueFactory().createStatement(statement.getSubject(),
+                            statement.getPredicate(), v));
                 } else {
                     statementList.add(statement);
                 }
             };
         } else {
             consumer = statement -> {
-                if (
-                        statement.getSubject().isBNode()
-                                || statement.getObject().isBNode())
+                if (statement.getSubject().isBNode() || statement.getObject().isBNode())
                     return;
                 statementList.add(statement);
             };
@@ -213,17 +205,12 @@ public class FileUploadTest {
             RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false);
             while (sts.hasNext()) {
                 Statement next = sts.next();
-                if (
-                        next.getSubject().isBNode()
-                                || next.getObject().isBNode()
-                                || next.getSubject().toString().startsWith("_:")
-                                || next.getObject().toString().startsWith("_:"))
+                if (next.getSubject().isBNode() || next.getObject().isBNode()
+                        || next.getSubject().toString().startsWith("_:")
+                        || next.getObject().toString().startsWith("_:"))
                     continue;
-                Assert.assertTrue("Statement (" +
-                        next.getSubject().toString() + ", " +
-                        next.getPredicate().toString() + ", " +
-                        next.getObject().toString()
-                        + "), not in " + fileName, statementList.remove(next));
+                Assert.assertTrue("Statement (" + next.getSubject().toString() + ", " + next.getPredicate().toString()
+                        + ", " + next.getObject().toString() + "), not in " + fileName, statementList.remove(next));
                 while (statementList.remove(next)) {
                     // remove duplicates
                     logger.trace("removed duplicate of {}", next);
@@ -247,7 +234,6 @@ public class FileUploadTest {
 
         sparql.loadFile(streamOut(fileName), fileName);
 
-
         assertAllCoktailsHDTLoaded();
     }
 
@@ -262,6 +248,7 @@ public class FileUploadTest {
 
         assertAllCoktailsHDTLoaded();
     }
+
     @Test
     @Ignore("skip")
     public void loadNoSplitTwoPassTest() throws IOException {
@@ -270,7 +257,6 @@ public class FileUploadTest {
         DebugOptionTestUtils.setPassMode(sparql.compiledSail.getOptions(), SailCompilerSchema.HDT_TWO_PASS_MODE);
 
         sparql.loadFile(streamOut(fileName), fileName);
-
 
         assertAllCoktailsHDTLoaded();
     }
@@ -292,17 +278,11 @@ public class FileUploadTest {
     public void loadLargeTest() throws IOException {
         long size = Sparql.getMaxChunkSize() * 10;
         LargeFakeDataSetStreamSupplier supplier = new LargeFakeDataSetStreamSupplier(size, 42);
-        sparql.loadFile(
-                supplier.createRDFStream(format),
-                "fake." + format.getDefaultFileExtension()
-        );
+        sparql.loadFile(supplier.createRDFStream(format), "fake." + format.getDefaultFileExtension());
 
         supplier.reset();
 
-        assertAllTriplesHDTLoaded(
-                supplier.createRDFStream(format),
-                "fake." + format.getDefaultFileExtension()
-        );
+        assertAllTriplesHDTLoaded(supplier.createRDFStream(format), "fake." + format.getDefaultFileExtension());
     }
 
     private RDFHandler noBNode(RDFHandler handler) {
@@ -324,11 +304,8 @@ public class FileUploadTest {
 
             @Override
             public void handleStatement(Statement statement) throws RDFHandlerException {
-                if (
-                        statement.getSubject().isBNode()
-                                || statement.getObject().isBNode()
-                                || statement.getPredicate().isBNode()
-                )
+                if (statement.getSubject().isBNode() || statement.getObject().isBNode()
+                        || statement.getPredicate().isBNode())
                     return;
                 handler.handleStatement(statement);
             }

@@ -21,10 +21,8 @@ public class EndpointStoreTripleIterator implements Iterator<Statement> {
     private final IteratorTripleID iterator;
     private final CloseableIteration<? extends Statement, SailException> repositoryResult;
 
-    public EndpointStoreTripleIterator(EndpointStore endpoint, EndpointTripleSource endpointTripleSource, IteratorTripleID iter,
-                                       CloseableIteration<? extends Statement,
-                                        SailException> repositoryResult
-    ) {
+    public EndpointStoreTripleIterator(EndpointStore endpoint, EndpointTripleSource endpointTripleSource,
+            IteratorTripleID iter, CloseableIteration<? extends Statement, SailException> repositoryResult) {
         this.endpoint = endpoint;
         this.endpointTripleSource = endpointTripleSource;
         this.iterator = iter;
@@ -48,7 +46,8 @@ public class EndpointStoreTripleIterator implements Iterator<Statement> {
                     IRI predicate = endpoint.getHdtConverter().IdToPredicateHDTResource(tripleID.getPredicate());
                     Value object = endpoint.getHdtConverter().IdToObjectHDTResource(tripleID.getObject());
                     if (logger.isTraceEnabled()) {
-                        logger.trace("From HDT   {} {} {} ", subject.stringValue(), predicate.stringValue(), object.stringValue());
+                        logger.trace("From HDT   {} {} {} ", subject.stringValue(), predicate.stringValue(),
+                                object.stringValue());
                     }
                     next = endpointTripleSource.getValueFactory().createStatement(subject, predicate, object);
                     return true;
@@ -61,9 +60,11 @@ public class EndpointStoreTripleIterator implements Iterator<Statement> {
             Resource newSubj = endpoint.getHdtConverter().rdf4jToHdtIDsubject(stm.getSubject());
             IRI newPred = endpoint.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
             Value newObject = endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
-            next =  endpointTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject, stm.getContext());
-                if (logger.isTraceEnabled()) {
-                logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(), next.getObject().stringValue());
+            next = endpointTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject,
+                    stm.getContext());
+            if (logger.isTraceEnabled()) {
+                logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(),
+                        next.getObject().stringValue());
             }
             return true;
         }
@@ -75,7 +76,8 @@ public class EndpointStoreTripleIterator implements Iterator<Statement> {
         if (!hasNext()) {
             return null;
         }
-        Statement stm = endpointTripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(), next.getObject(), next.getContext());
+        Statement stm = endpointTripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(),
+                next.getObject(), next.getContext());
         next = null;
         return stm;
     }

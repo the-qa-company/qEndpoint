@@ -102,12 +102,14 @@ public class EndpointStoreConnection extends SailSourceConnection {
 
     // for SPARQL queries
     @Override
-    protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+    protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr,
+            Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
         return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
     }
 
     @Override
-    public Explanation explain(Explanation.Level level, TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred, int timeoutSeconds) {
+    public Explanation explain(Explanation.Level level, TupleExpr tupleExpr, Dataset dataset, BindingSet bindings,
+            boolean includeInferred, int timeoutSeconds) {
         try {
             queryPreparer.setExplanationLevel(level);
             return super.explain(level, tupleExpr, dataset, bindings, includeInferred, timeoutSeconds);
@@ -118,11 +120,12 @@ public class EndpointStoreConnection extends SailSourceConnection {
 
     // USED from connection get api not SPARQL
     @Override
-    protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
+    protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred,
+            Value obj, boolean includeInferred, Resource... contexts) throws SailException {
         if (MergeRunnableStopPoint.disableRequest)
             throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
-        CloseableIteration<? extends Statement, QueryEvaluationException> result =
-                tripleSource.getStatements(subj, pred, obj, contexts);
+        CloseableIteration<? extends Statement, QueryEvaluationException> result = tripleSource.getStatements(subj,
+                pred, obj, contexts);
         return new ExceptionConvertingIteration<Statement, SailException>(result) {
             @Override
             protected SailException convert(Exception e) {
@@ -133,9 +136,9 @@ public class EndpointStoreConnection extends SailSourceConnection {
 
     @Override
     public void setNamespaceInternal(String prefix, String name) throws SailException {
-//    super.setNamespaceInternal(prefix,name);
+        // super.setNamespaceInternal(prefix,name);
         this.getCurrentConnectionWrite().setNamespace(prefix, name);
-        //this.getCurrentConnectionRead().setNamespace(prefix, name);
+        // this.getCurrentConnectionRead().setNamespace(prefix, name);
     }
 
     @Override
@@ -144,13 +147,14 @@ public class EndpointStoreConnection extends SailSourceConnection {
     }
 
     @Override
-    public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+    public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts)
+            throws SailException {
         if (MergeRunnableStopPoint.disableRequest)
             throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
 
         isWriteConnection = true;
 
-//        System.out.println(subj.stringValue()+" - "+ pred.stringValue() + " - "+ obj.stringValue());
+        // System.out.println(subj.stringValue()+" - "+ pred.stringValue() + " - "+ obj.stringValue());
         Resource newSubj;
         IRI newPred;
         Value newObj;
@@ -158,37 +162,33 @@ public class EndpointStoreConnection extends SailSourceConnection {
         long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
         long objectID = this.endpoint.getHdtConverter().objectToID(obj);
 
-        if (subjectID == -1){
+        if (subjectID == -1) {
             newSubj = subj;
         } else {
             newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
         }
-        if (predicateID == -1){
+        if (predicateID == -1) {
             newPred = pred;
         } else {
             newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
         }
-        if (objectID == -1){
+        if (objectID == -1) {
             newObj = obj;
         } else {
             newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("Adding triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+        logger.debug("Adding triple {} {} {}", newSubj.toString(), newPred.toString(), newObj.toString());
 
-        // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in HDT or not
+        // note that in the native store we insert a mix of native IRIs and HDT IRIs, depending if the resource is in
+        // HDT or not
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         if (!tripleExistInHDT(tripleID)) {
             // check if we need to search over the other native connection
             if (endpoint.isMerging()) {
                 if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-                    try (CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead().getStatements(
-                            newSubj,
-                            newPred,
-                            newObj,
-                            false,
-                            contexts
-                    )) {
+                    try (CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead()
+                            .getStatements(newSubj, newPred, newObj, false, contexts)) {
                         if (other.hasNext()) {
                             return;
                         }
@@ -196,14 +196,9 @@ public class EndpointStoreConnection extends SailSourceConnection {
                 }
             }
             // here we need uris using the internal IDs
-            getCurrentConnectionWrite().addStatement(
-                    newSubj,
-                    newPred,
-                    newObj,
-                    contexts
-            );
+            getCurrentConnectionWrite().addStatement(newSubj, newPred, newObj, contexts);
 
-//            // modify the bitmaps if the IRIs used are in HDT
+            // // modify the bitmaps if the IRIs used are in HDT
             this.endpoint.modifyBitmaps(subjectID, predicateID, objectID);
             // increase the number of statements
             this.endpoint.triplesCount++;
@@ -212,20 +207,19 @@ public class EndpointStoreConnection extends SailSourceConnection {
 
     // @TODO: I think this is also not used because addStatement is used
     @Override
-    public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts)
-            throws SailException {
+    public void addStatementInternal(Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
         this.getCurrentConnectionWrite().addStatement(subj, pred, obj, contexts);
     }
 
     @Override
     public void clearNamespacesInternal() throws SailException {
-        //super.clearNamespacesInternal();
+        // super.clearNamespacesInternal();
         getCurrentConnectionWrite().clearNamespaces();
     }
 
     @Override
     public void removeNamespaceInternal(String prefix) throws SailException {
-        //super.removeNamespaceInternal(prefix);
+        // super.removeNamespaceInternal(prefix);
         getCurrentConnectionWrite().removeNamespace(prefix);
     }
 
@@ -235,8 +229,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
     }
 
     @Override
-    protected CloseableIteration<? extends Namespace, SailException> getNamespacesInternal()
-            throws SailException {
+    protected CloseableIteration<? extends Namespace, SailException> getNamespacesInternal() throws SailException {
         return getCurrentConnectionRead().getNamespaces();
     }
 
@@ -326,7 +319,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
             }
         }
         super.closeInternal();
-        //this.nativeStoreConnection.close();
+        // this.nativeStoreConnection.close();
         this.connA_read.close();
         this.connB_read.close();
         this.connA_write.close();
@@ -335,14 +328,13 @@ public class EndpointStoreConnection extends SailSourceConnection {
     }
 
     @Override
-    protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal()
-            throws SailException {
+    protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal() throws SailException {
         return getCurrentConnectionRead().getContextIDs();
     }
 
     @Override
     protected long sizeInternal(Resource... contexts) throws SailException {
-        //return endpoint.getNativeStoreConnection().size(contexts);
+        // return endpoint.getNativeStoreConnection().size(contexts);
         long sizeNativeA = connA_read.size(contexts);
         long sizeNativeB = connB_read.size(contexts);
         long sizeHdt = this.endpoint.getHdt().getTriples().getNumberOfElements();
@@ -358,7 +350,8 @@ public class EndpointStoreConnection extends SailSourceConnection {
     }
 
     @Override
-    public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+    public void removeStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts)
+            throws SailException {
         if (MergeRunnableStopPoint.disableRequest)
             throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
 
@@ -371,23 +364,23 @@ public class EndpointStoreConnection extends SailSourceConnection {
         long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
         long objectID = this.endpoint.getHdtConverter().objectToID(obj);
 
-        if (subjectID == -1){
+        if (subjectID == -1) {
             newSubj = subj;
         } else {
             newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
         }
-        if (predicateID == -1){
+        if (predicateID == -1) {
             newPred = pred;
         } else {
             newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
         }
-        if (objectID == -1){
+        if (objectID == -1) {
             newObj = obj;
         } else {
             newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
         }
 
-//        logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
+        // logger.debug("Removing triple {} {} {}",newSubj.toString(),newPred.toString(),newObj.toString());
 
         // remove statement from both stores... A and B
         if (endpoint.isMergeTriggered) {
@@ -396,16 +389,16 @@ public class EndpointStoreConnection extends SailSourceConnection {
         } else {
             this.getCurrentConnectionWrite().removeStatement(op, newSubj, newPred, newObj, contexts);
         }
-//        this.endpoint.triplesCount--;
+        // this.endpoint.triplesCount--;
 
         TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
         assignBitMapDeletes(tripleID, subj, pred, obj);
     }
 
-    // @todo: I think this is never used since it is not called in removeStatement, not sure if this is good, since there is some logic that we might miss
+    // @todo: I think this is never used since it is not called in removeStatement, not sure if this is good, since
+    // there is some logic that we might miss
     @Override
-    public void removeStatementsInternal(Resource subj, IRI pred, Value obj, Resource... context)
-            throws SailException {
+    public void removeStatementsInternal(Resource subj, IRI pred, Value obj, Resource... context) throws SailException {
         throw new SailReadOnlyException("");
     }
 
@@ -444,7 +437,8 @@ public class EndpointStoreConnection extends SailSourceConnection {
             }
         } else {
             // @todo: why is this important?
-            // means that the triple doesn't exist in HDT - we have to dump it while merging, this triple might be in the newly generated HDT
+            // means that the triple doesn't exist in HDT - we have to dump it while merging, this triple might be in
+            // the newly generated HDT
             if (this.endpoint.isMerging()) {
                 NTriplesWriter writer = this.endpoint.getRdfWriterTempTriples();
                 if (writer != null) {
@@ -460,39 +454,40 @@ public class EndpointStoreConnection extends SailSourceConnection {
 
     public SailConnection getCurrentConnectionRead() {
         if (endpoint.switchStore) {
-//            logger.debug("STORE B");
+            // logger.debug("STORE B");
             return connB_read;
         } else {
-//            logger.debug("STORE A");
+            // logger.debug("STORE A");
             return connA_read;
         }
     }
 
     public SailConnection getCurrentConnectionWrite() {
         if (endpoint.switchStore) {
-//            logger.debug("STORE B");
+            // logger.debug("STORE B");
             return connB_write;
         } else {
-//            logger.debug("STORE A");
+            // logger.debug("STORE A");
             return connA_write;
         }
     }
+
     public SailConnection getOtherConnectionRead() {
         if (!endpoint.switchStore) {
-//            logger.debug("STORE B");
+            // logger.debug("STORE B");
             return connB_read;
         } else {
-//            logger.debug("STORE A");
+            // logger.debug("STORE A");
             return connA_read;
         }
     }
 
     public SailConnection getOtherConnectionWrite() {
         if (!endpoint.switchStore) {
-//            logger.debug("STORE B");
+            // logger.debug("STORE B");
             return connB_write;
         } else {
-//            logger.debug("STORE A");
+            // logger.debug("STORE A");
             return connA_write;
         }
     }

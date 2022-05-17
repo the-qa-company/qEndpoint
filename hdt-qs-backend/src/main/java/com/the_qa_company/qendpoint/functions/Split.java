@@ -18,6 +18,7 @@ public class Split implements TupleFunction {
      * function's URI
      */
     public static final String URI = "http://qanswer.eu/function/split";
+
     @Override
     public String getURI() {
         return URI;
@@ -39,24 +40,23 @@ public class Split implements TupleFunction {
         final String s = args[0].stringValue();
         final String regex = args[1].stringValue();
         final String[] parts = s.split(regex);
-        return new CloseableIteratorIteration<>(
-                new Iterator<>() {
-                    int pos = 0;
+        return new CloseableIteratorIteration<>(new Iterator<>() {
+            int pos = 0;
 
-                    @Override
-                    public boolean hasNext() {
-                        return (pos < parts.length);
-                    }
+            @Override
+            public boolean hasNext() {
+                return (pos < parts.length);
+            }
 
-                    @Override
-                    public List<Value> next() {
-                        return Collections.singletonList(valueFactory.createLiteral(parts[pos++]));
-                    }
+            @Override
+            public List<Value> next() {
+                return Collections.singletonList(valueFactory.createLiteral(parts[pos++]));
+            }
 
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                });
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        });
     }
 }

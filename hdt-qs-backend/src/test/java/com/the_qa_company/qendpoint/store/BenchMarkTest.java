@@ -35,11 +35,9 @@ public class BenchMarkTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
-        //printHDT(hdt);
-        SailRepository endpointStore = new SailRepository(
-                new EndpointStore(
-                        hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-                ));
+        // printHDT(hdt);
+        SailRepository endpointStore = new SailRepository(new EndpointStore(hdtStore.getAbsolutePath() + "/",
+                EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true));
         try (SailRepositoryConnection connection = endpointStore.getConnection()) {
             stopWatch.stop();
             int count = 100000;

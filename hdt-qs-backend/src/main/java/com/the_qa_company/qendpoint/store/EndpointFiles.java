@@ -12,8 +12,12 @@ public class EndpointFiles {
 
     /**
      * get the file the hdt
-     * @param locationHdt the HDT location dir
-     * @param hdtIndexName the HDT index name
+     *
+     * @param locationHdt
+     *            the HDT location dir
+     * @param hdtIndexName
+     *            the HDT index name
+     *
      * @return the hdt file
      */
     public static String getHDTIndex(String locationHdt, String hdtIndexName) {
@@ -22,8 +26,12 @@ public class EndpointFiles {
 
     /**
      * the HDT file with HDT version
-     * @param locationHdt the HDT location dir
-     * @param hdtIndexName the HDT index name
+     *
+     * @param locationHdt
+     *            the HDT location dir
+     * @param hdtIndexName
+     *            the HDT index name
+     *
      * @return the hdt file
      */
     public static String getHDTIndexV11(String locationHdt, String hdtIndexName) {
@@ -35,20 +43,29 @@ public class EndpointFiles {
 
     /**
      * create a file getter for a store
-     * @param locationNative the native storage dir
-     * @param locationHdt the hdt storage dir
-     * @param hdtIndexName the hdt index name
+     *
+     * @param locationNative
+     *            the native storage dir
+     * @param locationHdt
+     *            the hdt storage dir
+     * @param hdtIndexName
+     *            the hdt index name
      */
     public EndpointFiles(String locationNative, String locationHdt, String hdtIndexName) {
         this.locationNative = locationNative;
         this.locationHdt = locationHdt;
         this.hdtIndexName = hdtIndexName;
     }
+
     /**
      * create a file getter for a store
-     * @param locationNative the native storage dir
-     * @param locationHdt the hdt storage dir
-     * @param hdtIndexName the hdt index name
+     *
+     * @param locationNative
+     *            the native storage dir
+     * @param locationHdt
+     *            the hdt storage dir
+     * @param hdtIndexName
+     *            the hdt index name
      */
     public EndpointFiles(Path locationNative, Path locationHdt, String hdtIndexName) {
         this.locationNative = locationNative.toAbsolutePath() + "/";

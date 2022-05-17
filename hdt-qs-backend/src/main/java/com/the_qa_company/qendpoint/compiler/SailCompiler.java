@@ -48,7 +48,8 @@ public class SailCompiler {
 	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([^}]+)}");
 
 	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to an {@link org.eclipse.rdf4j.model.IRI}
+	 * convert a {@link org.eclipse.rdf4j.model.Value} to an
+	 * {@link org.eclipse.rdf4j.model.IRI}
 	 *
 	 * @param value the value
 	 * @return the iri
@@ -62,7 +63,8 @@ public class SailCompiler {
 	}
 
 	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to a {@link org.eclipse.rdf4j.model.Resource}
+	 * convert a {@link org.eclipse.rdf4j.model.Value} to a
+	 * {@link org.eclipse.rdf4j.model.Resource}
 	 *
 	 * @param value the value
 	 * @return the resource
@@ -145,8 +147,7 @@ public class SailCompiler {
 	}
 
 	/**
-	 * register a {@link SailCompilerSchema#PARSED_STRING_DATATYPE}
-	 * parsed value
+	 * register a {@link SailCompilerSchema#PARSED_STRING_DATATYPE} parsed value
 	 *
 	 * @param name  value key
 	 * @param value value
@@ -159,8 +160,7 @@ public class SailCompiler {
 	}
 
 	/**
-	 * load every method annotated with {@link ParsedStringValue} in
-	 * an object.
+	 * load every method annotated with {@link ParsedStringValue} in an object.
 	 *
 	 * @param object the object to read
 	 */
@@ -170,7 +170,8 @@ public class SailCompiler {
 			if (value != null) {
 				try {
 					if (m.getParameterCount() != 0) {
-						throw new IllegalArgumentException("The count of parameters on the method " + m.getName() + "isn't 0");
+						throw new IllegalArgumentException(
+								"The count of parameters on the method " + m.getName() + "isn't 0");
 					}
 					String key = value.value();
 					String val = String.valueOf(m.invoke(object));
@@ -204,7 +205,8 @@ public class SailCompiler {
 	}
 
 	/**
-	 * parse a directory and add {@literal ${key}} into value from {@link #registerDirString(String, String)}
+	 * parse a directory and add {@literal ${key}} into value from
+	 * {@link #registerDirString(String, String)}
 	 *
 	 * @param dir the directory string to parse
 	 * @return the parsed dir
@@ -264,19 +266,20 @@ public class SailCompiler {
 	}
 
 	/**
-	 * compile the read file from a source, if no main node is defined, the source is returned
+	 * compile the read file from a source, if no main node is defined, the
+	 * source is returned
 	 *
 	 * @param source the triple source to pipe to the model
-	 * @return the sail for this model piped to the source or the source if no main node is described
+	 * @return the sail for this model piped to the source or the source if no
+	 *         main node is described
 	 * @throws SailCompilerException sail error
 	 */
 	public NotifyingSail compile(NotifyingSail source) throws SailCompilerException {
 		LinkedSail<? extends NotifyingSail> sail;
 		try (SailCompilerReader reader = new SailCompilerReader()) {
 			// read parsedString properties
-			reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.PARSED_STRING_PARAM)
-					.stream().map(SailCompiler::asResource)
-					.forEach(rnode -> {
+			reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.PARSED_STRING_PARAM).stream()
+					.map(SailCompiler::asResource).forEach(rnode -> {
 						String key = asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_KEY));
 						String value = asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_VALUE));
 						dirStrings.put(key, value);
@@ -365,21 +368,24 @@ public class SailCompiler {
 		 */
 		public Value searchOne(Resource subject, IRI predicate) throws SailCompilerException {
 			Value out;
-			try (CloseableIteration<? extends Statement, SailCompilerException> it =
-						 connection.getStatements(subject, predicate, null)) {
+			try (CloseableIteration<? extends Statement, SailCompilerException> it = connection.getStatements(subject,
+					predicate, null)) {
 				if (!it.hasNext()) {
-					throw new SailCompilerException("Can't find statements for the query (" + subject + ", " + predicate + ", ???)!");
+					throw new SailCompilerException(
+							"Can't find statements for the query (" + subject + ", " + predicate + ", ???)!");
 				}
 				out = it.next().getObject();
 				if (it.hasNext()) {
-					throw new SailCompilerException("Too many value for the query (" + subject + ", " + predicate + ", ???)!");
+					throw new SailCompilerException(
+							"Too many value for the query (" + subject + ", " + predicate + ", ???)!");
 				}
 			}
 			return out;
 		}
 
 		/**
-		 * search for exactly one or zero statement with this subject and predicate
+		 * search for exactly one or zero statement with this subject and
+		 * predicate
 		 *
 		 * @param subject   the subject
 		 * @param predicate the predicate
@@ -388,14 +394,15 @@ public class SailCompiler {
 		 */
 		public Optional<Value> searchOneOpt(Resource subject, IRI predicate) throws SailCompilerException {
 			Value out;
-			try (CloseableIteration<? extends Statement, SailCompilerException> it =
-						 connection.getStatements(subject, predicate, null)) {
+			try (CloseableIteration<? extends Statement, SailCompilerException> it = connection.getStatements(subject,
+					predicate, null)) {
 				if (!it.hasNext()) {
 					return Optional.empty();
 				}
 				out = it.next().getObject();
 				if (it.hasNext()) {
-					throw new SailCompilerException("Too many value for the query (" + subject + ", " + predicate + ", ???)!");
+					throw new SailCompilerException(
+							"Too many value for the query (" + subject + ", " + predicate + ", ???)!");
 				}
 			}
 			return Optional.of(out);
@@ -407,11 +414,13 @@ public class SailCompiler {
 		 * @param subject  the subject to read
 		 * @param property the property to read and check values
 		 * @return the value
-		 * @throws SailCompilerException if the value isn't a valid value for this property
+		 * @throws SailCompilerException if the value isn't a valid value for
+		 *                               this property
 		 */
-		public <T> T searchPropertyValue(Resource subject, SailCompilerSchema.Property<T, ? extends SailCompilerSchema.ValueHandler<T>> property) throws SailCompilerException {
-			return searchOneOpt(subject, property.getIri())
-					.map(property::throwIfNotValidValue)
+		public <T> T searchPropertyValue(Resource subject,
+				SailCompilerSchema.Property<T, ? extends SailCompilerSchema.ValueHandler<T>> property)
+				throws SailCompilerException {
+			return searchOneOpt(subject, property.getIri()).map(property::throwIfNotValidValue)
 					.orElseGet(property.getHandler()::defaultValue);
 		}
 
@@ -424,8 +433,8 @@ public class SailCompiler {
 		 */
 		public List<Value> search(Resource subject, IRI predicate) {
 			List<Value> values = new ArrayList<>();
-			try (CloseableIteration<? extends Statement, SailCompilerException> it =
-						 connection.getStatements(subject, predicate, null)) {
+			try (CloseableIteration<? extends Statement, SailCompilerException> it = connection.getStatements(subject,
+					predicate, null)) {
 				it.stream().forEach(s -> values.add(s.getObject()));
 			}
 			return values;

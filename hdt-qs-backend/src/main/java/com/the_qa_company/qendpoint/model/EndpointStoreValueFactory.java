@@ -22,10 +22,9 @@ import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
 /**
- * Abstract base class for {@link ValueFactory} implementations. It implements all basic {@link
- * Value} creation methods by using the default implementations ({@link SimpleBNode}, {@link
- * SimpleIRI}, etc), and type-optimized subclasses (e.g. {@link BooleanLiteral}, {@link
- * NumericLiteral}) where possible.
+ * Abstract base class for {@link ValueFactory} implementations. It implements all basic {@link Value} creation methods
+ * by using the default implementations ({@link SimpleBNode}, {@link SimpleIRI}, etc), and type-optimized subclasses
+ * (e.g. {@link BooleanLiteral}, {@link NumericLiteral}) where possible.
  *
  * @author Arjohn Kampman
  * @author Jeen Broekstra
@@ -112,7 +111,6 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
     public IRI createIRI(String namespace, String localName) {
         return createIRI(namespace + localName);
     }
-
 
     @Override
     public Literal createLiteral(String value) {

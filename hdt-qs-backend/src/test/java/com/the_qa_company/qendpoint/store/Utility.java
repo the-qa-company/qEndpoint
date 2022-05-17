@@ -24,28 +24,45 @@ public class Utility {
 
     /**
      * create a temporary HDT Index
-     * @param fileName the temporaryFolder to create the temp file
-     * @param empty if the HDT should be empty?
-     * @param isBig if the HDT should be big?
-     * @param spec the HDTOptions to put to the HDT
+     *
+     * @param fileName
+     *            the temporaryFolder to create the temp file
+     * @param empty
+     *            if the HDT should be empty?
+     * @param isBig
+     *            if the HDT should be big?
+     * @param spec
+     *            the HDTOptions to put to the HDT
+     *
      * @return HDT
-     * @throws IOException io error
+     *
+     * @throws IOException
+     *             io error
      */
-    public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException {
+    public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTSpecification spec)
+            throws IOException {
         return createTempHdtIndex(new File(fileName.newFile() + ".nt").getAbsolutePath(), empty, isBig, spec);
     }
 
-
     /**
      * create a temporary HDT Index
-     * @param fileName the temp file name to create the temp rdf file
-     * @param empty if the HDT should be empty?
-     * @param isBig if the HDT should be big?
-     * @param spec the HDTOptions to put to the HDT
+     *
+     * @param fileName
+     *            the temp file name to create the temp rdf file
+     * @param empty
+     *            if the HDT should be empty?
+     * @param isBig
+     *            if the HDT should be big?
+     * @param spec
+     *            the HDTOptions to put to the HDT
+     *
      * @return HDT
-     * @throws IOException io error
+     *
+     * @throws IOException
+     *             io error
      */
-    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec) throws IOException{
+    public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec)
+            throws IOException {
         File inputFile = new File(fileName);
         if (!empty) {
             if (!isBig)
@@ -91,8 +108,12 @@ public class Utility {
 
     /**
      * create a statement of a fake person (ex:personX a foaf:person)
-     * @param vf the value factory
-     * @param id the id of the fake person
+     *
+     * @param vf
+     *            the value factory
+     * @param id
+     *            the id of the fake person
+     *
      * @return the statement
      */
     public static Statement getFakePersonStatement(ValueFactory vf, int id) {
@@ -102,8 +123,12 @@ public class Utility {
 
     /**
      * create a fake statement of a complete graph
-     * @param vf the value factory
-     * @param id the id, must be between 0 (included) and subjects*predicates*objects (excluded)
+     *
+     * @param vf
+     *            the value factory
+     * @param id
+     *            the id, must be between 0 (included) and subjects*predicates*objects (excluded)
+     *
      * @return the statement
      */
     public static Statement getFakeStatement(ValueFactory vf, int id) {
@@ -117,10 +142,10 @@ public class Utility {
         IRI o = vf.createIRI(EXAMPLE_NAMESPACE, "obj" + z);
 
         return vf.createStatement(r, p, o);
-        //*/
+        // */
     }
 
-    private static void writeBigIndex(File file) throws IOException{
+    private static void writeBigIndex(File file) throws IOException {
         ValueFactory vf = new MemValueFactory();
         try (FileOutputStream out = new FileOutputStream(file)) {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
@@ -145,4 +170,3 @@ public class Utility {
         }
     }
 }
-

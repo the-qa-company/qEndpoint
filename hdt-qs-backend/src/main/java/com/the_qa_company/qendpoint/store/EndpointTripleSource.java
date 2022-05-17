@@ -39,9 +39,8 @@ public class EndpointTripleSource implements TripleSource {
     }
 
     @Override
-    public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(
-            Resource resource, IRI iri, Value value, Resource... resources)
-            throws QueryEvaluationException {
+    public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(Resource resource, IRI iri,
+            Value value, Resource... resources) throws QueryEvaluationException {
 
         // @todo: should we not move this to the EndpointStore in the resetHDT function?
         // check if the index changed, then refresh it
@@ -57,25 +56,23 @@ public class EndpointTripleSource implements TripleSource {
         long predicateID = this.endpoint.getHdtConverter().predicateToID(iri);
         long objectID = this.endpoint.getHdtConverter().objectToID(value);
 
-
-        if (subjectID == 0 || subjectID == -1){
+        if (subjectID == 0 || subjectID == -1) {
             newSubj = resource;
         } else {
             newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
         }
-        if (predicateID == 0 || predicateID == -1){
+        if (predicateID == 0 || predicateID == -1) {
             newPred = iri;
         } else {
             newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
         }
-        if (objectID == 0 || objectID == -1){
+        if (objectID == 0 || objectID == -1) {
             newObj = value;
         } else {
             newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
         }
 
-        logger.debug("SEARCH {} {} {}",newSubj, newPred, newObj);
-
+        logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
         // check if we need to search over the delta and if yes, search
         CloseableIteration<? extends Statement, SailException> repositoryResult = null;
@@ -85,21 +82,16 @@ public class EndpointTripleSource implements TripleSource {
             if (endpoint.isMergeTriggered) {
                 // query both native stores
                 logger.debug("Query both RDF4j stores!");
-                CloseableIteration<? extends Statement, SailException> repositoryResult1 =
-                        this.endpointStoreConnection.getConnA_read().getStatements(
-                                newSubj, newPred, newObj, false, resources
-                        );
-                CloseableIteration<? extends Statement, SailException> repositoryResult2 =
-                        this.endpointStoreConnection.getConnB_read().getStatements(
-                                newSubj, newPred, newObj, false, resources
-                        );
+                CloseableIteration<? extends Statement, SailException> repositoryResult1 = this.endpointStoreConnection
+                        .getConnA_read().getStatements(newSubj, newPred, newObj, false, resources);
+                CloseableIteration<? extends Statement, SailException> repositoryResult2 = this.endpointStoreConnection
+                        .getConnB_read().getStatements(newSubj, newPred, newObj, false, resources);
                 repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
             } else {
                 logger.debug("Query only one RDF4j stores!");
-                repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(
-                        newSubj, newPred, newObj, false, resources
-                );
+                repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
+                        newPred, newObj, false, resources);
             }
         } else {
             logger.debug("Not searching over native store");
@@ -107,8 +99,8 @@ public class EndpointTripleSource implements TripleSource {
 
         // iterate over the HDT file
         IteratorTripleID iterator;
-        if ( subjectID != -1 && predicateID != -1 && objectID != -1) {
-            logger.debug("Searching over HDT {} {} {}",subjectID, predicateID, objectID);
+        if (subjectID != -1 && predicateID != -1 && objectID != -1) {
+            logger.debug("Searching over HDT {} {} {}", subjectID, predicateID, objectID);
             TripleID t = new TripleID(subjectID, predicateID, objectID);
             // search with the ID to check if the triples has been deleted
             iterator = this.endpoint.getHdt().getTriples().search(t);
@@ -117,7 +109,8 @@ public class EndpointTripleSource implements TripleSource {
         }
 
         // iterate over hdt result, delete the triples marked as deleted and add the triples from the delta
-        EndpointStoreTripleIterator tripleWithDeleteIter = new EndpointStoreTripleIterator(endpoint, this, iterator, repositoryResult);
+        EndpointStoreTripleIterator tripleWithDeleteIter = new EndpointStoreTripleIterator(endpoint, this, iterator,
+                repositoryResult);
         return new CloseableIteration<>() {
             @Override
             public void close() throws QueryEvaluationException {
@@ -153,14 +146,15 @@ public class EndpointTripleSource implements TripleSource {
         if (predicate != 0 && predicate != -1) {
             containsPredicate = this.endpoint.getBitY().access(predicate - 1);
         }
-        if (object!= 0 && object != -1) {
+        if (object != 0 && object != -1) {
             if (object <= this.endpoint.getHdt().getDictionary().getNshared()) {
                 containsObject = this.endpoint.getBitX().access(object - 1);
             } else {
-                containsObject = this.endpoint.getBitZ().access(object - this.endpoint.getHdt().getDictionary().getNshared() - 1);
+                containsObject = this.endpoint.getBitZ()
+                        .access(object - this.endpoint.getHdt().getDictionary().getNshared() - 1);
             }
         }
-        logger.debug("Search over native store? {} {} {}",containsSubject, containsPredicate, containsObject);
+        logger.debug("Search over native store? {} {} {}", containsSubject, containsPredicate, containsObject);
         return containsSubject && containsPredicate && containsObject;
     }
 

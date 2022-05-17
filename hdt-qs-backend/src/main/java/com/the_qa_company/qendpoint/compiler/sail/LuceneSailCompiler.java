@@ -18,65 +18,60 @@ import java.util.Set;
 
 /**
  * a linked sail sail to create lucene sails
+ *
  * @author Antoine Willerval
  */
 public class LuceneSailCompiler extends LinkedSailCompiler {
-	private final Set<LuceneSail> sails = new HashSet<>();
-	public LuceneSailCompiler() {
-		super(SailCompilerSchema.LUCENE_TYPE);
-	}
+    private final Set<LuceneSail> sails = new HashSet<>();
 
-	public void reset() {
-		sails.clear();
-	}
+    public LuceneSailCompiler() {
+        super(SailCompilerSchema.LUCENE_TYPE);
+    }
 
-	public Set<LuceneSail> getSails() {
-		return sails;
-	}
+    public void reset() {
+        sails.clear();
+    }
 
-	@Override
-	public LinkedSail<? extends NotifyingSail> compileWithParam(SailCompiler.SailCompilerReader reader, Resource rnode)
-			throws SailCompiler.SailCompilerException {
+    public Set<LuceneSail> getSails() {
+        return sails;
+    }
 
-		LuceneSailBuilder builder = new LuceneSailBuilder();
+    @Override
+    public LinkedSail<? extends NotifyingSail> compileWithParam(SailCompiler.SailCompilerReader reader, Resource rnode)
+            throws SailCompiler.SailCompilerException {
 
-		reader.searchOneOpt(rnode, LuceneSailSchema.INDEXID)
-				.map(SailCompiler::asIRI)
-				.map(IRI::toString)
-				.ifPresent(builder::withId);
+        LuceneSailBuilder builder = new LuceneSailBuilder();
 
-		List<Value> languages = reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_LANG);
+        reader.searchOneOpt(rnode, LuceneSailSchema.INDEXID).map(SailCompiler::asIRI).map(IRI::toString)
+                .ifPresent(builder::withId);
 
-		if (!languages.isEmpty()) {
-			builder.withLanguageFiltering(languages.stream()
-					.map(reader.getSailCompiler()::asLitString)
-					.toArray(String[]::new)
-			);
-		}
+        List<Value> languages = reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_LANG);
 
-		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_EVAL_MODE)
-				.map(reader.getSailCompiler()::asLitString)
-				.map(TupleFunctionEvaluationMode::valueOf)
-				.ifPresent(builder::withEvaluationMode);
+        if (!languages.isEmpty()) {
+            builder.withLanguageFiltering(
+                    languages.stream().map(reader.getSailCompiler()::asLitString).toArray(String[]::new));
+        }
 
-		reader.searchOneOpt(rnode, SailCompilerSchema.DIR_LOCATION)
-				.map(reader.getSailCompiler()::asLitString)
-				.ifPresent(builder::withDir);
+        reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_EVAL_MODE).map(reader.getSailCompiler()::asLitString)
+                .map(TupleFunctionEvaluationMode::valueOf).ifPresent(builder::withEvaluationMode);
 
-		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_REINDEX_QUERY)
-				.map(reader.getSailCompiler()::asLitString)
-				.ifPresent(builder::withReindexQuery);
+        reader.searchOneOpt(rnode, SailCompilerSchema.DIR_LOCATION).map(reader.getSailCompiler()::asLitString)
+                .ifPresent(builder::withDir);
 
-		reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_PARAM).stream()
-				.map(SailCompiler::asResource)
-				.forEach(rsnode -> {
-					String key = reader.getSailCompiler().asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_KEY));
-					String value = reader.getSailCompiler().asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_VALUE));
-					builder.withParameter(key, value);
-				});
+        reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_REINDEX_QUERY)
+                .map(reader.getSailCompiler()::asLitString).ifPresent(builder::withReindexQuery);
 
-		LinkedSail<LuceneSail> lucene = builder.buildLinked();
-		sails.add(lucene.getSail());
-		return lucene;
-	}
+        reader.search(rnode, SailCompilerSchema.LUCENE_TYPE_PARAM).stream().map(SailCompiler::asResource)
+                .forEach(rsnode -> {
+                    String key = reader.getSailCompiler()
+                            .asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_KEY));
+                    String value = reader.getSailCompiler()
+                            .asLitString(reader.searchOne(rsnode, SailCompilerSchema.PARAM_VALUE));
+                    builder.withParameter(key, value);
+                });
+
+        LinkedSail<LuceneSail> lucene = builder.buildLinked();
+        sails.add(lucene.getSail());
+        return lucene;
+    }
 }

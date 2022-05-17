@@ -85,8 +85,7 @@ public class SimpleLiteral2 implements Literal {
             } else if (!this.datatype.equals(other.getDatatype())) {
                 return false;
             } else if (this.getLanguage().isPresent() && other.getLanguage().isPresent()) {
-                return (this.getLanguage().get())
-                        .equalsIgnoreCase(other.getLanguage().get());
+                return (this.getLanguage().get()).equalsIgnoreCase(other.getLanguage().get());
             } else {
                 return this.getLanguage().isEmpty() && other.getLanguage().isEmpty();
             }

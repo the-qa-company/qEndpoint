@@ -7,18 +7,19 @@ import java.util.function.Consumer;
 /**
  * Class to store multiple sails
  *
- * @param <S> the linked sail type
+ * @param <S>
+ *            the linked sail type
+ *
  * @author Antoine Willerval
  */
 public interface LinkedSail<S extends Sail> {
-	/**
-	 * @return the described sail
-	 */
-	S getSail();
+    /**
+     * @return the described sail
+     */
+    S getSail();
 
-
-	/**
-	 * @return the consumer to set the base sail
-	 */
-	Consumer<Sail> getSailConsumer();
+    /**
+     * @return the consumer to set the base sail
+     */
+    Consumer<Sail> getSailConsumer();
 }

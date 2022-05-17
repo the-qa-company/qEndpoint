@@ -36,7 +36,6 @@ import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 
 import java.util.ArrayList;
 
-
 // @todo: are there any changes in this class except that the evaluationStatistics is using the CombinedEvaluationStatistics?
 // yes
 public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
@@ -66,22 +65,22 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
             return;
         }
 
-        switch(level) {
-            case Timed:
-                this.trackTime = true;
-                this.trackResultSize = true;
-                this.cloneTupleExpression = false;
-                break;
-            case Executed:
-                this.trackResultSize = true;
-                this.cloneTupleExpression = false;
-                break;
-            case Optimized:
-                this.cloneTupleExpression = false;
-            case Unoptimized:
-                break;
-            default:
-                throw new UnsupportedOperationException("Unsupported query explanation level: " + level);
+        switch (level) {
+        case Timed:
+            this.trackTime = true;
+            this.trackResultSize = true;
+            this.cloneTupleExpression = false;
+            break;
+        case Executed:
+            this.trackResultSize = true;
+            this.cloneTupleExpression = false;
+            break;
+        case Optimized:
+            this.cloneTupleExpression = false;
+        case Unoptimized:
+            break;
+        default:
+            throw new UnsupportedOperationException("Unsupported query explanation level: " + level);
         }
     }
 
@@ -91,12 +90,8 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
     }
 
     @Override
-    protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(
-            TupleExpr tupleExpr,
-            Dataset dataset,
-            BindingSet bindings,
-            boolean includeInferred,
-            int maxExecutionTime)
+    protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
+            Dataset dataset, BindingSet bindings, boolean includeInferred, int maxExecutionTime)
             throws QueryEvaluationException {
 
         if (this.cloneTupleExpression) {
@@ -105,9 +100,8 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
         if (!(tupleExpr instanceof QueryRoot)) {
             tupleExpr = new QueryRoot(tupleExpr);
         }
-        EvaluationStrategy strategy =
-                new ExtendedEvaluationStrategy(
-                        getTripleSource(), dataset, new SPARQLServiceResolver(), 0L, evaluationStatistics);
+        EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
+                new SPARQLServiceResolver(), 0L, evaluationStatistics);
 
         if (this.trackResultSize) {
             strategy.setTrackResultSize(this.trackResultSize);
@@ -134,15 +128,11 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
         return strategy.evaluate(tupleExpr, bindings);
     }
 
-    // @todo: this looks wrong, apperently if one wraps around the store SailRepository then the function is overwritten, this is the reason we do not say an error
+    // @todo: this looks wrong, apperently if one wraps around the store SailRepository then the function is
+    // overwritten, this is the reason we do not say an error
     @Override
-    protected void execute(
-            UpdateExpr updateExpr,
-            Dataset dataset,
-            BindingSet bindings,
-            boolean includeInferred,
-            int maxExecutionTime)
-            throws UpdateExecutionException {
+    protected void execute(UpdateExpr updateExpr, Dataset dataset, BindingSet bindings, boolean includeInferred,
+            int maxExecutionTime) throws UpdateExecutionException {
         throw new UpdateExecutionException("This repository is read only");
     }
 
@@ -169,17 +159,10 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
             IteratingTupleQueryResult var6;
             try {
                 TupleExpr tupleExpr = this.getParsedQuery().getTupleExpr();
-                bindingsIter1 =
-                        EndpointStoreQueryPreparer.this.evaluate(
-                                tupleExpr,
-                                this.getActiveDataset(),
-                                this.getBindings(),
-                                this.getIncludeInferred(),
-                                this.getMaxExecutionTime());
+                bindingsIter1 = EndpointStoreQueryPreparer.this.evaluate(tupleExpr, this.getActiveDataset(),
+                        this.getBindings(), this.getIncludeInferred(), this.getMaxExecutionTime());
                 bindingsIter2 = this.enforceMaxQueryTime(bindingsIter1);
-                result =
-                        new IteratingTupleQueryResult(
-                                new ArrayList<>(tupleExpr.getBindingNames()), bindingsIter2);
+                result = new IteratingTupleQueryResult(new ArrayList<>(tupleExpr.getBindingNames()), bindingsIter2);
                 allGood = true;
                 var6 = result;
             } finally {

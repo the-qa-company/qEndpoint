@@ -96,9 +96,8 @@ public class EndpointStoreTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-        EndpointStore endpoint = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-        );
+        EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", true);
         endpoint.shutDown();
     }
 
@@ -109,9 +108,8 @@ public class EndpointStoreTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-        EndpointStore endpoint = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-        );
+        EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", true);
         SailConnection connection = endpoint.getConnection();
         connection.close();
         endpoint.shutDown();
@@ -124,11 +122,8 @@ public class EndpointStoreTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-        SailRepository endpointStore = new SailRepository(
-                new EndpointStore(
-                        hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-                )
-        );
+        SailRepository endpointStore = new SailRepository(new EndpointStore(hdtStore.getAbsolutePath() + "/",
+                HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true));
         endpointStore.shutDown();
     }
 
@@ -139,11 +134,9 @@ public class EndpointStoreTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-        SailRepository endpointStore = new SailRepository(
-                new EndpointStore(
-                        hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-                )
-//                    new NativeStore(nativeStore,"spoc")
+        SailRepository endpointStore = new SailRepository(new EndpointStore(hdtStore.getAbsolutePath() + "/",
+                HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true)
+        // new NativeStore(nativeStore,"spoc")
         );
         try (SailRepositoryConnection connection = endpointStore.getConnection()) {
             System.out.println(connection.size());
@@ -159,9 +152,8 @@ public class EndpointStoreTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-        EndpointStore endpoint = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-        );
+        EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", true);
 
         try (NotifyingSailConnection connection = endpoint.getConnection()) {
             connection.begin();
@@ -169,9 +161,8 @@ public class EndpointStoreTest {
             connection.commit();
         }
         endpoint.shutDown();
-        endpoint = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-        );
+        endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", true);
         try (NotifyingSailConnection connection = endpoint.getConnection()) {
             connection.begin();
             connection.addStatement(RDF.TYPE, RDF.TYPE, RDFS.RESOURCE);
@@ -189,11 +180,8 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        SailRepository endpointStore = new SailRepository(
-                new EndpointStore(
-                        hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true
-                )
-        );
+        SailRepository endpointStore = new SailRepository(new EndpointStore(hdtStore.getAbsolutePath() + "/",
+                HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true));
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -217,9 +205,8 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -249,7 +236,6 @@ public class EndpointStoreTest {
             assertEquals(3, count);
             Thread.sleep(3000);
 
-
             sts = connection.getStatements(null, null, null, true);
             count = 0;
             while (sts.hasNext()) {
@@ -259,11 +245,12 @@ public class EndpointStoreTest {
             // 2 triples hdt, 0 triples native a, 1 triple native b
             assertEquals(3, count);
             Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
-            Files.deleteIfExists(Paths.get(HDT_INDEX_NAME +".index.v1-1"));
+            Files.deleteIfExists(Paths.get(HDT_INDEX_NAME + ".index.v1-1"));
             Files.deleteIfExists(Paths.get("index.nt"));
 
         }
     }
+
     @Test
     public void testMergeBig() throws IOException, InterruptedException {
         MergeRunnableStopPoint.STEP2_END.debugLock();
@@ -274,10 +261,9 @@ public class EndpointStoreTest {
         HDT hdt = Utility.createTempHdtIndex(tempDir, false, true, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
-//            printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        // printHDT(hdt);
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
 
         int toAdd = 15;
         int toDelete = Utility.COUNT / 100;
@@ -285,7 +271,6 @@ public class EndpointStoreTest {
         Random rnd = new Random(42);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
-
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -312,7 +297,6 @@ public class EndpointStoreTest {
 
         MergeRunnableStopPoint.STEP2_END.debugUnlockTest();
 
-
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
 
@@ -334,7 +318,6 @@ public class EndpointStoreTest {
             assertEquals(endCount, count);
             Thread.sleep(3000);
 
-
             sts = connection.getStatements(null, null, null, true);
             count = 0;
             while (sts.hasNext()) {
@@ -342,7 +325,7 @@ public class EndpointStoreTest {
                 count++;
             }
             // 2 triples hdt, 0 triples native a, 1 triple native b
-            assertEquals( endCount, count);
+            assertEquals(endCount, count);
 
         }
     }
@@ -357,9 +340,8 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(999);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -391,12 +373,10 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(10);
         SailRepository endpointStore = new SailRepository(store);
-
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -407,7 +387,8 @@ public class EndpointStoreTest {
             connection.add(dennis, RDF.TYPE, FOAF.PERSON);
 
             // query everything of type PERSON
-            List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, RDF.TYPE, FOAF.PERSON, true));
+            List<? extends Statement> statements = Iterations
+                    .asList(connection.getStatements(null, RDF.TYPE, FOAF.PERSON, true));
             for (Statement s : statements) {
                 System.out.println(s);
             }
@@ -436,11 +417,11 @@ public class EndpointStoreTest {
         connection.startUpdate(null);
 
         ValueFactory factory = SimpleValueFactory.getInstance();
-        for (int i=0; i<5000; i++) {
-            IRI s1 = factory.createIRI("http://s"+i);
-            IRI p1 = factory.createIRI("http://p"+i);
-            IRI o1 = factory.createIRI("http://o"+i);
-            connection.addStatement(s1,p1,o1);
+        for (int i = 0; i < 5000; i++) {
+            IRI s1 = factory.createIRI("http://s" + i);
+            IRI p1 = factory.createIRI("http://p" + i);
+            IRI o1 = factory.createIRI("http://o" + i);
+            connection.addStatement(s1, p1, o1);
         }
         connection.endUpdate(null);
         connection.commit();
@@ -455,7 +436,7 @@ public class EndpointStoreTest {
 
         assertTrue(tupleQueryResult.hasNext());
 
-        if (tupleQueryResult.hasNext()){
+        if (tupleQueryResult.hasNext()) {
             tupleQueryResult.stream().iterator().forEachRemaining(System.out::println);
         }
     }
@@ -488,8 +469,7 @@ public class EndpointStoreTest {
             Statement stm1 = stmtsAdded.get(i);
             Statement stm2 = stmtsQueried.get(i);
 
-            if (!(stm1.getSubject().equals(stm2.getSubject())
-                    && stm1.getPredicate().equals(stm2.getPredicate())
+            if (!(stm1.getSubject().equals(stm2.getSubject()) && stm1.getPredicate().equals(stm2.getPredicate())
                     && stm1.getObject().equals(stm2.getObject()))) {
 
                 fail("Not equal: [" + stm1 + "] - [" + stm2 + "]");
@@ -506,9 +486,8 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(99);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -519,7 +498,8 @@ public class EndpointStoreTest {
             InputStream inputStream = new FileInputStream(cocktails.getFile());
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
+            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser,
+                    new WeakReference<>(this))) {
                 int count = 1;
                 ArrayList<Statement> stmtsAdded = new ArrayList<>();
                 while (res.hasNext()) {
@@ -528,7 +508,8 @@ public class EndpointStoreTest {
                     connection.add(st);
                     if (count % 100 == 0) {
                         System.out.println("Sleeping for 2s...");
-                        List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null));
+                        List<? extends Statement> statements = Iterations
+                                .asList(connection.getStatements(null, null, null));
                         compareTriples(stmtsAdded, statements);
                     }
                     count++;
@@ -551,9 +532,8 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -589,9 +569,8 @@ public class EndpointStoreTest {
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         System.out.println("HDT content");
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
         ArrayList<IRI> subjects = new ArrayList<>();
@@ -620,7 +599,7 @@ public class EndpointStoreTest {
             int index = 0;
             System.out.println(statements.size());
             for (Statement s : statements) {
-                System.out.println("here "+s.toString());
+                System.out.println("here " + s.toString());
                 assertEquals(subjects.get(index).toString(), s.getSubject().toString());
                 index++;
             }
@@ -639,9 +618,8 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -680,12 +658,10 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(10);
         SailRepository endpointStore = new SailRepository(store);
-
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -695,12 +671,10 @@ public class EndpointStoreTest {
             IRI dennis = vf.createIRI(ex, "Dennis");
             connection.add(dennis, RDF.TYPE, FOAF.PERSON);
 
-            TupleQuery tupleQuery = connection.prepareTupleQuery(String.join("\n", "",
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-                    "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
-                    "select ?s where {",
-                    "	?s rdf:type foaf:Person .",
-                    "}"));
+            TupleQuery tupleQuery = connection.prepareTupleQuery(
+                    String.join("\n", "", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+                            "PREFIX foaf: <http://xmlns.com/foaf/0.1/>", "select ?s where {",
+                            "	?s rdf:type foaf:Person .", "}"));
 
             List<BindingSet> bindingSets = Iterations.asList(tupleQuery.evaluate());
             for (BindingSet binding : bindingSets) {
@@ -721,12 +695,10 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
-
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -734,13 +706,10 @@ public class EndpointStoreTest {
             IRI ali = vf.createIRI(ex, "Ali");
             connection.add(ali, RDF.TYPE, FOAF.PERSON);
 
-            Update update = connection.prepareUpdate(String.join("\n", "",
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-                    "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
-                    "PREFIX ex: <http://example.com/>",
-                    "DELETE DATA{",
-                    "	ex:Guo rdf:type foaf:Person .",
-                    "}"));
+            Update update = connection
+                    .prepareUpdate(String.join("\n", "", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+                            "PREFIX foaf: <http://xmlns.com/foaf/0.1/>", "PREFIX ex: <http://example.com/>",
+                            "DELETE DATA{", "	ex:Guo rdf:type foaf:Person .", "}"));
 
             update.execute();
             List<Statement> statements = Iterations.asList(connection.getStatements(null, null, null, (Resource) null));
@@ -765,12 +734,10 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
-
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -778,10 +745,8 @@ public class EndpointStoreTest {
             IRI ali = vf.createIRI(ex, "Ali");
             connection.add(ali, RDF.TYPE, FOAF.PERSON);
 
-            Update update = connection.prepareUpdate(String.join("\n", "",
-                    "DELETE {",
-                    "	?s ?p ?o",
-                    "}", "\n", "WHERE { ?s ?p ?o}"));
+            Update update = connection
+                    .prepareUpdate(String.join("\n", "", "DELETE {", "	?s ?p ?o", "}", "\n", "WHERE { ?s ?p ?o}"));
 
             update.execute();
             List<Statement> statements = Iterations.asList(connection.getStatements(null, null, null, (Resource) null));
@@ -797,12 +762,10 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(2);
         SailRepository endpointStore = new SailRepository(store);
-
 
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             ValueFactory vf = connection.getValueFactory();
@@ -813,15 +776,12 @@ public class EndpointStoreTest {
             IRI has = vf.createIRI(ex, "has");
             connection.add(guo, has, FOAF.ACCOUNT);
 
-            TupleQuery tupleQuery = connection.prepareTupleQuery(String.join("\n", "",
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-                    "PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
-                    "PREFIX ex: <http://example.com/>",
-                    "select ?s where {",
-                    "	?s rdf:type foaf:Person .",
-                    "	?s ex:has foaf:account .",
+            TupleQuery tupleQuery = connection.prepareTupleQuery(
+                    String.join("\n", "", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+                            "PREFIX foaf: <http://xmlns.com/foaf/0.1/>", "PREFIX ex: <http://example.com/>",
+                            "select ?s where {", "	?s rdf:type foaf:Person .", "	?s ex:has foaf:account .",
 
-                    "}"));
+                            "}"));
 
             List<BindingSet> bindingSets = Iterations.asList(tupleQuery.evaluate());
             for (BindingSet binding : bindingSets) {
@@ -831,7 +791,7 @@ public class EndpointStoreTest {
             connection.close();
             endpointStore.shutDown();
             Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
-            Files.deleteIfExists(Paths.get( HDT_INDEX_NAME + ".index.v1-1"));
+            Files.deleteIfExists(Paths.get(HDT_INDEX_NAME + ".index.v1-1"));
             Files.deleteIfExists(Paths.get("index.nt"));
         }
     }
@@ -845,16 +805,13 @@ public class EndpointStoreTest {
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + HDT_INDEX_NAME, null);
         printHDT(hdt);
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME,spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
         store.setThreshold(1000000);
         SailRepository endpointStore = new SailRepository(store);
 
-
         try (SailRepositoryConnection connection = endpointStore.getConnection()) {
             stopWatch.stop();
-
 
             stopWatch = StopWatch.createStarted();
             connection.begin();
@@ -865,7 +822,7 @@ public class EndpointStoreTest {
             connection.commit();
             stopWatch.stop();
 
-            //Thread.sleep(2000);
+            // Thread.sleep(2000);
             assertEquals(count + 1, connection.size());
 
             Files.deleteIfExists(Paths.get(EndpointStoreTest.HDT_INDEX_NAME));
@@ -879,30 +836,17 @@ public class EndpointStoreTest {
     @Test
     public void bnodeTest() throws ParserException, IOException {
         Path dir = tempDir.newFolder().toPath();
-		Path nativeStore = dir.resolve("native");
-		Path hdtStore = dir.resolve("hdt");
-		Files.createDirectories(hdtStore);
+        Path nativeStore = dir.resolve("native");
+        Path hdtStore = dir.resolve("hdt");
+        Files.createDirectories(hdtStore);
         try (HDT hdt = HDTManager.generateHDT(
-                List.of(
-                        new TripleString("_:aaaa", "http://pppp", "\"aaaa\"^^<http://type>")
-                ).iterator(),
-                Utility.EXAMPLE_NAMESPACE,
-                spec,
-                null
-        )) {
+                List.of(new TripleString("_:aaaa", "http://pppp", "\"aaaa\"^^<http://type>")).iterator(),
+                Utility.EXAMPLE_NAMESPACE, spec, null)) {
             hdt.saveToHDT(hdtStore.resolve("test.hdt").toAbsolutePath().toString(), null);
         }
 
-		EndpointStore store = new EndpointStore(
-				new EndpointFiles(
-						nativeStore,
-						hdtStore,
-						"test.hdt"
-				),
-				spec,
-				false,
-				true
-		);
+        EndpointStore store = new EndpointStore(new EndpointFiles(nativeStore, hdtStore, "test.hdt"), spec, false,
+                true);
         HDTConverter converter = store.getHdtConverter();
         Resource bnode = converter.IdToSubjectHDTResource(1L);
         Assert.assertTrue(bnode instanceof BNode);
@@ -910,27 +854,21 @@ public class EndpointStoreTest {
         Assert.assertEquals(1L, ((SimpleBNodeHDT) bnode).getHdtId());
         Assert.assertEquals("aaaa", ((BNode) bnode).getID());
         Assert.assertEquals("_:aaaa", bnode.toString());
-		SailRepository repo = new SailRepository(store);
-		try (SailRepositoryConnection connection = repo.getConnection()) {
+        SailRepository repo = new SailRepository(store);
+        try (SailRepositoryConnection connection = repo.getConnection()) {
 
             ValueFactory vf = connection.getValueFactory();
 
             System.out.println(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "test"));
-			try (RepositoryResult<Statement> result = connection.getStatements(
-					vf.createBNode("aaaa"),
-					vf.createIRI("http://pppp"),
-					vf.createLiteral(
-							"aaaa",
-							vf.createIRI("http://type")
-					)
-			)) {
-				Assert.assertTrue(result.hasNext());
-				result.next();
-				Assert.assertFalse(result.hasNext());
-			}
-		} finally {
-			repo.shutDown();
-		}
+            try (RepositoryResult<Statement> result = connection.getStatements(vf.createBNode("aaaa"),
+                    vf.createIRI("http://pppp"), vf.createLiteral("aaaa", vf.createIRI("http://type")))) {
+                Assert.assertTrue(result.hasNext());
+                result.next();
+                Assert.assertFalse(result.hasNext());
+            }
+        } finally {
+            repo.shutDown();
+        }
 
     }
 

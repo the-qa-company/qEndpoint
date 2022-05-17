@@ -42,6 +42,4 @@ public class IRITest {
         Assert.assertEquals(s1.isIRI(), s2.isIRI());
     }
 
-
-
 }

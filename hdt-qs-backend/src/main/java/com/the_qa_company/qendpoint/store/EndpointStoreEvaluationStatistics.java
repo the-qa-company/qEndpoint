@@ -9,7 +9,7 @@ public class EndpointStoreEvaluationStatistics extends EvaluationStatistics {
     private final EvaluationStatistics nativeEvaluationStatistics;
 
     public EndpointStoreEvaluationStatistics(EndpointStoreEvaluationStatisticsHDT endpointStoreEvaluationStatisticsHDT,
-											 EvaluationStatistics nativeEvaluationStatistics) {
+            EvaluationStatistics nativeEvaluationStatistics) {
         this.endpointStoreEvaluationStatisticsHDT = endpointStoreEvaluationStatisticsHDT;
         this.nativeEvaluationStatistics = nativeEvaluationStatistics;
     }

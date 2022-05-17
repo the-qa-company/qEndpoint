@@ -26,79 +26,82 @@ import java.util.stream.Collectors;
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
 public class TripleSourceTest {
-	@Parameterized.Parameters(name = "{0}")
-	public static Collection<Object> params() {
-		return SailCompilerSchema.STORAGE_MODE_PROPERTY.getHandler().getValues().stream()
-				.map(iri -> (Object) iri)
-				.collect(Collectors.toList());
-	}
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object> params() {
+        return SailCompilerSchema.STORAGE_MODE_PROPERTY.getHandler().getValues().stream().map(iri -> (Object) iri)
+                .collect(Collectors.toList());
+    }
 
-	@Autowired
-	Sparql sparql;
+    @Autowired
+    Sparql sparql;
 
-	@Value("${locationHdt}")
-	String locationHdt;
+    @Value("${locationHdt}")
+    String locationHdt;
 
-	@Value("${hdtIndexName}")
-	String hdtIndexName;
+    @Value("${hdtIndexName}")
+    String hdtIndexName;
 
-	@Value("${locationNative}")
-	String locationNative;
+    @Value("${locationNative}")
+    String locationNative;
 
-	private Runnable storageModeUnset;
+    private Runnable storageModeUnset;
 
-	private final IRI mode;
-	public TripleSourceTest(IRI mode) {
-		this.mode = mode;
-	}
-	@Before
-	public void setup() throws Exception {
-		// init spring runner
-		TestContextManager testContextManager = new TestContextManager(getClass());
-		testContextManager.prepareTestInstance(this);
+    private final IRI mode;
 
-		// clear map to recreate endpoint store
-		sparql.model.clear();
-		storageModeUnset = DebugOptionTestUtils.setStorageMode(mode);
+    public TripleSourceTest(IRI mode) {
+        this.mode = mode;
+    }
 
-		// remove previous data
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationHdt));
-		} catch (IOException e) {
-			//
-		}
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationNative));
-		} catch (IOException e) {
-			//
-		}
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(hdtIndexName));
-		} catch (IOException e) {
-			//
-		}
-	}
-	@After
-	public void complete() {
-		storageModeUnset.run();
-	}
+    @Before
+    public void setup() throws Exception {
+        // init spring runner
+        TestContextManager testContextManager = new TestContextManager(getClass());
+        testContextManager.prepareTestInstance(this);
 
-	@Test
-	public void optimizedTest() throws IOException {
-		Runnable op = DebugOptionTestUtils.setOptimization(true);
+        // clear map to recreate endpoint store
+        sparql.model.clear();
+        storageModeUnset = DebugOptionTestUtils.setStorageMode(mode);
 
-		sparql.clearEndpointStore(locationHdt);
-		sparql.initializeEndpointStore(locationHdt, true);
+        // remove previous data
+        try {
+            FileSystemUtils.deleteRecursively(Paths.get(locationHdt));
+        } catch (IOException e) {
+            //
+        }
+        try {
+            FileSystemUtils.deleteRecursively(Paths.get(locationNative));
+        } catch (IOException e) {
+            //
+        }
+        try {
+            FileSystemUtils.deleteRecursively(Paths.get(hdtIndexName));
+        } catch (IOException e) {
+            //
+        }
+    }
 
-		op.run();
-	}
-	@Test
-	public void noOptimizedTest() throws IOException {
-		Runnable op = DebugOptionTestUtils.setOptimization(false);
+    @After
+    public void complete() {
+        storageModeUnset.run();
+    }
 
-		sparql.clearEndpointStore(locationHdt);
-		sparql.initializeEndpointStore(locationHdt, true);
+    @Test
+    public void optimizedTest() throws IOException {
+        Runnable op = DebugOptionTestUtils.setOptimization(true);
 
-		op.run();
-	}
+        sparql.clearEndpointStore(locationHdt);
+        sparql.initializeEndpointStore(locationHdt, true);
+
+        op.run();
+    }
+
+    @Test
+    public void noOptimizedTest() throws IOException {
+        Runnable op = DebugOptionTestUtils.setOptimization(false);
+
+        sparql.clearEndpointStore(locationHdt);
+        sparql.initializeEndpointStore(locationHdt, true);
+
+        op.run();
+    }
 }

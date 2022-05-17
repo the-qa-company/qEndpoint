@@ -31,49 +31,47 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import java.util.function.Supplier;
 
 public class OptimizingSail extends NotifyingSailWrapper {
-	private final Supplier<FederatedServiceResolver> federatedServiceResolverSupplier;
+    private final Supplier<FederatedServiceResolver> federatedServiceResolverSupplier;
 
-	public OptimizingSail(NotifyingSail baseSail, Supplier<FederatedServiceResolver> federatedServiceResolverSupplier) {
-		super(baseSail);
-		this.federatedServiceResolverSupplier = federatedServiceResolverSupplier;
-	}
+    public OptimizingSail(NotifyingSail baseSail, Supplier<FederatedServiceResolver> federatedServiceResolverSupplier) {
+        super(baseSail);
+        this.federatedServiceResolverSupplier = federatedServiceResolverSupplier;
+    }
 
-	@Override
-	public NotifyingSailConnection getConnection() throws SailException {
-		return new OptimizingSailConnection(super.getConnection());
-	}
+    @Override
+    public NotifyingSailConnection getConnection() throws SailException {
+        return new OptimizingSailConnection(super.getConnection());
+    }
 
-	private class OptimizingSailConnection extends NotifyingSailConnectionWrapper {
-		public OptimizingSailConnection(NotifyingSailConnection wrappedCon) {
-			super(wrappedCon);
-		}
+    private class OptimizingSailConnection extends NotifyingSailConnectionWrapper {
+        public OptimizingSailConnection(NotifyingSailConnection wrappedCon) {
+            super(wrappedCon);
+        }
 
-		@Override
-		public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
-			ValueFactory vf = getValueFactory();
-			EvaluationStrategy strategy = new TupleFunctionEvaluationStrategy(
-					new SailTripleSource(this, includeInferred, vf),
-					dataset,
-					federatedServiceResolverSupplier.get()
-			);
-			(new BindingAssigner()).optimize(tupleExpr, dataset, bindings);
-			(new ConstantOptimizer(strategy)).optimize(tupleExpr, dataset, bindings);
-			(new CompareOptimizer()).optimize(tupleExpr, dataset, bindings);
-			(new ConjunctiveConstraintSplitter()).optimize(tupleExpr, dataset, bindings);
-			(new DisjunctiveConstraintOptimizer()).optimize(tupleExpr, dataset, bindings);
-			(new SameTermFilterOptimizer()).optimize(tupleExpr, dataset, bindings);
-			(new QueryModelNormalizer()).optimize(tupleExpr, dataset, bindings);
-			(new QueryJoinOptimizer(new TupleFunctionEvaluationStatistics())).optimize(tupleExpr, dataset, bindings);
-			(new IterativeEvaluationOptimizer()).optimize(tupleExpr, dataset, bindings);
-			// FIXME: remove comment
-			// (new FilterOptimizer()).optimize(tupleExpr, dataset, bindings);
-			(new OrderLimitOptimizer()).optimize(tupleExpr, dataset, bindings);
+        @Override
+        public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
+                Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+            ValueFactory vf = getValueFactory();
+            EvaluationStrategy strategy = new TupleFunctionEvaluationStrategy(
+                    new SailTripleSource(this, includeInferred, vf), dataset, federatedServiceResolverSupplier.get());
+            (new BindingAssigner()).optimize(tupleExpr, dataset, bindings);
+            (new ConstantOptimizer(strategy)).optimize(tupleExpr, dataset, bindings);
+            (new CompareOptimizer()).optimize(tupleExpr, dataset, bindings);
+            (new ConjunctiveConstraintSplitter()).optimize(tupleExpr, dataset, bindings);
+            (new DisjunctiveConstraintOptimizer()).optimize(tupleExpr, dataset, bindings);
+            (new SameTermFilterOptimizer()).optimize(tupleExpr, dataset, bindings);
+            (new QueryModelNormalizer()).optimize(tupleExpr, dataset, bindings);
+            (new QueryJoinOptimizer(new TupleFunctionEvaluationStatistics())).optimize(tupleExpr, dataset, bindings);
+            (new IterativeEvaluationOptimizer()).optimize(tupleExpr, dataset, bindings);
+            // FIXME: remove comment
+            // (new FilterOptimizer()).optimize(tupleExpr, dataset, bindings);
+            (new OrderLimitOptimizer()).optimize(tupleExpr, dataset, bindings);
 
-			try {
-				return strategy.evaluate(tupleExpr, bindings);
-			} catch (QueryEvaluationException e) {
-				throw new SailException(e);
-			}
-		}
-	}
+            try {
+                return strategy.evaluate(tupleExpr, bindings);
+            } catch (QueryEvaluationException e) {
+                throw new SailException(e);
+            }
+        }
+    }
 }

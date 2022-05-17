@@ -126,7 +126,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
     }
 
-    public EndpointStore(EndpointFiles files, HDTSpecification spec, boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
+    public EndpointStore(EndpointFiles files, HDTSpecification spec, boolean inMemDeletes, boolean loadIntoMemory)
+            throws IOException {
         this.endpointFiles = files;
         this.loadIntoMemory = loadIntoMemory;
         this.mergeRunnable = new MergeRunnable(this);
@@ -181,19 +182,21 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         connection.close();
     }
 
-    public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
+    public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative,
+            boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
         this(new EndpointFiles(locationNative, locationHdt, hdtIndexName), spec, inMemDeletes, loadIntoMemory);
     }
 
-    public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative, boolean inMemDeletes) throws IOException {
+    public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative,
+            boolean inMemDeletes) throws IOException {
         this(locationHdt, hdtIndexName, spec, locationNative, inMemDeletes, false);
     }
-
 
     public void initNativeStoreDictionary(HDT hdt) {
         this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), endpointFiles.getHDTBitX());
         this.bitY = new BitArrayDisk(hdt.getDictionary().getNpredicates(), endpointFiles.getHDTBitY());
-        this.bitZ = new BitArrayDisk(hdt.getDictionary().getNobjects() - hdt.getDictionary().getNshared(), endpointFiles.getHDTBitZ());
+        this.bitZ = new BitArrayDisk(hdt.getDictionary().getNobjects() - hdt.getDictionary().getNshared(),
+                endpointFiles.getHDTBitZ());
         // if the bitmaps have not been initialized with the native store
         if (this.bitX.countOnes() == 0 && this.bitY.countOnes() == 0 && this.bitZ.countOnes() == 0) {
             initBitmaps();
@@ -217,7 +220,9 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
     /**
      * set the threshold before a merge is automatically made.
-     * @param threshold the threshold, 0 for disabling the automatic merge
+     *
+     * @param threshold
+     *            the threshold, 0 for disabling the automatic merge
      */
     public void setThreshold(int threshold) {
         this.threshold = threshold;
@@ -229,13 +234,14 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
             setDeleteBitMap(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements()));
         else {
             // @todo: these should be recovered from the file if it is there
-            setDeleteBitMap(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), endpointFiles.getTripleDeleteArr()));
+            setDeleteBitMap(
+                    new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), endpointFiles.getTripleDeleteArr()));
         }
     }
 
     @Override
     protected void initializeInternal() throws SailException {
-//        this.repo.init();
+        // this.repo.init();
         this.nativeStoreA.init();
         this.nativeStoreB.init();
     }
@@ -389,8 +395,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
     @Override
     public void setFederatedServiceResolver(FederatedServiceResolver federatedServiceResolver) {
-//        nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
-//        nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
+        // nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
+        // nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
     }
 
     public RepositoryConnection getConnectionToChangingStore() {
@@ -442,7 +448,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
     }
 
     /*
-    In case of merge, we create a new array to recover all deleted triples while merging
+     * In case of merge, we create a new array to recover all deleted triples while merging
      */
     public void initTempDeleteArray() {
         this.tempdeleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
@@ -453,7 +459,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
     /**
      * Init temp file to store triples to be deleted from native store while merging
      *
-     * @param isRestarting if we should append to previous data
+     * @param isRestarting
+     *            if we should append to previous data
      */
     public void initTempDump(boolean isRestarting) {
         try {
@@ -507,8 +514,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
                     if (oldSubject != lastOldSubject) {
                         subject = newHdt.getDictionary().stringToId(
                                 this.hdt.getDictionary().idToString(oldSubject, TripleComponentRole.SUBJECT),
-                                TripleComponentRole.SUBJECT
-                        );
+                                TripleComponentRole.SUBJECT);
                         lastNewSubject = subject;
                         lastOldSubject = oldSubject;
                     } else {
@@ -523,8 +529,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
                     if (oldPredicate != lastOldPredicate) {
                         predicate = newHdt.getDictionary().stringToId(
                                 this.hdt.getDictionary().idToString(oldPredicate, TripleComponentRole.PREDICATE),
-                                TripleComponentRole.PREDICATE
-                        );
+                                TripleComponentRole.PREDICATE);
                         lastNewPredicate = predicate;
                         lastOldPredicate = oldPredicate;
                     } else {
@@ -539,8 +544,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
                     if (oldObject != lastOldObject) {
                         object = newHdt.getDictionary().stringToId(
                                 this.hdt.getDictionary().idToString(oldObject, TripleComponentRole.OBJECT),
-                                TripleComponentRole.OBJECT
-                        );
+                                TripleComponentRole.OBJECT);
                         lastNewObject = object;
                         lastOldObject = oldObject;
                     } else {
@@ -567,12 +571,12 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         if (MergeRunnableStopPoint.debug) {
             logger.debug("HDT cache saved element(s) ones={} in {}", tempdeleteBitMap.countOnes(), watch.stopAndShow());
             if (debugTotal != 0) {
-                logger.debug("debugSavedSubject        : {} % | {} / {}",
-                        100 * debugSavedSubject / debugTotal, debugSavedSubject, debugTotal);
-                logger.debug("debugSavedPredicate      : {} % | {} / {}",
-                        100 * debugSavedPredicate / debugTotal, debugSavedPredicate, debugTotal);
-                logger.debug("debugSavedObject         : {} % | {} / {}",
-                        100 * debugSavedObject / debugTotal, debugSavedObject, debugTotal);
+                logger.debug("debugSavedSubject        : {} % | {} / {}", 100 * debugSavedSubject / debugTotal,
+                        debugSavedSubject, debugTotal);
+                logger.debug("debugSavedPredicate      : {} % | {} / {}", 100 * debugSavedPredicate / debugTotal,
+                        debugSavedPredicate, debugTotal);
+                logger.debug("debugSavedObject         : {} % | {} / {}", 100 * debugSavedObject / debugTotal,
+                        debugSavedObject, debugTotal);
             } else {
                 logger.debug("no remap");
             }
@@ -590,10 +594,12 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples())) {
             RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
             rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, new WeakReference<>(this))) {
+            try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser,
+                    new WeakReference<>(this))) {
                 while (res.hasNext()) {
                     Statement st = res.next();
-                    IteratorTripleString search = this.hdt.search(st.getSubject().toString(), st.getPredicate().toString(), st.getObject().toString());
+                    IteratorTripleString search = this.hdt.search(st.getSubject().toString(),
+                            st.getPredicate().toString(), st.getObject().toString());
                     if (search.hasNext()) {
                         search.next();
                         long index = search.getLastTriplePosition();
@@ -617,7 +623,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         logger.debug("Resetting bitmaps");
         try {
             HDTConverter converter = new HDTConverter(this);
-            // iterate over the current rdf4j store and mark in HDT the store the subject, predicate, objects that are used in rdf4j
+            // iterate over the current rdf4j store and mark in HDT the store the subject, predicate, objects that are
+            // used in rdf4j
             try (RepositoryConnection connection = this.getConnectionToChangingStore()) {
                 RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
                 for (Statement statement : statements) {
@@ -699,10 +706,10 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         }
     }
 
-    private synchronized void mergeStore(boolean fail) throws MergeStartException{
+    private synchronized void mergeStore(boolean fail) throws MergeStartException {
         // check that no merge is already triggered
         if (isMergeTriggered) {
-            failOrWarn(fail,"A merge was triggered, but the store is already merging!");
+            failOrWarn(fail, "A merge was triggered, but the store is already merging!");
             return; // ignore
         }
 
@@ -724,8 +731,10 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
         }
     }
 
-    // @todo: this can be dangerous, what if it is called 2 times, then two threads will start which will overlap each other, only one should be allowed, no?
-    // should not be called from the outside because it's internals, the case is handled in the EndpointStoreConnection when
+    // @todo: this can be dangerous, what if it is called 2 times, then two threads will start which will overlap each
+    // other, only one should be allowed, no?
+    // should not be called from the outside because it's internals, the case is handled in the EndpointStoreConnection
+    // when
     // the store is being merged we don't call it again..
     // starts the merging process to merge the delta into HDT
 
@@ -747,7 +756,10 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
     /**
      * test if the native store contains at least a certain number of triples
-     * @param number the number of triples to at least have
+     *
+     * @param number
+     *            the number of triples to at least have
+     *
      * @return true if the size of the store is at least number, false otherwise
      */
     public boolean isNativeStoreContainsAtLeast(long number) {
@@ -761,10 +773,9 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
         try (SailConnection connection = getChangingStore().getConnection()) {
             // https://github.com/eclipse/rdf4j/discussions/3734
-//            return connection.size() >= number;
-            try (CloseableIteration<? extends Statement, SailException> it = connection.getStatements(
-                    null, null, null, false
-            )) {
+            // return connection.size() >= number;
+            try (CloseableIteration<? extends Statement, SailException> it = connection.getStatements(null, null, null,
+                    false)) {
                 for (long i = 0; i < number; i++) {
                     if (!it.hasNext()) {
                         return false;

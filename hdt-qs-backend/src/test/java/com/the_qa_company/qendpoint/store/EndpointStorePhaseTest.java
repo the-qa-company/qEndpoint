@@ -35,7 +35,7 @@ public class EndpointStorePhaseTest {
     public void setUp() throws IOException {
         MergeRunnableStopPoint.debug = true;
         HDTSpecification spec = new HDTSpecification();
-//        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+        // spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
         logger.info("Initialize the store ... ");
         File nativeStore = tempDir.newFolder("native-store");
         File hdtStore = tempDir.newFolder("hdt-store/");
@@ -43,10 +43,10 @@ public class EndpointStorePhaseTest {
         HDT hdt = Utility.createTempHdtIndex(tmp.getAbsolutePath(), true, false, spec);
         assert hdt != null;
         hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
-        store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        store = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
+                nativeStore.getAbsolutePath() + "/", false);
     }
+
     @After
     public void complete() {
         MergeRunnableStopPoint.debug = false;
@@ -56,7 +56,7 @@ public class EndpointStorePhaseTest {
     public void testBeforeMerge() {
 
         int threshold = 1000;
-        logger.info("Setting the threshold to "+threshold);
+        logger.info("Setting the threshold to " + threshold);
         store.setThreshold(threshold);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -64,7 +64,8 @@ public class EndpointStorePhaseTest {
         int numbeOfTriples = 500;
         StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o")
+                    .append(i).append("> . ");
         }
         sparqlQuery.append("} ");
         RepositoryConnection connection = endpointStore.getConnection();
@@ -97,7 +98,8 @@ public class EndpointStorePhaseTest {
         logger.info("DELETE");
         sparqlQuery = new StringBuilder("DELETE DATA { ");
         for (int i = 0; i < 10; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o")
+                    .append(i).append("> . ");
         }
         sparqlQuery.append("} ");
         tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
@@ -132,10 +134,10 @@ public class EndpointStorePhaseTest {
     }
 
     @Test
-    @Ignore("Can't use it anymore") //@todo: check if this true
+    @Ignore("Can't use it anymore") // @todo: check if this true
     public void duringMerge1() throws InterruptedException {
         int threshold = 400;
-        logger.info("Setting the threshold to "+threshold);
+        logger.info("Setting the threshold to " + threshold);
         store.setThreshold(threshold);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -143,15 +145,14 @@ public class EndpointStorePhaseTest {
         int numbeOfTriples = 500;
         StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o")
+                    .append(i).append("> . ");
         }
         sparqlQuery.append("} ");
         RepositoryConnection connection = endpointStore.getConnection();
         Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
         connection.commit();
-
-
 
         // START MERGE
         // artificially rise the time to merge to 5 seconds
@@ -229,7 +230,7 @@ public class EndpointStorePhaseTest {
     @Test
     public void afterMerge() throws InterruptedException {
         int threshold = 100;
-        logger.info("Setting the threshold to "+threshold);
+        logger.info("Setting the threshold to " + threshold);
         store.setThreshold(threshold);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -237,7 +238,8 @@ public class EndpointStorePhaseTest {
         int numbeOfTriples = 150;
         StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o").append(i).append("> . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  <http://o")
+                    .append(i).append("> . ");
         }
         sparqlQuery.append("} ");
         RepositoryConnection connection = endpointStore.getConnection();
@@ -265,8 +267,6 @@ public class EndpointStorePhaseTest {
                 assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
             }
         }
-
-
 
         logger.info("QUERY");
         sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ");
@@ -302,7 +302,7 @@ public class EndpointStorePhaseTest {
     @Test
     public void insertExistingTriple() throws InterruptedException {
         int threshold = 100;
-        logger.info("Setting the threshold to "+threshold);
+        logger.info("Setting the threshold to " + threshold);
         store.setThreshold(threshold);
         SailRepository endpointStore = new SailRepository(store);
 
@@ -310,7 +310,8 @@ public class EndpointStorePhaseTest {
         int numbeOfTriples = 100;
         StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i).append("\"@pl . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i)
+                    .append("\"@pl . ");
         }
         sparqlQuery.append("} ");
         RepositoryConnection connection = endpointStore.getConnection();
@@ -332,7 +333,6 @@ public class EndpointStorePhaseTest {
         tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
         tupleQuery.execute();
 
-
         logger.info("QUERY");
         sparqlQuery = new StringBuilder("SELECT ?o WHERE { <http://s0>  ?p  ?o . } ");
         TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
@@ -352,7 +352,7 @@ public class EndpointStorePhaseTest {
     @Test
     public void testDeleteTripleInHdtWhileMerging() throws InterruptedException {
         int threshold = 100;
-        logger.info("Setting the threshold to "+threshold);
+        logger.info("Setting the threshold to " + threshold);
         store.setThreshold(threshold);
         store.setExtendsTimeMergeBeginningAfterSwitch(2);
         SailRepository endpointStore = new SailRepository(store);
@@ -361,7 +361,8 @@ public class EndpointStorePhaseTest {
         int numbeOfTriples = 100;
         StringBuilder sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 0; i < numbeOfTriples; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i).append("\"@pl . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i)
+                    .append("\"@pl . ");
         }
         sparqlQuery.append("} ");
         try (RepositoryConnection connection = endpointStore.getConnection()) {
@@ -381,7 +382,8 @@ public class EndpointStorePhaseTest {
 
         sparqlQuery = new StringBuilder("INSERT DATA { ");
         for (int i = 101; i < numbeOfTriples + 101; i++) {
-            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i).append("\"@pl . ");
+            sparqlQuery.append("	<http://s").append(i).append(">  <http://p").append(i).append(">  \"").append(i)
+                    .append("\"@pl . ");
         }
         sparqlQuery.append("} ");
         try (RepositoryConnection connection = endpointStore.getConnection()) {
@@ -396,7 +398,6 @@ public class EndpointStorePhaseTest {
             tupleQuery.execute();
         }
 
-
         System.out.println("Triples with s200: ");
         try (RepositoryConnection connection = endpointStore.getConnection()) {
             sparqlQuery = new StringBuilder("SELECT * WHERE { <http://s200>  ?p  ?o . } ");
@@ -407,7 +408,6 @@ public class EndpointStorePhaseTest {
             sparqlQuery = new StringBuilder("DELETE { ?s <http://p1> ?o } WHERE { ?s  <http://p1>  ?o .} ");
             Update tupleQuery = connection.prepareUpdate(sparqlQuery.toString());
             tupleQuery.execute();
-
 
             logger.info("QUERY");
             sparqlQuery = new StringBuilder("SELECT * WHERE { <http://s200>  <http://p1>  \"1\"@pl . } ");

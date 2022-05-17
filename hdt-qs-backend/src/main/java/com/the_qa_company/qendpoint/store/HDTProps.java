@@ -20,21 +20,10 @@ public class HDTProps {
 
     public HDTProps(HDT hdt) {
 
-        this.startLiteral =
-                BinarySearch.first(
-                        hdt.getDictionary(),
-                        hdt.getDictionary().getNshared() + 1,
-                        hdt.getDictionary().getNobjects(),
-                        "\"",
-                        TripleComponentRole.OBJECT);
-        this.endLiteral =
-                BinarySearch.last(
-                        hdt.getDictionary(),
-                        hdt.getDictionary().getNshared() + 1,
-                        hdt.getDictionary().getNobjects(),
-                        hdt.getDictionary().getNobjects(),
-                        "\"",
-                        TripleComponentRole.OBJECT);
+        this.startLiteral = BinarySearch.first(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
+                hdt.getDictionary().getNobjects(), "\"", TripleComponentRole.OBJECT);
+        this.endLiteral = BinarySearch.last(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
+                hdt.getDictionary().getNobjects(), hdt.getDictionary().getNobjects(), "\"", TripleComponentRole.OBJECT);
         long start;
         long end;
         // if the dictionay is spliting the objects to sections - we just have to look in the
@@ -53,53 +42,24 @@ public class HDTProps {
         }
         // use binary search to check the start and the end of blank nodes
         // where items are sorted lexicographically
-        this.startBlankObjects = BinarySearch.first(
-                hdt.getDictionary(),
-                start,
-                end,
-                "_",
-                TripleComponentRole.OBJECT);
-        this.endBlankObjects = BinarySearch.last(
-                hdt.getDictionary(),
-                start,
-                end,
-                end,
-                "_",
-                TripleComponentRole.OBJECT);
+        this.startBlankObjects = BinarySearch.first(hdt.getDictionary(), start, end, "_", TripleComponentRole.OBJECT);
+        this.endBlankObjects = BinarySearch.last(hdt.getDictionary(), start, end, end, "_", TripleComponentRole.OBJECT);
 
         // we need as well the range of the blank nodes in the shared section of the dictionary
         // in order to distinguish them from URIs at query time. (could be used in inserts and deletes as well)
         // like INSERT { ?s1 rdfs:type ex:Person } where { ?s rdfs:label "Ali" . }
 
-        this.startBlankShared = BinarySearch.first(
-                hdt.getDictionary(),
-                1,
+        this.startBlankShared = BinarySearch.first(hdt.getDictionary(), 1,
+                hdt.getDictionary().getShared().getNumberOfElements(), "_", TripleComponentRole.OBJECT);
+        this.endBlankShared = BinarySearch.last(hdt.getDictionary(), 1,
                 hdt.getDictionary().getShared().getNumberOfElements(),
-                "_",
-                TripleComponentRole.OBJECT
-        );
-        this.endBlankShared = BinarySearch.last(
-                hdt.getDictionary(),
-                1,
-                hdt.getDictionary().getShared().getNumberOfElements(),
-                hdt.getDictionary().getShared().getNumberOfElements(),
-                "_",
-                TripleComponentRole.OBJECT
-        );
+                hdt.getDictionary().getShared().getNumberOfElements(), "_", TripleComponentRole.OBJECT);
         // use binary search to check the start and the end of blank nodes
         // where items are sorted lexicographically
-        this.startBlankSubjects = BinarySearch.first(
-                hdt.getDictionary(),
-                hdt.getDictionary().getNshared() + 1,
-                hdt.getDictionary().getNsubjects(),
-                "_",
-                TripleComponentRole.SUBJECT);
-        this.endBlankSubjects = BinarySearch.last(
-                hdt.getDictionary(),
-                hdt.getDictionary().getNshared() + 1,
-                hdt.getDictionary().getNsubjects(),
-                hdt.getDictionary().getNsubjects(),
-                "_",
+        this.startBlankSubjects = BinarySearch.first(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
+                hdt.getDictionary().getNsubjects(), "_", TripleComponentRole.SUBJECT);
+        this.endBlankSubjects = BinarySearch.last(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
+                hdt.getDictionary().getNsubjects(), hdt.getDictionary().getNsubjects(), "_",
                 TripleComponentRole.SUBJECT);
     }
 

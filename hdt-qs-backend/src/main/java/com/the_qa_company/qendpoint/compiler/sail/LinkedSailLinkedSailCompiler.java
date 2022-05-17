@@ -12,17 +12,18 @@ import java.util.List;
 
 /**
  * a linked sail sail to link multiple linked sail
+ *
  * @author Antoine Willerval
  */
 public class LinkedSailLinkedSailCompiler extends LinkedSailCompiler {
-	public LinkedSailLinkedSailCompiler() {
-		super(SailCompilerSchema.LINKED_SAIL_TYPE);
-	}
+    public LinkedSailLinkedSailCompiler() {
+        super(SailCompilerSchema.LINKED_SAIL_TYPE);
+    }
 
-	@Override
-	public LinkedSail<? extends NotifyingSail> compileWithParam(SailCompiler.SailCompilerReader reader, Resource rnode)
-			throws SailCompiler.SailCompilerException {
-		List<Value> nodes = reader.search(rnode, SailCompilerSchema.NODE);
-		return SimpleLinkedSail.linkSails(nodes.stream().map(reader::compileNode));
-	}
+    @Override
+    public LinkedSail<? extends NotifyingSail> compileWithParam(SailCompiler.SailCompilerReader reader, Resource rnode)
+            throws SailCompiler.SailCompilerException {
+        List<Value> nodes = reader.search(rnode, SailCompilerSchema.NODE);
+        return SimpleLinkedSail.linkSails(nodes.stream().map(reader::compileNode));
+    }
 }

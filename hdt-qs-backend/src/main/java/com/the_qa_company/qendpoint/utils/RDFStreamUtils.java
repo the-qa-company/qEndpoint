@@ -14,39 +14,55 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * Utility class to help to handle RDF stream
+ *
  * @author Antoine Willerval
  */
 public class RDFStreamUtils {
 
     /**
-     * convert this stream into a CompressorInputStream if the file type is .gz, .tgz, .bz, .bz2 or .xz, otherwise
-     * it returns the stream
-     * @param stream the stream to uncompress
-     * @param filename the filename associate with the stream
+     * convert this stream into a CompressorInputStream if the file type is .gz, .tgz, .bz, .bz2 or .xz, otherwise it
+     * returns the stream
+     *
+     * @param stream
+     *            the stream to uncompress
+     * @param filename
+     *            the filename associate with the stream
+     *
      * @return stream
-     * @throws IOException if the CompressorInputStream can't be created
+     *
+     * @throws IOException
+     *             if the CompressorInputStream can't be created
      */
     public static InputStream uncompressedStream(InputStream stream, String filename) throws IOException {
         String name = filename.toLowerCase();
-        if(name.endsWith(".gz") || name.endsWith(".tgz")) {
+        if (name.endsWith(".gz") || name.endsWith(".tgz")) {
             return new GZIPInputStream(stream);
-        } else if(name.endsWith("bz2") || name.endsWith("bz")) {
+        } else if (name.endsWith("bz2") || name.endsWith("bz")) {
             return new BZip2CompressorInputStream(stream, true);
-        } else if(name.endsWith("xz")) {
+        } else if (name.endsWith("xz")) {
             return new XZCompressorInputStream(stream, true);
         } else {
             return stream;
         }
     }
+
     /**
      * read a stream of a certain type to {@link Statement}
-     * @param stream rdf stream
-     * @param format format of the stream
-     * @param keepBNode keep blank node
-     * @param statementConsumer the triple consumer
-     * @throws IOException io error
+     *
+     * @param stream
+     *            rdf stream
+     * @param format
+     *            format of the stream
+     * @param keepBNode
+     *            keep blank node
+     * @param statementConsumer
+     *            the triple consumer
+     *
+     * @throws IOException
+     *             io error
      */
-    public static void readRDFStream(InputStream stream, RDFFormat format, boolean keepBNode, Consumer<Statement> statementConsumer) throws IOException {
+    public static void readRDFStream(InputStream stream, RDFFormat format, boolean keepBNode,
+            Consumer<Statement> statementConsumer) throws IOException {
         RDFParser parser = Rio.createParser(format);
         parser.setPreserveBNodeIDs(keepBNode);
         parser.setRDFHandler(new RDFHandler() {
@@ -77,9 +93,14 @@ public class RDFStreamUtils {
 
     /**
      * create an iterator from a RDF inputstream
-     * @param stream rdf stream
-     * @param format format of the stream
-     * @param keepBNode keep blank node
+     *
+     * @param stream
+     *            rdf stream
+     * @param format
+     *            format of the stream
+     * @param keepBNode
+     *            keep blank node
+     *
      * @return the iterator
      */
     public static Iterator<Statement> readRDFStreamAsIterator(InputStream stream, RDFFormat format, boolean keepBNode) {
@@ -88,17 +109,23 @@ public class RDFStreamUtils {
 
     /**
      * create an iterator from a RDF inputstream
-     * @param stream rdf stream
-     * @param format format of the stream
-     * @param keepBNode keep blank node
+     *
+     * @param stream
+     *            rdf stream
+     * @param format
+     *            format of the stream
+     * @param keepBNode
+     *            keep blank node
+     *
      * @return the iterator
      */
-    public static Iterator<TripleString> readRDFStreamAsTripleStringIterator(InputStream stream, RDFFormat format, boolean keepBNode) {
-        return new MapIterator<>(readRDFStreamAsIterator(stream, format, keepBNode), statement -> new TripleString(
-                statement.getSubject().toString(),
-                statement.getPredicate().toString(),
-                statement.getObject().toString()
-        ));
+    public static Iterator<TripleString> readRDFStreamAsTripleStringIterator(InputStream stream, RDFFormat format,
+            boolean keepBNode) {
+        return new MapIterator<>(readRDFStreamAsIterator(stream, format, keepBNode),
+                statement -> new TripleString(statement.getSubject().toString(), statement.getPredicate().toString(),
+                        statement.getObject().toString()));
     }
-    private RDFStreamUtils() {}
+
+    private RDFStreamUtils() {
+    }
 }

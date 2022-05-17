@@ -36,24 +36,33 @@ import java.util.Optional;
 public class MergeRunnable {
     /**
      * class to use {@link MergeThread}
-     * @param <T> the merge thread type
+     *
+     * @param <T>
+     *            the merge thread type
      */
     @FunctionalInterface
     private interface MergeThreadRunnable<T> {
         /**
          * execute a merge step and the next step
          *
-         * @param restarting if the step is restarting
-         * @param data       if restarting == true, the return value of {@link MergeThreadReloader#reload()}
-         * @throws InterruptedException in case of interruption
-         * @throws IOException in case of IO error
+         * @param restarting
+         *            if the step is restarting
+         * @param data
+         *            if restarting == true, the return value of {@link MergeThreadReloader#reload()}
+         *
+         * @throws InterruptedException
+         *             in case of interruption
+         * @throws IOException
+         *             in case of IO error
          */
         void run(boolean restarting, T data) throws InterruptedException, IOException;
     }
 
     /**
      * class to use {@link MergeThread}
-     * @param <T> the merge thread type
+     *
+     * @param <T>
+     *            the merge thread type
      */
     @FunctionalInterface
     private interface MergeThreadReloader<T> {
@@ -77,7 +86,6 @@ public class MergeRunnable {
     // the last exception during the merge
     private static Exception debugLastMergeException;
     /////////////////////////////////////////////////
-
 
     public static int getExtendsTimeMergeBeginning() {
         return extendsTimeMergeBeginning;
@@ -104,9 +112,11 @@ public class MergeRunnable {
     }
 
     /**
-     * wait for the merge to complete, if the merge was stopped because of an exception
-     * (except with {@link #setStopPoint(MergeRunnableStopPoint)} exception), it is thrown inside a RuntimeException
-     * @throws InterruptedException in case of interruption
+     * wait for the merge to complete, if the merge was stopped because of an exception (except with
+     * {@link #setStopPoint(MergeRunnableStopPoint)} exception), it is thrown inside a RuntimeException
+     *
+     * @throws InterruptedException
+     *             in case of interruption
      */
     public static void debugWaitMerge() throws InterruptedException {
         MERGE_THREAD_LOCK_MANAGER.waitForActiveLocks();
@@ -122,7 +132,8 @@ public class MergeRunnable {
     /**
      * set the next stop point in a merge, it would be used only once
      *
-     * @param stopPoint the stop point
+     * @param stopPoint
+     *            the stop point
      */
     public static void setStopPoint(MergeRunnableStopPoint stopPoint) {
         MergeRunnable.stopPoint = stopPoint;
@@ -130,7 +141,9 @@ public class MergeRunnable {
 
     /**
      * try delete a file
-     * @param file the file to delete
+     *
+     * @param file
+     *            the file to delete
      */
     private static void delete(String file) {
         try {
@@ -144,7 +157,9 @@ public class MergeRunnable {
 
     /**
      * try delete a file if it exists
-     * @param file the file to delete
+     *
+     * @param file
+     *            the file to delete
      */
     private static void deleteIfExists(String file) {
         try {
@@ -161,7 +176,9 @@ public class MergeRunnable {
 
     /**
      * delete "file + {@link #OLD_EXT}"
-     * @param file file
+     *
+     * @param file
+     *            file
      */
     private static void deleteOld(String file) {
         delete(file + OLD_EXT);
@@ -169,15 +186,22 @@ public class MergeRunnable {
 
     /**
      * test if the file exists
-     * @param file the file
+     *
+     * @param file
+     *            the file
+     *
      * @return true if the file exists, false otherwise
      */
     private static boolean exists(String file) {
         return Files.exists(Paths.get(file));
     }
+
     /**
      * test if the file "file + {@link #OLD_EXT}" exists
-     * @param file the file
+     *
+     * @param file
+     *            the file
+     *
      * @return true if the file exists, false otherwise
      */
     private static boolean existsOld(String file) {
@@ -186,7 +210,9 @@ public class MergeRunnable {
 
     /**
      * rename file to "file + {@link #OLD_EXT}"
-     * @param file file
+     *
+     * @param file
+     *            file
      */
     private static void renameToOld(String file) {
         rename(file, file + OLD_EXT);
@@ -194,7 +220,9 @@ public class MergeRunnable {
 
     /**
      * rename "file + {@link #OLD_EXT}" to file
-     * @param file file
+     *
+     * @param file
+     *            file
      */
     private static void renameFromOld(String file) {
         rename(file + OLD_EXT, file);
@@ -202,8 +230,11 @@ public class MergeRunnable {
 
     /**
      * rename a file to another
-     * @param oldFile the current name
-     * @param newFile the new name
+     *
+     * @param oldFile
+     *            the current name
+     * @param newFile
+     *            the new name
      */
     private static void rename(String oldFile, String newFile) {
         try {
@@ -232,6 +263,7 @@ public class MergeRunnable {
         private MergeThread(MergeThreadRunnable<T> run, MergeThreadReloader<T> reloadData) {
             this(null, run, reloadData);
         }
+
         private MergeThread(Runnable preload, MergeThreadRunnable<T> run, MergeThreadReloader<T> reloadData) {
             this(run, true);
             this.reloadData = reloadData;
@@ -277,7 +309,8 @@ public class MergeRunnable {
         public synchronized void start() {
             if (MergeRunnableStopPoint.debug) {
                 // create a lock to use the method MergeRunnableStopPoint#debugWaitForEvent()
-                if (debugLastMergeException != null && !(debugLastMergeException instanceof MergeRunnableStopPoint.MergeRunnableStopException)) {
+                if (debugLastMergeException != null
+                        && !(debugLastMergeException instanceof MergeRunnableStopPoint.MergeRunnableStopException)) {
                     Exception old = debugLastMergeException;
                     debugLastMergeException = null;
                     throw new RuntimeException("old exception not triggered", old);
@@ -300,7 +333,9 @@ public class MergeRunnable {
 
     /**
      * create a merge runnable handler
-     * @param endpoint the store to handle
+     *
+     * @param endpoint
+     *            the store to handle
      */
     public MergeRunnable(EndpointStore endpoint) {
         this.endpoint = endpoint;
@@ -321,6 +356,7 @@ public class MergeRunnable {
 
         return l;
     }
+
     /**
      * create a lock to prevent new update
      *
@@ -339,8 +375,11 @@ public class MergeRunnable {
     /**
      * only for test purpose, crash if the stopPoint set with {@link #setStopPoint(MergeRunnableStopPoint)} == point
      *
-     * @param point the point to crash
-     * @throws MergeRunnableStopPoint.MergeRunnableStopException if this point is selected
+     * @param point
+     *            the point to crash
+     *
+     * @throws MergeRunnableStopPoint.MergeRunnableStopException
+     *             if this point is selected
      */
     private void debugStepPoint(MergeRunnableStopPoint point) {
         if (!MergeRunnableStopPoint.debug)
@@ -360,17 +399,20 @@ public class MergeRunnable {
     /**
      * wait all active connection locks
      *
-     * @throws InterruptedException in case of interruption
+     * @throws InterruptedException
+     *             in case of interruption
      */
     private void waitForActiveConnections() throws InterruptedException {
         logger.info("Waiting for connections...");
         endpoint.locksHoldByConnections.waitForActiveLocks();
         logger.info("All connections completed.");
     }
+
     /**
      * wait all active updates locks
      *
-     * @throws InterruptedException in case of interruption
+     * @throws InterruptedException
+     *             in case of interruption
      */
     private void waitForActiveUpdates() throws InterruptedException {
         logger.info("Waiting for updates...");
@@ -393,22 +435,25 @@ public class MergeRunnable {
         int step = getRestartStep();
         logger.debug("Restart step: {}", step);
         switch (step) {
-            case 0:
-                return Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
-            case 2:
-                return Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
-            case 3:
-                return Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
-            default:
-                return Optional.empty();
+        case 0:
+            return Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
+        case 2:
+            return Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
+        case 3:
+            return Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
+        default:
+            return Optional.empty();
         }
     }
 
     /**
      * write the restart step in the merge file
      *
-     * @param step the restart step to write
-     * @throws IOException see {@link Files#writeString(Path, CharSequence, OpenOption...)} ioe
+     * @param step
+     *            the restart step to write
+     *
+     * @throws IOException
+     *             see {@link Files#writeString(Path, CharSequence, OpenOption...)} ioe
      */
     private void markRestartStepCompleted(int step) throws IOException {
         Files.writeString(Paths.get(endpointFiles.getPreviousMergeFile()), String.valueOf(step));
@@ -429,7 +474,8 @@ public class MergeRunnable {
     /**
      * delete the merge file
      *
-     * @throws IOException see {@link Files#delete(Path)} ioe
+     * @throws IOException
+     *             see {@link Files#delete(Path)} ioe
      */
     private void completedMerge() throws IOException {
         Files.delete(Paths.get(endpointFiles.getPreviousMergeFile()));
@@ -437,8 +483,11 @@ public class MergeRunnable {
 
     /**
      * (debug), sleep for seconds s if seconds != -1
-     * @param seconds the number of seconds to sleep
-     * @param title the title in the debug logs
+     *
+     * @param seconds
+     *            the number of seconds to sleep
+     * @param title
+     *            the title in the debug logs
      */
     private void sleep(int seconds, String title) {
         if (seconds != -1) {
@@ -454,6 +503,7 @@ public class MergeRunnable {
 
     /**
      * reload previous data from step 1
+     *
      * @return previous data from step 2
      */
     private Lock reloadDataFromStep1() {
@@ -462,10 +512,16 @@ public class MergeRunnable {
 
     /**
      * start the merge at step1
-     * @param restarting if we are restarting from step 1 or not
-     * @param switchLock the return value or {@link #reloadDataFromStep1()}
-     * @throws InterruptedException for wait exception
-     * @throws IOException for file exception
+     *
+     * @param restarting
+     *            if we are restarting from step 1 or not
+     * @param switchLock
+     *            the return value or {@link #reloadDataFromStep1()}
+     *
+     * @throws InterruptedException
+     *             for wait exception
+     * @throws IOException
+     *             for file exception
      */
     private synchronized void step1(boolean restarting, Lock switchLock) throws InterruptedException, IOException {
         logger.info("Start Merge process...");
@@ -486,7 +542,8 @@ public class MergeRunnable {
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_BITMAP1);
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT1);
 
-        // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated HDT file
+        // init the temp deletes while merging... triples that are deleted while merging might be in the newly generated
+        // HDT file
         endpoint.initTempDump(restarting);
         endpoint.initTempDeleteArray();
 
@@ -498,7 +555,6 @@ public class MergeRunnable {
 
         sleep(extendsTimeMergeBeginning, "extendsTimeMergeBeginning");
         debugStepPoint(MergeRunnableStopPoint.STEP1_OLD_SLEEP_BEFORE_SWITCH);
-
 
         debugStepPoint(MergeRunnableStopPoint.STEP1_TEST_SELECT3);
 
@@ -513,13 +569,13 @@ public class MergeRunnable {
         sleep(extendsTimeMergeBeginningAfterSwitch, "extendsTimeMergeBeginningAfterSwitch");
         debugStepPoint(MergeRunnableStopPoint.STEP1_OLD_SLEEP_AFTER_SWITCH);
 
-        // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo: a lock is needed here
+        // make a copy of the delete array so that the merge thread doesn't interfere with the store data access @todo:
+        // a lock is needed here
         if (restarting) {
             // delete previous array in case of restart
             Files.deleteIfExists(Paths.get(endpointFiles.getTripleDeleteCopyArr()));
         }
-        Files.copy(Paths.get(endpointFiles.getTripleDeleteArr()),
-                Paths.get(endpointFiles.getTripleDeleteCopyArr()));
+        Files.copy(Paths.get(endpointFiles.getTripleDeleteArr()), Paths.get(endpointFiles.getTripleDeleteCopyArr()));
         // release the lock so that the connections can continue
         switchLock.release();
         debugStepPoint(MergeRunnableStopPoint.STEP1_END);
@@ -535,6 +591,7 @@ public class MergeRunnable {
 
     /**
      * reload previous data from step 2
+     *
      * @return previous data of step 2
      */
     private Lock reloadDataFromStep2() {
@@ -547,10 +604,16 @@ public class MergeRunnable {
 
     /**
      * start the merge at step2
-     * @param restarting if we are restarting from step 2 or not
-     * @param lock the return value or {@link #reloadDataFromStep2()}
-     * @throws InterruptedException for wait exception
-     * @throws IOException for file exception
+     *
+     * @param restarting
+     *            if we are restarting from step 2 or not
+     * @param lock
+     *            the return value or {@link #reloadDataFromStep2()}
+     *
+     * @throws InterruptedException
+     *             for wait exception
+     * @throws IOException
+     *             for file exception
      */
     private synchronized void step2(boolean restarting, Lock lock) throws InterruptedException, IOException {
         debugStepPoint(MergeRunnableStopPoint.STEP2_START);
@@ -565,7 +628,8 @@ public class MergeRunnable {
         logger.debug("Create HDT index from dumped file");
         createHDTDump(endpointFiles.getRDFTempOutput(), endpointFiles.getHDTTempOutput());
         // cat the original index and the temp index
-        catIndexes(endpointFiles.getHDTNewIndexDiff(), endpointFiles.getHDTTempOutput(), endpointFiles.getHDTNewIndex());
+        catIndexes(endpointFiles.getHDTNewIndexDiff(), endpointFiles.getHDTTempOutput(),
+                endpointFiles.getHDTNewIndex());
         logger.debug("CAT completed!!!!! " + endpointFiles.getLocationHdt());
 
         debugStepPoint(MergeRunnableStopPoint.STEP2_END);
@@ -584,15 +648,12 @@ public class MergeRunnable {
 
     /**
      * return value for {@link #getStep3SubStep()}
+     *
      * @see #getStep3SubStep()
      */
     private enum Step3SubStep {
-        AFTER_INDEX_V11_RENAME,
-        AFTER_INDEX_RENAME,
-        AFTER_INDEX_V11_OLD_RENAME,
-        AFTER_INDEX_OLD_RENAME,
-        AFTER_TRIPLEDEL_TMP_OLD_RENAME,
-        BEFORE_ALL
+        AFTER_INDEX_V11_RENAME, AFTER_INDEX_RENAME, AFTER_INDEX_V11_OLD_RENAME, AFTER_INDEX_OLD_RENAME,
+        AFTER_TRIPLEDEL_TMP_OLD_RENAME, BEFORE_ALL
     }
 
     /**
@@ -603,23 +664,23 @@ public class MergeRunnable {
         boolean existsOldTripleDeleteTempArr = existsOld(endpointFiles.getTripleDeleteTempArr());
 
         if (!exists(endpointFiles.getHDTNewIndexV11()) && existsOldTripleDeleteTempArr) {
-//            after rename(endpointFiles.getHDTNewIndexV11(), endpointFiles.getHDTIndexV11());
+            // after rename(endpointFiles.getHDTNewIndexV11(), endpointFiles.getHDTIndexV11());
             return Step3SubStep.AFTER_INDEX_V11_RENAME;
         }
         if (!exists(endpointFiles.getHDTNewIndex()) && existsOldTripleDeleteTempArr) {
-//            after rename(endpointFiles.getHDTNewIndex(), endpointFiles.getHDTIndex());
+            // after rename(endpointFiles.getHDTNewIndex(), endpointFiles.getHDTIndex());
             return Step3SubStep.AFTER_INDEX_RENAME;
         }
         if (existsOld(endpointFiles.getHDTIndexV11())) {
-//            after renameToOld(endpointFiles.getHDTIndexV11());
+            // after renameToOld(endpointFiles.getHDTIndexV11());
             return Step3SubStep.AFTER_INDEX_V11_OLD_RENAME;
         }
         if (existsOld(endpointFiles.getHDTIndex())) {
-//            after renameToOld(endpointFiles.getHDTIndex());
+            // after renameToOld(endpointFiles.getHDTIndex());
             return Step3SubStep.AFTER_INDEX_OLD_RENAME;
         }
         if (existsOldTripleDeleteTempArr) {
-//            after renameToOld(endpointFiles.getTripleDeleteTempArr());
+            // after renameToOld(endpointFiles.getTripleDeleteTempArr());
             return Step3SubStep.AFTER_TRIPLEDEL_TMP_OLD_RENAME;
         }
         return Step3SubStep.BEFORE_ALL;
@@ -636,23 +697,24 @@ public class MergeRunnable {
         logger.debug("Reloading step 3 from sub step {}", step3SubStep.name().toLowerCase());
 
         switch (step3SubStep) {
-            case AFTER_INDEX_V11_RENAME:
-                rename(endpointFiles.getHDTIndexV11(), endpointFiles.getHDTNewIndexV11());
-            case AFTER_INDEX_RENAME:
-                rename(endpointFiles.getHDTIndex(), endpointFiles.getHDTNewIndex());
-            case AFTER_INDEX_V11_OLD_RENAME:
-                renameFromOld(endpointFiles.getHDTIndexV11());
-            case AFTER_INDEX_OLD_RENAME:
-                renameFromOld(endpointFiles.getHDTIndex());
-            case AFTER_TRIPLEDEL_TMP_OLD_RENAME:
-                renameFromOld(endpointFiles.getTripleDeleteTempArr());
-            case BEFORE_ALL:
-                break;
+        case AFTER_INDEX_V11_RENAME:
+            rename(endpointFiles.getHDTIndexV11(), endpointFiles.getHDTNewIndexV11());
+        case AFTER_INDEX_RENAME:
+            rename(endpointFiles.getHDTIndex(), endpointFiles.getHDTNewIndex());
+        case AFTER_INDEX_V11_OLD_RENAME:
+            renameFromOld(endpointFiles.getHDTIndexV11());
+        case AFTER_INDEX_OLD_RENAME:
+            renameFromOld(endpointFiles.getHDTIndex());
+        case AFTER_TRIPLEDEL_TMP_OLD_RENAME:
+            renameFromOld(endpointFiles.getTripleDeleteTempArr());
+        case BEFORE_ALL:
+            break;
         }
     }
 
     /**
      * reload previous data from step 3
+     *
      * @return previous data of step 3
      */
     private Lock reloadDataFromStep3() {
@@ -665,10 +727,16 @@ public class MergeRunnable {
 
     /**
      * start the merge at step3
-     * @param restarting if we are restarting from step 3 or not
-     * @param lock the return value or {@link #reloadDataFromStep3()}
-     * @throws InterruptedException for wait exception
-     * @throws IOException for file exception
+     *
+     * @param restarting
+     *            if we are restarting from step 3 or not
+     * @param lock
+     *            the return value or {@link #reloadDataFromStep3()}
+     *
+     * @throws InterruptedException
+     *             for wait exception
+     * @throws IOException
+     *             for file exception
      */
     private synchronized void step3(boolean restarting, Lock lock) throws InterruptedException, IOException {
         logger.debug("Start Step 3");
@@ -691,7 +759,6 @@ public class MergeRunnable {
 
         this.endpoint.resetDeleteArray(newHdt);
         newHdt.close();
-
 
         Path hdtIndexV11 = Paths.get(endpointFiles.getHDTIndexV11());
         // if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so we create a mock index file
@@ -757,7 +824,8 @@ public class MergeRunnable {
             File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
             Files.createDirectories(theDir.toPath());
             String location = theDir.getAbsolutePath() + "/";
-            BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(), new File(bitArray));
+            BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
+                    new File(bitArray));
             // @todo: should we not use the already mapped HDT file instead of remapping
             HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, deleteBitmap, this.endpoint.getHDTSpec(), null);
             hdt.saveToHDT(hdtOutput, null);
@@ -807,7 +875,8 @@ public class MergeRunnable {
         String baseURI = "file://" + rdfInput;
         try {
             StopWatch sw = new StopWatch();
-            HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES, this.endpoint.getHDTSpec(), null);
+            HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
+                    this.endpoint.getHDTSpec(), null);
             logger.info("File converted in: " + sw.stopAndShow());
             hdt.saveToHDT(hdtOutput, null);
             logger.info("HDT saved to file in: " + sw.stopAndShow());
@@ -820,8 +889,7 @@ public class MergeRunnable {
     private void writeTempFile(RepositoryConnection connection, String file) {
         try (FileOutputStream out = new FileOutputStream(file)) {
             RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
-            RepositoryResult<Statement> repositoryResult =
-                    connection.getStatements(null, null, null, false);
+            RepositoryResult<Statement> repositoryResult = connection.getStatements(null, null, null, false);
             writer.startRDF();
             logger.debug("Content dumped file");
             while (repositoryResult.hasNext()) {
@@ -836,12 +904,10 @@ public class MergeRunnable {
                 Value newObjIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
                 newObjIRI = this.endpoint.getHdtConverter().objectHdtResourceToResource(newObjIRI);
 
-                Statement stmConverted = this.endpoint.getValueFactory().createStatement(
-                        newSubjIRI,
-                        newPredIRI,
-                        newObjIRI
-                );
-                logger.debug("  {} {} {}", stmConverted.getSubject(), stmConverted.getPredicate(), stmConverted.getObject());
+                Statement stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI,
+                        newObjIRI);
+                logger.debug("  {} {} {}", stmConverted.getSubject(), stmConverted.getPredicate(),
+                        stmConverted.getObject());
                 writer.handleStatement(stmConverted);
             }
             writer.endRDF();
@@ -865,7 +931,6 @@ public class MergeRunnable {
                 count++;
                 // get the string
                 // convert the string using the new dictionary
-
 
                 // get the old IRIs with old IDs
                 HDTConverter iriConverter = new HDTConverter(this.endpoint);
@@ -893,9 +958,9 @@ public class MergeRunnable {
                 logger.debug("old:[{} {} {}]", oldSubject, oldPredicate, oldObject);
                 logger.debug("new:[{} {} {}]", newSubjIRI, newPredIRI, newObjIRI);
                 connectionFreezed.add(newSubjIRI, newPredIRI, newObjIRI);
-//                alternative, i.e. make inplace replacements
-//                connectionChanging.remove(s.getSubject(), s.getPredicate(), s.getObject());
-//                connectionChanging.add(newSubjIRI, newPredIRI, newObjIRI);
+                // alternative, i.e. make inplace replacements
+                // connectionChanging.remove(s.getSubject(), s.getPredicate(), s.getObject());
+                // connectionChanging.add(newSubjIRI, newPredIRI, newObjIRI);
 
                 if (count % 10000 == 0) {
                     logger.debug("Converted {}", count);

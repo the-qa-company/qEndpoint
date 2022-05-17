@@ -9,13 +9,18 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Utility class to manage files
+ *
  * @author Antoine Willerval
  */
 public class FileUtils {
     /**
      * delete a path recursively
-     * @param path the path to delete
-     * @throws IOException in case of error
+     *
+     * @param path
+     *            the path to delete
+     *
+     * @throws IOException
+     *             in case of error
      */
     public static void deleteRecursively(Path path) throws IOException {
         Files.walkFileTree(path, new FileVisitor<>() {

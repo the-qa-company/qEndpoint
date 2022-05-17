@@ -58,20 +58,32 @@ public class MergeRestartTest {
 
     /**
      * write inside a file a count
-     * @param f the file to write
-     * @param count the count to write
-     * @throws IOException if we can't write into the file
+     *
+     * @param f
+     *            the file to write
+     * @param count
+     *            the count to write
+     *
+     * @throws IOException
+     *             if we can't write into the file
+     *
      * @see #getInfoCount(File)
      */
-    private void writeInfoCount(File f, int count) throws IOException{
+    private void writeInfoCount(File f, int count) throws IOException {
         Files.writeString(Paths.get(f.getAbsolutePath()), String.valueOf(count));
     }
 
     /**
      * read a count inside a file
-     * @param f the file to write
+     *
+     * @param f
+     *            the file to write
+     *
      * @return the count inside the file
-     * @throws IOException if we can't read the file
+     *
+     * @throws IOException
+     *             if we can't read the file
+     *
      * @see #writeInfoCount(File, int)
      */
     private int getInfoCount(File f) throws IOException {
@@ -80,8 +92,12 @@ public class MergeRestartTest {
 
     /**
      * lock a {@link MergeRunnableStopPoint} if it is before the current point
-     * @param point the point
-     * @param current the current point
+     *
+     * @param point
+     *            the point
+     * @param current
+     *            the current point
+     *
      * @see #lockIfAfter(MergeRunnableStopPoint, MergeRunnableStopPoint)
      */
     private void lockIfBefore(MergeRunnableStopPoint point, MergeRunnableStopPoint current) {
@@ -93,10 +109,15 @@ public class MergeRestartTest {
             logger.debug("pass locking " + point.name().toLowerCase());
         }
     }
+
     /**
      * lock a {@link MergeRunnableStopPoint} if it is after the current point
-     * @param point the point
-     * @param current the current point
+     *
+     * @param point
+     *            the point
+     * @param current
+     *            the current point
+     *
      * @see #lockIfBefore(MergeRunnableStopPoint, MergeRunnableStopPoint)
      */
     private void lockIfAfter(MergeRunnableStopPoint point, MergeRunnableStopPoint current) {
@@ -111,13 +132,21 @@ public class MergeRestartTest {
 
     /**
      * first stage of the merge test, before the crash
-     * @param stopPoint the stop point to crash
-     * @param root the root test directory
-     * @throws IOException io errors
-     * @throws InterruptedException wait errors
-     * @throws NotFoundException rdf select errors
+     *
+     * @param stopPoint
+     *            the stop point to crash
+     * @param root
+     *            the root test directory
+     *
+     * @throws IOException
+     *             io errors
+     * @throws InterruptedException
+     *             wait errors
+     * @throws NotFoundException
+     *             rdf select errors
      */
-    private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root) throws IOException, InterruptedException, NotFoundException {
+    private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root)
+            throws IOException, InterruptedException, NotFoundException {
         // lock every point we need
         lockIfAfter(MergeRunnableStopPoint.STEP1_START, stopPoint);
         lockIfAfter(MergeRunnableStopPoint.STEP1_TEST_SELECT1, stopPoint);
@@ -149,9 +178,8 @@ public class MergeRestartTest {
         writeInfoCount(countFile, count);
 
         // start an endpoint store
-        EndpointStore store = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
+                spec, nativeStore.getAbsolutePath() + "/", false);
         logger.debug("--- launching merge with stopPoint=" + stopPoint.name().toLowerCase());
 
         // set the threshold to control the number of add required to trigger the merge
@@ -309,11 +337,17 @@ public class MergeRestartTest {
 
     /**
      * open a connection in the store and return a consumer of it with a value factory
-     * @param endpointStore the store to open the connection
-     * @param accept the consumer
-     * @throws MergeRunnableStopPoint.MergeRunnableStopException if the connection was stopped by a merge crash
+     *
+     * @param endpointStore
+     *            the store to open the connection
+     * @param accept
+     *            the consumer
+     *
+     * @throws MergeRunnableStopPoint.MergeRunnableStopException
+     *             if the connection was stopped by a merge crash
      */
-    private void openConnection(SailRepository endpointStore, BiConsumer<ValueFactory, RepositoryConnection> accept) throws MergeRunnableStopPoint.MergeRunnableStopException {
+    private void openConnection(SailRepository endpointStore, BiConsumer<ValueFactory, RepositoryConnection> accept)
+            throws MergeRunnableStopPoint.MergeRunnableStopException {
         try {
             // open the connection
             try (RepositoryConnection connection = endpointStore.getConnection()) {
@@ -333,12 +367,19 @@ public class MergeRestartTest {
             throw (MergeRunnableStopPoint.MergeRunnableException) e2;
         }
     }
+
     /**
      * second stage of the merge test, after the crash
-     * @param point the stop point of the crash
-     * @param root the root test directory
-     * @throws IOException io errors
-     * @throws InterruptedException wait errors
+     *
+     * @param point
+     *            the stop point of the crash
+     * @param root
+     *            the root test directory
+     *
+     * @throws IOException
+     *             io errors
+     * @throws InterruptedException
+     *             wait errors
      */
     private void mergeRestartTest2(MergeRunnableStopPoint point, File root) throws IOException, InterruptedException {
         // lock merge point we need
@@ -354,12 +395,12 @@ public class MergeRestartTest {
         File hdtStore = new File(root, "hdt-store");
         File countFile = new File(root, "count");
 
-        logger.debug("test2 restart, count of deleted in hdt: {}", new BitArrayDisk(4, hdtStore.getAbsolutePath() + "/triples-delete.arr").countOnes());
+        logger.debug("test2 restart, count of deleted in hdt: {}",
+                new BitArrayDisk(4, hdtStore.getAbsolutePath() + "/triples-delete.arr").countOnes());
 
         // lock to get the test count 1 into the 2nd step
-        EndpointStore store2 = new EndpointStore(
-                hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", false
-        );
+        EndpointStore store2 = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
+                spec, nativeStore.getAbsolutePath() + "/", false);
         SailRepository endpointStore2 = new SailRepository(store2);
         // a merge should be triggered
 
@@ -463,7 +504,9 @@ public class MergeRestartTest {
             return new File(getRoot(), "hdt-store");
         }
     }
-    public void mergeRestartTest(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException, NotFoundException {
+
+    public void mergeRestartTest(MergeRunnableStopPoint stopPoint)
+            throws IOException, InterruptedException, NotFoundException {
         // create a store to tell which dir we are using
         FileStore store = new FileStore(tempDir.getRoot(), tempDir2.getRoot());
         Thread knowledgeThread = new Thread(() -> {
@@ -496,7 +539,7 @@ public class MergeRestartTest {
         mergeRestartTest1(stopPoint, tempDir.getRoot());
         // re-allow the request, this was set to true in the first phase crash
         MergeRunnableStopPoint.disableRequest = false;
-//        MergeRunnableStopPoint.unlockAllLocks();
+        // MergeRunnableStopPoint.unlockAllLocks();
 
         // switch the directory we are using
         swapDir();
@@ -526,47 +569,58 @@ public class MergeRestartTest {
         // assert we have deleted the test data
         Assert.assertFalse(HALT_TEST_DIR.exists());
     }
+
     /* test with throw/wait */
     @Test
     public void mergeRestartStep1StartTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP1_START);
     }
+
     @Test
     public void mergeRestartStep1EndTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP1_END);
     }
+
     @Test
     public void mergeRestartStep2StartTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP2_START);
     }
+
     @Test
     public void mergeRestartStep2EndTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP2_END);
     }
+
     @Test
     public void mergeRestartStep3StartTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP3_START);
     }
+
     @Test
     public void mergeRestartStep3Mid1Test() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP3_FILES_MID1);
     }
+
     @Test
     public void mergeRestartStep3Mid2Test() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP3_FILES_MID2);
     }
+
     @Test
     public void mergeRestartStep3EndTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.STEP3_END);
     }
+
     @Test
     public void mergeRestartMergeEndTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.MERGE_END);
     }
+
     @Test
     public void mergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException, NotFoundException {
         mergeRestartTest(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
     }
+
     /* test with throw/wait */
     @Test
     @Ignore("should be used by hand | halt test")
@@ -574,114 +628,133 @@ public class MergeRestartTest {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP1_START, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep1StartTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP1_START, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep1EndTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP1_END, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep1EndTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP1_END, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep2StartTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP2_START, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep2StartTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP2_START, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep2EndTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP2_END, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep2EndTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP2_END, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep3StartTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP3_START, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep3StartTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP3_START, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep3Mid1Test() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP3_FILES_MID1, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep3Mid1Test() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP3_FILES_MID1, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep3Mid2Test() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP3_FILES_MID2, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep3Mid2Test() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP3_FILES_MID2, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartStep3EndTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.STEP3_END, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartStep3EndTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.STEP3_END, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartMergeEndTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.MERGE_END, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartMergeEndTest() throws IOException, InterruptedException {
         mergeRestartTest2(MergeRunnableStopPoint.MERGE_END, HALT_TEST_DIR);
         endHalt();
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void haltMergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException, NotFoundException {
         startHalt();
         mergeRestartTest1(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP, HALT_TEST_DIR);
     }
+
     @Test
     @Ignore("should be used by hand | halt test")
     public void halt2MergeRestartMergeEndAfterSleepTest() throws IOException, InterruptedException {
@@ -689,12 +762,16 @@ public class MergeRestartTest {
         endHalt();
     }
 
-
     /**
      * print the HDT and the bitmap (if store not null)
-     * @param hdt the hdt to print
-     * @param store the store, can be null to avoid printing the bitmap
-     * @throws NotFoundException if we can't search in the HDT
+     *
+     * @param hdt
+     *            the hdt to print
+     * @param store
+     *            the store, can be null to avoid printing the bitmap
+     *
+     * @throws NotFoundException
+     *             if we can't search in the HDT
      */
     public static void printHDT(HDT hdt, EndpointStore store) throws NotFoundException {
         IteratorTripleString it = hdt.search("", "", "");
@@ -703,12 +780,14 @@ public class MergeRestartTest {
             logger.debug("- {}", it.next());
         }
         if (store != null)
-        logger.debug("bitmap: {}", store.getDeleteBitMap().printInfo());
+            logger.debug("bitmap: {}", store.getDeleteBitMap().printInfo());
     }
 
     /**
      * recursively delete a directory
-     * @param f the directory to delete
+     *
+     * @param f
+     *            the directory to delete
      */
     private void deleteDir(File f) {
         try {
@@ -780,7 +859,10 @@ public class MergeRestartTest {
 
     /**
      * print and count all the triples of a connection
-     * @param connection the connection to read
+     *
+     * @param connection
+     *            the connection to read
+     *
      * @return the count of triples
      */
     private int count(RepositoryConnection connection) {
@@ -796,9 +878,14 @@ public class MergeRestartTest {
 
     /**
      * create a test HDT of size n
-     * @param fileName the hdt file
-     * @param spec the hdt spec
-     * @param testElements n
+     *
+     * @param fileName
+     *            the hdt file
+     * @param spec
+     *            the hdt spec
+     * @param testElements
+     *            n
+     *
      * @return the hdt
      */
     public static HDT createTestHDT(String fileName, HDTSpecification spec, int testElements) {
@@ -808,16 +895,14 @@ public class MergeRestartTest {
             // adding triples
 
             ValueFactory vf = new MemValueFactory();
-            try (FileOutputStream out = new FileOutputStream(inputFile)){
+            try (FileOutputStream out = new FileOutputStream(inputFile)) {
                 RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
                 writer.startRDF();
                 logger.debug("Initial HDT:");
                 for (int id = 1; id <= testElements; id++) {
-                    Statement stm = vf.createStatement(
-                            vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
+                    Statement stm = vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
                             vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-                            vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
-                    );
+                            vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule"));
                     logger.debug("HDT statement: " + stm);
                     writer.handleStatement(stm);
                 }
@@ -833,79 +918,102 @@ public class MergeRestartTest {
 
     /**
      * remove a triple from the HDT and write the count
-     * @param out the count file
-     * @param repo the store to connect
-     * @param id the id of the triple
-     * @param count the count with this action
-     * @throws IOException file write error
+     *
+     * @param out
+     *            the count file
+     * @param repo
+     *            the store to connect
+     * @param id
+     *            the id of the triple
+     * @param count
+     *            the count with this action
+     *
+     * @throws IOException
+     *             file write error
      */
     private void executeTestRemoveHDT(File out, SailRepository repo, int id, int count) throws IOException {
         openConnection(repo, (vf, connection) -> {
-            Statement stm = vf.createStatement(
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
+            Statement stm = vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
-            );
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule"));
             logger.debug("Remove statement " + stm);
             connection.remove(stm);
         });
         writeInfoCount(out, count);
     }
+
     /**
      * remove a triple from the RDF and write the count
-     * @param out the count file
-     * @param repo the store to connect
-     * @param id the id of the triple
-     * @param count the count with this action
-     * @throws IOException file write error
+     *
+     * @param out
+     *            the count file
+     * @param repo
+     *            the store to connect
+     * @param id
+     *            the id of the triple
+     * @param count
+     *            the count with this action
+     *
+     * @throws IOException
+     *             file write error
      */
     private void executeTestRemoveRDF(File out, SailRepository repo, int id, int count) throws IOException {
         openConnection(repo, (vf, connection) -> {
-            Statement stm = vf.createStatement(
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
+            Statement stm = vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
-            );
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule"));
             logger.debug("Remove statement " + stm);
             connection.remove(stm);
         });
         writeInfoCount(out, count);
     }
+
     /**
      * add a triple to the native store and write the count
-     * @param out the count file
-     * @param repo the store to connect
-     * @param id the id of the triple
-     * @param count the count with this action
-     * @throws IOException file write error
+     *
+     * @param out
+     *            the count file
+     * @param repo
+     *            the store to connect
+     * @param id
+     *            the id of the triple
+     * @param count
+     *            the count with this action
+     *
+     * @throws IOException
+     *             file write error
      */
     private void executeTestAddRDF(File out, SailRepository repo, int id, int count) throws IOException {
         openConnection(repo, (vf, connection) -> {
-            Statement stm = vf.createStatement(
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
+            Statement stm = vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testRDF" + id),
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
-            );
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule"));
             logger.debug("Add statement " + stm);
             connection.add(stm);
         });
         writeInfoCount(out, count);
     }
+
     /**
      * add a triple of the HDT to the native store to test duplicates and write the count
-     * @param out the count file
-     * @param repo the store to connect
-     * @param id the id of the triple
-     * @param count the count with this action
-     * @throws IOException file write error
+     *
+     * @param out
+     *            the count file
+     * @param repo
+     *            the store to connect
+     * @param id
+     *            the id of the triple
+     * @param count
+     *            the count with this action
+     *
+     * @throws IOException
+     *             file write error
      */
     private void executeTestAddHDT(File out, SailRepository repo, int id, int count) throws IOException {
         openConnection(repo, (vf, connection) -> {
-            Statement stm = vf.createStatement(
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
+            Statement stm = vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testHDT" + id),
                     vf.createIRI(Utility.EXAMPLE_NAMESPACE, "testP"),
-                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule")
-            );
+                    vf.createIRI(Utility.EXAMPLE_NAMESPACE, "Bidule"));
             logger.debug("Add statement " + stm);
             connection.add(stm);
         });
@@ -914,10 +1022,16 @@ public class MergeRestartTest {
 
     /**
      * count the number of triples and compare it with the count file value
-     * @param out the count file
-     * @param repo the repo to connect
-     * @param store the store to print the HDT
-     * @throws IOException file read error
+     *
+     * @param out
+     *            the count file
+     * @param repo
+     *            the repo to connect
+     * @param store
+     *            the store to print the HDT
+     *
+     * @throws IOException
+     *             file read error
      */
     private void executeTestCount(File out, SailRepository repo, EndpointStore store) throws IOException {
         int excepted = getInfoCount(out);

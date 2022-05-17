@@ -49,7 +49,7 @@ public class SimpleIRIHDT extends AbstractIRI {
 
     @Override
     public String toString() {
-        if (iriString == null){
+        if (iriString == null) {
             iriString = stringValue();
         }
         return iriString;
@@ -63,22 +63,11 @@ public class SimpleIRIHDT extends AbstractIRI {
             Sparql.count++;
 
             if (this.postion == SHARED_POS) {
-                return hdt.getDictionary()
-                        .idToString(
-                                this.id,
-                                TripleComponentRole.SUBJECT)
-                        .toString();
+                return hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT).toString();
             } else if (this.postion == SUBJECT_POS) {
-                return hdt.getDictionary()
-                        .idToString(
-                                this.id,
-                                TripleComponentRole.SUBJECT)
-                        .toString();
+                return hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT).toString();
             } else if (this.postion == OBJECT_POS) {
-                CharSequence charSequence = hdt.getDictionary()
-                        .idToString(
-                                this.id,
-                                TripleComponentRole.OBJECT);
+                CharSequence charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.OBJECT);
                 if (charSequence == null) {
                     throw new NullPointerException("NULL for ID: " + id);
                 }
@@ -160,7 +149,7 @@ public class SimpleIRIHDT extends AbstractIRI {
     }
 
     public void convertToNonHDTIRI() {
-        if (iriString == null){
+        if (iriString == null) {
             iriString = stringValue();
         }
         this.id = -1;
