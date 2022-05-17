@@ -12,15 +12,17 @@ RUN_HS_MAPPED=true
 # - use native store?
 RUN_NS=true
 # - use LMDB store?
-RUN_LMDB=true
+RUN_LMDB=false
 
 # test modes: "update", "bi", "explore"
-RUN_MODE=bi
+RUN_MODES="explore update bi"
 # params for the generator/testdriver
 GENERATOR_PARAMS=
 TESTDRIVER_PARAMS=
 # BSBM products count (separate with spaces)
-TESTS_NUMBERS="10000"
+TESTS_NUMBERS="10000 50000 100000 200000"
+# TESTS_NUMBERS="500000 1000000 2000000"
+# TESTS_NUMBERS="10000"
 # Timeout before killing the EP (in seconds)
 TIMEOUT_SECOND=$((3600 * 24 * 7))
 # Rebuild the endpoint at each start of the benchmark
@@ -50,57 +52,14 @@ CSV_FILE=results.csv
 # results directory
 RESULT_DIRECTORY=results
 
-# config per mode
-case "${RUN_MODE}" in
-    update)
-        echo "BSBM UPDATE MODE"
-        # dir configs
-        RUNOUT=$RUN_OLD/upt
-        RESULTS=$RESULT_DIRECTORY/update
-        
-        # bsbm config
-        USECASES=exploreAndUpdate
-        WARMUP_RUN=50
-        QUERY_MIX_RUNS=500
-    ;;
-    bi)
-        echo "BSBM BI MODE"
-        # dir configs
-        RUNOUT=$RUN_OLD/bi
-        RESULTS=$RESULT_DIRECTORY/bi
-        
-        # bsbm config
-        USECASES=businessIntelligence
-        WARMUP_RUN=25
-        QUERY_MIX_RUNS=10
-    ;;
-    explore)
-        echo "BSBM EXPLORE MODE"
-        # dir configs
-        RUNOUT=$RUN_OLD/exp
-        RESULTS=$RESULT_DIRECTORY/explore
-        
-        # bsbm config
-        USECASES=explore
-        WARMUP_RUN=50
-        QUERY_MIX_RUNS=500
-    ;;
-    *)
-        echo "BAD BSBM MODE: $RUN_MODE. exit"
-        exit -1
-    ;;
-esac
-CSV=$RESULTS/$CSV_FILE
-
-trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT INT SIGUSR1
-
-# Usage:   runtest MODE READING RESULTS_XML RDF_MODEL
-# Example: runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map"
+# Usage:   runtest MODE READING RESULTS_XML RDF_MODEL RMODE
+# Example: runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map" "bi"
 function runtest {
     MODE=$1
     READING=$2
     RESULTS_XML=$3
     RDF_MODEL=$4
+    RMODE=$5
     
     echo ""
     echo "----------------------------------------"
@@ -159,7 +118,7 @@ function runtest {
         GENERATOR_PARAMS_IN=$GENERATOR_PARAMS
         TESTDRIVER_PARAMS_IN=$TESTDRIVER_PARAMS
         
-        case "${RUN_MODE}" in
+        case "${RMODE}" in
             update)
                 GENERATOR_PARAMS_IN="$GENERATOR_PARAMS_IN  -ud"
                 DATASET_LOCATION=dataset_update.nt
@@ -242,70 +201,121 @@ function runtest {
     
 }
 
-if $REBUILD_ENDPOINT
-then
-    ./build_endpoint.sh .
-elif [ ! -e "$ENDPOINT_JAR" ]
-then
-    echo "$ENDPOINT_JAR doesn't exists, building a new one"
-    ./build_endpoint.sh .
-fi
+for RUN_MODE in $RUN_MODES
+do
+    echo "run mode $RUN_MODE"
+    # config per mode
+    case "${RUN_MODE}" in
+        update)
+            echo "BSBM UPDATE MODE"
+            # dir configs
+            RUNOUT=$RUN_OLD/upt
+            RESULTS=$RESULT_DIRECTORY/update
+            
+            # bsbm config
+            USECASES=exploreAndUpdate
+            WARMUP_RUN=50
+            QUERY_MIX_RUNS=500
+        ;;
+        bi)
+            echo "BSBM BI MODE"
+            # dir configs
+            RUNOUT=$RUN_OLD/bi
+            RESULTS=$RESULT_DIRECTORY/bi
+            
+            # bsbm config
+            USECASES=businessIntelligence
+            WARMUP_RUN=25
+            QUERY_MIX_RUNS=10
+        ;;
+        explore)
+            echo "BSBM EXPLORE MODE"
+            # dir configs
+            RUNOUT=$RUN_OLD/exp
+            RESULTS=$RESULT_DIRECTORY/explore
+            
+            # bsbm config
+            USECASES=explore
+            WARMUP_RUN=50
+            QUERY_MIX_RUNS=500
+        ;;
+        *)
+            echo "BAD BSBM MODE: $RUN_MODE. exit"
+            exit -1
+        ;;
+    esac
+    CSV=$RESULTS/$CSV_FILE
 
-echo "(Re)create result dir..."
-mkdir -p "$RESULTS"
+    trap "echo 'DELETE $RUN $OUTPUT' ; rm -rf $RUN $OUTPUT" EXIT INT SIGUSR1
 
-# Download the tool to generate the file
-if [ -d "bsbmtools" ]
-then
-    echo "bsbmtools already installed, to delete it run 'rm -r bsbmtools'"
-else
-    echo "Downloading BSBM..."
-    curl https://phoenixnap.dl.sourceforge.net/project/bsbmtools/bsbmtools/bsbmtools-0.2/bsbmtools-v0.2.zip --output bsmtools.zip
-    unzip bsmtools.zip
-    rm bsmtools.zip
-    mv bsbmtools-0.2 bsbmtools
-fi
 
-# set into bsbm tool suite
+    if $REBUILD_ENDPOINT
+    then
+        ./build_endpoint.sh .
+    elif [ ! -e "$ENDPOINT_JAR" ]
+    then
+        echo "$ENDPOINT_JAR doesn't exists, building a new one"
+        ./build_endpoint.sh .
+    fi
 
-OUTPUT_IN=../$OUTPUT
-CSV_IN=../$RESULTS/$CSV_FILE
+    echo "(Re)create result dir..."
+    mkdir -p "$RESULTS"
 
-mkdir -p $RUNOUT
+    # Download the tool to generate the file
+    if [ -d "bsbmtools" ]
+    then
+        echo "bsbmtools already installed, to delete it run 'rm -r bsbmtools'"
+    else
+        echo "Downloading BSBM..."
+        curl https://phoenixnap.dl.sourceforge.net/project/bsbmtools/bsbmtools/bsbmtools-0.2/bsbmtools-v0.2.zip --output bsmtools.zip
+        unzip bsmtools.zip
+        rm bsmtools.zip
+        mv bsbmtools-0.2 bsbmtools
+    fi
 
-cd bsbmtools
+    # set into bsbm tool suite
 
-# Backup old CSV data
+    OUTPUT_IN=../$OUTPUT
+    CSV_IN=../$RESULTS/$CSV_FILE
 
-if [ -f $CSV_IN ]
-then
-    mv $CSV_IN "$CSV_IN$(date '+%Y-%m-%d-%H:%M:%S').csv"
-fi
+    mkdir -p $RUNOUT
 
-# Write CSV header
+    cd bsbmtools
 
-echo "store,mode,file,uid,triples,runSize,hdtSize,nativeSize" > "$CSV_IN"
+    # Backup old CSV data
 
-if $RUN_HS_MAPPED
-then
-    runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map"
-fi
+    if [ -f $CSV_IN ]
+    then
+        mv $CSV_IN "$CSV_IN$(date '+%Y-%m-%d-%H:%M:%S').csv"
+    fi
 
-if $RUN_HS_LOADED
-then
-    runtest "HYBRID" "LOAD" "hybridstore/load" "model_hs_load"
-    
-fi
+    # Write CSV header
 
-if $RUN_NS
-then
-    runtest "NATIVE" "DEFAULT" "nativestore" "model_ns"
-    
-fi
+    echo "store,mode,file,uid,triples,runSize,hdtSize,nativeSize" > "$CSV_IN"
 
-if $RUN_LMDB
-then
-    runtest "LMDB" "DEFAULT" "lmdb" "model_lmdb"
-fi
+    if $RUN_HS_MAPPED
+    then
+        runtest "HYBRID" "MAP" "hybridstore/map" "model_hs_map" $RUN_MODE
+    fi
+
+    if $RUN_HS_LOADED
+    then
+        runtest "HYBRID" "LOAD" "hybridstore/load" "model_hs_load" $RUN_MODE
+    fi
+
+    if $RUN_NS
+    then
+        runtest "NATIVE" "DEFAULT" "nativestore" "model_ns" $RUN_MODE
+        
+    fi
+
+    if $RUN_LMDB
+    then
+        runtest "LMDB" "DEFAULT" "lmdb" "model_lmdb" $RUN_MODE
+    fi
+
+    cd ..
+
+done
 
 echo "Benchmark done :)"
