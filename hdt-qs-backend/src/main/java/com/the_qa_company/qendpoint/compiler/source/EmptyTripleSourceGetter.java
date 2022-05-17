@@ -10,43 +10,44 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 
 /**
- * empty implementation of {@link com.the_qa_company.qendpoint.compiler.TripleSourceModel}
+ * empty implementation of
+ * {@link com.the_qa_company.qendpoint.compiler.TripleSourceModel}
  *
  * @author Antoine Willerval
  */
 public class EmptyTripleSourceGetter implements TripleSourceGetter, TripleSourceModel {
-    @Override
-    public void close() throws SailCompiler.SailCompilerException {
-        // nothing
-    }
+	@Override
+	public void close() throws SailCompiler.SailCompilerException {
+		// nothing
+	}
 
-    @Override
-    public CloseableIteration<Statement, SailCompiler.SailCompilerException> getStatements(Resource s, IRI p, Value o)
-            throws SailCompiler.SailCompilerException {
-        return new CloseableIteration<>() {
-            @Override
-            public void close() throws SailCompiler.SailCompilerException {
-            }
+	@Override
+	public CloseableIteration<Statement, SailCompiler.SailCompilerException> getStatements(Resource s, IRI p, Value o)
+			throws SailCompiler.SailCompilerException {
+		return new CloseableIteration<>() {
+			@Override
+			public void close() throws SailCompiler.SailCompilerException {
+			}
 
-            @Override
-            public boolean hasNext() throws SailCompiler.SailCompilerException {
-                return false;
-            }
+			@Override
+			public boolean hasNext() throws SailCompiler.SailCompilerException {
+				return false;
+			}
 
-            @Override
-            public Statement next() throws SailCompiler.SailCompilerException {
-                return null;
-            }
+			@Override
+			public Statement next() throws SailCompiler.SailCompilerException {
+				return null;
+			}
 
-            @Override
-            public void remove() throws SailCompiler.SailCompilerException {
-                throw new IllegalArgumentException("empty iteration");
-            }
-        };
-    }
+			@Override
+			public void remove() throws SailCompiler.SailCompilerException {
+				throw new IllegalArgumentException("empty iteration");
+			}
+		};
+	}
 
-    @Override
-    public TripleSourceGetter getGetter() {
-        return this;
-    }
+	@Override
+	public TripleSourceGetter getGetter() {
+		return this;
+	}
 }

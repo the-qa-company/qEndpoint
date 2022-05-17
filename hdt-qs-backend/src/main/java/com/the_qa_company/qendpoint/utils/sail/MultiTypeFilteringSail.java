@@ -19,173 +19,160 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * a wrapper to filter multiple sail with a {@link com.the_qa_company.qendpoint.utils.sail.filter.TypeSailFilter}.
+ * a wrapper to filter multiple sail with a
+ * {@link com.the_qa_company.qendpoint.utils.sail.filter.TypeSailFilter}.
  *
  * @author Antoine Willerval
  */
 public class MultiTypeFilteringSail extends NotifyingSailWrapper implements LinkedSail<MultiTypeFilteringSail> {
-    private Map<Resource, Value> lastTypeBuffer;
-    private NotifyingSail tripleSourceSail;
-    private final List<TypedSail> types;
-    private final IRI predicate;
+	private Map<Resource, Value> lastTypeBuffer;
+	private NotifyingSail tripleSourceSail;
+	private final List<TypedSail> types;
+	private final IRI predicate;
 
-    /**
-     * create a sail to filter multiple sails by their type
-     *
-     * @param tripleSourceSail
-     *            the source to put bellow all the typed sail
-     * @param predicate
-     *            the predicate to define the type of a subject
-     * @param types
-     *            the typed sail to redirect
-     */
-    public MultiTypeFilteringSail(NotifyingSail tripleSourceSail, IRI predicate, TypedSail... types) {
-        this(tripleSourceSail, predicate, Arrays.asList(types));
-    }
+	/**
+	 * create a sail to filter multiple sails by their type
+	 *
+	 * @param tripleSourceSail the source to put bellow all the typed sail
+	 * @param predicate        the predicate to define the type of a subject
+	 * @param types            the typed sail to redirect
+	 */
+	public MultiTypeFilteringSail(NotifyingSail tripleSourceSail, IRI predicate, TypedSail... types) {
+		this(tripleSourceSail, predicate, Arrays.asList(types));
+	}
 
-    /**
-     * create a sail to filter multiple sails by their type
-     *
-     * @param tripleSourceSail
-     *            the source to put bellow all the typed sail
-     * @param predicate
-     *            the predicate to define the type of a subject
-     * @param types
-     *            the typed sail to redirect
-     */
-    public MultiTypeFilteringSail(NotifyingSail tripleSourceSail, IRI predicate, List<TypedSail> types) {
-        super();
-        this.types = types;
-        this.predicate = predicate;
-        if (tripleSourceSail != null) {
-            setTripleSourceSail(tripleSourceSail);
-        }
-    }
+	/**
+	 * create a sail to filter multiple sails by their type
+	 *
+	 * @param tripleSourceSail the source to put bellow all the typed sail
+	 * @param predicate        the predicate to define the type of a subject
+	 * @param types            the typed sail to redirect
+	 */
+	public MultiTypeFilteringSail(NotifyingSail tripleSourceSail, IRI predicate, List<TypedSail> types) {
+		super();
+		this.types = types;
+		this.predicate = predicate;
+		if (tripleSourceSail != null) {
+			setTripleSourceSail(tripleSourceSail);
+		}
+	}
 
-    /**
-     * create a sail to filter multiple sails by their type without triple source, use
-     * {@link #setBaseSail(org.eclipse.rdf4j.sail.Sail)} or
-     * {@link #setTripleSourceSail(org.eclipse.rdf4j.sail.NotifyingSail)} to set the source
-     *
-     * @param predicate
-     *            the predicate to define the type of a subject
-     * @param types
-     *            the typed sail to redirect
-     */
-    public MultiTypeFilteringSail(IRI predicate, TypedSail... types) {
-        this(predicate, Arrays.asList(types));
-    }
+	/**
+	 * create a sail to filter multiple sails by their type without triple
+	 * source, use {@link #setBaseSail(org.eclipse.rdf4j.sail.Sail)} or
+	 * {@link #setTripleSourceSail(org.eclipse.rdf4j.sail.NotifyingSail)} to set
+	 * the source
+	 *
+	 * @param predicate the predicate to define the type of a subject
+	 * @param types     the typed sail to redirect
+	 */
+	public MultiTypeFilteringSail(IRI predicate, TypedSail... types) {
+		this(predicate, Arrays.asList(types));
+	}
 
-    /**
-     * create a sail to filter multiple sails by their type without triple source, use
-     * {@link #setBaseSail(org.eclipse.rdf4j.sail.Sail)} or
-     * {@link #setTripleSourceSail(org.eclipse.rdf4j.sail.NotifyingSail)} to set the source
-     *
-     * @param predicate
-     *            the predicate to define the type of a subject
-     * @param types
-     *            the typed sail to redirect
-     */
-    public MultiTypeFilteringSail(IRI predicate, List<TypedSail> types) {
-        this(null, predicate, types);
-    }
+	/**
+	 * create a sail to filter multiple sails by their type without triple
+	 * source, use {@link #setBaseSail(org.eclipse.rdf4j.sail.Sail)} or
+	 * {@link #setTripleSourceSail(org.eclipse.rdf4j.sail.NotifyingSail)} to set
+	 * the source
+	 *
+	 * @param predicate the predicate to define the type of a subject
+	 * @param types     the typed sail to redirect
+	 */
+	public MultiTypeFilteringSail(IRI predicate, List<TypedSail> types) {
+		this(null, predicate, types);
+	}
 
-    /**
-     * set the triple source sail and link the filters
-     *
-     * @param tripleSourceSail
-     *            the triple source
-     */
-    public void setTripleSourceSail(NotifyingSail tripleSourceSail) {
-        this.tripleSourceSail = tripleSourceSail;
+	/**
+	 * set the triple source sail and link the filters
+	 *
+	 * @param tripleSourceSail the triple source
+	 */
+	public void setTripleSourceSail(NotifyingSail tripleSourceSail) {
+		this.tripleSourceSail = tripleSourceSail;
 
-        NotifyingSail baseSail = tripleSourceSail;
-        // inverse loop to link the last element to the source
-        for (int i = types.size() - 1; i >= 0; i--) {
-            TypedSail type = types.get(i);
-            baseSail = new FilteringSail(type, baseSail,
-                    (sail, connection) -> new TypeSailFilter(lastTypeBuffer, sail, predicate, type.getType()));
-        }
-        super.setBaseSail(baseSail);
-    }
+		NotifyingSail baseSail = tripleSourceSail;
+		// inverse loop to link the last element to the source
+		for (int i = types.size() - 1; i >= 0; i--) {
+			TypedSail type = types.get(i);
+			baseSail = new FilteringSail(type, baseSail,
+					(sail, connection) -> new TypeSailFilter(lastTypeBuffer, sail, predicate, type.getType()));
+		}
+		super.setBaseSail(baseSail);
+	}
 
-    @Override
-    public void setBaseSail(Sail tripleSourceSail) {
-        setTripleSourceSail((NotifyingSail) tripleSourceSail);
-    }
+	@Override
+	public void setBaseSail(Sail tripleSourceSail) {
+		setTripleSourceSail((NotifyingSail) tripleSourceSail);
+	}
 
-    /**
-     * @return the triple source of this sail
-     */
-    public Sail getTripleSourceSail() {
-        return tripleSourceSail;
-    }
+	/**
+	 * @return the triple source of this sail
+	 */
+	public Sail getTripleSourceSail() {
+		return tripleSourceSail;
+	}
 
-    public IRI getPredicate() {
-        return predicate;
-    }
+	public IRI getPredicate() {
+		return predicate;
+	}
 
-    public List<TypedSail> getTypes() {
-        return types;
-    }
+	public List<TypedSail> getTypes() {
+		return types;
+	}
 
-    @Override
-    public synchronized NotifyingSailConnection getConnection() throws SailException {
-        lastTypeBuffer = new HashMap<>();
-        return super.getConnection();
-    }
+	@Override
+	public synchronized NotifyingSailConnection getConnection() throws SailException {
+		lastTypeBuffer = new HashMap<>();
+		return super.getConnection();
+	}
 
-    @Override
-    public MultiTypeFilteringSail getSail() {
-        return this;
-    }
+	@Override
+	public MultiTypeFilteringSail getSail() {
+		return this;
+	}
 
-    @Override
-    public Consumer<Sail> getSailConsumer() {
-        return this::setBaseSail;
-    }
+	@Override
+	public Consumer<Sail> getSailConsumer() {
+		return this::setBaseSail;
+	}
 
-    /**
-     * a sail and a type describing it
-     *
-     * @author Antoine Willerval
-     */
-    public static class TypedSail extends SimpleLinkedSail<NotifyingSail> {
-        private final Value type;
+	/**
+	 * a sail and a type describing it
+	 *
+	 * @author Antoine Willerval
+	 */
+	public static class TypedSail extends SimpleLinkedSail<NotifyingSail> {
+		private final Value type;
 
-        /**
-         * create a typed sail with a sail consumer to define the end
-         *
-         * @param sail
-         *            the sail to redirect
-         * @param type
-         *            the type associate with this filtered sail
-         * @param sailConsumer
-         *            the consumer to define the base sail of the sail
-         */
-        public TypedSail(NotifyingSail sail, Value type, Consumer<Sail> sailConsumer) {
-            super(sail, sailConsumer);
-            this.type = type;
-        }
+		/**
+		 * create a typed sail with a sail consumer to define the end
+		 *
+		 * @param sail         the sail to redirect
+		 * @param type         the type associate with this filtered sail
+		 * @param sailConsumer the consumer to define the base sail of the sail
+		 */
+		public TypedSail(NotifyingSail sail, Value type, Consumer<Sail> sailConsumer) {
+			super(sail, sailConsumer);
+			this.type = type;
+		}
 
-        /**
-         * create a typed sail with a sail consumer to define the end
-         *
-         * @param type
-         *            the type associate with this filtered sail
-         * @param linkedSails
-         *            the sails to redirect
-         */
-        public TypedSail(LinkedSail<? extends NotifyingSail> linkedSails, Value type) {
-            super(linkedSails);
-            this.type = type;
-        }
+		/**
+		 * create a typed sail with a sail consumer to define the end
+		 *
+		 * @param type        the type associate with this filtered sail
+		 * @param linkedSails the sails to redirect
+		 */
+		public TypedSail(LinkedSail<? extends NotifyingSail> linkedSails, Value type) {
+			super(linkedSails);
+			this.type = type;
+		}
 
-        /**
-         * @return the type of the sail
-         */
-        public Value getType() {
-            return type;
-        }
-    }
+		/**
+		 * @return the type of the sail
+		 */
+		public Value getType() {
+			return type;
+		}
+	}
 }

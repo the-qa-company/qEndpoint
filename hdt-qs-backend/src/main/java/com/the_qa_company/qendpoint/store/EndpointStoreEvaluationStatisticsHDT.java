@@ -9,51 +9,53 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.rdfhdt.hdt.triples.TripleID;
 
 public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
-    private final EndpointStore endpoint;
+	private final EndpointStore endpoint;
 
-    public EndpointStoreEvaluationStatisticsHDT(EndpointStore endpoint) {
-        this.endpoint = endpoint;
-    }
+	public EndpointStoreEvaluationStatisticsHDT(EndpointStore endpoint) {
+		this.endpoint = endpoint;
+	}
 
-    @Override
-    protected CardinalityCalculator createCardinalityCalculator() {
-        return new HDTCardinalityCalculator();
-    }
+	@Override
+	protected CardinalityCalculator createCardinalityCalculator() {
+		return new HDTCardinalityCalculator();
+	}
 
-    protected class HDTCardinalityCalculator extends CardinalityCalculator {
+	protected class HDTCardinalityCalculator extends CardinalityCalculator {
 
-        @Override
-        public double getCardinality(StatementPattern sp) {
-            Value subject = getConstantValue(sp.getSubjectVar());
-            Value predicate = getConstantValue(sp.getPredicateVar());
-            Value object = getConstantValue(sp.getObjectVar());
+		@Override
+		public double getCardinality(StatementPattern sp) {
+			Value subject = getConstantValue(sp.getSubjectVar());
+			Value predicate = getConstantValue(sp.getPredicateVar());
+			Value object = getConstantValue(sp.getObjectVar());
 
-            HDTConverter hdtConverter = new HDTConverter(endpoint);
-            long subId = hdtConverter.subjectToID((Resource) subject);
-            long predId = hdtConverter.predicateToID((IRI) predicate);
-            long objId = hdtConverter.objectToID(object);
+			HDTConverter hdtConverter = new HDTConverter(endpoint);
+			long subId = hdtConverter.subjectToID((Resource) subject);
+			long predId = hdtConverter.predicateToID((IRI) predicate);
+			long objId = hdtConverter.objectToID(object);
 
-            double cardinality;
+			double cardinality;
 
-            if (subId == 0 && predId == 0 && objId == 0) {
-                /*
-                 * apparently we got all variables in the triple so we'll not search the whole knowledge base to get the
-                 * cardinality so put we put a high card to put this triple on last in the ordering scenario
-                 */
-                cardinality = Double.MAX_VALUE;
-            } else {
-                cardinality = endpoint.getHdt().getTriples().search(new TripleID(subId, predId, objId))
-                        .estimatedNumResults();
-            }
-            return cardinality;
-        }
+			if (subId == 0 && predId == 0 && objId == 0) {
+				/*
+				 * apparently we got all variables in the triple so we'll not
+				 * search the whole knowledge base to get the cardinality so put
+				 * we put a high card to put this triple on last in the ordering
+				 * scenario
+				 */
+				cardinality = Double.MAX_VALUE;
+			} else {
+				cardinality = endpoint.getHdt().getTriples().search(new TripleID(subId, predId, objId))
+						.estimatedNumResults();
+			}
+			return cardinality;
+		}
 
-        protected Value getConstantValue(Var var) {
-            if (var != null) {
-                return var.getValue();
-            }
+		protected Value getConstantValue(Var var) {
+			if (var != null) {
+				return var.getValue();
+			}
 
-            return null;
-        }
-    }
+			return null;
+		}
+	}
 }

@@ -14,40 +14,36 @@ import java.util.Optional;
  */
 public class FormatUtils {
 
-    /**
-     * get a result writer format for an accept header
-     *
-     * @param acceptHeader
-     *            the format to search
-     *
-     * @return the format
-     */
-    public static Optional<QueryResultFormat> getResultWriterFormat(String acceptHeader) {
-        for (String mime : acceptHeader.split("[,;]")) {
-            Optional<QueryResultFormat> format = TupleQueryResultWriterRegistry.getInstance()
-                    .getFileFormatForMIMEType(mime);
-            if (format.isPresent()) {
-                return format;
-            }
-        }
-        return Optional.empty();
-    }
+	/**
+	 * get a result writer format for an accept header
+	 *
+	 * @param acceptHeader the format to search
+	 * @return the format
+	 */
+	public static Optional<QueryResultFormat> getResultWriterFormat(String acceptHeader) {
+		for (String mime : acceptHeader.split("[,;]")) {
+			Optional<QueryResultFormat> format = TupleQueryResultWriterRegistry.getInstance()
+					.getFileFormatForMIMEType(mime);
+			if (format.isPresent()) {
+				return format;
+			}
+		}
+		return Optional.empty();
+	}
 
-    /**
-     * get a result writer format for an accept header
-     *
-     * @param acceptHeader
-     *            the format to search
-     *
-     * @return the format
-     */
-    public static Optional<RDFFormat> getRDFWriterFormat(String acceptHeader) {
-        for (String mime : acceptHeader.split("[,;]")) {
-            Optional<RDFFormat> format = Rio.getWriterFormatForMIMEType(mime);
-            if (format.isPresent()) {
-                return format;
-            }
-        }
-        return Optional.empty();
-    }
+	/**
+	 * get a result writer format for an accept header
+	 *
+	 * @param acceptHeader the format to search
+	 * @return the format
+	 */
+	public static Optional<RDFFormat> getRDFWriterFormat(String acceptHeader) {
+		for (String mime : acceptHeader.split("[,;]")) {
+			Optional<RDFFormat> format = Rio.getWriterFormatForMIMEType(mime);
+			if (format.isPresent()) {
+				return format;
+			}
+		}
+		return Optional.empty();
+	}
 }

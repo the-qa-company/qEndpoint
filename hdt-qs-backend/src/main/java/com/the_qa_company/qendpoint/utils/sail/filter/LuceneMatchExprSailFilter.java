@@ -18,72 +18,72 @@ import org.eclipse.rdf4j.sail.lucene.LuceneSailSchema;
  * @author Antoine Willerval
  */
 public class LuceneMatchExprSailFilter implements SailFilter {
-    @Override
-    public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
-        return true;
-    }
+	@Override
+	public boolean shouldHandleAdd(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return true;
+	}
 
-    @Override
-    public boolean shouldHandleRemove(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
-        return true;
-    }
+	@Override
+	public boolean shouldHandleRemove(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return true;
+	}
 
-    @Override
-    public boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts) {
-        return true;
-    }
+	@Override
+	public boolean shouldHandleNotifyAdd(Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return true;
+	}
 
-    @Override
-    public boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts) {
-        return true;
-    }
+	@Override
+	public boolean shouldHandleNotifyRemove(Resource subj, IRI pred, Value obj, Resource... contexts) {
+		return true;
+	}
 
-    @Override
-    public boolean shouldHandleGet(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) {
-        return true;
-    }
+	@Override
+	public boolean shouldHandleGet(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) {
+		return true;
+	}
 
-    @Override
-    public boolean shouldHandleExpression(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings,
-            boolean includeInferred) {
-        LuceneMatchExprQueryVisitor visitor = new LuceneMatchExprQueryVisitor();
-        tupleExpr.visit(visitor);
-        return visitor.found();
-    }
+	@Override
+	public boolean shouldHandleExpression(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings,
+			boolean includeInferred) {
+		LuceneMatchExprQueryVisitor visitor = new LuceneMatchExprQueryVisitor();
+		tupleExpr.visit(visitor);
+		return visitor.found();
+	}
 
-    /**
-     * class to search for a search:match of Lucene in an expression
-     *
-     * @author Antoine Willerval
-     */
-    public static class LuceneMatchExprQueryVisitor extends AbstractQueryModelVisitor<RuntimeException> {
-        private boolean find;
+	/**
+	 * class to search for a search:match of Lucene in an expression
+	 *
+	 * @author Antoine Willerval
+	 */
+	public static class LuceneMatchExprQueryVisitor extends AbstractQueryModelVisitor<RuntimeException> {
+		private boolean find;
 
-        @Override
-        public void meet(StatementPattern node) {
-            // ignore this node if we found the search:matches
-            if (found()) {
-                return;
-            }
-            Value predicate = node.getPredicateVar().getValue();
-            if (LuceneSailSchema.MATCHES.equals(predicate)) {
-                find = true;
-            }
-        }
+		@Override
+		public void meet(StatementPattern node) {
+			// ignore this node if we found the search:matches
+			if (found()) {
+				return;
+			}
+			Value predicate = node.getPredicateVar().getValue();
+			if (LuceneSailSchema.MATCHES.equals(predicate)) {
+				find = true;
+			}
+		}
 
-        @Override
-        protected void meetNode(QueryModelNode node) {
-            // ignore the next child if we found the search:matches
-            if (!found()) {
-                super.meetNode(node);
-            }
-        }
+		@Override
+		protected void meetNode(QueryModelNode node) {
+			// ignore the next child if we found the search:matches
+			if (!found()) {
+				super.meetNode(node);
+			}
+		}
 
-        /**
-         * @return if we found the search:matches predicate
-         */
-        public boolean found() {
-            return find;
-        }
-    }
+		/**
+		 * @return if we found the search:matches predicate
+		 */
+		public boolean found() {
+			return find;
+		}
+	}
 }

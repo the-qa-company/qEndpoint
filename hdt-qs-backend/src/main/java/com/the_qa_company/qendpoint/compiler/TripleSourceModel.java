@@ -6,8 +6,8 @@ package com.the_qa_company.qendpoint.compiler;
  * @author Antoine Willerval
  */
 public interface TripleSourceModel {
-    /**
-     * @return the triple getter
-     */
-    TripleSourceGetter getGetter();
+	/**
+	 * @return the triple getter
+	 */
+	TripleSourceGetter getGetter();
 }

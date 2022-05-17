@@ -21,43 +21,46 @@ import java.util.Map;
  */
 public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
-    public EndpointSPARQL11UpdateComplianceTest(String displayName, String testURI, String name, String requestFile,
-            IRI defaultGraphURI, Map<String, IRI> inputNamedGraphs, IRI resultDefaultGraphURI,
-            Map<String, IRI> resultNamedGraphs) {
-        super(displayName, testURI, name, requestFile, defaultGraphURI, inputNamedGraphs, resultDefaultGraphURI,
-                resultNamedGraphs);
-        List<String> testToIgnore = new ArrayList<>();
-        // @todo these tests are failing and should not, they are skipped so that we can be sure that we see when
-        // currently passing tests are not failing. Many of these tests are not so problematic since we do not support
-        // named graphs anyway
-        testToIgnore.add("DELETE INSERT 1b");
-        testToIgnore.add("DELETE INSERT 1c");
-        this.setIgnoredTests(testToIgnore);
-    }
+	public EndpointSPARQL11UpdateComplianceTest(String displayName, String testURI, String name, String requestFile,
+			IRI defaultGraphURI, Map<String, IRI> inputNamedGraphs, IRI resultDefaultGraphURI,
+			Map<String, IRI> resultNamedGraphs) {
+		super(displayName, testURI, name, requestFile, defaultGraphURI, inputNamedGraphs, resultDefaultGraphURI,
+				resultNamedGraphs);
+		List<String> testToIgnore = new ArrayList<>();
+		// @todo these tests are failing and should not, they are skipped so
+		// that we can be sure that we see when
+		// currently passing tests are not failing. Many of these tests are not
+		// so problematic since we do not support
+		// named graphs anyway
+		testToIgnore.add("DELETE INSERT 1b");
+		testToIgnore.add("DELETE INSERT 1c");
+		this.setIgnoredTests(testToIgnore);
+	}
 
-    @Rule
-    public TemporaryFolder tempDir = new TemporaryFolder();
+	@Rule
+	public TemporaryFolder tempDir = new TemporaryFolder();
 
-    @Override
-    protected Repository newRepository() throws Exception {
-        File nativeStore = tempDir.newFolder();
-        File hdtStore = tempDir.newFolder();
-        HDTSpecification spec = new HDTSpecification();
-        spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-        HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
-        assert hdt != null;
-        hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+	@Override
+	protected Repository newRepository() throws Exception {
+		File nativeStore = tempDir.newFolder();
+		File hdtStore = tempDir.newFolder();
+		HDTSpecification spec = new HDTSpecification();
+		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+		HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+		assert hdt != null;
+		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 
-        EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-                spec, nativeStore.getAbsolutePath() + "/", true);
-        // endpoint.setThreshold(2);
+		EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
+				spec, nativeStore.getAbsolutePath() + "/", true);
+		// endpoint.setThreshold(2);
 
-        return new SailRepository(endpoint);
-        // return new DatasetRepository(new SailRepository(new NativeStore(tempDir.newFolder(), "spoc")));
-    }
+		return new SailRepository(endpoint);
+		// return new DatasetRepository(new SailRepository(new
+		// NativeStore(tempDir.newFolder(), "spoc")));
+	}
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-    }
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+	}
 }

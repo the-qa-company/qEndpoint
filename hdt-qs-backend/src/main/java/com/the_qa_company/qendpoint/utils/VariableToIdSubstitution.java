@@ -20,60 +20,59 @@ import org.rdfhdt.hdt.hdt.HDT;
  */
 public class VariableToIdSubstitution implements QueryOptimizer {
 
-    private final HDTConverter converter;
-    private final HDT hdt;
+	private final HDTConverter converter;
+	private final HDT hdt;
 
-    /**
-     * create the optimizer
-     *
-     * @param store
-     *            the store to get the hdt
-     */
-    public VariableToIdSubstitution(EndpointStore store) {
-        this.hdt = store.getHdt();
-        this.converter = store.getHdtConverter();
-    }
+	/**
+	 * create the optimizer
+	 *
+	 * @param store the store to get the hdt
+	 */
+	public VariableToIdSubstitution(EndpointStore store) {
+		this.hdt = store.getHdt();
+		this.converter = store.getHdtConverter();
+	}
 
-    @Override
-    public void optimize(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings) {
-        Substituor substitutor = new Substituor();
-        tupleExpr.visit(substitutor);
-    }
+	@Override
+	public void optimize(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings) {
+		Substituor substitutor = new Substituor();
+		tupleExpr.visit(substitutor);
+	}
 
-    protected class Substituor extends AbstractQueryModelVisitor<RuntimeException> {
+	protected class Substituor extends AbstractQueryModelVisitor<RuntimeException> {
 
-        @Override
-        public void meet(Var var) {
-            if (var.isAnonymous() && var.hasValue()) {
-                String iriString = var.getValue().toString();
-                long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
-                int position;
-                if (id != -1) {
-                    if (id <= hdt.getDictionary().getNshared()) {
-                        position = SimpleIRIHDT.SHARED_POS;
-                    } else {
-                        position = SimpleIRIHDT.SUBJECT_POS;
-                    }
-                } else {
-                    id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
-                    if (id != -1) {
-                        position = SimpleIRIHDT.OBJECT_POS;
-                    } else {
-                        id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.PREDICATE);
-                        position = SimpleIRIHDT.PREDICATE_POS;
-                    }
-                }
-                if (id != -1) {
-                    var.setValue(converter.idToHDTValue(id, position));
-                }
-            }
-        }
+		@Override
+		public void meet(Var var) {
+			if (var.isAnonymous() && var.hasValue()) {
+				String iriString = var.getValue().toString();
+				long id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.SUBJECT);
+				int position;
+				if (id != -1) {
+					if (id <= hdt.getDictionary().getNshared()) {
+						position = SimpleIRIHDT.SHARED_POS;
+					} else {
+						position = SimpleIRIHDT.SUBJECT_POS;
+					}
+				} else {
+					id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.OBJECT);
+					if (id != -1) {
+						position = SimpleIRIHDT.OBJECT_POS;
+					} else {
+						id = hdt.getDictionary().stringToId(iriString, TripleComponentRole.PREDICATE);
+						position = SimpleIRIHDT.PREDICATE_POS;
+					}
+				}
+				if (id != -1) {
+					var.setValue(converter.idToHDTValue(id, position));
+				}
+			}
+		}
 
-        @Override
-        public void meet(BindingSetAssignment bindings) {
-            for (BindingSet binding : bindings.getBindingSets()) {
-                binding.getBindingNames().iterator();
-            }
-        }
-    }
+		@Override
+		public void meet(BindingSetAssignment bindings) {
+			for (BindingSet binding : bindings.getBindingSets()) {
+				binding.getBindingNames().iterator();
+			}
+		}
+	}
 }

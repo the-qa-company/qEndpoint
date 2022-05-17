@@ -40,152 +40,153 @@ import java.util.ArrayList;
 // yes
 public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 
-    private final EvaluationStatistics evaluationStatistics;
-    private final EndpointTripleSource tripleSource;
-    private final EndpointStore endpoint;
-    private boolean trackResultSize;
-    private boolean cloneTupleExpression;
-    private boolean trackTime;
+	private final EvaluationStatistics evaluationStatistics;
+	private final EndpointTripleSource tripleSource;
+	private final EndpointStore endpoint;
+	private boolean trackResultSize;
+	private boolean cloneTupleExpression;
+	private boolean trackTime;
 
-    public EndpointStoreQueryPreparer(EndpointStore endpoint, EndpointTripleSource tripleSource) {
-        super(tripleSource);
-        this.tripleSource = tripleSource;
-        this.endpoint = endpoint;
-        cloneTupleExpression = true;
+	public EndpointStoreQueryPreparer(EndpointStore endpoint, EndpointTripleSource tripleSource) {
+		super(tripleSource);
+		this.tripleSource = tripleSource;
+		this.endpoint = endpoint;
+		cloneTupleExpression = true;
 
-        evaluationStatistics = new EndpointStoreEvaluationStatistics(new EndpointStoreEvaluationStatisticsHDT(endpoint),
-                endpoint.getCurrentSaliStore().getEvaluationStatistics());
-    }
+		evaluationStatistics = new EndpointStoreEvaluationStatistics(new EndpointStoreEvaluationStatisticsHDT(endpoint),
+				endpoint.getCurrentSaliStore().getEvaluationStatistics());
+	}
 
-    public void setExplanationLevel(Explanation.Level level) {
-        if (level == null) {
-            this.cloneTupleExpression = true;
-            this.trackResultSize = false;
-            this.trackTime = false;
-            return;
-        }
+	public void setExplanationLevel(Explanation.Level level) {
+		if (level == null) {
+			this.cloneTupleExpression = true;
+			this.trackResultSize = false;
+			this.trackTime = false;
+			return;
+		}
 
-        switch (level) {
-        case Timed:
-            this.trackTime = true;
-            this.trackResultSize = true;
-            this.cloneTupleExpression = false;
-            break;
-        case Executed:
-            this.trackResultSize = true;
-            this.cloneTupleExpression = false;
-            break;
-        case Optimized:
-            this.cloneTupleExpression = false;
-        case Unoptimized:
-            break;
-        default:
-            throw new UnsupportedOperationException("Unsupported query explanation level: " + level);
-        }
-    }
+		switch (level) {
+		case Timed:
+			this.trackTime = true;
+			this.trackResultSize = true;
+			this.cloneTupleExpression = false;
+			break;
+		case Executed:
+			this.trackResultSize = true;
+			this.cloneTupleExpression = false;
+			break;
+		case Optimized:
+			this.cloneTupleExpression = false;
+		case Unoptimized:
+			break;
+		default:
+			throw new UnsupportedOperationException("Unsupported query explanation level: " + level);
+		}
+	}
 
-    @Override
-    public EndpointTripleSource getTripleSource() {
-        return tripleSource;
-    }
+	@Override
+	public EndpointTripleSource getTripleSource() {
+		return tripleSource;
+	}
 
-    @Override
-    protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
-            Dataset dataset, BindingSet bindings, boolean includeInferred, int maxExecutionTime)
-            throws QueryEvaluationException {
+	@Override
+	protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
+			Dataset dataset, BindingSet bindings, boolean includeInferred, int maxExecutionTime)
+			throws QueryEvaluationException {
 
-        if (this.cloneTupleExpression) {
-            tupleExpr = tupleExpr.clone();
-        }
-        if (!(tupleExpr instanceof QueryRoot)) {
-            tupleExpr = new QueryRoot(tupleExpr);
-        }
-        EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
-                new SPARQLServiceResolver(), 0L, evaluationStatistics);
+		if (this.cloneTupleExpression) {
+			tupleExpr = tupleExpr.clone();
+		}
+		if (!(tupleExpr instanceof QueryRoot)) {
+			tupleExpr = new QueryRoot(tupleExpr);
+		}
+		EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
+				new SPARQLServiceResolver(), 0L, evaluationStatistics);
 
-        if (this.trackResultSize) {
-            strategy.setTrackResultSize(this.trackResultSize);
-        }
+		if (this.trackResultSize) {
+			strategy.setTrackResultSize(this.trackResultSize);
+		}
 
-        if (this.trackTime) {
-            strategy.setTrackTime(this.trackTime);
-        }
+		if (this.trackTime) {
+			strategy.setTrackTime(this.trackTime);
+		}
 
-        new VariableToIdSubstitution(endpoint).optimize(tupleExpr, dataset, bindings);
-        new BindingAssigner().optimize(tupleExpr, dataset, bindings);
-        new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
-        new CompareOptimizer().optimize(tupleExpr, dataset, bindings);
-        new ConjunctiveConstraintSplitter().optimize(tupleExpr, dataset, bindings);
-        new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
-        new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
-        new QueryModelNormalizer().optimize(tupleExpr, dataset, bindings);
-        new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
-        new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
-        // FIXME: remove comment
-        // new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
-        new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+		new VariableToIdSubstitution(endpoint).optimize(tupleExpr, dataset, bindings);
+		new BindingAssigner().optimize(tupleExpr, dataset, bindings);
+		new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
+		new CompareOptimizer().optimize(tupleExpr, dataset, bindings);
+		new ConjunctiveConstraintSplitter().optimize(tupleExpr, dataset, bindings);
+		new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
+		new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
+		new QueryModelNormalizer().optimize(tupleExpr, dataset, bindings);
+		new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
+		new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
+		// FIXME: remove comment
+		// new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
+		new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
 
-        return strategy.evaluate(tupleExpr, bindings);
-    }
+		return strategy.evaluate(tupleExpr, bindings);
+	}
 
-    // @todo: this looks wrong, apperently if one wraps around the store SailRepository then the function is
-    // overwritten, this is the reason we do not say an error
-    @Override
-    protected void execute(UpdateExpr updateExpr, Dataset dataset, BindingSet bindings, boolean includeInferred,
-            int maxExecutionTime) throws UpdateExecutionException {
-        throw new UpdateExecutionException("This repository is read only");
-    }
+	// @todo: this looks wrong, apperently if one wraps around the store
+	// SailRepository then the function is
+	// overwritten, this is the reason we do not say an error
+	@Override
+	protected void execute(UpdateExpr updateExpr, Dataset dataset, BindingSet bindings, boolean includeInferred,
+			int maxExecutionTime) throws UpdateExecutionException {
+		throw new UpdateExecutionException("This repository is read only");
+	}
 
-    @Override
-    public TupleQuery prepare(ParsedTupleQuery q) {
-        return new HDTTupleQueryImpl(q);
-    }
+	@Override
+	public TupleQuery prepare(ParsedTupleQuery q) {
+		return new HDTTupleQueryImpl(q);
+	}
 
-    class HDTTupleQueryImpl extends AbstractParserQuery implements TupleQuery {
-        HDTTupleQueryImpl(ParsedTupleQuery query) {
-            super(query);
-        }
+	class HDTTupleQueryImpl extends AbstractParserQuery implements TupleQuery {
+		HDTTupleQueryImpl(ParsedTupleQuery query) {
+			super(query);
+		}
 
-        public ParsedTupleQuery getParsedQuery() {
-            return (ParsedTupleQuery) super.getParsedQuery();
-        }
+		public ParsedTupleQuery getParsedQuery() {
+			return (ParsedTupleQuery) super.getParsedQuery();
+		}
 
-        public TupleQueryResult evaluate() throws QueryEvaluationException {
-            CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter1 = null;
-            CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter2 = null;
-            IteratingTupleQueryResult result;
-            boolean allGood = false;
+		public TupleQueryResult evaluate() throws QueryEvaluationException {
+			CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter1 = null;
+			CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter2 = null;
+			IteratingTupleQueryResult result;
+			boolean allGood = false;
 
-            IteratingTupleQueryResult var6;
-            try {
-                TupleExpr tupleExpr = this.getParsedQuery().getTupleExpr();
-                bindingsIter1 = EndpointStoreQueryPreparer.this.evaluate(tupleExpr, this.getActiveDataset(),
-                        this.getBindings(), this.getIncludeInferred(), this.getMaxExecutionTime());
-                bindingsIter2 = this.enforceMaxQueryTime(bindingsIter1);
-                result = new IteratingTupleQueryResult(new ArrayList<>(tupleExpr.getBindingNames()), bindingsIter2);
-                allGood = true;
-                var6 = result;
-            } finally {
-                if (!allGood) {
-                    try {
-                        if (bindingsIter2 != null) {
-                            bindingsIter2.close();
-                        }
-                    } finally {
-                        if (bindingsIter1 != null) {
-                            bindingsIter1.close();
-                        }
-                    }
-                }
-            }
+			IteratingTupleQueryResult var6;
+			try {
+				TupleExpr tupleExpr = this.getParsedQuery().getTupleExpr();
+				bindingsIter1 = EndpointStoreQueryPreparer.this.evaluate(tupleExpr, this.getActiveDataset(),
+						this.getBindings(), this.getIncludeInferred(), this.getMaxExecutionTime());
+				bindingsIter2 = this.enforceMaxQueryTime(bindingsIter1);
+				result = new IteratingTupleQueryResult(new ArrayList<>(tupleExpr.getBindingNames()), bindingsIter2);
+				allGood = true;
+				var6 = result;
+			} finally {
+				if (!allGood) {
+					try {
+						if (bindingsIter2 != null) {
+							bindingsIter2.close();
+						}
+					} finally {
+						if (bindingsIter1 != null) {
+							bindingsIter1.close();
+						}
+					}
+				}
+			}
 
-            return var6;
-        }
+			return var6;
+		}
 
-        public void evaluate(TupleQueryResultHandler handler)
-                throws QueryEvaluationException, TupleQueryResultHandlerException {
-            TupleQueryResult queryResult = this.evaluate();
-            QueryResults.report(queryResult, handler);
-        }
-    }
+		public void evaluate(TupleQueryResultHandler handler)
+				throws QueryEvaluationException, TupleQueryResultHandlerException {
+			TupleQueryResult queryResult = this.evaluate();
+			QueryResults.report(queryResult, handler);
+		}
+	}
 }

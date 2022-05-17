@@ -8,10 +8,10 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 
 /**
- * A sail to create multiple Connection input points.
- *
- * To create a new connection, the user should call {@link #startCreatingConnection()}, {@link #getConnection()} and
- * complete it with {@link #completeCreatingConnection()}.
+ * A sail to create multiple Connection input points. To create a new
+ * connection, the user should call {@link #startCreatingConnection()},
+ * {@link #getConnection()} and complete it with
+ * {@link #completeCreatingConnection()}.
  *
  * <pre>
  * // prepare new connection
@@ -27,76 +27,74 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
  * @author Antoine Willerval
  */
 public class MultiInputFilteringSail extends NotifyingSailWrapper {
-    private final LockManager lockManager = new LockManager();
-    private Lock lock;
-    private MultiInputFilteringSailConnection lastConnection;
-    private final FilteringSail filteringSail;
+	private final LockManager lockManager = new LockManager();
+	private Lock lock;
+	private MultiInputFilteringSailConnection lastConnection;
+	private final FilteringSail filteringSail;
 
-    /**
-     * Creates a new MultiInputSail object that wraps the supplied connection.
-     *
-     * @param wrappedSail
-     *            the sail to allow multiple sail
-     */
-    MultiInputFilteringSail(NotifyingSail wrappedSail, FilteringSail filteringSail) {
-        super(wrappedSail);
-        this.filteringSail = filteringSail;
-    }
+	/**
+	 * Creates a new MultiInputSail object that wraps the supplied connection.
+	 *
+	 * @param wrappedSail the sail to allow multiple sail
+	 */
+	MultiInputFilteringSail(NotifyingSail wrappedSail, FilteringSail filteringSail) {
+		super(wrappedSail);
+		this.filteringSail = filteringSail;
+	}
 
-    /**
-     * start a new connection creation, the next call to {@link #getConnection()} will return the same connection.
-     *
-     * @throws SailException
-     *             if the creating is interrupted
-     */
-    public synchronized void startCreatingConnection() throws SailException {
-        try {
-            lockManager.waitForActiveLocks();
-        } catch (InterruptedException e) {
-            throw new SailException("Interruption while waiting for active locks", e);
-        }
+	/**
+	 * start a new connection creation, the next call to
+	 * {@link #getConnection()} will return the same connection.
+	 *
+	 * @throws SailException if the creating is interrupted
+	 */
+	public synchronized void startCreatingConnection() throws SailException {
+		try {
+			lockManager.waitForActiveLocks();
+		} catch (InterruptedException e) {
+			throw new SailException("Interruption while waiting for active locks", e);
+		}
 
-        lock = lockManager.createLock("");
+		lock = lockManager.createLock("");
 
-        lastConnection = new MultiInputFilteringSailConnection(getBaseSail().getConnection());
-    }
+		lastConnection = new MultiInputFilteringSailConnection(getBaseSail().getConnection());
+	}
 
-    @Override
-    public synchronized MultiInputFilteringSailConnection getConnection() throws SailException {
-        checkCreatingConnectionStarted();
-        return lastConnection;
-    }
+	@Override
+	public synchronized MultiInputFilteringSailConnection getConnection() throws SailException {
+		checkCreatingConnectionStarted();
+		return lastConnection;
+	}
 
-    /**
-     * @return a connection bypassing the filtering
-     *
-     * @throws SailException
-     *             same as {@link org.eclipse.rdf4j.sail.Sail#getConnection()}
-     */
-    public NotifyingSailConnection getConnectionInternal() throws SailException {
-        return super.getConnection();
-    }
+	/**
+	 * @return a connection bypassing the filtering
+	 * @throws SailException same as
+	 *                       {@link org.eclipse.rdf4j.sail.Sail#getConnection()}
+	 */
+	public NotifyingSailConnection getConnectionInternal() throws SailException {
+		return super.getConnection();
+	}
 
-    /**
-     * complete a new connection creation.
-     *
-     * @throws SailException
-     *             if {@link #startCreatingConnection()} wasn't called before
-     */
-    public synchronized void completeCreatingConnection() throws SailException {
-        checkCreatingConnectionStarted();
-        lastConnection.setFilter(filteringSail.getFilter());
-        lock.release();
-        lastConnection = null;
-    }
+	/**
+	 * complete a new connection creation.
+	 *
+	 * @throws SailException if {@link #startCreatingConnection()} wasn't called
+	 *                       before
+	 */
+	public synchronized void completeCreatingConnection() throws SailException {
+		checkCreatingConnectionStarted();
+		lastConnection.setFilter(filteringSail.getFilter());
+		lock.release();
+		lastConnection = null;
+	}
 
-    public void checkCreatingConnectionStarted() throws SailException {
-        if (lastConnection == null) {
-            throw new SailException("The MultiInputSail wasn't started!");
-        }
-    }
+	public void checkCreatingConnectionStarted() throws SailException {
+		if (lastConnection == null) {
+			throw new SailException("The MultiInputSail wasn't started!");
+		}
+	}
 
-    public FilteringSail getFilteringSail() {
-        return filteringSail;
-    }
+	public FilteringSail getFilteringSail() {
+		return filteringSail;
+	}
 }
