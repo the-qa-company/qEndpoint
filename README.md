@@ -14,8 +14,3 @@
 ```
 java -cp target/wikidata-query-tools-*-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update --sparqlUrl http://localhost:1234/api/endpoint/sparql --wikibaseHost https://linkedopendata.eu/ --wikibaseUrl https://linkedopendata.eu/ --conceptUri https://linkedopendata.eu/ --wikibaseScheme https --entityNamespaces 120,122
 ```
-
-## Where to find the things
-
-- The jar of the updater is on compute /home/ha07131t/qa-data/
-- AS well the hdt index is in /home/ha07131t/qa-data/admin/eu/hdt_index/

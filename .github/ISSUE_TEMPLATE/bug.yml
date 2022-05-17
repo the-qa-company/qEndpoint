@@ -1,0 +1,66 @@
+name: Bug Report 🔥
+description: Report a bug
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping to improve this repository!
+  - type: textarea
+    attributes:
+      label: Description of the issue
+      description: Small description of the issue
+      placeholder: |
+        my problem is...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Excepted behavior
+      description: What was the excepted behavior?
+      placeholder: |
+        I was excepting...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Obtained behavior
+      description: What is the obtained behavior?
+      placeholder: |
+        ...but this happened
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: How to reproduce
+      description: How to reproduce?
+      placeholder: |
+        - step 1: that
+        - step 2: this
+        - step 3: something
+        - ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Endpoint version
+      description: Endpoint version
+      placeholder: "1.1.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: dropdown_id
+    attributes:
+      label: Do I want to contribute to fix it?
+      description: Do I want to contribute to fix it?
+      options:
+        - "Yes"
+        - "No"
+        - "Maybe"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Something else?
+      description: Something else to inform us?
