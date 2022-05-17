@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.compiler.sail.LuceneSailCompiler;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.sail.OptimizingSail;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.Sail;
@@ -70,6 +71,8 @@ public class CompiledSail extends SailWrapper {
             }
         } else if (config.configSail != null) {
             sailCompiler.load(config.configSail);
+        }  else if (config.configModel != null) {
+            sailCompiler.load(config.configModel);
         }
 
         // read the options
@@ -165,6 +168,7 @@ public class CompiledSail extends SailWrapper {
         private RDFFormat configRDFStreamFormat;
         private Path configRDFFile;
         private Sail configSail;
+        private Model configModel;
         private NotifyingSail sourceSail;
         private EndpointFiles endpointFiles;
         private HDTSpecification spec;
@@ -190,6 +194,7 @@ public class CompiledSail extends SailWrapper {
          *
          * @see #withConfig(java.nio.file.Path)
          * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
+         * @see #withConfig(org.eclipse.rdf4j.model.Model)
          */
         public CompiledSailCompiler withConfig(InputStream configRDFStream, RDFFormat configRDFStreamFormat,
                 boolean close) {
@@ -213,9 +218,30 @@ public class CompiledSail extends SailWrapper {
          *
          * @see #withConfig(java.io.InputStream, org.eclipse.rdf4j.rio.RDFFormat, boolean)
          * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
+         * @see #withConfig(org.eclipse.rdf4j.model.Model)
          */
         public CompiledSailCompiler withConfig(Path configRDFFile) {
             this.configRDFFile = Objects.requireNonNull(configRDFFile, "configRDFFile can't be null!");
+            return this;
+        }
+
+        /**
+         * set an input stream to load the configs
+         *
+         * @param configModel
+         *            the rdf model
+         *
+         * @return this
+         *
+         * @throws java.lang.NullPointerException
+         *             a parameter is null
+         *
+         * @see #withConfig(java.io.InputStream, org.eclipse.rdf4j.rio.RDFFormat, boolean)
+         * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
+         * @see #withConfig(java.nio.file.Path)
+         */
+        public CompiledSailCompiler withConfig(Model configModel) {
+            this.configModel = Objects.requireNonNull(configModel, "configModel can't be null!");
             return this;
         }
 
@@ -236,6 +262,7 @@ public class CompiledSail extends SailWrapper {
          *
          * @see #withConfig(java.io.InputStream, org.eclipse.rdf4j.rio.RDFFormat, boolean)
          * @see #withConfig(java.nio.file.Path)
+         * @see #withConfig(org.eclipse.rdf4j.model.Model)
          */
         public CompiledSailCompiler withConfig(Sail configSail) {
             this.configSail = Objects.requireNonNull(configSail, "configSail can't be null!");
