@@ -106,9 +106,8 @@ public class SailCompiler {
 	 * load a sail describing the model
 	 *
 	 * @param store the store to fetch the model information
-	 * @throws IOException can't read the stream
 	 */
-	public void load(Sail store) throws IOException {
+	public void load(Sail store) {
 		setStore(new SailTripleSourceModel(store));
 	}
 
@@ -116,9 +115,8 @@ public class SailCompiler {
 	 * load a sail describing the model
 	 *
 	 * @param store the store to fetch the model information
-	 * @throws IOException can't read the stream
 	 */
-	public void load(Model store) throws IOException {
+	public void load(Model store) {
 		setStore(new ModelTripleSourceGetter(store));
 	}
 

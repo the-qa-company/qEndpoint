@@ -149,7 +149,7 @@ public class EndpointController {
 	}
 
 	@GetMapping("/merge")
-	public ResponseEntity<Sparql.MergeRequestResult> mergeStore() throws IOException {
+	public ResponseEntity<Sparql.MergeRequestResult> mergeStore() {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
 	}
 
@@ -159,7 +159,7 @@ public class EndpointController {
 	}
 
 	@GetMapping("/is_merging")
-	public ResponseEntity<Sparql.IsMergingResult> isMerging() throws IOException {
+	public ResponseEntity<Sparql.IsMergingResult> isMerging() {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.isMerging());
 	}
 

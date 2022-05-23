@@ -303,9 +303,8 @@ public class Sparql {
 
 	/**
 	 * @return if the store is merging
-	 * @throws IOException if the store can't be merged or init
 	 */
-	public IsMergingResult isMerging() throws IOException {
+	public IsMergingResult isMerging() {
 		if (endpoint == null) {
 			throw new ServerWebInputException("No enpoint store, bad config?");
 		}
@@ -319,7 +318,7 @@ public class Sparql {
 	}
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
-			OutputStream out) throws IOException {
+			OutputStream out) {
 		waitLoading(1);
 		try (RepositoryConnection connection = repository.getConnection()) {
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");

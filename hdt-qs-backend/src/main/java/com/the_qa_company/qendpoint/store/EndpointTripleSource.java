@@ -26,7 +26,7 @@ public class EndpointTripleSource implements TripleSource {
 	// count the number of times rdf4j is called within a triple pattern..
 	// only for debugging ...
 	private long count = 0;
-	EndpointStoreConnection endpointStoreConnection;
+	private final EndpointStoreConnection endpointStoreConnection;
 
 	public EndpointTripleSource(EndpointStoreConnection endpointStoreConnection, EndpointStore endpoint) {
 		this.endpoint = endpoint;

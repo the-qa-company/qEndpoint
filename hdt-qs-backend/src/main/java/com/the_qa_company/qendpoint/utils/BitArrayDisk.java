@@ -340,12 +340,12 @@ public class BitArrayDisk implements ModifiableBitmap {
 	}
 
 	@Override
-	public void save(OutputStream output, ProgressListener listener) throws IOException {
+	public void save(OutputStream output, ProgressListener listener) {
 		throw new RuntimeException("Not implemented");
 	}
 
 	@Override
-	public void load(InputStream input, ProgressListener listener) throws IOException {
+	public void load(InputStream input, ProgressListener listener) {
 		throw new RuntimeException("Not implemented");
 	}
 

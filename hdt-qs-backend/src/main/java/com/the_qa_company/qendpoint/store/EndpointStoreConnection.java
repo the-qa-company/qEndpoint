@@ -39,7 +39,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 	private final EndpointTripleSource tripleSource;
 	private final EndpointStoreQueryPreparer queryPreparer;
 	private boolean isWriteConnection = false;
-	EndpointStore endpoint;
+	private final EndpointStore endpoint;
 	NotifyingSailConnection connA_read;
 	NotifyingSailConnection connB_read;
 	NotifyingSailConnection connA_write;
