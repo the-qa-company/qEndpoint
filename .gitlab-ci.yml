@@ -34,6 +34,6 @@ deploy:
   stage: deploy
   image: maven:3.6-jdk-11
   script:
-    - 'cd hdt-qs-backend && mvn deploy -DskipTests -U -s ci_settings.xml'
+    - "cd hdt-qs-backend && mvn deploy -DskipTests -U"
   only:
     - master

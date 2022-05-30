@@ -54,7 +54,7 @@ WORKDIR /home/app
 RUN mkdir data
 RUN mkdir data/hdt-store
 
-COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-SNAPSHOT-exec.jar /usr/local/lib/hdtSparqlEndpoint-*.jar
+COPY --from=build-backend /home/app/target/hdtSparqlEndpoint-*-exec.jar /usr/local/lib/hdtSparqlEndpoint-*.jar
 COPY --from=build-backend /home/app/src/main/resources/application-prod.properties /home/app/application-prod.properties
 COPY --from=build-backend /home/app/src/main/resources/repo_model.ttl /home/app/repo_model.ttl
 
