@@ -24,6 +24,6 @@ my:mainNode mdlc:type mdlc:luceneNode ;
                 mdlc:paramKey "wktFields" ;
                 mdlc:paramValue "${luceneWktFields}"^^mdlc:parsedString ;
             ] ;
-            mdlc:luceneReindexQuery "SELECT * {?s ?p ?o}" ;
+            mdlc:luceneReindexQuery "SELECT * {?s ?p ?o} order by ?s" ;
             mdlc:luceneEvalMode "${luceneEvalMode}"^^mdlc:parsedString.
 
