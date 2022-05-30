@@ -26,17 +26,20 @@ public class LuceneMatch implements GraphPattern {
 
 	/**
 	 * create a match object from a subject
+	 *
 	 * @param subject the subject to match
 	 * @return LuceneMatch object
 	 */
 	public static LuceneMatch of(RdfSubject subject) {
 		return new LuceneMatch(subject);
 	}
+
 	private RdfBlankNode.PropertiesBlankNode matchesObject;
 	private final RdfSubject subject;
 
 	/**
 	 * create a match object from a subject
+	 *
 	 * @param subject the subject to match
 	 */
 	public LuceneMatch(RdfSubject subject) {
@@ -44,9 +47,11 @@ public class LuceneMatch implements GraphPattern {
 	}
 
 	/**
-	 * add a custom (predicate, object) to match with the match (can be used for future/custom Lucene options)
+	 * add a custom (predicate, object) to match with the match (can be used for
+	 * future/custom Lucene options)
+	 *
 	 * @param predicate predicate
-	 * @param object object
+	 * @param object    object
 	 * @return this
 	 */
 	public LuceneMatch customMatches(RdfPredicate predicate, RdfObject object) {
@@ -64,6 +69,7 @@ public class LuceneMatch implements GraphPattern {
 
 	/**
 	 * specify the search:query value
+	 *
 	 * @param searchTerms search query
 	 * @return this
 	 */
@@ -73,6 +79,7 @@ public class LuceneMatch implements GraphPattern {
 
 	/**
 	 * specify the search:property value
+	 *
 	 * @param property query property
 	 * @return this
 	 */
@@ -82,6 +89,7 @@ public class LuceneMatch implements GraphPattern {
 
 	/**
 	 * specify the search:score value
+	 *
 	 * @param score query score
 	 * @return this
 	 */
@@ -91,6 +99,7 @@ public class LuceneMatch implements GraphPattern {
 
 	/**
 	 * specify the search:snippet value
+	 *
 	 * @param snippet query snippet
 	 * @return this
 	 */
@@ -100,6 +109,7 @@ public class LuceneMatch implements GraphPattern {
 
 	/**
 	 * specify the search:indexid value
+	 *
 	 * @param indexId query lucene index id
 	 * @return this
 	 */

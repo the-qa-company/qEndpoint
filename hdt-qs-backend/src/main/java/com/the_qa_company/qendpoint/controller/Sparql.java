@@ -1,44 +1,17 @@
 package com.the_qa_company.qendpoint.controller;
 
-import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.CompiledSailOptions;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
+import com.the_qa_company.qendpoint.compiler.SparqlRepository;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
-import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
-import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
-import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
-import jakarta.json.Json;
-import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResultHandler;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.explanation.Explanation;
-import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
-import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
-import org.eclipse.rdf4j.query.parser.ParsedQuery;
-import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
-import org.eclipse.rdf4j.query.parser.QueryParserUtil;
-import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
-import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriter;
-import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.rio.ParserConfig;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
@@ -65,9 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 @Component
 public class Sparql {
@@ -173,8 +144,7 @@ public class Sparql {
 	private String repoModel;
 
 	EndpointStore endpoint;
-	CompiledSail compiledSail;
-	SailRepository repository;
+	SparqlRepository sparqlRepository;
 	final Object storeLock = new Object() {};
 	boolean loading = false;
 	int queries;
@@ -226,9 +196,9 @@ public class Sparql {
 		if (model.containsKey(location)) {
 			logger.info("Clear old store");
 			model.remove(location);
-			repository.shutDown();
+			sparqlRepository.shutDown();
 			endpoint = null;
-			repository = null;
+			sparqlRepository = null;
 		}
 		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
@@ -268,7 +238,7 @@ public class Sparql {
 				}
 			}
 
-			compiledSail = CompiledSail.compiler()
+			CompiledSail compiledSail = CompiledSail.compiler()
 					.withConfig(stream, Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
 					.withEndpointFiles(files).withHDTSpec(spec).compile();
 
@@ -278,8 +248,9 @@ public class Sparql {
 				endpoint = (EndpointStore) source;
 			}
 
-			repository = new SailRepository(compiledSail);
-			repository.init();
+			sparqlRepository = new SparqlRepository(compiledSail);
+			sparqlRepository.setSparqlPrefixes(sparqlPrefixes);
+			sparqlRepository.init();
 		}
 		if (finishLoading) {
 			completeLoading();
@@ -313,81 +284,15 @@ public class Sparql {
 
 	public LuceneIndexRequestResult reindexLucene() throws Exception {
 		initializeEndpointStore(locationHdt, true);
-		compiledSail.reindexLuceneSails();
+		sparqlRepository.reindexLuceneSails();
 		return new LuceneIndexRequestResult(true);
 	}
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out) {
 		waitLoading(1);
-		try (RepositoryConnection connection = repository.getConnection()) {
-			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
-			// sparqlQuery = sparqlPrefixes+sparqlQuery;
-
-			logger.info("Running given sparql query: {}", sparqlQuery);
-
-			ParsedQuery parsedQuery = QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-
-			if (compiledSail.getOptions().isDebugShowPlans()) {
-				System.out.println(parsedQuery);
-			}
-
-			if (parsedQuery instanceof ParsedTupleQuery) {
-				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-				QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader).orElseThrow(
-						() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
-				mimeSetter.accept(format.getDefaultMIMEType());
-				TupleQueryResultHandler writer = TupleQueryResultWriterRegistry.getInstance().get(format).orElseThrow()
-						.getWriter(out);
-				query.setMaxExecutionTime(timeout);
-				try {
-					if (compiledSail.getOptions().isDebugShowCount()) {
-						writer = new QueryResultCounter(writer);
-					}
-					query.evaluate(writer);
-					if (compiledSail.getOptions().isDebugShowCount()) {
-						logger.info("Complete query with {} triples", ((QueryResultCounter) writer).getCount());
-					}
-					if (compiledSail.getOptions().isDebugShowTime()) {
-						System.out.println(query.explain(Explanation.Level.Timed));
-					}
-				} catch (QueryEvaluationException q) {
-					logger.error("This exception was caught [" + q + "]");
-					q.printStackTrace();
-					throw new RuntimeException(q);
-				}
-			} else if (parsedQuery instanceof ParsedBooleanQuery) {
-				BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
-				QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader).orElseThrow(
-						() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
-				mimeSetter.accept(format.getDefaultMIMEType());
-				TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance().get(format).orElseThrow()
-						.getWriter(out);
-				query.setMaxExecutionTime(timeout);
-				writer.handleBoolean(query.evaluate());
-				connection.close();
-			} else if (parsedQuery instanceof ParsedGraphQuery) {
-				GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
-				RDFFormat format = FormatUtils.getRDFWriterFormat(acceptHeader).orElseThrow(
-						() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
-				mimeSetter.accept(format.getDefaultMIMEType());
-				RDFHandler handler = Rio.createWriter(format, out);
-				try {
-					if (compiledSail.getOptions().isDebugShowCount()) {
-						handler = new RDFHandlerCounter(handler);
-					}
-					query.evaluate(handler);
-					if (compiledSail.getOptions().isDebugShowCount()) {
-						logger.info("Complete query with {} triples", ((RDFHandlerCounter) handler).getCount());
-					}
-				} catch (QueryEvaluationException q) {
-					logger.error("This exception was caught [" + q + "]");
-					q.printStackTrace();
-					throw new RuntimeException(q);
-				}
-			} else {
-				throw new ServerWebInputException("query not supported");
-			}
+		try {
+			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out);
 		} finally {
 			completeQuery();
 		}
@@ -395,22 +300,9 @@ public class Sparql {
 
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
 		// logger.info("Running update query:"+sparqlQuery);
-		sparqlQuery = sparqlPrefixes + sparqlQuery;
-		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
 		waitLoading(1);
-		try (SailRepositoryConnection connection = repository.getConnection()) {
-			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
-
-			Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);
-			preparedUpdate.setMaxExecutionTime(timeout);
-
-			Stopwatch stopwatch = Stopwatch.createStarted();
-			preparedUpdate.execute();
-			stopwatch.stop(); // optional
-			logger.info("Time elapsed to execute update query: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-			try (JsonGenerator gen = Json.createGenerator(out)) {
-				gen.writeStartObject().write("ok", true).writeEnd();
-			}
+		try {
+			sparqlRepository.executeUpdate(sparqlQuery, timeout, out);
 		} finally {
 			completeQuery();
 		}
@@ -428,11 +320,11 @@ public class Sparql {
 			Files.deleteIfExists(Paths.get(hdtOutput));
 			Files.deleteIfExists(Paths.get(EndpointFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
-			if (compiledSail.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
+			if (sparqlRepository.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				clearEndpointStore(locationHdt);
 				HDTSpecification spec = new HDTSpecification();
 				spec.setOptions(hdtSpec);
-				if (compiledSail.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+				if (sparqlRepository.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 					spec.set("loader.type", "two-pass");
 				}
 				compressToHdt(input, baseURI, filename, hdtOutput, spec);
@@ -444,7 +336,7 @@ public class Sparql {
 				sendUpdates(input, baseURI, filename);
 			}
 			try {
-				compiledSail.reindexLuceneSails();
+				sparqlRepository.reindexLuceneSails();
 			} catch (Exception e) {
 				throw new RuntimeException("Can't reindex the lucene sail(s)!", e);
 			}
@@ -555,9 +447,9 @@ public class Sparql {
 		long triples = 0;
 		long total = 0;
 		while (it.hasNext()) {
-			try (RepositoryConnection connection = repository.getConnection()) {
+			try (RepositoryConnection connection = sparqlRepository.getConnection()) {
 				connection.begin();
-				for (int i = 0; i < compiledSail.getOptions().getRdf4jSplitUpdate(); i++) {
+				for (int i = 0; i < sparqlRepository.getOptions().getRdf4jSplitUpdate(); i++) {
 					Statement stmt = it.next();
 					connection.add(stmt);
 					triples++;
@@ -581,7 +473,7 @@ public class Sparql {
 
 	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTSpecification spec, String hdtOutput)
 			throws IOException {
-		if (compiledSail.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+		if (sparqlRepository.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 			// dump the file to the disk to allow 2 passes
 			Path tempNTFile = Paths.get(hdtOutput + "-tmp.nt");
 			logger.info("Create TEMP NT file '{}'", tempNTFile);

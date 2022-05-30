@@ -21,7 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -56,6 +60,8 @@ public class CompiledSail extends SailWrapper {
 		}
 		SailCompiler sailCompiler = new SailCompiler();
 		sailCompiler.registerDirObject(files);
+		config.stringObject.forEach(sailCompiler::registerDirObject);
+		config.stringConfig.forEach(sailCompiler::registerDirString);
 		LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) sailCompiler
 				.getCompiler(SailCompilerSchema.LUCENE_TYPE);
 		luceneCompiler.reset();
@@ -176,8 +182,33 @@ public class CompiledSail extends SailWrapper {
 		private EndpointFiles endpointFiles;
 		private HDTSpecification spec;
 		private String hdtSpec;
+		private final Map<String, String> stringConfig = new HashMap<>();
+		private final List<Object> stringObject = new ArrayList<>();
 
 		private CompiledSailCompiler() {
+		}
+
+		/**
+		 * add a custom string config for the parsed string in the config
+		 *
+		 * @param key   key
+		 * @param value value
+		 * @return this
+		 */
+		public CompiledSailCompiler withStringConfig(String key, String value) {
+			stringConfig.put(key, value);
+			return this;
+		}
+
+		/**
+		 * add a custom string config object for the parsed string in the config
+		 *
+		 * @param object the object to add
+		 * @return this
+		 */
+		public CompiledSailCompiler withStringObject(Object object) {
+			stringObject.add(object);
+			return this;
 		}
 
 		/**
@@ -309,7 +340,7 @@ public class CompiledSail extends SailWrapper {
 		}
 
 		/**
-		 * compiled this sail
+		 * compile this sail
 		 *
 		 * @return compiled sail
 		 * @throws IOException                        error while reading a
@@ -318,6 +349,18 @@ public class CompiledSail extends SailWrapper {
 		 */
 		public CompiledSail compile() throws IOException, SailCompiler.SailCompilerException {
 			return new CompiledSail(this);
+		}
+
+		/**
+		 * compile this sail
+		 *
+		 * @return compiled repository sail
+		 * @throws IOException                        error while reading a
+		 *                                            file/stream
+		 * @throws SailCompiler.SailCompilerException compiler exception
+		 */
+		public SparqlRepository compileToSparqlRepository() throws IOException, SailCompiler.SailCompilerException {
+			return new SparqlRepository(compile());
 		}
 	}
 }
