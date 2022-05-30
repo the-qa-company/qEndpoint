@@ -34,6 +34,7 @@ RUN mvn dependency:go-offline --quiet
 # build the application
 COPY hdt-qs-backend/allatori /home/app/allatori
 COPY hdt-qs-backend/src /home/app/src
+COPY hdt-qs-backend/formatter-config.xml /home/app
 COPY --from=build-frontend /home/app/build /home/app/src/main/resources/static/
 
 RUN mvn -f /home/app/pom.xml clean package --quiet -DskipTests -P prod
