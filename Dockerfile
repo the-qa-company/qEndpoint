@@ -26,17 +26,17 @@ FROM maven:3.6.0-jdk-11-slim AS build-backend
 WORKDIR /home/app
 # install dependencies
 COPY hdt-qs-backend/pom.xml .
-COPY hdt-qs-backend/ci_settings.xml .
+#COPY hdt-qs-backend/ci_settings.xml .
 
 
-RUN mvn dependency:go-offline -s ci_settings.xml --quiet
+RUN mvn dependency:go-offline --quiet
 
 # build the application
 COPY hdt-qs-backend/allatori /home/app/allatori
 COPY hdt-qs-backend/src /home/app/src
 COPY --from=build-frontend /home/app/build /home/app/src/main/resources/static/
 
-RUN mvn -f /home/app/pom.xml clean package -s /home/app/ci_settings.xml --quiet -DskipTests -P prod
+RUN mvn -f /home/app/pom.xml clean package --quiet -DskipTests -P prod
 
 
 
