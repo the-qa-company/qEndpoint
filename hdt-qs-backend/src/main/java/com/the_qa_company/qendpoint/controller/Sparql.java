@@ -143,6 +143,11 @@ public class Sparql {
 	@Value("${repoModel}")
 	private String repoModel;
 
+	@Value("${maxTimeout}")
+	private int maxTimeout;
+	@Value("${maxTimeoutUpdate}")
+	private int maxTimeoutUpdate;
+
 	EndpointStore endpoint;
 	SparqlRepository sparqlRepository;
 	final Object storeLock = new Object() {};
@@ -290,6 +295,11 @@ public class Sparql {
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out) {
+		if (timeout == 0) {
+			timeout = maxTimeout;
+		} else if (timeout < 0) {
+			throw new ServerWebInputException("negative timeout!");
+		}
 		waitLoading(1);
 		try {
 			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out);
@@ -299,6 +309,12 @@ public class Sparql {
 	}
 
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
+		if (timeout == 0) {
+			timeout = maxTimeoutUpdate;
+		} else if (timeout < 0) {
+			throw new ServerWebInputException("negative timeout!");
+		}
+		logger.info("timeout: " + timeout);
 		// logger.info("Running update query:"+sparqlQuery);
 		waitLoading(1);
 		try {
