@@ -1,0 +1,15 @@
+<settings>
+    <servers>
+        <server>
+            <id>gitlab-maven-hdt-endpoint</id>
+            <configuration>
+                <httpHeaders>
+                    <property>
+                        <name>Deploy-Token</name>
+                        <value>${HDT_DEPLOY_TOKEN}</value>
+                    </property>
+                </httpHeaders>
+            </configuration>
+        </server>
+    </servers>
+</settings>

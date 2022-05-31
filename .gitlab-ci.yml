@@ -34,7 +34,6 @@ deploy:
   stage: deploy
   image: maven:3.6-jdk-11
   script:
-    - 'echo "<settings><servers><server><id>gitlab-maven-hdt-endpoint</id><configuration><httpHeaders><property><name>deploy-token</name><value>$CI_JOB_TOKEN</value></property></httpHeaders></configuration></server></servers></settings>" > hdt-qs-backend/ci_settings.xml'
     - "cd hdt-qs-backend && mvn deploy -DskipTests -U -s ci_settings.xml"
   only:
     - master
