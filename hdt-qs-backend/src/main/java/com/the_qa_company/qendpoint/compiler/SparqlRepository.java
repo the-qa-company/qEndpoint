@@ -4,6 +4,7 @@ import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult;
+import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
 import jakarta.json.Json;
@@ -13,7 +14,6 @@ import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.QueryResult;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResultHandler;
 import org.eclipse.rdf4j.query.Update;
@@ -134,9 +134,10 @@ public class SparqlRepository {
 	 *         {@link com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult}
 	 *         for boolean queries
 	 */
-	public QueryResult<?> execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
-			OutputStream out) {
-		try (RepositoryConnection connection = repository.getConnection()) {
+	public ClosableResult<?, ?> execute(String sparqlQuery, int timeout, String acceptHeader,
+			Consumer<String> mimeSetter, OutputStream out) {
+		RepositoryConnection connection = repository.getConnection();
+		try {
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			// sparqlQuery = sparqlPrefixes+sparqlQuery;
 
@@ -168,7 +169,7 @@ public class SparqlRepository {
 						}
 						return null;
 					} else {
-						return query.evaluate();
+						return new ClosableResult<>(query.evaluate(), connection);
 					}
 				} catch (QueryEvaluationException q) {
 					error = true;
@@ -192,7 +193,7 @@ public class SparqlRepository {
 					writer.handleBoolean(query.evaluate());
 					return null;
 				} else {
-					return new BooleanQueryResult(query.evaluate());
+					return new ClosableResult<>(new BooleanQueryResult(query.evaluate()), connection);
 				}
 			} else if (parsedQuery instanceof ParsedGraphQuery) {
 				GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
@@ -211,7 +212,7 @@ public class SparqlRepository {
 						}
 						return null;
 					} else {
-						return query.evaluate();
+						return new ClosableResult<>(query.evaluate(), connection);
 					}
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
@@ -220,6 +221,10 @@ public class SparqlRepository {
 				}
 			} else {
 				throw new ServerWebInputException("query not supported");
+			}
+		} finally {
+			if (out != null) {
+				connection.close();
 			}
 		}
 	}
@@ -254,9 +259,11 @@ public class SparqlRepository {
 	}
 
 	/**
-	 * load a file using updates, will split the file into split of size {@link CompiledSailOptions#getRdf4jSplitUpdate()}
+	 * load a file using updates, will split the file into split of size
+	 * {@link CompiledSailOptions#getRdf4jSplitUpdate()}
+	 *
 	 * @param inputStream file stream
-	 * @param filename file name to get the compression and the rdf type
+	 * @param filename    file name to get the compression and the rdf type
 	 * @throws IOException parsing exception
 	 */
 	public void loadFile(InputStream inputStream, String filename) throws IOException {
