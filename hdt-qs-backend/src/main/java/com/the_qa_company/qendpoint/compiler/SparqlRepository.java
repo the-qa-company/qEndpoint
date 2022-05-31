@@ -2,11 +2,13 @@ package com.the_qa_company.qendpoint.compiler;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
+import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -33,11 +35,15 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ServerWebInputException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -245,5 +251,50 @@ public class SparqlRepository {
 				}
 			}
 		}
+	}
+
+	/**
+	 * load a file using updates, will split the file into split of size {@link CompiledSailOptions#getRdf4jSplitUpdate()}
+	 * @param inputStream file stream
+	 * @param filename file name to get the compression and the rdf type
+	 * @throws IOException parsing exception
+	 */
+	public void loadFile(InputStream inputStream, String filename) throws IOException {
+		StopWatch timeWatch = new StopWatch();
+
+		// uncompress the file if required
+		InputStream fileStream = RDFStreamUtils.uncompressedStream(inputStream, filename);
+		// get a triple iterator for this stream
+		Iterator<Statement> it = RDFStreamUtils.readRDFStreamAsIterator(fileStream,
+				Rio.getParserFormatForFileName(filename)
+						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename)),
+				true);
+
+		long triples = 0;
+		long total = 0;
+		while (it.hasNext()) {
+			int updates = getOptions().getRdf4jSplitUpdate();
+			try (RepositoryConnection connection = getConnection()) {
+				connection.begin();
+				for (int i = 0; i < updates; i++) {
+					Statement stmt = it.next();
+					connection.add(stmt);
+					triples++;
+					if (!it.hasNext()) {
+						break;
+					}
+				}
+				connection.commit();
+			}
+			if (triples >= 100_000L) {
+				total += triples;
+				logger.info("loaded {} triples (+{}), {}", total, triples, timeWatch.stopAndShow());
+				triples = 0;
+			}
+		}
+		total += triples;
+		logger.info("loaded {} triples (+{})", total, triples);
+
+		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
 	}
 }

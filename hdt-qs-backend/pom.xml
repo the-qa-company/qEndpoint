@@ -9,7 +9,7 @@
 
     <groupId>com.the_qa_company</groupId>
     <artifactId>hdtSparqlEndpoint</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 
     <properties>
         <java.source.version>11</java.source.version>
@@ -154,6 +154,11 @@
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-sparql-testsuite</artifactId>
+            <version>${rdf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-query</artifactId>
             <version>${rdf4j.version}</version>
         </dependency>
         <dependency>
