@@ -6,7 +6,7 @@
                 <httpHeaders>
                     <property>
                         <name>Deploy-Token</name>
-                        <value>${HDT_DEPLOY_TOKEN}</value>
+                        <value>${env.HDT_DEPLOY_TOKEN}</value>
                     </property>
                 </httpHeaders>
             </configuration>
