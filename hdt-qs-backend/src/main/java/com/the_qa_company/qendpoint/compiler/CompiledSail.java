@@ -64,7 +64,6 @@ public class CompiledSail extends SailWrapper {
 		config.stringConfig.forEach(sailCompiler::registerDirString);
 		LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) sailCompiler
 				.getCompiler(SailCompilerSchema.LUCENE_TYPE);
-		luceneCompiler.reset();
 
 		// load the options
 		if (config.configRDFFile != null) {
@@ -134,9 +133,9 @@ public class CompiledSail extends SailWrapper {
 			source = config.sourceSail;
 		}
 
+		setBaseSail(sailCompiler.compile(source));
 		// write the lucene sails
 		luceneSails.addAll(luceneCompiler.getSails());
-		setBaseSail(sailCompiler.compile(source));
 	}
 
 	/**
