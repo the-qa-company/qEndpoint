@@ -9,7 +9,10 @@ import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.sail.UpdateContext;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Implementation of {@link SailFilter} to filter statements by literal
@@ -18,17 +21,24 @@ import java.util.Optional;
  * @author Antoine Willerval
  */
 public class LanguageSailFilter implements SailFilter {
-	private String language;
+	private Set<String> language;
 	private boolean acceptNoLanguageLiterals;
 	private boolean shouldHandleExpression;
 
 	public LanguageSailFilter(String language, boolean acceptNoLanguageLiterals, boolean shouldHandleExpression) {
-		this.language = language;
+		this(List.of(language), acceptNoLanguageLiterals, shouldHandleExpression);
+	}
+	public LanguageSailFilter(List<String> language, boolean acceptNoLanguageLiterals, boolean shouldHandleExpression) {
+		this.language = new HashSet<>(language);
 		this.acceptNoLanguageLiterals = acceptNoLanguageLiterals;
 		this.shouldHandleExpression = shouldHandleExpression;
 	}
 
 	public LanguageSailFilter(String language, boolean acceptNoLanguageLiterals) {
+		this(language, acceptNoLanguageLiterals, true);
+	}
+
+	public LanguageSailFilter(List<String> language, boolean acceptNoLanguageLiterals) {
 		this(language, acceptNoLanguageLiterals, true);
 	}
 
@@ -42,7 +52,7 @@ public class LanguageSailFilter implements SailFilter {
 		Optional<String> lang = literal.getLanguage();
 
 		if (lang.isPresent()) {
-			return lang.get().equals(language);
+			return language.contains(lang.get());
 		} else {
 			return acceptNoLanguageLiterals;
 		}
@@ -79,7 +89,7 @@ public class LanguageSailFilter implements SailFilter {
 		return shouldHandleExpression;
 	}
 
-	public String getLanguage() {
+	public Set<String> getLanguages() {
 		return language;
 	}
 
@@ -91,7 +101,7 @@ public class LanguageSailFilter implements SailFilter {
 		return shouldHandleExpression;
 	}
 
-	public void setLanguage(String language) {
+	public void setLanguage(Set<String> language) {
 		this.language = language;
 	}
 

@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.utils.sail.filter.LuceneMatchExprSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.PredicateSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.qendpoint.utils.sail.linked.SimpleLinkedSail;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;

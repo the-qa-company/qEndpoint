@@ -14,7 +14,10 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.UpdateContext;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * {@link SailFilter} implementation to filter subject by type when adding by
@@ -26,7 +29,7 @@ public class TypeSailFilter implements SailFilter {
 	private final Map<Resource, Value> typeBuffer;
 	private final Map<Resource, Boolean> typeContainedBuffer = new HashMap<>();
 	private final IRI predicate;
-	private final Value object;
+	private final Set<Value> objects;
 	private final SailConnection subConnection;
 
 	/**
@@ -34,10 +37,20 @@ public class TypeSailFilter implements SailFilter {
 	 *
 	 * @param filteringSail the connection to fetch data
 	 * @param predicate     the predicate to define the type
-	 * @param object        the type object
+	 * @param objects        the type object
 	 */
-	public TypeSailFilter(FilteringSail filteringSail, IRI predicate, Value object) {
-		this(null, filteringSail, predicate, object);
+	public TypeSailFilter(FilteringSail filteringSail, IRI predicate, Value... objects) {
+		this(null, filteringSail, predicate, objects);
+	}
+	/**
+	 * create a type sail filter
+	 *
+	 * @param filteringSail the connection to fetch data
+	 * @param predicate     the predicate to define the type
+	 * @param objects        the type object
+	 */
+	public TypeSailFilter(FilteringSail filteringSail, IRI predicate, List<Value> objects) {
+		this(null, filteringSail, predicate, objects);
 	}
 
 	/**
@@ -46,13 +59,31 @@ public class TypeSailFilter implements SailFilter {
 	 * @param typeBuffer    the buffer to store the subjects' type
 	 * @param filteringSail the connection to fetch data
 	 * @param predicate     the predicate to define the type
-	 * @param object        the type object
+	 * @param objects        the type objects
 	 */
-	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate, Value object) {
+	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate, Value... objects) {
+		this(typeBuffer, filteringSail, predicate, List.of(objects));
+	}
+	/**
+	 * create a type sail filter with a buffer to store the type of the subjects
+	 *
+	 * @param typeBuffer    the buffer to store the subjects' type
+	 * @param filteringSail the connection to fetch data
+	 * @param predicate     the predicate to define the type
+	 * @param objects        the type objects
+	 */
+	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate, List<Value> objects) {
 		this.typeBuffer = typeBuffer;
 		this.subConnection = filteringSail.getOnNoSail().getConnectionInternal();
 		this.predicate = predicate;
-		this.object = object;
+		if (objects.size() == 0) {
+			throw new IllegalArgumentException("object type can't be empty!");
+		}
+		if (objects.size() == 1) {
+			this.objects = Set.of(objects.get(0));
+		} else {
+			this.objects = new HashSet<>(objects);
+		}
 	}
 
 	/**
@@ -92,7 +123,7 @@ public class TypeSailFilter implements SailFilter {
 				}
 			}
 			// test the selected type
-			typeContainer = type.equals(object);
+			typeContainer = objects.contains(type);
 			typeContainedBuffer.put(subj, typeContainer);
 		}
 
@@ -106,7 +137,7 @@ public class TypeSailFilter implements SailFilter {
 			if (typeBuffer != null) {
 				typeBuffer.put(subj, obj);
 			}
-			typeContainedBuffer.put(subj, obj.equals(object));
+			typeContainedBuffer.put(subj, objects.contains(obj));
 			return false;
 		}
 		return isSubjectOfType(subj);

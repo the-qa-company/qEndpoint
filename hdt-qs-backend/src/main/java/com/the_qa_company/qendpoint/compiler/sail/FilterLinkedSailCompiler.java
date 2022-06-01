@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.sail.SailConnection;
 
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * a linked sail sail to create filtering sail
@@ -82,13 +83,19 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 		BiFunction<FilteringSail, SailConnection, SailFilter> function;
 
 		if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_PREDICATE)) {
-			IRI predicate = SailCompiler
-					.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE));
-			PredicateSailFilter filter = new PredicateSailFilter(predicate);
+			List<IRI> predicates = reader
+					.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE)
+					.stream()
+					.map(SailCompiler::asIRI)
+					.collect(Collectors.toList());
+			PredicateSailFilter filter = new PredicateSailFilter(predicates);
 			function = (sail, connection) -> filter;
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE)) {
-			String lang = reader.getSailCompiler()
-					.asLitString(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG));
+			List<String> lang = reader
+					.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG)
+					.stream()
+					.map(reader.getSailCompiler()::asLitString)
+					.collect(Collectors.toList());
 			boolean acceptNoLanguageLiterals = reader
 					.searchOneOpt(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_NO_LANG_LIT).isPresent();
 			LanguageSailFilter filter = new LanguageSailFilter(lang, acceptNoLanguageLiterals);
@@ -96,8 +103,8 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_TYPE)) {
 			IRI predicate = SailCompiler
 					.asIRI(reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE));
-			Value object = reader.searchOne(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT);
-			function = (sail, connection) -> new TypeSailFilter(sail, predicate, object);
+			List<Value> objects = reader.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT);
+			function = (sail, connection) -> new TypeSailFilter(sail, predicate, objects);
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LUCENE_EXP)) {
 			LuceneMatchExprSailFilter filter = new LuceneMatchExprSailFilter();
 			function = (sail, connection) -> filter;

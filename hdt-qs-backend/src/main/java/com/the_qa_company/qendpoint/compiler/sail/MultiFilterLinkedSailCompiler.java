@@ -6,8 +6,10 @@ import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -30,14 +32,14 @@ public class MultiFilterLinkedSailCompiler extends LinkedSailCompiler {
 						.map(rsnode -> typedSailOf(
 								reader.compileNode(
 										reader.searchOne(SailCompiler.asResource(rsnode), SailCompilerSchema.NODE)),
-								SailCompiler.asIRI(reader.searchOne(SailCompiler.asResource(rsnode),
-										SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT))))
+								reader.search(SailCompiler.asResource(rsnode),
+										SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_OBJECT)))
 						.collect(Collectors.toList())
 
 		);
 	}
 
-	public MultiTypeFilteringSail.TypedSail typedSailOf(LinkedSail<? extends NotifyingSail> sail, IRI type) {
-		return new MultiTypeFilteringSail.TypedSail(sail, type);
+	public MultiTypeFilteringSail.TypedSail typedSailOf(LinkedSail<? extends NotifyingSail> sail, List<Value> types) {
+		return new MultiTypeFilteringSail.TypedSail(sail, types);
 	}
 }
