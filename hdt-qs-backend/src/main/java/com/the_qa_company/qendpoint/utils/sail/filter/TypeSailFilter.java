@@ -37,17 +37,18 @@ public class TypeSailFilter implements SailFilter {
 	 *
 	 * @param filteringSail the connection to fetch data
 	 * @param predicate     the predicate to define the type
-	 * @param objects        the type object
+	 * @param objects       the type object
 	 */
 	public TypeSailFilter(FilteringSail filteringSail, IRI predicate, Value... objects) {
 		this(null, filteringSail, predicate, objects);
 	}
+
 	/**
 	 * create a type sail filter
 	 *
 	 * @param filteringSail the connection to fetch data
 	 * @param predicate     the predicate to define the type
-	 * @param objects        the type object
+	 * @param objects       the type object
 	 */
 	public TypeSailFilter(FilteringSail filteringSail, IRI predicate, List<Value> objects) {
 		this(null, filteringSail, predicate, objects);
@@ -59,20 +60,23 @@ public class TypeSailFilter implements SailFilter {
 	 * @param typeBuffer    the buffer to store the subjects' type
 	 * @param filteringSail the connection to fetch data
 	 * @param predicate     the predicate to define the type
-	 * @param objects        the type objects
+	 * @param objects       the type objects
 	 */
-	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate, Value... objects) {
+	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate,
+			Value... objects) {
 		this(typeBuffer, filteringSail, predicate, List.of(objects));
 	}
+
 	/**
 	 * create a type sail filter with a buffer to store the type of the subjects
 	 *
 	 * @param typeBuffer    the buffer to store the subjects' type
 	 * @param filteringSail the connection to fetch data
 	 * @param predicate     the predicate to define the type
-	 * @param objects        the type objects
+	 * @param objects       the type objects
 	 */
-	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate, List<Value> objects) {
+	public TypeSailFilter(Map<Resource, Value> typeBuffer, FilteringSail filteringSail, IRI predicate,
+			List<Value> objects) {
 		this.typeBuffer = typeBuffer;
 		this.subConnection = filteringSail.getOnNoSail().getConnectionInternal();
 		this.predicate = predicate;

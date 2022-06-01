@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SailCompilerTest {
 	@Rule
@@ -100,12 +101,14 @@ public class SailCompilerTest {
 		SailFilter filter21 = opf1.getFilter1();
 		Assert.assertTrue(filter21 instanceof PredicateSailFilter);
 		PredicateSailFilter prf1 = (PredicateSailFilter) filter21;
-		Assert.assertEquals(prf1.getPredicate(), data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text"));
+		Assert.assertEquals(prf1.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text")));
 
 		SailFilter filter22 = opf1.getFilter2();
 		Assert.assertTrue(filter22 instanceof PredicateSailFilter);
 		PredicateSailFilter prf2 = (PredicateSailFilter) filter22;
-		Assert.assertEquals(prf2.getPredicate(), data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof"));
+		Assert.assertEquals(prf2.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof")));
 	}
 
 	@Test
@@ -129,12 +132,14 @@ public class SailCompilerTest {
 		SailFilter filter21 = opf1.getFilter1();
 		Assert.assertTrue(filter21 instanceof PredicateSailFilter);
 		PredicateSailFilter prf1 = (PredicateSailFilter) filter21;
-		Assert.assertEquals(prf1.getPredicate(), data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text"));
+		Assert.assertEquals(prf1.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text")));
 
 		SailFilter filter22 = opf1.getFilter2();
 		Assert.assertTrue(filter22 instanceof PredicateSailFilter);
 		PredicateSailFilter prf2 = (PredicateSailFilter) filter22;
-		Assert.assertEquals(prf2.getPredicate(), data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof"));
+		Assert.assertEquals(prf2.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof")));
 
 		Sail chain = sail.getOnYesSail();
 		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_fr",
@@ -170,12 +175,14 @@ public class SailCompilerTest {
 		SailFilter filter21 = opf1.getFilter1();
 		Assert.assertTrue(filter21 instanceof PredicateSailFilter);
 		PredicateSailFilter prf1 = (PredicateSailFilter) filter21;
-		Assert.assertEquals(prf1.getPredicate(), data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text"));
+		Assert.assertEquals(prf1.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text")));
 
 		SailFilter filter22 = opf1.getFilter2();
 		Assert.assertTrue(filter22 instanceof PredicateSailFilter);
 		PredicateSailFilter prf2 = (PredicateSailFilter) filter22;
-		Assert.assertEquals(prf2.getPredicate(), data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof"));
+		Assert.assertEquals(prf2.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof")));
 
 		Assert.assertTrue(sail.getOnYesSail() instanceof MultiTypeFilteringSail);
 		MultiTypeFilteringSail multiTypeFilter = (MultiTypeFilteringSail) sail.getOnYesSail();
@@ -184,7 +191,8 @@ public class SailCompilerTest {
 		List<MultiTypeFilteringSail.TypedSail> typedSails = multiTypeFilter.getTypes();
 		Assert.assertEquals(2, typedSails.size());
 		MultiTypeFilteringSail.TypedSail type1 = typedSails.get(0);
-		Assert.assertEquals(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type1"), type1.getType());
+		Assert.assertEquals(List.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type1")),
+				type1.getType());
 
 		Sail chain = type1.getSail();
 		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_fr_type1",
@@ -202,7 +210,8 @@ public class SailCompilerTest {
 		Assert.assertFalse(chain instanceof LuceneSail);
 
 		MultiTypeFilteringSail.TypedSail type2 = typedSails.get(1);
-		Assert.assertEquals(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type2"), type2.getType());
+		Assert.assertEquals(List.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type2")),
+				type2.getType());
 
 		chain = type2.getSail();
 		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_fr_type2",

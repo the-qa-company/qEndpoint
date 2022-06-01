@@ -28,6 +28,7 @@ public class LanguageSailFilter implements SailFilter {
 	public LanguageSailFilter(String language, boolean acceptNoLanguageLiterals, boolean shouldHandleExpression) {
 		this(List.of(language), acceptNoLanguageLiterals, shouldHandleExpression);
 	}
+
 	public LanguageSailFilter(List<String> language, boolean acceptNoLanguageLiterals, boolean shouldHandleExpression) {
 		this.language = new HashSet<>(language);
 		this.acceptNoLanguageLiterals = acceptNoLanguageLiterals;

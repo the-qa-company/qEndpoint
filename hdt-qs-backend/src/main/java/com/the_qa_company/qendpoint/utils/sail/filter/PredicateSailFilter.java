@@ -29,6 +29,7 @@ public class PredicateSailFilter implements SailFilter {
 	public PredicateSailFilter(IRI... predicates) {
 		this(List.of(predicates));
 	}
+
 	/**
 	 * filter a sail with predicates
 	 *

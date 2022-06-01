@@ -150,17 +150,18 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 		 *
 		 * @param sail         the sail to redirect
 		 * @param sailConsumer the consumer to define the base sail of the sail
-		 * @param types         the types associate with this filtered sail
+		 * @param types        the types associate with this filtered sail
 		 */
 		public TypedSail(NotifyingSail sail, Consumer<Sail> sailConsumer, Value... types) {
 			this(sail, sailConsumer, List.of(types));
 		}
+
 		/**
 		 * create a typed sail with a sail consumer to define the end
 		 *
 		 * @param sail         the sail to redirect
 		 * @param sailConsumer the consumer to define the base sail of the sail
-		 * @param types         the types associate with this filtered sail
+		 * @param types        the types associate with this filtered sail
 		 */
 		public TypedSail(NotifyingSail sail, Consumer<Sail> sailConsumer, List<Value> types) {
 			super(sail, sailConsumer);
@@ -170,16 +171,17 @@ public class MultiTypeFilteringSail extends NotifyingSailWrapper implements Link
 		/**
 		 * create a typed sail with a sail consumer to define the end
 		 *
-		 * @param types        the type associate with this filtered sail
+		 * @param types       the type associate with this filtered sail
 		 * @param linkedSails the sails to redirect
 		 */
 		public TypedSail(LinkedSail<? extends NotifyingSail> linkedSails, Value... types) {
 			this(linkedSails, List.of(types));
 		}
+
 		/**
 		 * create a typed sail with a sail consumer to define the end
 		 *
-		 * @param types        the type associate with this filtered sail
+		 * @param types       the type associate with this filtered sail
 		 * @param linkedSails the sails to redirect
 		 */
 		public TypedSail(LinkedSail<? extends NotifyingSail> linkedSails, List<Value> types) {

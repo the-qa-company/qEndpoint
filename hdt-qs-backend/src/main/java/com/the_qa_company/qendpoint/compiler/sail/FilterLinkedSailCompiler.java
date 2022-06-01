@@ -83,19 +83,13 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 		BiFunction<FilteringSail, SailConnection, SailFilter> function;
 
 		if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_PREDICATE)) {
-			List<IRI> predicates = reader
-					.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE)
-					.stream()
-					.map(SailCompiler::asIRI)
-					.collect(Collectors.toList());
+			List<IRI> predicates = reader.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_TYPE_PREDICATE).stream()
+					.map(SailCompiler::asIRI).collect(Collectors.toList());
 			PredicateSailFilter filter = new PredicateSailFilter(predicates);
 			function = (sail, connection) -> filter;
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE)) {
-			List<String> lang = reader
-					.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG)
-					.stream()
-					.map(reader.getSailCompiler()::asLitString)
-					.collect(Collectors.toList());
+			List<String> lang = reader.search(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_LANG).stream()
+					.map(reader.getSailCompiler()::asLitString).collect(Collectors.toList());
 			boolean acceptNoLanguageLiterals = reader
 					.searchOneOpt(rnode, SailCompilerSchema.PARAM_FILTER_TYPE_LANGUAGE_NO_LANG_LIT).isPresent();
 			LanguageSailFilter filter = new LanguageSailFilter(lang, acceptNoLanguageLiterals);
