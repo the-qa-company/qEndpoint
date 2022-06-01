@@ -230,6 +230,83 @@ public class SailCompilerTest {
 	}
 
 	@Test
+	public void loadModel5Test() throws IOException, SailCompiler.SailCompilerException {
+		LoadData data = loadFile("model/model_example5.ttl");
+
+		FilteringSail sail = (FilteringSail) data.sail;
+		SailFilter filter = sail.getFilter(null);
+		Assert.assertTrue(filter instanceof OpSailFilter);
+		OpSailFilter opf = (OpSailFilter) filter;
+		Assert.assertSame(opf.getOperation(), OpSailFilter.AND);
+
+		SailFilter filter1 = opf.getFilter1();
+		Assert.assertTrue(filter1 instanceof LuceneMatchExprSailFilter);
+
+		SailFilter filter2 = opf.getFilter2();
+		Assert.assertTrue(filter2 instanceof OpSailFilter);
+		OpSailFilter opf1 = (OpSailFilter) filter2;
+		Assert.assertSame(opf1.getOperation(), OpSailFilter.OR);
+
+		SailFilter filter21 = opf1.getFilter1();
+		Assert.assertTrue(filter21 instanceof PredicateSailFilter);
+		PredicateSailFilter prf1 = (PredicateSailFilter) filter21;
+		Assert.assertEquals(prf1.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "text")));
+
+		SailFilter filter22 = opf1.getFilter2();
+		Assert.assertTrue(filter22 instanceof PredicateSailFilter);
+		PredicateSailFilter prf2 = (PredicateSailFilter) filter22;
+		Assert.assertEquals(prf2.getPredicate(),
+				Set.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof")));
+
+		Assert.assertTrue(sail.getOnYesSail() instanceof MultiTypeFilteringSail);
+		MultiTypeFilteringSail multiTypeFilter = (MultiTypeFilteringSail) sail.getOnYesSail();
+		Assert.assertEquals(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "typeof"),
+				multiTypeFilter.getPredicate());
+		List<MultiTypeFilteringSail.TypedSail> typedSails = multiTypeFilter.getTypes();
+		Assert.assertEquals(2, typedSails.size());
+		MultiTypeFilteringSail.TypedSail type1 = typedSails.get(0);
+		Assert.assertEquals(List.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type1"),
+				data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type3"),
+				data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type4")), type1.getType());
+
+		Sail chain = type1.getSail();
+		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_fr_type1",
+				data.compiler.parseDir("${locationNative}lucene_fr_type1"), "fr en ro", new LuceneParam()
+						.with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"));
+		chain = ((LuceneSail) chain).getBaseSail();
+		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_de_type1",
+				data.compiler.parseDir("${locationNative}lucene_de_type1"), "de lv bg", new LuceneParam()
+						.with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"));
+		chain = ((LuceneSail) chain).getBaseSail();
+		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_es_type1",
+				data.compiler.parseDir("${locationNative}lucene_es_type1"), "es", new LuceneParam().with("wktFields",
+						"http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"));
+		chain = ((LuceneSail) chain).getBaseSail();
+		Assert.assertFalse(chain instanceof LuceneSail);
+
+		MultiTypeFilteringSail.TypedSail type2 = typedSails.get(1);
+		Assert.assertEquals(List.of(data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type2"),
+				data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type5"),
+				data.sail.getValueFactory().createIRI(SailTest.NAMESPACE + "type6")), type2.getType());
+
+		chain = type2.getSail();
+		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_fr_type2",
+				data.compiler.parseDir("${locationNative}lucene_fr_type2"), "fr en ro", new LuceneParam()
+						.with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"));
+		chain = ((LuceneSail) chain).getBaseSail();
+		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_de_type2",
+				data.compiler.parseDir("${locationNative}lucene_de_type2"), "de lv bg", new LuceneParam()
+						.with("wktFields", "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"));
+		chain = ((LuceneSail) chain).getBaseSail();
+		assertLuceneSail(chain, SailTest.NAMESPACE + "luceneIndex_es_type2",
+				data.compiler.parseDir("${locationNative}lucene_es_type2"), "es", new LuceneParam().with("wktFields",
+						"http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"));
+		chain = ((LuceneSail) chain).getBaseSail();
+		Assert.assertFalse(chain instanceof LuceneSail);
+	}
+
+	@Test
 	public void dirCompileTest() throws SailCompiler.SailCompilerException {
 		SailCompiler compiler = new SailCompiler();
 		compiler.registerDirString("myKey", "my cat");
