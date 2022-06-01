@@ -203,7 +203,6 @@ public class Sparql {
 			model.remove(location);
 			sparqlRepository.shutDown();
 			endpoint = null;
-			sparqlRepository = null;
 		}
 		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
@@ -340,7 +339,7 @@ public class Sparql {
 				clearEndpointStore(locationHdt);
 				HDTSpecification spec = new HDTSpecification();
 				spec.setOptions(hdtSpec);
-				if (sparqlRepository.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+				if (SailCompilerSchema.HDT_TWO_PASS_MODE.equals(sparqlRepository.getOptions().getPassMode())) {
 					spec.set("loader.type", "two-pass");
 				}
 				compressToHdt(input, baseURI, filename, hdtOutput, spec);
