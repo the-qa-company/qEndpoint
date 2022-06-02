@@ -160,7 +160,15 @@ public class CompiledSail extends SailWrapper {
 	 */
 	public void reindexLuceneSails() throws Exception {
 		for (LuceneSail sail : luceneSails) {
-			sail.reindex();
+			// bypass filtering system to use the source
+			NotifyingSail oldSail = sail.getBaseSail();
+			try {
+				sail.setBaseSail(source);
+				sail.reindex();
+			} finally {
+				sail.setBaseSail(oldSail);
+			}
+
 		}
 	}
 
