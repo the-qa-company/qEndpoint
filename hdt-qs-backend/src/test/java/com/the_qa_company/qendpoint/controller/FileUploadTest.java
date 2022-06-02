@@ -57,6 +57,7 @@ import java.util.function.Consumer;
 @RunWith(Parameterized.class)
 @ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
+@Ignore("skip")
 public class FileUploadTest {
 	public static final String COKTAILS_NT = "cocktails.nt";
 	private static final Logger logger = LoggerFactory.getLogger(FileUploadTest.class);
@@ -226,7 +227,6 @@ public class FileUploadTest {
 	}
 
 	@Test
-	@Ignore("skip")
 	public void loadNoSplitOnePassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size + 1;
@@ -238,7 +238,6 @@ public class FileUploadTest {
 	}
 
 	@Test
-	@Ignore("skip")
 	public void loadSplitOnePassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size / 10;
@@ -250,7 +249,6 @@ public class FileUploadTest {
 	}
 
 	@Test
-	@Ignore("skip")
 	public void loadNoSplitTwoPassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size + 1;
@@ -262,7 +260,6 @@ public class FileUploadTest {
 	}
 
 	@Test
-	@Ignore("skip")
 	public void loadSplitTwoPassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size / 10;
