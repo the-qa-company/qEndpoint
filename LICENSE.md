@@ -1,8 +1,7 @@
 ## NOTICE
 
 This package contains software licensed under different
-licenses, please refer to the [NOTICE.md](NOTICE.md) file for further
-information.
+licenses.
 
 The software ("Software") developed and owned by The QA Company
 is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
