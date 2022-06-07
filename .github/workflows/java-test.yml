@@ -1,11 +1,14 @@
 name: Java Tests
 
-on: [push]
+on:
+  push:
+    paths:
+      - "hdt-qs-backend/**"
 
 defaults:
   run:
     working-directory: hdt-qs-backend
-    
+
 jobs:
   build:
     runs-on: ubuntu-latest

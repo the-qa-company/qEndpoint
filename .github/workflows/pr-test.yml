@@ -1,6 +1,9 @@
 name: Pull request Tests
 
-on: pull_request
+on:
+  pull_request:
+    paths:
+      - "hdt-qs-backend/**"
 
 defaults:
   run:

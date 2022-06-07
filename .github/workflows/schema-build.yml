@@ -3,6 +3,8 @@ name: Schema deploy
 on:
   push:
     branches: [master]
+    paths:
+      - "hdt-qs-backend/**"
 
 defaults:
   run:
