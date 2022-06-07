@@ -6,3 +6,11 @@ body:
     attributes:
       value: |
         What needs to be done!
+ - type: textarea
+    attributes:
+      label: Description of the task
+      description: Small description of the task
+      placeholder: |
+        I need to ....
+    validations:
+      required: true
