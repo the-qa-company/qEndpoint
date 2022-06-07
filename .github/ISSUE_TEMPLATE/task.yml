@@ -8,9 +8,5 @@ body:
         What needs to be done!
  - type: textarea
     attributes:
-      label: Description of the task
-      description: Small description of the task
-      placeholder: |
-        I need to ....
-    validations:
-      required: true
+      label: Task to perform
+      description: Description of the task
