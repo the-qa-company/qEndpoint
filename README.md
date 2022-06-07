@@ -142,7 +142,7 @@ Reach out to the maintainer at one of the following places:
 
 ## Project assistance
 
-If you want to say **thank you** or/and support active development of QEndpoint:
+If you want to say **thank you** or/and support active development of qEndpoint:
 
 - Add a [GitHub Star](https://github.com/the-qa-company/qEndpoint) to the project.
 - Tweet about the QEndpoint.
