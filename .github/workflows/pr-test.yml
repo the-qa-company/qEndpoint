@@ -2,6 +2,10 @@ name: Pull request Tests
 
 on: pull_request
 
+defaults:
+  run:
+    working-directory: hdt-qs-backend
+
 jobs:
   build:
     runs-on: ubuntu-latest
