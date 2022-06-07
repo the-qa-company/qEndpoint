@@ -3,6 +3,7 @@ hdt-qs-backend/*.iml
 hdt-qs-backend/.idea/
 hdt-qs-backend/hdt-store/
 hdt-qs-backend/native-store/
+hdt-qs-backend/COMPILER_SCHEMA.MD
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 

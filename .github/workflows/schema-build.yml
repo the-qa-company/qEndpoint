@@ -1,0 +1,40 @@
+name: Schema deploy
+
+on:
+  push:
+    branches: [master]
+
+defaults:
+  run:
+    working-directory: hdt-qs-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        jdk: [17]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.jdk }}
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: Create schema file
+        run: mvn spring-boot:run -Pschema
+      - run: mkdir deploy && ./COMPILER_SCHEMA.MD
+      - run: mv COMPILER_SCHEMA.MD deploy
+      - name: Deploy to GitHub Pages
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: schema-pages
+          build_dir: deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

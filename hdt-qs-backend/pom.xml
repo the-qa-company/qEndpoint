@@ -167,6 +167,23 @@
             <version>${rdfhdt.version}</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <id>schema</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <mainClass>com.the_qa_company.qendpoint.compiler.SailCompilerSchema</mainClass>
+                            <classifier>exec</classifier>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     <build>
         <plugins>
             <plugin>
