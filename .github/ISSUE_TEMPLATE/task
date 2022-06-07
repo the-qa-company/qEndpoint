@@ -1,0 +1,8 @@
+name: Task
+description: Task to perform
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        What needs to be done!
