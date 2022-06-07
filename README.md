@@ -114,13 +114,8 @@ where `mydataset.nt` is the RDF file to load, you can use all [the formats used 
 ### As a dependency
 
 ```java
-// specify the model RDF config file
-Path myConfig = Path.of("modelConfig.ttl");
-
 // Create a SPARQL repository
-SparqlRepository repository = CompiledSail.compiler()
-        .withConfig(myConfig)
-        .compileToSparqlRepository();
+SparqlRepository repository = CompiledSail.compiler().compileToSparqlRepository();
 // Init the repository
 repository.init();
 
@@ -128,42 +123,6 @@ repository.init();
 
 // Shutdown the repository (better to release resources)
 repository.shutDown();
-```
-
-For a basic Lucene full-text model, you can use this example file
-
-```turtle
-@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
-@prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
-
-# Describe the main node to use: _:mainNode
-mdlc:main mdlc:node _:mainNode ;
-          # Describe the storage mode of the endpoint
-          mdlc:storageMode mdlc:endpointStoreStorage ;
-          # Describe the loading method of the HDT, using LOAD or MAP
-          mdlc:hdtReadMode mdlc:hdtLoadReadMode ;
-          # Describe the default split for native store storages
-          mdlc:rdfStoreSplit 1000 ;
-          # Enable to show the time of the executed queries
-          # mdlc:option mdlc:debugShowTime ;
-          # Enable to show the plan of the executed queries
-          # mdlc:option mdlc:debugShowPlan ;
-          # Describe custom strings for the mdlc:parsedString format, will be available with ${key}
-          mdlc:parsedStringParam [
-                                     mdlc:paramKey "luceneEvalMode" ;
-                                     mdlc:paramValue "NATIVE"
-                                 ].
-
-# Create a lucene node for full-text search
-_:mainNode mdlc:type mdlc:luceneNode ;
-            # Describe the location of the lucene directory, you can use mdlc:parsedString for template strings
-            mdlc:dirLocation "${locationNative}lucene"^^mdlc:parsedString ;
-            # Define the reindex query for the lucene sail, the query should be ordered by ?s
-            mdlc:luceneReindexQuery "SELECT * {?s ?p ?o} order by ?s" ;
-            # Describe the evaluation mode of the queries, for native or endpointStore storage, use NATIVE
-            mdlc:luceneEvalMode "${luceneEvalMode}"^^mdlc:parsedString.
-
-
 ```
 
 ## Roadmap
