@@ -1,0 +1,22 @@
+name: Support 📚
+description: Ask a question about QEndpoint
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping to improve this repository!
+  - type: textarea
+    attributes:
+      label: Description of the question
+      description: the description of the question
+      placeholder: |
+        I want to know...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Endpoint version (if linked with the question)
+      description: Endpoint version
+      placeholder: "1.1.1"
