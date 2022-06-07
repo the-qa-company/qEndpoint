@@ -35,6 +35,6 @@ jobs:
         uses: crazy-max/ghaction-github-pages@v2
         with:
           target_branch: schema-pages
-          build_dir: deploy
+          build_dir: hdt-qs-backend/deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
