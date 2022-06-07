@@ -28,7 +28,7 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
       - name: Create schema file
         run: mvn spring-boot:run -Pschema
-      - run: mkdir deploy && ./COMPILER_SCHEMA.MD
+      - run: mkdir deploy
       - run: mv COMPILER_SCHEMA.MD deploy
       - name: Deploy to GitHub Pages
         if: success()
