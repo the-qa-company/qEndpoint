@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         What needs to be done!
- - type: textarea
+  - type: textarea
     attributes:
       label: Task to perform
       description: Description of the task
