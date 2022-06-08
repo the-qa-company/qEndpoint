@@ -258,24 +258,6 @@ public class Sparql {
 			sparqlRepository = new SparqlRepository(compiledSail);
 			sparqlRepository.setSparqlPrefixes(sparqlPrefixes);
 			sparqlRepository.init();
-
-			// execute the a tuple query
-			try (ClosableResult<TupleQueryResult> execute = sparqlRepository.executeTupleQuery(
-					// the sparql query
-					"SELECT * WHERE { ?s ?p ?o }",
-					// the timeout
-					10)) {
-				// get the result, no need to close it, closing execute will
-				// close the result
-				TupleQueryResult result = execute.getResult();
-
-				// the tuples
-				for (BindingSet set : result) {
-					System.out.println("Subject:   " + set.getValue("s"));
-					System.out.println("Predicate: " + set.getValue("p"));
-					System.out.println("Object:    " + set.getValue("o"));
-				}
-			}
 		}
 		if (finishLoading) {
 			completeLoading();
