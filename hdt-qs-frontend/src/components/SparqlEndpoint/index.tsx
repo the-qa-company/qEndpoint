@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useSyncRef } from 'common/react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { TextField, Typography, useTheme } from '@mui/material'
+import config from 'common/config'
 
 import Yasgui from '@triply/yasgui'
 import '@triply/yasgui/build/yasgui.min.css'
@@ -55,7 +56,7 @@ export default function SparqlEndpoint () {
     // Construct Yasgui
     const yasgui = new Yasgui(yasguiDivRef.current, {
       requestConfig: {
-        endpoint: 'http://localhost:1234/api/endpoint/sparql',
+        endpoint: config.endpoint,
         headers: () => ({
           timeout: timeoutRef.current || ''
         }),
