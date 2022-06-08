@@ -8,11 +8,11 @@
 <div align="center">
   qEndpoint
   <br />
-  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=bug&template=bug.md&title=bug%3A+">Report a Bug</a>
+  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=bug&template=bug.yml">Report a Bug</a>
   ·
-  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=enhancement&template=feature.md&title=feat%3A+">Request a Feature</a>
+  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=enhancement&template=feature.yml">Request a Feature</a>
   ·
-  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=question&template=support.md&title=support%3A+">Ask a Question</a>
+  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=question&template=support.yml">Ask a Question</a>
 </div>
 
 <div align="center">

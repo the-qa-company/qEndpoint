@@ -8,9 +8,8 @@ import org.eclipse.rdf4j.repository.RepositoryException;
  * Closable query result
  *
  * @param <T> the query result type
- * @param <E> the query result line type
  */
-public class ClosableResult<T extends QueryResult<E>, E> implements AutoCloseable {
+public class ClosableResult<T extends QueryResult<?>> implements AutoCloseable {
 	private final T query;
 	private final RepositoryConnection closeable;
 

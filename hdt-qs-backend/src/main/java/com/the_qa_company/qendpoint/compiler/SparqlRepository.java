@@ -12,9 +12,11 @@ import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResultHandler;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.explanation.Explanation;
@@ -126,6 +128,172 @@ public class SparqlRepository {
 	 *
 	 * @param sparqlQuery  the query
 	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
+			OutputStream out) {
+		execute(null, sparqlQuery, timeout, acceptHeader, mimeSetter, out);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection   the connection to use
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
+			Consumer<String> mimeSetter, OutputStream out) {
+		Objects.requireNonNull(sparqlQuery, "sparqlQuery can't be null");
+		Objects.requireNonNull(acceptHeader, "acceptHeader can't be null");
+		mimeSetter = Objects.requireNonNullElseGet(mimeSetter, () -> s -> {});
+		Objects.requireNonNull(out, "output stream can't be null");
+
+		execute0(connection, sparqlQuery, timeout, acceptHeader, mimeSetter, out);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 */
+	public ClosableResult<?> execute(String sparqlQuery, int timeout) {
+		return execute(null, sparqlQuery, timeout);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection  the connection to use
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 */
+	public ClosableResult<?> execute(RepositoryConnection connection, String sparqlQuery, int timeout) {
+		return execute0(connection, sparqlQuery, timeout, null, null, null);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @throws java.lang.IllegalArgumentException if the query isn't a tuple
+	 *                                            query
+	 */
+	@SuppressWarnings("unchecked")
+	public ClosableResult<TupleQueryResult> executeTupleQuery(RepositoryConnection connection, String sparqlQuery,
+			int timeout) {
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
+		assert res != null;
+		if (!(res.getQuery() instanceof TupleQueryResult)) {
+			try {
+				throw new IllegalArgumentException("the query isn't a tuple query! " + res.getQuery().getClass());
+			} finally {
+				if (connection == null) {
+					res.close();
+				}
+			}
+		}
+		return (ClosableResult<TupleQueryResult>) res;
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @throws java.lang.IllegalArgumentException               if the query
+	 *                                                          isn't a boolean
+	 *                                                          query
+	 * @throws org.eclipse.rdf4j.repository.RepositoryException if the
+	 *                                                          connection can't
+	 *                                                          be closed
+	 */
+	public boolean executeBooleanQuery(String sparqlQuery, int timeout) {
+		return executeBooleanQuery(null, sparqlQuery, timeout);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection  the connection to use
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @throws java.lang.IllegalArgumentException               if the query
+	 *                                                          isn't a boolean
+	 *                                                          query
+	 * @throws org.eclipse.rdf4j.repository.RepositoryException if the
+	 *                                                          connection can't
+	 *                                                          be closed
+	 */
+	public boolean executeBooleanQuery(RepositoryConnection connection, String sparqlQuery, int timeout) {
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
+		assert res != null;
+		try {
+			if (!(res.getQuery() instanceof BooleanQueryResult)) {
+				throw new IllegalArgumentException("the query isn't a boolean query! " + res.getQuery().getClass());
+			}
+			return ((BooleanQueryResult) res.getQuery()).getValue();
+		} finally {
+			if (connection == null) {
+				// we created this connection, we can close it
+				res.close();
+			}
+		}
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @throws java.lang.IllegalArgumentException if the query isn't a graph
+	 *                                            query
+	 */
+	public ClosableResult<GraphQueryResult> executeGraphQuery(String sparqlQuery, int timeout) {
+		return executeGraphQuery(null, sparqlQuery, timeout);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection  the connection to use
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @throws java.lang.IllegalArgumentException if the query isn't a graph
+	 *                                            query
+	 */
+	@SuppressWarnings("unchecked")
+	public ClosableResult<GraphQueryResult> executeGraphQuery(RepositoryConnection connection, String sparqlQuery,
+			int timeout) {
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
+		assert res != null;
+		if (!(res.getQuery() instanceof GraphQueryResult)) {
+			try {
+				throw new IllegalArgumentException("the query isn't a graph query! " + res.getQuery().getClass());
+			} finally {
+				if (connection == null) {
+					res.close();
+				}
+			}
+		}
+		return (ClosableResult<GraphQueryResult>) res.getQuery();
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection   the connection to use (null for new connection)
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
 	 * @param acceptHeader accept header (useless if out is null)
 	 * @param mimeSetter   mime setter (useless if out is null)
 	 * @param out          output stream
@@ -134,9 +302,9 @@ public class SparqlRepository {
 	 *         {@link com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult}
 	 *         for boolean queries
 	 */
-	public ClosableResult<?, ?> execute(String sparqlQuery, int timeout, String acceptHeader,
-			Consumer<String> mimeSetter, OutputStream out) {
-		RepositoryConnection connection = repository.getConnection();
+	private ClosableResult<?> execute0(RepositoryConnection connection, String sparqlQuery, int timeout,
+			String acceptHeader, Consumer<String> mimeSetter, OutputStream out) {
+		connection = Objects.requireNonNullElseGet(connection, repository::getConnection);
 		try {
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			// sparqlQuery = sparqlPrefixes+sparqlQuery;
