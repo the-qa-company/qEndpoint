@@ -21,7 +21,7 @@ body:
       placeholder: |
         I was excepting...
     validations:
-      required: true
+      required: false
   - type: textarea
     attributes:
       label: Obtained behavior
@@ -29,7 +29,7 @@ body:
       placeholder: |
         ...but this happened
     validations:
-      required: true
+      required: false
   - type: textarea
     attributes:
       label: How to reproduce
@@ -40,7 +40,7 @@ body:
         - step 3: something
         - ...
     validations:
-      required: true
+      required: false
   - type: input
     id: version
     attributes:
@@ -48,7 +48,7 @@ body:
       description: Endpoint version
       placeholder: "1.1.1"
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: dropdown_id
     attributes:
@@ -59,7 +59,7 @@ body:
         - "No"
         - "Maybe"
     validations:
-      required: true
+      required: false
   - type: textarea
     attributes:
       label: Something else?
