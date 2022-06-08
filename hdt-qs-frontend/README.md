@@ -9,7 +9,16 @@
 
 ## Run front end
 
+Before using npm, we recommend using `nvm` to manage your `node` and `npm` versions.
+
+- If you want/can use `nvm`, just type `nvm use` from the root folder of the front-end project
+- If you **don't** want to / cannot use `nvm`, use the version described in the `.nvmrc` file
+
 In the project directory, you can run:
+
+### `npm install`
+
+You may have to run it like this: `npm i --legacy-peer-deps`
 
 ### `npm start`
 
