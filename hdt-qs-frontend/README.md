@@ -3,9 +3,17 @@
 # Sparql Endpoint Frontend
 
 - [Sparql Endpoint Frontend](#sparql-endpoint-frontend)
+  - [Requirements](#requirements)
   - [Run front end](#run-front-end)
     - [`npm start`](#npm-start)
     - [`npm run build`](#npm-run-build)
+
+## Requirements
+
+We recommend using `nvm`, a `.nvmrc` file is available in the root folder of the frontend project.
+
+- node 16
+- npm 8
 
 ## Run front end
 

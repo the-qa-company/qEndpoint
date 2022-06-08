@@ -66,7 +66,7 @@ For the backend/benchmark
 
 For the frontend (not mandatory to run the backend)
 
-- Node 14
+- see specific [README](./hdt-qs-frontend/README.md)
 
 ### Installation
 
