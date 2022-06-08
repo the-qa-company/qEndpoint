@@ -5,6 +5,7 @@ import InputIcon from '@mui/icons-material/Input'
 import InfoIcon from '@mui/icons-material/Info'
 import { useNavigate } from 'react-router'
 import { Link } from 'react-router-dom'
+import config from 'common/config'
 
 import Drawer from './Drawer'
 import Item from './Item'
@@ -41,7 +42,7 @@ const tabs: TabDef[] = [
   {
     name: 'About',
     type: 'redirect',
-    path: 'https://qanswer.ai/',
+    path: config.aboutPage,
     icon: <InfoIcon />
   }
 ]
@@ -63,7 +64,7 @@ export default function NavigationBar () {
             style={{ width: retractedWidth }}
             onClick={() => navigate('/')}
           />
-          <Typography className={s.title} variant='h6' component='h1'>qEndpoint</Typography>
+          <Typography className={s.title} variant='h5' component='h1'>qEndpoint</Typography>
         </Link>
       </div>
       <Divider />

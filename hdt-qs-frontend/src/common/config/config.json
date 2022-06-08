@@ -1,3 +1,4 @@
 {
-  "endpoint": "http://localhost:1234/api/endpoint/sparql"
+  "endpoint": "http://localhost:1234/api/endpoint/sparql",
+  "aboutPage": "https://qanswer.ai/"
 }
