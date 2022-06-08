@@ -6,7 +6,7 @@
 </h1>
 
 <div align="center">
-  QEndpoint
+  qEndpoint
   <br />
   <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=bug&template=bug.md&title=bug%3A+">Report a Bug</a>
   ·
