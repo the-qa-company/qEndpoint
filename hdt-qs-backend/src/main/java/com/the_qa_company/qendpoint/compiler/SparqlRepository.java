@@ -58,7 +58,6 @@ import java.util.regex.Pattern;
  */
 public class SparqlRepository {
 	private static final Logger logger = LoggerFactory.getLogger(SparqlRepository.class);
-	private String sparqlPrefixes = "";
 	private final CompiledSail compiledSail;
 	private final SailRepository repository;
 
@@ -112,15 +111,6 @@ public class SparqlRepository {
 	 */
 	public void reindexLuceneSails() throws Exception {
 		compiledSail.reindexLuceneSails();
-	}
-
-	/**
-	 * set the sparql prefixes to put before queries
-	 *
-	 * @param sparqlPrefixes the prefixes
-	 */
-	public void setSparqlPrefixes(String sparqlPrefixes) {
-		this.sparqlPrefixes = sparqlPrefixes;
 	}
 
 	/**
@@ -419,7 +409,6 @@ public class SparqlRepository {
 	 */
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
 		// logger.info("Running update query:"+sparqlQuery);
-		sparqlQuery = sparqlPrefixes + sparqlQuery;
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
 		try (SailRepositoryConnection connection = repository.getConnection()) {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
