@@ -47,7 +47,7 @@
 
 ## About
 
-QEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.
+The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.
 
 ### Built With
 
@@ -70,7 +70,7 @@ For the frontend (not mandatory to run the backend)
 
 ### Installation
 
-- Clone the QEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
+- Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
 
@@ -143,10 +143,10 @@ Reach out to the maintainer at one of the following places:
 If you want to say **thank you** or/and support active development of qEndpoint:
 
 - Add a [GitHub Star](https://github.com/the-qa-company/qEndpoint) to the project.
-- Tweet about the QEndpoint.
+- Tweet about the qEndpoint.
 - Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com/) or your personal blog.
 
-Together, we can make QEndpoint **better**!
+Together, we can make qEndpoint **better**!
 
 ## Contributing
 
@@ -162,8 +162,8 @@ For a full list of all authors and contributors, see [the contributors page](htt
 
 ## Security
 
-QEndpoint follows good practices of security, but 100% security cannot be assured.
-QEndpoint is provided **"as is"** without any **warranty**. Use at your own risk.
+qEndpoint follows good practices of security, but 100% security cannot be assured.
+qEndpoint is provided **"as is"** without any **warranty**. Use at your own risk.
 
 _For more information and to report security issues, please refer to our [security documentation](docs/SECURITY.md)._
 
