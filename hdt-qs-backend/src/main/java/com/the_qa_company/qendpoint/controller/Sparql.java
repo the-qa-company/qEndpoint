@@ -9,7 +9,10 @@ import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
+import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
@@ -255,6 +258,24 @@ public class Sparql {
 			sparqlRepository = new SparqlRepository(compiledSail);
 			sparqlRepository.setSparqlPrefixes(sparqlPrefixes);
 			sparqlRepository.init();
+
+			// execute the a tuple query
+			try (ClosableResult<TupleQueryResult> execute = sparqlRepository.executeTupleQuery(
+					// the sparql query
+					"SELECT * WHERE { ?s ?p ?o }",
+					// the timeout
+					10)) {
+				// get the result, no need to close it, closing execute will
+				// close the result
+				TupleQueryResult result = execute.getResult();
+
+				// the tuples
+				for (BindingSet set : result) {
+					System.out.println("Subject:   " + set.getValue("s"));
+					System.out.println("Predicate: " + set.getValue("p"));
+					System.out.println("Object:    " + set.getValue("o"));
+				}
+			}
 		}
 		if (finishLoading) {
 			completeLoading();

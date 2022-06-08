@@ -84,7 +84,7 @@ You can use the project as a dependency (replace the version by the latest versi
 </dependency>
 ```
 
-Or you can get the executable jar of the endpoint `target/hdtSparqlEndpoint-VERSION-exec.jar`.
+Or you can get the executable jar of the endpoint `cp target/hdtSparqlEndpoint-*-exec.jar endpoint.jar`.
 
 ## Usage
 
@@ -93,10 +93,10 @@ Or you can get the executable jar of the endpoint `target/hdtSparqlEndpoint-VERS
 You can run the endpoint with this command
 
 ```bash
-java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar ENDPOINT_JAR &
+java -jar endpoint.jar &
 ```
 
-you can find a template of [the application.properties file in the backend source](hdt-qs-backend/src/main/resources/application-prod.properties)
+you can find a template of [the application.properties file in the backend source](hdt-qs-backend/src/main/resources/application.properties)
 
 If you have the HDT file of your graph, you can put it before loading the endpoint in the hdt-store directory (by default `hdt-store/index_dev.hdt`)
 
@@ -110,16 +110,49 @@ where `mydataset.nt` is the RDF file to load, you can use all [the formats used 
 
 ### As a dependency
 
+You can create a SPARQL repository using this method, don't forget to init the repository
+
 ```java
 // Create a SPARQL repository
 SparqlRepository repository = CompiledSail.compiler().compileToSparqlRepository();
 // Init the repository
 repository.init();
+```
 
-// ...
+You can execute SPARQL queries using the `executeTupleQuery`, `executeBooleanQuery`, `executeGraphQuery` or `execute`.
 
+```java
+// execute the a tuple query
+try (ClosableResult<TupleQueryResult> execute = sparqlRepository.executeTupleQuery(
+        // the sparql query
+        "SELECT * WHERE { ?s ?p ?o }",
+        // the timeout
+        10
+)) {
+    // get the result, no need to close it, closing execute will close the result
+    TupleQueryResult result = execute.getResult();
+
+    // the tuples
+    for (BindingSet set : result) {
+        System.out.println("Subject:   " + set.getValue("s"));
+        System.out.println("Predicate: " + set.getValue("p"));
+        System.out.println("Object:    " + set.getValue("o"));
+    }
+}
+```
+
+Don't forget to shutdown the repository after usage
+
+```java
 // Shutdown the repository (better to release resources)
 repository.shutDown();
+```
+
+You can get the RDF4J with this method
+
+```java
+// get the rdf4j repository (if required)
+SailRepository rdf4jRepo = repository.getRepository();
 ```
 
 ## Roadmap

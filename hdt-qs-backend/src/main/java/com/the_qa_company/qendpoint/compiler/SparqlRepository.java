@@ -188,14 +188,27 @@ public class SparqlRepository {
 	 * @throws java.lang.IllegalArgumentException if the query isn't a tuple
 	 *                                            query
 	 */
+	public ClosableResult<TupleQueryResult> executeTupleQuery(String sparqlQuery, int timeout) {
+		return executeTupleQuery(null, sparqlQuery, timeout);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection  the connection to use
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @throws java.lang.IllegalArgumentException if the query isn't a tuple
+	 *                                            query
+	 */
 	@SuppressWarnings("unchecked")
 	public ClosableResult<TupleQueryResult> executeTupleQuery(RepositoryConnection connection, String sparqlQuery,
 			int timeout) {
 		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
 		assert res != null;
-		if (!(res.getQuery() instanceof TupleQueryResult)) {
+		if (!(res.getResult() instanceof TupleQueryResult)) {
 			try {
-				throw new IllegalArgumentException("the query isn't a tuple query! " + res.getQuery().getClass());
+				throw new IllegalArgumentException("the query isn't a tuple query! " + res.getResult().getClass());
 			} finally {
 				if (connection == null) {
 					res.close();
@@ -238,10 +251,10 @@ public class SparqlRepository {
 		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
 		assert res != null;
 		try {
-			if (!(res.getQuery() instanceof BooleanQueryResult)) {
-				throw new IllegalArgumentException("the query isn't a boolean query! " + res.getQuery().getClass());
+			if (!(res.getResult() instanceof BooleanQueryResult)) {
+				throw new IllegalArgumentException("the query isn't a boolean query! " + res.getResult().getClass());
 			}
-			return ((BooleanQueryResult) res.getQuery()).getValue();
+			return ((BooleanQueryResult) res.getResult()).getValue();
 		} finally {
 			if (connection == null) {
 				// we created this connection, we can close it
@@ -276,16 +289,16 @@ public class SparqlRepository {
 			int timeout) {
 		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
 		assert res != null;
-		if (!(res.getQuery() instanceof GraphQueryResult)) {
+		if (!(res.getResult() instanceof GraphQueryResult)) {
 			try {
-				throw new IllegalArgumentException("the query isn't a graph query! " + res.getQuery().getClass());
+				throw new IllegalArgumentException("the query isn't a graph query! " + res.getResult().getClass());
 			} finally {
 				if (connection == null) {
 					res.close();
 				}
 			}
 		}
-		return (ClosableResult<GraphQueryResult>) res.getQuery();
+		return (ClosableResult<GraphQueryResult>) res.getResult();
 	}
 
 	/**

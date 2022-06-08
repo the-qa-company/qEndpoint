@@ -21,7 +21,7 @@ public class ClosableResult<T extends QueryResult<?>> implements AutoCloseable {
 	/**
 	 * @return the result
 	 */
-	public T getQuery() {
+	public T getResult() {
 		return query;
 	}
 
@@ -34,6 +34,10 @@ public class ClosableResult<T extends QueryResult<?>> implements AutoCloseable {
 
 	@Override
 	public void close() throws RepositoryException {
-		closeable.close();
+		try {
+			query.close();
+		} finally {
+			closeable.close();
+		}
 	}
 }
