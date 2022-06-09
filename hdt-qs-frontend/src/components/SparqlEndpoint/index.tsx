@@ -56,7 +56,7 @@ export default function SparqlEndpoint () {
     // Construct Yasgui
     const yasgui = new Yasgui(yasguiDivRef.current, {
       requestConfig: {
-        endpoint: config.endpoint,
+        endpoint: `${config.apiBase}/endpoint/sparql`,
         headers: () => ({
           timeout: timeoutRef.current || ''
         }),
