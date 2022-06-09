@@ -25,7 +25,7 @@ import java.io.PipedOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
-@CrossOrigin(origins = "http://localhost:3001")
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/endpoint")
 public class EndpointController {
