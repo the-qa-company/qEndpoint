@@ -14,6 +14,17 @@ body:
         my problem is...
     validations:
       required: true
+  - type: dropdown
+    id: dropdown_id2
+    attributes:
+      label: Type of problem
+      description: To which component is the problem related
+      options:
+        - "Back-end"
+        - "Front-end"
+        - "Other"
+    validations:
+      required: true
   - type: textarea
     attributes:
       label: Excepted behavior
