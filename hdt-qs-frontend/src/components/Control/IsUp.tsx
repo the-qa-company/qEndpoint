@@ -13,7 +13,7 @@ export default function IsUp () {
     setRequest,
     error,
     success,
-    loading,
+    loading
   } = useFastAPI()
 
   // Make the request on mount
