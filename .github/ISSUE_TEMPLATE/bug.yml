@@ -6,6 +6,16 @@ body:
     attributes:
       value: |
         Thanks for helping to improve this repository!
+  - type: checkboxes
+    id: part
+    attributes:
+      label: Part of the endpoint? (leave empty if you don't know)
+      description: Part of the endpoint? (leave empty if you don't know)
+      options:
+        - label: Backend (hdt-qs-backend)
+        - label: Frontend (hdt-qs-benchmark)
+        - label: Benchmark (hdt-qs-frontend)
+        - label: Other
   - type: textarea
     attributes:
       label: Description of the issue

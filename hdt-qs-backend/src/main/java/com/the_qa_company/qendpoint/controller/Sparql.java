@@ -9,7 +9,10 @@ import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
+import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
@@ -98,29 +101,6 @@ public class Sparql {
 
 	public static int count = 0;
 	public static int countEquals = 0;
-
-	private static final String sparqlPrefixes = String.join("\n",
-			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
-			"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>", "PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>",
-			"PREFIX dct: <http://purl.org/dc/terms/>", "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>",
-			"PREFIX owl: <http://www.w3.org/2002/07/owl#>", "PREFIX wikibase: <http://wikiba.se/ontology#>",
-			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>", "PREFIX cc: <http://creativecommons.org/ns#>",
-			"PREFIX geo: <http://www.opengis.net/ont/geosparql#>", "PREFIX prov: <http://www.w3.org/ns/prov#>",
-			"PREFIX wd: <http://www.wikidata.org/entity/>",
-			"PREFIX data: <https://www.wikidata.org/wiki/Special:EntityData/>",
-			"PREFIX s: <http://www.wikidata.org/entity/statement/>", "PREFIX ref: <http://www.wikidata.org/reference/>",
-			"PREFIX v: <http://www.wikidata.org/value/>", "PREFIX wdt: <http://www.wikidata.org/prop/direct/>",
-			"PREFIX wdtn: <http://www.wikidata.org/prop/direct-normalized/>",
-			"PREFIX p: <http://www.wikidata.org/prop/>", "PREFIX ps: <http://www.wikidata.org/prop/statement/>",
-			"PREFIX psv: <http://www.wikidata.org/prop/statement/value/>",
-			"PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>",
-			"PREFIX pq: <http://www.wikidata.org/prop/qualifier/>",
-			"PREFIX pqv: <http://www.wikidata.org/prop/qualifier/value/>",
-			"PREFIX pqn: <http://www.wikidata.org/prop/qualifier/value-normalized/>",
-			"PREFIX pr: <http://www.wikidata.org/prop/reference/>",
-			"PREFIX prv: <http://www.wikidata.org/prop/reference/value/>",
-			"PREFIX prn: <http://www.wikidata.org/prop/reference/value-normalized/>",
-			"PREFIX wdno: <http://www.wikidata.org/prop/novalue/> ");
 	final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
 	// to test the chunk development of stream
@@ -253,7 +233,6 @@ public class Sparql {
 			}
 
 			sparqlRepository = new SparqlRepository(compiledSail);
-			sparqlRepository.setSparqlPrefixes(sparqlPrefixes);
 			sparqlRepository.init();
 		}
 		if (finishLoading) {

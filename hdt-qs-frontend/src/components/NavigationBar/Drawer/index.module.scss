@@ -1,0 +1,9 @@
+.drawer {
+  box-sizing: border-box;
+  width: 200px;
+  flex-shrink: 0;
+  & :global(.MuiDrawer-paper) {
+    box-sizing: border-box;
+    width: 200px;
+  }
+}

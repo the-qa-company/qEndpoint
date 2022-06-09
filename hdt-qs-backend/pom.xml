@@ -9,7 +9,7 @@
 
     <groupId>com.the_qa_company</groupId>
     <artifactId>hdtSparqlEndpoint</artifactId>
-    <version>1.2.4</version>
+    <version>1.3.0</version>
 
     <properties>
         <java.source.version>11</java.source.version>

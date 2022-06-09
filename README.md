@@ -8,11 +8,11 @@
 <div align="center">
   qEndpoint
   <br />
-  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=bug&template=bug.md&title=bug%3A+">Report a Bug</a>
+  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=bug&template=bug.yml">Report a Bug</a>
   ·
-  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=enhancement&template=feature.md&title=feat%3A+">Request a Feature</a>
+  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=enhancement&template=feature.yml">Request a Feature</a>
   ·
-  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=question&template=support.md&title=support%3A+">Ask a Question</a>
+  <a href="https://github.com/the-qa-company/qEndpoint/issues/new?assignees=&labels=question&template=support.yml">Ask a Question</a>
 </div>
 
 <div align="center">
@@ -66,13 +66,15 @@ For the backend/benchmark
 
 For the frontend (not mandatory to run the backend)
 
-- Node 14
+- see specific [README](./hdt-qs-frontend/README.md)
 
 ### Installation
 
+#### Back-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
-- move to the back-end directory `cd hdt-qs-backend`
+- Move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
+- Run the project using `java -jar target/hdtSparqlEndpoint-1.2.3-exec.jar` (replace the version by the latest version)
 
 You can use the project as a dependency (replace the version by the latest version)
 
@@ -84,7 +86,12 @@ You can use the project as a dependency (replace the version by the latest versi
 </dependency>
 ```
 
-Or you can get the executable jar of the endpoint `target/hdtSparqlEndpoint-VERSION-exec.jar`.
+#### Front-end
+- Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
+- Move to the front-end directory `cd hdt-qs-frontend`
+- Install the packages using `npm install`
+- Run the project using `npm start`
+
 
 ## Usage
 
@@ -93,10 +100,10 @@ Or you can get the executable jar of the endpoint `target/hdtSparqlEndpoint-VERS
 You can run the endpoint with this command
 
 ```bash
-java -Xmx"$JAVA_MAX_MEM" "-Dspring.config.location=application.properties" -jar ENDPOINT_JAR &
+java -jar endpoint.jar &
 ```
 
-you can find a template of [the application.properties file in the backend source](hdt-qs-backend/src/main/resources/application-prod.properties)
+you can find a template of [the application.properties file in the backend source](hdt-qs-backend/src/main/resources/application.properties)
 
 If you have the HDT file of your graph, you can put it before loading the endpoint in the hdt-store directory (by default `hdt-store/index_dev.hdt`)
 
@@ -110,16 +117,49 @@ where `mydataset.nt` is the RDF file to load, you can use all [the formats used 
 
 ### As a dependency
 
+You can create a SPARQL repository using this method, don't forget to init the repository
+
 ```java
 // Create a SPARQL repository
 SparqlRepository repository = CompiledSail.compiler().compileToSparqlRepository();
 // Init the repository
 repository.init();
+```
 
-// ...
+You can execute SPARQL queries using the `executeTupleQuery`, `executeBooleanQuery`, `executeGraphQuery` or `execute`.
 
+```java
+// execute the a tuple query
+try (ClosableResult<TupleQueryResult> execute = sparqlRepository.executeTupleQuery(
+        // the sparql query
+        "SELECT * WHERE { ?s ?p ?o }",
+        // the timeout
+        10
+)) {
+    // get the result, no need to close it, closing execute will close the result
+    TupleQueryResult result = execute.getResult();
+
+    // the tuples
+    for (BindingSet set : result) {
+        System.out.println("Subject:   " + set.getValue("s"));
+        System.out.println("Predicate: " + set.getValue("p"));
+        System.out.println("Object:    " + set.getValue("o"));
+    }
+}
+```
+
+Don't forget to shutdown the repository after usage
+
+```java
 // Shutdown the repository (better to release resources)
 repository.shutDown();
+```
+
+You can get the RDF4J with this method
+
+```java
+// get the rdf4j repository (if required)
+SailRepository rdf4jRepo = repository.getRepository();
 ```
 
 ## Roadmap
