@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Divider, List, Typography } from '@mui/material'
 import DoubleArrowIcon from '@mui/icons-material/DoubleArrow'
-import InputIcon from '@mui/icons-material/Input'
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 import InfoIcon from '@mui/icons-material/Info'
+import ControlCameraIcon from '@mui/icons-material/ControlCamera'
+import FileUploadIcon from '@mui/icons-material/FileUpload'
 import { useNavigate } from 'react-router'
 import { Link } from 'react-router-dom'
 import config from 'common/config'
@@ -13,6 +15,7 @@ import Item from './Item'
 import s from './index.module.scss'
 
 import logo from 'res/logo/the-qa-company-notext.png'
+import * as localStorage from 'common/local-storage'
 
 export const retractedWidth = 50
 export const openWidth = 250
@@ -37,7 +40,21 @@ const tabs: TabDef[] = [
     type: 'regular',
     matcher: (path) => path.length === 0 || path === '/',
     path: '/',
-    icon: <InputIcon />
+    icon: <ArrowForwardIosIcon />
+  },
+  {
+    name: 'Upload',
+    type: 'regular',
+    matcher: (path) => path === '/upload' || path.startsWith('/upload/'),
+    path: '/upload',
+    icon: <FileUploadIcon />
+  },
+  {
+    name: 'Control',
+    type: 'regular',
+    matcher: (path) => path === '/control' || path.startsWith('/control/'),
+    path: '/control',
+    icon: <ControlCameraIcon />
   },
   {
     name: 'About',
@@ -49,7 +66,14 @@ const tabs: TabDef[] = [
 
 export default function NavigationBar () {
   const navigate = useNavigate()
-  const [open, setOpen] = useState(true)
+
+  const [open, setOpen] = useState(localStorage.getItem('isNavigationBarOpen') ?? true)
+
+  // Save open state in local storage
+  useEffect(() => {
+    localStorage.setItem('isNavigationBarOpen', open)
+  }, [open])
+
   return (
     <Drawer
       open={open}

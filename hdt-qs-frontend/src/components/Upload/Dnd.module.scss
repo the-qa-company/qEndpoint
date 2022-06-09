@@ -1,0 +1,13 @@
+.dnd {
+  width: 100%;
+  flex: 1;
+  max-height: 800px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .center {
+    text-align: center;
+  }
+}
