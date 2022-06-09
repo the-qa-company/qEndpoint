@@ -70,9 +70,11 @@ For the frontend (not mandatory to run the backend)
 
 ### Installation
 
+#### Back-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
-- move to the back-end directory `cd hdt-qs-backend`
+- Move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
+- Run the project using `java -jar target/hdtSparqlEndpoint-1.2.3-exec.jar` (replace the version by the latest version)
 
 You can use the project as a dependency (replace the version by the latest version)
 
@@ -84,7 +86,12 @@ You can use the project as a dependency (replace the version by the latest versi
 </dependency>
 ```
 
-Or you can get the executable jar of the endpoint `cp target/hdtSparqlEndpoint-*-exec.jar endpoint.jar`.
+#### Front-end
+- Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
+- Move to the front-end directory `cd hdt-qs-frontend`
+- Install the packages using `npm install`
+- Run the project using `npm start`
+
 
 ## Usage
 
