@@ -1,4 +1,4 @@
-name: Pull request Tests
+name: Pull request Tests Backend
 
 on:
   pull_request:

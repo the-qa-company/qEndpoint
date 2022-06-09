@@ -2,6 +2,16 @@ name: Task
 description: Task to perform
 labels: ["task"]
 body:
+    - type: checkboxes
+      id: part
+      attributes:
+        label: Part of the endpoint? (leave empty if you don't know)
+        description: Part of the endpoint? (leave empty if you don't know)
+        options:
+          - label: Backend (hdt-qs-backend)
+          - label: Frontend (hdt-qs-benchmark)
+          - label: Benchmark (hdt-qs-frontend)
+          - label: Other
   - type: markdown
     attributes:
       value: |

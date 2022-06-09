@@ -5,8 +5,11 @@
 - [Sparql Endpoint Frontend](#sparql-endpoint-frontend)
   - [Requirements](#requirements)
   - [Run front end](#run-front-end)
+    - [`npm install`](#npm-install)
     - [`npm start`](#npm-start)
     - [`npm run build`](#npm-run-build)
+    - [`npm run validate`](#npm-run-validate)
+    - [`npm run format`](#npm-run-format)
 
 ## Requirements
 
@@ -45,3 +48,11 @@ The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+
+### `npm run validate`
+
+Checks the code formatting with `npm run validate`. For pull requests, the validate script shouldn't return an error.
+
+### `npm run format`
+
+Format your code with `npm run format`.

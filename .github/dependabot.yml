@@ -9,3 +9,7 @@ updates:
     directory: "/hdt-qs-backend/" # Location of package manifests
     schedule:
       interval: "daily"
+  - package-ecosystem: "npm" # See documentation for possible values
+    directory: "/hdt-qs-frontend/" # Location of package manifests
+    schedule:
+      interval: "daily"

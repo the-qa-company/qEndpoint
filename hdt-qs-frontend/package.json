@@ -9,7 +9,9 @@
     "start": "PORT=3001 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "format": "tsc --noEmit && eslint src/**/*.ts{,x} --fix",
+    "validate": "tsc --noEmit && eslint src/**/*.ts{,x} --max-warnings=0"
   },
   "dependencies": {
     "@emotion/react": "^11.6.0",
