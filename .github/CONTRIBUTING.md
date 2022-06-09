@@ -22,6 +22,8 @@ Please try to create bug reports that are:
 - Fork the repository on GitHub
 - Create a new branch from `dev` with the name `GH-id123-description`, where `id123` is the id of your issue and `description` a little description of your issue.
 - Make your update to the code with commits with meaningful messages.
-- Apply the code formatter (`mvn formatter:format`), you can check the format with `mvn formatter:validate`.
+- For backend and frontend pull requests, apply the code formatter
+  - For the backend, run `mvn formatter:format`, you can check the format with `mvn formatter:validate`.
+  - For the frontend, run `npm run format`, you can check the format with `npm run validate`.
 - Squash your commits if necessary
 - Create a pull request to the `dev` branch

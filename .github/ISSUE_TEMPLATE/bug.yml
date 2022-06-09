@@ -6,23 +6,22 @@ body:
     attributes:
       value: |
         Thanks for helping to improve this repository!
+  - type: checkboxes
+    id: part
+    attributes:
+      label: Part of the endpoint? (leave empty if you don't know)
+      description: Part of the endpoint? (leave empty if you don't know)
+      options:
+        - label: Backend (hdt-qs-backend)
+        - label: Frontend (hdt-qs-benchmark)
+        - label: Benchmark (hdt-qs-frontend)
+        - label: Other
   - type: textarea
     attributes:
       label: Description of the issue
       description: Small description of the issue
       placeholder: |
         my problem is...
-    validations:
-      required: true
-  - type: dropdown
-    id: dropdown_id2
-    attributes:
-      label: Type of problem
-      description: To which component is the problem related
-      options:
-        - "Back-end"
-        - "Front-end"
-        - "Other"
     validations:
       required: true
   - type: textarea
