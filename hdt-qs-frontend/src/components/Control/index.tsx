@@ -1,16 +1,22 @@
-import React, { useEffect, useMemo } from 'react'
-import { Typography, useTheme } from '@mui/material'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { Tooltip, Typography, useTheme } from '@mui/material'
 import { LoadingButton } from '@mui/lab'
 import CallMergeIcon from '@mui/icons-material/CallMerge'
 import ListIcon from '@mui/icons-material/List'
 import { useFastAPI } from 'common/api'
 import config from 'common/config'
 import IsUp from './IsUp'
+import useAsyncEffect from 'use-async-effect'
+import { useSnackbar } from 'notistack'
 
 import s from './index.module.scss'
 
 export default function Control () {
   const theme = useTheme()
+  const { enqueueSnackbar } = useSnackbar()
+
+  const [isMerging, setIsMerging] = useState<boolean>()
+  const [isMergingTooltipVisible, setIsMergingTooltipVisible] = useState(false)
 
   // isMerging request
   const isMergingReq = useFastAPI({ autoNotify: true, errorMsg: 'Impossible to know whether the endpoint is merging or not' })
@@ -18,21 +24,68 @@ export default function Control () {
     setRequest: setIsMergingReq
   } = isMergingReq
 
-  // Make isMerging request on mount
-  useEffect(() => {
+  const checkIsMerging = useCallback(() => {
     setIsMergingReq(fetch(`${config.apiBase}/endpoint/is_merging`))
   }, [setIsMergingReq])
+
+  // Make isMerging request on mount
+  useEffect(() => {
+    checkIsMerging()
+  }, [checkIsMerging])
+
+  // Read isMerging response
+  useAsyncEffect(async () => {
+    if (isMergingReq.success && isMergingReq.res !== undefined) {
+      const parsed = await isMergingReq.res.json()
+      console.log('parsed', parsed)
+      setIsMerging(parsed.merging)
+    }
+  }, [isMergingReq.success, isMergingReq.res])
+
+  // Hide tooltip when server says it's not merging or is loading
+  useEffect(() => {
+    if (isMerging === false || isMerging === undefined) {
+      setIsMergingTooltipVisible(false)
+    }
+  }, [isMerging])
 
   // Merge request
   const mergeReq = useFastAPI({ autoNotify: true, label: 'Merge request' })
 
-  console.log(JSON.stringify(mergeReq, null, 2))
+  // Notify on merge success
+  useEffect(() => {
+    if (mergeReq.success) {
+      enqueueSnackbar('Merge request sent', { variant: 'success' })
+    }
+  }, [enqueueSnackbar, mergeReq.success])
+
+  // Update UI when merge request is finished
+  useEffect(() => {
+    if (mergeReq.finished) {
+      checkIsMerging()
+    }
+  }, [checkIsMerging, mergeReq.finished])
+
+  // Index request
+  const indexReq = useFastAPI({ autoNotify: true, label: 'Index request' })
+
+  const index = () => {
+    indexReq.setRequest(fetch(`${config.apiBase}/endpoint/reindex`))
+  }
+
+  // Notify user when indexing is finished successfully
+  useEffect(() => {
+    if (indexReq.success) {
+      enqueueSnackbar('Re-indexed successfully', { variant: 'success' })
+    }
+  }, [enqueueSnackbar, indexReq.success])
 
   const isMergingBtnLoading = useMemo(() => {
-    if (isMergingReq.loading || isMergingReq.rawRequest === undefined) return true
-    // return isMergingReq.res
+    const isRequestLaunched = isMergingReq.rawRequest !== undefined
+    if (isMergingReq.loading || !isRequestLaunched) return true
+    if (isMerging === true) return true
     return false
-  }, [isMergingReq.loading, isMergingReq.rawRequest])
+  }, [isMerging, isMergingReq.loading, isMergingReq.rawRequest])
 
   return (
     <div className={s.container}>
@@ -45,18 +98,27 @@ export default function Control () {
       <div className={s.body}>
         <IsUp />
         <div className={s.buttons}>
-          <LoadingButton
-            variant='contained'
-            startIcon={<CallMergeIcon />}
-            loading={isMergingBtnLoading}
-            onClick={() => mergeReq.setRequest(fetch(`${config.apiBase}/endpoint/merge`))}
+          <Tooltip
+            title='Merging...'
+            open={isMergingTooltipVisible}
+            onOpen={() => isMerging && setIsMergingTooltipVisible(true)}
+            onClose={() => setIsMergingTooltipVisible(false)}
           >
-            Merge
-          </LoadingButton>
+            <LoadingButton
+              variant='contained'
+              startIcon={<CallMergeIcon />}
+              loading={isMergingBtnLoading}
+              onClick={() => mergeReq.setRequest(fetch(`${config.apiBase}/endpoint/merge`))}
+            >
+              Merge
+            </LoadingButton>
+          </Tooltip>
 
           <LoadingButton
             variant='contained'
             startIcon={<ListIcon />}
+            loading={indexReq.loading}
+            onClick={index}
           >
             Re-Index
           </LoadingButton>
