@@ -226,14 +226,4 @@
             </plugin>
         </plugins>
     </build>
-    <distributionManagement>
-    <repository>
-      <id>gitlab-maven-hdt-endpoint</id>
-      <url>https://gitlab.the-qa-company.com/api/v4/projects/1/packages/maven</url>
-    </repository>
-    <snapshotRepository>
-      <id>gitlab-maven-hdt-endpoint</id>
-      <url>https://gitlab.the-qa-company.com/api/v4/projects/1/packages/maven</url>
-    </snapshotRepository>
-  </distributionManagement>
 </project>
