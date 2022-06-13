@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Package build and deploy
 
 on:
   push:
@@ -6,6 +6,11 @@ on:
       - "hdt-qs-backend/**"
       - "hdt-qs-frontend/**"
       - "scripts/**"
+      - ".github/workflows/package_build.yml"
+    branches:
+      - "master"
+      - "dev_packaging"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -48,8 +53,10 @@ jobs:
       - name: Compile backend
         run: mvn install
         working-directory: hdt-qs-backend
+      - name: move endpoint
+        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar endpoint.jar
       - name: Deploy jar
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: jar
-          path: "hdt-qs-backend/target/qendpoint-*-exec.jar"
+          path: "endpoint.jar"
