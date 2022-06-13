@@ -63,11 +63,6 @@ jobs:
         with:
           name: "endpoint.dmg"
           path: "endpoint.dmg"
-      - uses: ncipollo/release-action@v1
-        with:
-          artifacts: "endpoint.dmg"
-          bodyFile: "body.md"
-          token: ${{ secrets.GITHUB_TOKEN }}
   windows:
     needs: build
     runs-on: windows-latest
