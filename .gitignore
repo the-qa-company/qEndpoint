@@ -1,8 +1,8 @@
 hdt-qs-backend/target/
 hdt-qs-backend/*.iml
 hdt-qs-backend/.idea/
-hdt-qs-backend/hdt-store/
-hdt-qs-backend/native-store/
+hdt-qs-backend/qendpoint/hdt-store/
+hdt-qs-backend/qendpoint/native-store/
 hdt-qs-backend/COMPILER_SCHEMA.MD
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
@@ -28,6 +28,8 @@ hdt-qs-frontend/.env.production.local
 hdt-qs-frontend/npm-debug.log*
 hdt-qs-frontend/yarn-debug.log*
 hdt-qs-frontend/yarn-error.log*
+
+scripts/build
 
 .idea
 data

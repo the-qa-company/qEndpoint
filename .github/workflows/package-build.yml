@@ -1,0 +1,122 @@
+name: Package build and deploy
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Use Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache-dependency-path: hdt-qs-frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+        working-directory: hdt-qs-frontend
+      - name: Validate frontend format
+        run: npm run validate
+        working-directory: hdt-qs-frontend
+      - name: Compiling frontend
+        run: npm run build --if-present
+        working-directory: hdt-qs-frontend
+      - name: Put frontend in backend
+        run: |
+          mkdir -p hdt-qs-backend/src/main/resources/static/
+          cp -r hdt-qs-frontend/build/* hdt-qs-backend/src/main/resources/static/
+      - name: Compile backend
+        run: mvn install
+        working-directory: hdt-qs-backend
+      - name: move endpoint
+        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar endpoint.jar
+      - name: Deploy jar
+        uses: actions/upload-artifact@v3
+        with:
+          name: "endpoint.jar"
+          path: "endpoint.jar"
+  osx:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Download endpoint jar
+        uses: actions/download-artifact@v3
+        with:
+          name: "endpoint.jar"
+      - name: Package jar as dmg installer
+        run: |
+          scripts/build_package.sh scripts/jpackage_osx.cfg endpoint.jar
+          mv scripts/build/distributions/*.dmg endpoint.dmg
+      - name: Upload dmg
+        uses: actions/upload-artifact@v3
+        with:
+          name: "endpoint.dmg"
+          path: "endpoint.dmg"
+  windows:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Download endpoint jar
+        uses: actions/download-artifact@v3
+        with:
+          name: "endpoint.jar"
+      - name: Package jar as msi installer
+        run: |
+          scripts/build_package.ps1 scripts/jpackage_windows.cfg endpoint.jar
+          mv scripts/build/distributions/*.msi endpoint.msi
+      - name: Upload installer
+        uses: actions/upload-artifact@v1
+        with:
+          name: "endpoint.msi"
+          path: "endpoint.msi"
+  linux:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Download endpoint jar
+        uses: actions/download-artifact@v3
+        with:
+          name: "endpoint.jar"
+      - name: Package jar as deb installer
+        run: |
+          scripts/build_package.sh scripts/jpackage_linux.cfg endpoint.jar
+          mv scripts/build/distributions/*.deb endpoint.deb
+      - name: Upload installer
+        uses: actions/upload-artifact@v1
+        with:
+          name: "endpoint.deb"
+          path: "endpoint.deb"
+  deploy:
+    needs:
+      - linux
+      - windows
+      - osx
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+      - name: Deploy artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "endpoint.*"
+          token: ${{ secrets.GITHUB_TOKEN }}
