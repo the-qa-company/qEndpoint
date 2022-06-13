@@ -114,9 +114,13 @@ jobs:
       - uses: actions/checkout@v2
       - name: Download artifacts
         uses: actions/download-artifact@v3
+      - name: Extract artifacts
+        run: |
+          mkdir -p deploy
+          mv endpoint.*/* deploy_file
       - name: Deploy artifacts
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: "endpoint.*"
+          artifacts: "deploy_file/*"
           token: ${{ secrets.GITHUB_TOKEN }}
