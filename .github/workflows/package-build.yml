@@ -2,15 +2,8 @@ name: Package build and deploy
 
 on:
   push:
-    paths:
-      - "hdt-qs-backend/**"
-      - "hdt-qs-frontend/**"
-      - "scripts/**"
-      - ".github/workflows/package_build.yml"
-    branches:
-      - "master"
-      - "dev_packaging"
-  workflow_dispatch:
+    tags:
+    - '*'
 
 jobs:
   build:
@@ -70,6 +63,11 @@ jobs:
         with:
           name: "endpoint.dmg"
           path: "endpoint.dmg"
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "endpoint.dmg"
+          bodyFile: "body.md"
+          token: ${{ secrets.GITHUB_TOKEN }}
   windows:
     needs: build
     runs-on: windows-latest
@@ -112,3 +110,18 @@ jobs:
         with:
           name: "endpoint.deb"
           path: "endpoint.deb"
+  deploy:
+    needs:
+      - linux
+      - windows
+      - osx
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+      - name: Deploy artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "endpoint.*"
+          token: ${{ secrets.GITHUB_TOKEN }}
