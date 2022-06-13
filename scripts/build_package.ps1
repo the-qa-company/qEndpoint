@@ -1,6 +1,5 @@
 param(
     $PackageFile,
-    $Version,
     $EndpointJar
 )
 
@@ -18,11 +17,20 @@ $LicenseFile = "../LICENSE.md"
 Write-Host "Read config file"
 $ConfigData = Get-Content $PackageFile
 Write-Host "Copy endpoint"
-$execJarName = "target-$Version.jar"
+$execJarName = "target.jar"
 Copy-Item $EndpointJar "$PSScriptRoot/$inputDir/$execJarName" > $null
 
 Push-Location
 Set-Location $PSScriptRoot
+
+Set-Location ../hdt-qs-backend
+
+$Version = $(mvn help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+
+Write-Host "Version: '$Version'"
+
+Set-Location ../scripts
+
 
 Write-Host "Create jpackage config file"
 

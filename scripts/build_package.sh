@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
-if (( $# < 3 )); then
-    1>&2 echo "$0 (package file) (version) (endpoint jar)"
+if (( $# < 2 )); then
+    1>&2 echo "$0 (package file) (endpoint jar)"
     exit -1
 fi
 
 PACKAGE_FILE=$1
-VERSION=$2
-ENDPOINT_JAR=$3
+ENDPOINT_JAR=$2
 
 BASE=`dirname $0`
 
@@ -21,10 +20,18 @@ LICENSE="../LICENSE.md"
 echo "Read config file"
 CONFIG_DATA=$(cat $PACKAGE_FILE)
 echo "Copy endpoint"
-EXEC_JAR_NAME="target-$VERSION.jar"
+EXEC_JAR_NAME="endpoint.jar"
 cp $ENDPOINT_JAR "$BASE/$INPUT_DIR/$EXEC_JAR_NAME"
 
 cd $BASE
+
+cd ../hdt-qs-backend
+
+VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+
+echo "Version: '$VERSION'"
+
+cd ../scripts
 
 echo "Create jpackage config file"
 
