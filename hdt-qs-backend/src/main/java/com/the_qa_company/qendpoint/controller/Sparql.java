@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.controller;
 
+import com.the_qa_company.qendpoint.client.QEndpointClient;
 import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.CompiledSailOptions;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
@@ -9,6 +10,7 @@ import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
@@ -24,24 +26,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebInputException;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
 @Component
-public class Sparql {
+public class Sparql implements CommandLineRunner {
 	public static class MergeRequestResult {
 		private final boolean completed;
 
@@ -103,13 +110,13 @@ public class Sparql {
 	// to test the chunk development of stream
 	public long debugMaxChunkSize = -1;
 	@Value("${locationHdt}")
-	private String locationHdt;
+	private String locationHdtCfg;
 
 	@Value("${hdtIndexName}")
 	private String hdtIndexName;
 
 	@Value("${locationNative}")
-	private String locationNative;
+	private String locationNativeCfg;
 
 	@Value("${threshold}")
 	private int threshold;
@@ -125,11 +132,16 @@ public class Sparql {
 	@Value("${maxTimeoutUpdate}")
 	private int maxTimeoutUpdate;
 
+	@Value("${server.port}")
+	String port;
+
 	EndpointStore endpoint;
 	SparqlRepository sparqlRepository;
 	final Object storeLock = new Object() {};
 	boolean loading = false;
 	int queries;
+	private String locationHdt;
+	private String locationNative;
 
 	void waitLoading(int query) {
 		synchronized (storeLock) {
@@ -168,9 +180,26 @@ public class Sparql {
 		}
 	}
 
-	@Autowired
 	public void init() throws IOException {
 		initializeEndpointStore(locationHdt, true);
+	}
+
+	@Override
+	public void run(String... args) throws IOException, URISyntaxException {
+		boolean client = Arrays.stream(args).anyMatch(arg -> arg.contains("--client"));
+
+		if (client) {
+			QEndpointClient qClient = new QEndpointClient();
+			qClient.openUri(new URI("http://localhost:" + port + "/"));
+			String app = qClient.getApplicationDirectory();
+			locationHdt = app + "/qendpoint/hdt-store/";
+			locationNative = app + "/qendpoint/native-store/";
+		} else {
+			locationHdt = Path.of(locationHdtCfg).toAbsolutePath() + "/";
+			locationNative = Path.of(locationNativeCfg).toAbsolutePath() + "/";
+		}
+
+		init();
 	}
 
 	public void clearEndpointStore(String location) throws IOException {
@@ -184,15 +213,15 @@ public class Sparql {
 		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
 
-	public void initializeEndpointStore(String location, boolean finishLoading) throws IOException {
-		if (!model.containsKey(location)) {
-			model.put(location, null);
+	public void initializeEndpointStore(String ll, boolean finishLoading) throws IOException {
+		if (!model.containsKey(locationHdt)) {
+			model.put(locationHdt, null);
 			HDTSpecification spec = new HDTSpecification();
 			spec.setOptions(hdtSpec);
 
-			File hdtFile = new File(EndpointFiles.getHDTIndex(location, hdtIndexName));
+			File hdtFile = new File(EndpointFiles.getHDTIndex(locationHdt, hdtIndexName));
 			if (!hdtFile.exists()) {
-				File tempRDF = new File(location + "tmp_index.nt");
+				File tempRDF = new File(locationHdt + "tmp_index.nt");
 				Files.createDirectories(tempRDF.getParentFile().toPath());
 				Files.createFile(tempRDF.toPath());
 				try {

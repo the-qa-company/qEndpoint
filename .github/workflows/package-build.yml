@@ -1,0 +1,55 @@
+name: Backend Tests
+
+on:
+  push:
+    paths:
+      - "hdt-qs-backend/**"
+      - "hdt-qs-frontend/**"
+      - "scripts/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        jdk: [17]
+        node-version: [16.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.jdk }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: hdt-qs-frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+        working-directory: hdt-qs-frontend
+      - name: Validate frontend format
+        run: npm run validate
+        working-directory: hdt-qs-frontend
+      - name: Compiling frontend
+        run: npm run build --if-present
+        working-directory: hdt-qs-frontend
+      - name: Put frontend in backend
+        run: |
+          mkdir -p hdt-qs-backend/src/main/resources/static/
+          cp -r hdt-qs-frontend/build/* hdt-qs-backend/src/main/resources/static/
+      - name: Install backend dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: Compile backend
+        run: mvn install
+        working-directory: hdt-qs-backend
+      - name: Deploy jar
+        uses: actions/upload-artifact@v1
+        with:
+          name: jar
+          path: "hdt-qs-backend/target/qendpoint-*-exec.jar"
