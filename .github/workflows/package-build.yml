@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: "echo Branch ${{GITHUB_REF##*/}}"
+      - run: "echo Branch ${GITHUB_REF##*/}"
       - name: Set up JDK
         uses: actions/setup-java@v1
         with:
@@ -150,7 +150,7 @@ jobs:
       - name: Deploy artifacts
         uses: ncipollo/release-action@v1
         with:
-          commit: ${{GITHUB_REF##*/}}
+          commit: ${GITHUB_REF##*/}
           tag: "v${{ inputs.version }}"
           artifacts: "deploy_file/*"
           name: "Release ${{ inputs.version }}"
