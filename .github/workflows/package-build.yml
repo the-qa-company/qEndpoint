@@ -1,9 +1,8 @@
 name: Package build and deploy
 
 on:
-  push:
-    tags:
-    - '*'
+  release:
+    types: [created]
 
 jobs:
   build:
@@ -118,5 +117,6 @@ jobs:
       - name: Deploy artifacts
         uses: ncipollo/release-action@v1
         with:
+          allowUpdates: true
           artifacts: "endpoint.*"
           token: ${{ secrets.GITHUB_TOKEN }}
