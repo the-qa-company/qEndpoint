@@ -116,7 +116,7 @@ jobs:
         uses: actions/download-artifact@v3
       - name: Extract artifacts
         run: |
-          mkdir -p deploy
+          mkdir -p deploy_file
           mv endpoint.*/* deploy_file
       - name: Deploy artifacts
         uses: ncipollo/release-action@v1
