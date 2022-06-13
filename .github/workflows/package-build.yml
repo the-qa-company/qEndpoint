@@ -1,10 +1,38 @@
 name: Package build and deploy
 
-on:
-  release:
-    types: [created]
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version name'
+        required: true 
+        type: string
+      publish_maven:
+        description: 'Publish to Maven'
+        required: true 
+        type: boolean
 
 jobs:
+  publish:
+    runs-on: ubuntu-latest 
+    if: ${{ inputs.publish_maven }}
+    permissions: 
+      contents: read
+      packages: write 
+    steps:
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+      - uses: actions/checkout@v2
+      - name: maven-settings-action
+        uses: s4u/maven-settings-action@v2.5.0
+        with:
+          servers: '[{"id": "sonatype-nexus-snapshots", "username": "${{ secrets.SONATYPE_NEXUS_USERNAME }}", "password": "${{ secrets.SONATYPE_NEXUS_PASSWORD }}"},{"id": "sonatype-nexus-staging", "username": "${{ secrets.SONATYPE_NEXUS_USERNAME }}", "password": "${{ secrets.SONATYPE_NEXUS_PASSWORD }}"}]'
+      - name: Publish to the Maven Central Repository
+        run: mvn --batch-mode deploy -P release
   build:
     runs-on: ubuntu-latest
     steps:
@@ -121,6 +149,7 @@ jobs:
       - name: Deploy artifacts
         uses: ncipollo/release-action@v1
         with:
-          allowUpdates: true
           artifacts: "deploy_file/*"
+          name: "Release ${{ inputs.version }}"
+          bodyFile: "release/RELEASE.md"
           token: ${{ secrets.GITHUB_TOKEN }}
