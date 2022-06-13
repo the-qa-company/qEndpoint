@@ -10,7 +10,6 @@ import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
@@ -24,13 +23,11 @@ import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebInputException;
 
-import java.awt.Desktop;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -191,9 +188,9 @@ public class Sparql implements CommandLineRunner {
 		if (client) {
 			QEndpointClient qClient = new QEndpointClient();
 			qClient.openUri(new URI("http://localhost:" + port + "/"));
-			String app = qClient.getApplicationDirectory();
-			locationHdt = app + "/qendpoint/hdt-store/";
-			locationNative = app + "/qendpoint/native-store/";
+			Path app = qClient.getApplicationDirectory();
+			locationHdt = app.resolve("hdt-store").toAbsolutePath() + "/";
+			locationNative = app.resolve("native-store").toAbsolutePath() + "/";
 		} else {
 			locationHdt = Path.of(locationHdtCfg).toAbsolutePath() + "/";
 			locationNative = Path.of(locationNativeCfg).toAbsolutePath() + "/";
@@ -392,7 +389,7 @@ public class Sparql implements CommandLineRunner {
 
 		StopWatch timeWatch = new StopWatch();
 
-		File tempFile = new File(filename);
+		File tempFile = new File(hdtParentFile, filename);
 		// the compression will not fit in memory, cat the files in chunks and
 		// use hdtCat
 
