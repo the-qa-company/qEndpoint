@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 if (( $# < 1 )); then
-    1>&2 echo "$0 (version)"
+    1>&2 echo "$0 (version=x.y.z|edit)"
+    1>&2 echo "version = x.y.z    Set the version to x.y.z, if this is already"
+    1>&2 echo "                   the current version, it will edit the file."
+    1>&2 echo "version = edit     Edit the release file"
     exit -1
 fi
 
@@ -11,10 +14,22 @@ BASE=`dirname $0`
 
 cd $BASE
 
+if [[ "edit" == "${VERSION}" ]]; then
+    echo "edit RELEASE file"
+    vim ../release/RELEASE.md
+    exit 0
+fi
+
 cd ../hdt-qs-backend/
 
 OLD_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 echo "old version: $OLD_VERSION"
+
+if [[ "${OLD_VERSION}" == "${VERSION}" ]]; then
+    echo "the new version is the same as the old version, edit RELEASE file"
+    vim ../release/RELEASE.md
+    exit 0
+fi
 
 cp pom.xml pom.xml_backupsv
 
