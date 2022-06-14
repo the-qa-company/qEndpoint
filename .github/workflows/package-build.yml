@@ -92,6 +92,8 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: "endpoint.jar"
+      - name: Create Icon
+        run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
       - name: Package jar as dmg installer
         run: |
           scripts/build_package.sh scripts/jpackage_osx.cfg endpoint.jar
