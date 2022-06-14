@@ -59,7 +59,7 @@ public class TripleSourceTest {
 		testContextManager.prepareTestInstance(this);
 
 		// clear map to recreate endpoint store
-		sparql.model.clear();
+		sparql.init = false;
 		storageModeUnset = DebugOptionTestUtils.setStorageMode(mode);
 
 		// remove previous data
@@ -89,8 +89,8 @@ public class TripleSourceTest {
 	public void optimizedTest() throws IOException {
 		Runnable op = DebugOptionTestUtils.setOptimization(true);
 
-		sparql.clearEndpointStore(locationHdt);
-		sparql.initializeEndpointStore(locationHdt, true);
+		sparql.shutdown();
+		sparql.initializeEndpointStore(true);
 
 		op.run();
 	}
@@ -99,8 +99,8 @@ public class TripleSourceTest {
 	public void noOptimizedTest() throws IOException {
 		Runnable op = DebugOptionTestUtils.setOptimization(false);
 
-		sparql.clearEndpointStore(locationHdt);
-		sparql.initializeEndpointStore(locationHdt, true);
+		sparql.shutdown();
+		sparql.initializeEndpointStore(true);
 
 		op.run();
 	}

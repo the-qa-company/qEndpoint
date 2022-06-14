@@ -1,1 +1,2 @@
-- Add client standalone version
+- add shutdown hook
+

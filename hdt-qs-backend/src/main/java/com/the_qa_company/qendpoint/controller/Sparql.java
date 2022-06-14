@@ -28,6 +28,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebInputException;
 
+import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
@@ -102,7 +102,6 @@ public class Sparql implements CommandLineRunner {
 
 	public static int count = 0;
 	public static int countEquals = 0;
-	final HashMap<String, RepositoryConnection> model = new HashMap<>();
 
 	// to test the chunk development of stream
 	public long debugMaxChunkSize = -1;
@@ -139,6 +138,7 @@ public class Sparql implements CommandLineRunner {
 	int queries;
 	private String locationHdt;
 	private String locationNative;
+	boolean init;
 
 	void waitLoading(int query) {
 		synchronized (storeLock) {
@@ -177,13 +177,17 @@ public class Sparql implements CommandLineRunner {
 		}
 	}
 
+	/**
+	 * Init the endpoint
+	 * @throws IOException exception with the initialization
+	 */
 	public void init() throws IOException {
-		initializeEndpointStore(locationHdt, true);
+		initializeEndpointStore(true);
 	}
 
 	@Override
 	public void run(String... args) throws IOException, URISyntaxException {
-		boolean client = Arrays.stream(args).anyMatch(arg -> arg.contains("--client"));
+		boolean client = Arrays.asList(args).contains("--client");
 
 		if (client) {
 			QEndpointClient qClient = new QEndpointClient();
@@ -199,20 +203,25 @@ public class Sparql implements CommandLineRunner {
 		init();
 	}
 
-	public void clearEndpointStore(String location) throws IOException {
+	/**
+	 * shutdown the endpoint
+	 * @throws IOException io exception
+	 */
+	@PreDestroy
+	public void shutdown() throws IOException {
 		startLoading();
-		if (model.containsKey(location)) {
+		if (init) {
 			logger.info("Clear old store");
-			model.remove(location);
+			init = false;
 			sparqlRepository.shutDown();
 			endpoint = null;
 		}
 		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
 
-	public void initializeEndpointStore(String ll, boolean finishLoading) throws IOException {
-		if (!model.containsKey(locationHdt)) {
-			model.put(locationHdt, null);
+	void initializeEndpointStore(boolean finishLoading) throws IOException {
+		if (!init) {
+			init = true;
 			HDTSpecification spec = new HDTSpecification();
 			spec.setOptions(hdtSpec);
 
@@ -289,7 +298,7 @@ public class Sparql implements CommandLineRunner {
 	}
 
 	public LuceneIndexRequestResult reindexLucene() throws Exception {
-		initializeEndpointStore(locationHdt, true);
+		initializeEndpointStore(true);
 		sparqlRepository.reindexLuceneSails();
 		return new LuceneIndexRequestResult(true);
 	}
@@ -338,7 +347,7 @@ public class Sparql implements CommandLineRunner {
 			Files.deleteIfExists(Paths.get(EndpointFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
 
 			if (sparqlRepository.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
-				clearEndpointStore(locationHdt);
+				shutdown();
 				HDTSpecification spec = new HDTSpecification();
 				spec.setOptions(hdtSpec);
 				if (SailCompilerSchema.HDT_TWO_PASS_MODE.equals(sparqlRepository.getOptions().getPassMode())) {
@@ -346,10 +355,10 @@ public class Sparql implements CommandLineRunner {
 				}
 				compressToHdt(input, baseURI, filename, hdtOutput, spec);
 
-				initializeEndpointStore(locationHdt, false);
+				initializeEndpointStore(false);
 			} else {
-				clearEndpointStore(locationHdt);
-				initializeEndpointStore(locationHdt, false);
+				shutdown();
+				initializeEndpointStore(false);
 				sendUpdates(input, baseURI, filename);
 			}
 			try {

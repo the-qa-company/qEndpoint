@@ -108,7 +108,7 @@ public class FileUploadTest {
 		testContextManager.prepareTestInstance(this);
 
 		// clear map to recreate endpoint store
-		sparql.model.clear();
+		sparql.init = false;
 
 		// remove previous data
 		try {
@@ -130,7 +130,7 @@ public class FileUploadTest {
 
 	@After
 	public void complete() throws IOException {
-		sparql.clearEndpointStore(locationHdt);
+		sparql.shutdown();
 	}
 
 	private InputStream stream(String file) {

@@ -16,6 +16,8 @@ public class Application {
 			bld.headless(false);
 		}
 
+		bld.registerShutdownHook(true);
+
 		bld.run(args);
 	}
 }
