@@ -11,9 +11,19 @@ on:
         description: 'Publish to Maven'
         required: true 
         type: boolean
+      release_made:
+        description: "I have update the release/RELEASE.md file and a new version in the POM"
+        required: true 
+        type: boolean
 
 jobs:
+  check_release:
+    if: ${{ !inputs.release_made }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Release check wasn't checked"
   build:
+    if: ${{ inputs.release_made }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
