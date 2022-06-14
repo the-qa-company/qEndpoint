@@ -12,7 +12,7 @@ on:
         required: true 
         type: boolean
       release_made:
-        description: "I have update the release/RELEASE.md file and a new version in the POM"
+        description: "I have used the scripts/set_version.sh script to set the new version."
         required: true 
         type: boolean
 
