@@ -3,10 +3,6 @@ name: Package build and deploy
 on: 
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version name'
-        required: true 
-        type: string
       publish_maven:
         description: 'Publish to Maven'
         required: true 
@@ -25,9 +21,12 @@ jobs:
   build:
     if: ${{ inputs.release_made }}
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version_get.outputs.version }}
     steps:
       - uses: actions/checkout@v2
-      - run: "echo Branch ${GITHUB_REF##*/}"
+      - id: version_get
+        run: echo "::set-output name=version::$(scripts/get_version.sh)"
       - name: Set up JDK
         uses: actions/setup-java@v1
         with:
@@ -146,6 +145,7 @@ jobs:
           path: "endpoint.deb"
   deploy:
     needs:
+      - build
       - linux
       - windows
       - osx
@@ -162,8 +162,8 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           commit: ${{ github.sha }}
-          tag: "v${{ inputs.version }}"
+          tag: "v${{ needs.build.outputs.version }}"
           artifacts: "deploy_file/*"
-          name: "Release ${{ inputs.version }}"
+          name: "Release ${{ needs.build.outputs.version }}"
           bodyFile: "release/RELEASE.md"
           token: ${{ secrets.GITHUB_TOKEN }}
