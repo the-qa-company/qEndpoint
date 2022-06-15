@@ -22,7 +22,7 @@ fi
 
 cd ../hdt-qs-backend/
 
-OLD_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+OLD_VERSION=$(../scripts/get_version.sh)
 echo "old version: $OLD_VERSION"
 
 if [[ "${OLD_VERSION}" == "${VERSION}" ]]; then
@@ -37,7 +37,7 @@ echo "set new version..."
 
 mvn versions:set versions:commit -DnewVersion="$VERSION" -q
 
-NEW_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+NEW_VERSION=$(../scripts/get_version.sh)
 
 echo "new version: $NEW_VERSION"
 

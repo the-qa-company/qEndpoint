@@ -41,11 +41,13 @@ cp $LICENSE $LICENSE_BLD
 
 echo "
 $(cat jpackage.cfg)
-$CONFIG_DATA
+
 --main-jar $EXEC_JAR_NAME
 --app-version $VERSION
+
+$CONFIG_DATA
 " > "$PACKAGE_FILE_FINAL"
 
-echo "JPackage creation"
+echo "JPackage creation $PACKAGE_FILE_FINAL"
 
 jpackage "@$PACKAGE_FILE_FINAL"

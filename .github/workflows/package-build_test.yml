@@ -1,0 +1,57 @@
+name: Package build and deploy
+
+on: 
+  push:
+    branches:
+      - "dev_sign_macos"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version_get.outputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: version_get
+        run: echo "::set-output name=version::$(scripts/get_version.sh)"
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Compile backend
+        run: mvn install -DskipTests
+        working-directory: hdt-qs-backend
+      - name: move endpoint
+        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar endpoint.jar
+      - name: Deploy jar
+        uses: actions/upload-artifact@v3
+        with:
+          name: "endpoint.jar"
+          path: "endpoint.jar"
+  osx:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Download endpoint jar
+        uses: actions/download-artifact@v3
+        with:
+          name: "endpoint.jar"
+      - name: Create Icon
+        run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
+      - name: Package jar as dmg installer
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MAOS_CERTIFICATE_PWD }}
+          MACOS_KEYCHAIN_PWD: ${{ secrets.MACOS_KEYCHAIN_PWD }}
+          MACOS_DEV_ID: ${{ secrets.MACOS_DEVID }}
+          MACOS_TEAMID: ${{ secrets.MACOS_TEAMID }}
+        run: scripts/build_package_osx.sh endpoint.jar
+      - name: Upload dmg
+        uses: actions/upload-artifact@v3
+        with:
+          name: "endpoint.dmg"
+          path: "endpoint.dmg"

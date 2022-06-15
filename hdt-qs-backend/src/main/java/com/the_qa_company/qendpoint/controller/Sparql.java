@@ -179,6 +179,7 @@ public class Sparql implements CommandLineRunner {
 
 	/**
 	 * Init the endpoint
+	 *
 	 * @throws IOException exception with the initialization
 	 */
 	public void init() throws IOException {
@@ -205,6 +206,7 @@ public class Sparql implements CommandLineRunner {
 
 	/**
 	 * shutdown the endpoint
+	 *
 	 * @throws IOException io exception
 	 */
 	@PreDestroy
