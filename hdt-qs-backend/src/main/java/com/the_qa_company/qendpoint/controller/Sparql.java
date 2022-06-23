@@ -70,6 +70,18 @@ public class Sparql implements CommandLineRunner {
 		}
 	}
 
+	public static class HasLuceneIndexResult {
+		private final boolean hasLuceneIndex;
+
+		public HasLuceneIndexResult(boolean hasLuceneIndex) {
+			this.hasLuceneIndex = hasLuceneIndex;
+		}
+
+		public boolean isHasLuceneIndex() {
+			return hasLuceneIndex;
+		}
+	}
+
 	public static class IsMergingResult {
 		private final boolean merging;
 
@@ -179,6 +191,7 @@ public class Sparql implements CommandLineRunner {
 
 	/**
 	 * Init the endpoint
+	 *
 	 * @throws IOException exception with the initialization
 	 */
 	public void init() throws IOException {
@@ -205,6 +218,7 @@ public class Sparql implements CommandLineRunner {
 
 	/**
 	 * shutdown the endpoint
+	 *
 	 * @throws IOException io exception
 	 */
 	@PreDestroy
@@ -301,6 +315,13 @@ public class Sparql implements CommandLineRunner {
 		initializeEndpointStore(true);
 		sparqlRepository.reindexLuceneSails();
 		return new LuceneIndexRequestResult(true);
+	}
+
+	/**
+	 * @return if the sail has a least one lucene sail connected to it
+	 */
+	public HasLuceneIndexResult hasLuceneSail() {
+		return new HasLuceneIndexResult(sparqlRepository.hasLuceneSail());
 	}
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
