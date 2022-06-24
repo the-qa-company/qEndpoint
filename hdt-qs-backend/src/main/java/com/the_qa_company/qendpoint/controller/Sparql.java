@@ -105,14 +105,17 @@ public class Sparql implements CommandLineRunner {
 
 	// to test the chunk development of stream
 	public long debugMaxChunkSize = -1;
-	@Value("${locationHdt}")
+	@Value("${hdtStoreName}")
 	private String locationHdtCfg;
 
 	@Value("${hdtIndexName}")
 	private String hdtIndexName;
 
-	@Value("${locationNative}")
+	@Value("${nativeStoreName}")
 	private String locationNativeCfg;
+
+	@Value("${locationEndpoint}")
+	private String locationEndpointCfg;
 
 	@Value("${threshold}")
 	private int threshold;
@@ -136,6 +139,7 @@ public class Sparql implements CommandLineRunner {
 	final Object storeLock = new Object() {};
 	boolean loading = false;
 	int queries;
+	private Path applicationDirectory;
 	private String locationHdt;
 	private String locationNative;
 	boolean init;
@@ -179,6 +183,7 @@ public class Sparql implements CommandLineRunner {
 
 	/**
 	 * Init the endpoint
+	 *
 	 * @throws IOException exception with the initialization
 	 */
 	public void init() throws IOException {
@@ -192,19 +197,19 @@ public class Sparql implements CommandLineRunner {
 		if (client) {
 			QEndpointClient qClient = new QEndpointClient();
 			qClient.openUri(new URI("http://localhost:" + port + "/"));
-			Path app = qClient.getApplicationDirectory();
-			locationHdt = app.resolve("hdt-store").toAbsolutePath() + "/";
-			locationNative = app.resolve("native-store").toAbsolutePath() + "/";
+			applicationDirectory = qClient.getApplicationDirectory();
 		} else {
-			locationHdt = Path.of(locationHdtCfg).toAbsolutePath() + "/";
-			locationNative = Path.of(locationNativeCfg).toAbsolutePath() + "/";
+			applicationDirectory = Path.of(locationEndpointCfg);
 		}
+		locationHdt = applicationDirectory.resolve(locationEndpointCfg).toAbsolutePath() + "/";
+		locationNative = applicationDirectory.resolve(locationNativeCfg).toAbsolutePath() + "/";
 
 		init();
 	}
 
 	/**
 	 * shutdown the endpoint
+	 *
 	 * @throws IOException io exception
 	 */
 	@PreDestroy
@@ -225,6 +230,8 @@ public class Sparql implements CommandLineRunner {
 			HDTSpecification spec = new HDTSpecification();
 			spec.setOptions(hdtSpec);
 
+			Files.createDirectories(applicationDirectory);
+
 			File hdtFile = new File(EndpointFiles.getHDTIndex(locationHdt, hdtIndexName));
 			if (!hdtFile.exists()) {
 				File tempRDF = new File(locationHdt + "tmp_index.nt");
@@ -244,18 +251,16 @@ public class Sparql implements CommandLineRunner {
 			CompiledSailOptions.setDefaultEndpointThreshold(threshold);
 
 			EndpointFiles files = new EndpointFiles(locationNative, locationHdt, hdtIndexName);
-			InputStream stream;
-			try {
-				stream = new FileInputStream(repoModel);
-			} catch (IOException e) {
-				stream = getClass().getClassLoader().getResourceAsStream(repoModel);
-				if (stream == null) {
-					throw e;
-				}
+
+			Path p = applicationDirectory.resolve(repoModel);
+
+			if (Files.notExists(p)) {
+				// create config file
+				Files.copy(FileUtils.openFile(applicationDirectory, repoModel), p);
 			}
 
 			CompiledSail compiledSail = CompiledSail.compiler()
-					.withConfig(stream, Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
+					.withConfig(Files.newInputStream(p), Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
 					.withEndpointFiles(files).withHDTSpec(spec).compile();
 
 			NotifyingSail source = compiledSail.getSource();

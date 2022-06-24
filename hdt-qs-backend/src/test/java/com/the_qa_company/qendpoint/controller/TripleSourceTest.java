@@ -35,14 +35,8 @@ public class TripleSourceTest {
 	@Autowired
 	Sparql sparql;
 
-	@Value("${locationHdt}")
-	String locationHdt;
-
-	@Value("${hdtIndexName}")
-	String hdtIndexName;
-
-	@Value("${locationNative}")
-	String locationNative;
+	@Value("${locationEndpoint}")
+	String locationEndpoint;
 
 	private Runnable storageModeUnset;
 
@@ -64,17 +58,7 @@ public class TripleSourceTest {
 
 		// remove previous data
 		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationHdt));
-		} catch (IOException e) {
-			//
-		}
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationNative));
-		} catch (IOException e) {
-			//
-		}
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(hdtIndexName));
+			FileSystemUtils.deleteRecursively(Paths.get(locationEndpoint));
 		} catch (IOException e) {
 			//
 		}
