@@ -38,8 +38,6 @@ public class TripleSourceTest {
 	@Value("${locationEndpoint}")
 	String locationEndpoint;
 
-	private Runnable storageModeUnset;
-
 	private final IRI mode;
 
 	public TripleSourceTest(IRI mode) {
@@ -54,7 +52,7 @@ public class TripleSourceTest {
 
 		// clear map to recreate endpoint store
 		sparql.init = false;
-		storageModeUnset = DebugOptionTestUtils.setStorageMode(mode);
+		DebugOptionTestUtils.getOrCreateDebugOption().setStorageMode(mode);
 
 		// remove previous data
 		try {
@@ -66,26 +64,22 @@ public class TripleSourceTest {
 
 	@After
 	public void complete() {
-		storageModeUnset.run();
+		DebugOptionTestUtils.clearDebugOption();
 	}
 
 	@Test
 	public void optimizedTest() throws IOException {
-		Runnable op = DebugOptionTestUtils.setOptimization(true);
+		DebugOptionTestUtils.getOrCreateDebugOption().setOptimization(true);
 
 		sparql.shutdown();
 		sparql.initializeEndpointStore(true);
-
-		op.run();
 	}
 
 	@Test
 	public void noOptimizedTest() throws IOException {
-		Runnable op = DebugOptionTestUtils.setOptimization(false);
+		DebugOptionTestUtils.getOrCreateDebugOption().setOptimization(false);
 
 		sparql.shutdown();
 		sparql.initializeEndpointStore(true);
-
-		op.run();
 	}
 }

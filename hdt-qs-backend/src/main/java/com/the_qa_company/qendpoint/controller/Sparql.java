@@ -24,13 +24,12 @@ import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebInputException;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,12 +39,12 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
 @Component
-public class Sparql implements CommandLineRunner {
+public class Sparql {
+
 	public static class MergeRequestResult {
 		private final boolean completed;
 
@@ -105,6 +104,7 @@ public class Sparql implements CommandLineRunner {
 
 	// to test the chunk development of stream
 	public long debugMaxChunkSize = -1;
+
 	@Value("${hdtStoreName}")
 	private String locationHdtCfg;
 
@@ -132,17 +132,23 @@ public class Sparql implements CommandLineRunner {
 	private int maxTimeoutUpdate;
 
 	@Value("${server.port}")
-	String port;
+	String portCfg;
+
+	@Value("${qendpoint.client}")
+	boolean client;
 
 	EndpointStore endpoint;
 	SparqlRepository sparqlRepository;
+	QEndpointClient qClient;
 	final Object storeLock = new Object() {};
 	boolean loading = false;
 	int queries;
+	int port;
 	private Path applicationDirectory;
 	private String locationHdt;
 	private String locationNative;
 	boolean init;
+	boolean serverInit;
 
 	void waitLoading(int query) {
 		synchronized (storeLock) {
@@ -190,21 +196,43 @@ public class Sparql implements CommandLineRunner {
 		initializeEndpointStore(true);
 	}
 
-	@Override
-	public void run(String... args) throws IOException, URISyntaxException {
-		boolean client = Arrays.asList(args).contains("--client");
-
+	@PostConstruct
+	public void runClient() throws IOException, URISyntaxException {
 		if (client) {
-			QEndpointClient qClient = new QEndpointClient();
-			qClient.openUri(new URI("http://localhost:" + port + "/"));
+			qClient = new QEndpointClient();
 			applicationDirectory = qClient.getApplicationDirectory();
 		} else {
+			qClient = null;
 			applicationDirectory = Path.of(locationEndpointCfg);
 		}
-		locationHdt = applicationDirectory.resolve(locationEndpointCfg).toAbsolutePath() + "/";
+		locationHdt = applicationDirectory.resolve(locationHdtCfg).toAbsolutePath() + "/";
 		locationNative = applicationDirectory.resolve(locationNativeCfg).toAbsolutePath() + "/";
 
+		// set default value
+		port = Integer.parseInt(portCfg);
+
 		init();
+	}
+
+	/**
+	 * @return the server address
+	 */
+	public String getServerAddress() {
+		return "http://localhost:" + port + "/";
+	}
+
+	/**
+	 * open the server address in the web navigator
+	 */
+	public void openClient() {
+		if (qClient != null) {
+			try {
+				qClient.openUri(new URI(getServerAddress()));
+			} catch (Exception e) {
+				// ignore exception
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
@@ -248,7 +276,10 @@ public class Sparql implements CommandLineRunner {
 			}
 
 			// keep the config in application.properties
-			CompiledSailOptions.setDefaultEndpointThreshold(threshold);
+			CompiledSailOptions options = new CompiledSailOptions();
+			options.setPort(port);
+			options.setEndpointThreshold(threshold);
+			options.setHdtSpec(hdtSpec);
 
 			EndpointFiles files = new EndpointFiles(locationNative, locationHdt, hdtIndexName);
 
@@ -259,7 +290,7 @@ public class Sparql implements CommandLineRunner {
 				Files.copy(FileUtils.openFile(applicationDirectory, repoModel), p);
 			}
 
-			CompiledSail compiledSail = CompiledSail.compiler()
+			CompiledSail compiledSail = CompiledSail.compiler().withOptions(options)
 					.withConfig(Files.newInputStream(p), Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
 					.withEndpointFiles(files).withHDTSpec(spec).compile();
 
@@ -271,6 +302,12 @@ public class Sparql implements CommandLineRunner {
 
 			sparqlRepository = new SparqlRepository(compiledSail);
 			sparqlRepository.init();
+
+			// set the config port
+			if (!serverInit) {
+				serverInit = true;
+				port = sparqlRepository.getOptions().getPort();
+			}
 		}
 		if (finishLoading) {
 			completeLoading();
@@ -537,5 +574,9 @@ public class Sparql implements CommandLineRunner {
 				throw new IOException("Can't generate HDT", e);
 			}
 		}
+	}
+
+	public int getPort() {
+		return port;
 	}
 }

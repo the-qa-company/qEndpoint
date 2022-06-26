@@ -230,7 +230,7 @@ public class FileUploadTest {
 	public void loadNoSplitOnePassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size + 1;
-		DebugOptionTestUtils.setPassMode(sparql.sparqlRepository.getOptions(), SailCompilerSchema.HDT_ONE_PASS_MODE);
+		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_ONE_PASS_MODE);
 
 		sparql.loadFile(streamOut(fileName), fileName);
 
@@ -241,7 +241,7 @@ public class FileUploadTest {
 	public void loadSplitOnePassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size / 10;
-		DebugOptionTestUtils.setPassMode(sparql.sparqlRepository.getOptions(), SailCompilerSchema.HDT_ONE_PASS_MODE);
+		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_ONE_PASS_MODE);
 
 		sparql.loadFile(streamOut(fileName), fileName);
 
@@ -252,7 +252,7 @@ public class FileUploadTest {
 	public void loadNoSplitTwoPassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size + 1;
-		DebugOptionTestUtils.setPassMode(sparql.sparqlRepository.getOptions(), SailCompilerSchema.HDT_TWO_PASS_MODE);
+		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_TWO_PASS_MODE);
 
 		sparql.loadFile(streamOut(fileName), fileName);
 
@@ -263,7 +263,7 @@ public class FileUploadTest {
 	public void loadSplitTwoPassTest() throws IOException {
 		long size = fileSize(fileName);
 		sparql.debugMaxChunkSize = size / 10;
-		DebugOptionTestUtils.setPassMode(sparql.sparqlRepository.getOptions(), SailCompilerSchema.HDT_TWO_PASS_MODE);
+		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_TWO_PASS_MODE);
 
 		sparql.loadFile(streamOut(fileName), fileName);
 

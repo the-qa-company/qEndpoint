@@ -10,50 +10,56 @@ import org.eclipse.rdf4j.model.Value;
  * @author Antoine Willerval
  */
 public class CompiledSailOptions {
-	static boolean defaultDebugDisableLoading;
-	static boolean defaultDebugShowTime = false;
-	static boolean defaultDebugShowPlans = false;
-	static boolean defaultDebugShowCount = false;
-	static boolean defaultOptimization = true;
-	static IRI defaultStorageMode = SailCompilerSchema.ENDPOINTSTORE_STORAGE;
-	static IRI defaultHdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
-	static IRI defaultPassMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
-	static int defaultRdf4jSplitUpdate = SailCompilerSchema.RDF_STORE_SPLIT_STORAGE.getHandler().defaultValue();
-	static int defaultEndpointThreshold = SailCompilerSchema.ENDPOINT_THRESHOLD.getHandler().defaultValue();
 
-	public static void setDefaultEndpointThreshold(int defaultEndpointThreshold) {
-		if (defaultEndpointThreshold < 0) {
-			throw new IllegalArgumentException("Can't have a negative endpoint threshold!");
-		}
-		CompiledSailOptions.defaultEndpointThreshold = defaultEndpointThreshold;
-	}
+	// debug only
+	static CompiledSailOptions debugOptions;
 
 	/**
 	 * disable the loading of the config
 	 */
-	boolean debugDisableLoading;
-
-	boolean debugShowTime;
-	boolean debugShowPlans;
-	boolean debugShowCount;
-	boolean optimization;
-	IRI storageMode;
-	IRI hdtReadMode;
-	IRI passMode;
-	int rdf4jSplitUpdate;
-	int endpointThreshold;
+	private boolean debugDisableLoading;
+	private boolean debugShowTime;
+	private boolean debugShowPlans;
+	private boolean debugShowCount;
+	private boolean optimization;
+	private IRI storageMode;
+	private IRI hdtReadMode;
+	private IRI passMode;
+	private int rdf4jSplitUpdate;
+	private int endpointThreshold;
+	private int port;
+	private String hdtSpec;
 
 	public CompiledSailOptions() {
-		debugDisableLoading = defaultDebugDisableLoading;
-		debugShowTime = defaultDebugShowTime;
-		debugShowPlans = defaultDebugShowPlans;
-		optimization = defaultOptimization;
-		debugShowCount = defaultDebugShowCount;
-		storageMode = defaultStorageMode;
-		hdtReadMode = defaultHdtReadMode;
-		passMode = defaultPassMode;
-		rdf4jSplitUpdate = defaultRdf4jSplitUpdate;
-		endpointThreshold = defaultEndpointThreshold;
+		// set debug default values
+		if (debugOptions != null) {
+			debugDisableLoading = debugOptions.debugDisableLoading;
+			debugShowTime = debugOptions.debugShowTime;
+			debugShowPlans = debugOptions.debugShowPlans;
+			optimization = debugOptions.optimization;
+			debugShowCount = debugOptions.debugShowCount;
+			storageMode = debugOptions.storageMode;
+			hdtReadMode = debugOptions.hdtReadMode;
+			passMode = debugOptions.passMode;
+			rdf4jSplitUpdate = debugOptions.rdf4jSplitUpdate;
+			endpointThreshold = debugOptions.endpointThreshold;
+			port = debugOptions.port;
+			hdtSpec = debugOptions.hdtSpec;
+			return;
+		}
+		// set default values
+		debugDisableLoading = false;
+		debugShowTime = false;
+		debugShowPlans = false;
+		optimization = true;
+		debugShowCount = false;
+		storageMode = SailCompilerSchema.ENDPOINTSTORE_STORAGE;
+		hdtReadMode = SailCompilerSchema.HDT_READ_MODE_MAP;
+		passMode = SailCompilerSchema.HDT_TWO_PASS_MODE;
+		rdf4jSplitUpdate = SailCompilerSchema.RDF_STORE_SPLIT_STORAGE.getHandler().defaultValue();
+		endpointThreshold = SailCompilerSchema.ENDPOINT_THRESHOLD.getHandler().defaultValue();
+		port = SailCompilerSchema.SERVER_PORT.getHandler().defaultValue();
+		hdtSpec = "";
 	}
 
 	/**
@@ -69,6 +75,8 @@ public class CompiledSailOptions {
 				SailCompilerSchema.RDF_STORE_SPLIT_STORAGE);
 		endpointThreshold = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.ENDPOINT_THRESHOLD);
 		hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY);
+		port = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.SERVER_PORT);
+		hdtSpec = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_SPEC_PROPERTY);
 	}
 
 	private void add(Value value) {
@@ -93,39 +101,95 @@ public class CompiledSailOptions {
 		return debugDisableLoading;
 	}
 
+	public void setDebugDisableLoading(boolean debugDisableLoading) {
+		this.debugDisableLoading = debugDisableLoading;
+	}
+
 	public boolean isDebugShowTime() {
 		return debugShowTime;
+	}
+
+	public void setDebugShowTime(boolean debugShowTime) {
+		this.debugShowTime = debugShowTime;
 	}
 
 	public boolean isDebugShowPlans() {
 		return debugShowPlans;
 	}
 
+	public void setDebugShowPlans(boolean debugShowPlans) {
+		this.debugShowPlans = debugShowPlans;
+	}
+
 	public boolean isDebugShowCount() {
 		return debugShowCount;
+	}
+
+	public void setDebugShowCount(boolean debugShowCount) {
+		this.debugShowCount = debugShowCount;
 	}
 
 	public boolean isOptimization() {
 		return optimization;
 	}
 
+	public void setOptimization(boolean optimization) {
+		this.optimization = optimization;
+	}
+
 	public IRI getStorageMode() {
 		return storageMode;
+	}
+
+	public void setStorageMode(IRI storageMode) {
+		this.storageMode = storageMode;
 	}
 
 	public IRI getHdtReadMode() {
 		return hdtReadMode;
 	}
 
+	public void setHdtReadMode(IRI hdtReadMode) {
+		this.hdtReadMode = hdtReadMode;
+	}
+
 	public IRI getPassMode() {
 		return passMode;
+	}
+
+	public void setPassMode(IRI passMode) {
+		this.passMode = passMode;
 	}
 
 	public int getRdf4jSplitUpdate() {
 		return rdf4jSplitUpdate;
 	}
 
+	public void setRdf4jSplitUpdate(int rdf4jSplitUpdate) {
+		this.rdf4jSplitUpdate = rdf4jSplitUpdate;
+	}
+
 	public int getEndpointThreshold() {
 		return endpointThreshold;
+	}
+
+	public void setEndpointThreshold(int endpointThreshold) {
+		this.endpointThreshold = endpointThreshold;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public String getHdtSpec() {
+		return hdtSpec;
+	}
+
+	public void setHdtSpec(String hdtSpec) {
+		this.hdtSpec = hdtSpec;
 	}
 }
