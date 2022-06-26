@@ -39,14 +39,16 @@ echo "signing dmg file"
 
 mv "build/distributions/$(ls build/distributions)" "endpoint.dmg"
 
-codesign --timestamp -s "$MACOS_DEV_ID" "endpoint.dmg"
+gon -log-level=debug -log-json ./gon.json
 
-xcrun notarytool store-credentials build_keychain
-xcrun notarytool submit "endpoint.dmg" --keychain-profile build_keychain --wait
-xcrun stapler staple "endpoint.dmg"
-spctl -a -t open --context context:primary-signature -vv "endpoint.dmg"
+#codesign --timestamp -s "$MACOS_DEV_ID" "endpoint.dmg"
 
-echo "signed"
+#xcrun notarytool store-credentials build_keychain
+#xcrun notarytool submit "endpoint.dmg" --keychain-profile build_keychain --wait
+#xcrun stapler staple "endpoint.dmg"
+#spctl -a -t open --context context:primary-signature -vv "endpoint.dmg"
+
+#echo "signed"
 
 mv endpoint.dmg ..
 
