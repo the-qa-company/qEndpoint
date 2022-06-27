@@ -112,6 +112,8 @@ export default function Control () {
     return false
   }, [isMerging, isMergingReq.loading, isMergingReq.rawRequest])
 
+  const dontShowIndexButton = !indexReq.loading && (hasIndexReq.loading || (hasIndexReq.success && hasIndex === false))
+
   return (
     <div className={s.container}>
       <div className={s.centered}>
@@ -139,15 +141,16 @@ export default function Control () {
             </LoadingButton>
           </Tooltip>
 
-          <LoadingButton
-            variant='contained'
-            startIcon={<ListIcon />}
-            loading={indexReq.loading}
-            disabled={!indexReq.loading && (hasIndexReq.loading || (hasIndexReq.success && hasIndex === false))}
-            onClick={index}
-          >
-            Re-Index
-          </LoadingButton>
+          {!dontShowIndexButton && (
+            <LoadingButton
+              variant='contained'
+              startIcon={<ListIcon />}
+              loading={indexReq.loading}
+              onClick={index}
+            >
+              Re-Index
+            </LoadingButton>
+          )}
         </div>
       </div>
     </div>
