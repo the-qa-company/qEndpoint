@@ -173,6 +173,13 @@ public class CompiledSail extends SailWrapper {
 	}
 
 	/**
+	 * @return if the sail has a least one lucene sail connected to it
+	 */
+	public boolean hasLuceneSail() {
+		return !luceneSails.isEmpty();
+	}
+
+	/**
 	 * Compiler class for the
 	 * {@link com.the_qa_company.qendpoint.compiler.CompiledSail}
 	 *

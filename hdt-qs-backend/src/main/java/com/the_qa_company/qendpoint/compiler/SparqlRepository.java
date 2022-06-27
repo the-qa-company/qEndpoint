@@ -114,6 +114,13 @@ public class SparqlRepository {
 	}
 
 	/**
+	 * @return if the sail has a least one lucene sail connected to it
+	 */
+	public boolean hasLuceneSail() {
+		return compiledSail.hasLuceneSail();
+	}
+
+	/**
 	 * execute a sparql query
 	 *
 	 * @param sparqlQuery  the query
