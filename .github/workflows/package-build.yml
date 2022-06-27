@@ -94,10 +94,19 @@ jobs:
           name: "endpoint.jar"
       - name: Create Icon
         run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
-      - name: Package jar as dmg installer
+      - name: Install gon via HomeBrew for code notarization
         run: |
-          scripts/build_package.sh scripts/jpackage_osx.cfg endpoint.jar
-          mv scripts/build/distributions/*.dmg endpoint.dmg
+          brew tap mitchellh/gon
+          brew install mitchellh/gon/gon
+      - name: Package jar as dmg installer
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MAOS_CERTIFICATE_PWD }}
+          MACOS_KEYCHAIN_PWD: ${{ secrets.MACOS_KEYCHAIN_PWD }}
+          MACOS_DEV_ID: ${{ secrets.MACOS_DEVID }}
+          MACOS_TEAMID: ${{ secrets.MACOS_TEAMID }}
+          AC_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+        run: scripts/build_package_osx.sh endpoint.jar
       - name: Upload dmg
         uses: actions/upload-artifact@v3
         with:

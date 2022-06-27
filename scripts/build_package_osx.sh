@@ -41,15 +41,6 @@ mv "build/distributions/$(ls build/distributions)" "endpoint.dmg"
 
 gon -log-level=debug -log-json ./gon.json
 
-#codesign --timestamp -s "$MACOS_DEV_ID" "endpoint.dmg"
-
-#xcrun notarytool store-credentials build_keychain
-#xcrun notarytool submit "endpoint.dmg" --keychain-profile build_keychain --wait
-#xcrun stapler staple "endpoint.dmg"
-#spctl -a -t open --context context:primary-signature -vv "endpoint.dmg"
-
-#echo "signed"
-
 mv endpoint.dmg ..
 
 rm endpoint.jar tmp_jpackage_osx.cfg
