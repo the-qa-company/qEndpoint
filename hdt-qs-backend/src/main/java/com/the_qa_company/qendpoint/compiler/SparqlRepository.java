@@ -329,7 +329,11 @@ public class SparqlRepository {
 
 			if (parsedQuery instanceof ParsedTupleQuery) {
 				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-				query.setMaxExecutionTime(timeout);
+				if (timeout < 0) {
+					query.setMaxExecutionTime(getOptions().getTimeoutQuery());
+				} else {
+					query.setMaxExecutionTime(timeout);
+				}
 				boolean error = false;
 				try {
 					if (out != null) {
@@ -421,7 +425,12 @@ public class SparqlRepository {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
 			Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);
-			preparedUpdate.setMaxExecutionTime(timeout);
+
+			if (timeout < 0) {
+				preparedUpdate.setMaxExecutionTime(getOptions().getTimeoutQuery());
+			} else {
+				preparedUpdate.setMaxExecutionTime(timeout);
+			}
 
 			Stopwatch stopwatch = Stopwatch.createStarted();
 			preparedUpdate.execute();

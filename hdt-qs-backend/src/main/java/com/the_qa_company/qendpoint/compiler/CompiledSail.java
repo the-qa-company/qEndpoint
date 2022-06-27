@@ -45,11 +45,17 @@ public class CompiledSail extends SailWrapper {
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(CompiledSail.class);
-	private final CompiledSailOptions options = new CompiledSailOptions();
+	private final CompiledSailOptions options;
 	private final NotifyingSail source;
 	private final Set<LuceneSail> luceneSails = new HashSet<>();
 
 	private CompiledSail(CompiledSailCompiler config) throws IOException, SailCompiler.SailCompilerException {
+		// use set config?
+		if (config.options != null) {
+			options = config.options;
+		} else {
+			options = new CompiledSailOptions();
+		}
 		// get files or create a basic one
 		EndpointFiles files;
 		if (config.sourceSail instanceof EndpointStore) {
@@ -93,42 +99,45 @@ public class CompiledSail extends SailWrapper {
 			HDTSpecification spec = Objects.requireNonNullElseGet(config.spec, HDTSpecification::new);
 			if (config.hdtSpec != null) {
 				spec.setOptions(config.hdtSpec);
+			} else {
+				spec.setOptions(options.getHdtSpec());
 			}
 			// set the storage
-			if (options.storageMode.equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
-				if (options.passMode.equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
+			if (options.getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
+				if (options.getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 					spec.set("loader.type", "two-pass");
 				}
 				endpoint = new EndpointStore(files, spec, false,
-						options.hdtReadMode.equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
-				endpoint.setThreshold(options.endpointThreshold);
-				logger.info("Threshold for triples in Native RDF store: " + options.endpointThreshold + " triples");
+						options.getHdtReadMode().equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
+				endpoint.setThreshold(options.getEndpointThreshold());
+				logger.info(
+						"Threshold for triples in Native RDF store: " + options.getEndpointThreshold() + " triples");
 				source = endpoint;
-			} else if (options.storageMode.equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
+			} else if (options.getStorageMode().equals(SailCompilerSchema.NATIVESTORE_STORAGE)) {
 				NativeStore store = new NativeStore(new File(files.getLocationNative(), "nativeglobal"));
-				if (options.optimization) {
+				if (options.isOptimization()) {
 					source = new OptimizingSail(store, store::getFederatedServiceResolver);
 				} else {
 					source = store;
 				}
-			} else if (options.storageMode.equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
+			} else if (options.getStorageMode().equals(SailCompilerSchema.MEMORYSTORE_STORAGE)) {
 				MemoryStore store = new MemoryStore();
-				if (options.optimization) {
+				if (options.isOptimization()) {
 					source = new OptimizingSail(store, store::getFederatedServiceResolver);
 				} else {
 					source = store;
 				}
-			} else if (options.storageMode.equals(SailCompilerSchema.LMDB_STORAGE)) {
+			} else if (options.getStorageMode().equals(SailCompilerSchema.LMDB_STORAGE)) {
 				LmdbStore store = new LmdbStore(new File(files.getLocationNative(), "lmdb"));
-				if (options.optimization) {
+				if (options.isOptimization()) {
 					source = new OptimizingSail(store, store::getFederatedServiceResolver);
 				} else {
 					source = store;
 				}
 			} else {
-				throw new RuntimeException("Bad storage mode: " + options.storageMode);
+				throw new RuntimeException("Bad storage mode: " + options.getStorageMode());
 			}
-			logger.info("Using storage mode {}, optimized: {}.", options.storageMode, options.optimization);
+			logger.info("Using storage mode {}, optimized: {}.", options.getStorageMode(), options.isOptimization());
 		} else {
 			source = config.sourceSail;
 		}
@@ -198,6 +207,7 @@ public class CompiledSail extends SailWrapper {
 		private String hdtSpec;
 		private final Map<String, String> stringConfig = new HashMap<>();
 		private final List<Object> stringObject = new ArrayList<>();
+		private CompiledSailOptions options;
 
 		private CompiledSailCompiler() {
 		}
@@ -297,6 +307,18 @@ public class CompiledSail extends SailWrapper {
 		 */
 		public CompiledSailCompiler withConfig(Sail configSail) {
 			this.configSail = Objects.requireNonNull(configSail, "configSail can't be null!");
+			return this;
+		}
+
+		/**
+		 * set the options for the sail, might be overwritten by the config
+		 *
+		 * @param options the options
+		 * @return this
+		 * @throws java.lang.NullPointerException a parameter is null
+		 */
+		public CompiledSailCompiler withOptions(CompiledSailOptions options) {
+			this.options = Objects.requireNonNull(options, "options can't be null!");
 			return this;
 		}
 

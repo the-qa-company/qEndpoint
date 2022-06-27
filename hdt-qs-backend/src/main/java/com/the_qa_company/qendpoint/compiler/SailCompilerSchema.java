@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Schema describing the model sail nodes,
@@ -185,6 +187,12 @@ public class SailCompilerSchema {
 			"The storage mode lmdb");
 
 	/**
+	 * mdlc:hdtSpec
+	 */
+	public static final Property<String, StringTypeValueHandler> HDT_SPEC_PROPERTY = propertyStr("hdtSpec",
+			"The hdt spec", "");
+
+	/**
 	 * mdlc:hdtReadMode PROPERTY
 	 */
 	public static final Property<IRI, IRITypeValueHandler> HDT_READ_MODE_PROPERTY = propertyIri("hdtReadMode",
@@ -215,6 +223,22 @@ public class SailCompilerSchema {
 	 */
 	public static final Property<Integer, NumberTypeValueHandler> ENDPOINT_THRESHOLD = propertyInt("endpointThreshold",
 			"The threshold before merging the endpoint", 1_000_000, 0);
+	/**
+	 * mdlc:serverPort
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> SERVER_PORT = propertyInt("serverPort",
+			"The endpoint server port", 1234, 1, (2 << 15) - 1);
+	/**
+	 * mdlc:timeoutUpdate
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> TIMEOUT_UPDATE = propertyInt("timeoutUpdate",
+			"the maximum time for update query, in second", 300, 0);
+	/**
+	 * mdlc:timeoutQuery
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> TIMEOUT_QUERY = propertyInt("timeoutQuery",
+			"the maximum time for non-update query, in second", 300, 0);
+
 	/**
 	 * mdlc:hdtPassMode property
 	 */
@@ -275,6 +299,10 @@ public class SailCompilerSchema {
 
 	private static Property<IRI, IRITypeValueHandler> propertyIri(String name, String desc) {
 		return property(name, desc, new IRITypeValueHandler());
+	}
+
+	private static Property<String, StringTypeValueHandler> propertyStr(String name, String desc, String defaultValue) {
+		return property(name, desc, new StringTypeValueHandler(defaultValue));
 	}
 
 	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc, int defaultValue) {
@@ -481,6 +509,52 @@ public class SailCompilerSchema {
 		}
 
 		default void setParent(Property<T, ? extends ValueHandler<T>> p) {
+		}
+	}
+
+	public static class StringTypeValueHandler implements ValueHandler<String> {
+		private Property<String, ? extends ValueHandler<String>> parent;
+		private final String defaultValue;
+		private final Pattern regex;
+
+		public StringTypeValueHandler(String defaultValue) {
+			this(defaultValue, (Pattern) null);
+		}
+
+		public StringTypeValueHandler(String defaultValue, String regex) {
+			this(defaultValue, regex == null ? null : Pattern.compile(regex));
+		}
+
+		public StringTypeValueHandler(String defaultValue, Pattern regex) {
+			this.defaultValue = defaultValue;
+			this.regex = regex;
+		}
+
+		@Override
+		public void setParent(Property<String, ? extends ValueHandler<String>> p) {
+			assert parent == null : "parent can't be null";
+			parent = p;
+		}
+
+		@Override
+		public String defaultValue() {
+			return defaultValue;
+		}
+
+		@Override
+		public String validate(Value v) throws SailCompiler.SailCompilerException {
+			if (!(v instanceof Literal)) {
+				throw new SailCompiler.SailCompilerException(
+						v + " is not a valid literal value for the property " + parent);
+			}
+			String val = v.stringValue();
+			if (regex != null) {
+				if (!regex.matcher(val).matches()) {
+					throw new SailCompiler.SailCompilerException(
+							v + " is not a valid value for the property " + parent + ", regex: " + regex);
+				}
+			}
+			return val;
 		}
 	}
 
