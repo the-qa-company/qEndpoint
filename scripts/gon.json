@@ -1,0 +1,11 @@
+{
+  "notarize": [{
+    "path": "endpoint.dmg",
+    "bundle_id": "com.the-qa-company.qEndpoint",
+    "staple": true
+  }],
+
+  "apple_id": {
+     "username": "dennis.diefenbach@googlemail.com"
+  }
+}
