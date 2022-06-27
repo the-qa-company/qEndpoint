@@ -9,6 +9,12 @@ mdlc:main mdlc:node _:mainNode .
 # Describe the endpoint server port
 # mdlc:main mdlc:serverPort 1234 .
 
+# Describe the maximum time for a non-update query (in seconds), 0 = infinity
+# mdlc:main mdlc:timeoutQuery 300 .
+
+# Describe the maximum time for an update query (in seconds), 0 = infinity
+# mdlc:main mdlc:timeoutUpdate 300 .
+
 # Describe the storage mode of the endpoint
 # mdlc:main mdlc:storageMode mdlc:endpointStoreStorage .
 

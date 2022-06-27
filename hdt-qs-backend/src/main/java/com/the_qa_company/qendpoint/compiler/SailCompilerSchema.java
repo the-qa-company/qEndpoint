@@ -229,6 +229,17 @@ public class SailCompilerSchema {
 	public static final Property<Integer, NumberTypeValueHandler> SERVER_PORT = propertyInt("serverPort",
 			"The endpoint server port", 1234, 1, (2 << 15) - 1);
 	/**
+	 * mdlc:timeoutUpdate
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> TIMEOUT_UPDATE = propertyInt("timeoutUpdate",
+			"the maximum time for update query, in second", 300, 0);
+	/**
+	 * mdlc:timeoutQuery
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> TIMEOUT_QUERY = propertyInt("timeoutQuery",
+			"the maximum time for non-update query, in second", 300, 0);
+
+	/**
 	 * mdlc:hdtPassMode property
 	 */
 	public static final Property<IRI, IRITypeValueHandler> HDT_PASS_MODE_PROPERTY = propertyIri("hdtPassMode",
@@ -503,25 +514,26 @@ public class SailCompilerSchema {
 
 	public static class StringTypeValueHandler implements ValueHandler<String> {
 		private Property<String, ? extends ValueHandler<String>> parent;
-		private String defaultValue;
-		private Pattern regex;
+		private final String defaultValue;
+		private final Pattern regex;
 
 		public StringTypeValueHandler(String defaultValue) {
+			this(defaultValue, (Pattern) null);
+		}
+
+		public StringTypeValueHandler(String defaultValue, String regex) {
+			this(defaultValue, regex == null ? null : Pattern.compile(regex));
+		}
+
+		public StringTypeValueHandler(String defaultValue, Pattern regex) {
 			this.defaultValue = defaultValue;
+			this.regex = regex;
 		}
 
 		@Override
 		public void setParent(Property<String, ? extends ValueHandler<String>> p) {
 			assert parent == null : "parent can't be null";
 			parent = p;
-		}
-
-		public void setRegex(Pattern regex) {
-			this.regex = regex;
-		}
-
-		public void setRegex(String regex) {
-			setRegex(Pattern.compile(regex));
 		}
 
 		@Override

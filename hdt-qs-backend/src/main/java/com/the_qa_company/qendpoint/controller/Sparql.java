@@ -127,9 +127,9 @@ public class Sparql {
 	private String repoModel;
 
 	@Value("${maxTimeout}")
-	private int maxTimeout;
+	private int maxTimeoutCfg;
 	@Value("${maxTimeoutUpdate}")
-	private int maxTimeoutUpdate;
+	private int maxTimeoutUpdateCfg;
 
 	@Value("${server.port}")
 	String portCfg;
@@ -280,6 +280,8 @@ public class Sparql {
 			options.setPort(port);
 			options.setEndpointThreshold(threshold);
 			options.setHdtSpec(hdtSpec);
+			options.setTimeoutQuery(maxTimeoutCfg);
+			options.setTimeoutUpdate(maxTimeoutUpdateCfg);
 
 			EndpointFiles files = new EndpointFiles(locationNative, locationHdt, hdtIndexName);
 
@@ -292,7 +294,7 @@ public class Sparql {
 
 			CompiledSail compiledSail = CompiledSail.compiler().withOptions(options)
 					.withConfig(Files.newInputStream(p), Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
-					.withEndpointFiles(files).withHDTSpec(spec).compile();
+					.withEndpointFiles(files).compile();
 
 			NotifyingSail source = compiledSail.getSource();
 
@@ -303,10 +305,11 @@ public class Sparql {
 			sparqlRepository = new SparqlRepository(compiledSail);
 			sparqlRepository.init();
 
-			// set the config port
+			// set the config
 			if (!serverInit) {
 				serverInit = true;
-				port = sparqlRepository.getOptions().getPort();
+				CompiledSailOptions opt = sparqlRepository.getOptions();
+				port = opt.getPort();
 			}
 		}
 		if (finishLoading) {
@@ -347,11 +350,6 @@ public class Sparql {
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out) {
-		if (timeout == 0) {
-			timeout = maxTimeout;
-		} else if (timeout < 0) {
-			throw new ServerWebInputException("negative timeout!");
-		}
 		waitLoading(1);
 		try {
 			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out);
@@ -361,11 +359,6 @@ public class Sparql {
 	}
 
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
-		if (timeout == 0) {
-			timeout = maxTimeoutUpdate;
-		} else if (timeout < 0) {
-			throw new ServerWebInputException("negative timeout!");
-		}
 		logger.info("timeout: " + timeout);
 		// logger.info("Running update query:"+sparqlQuery);
 		waitLoading(1);

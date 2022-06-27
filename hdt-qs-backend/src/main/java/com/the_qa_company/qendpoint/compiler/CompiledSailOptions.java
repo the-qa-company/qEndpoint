@@ -29,6 +29,8 @@ public class CompiledSailOptions {
 	private int endpointThreshold;
 	private int port;
 	private String hdtSpec;
+	private int timeoutUpdate;
+	private int timeoutQuery;
 
 	public CompiledSailOptions() {
 		// set debug default values
@@ -45,6 +47,8 @@ public class CompiledSailOptions {
 			endpointThreshold = debugOptions.endpointThreshold;
 			port = debugOptions.port;
 			hdtSpec = debugOptions.hdtSpec;
+			timeoutUpdate = debugOptions.timeoutUpdate;
+			timeoutQuery = debugOptions.timeoutQuery;
 			return;
 		}
 		// set default values
@@ -60,6 +64,8 @@ public class CompiledSailOptions {
 		endpointThreshold = SailCompilerSchema.ENDPOINT_THRESHOLD.getHandler().defaultValue();
 		port = SailCompilerSchema.SERVER_PORT.getHandler().defaultValue();
 		hdtSpec = "";
+		timeoutUpdate = SailCompilerSchema.TIMEOUT_UPDATE.getHandler().defaultValue();
+		timeoutQuery = SailCompilerSchema.TIMEOUT_QUERY.getHandler().defaultValue();
 	}
 
 	/**
@@ -77,6 +83,8 @@ public class CompiledSailOptions {
 		hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY);
 		port = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.SERVER_PORT);
 		hdtSpec = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_SPEC_PROPERTY);
+		timeoutUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_UPDATE);
+		timeoutQuery = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_QUERY);
 	}
 
 	private void add(Value value) {
@@ -191,5 +199,21 @@ public class CompiledSailOptions {
 
 	public void setHdtSpec(String hdtSpec) {
 		this.hdtSpec = hdtSpec;
+	}
+
+	public int getTimeoutUpdate() {
+		return timeoutUpdate;
+	}
+
+	public void setTimeoutUpdate(int timeoutUpdate) {
+		this.timeoutUpdate = timeoutUpdate;
+	}
+
+	public int getTimeoutQuery() {
+		return timeoutQuery;
+	}
+
+	public void setTimeoutQuery(int timeoutQuery) {
+		this.timeoutQuery = timeoutQuery;
 	}
 }
