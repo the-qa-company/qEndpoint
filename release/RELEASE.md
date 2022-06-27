@@ -1,1 +1,3 @@
-- Add client standalone version
+- add shutdown hook
+- fix windows package
+

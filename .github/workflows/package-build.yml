@@ -3,10 +3,6 @@ name: Package build and deploy
 on: 
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version name'
-        required: true 
-        type: string
       publish_maven:
         description: 'Publish to Maven'
         required: true 
@@ -25,9 +21,12 @@ jobs:
   build:
     if: ${{ inputs.release_made }}
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version_get.outputs.version }}
     steps:
       - uses: actions/checkout@v2
-      - run: "echo Branch ${GITHUB_REF##*/}"
+      - id: version_get
+        run: echo "::set-output name=version::$(scripts/get_version.sh)"
       - name: Set up JDK
         uses: actions/setup-java@v1
         with:
@@ -93,10 +92,21 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: "endpoint.jar"
-      - name: Package jar as dmg installer
+      - name: Create Icon
+        run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
+      - name: Install gon via HomeBrew for code notarization
         run: |
-          scripts/build_package.sh scripts/jpackage_osx.cfg endpoint.jar
-          mv scripts/build/distributions/*.dmg endpoint.dmg
+          brew tap mitchellh/gon
+          brew install mitchellh/gon/gon
+      - name: Package jar as dmg installer
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MAOS_CERTIFICATE_PWD }}
+          MACOS_KEYCHAIN_PWD: ${{ secrets.MACOS_KEYCHAIN_PWD }}
+          MACOS_DEV_ID: ${{ secrets.MACOS_DEVID }}
+          MACOS_TEAMID: ${{ secrets.MACOS_TEAMID }}
+          AC_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+        run: scripts/build_package_osx.sh endpoint.jar
       - name: Upload dmg
         uses: actions/upload-artifact@v3
         with:
@@ -146,6 +156,7 @@ jobs:
           path: "endpoint.deb"
   deploy:
     needs:
+      - build
       - linux
       - windows
       - osx
@@ -162,8 +173,8 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           commit: ${{ github.sha }}
-          tag: "v${{ inputs.version }}"
+          tag: "v${{ needs.build.outputs.version }}"
           artifacts: "deploy_file/*"
-          name: "Release ${{ inputs.version }}"
+          name: "Release ${{ needs.build.outputs.version }}"
           bodyFile: "release/RELEASE.md"
           token: ${{ secrets.GITHUB_TOKEN }}

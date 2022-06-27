@@ -35,16 +35,8 @@ public class TripleSourceTest {
 	@Autowired
 	Sparql sparql;
 
-	@Value("${locationHdt}")
-	String locationHdt;
-
-	@Value("${hdtIndexName}")
-	String hdtIndexName;
-
-	@Value("${locationNative}")
-	String locationNative;
-
-	private Runnable storageModeUnset;
+	@Value("${locationEndpoint}")
+	String locationEndpoint;
 
 	private final IRI mode;
 
@@ -59,22 +51,12 @@ public class TripleSourceTest {
 		testContextManager.prepareTestInstance(this);
 
 		// clear map to recreate endpoint store
-		sparql.model.clear();
-		storageModeUnset = DebugOptionTestUtils.setStorageMode(mode);
+		sparql.init = false;
+		DebugOptionTestUtils.getOrCreateDebugOption().setStorageMode(mode);
 
 		// remove previous data
 		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationHdt));
-		} catch (IOException e) {
-			//
-		}
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationNative));
-		} catch (IOException e) {
-			//
-		}
-		try {
-			FileSystemUtils.deleteRecursively(Paths.get(hdtIndexName));
+			FileSystemUtils.deleteRecursively(Paths.get(locationEndpoint));
 		} catch (IOException e) {
 			//
 		}
@@ -82,26 +64,22 @@ public class TripleSourceTest {
 
 	@After
 	public void complete() {
-		storageModeUnset.run();
+		DebugOptionTestUtils.clearDebugOption();
 	}
 
 	@Test
 	public void optimizedTest() throws IOException {
-		Runnable op = DebugOptionTestUtils.setOptimization(true);
+		DebugOptionTestUtils.getOrCreateDebugOption().setOptimization(true);
 
-		sparql.clearEndpointStore(locationHdt);
-		sparql.initializeEndpointStore(locationHdt, true);
-
-		op.run();
+		sparql.shutdown();
+		sparql.initializeEndpointStore(true);
 	}
 
 	@Test
 	public void noOptimizedTest() throws IOException {
-		Runnable op = DebugOptionTestUtils.setOptimization(false);
+		DebugOptionTestUtils.getOrCreateDebugOption().setOptimization(false);
 
-		sparql.clearEndpointStore(locationHdt);
-		sparql.initializeEndpointStore(locationHdt, true);
-
-		op.run();
+		sparql.shutdown();
+		sparql.initializeEndpointStore(true);
 	}
 }

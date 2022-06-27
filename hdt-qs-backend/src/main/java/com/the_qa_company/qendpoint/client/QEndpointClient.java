@@ -39,7 +39,7 @@ public class QEndpointClient extends JFrame {
 
 		String applicationDirectory;
 		if (SystemUtils.IS_OS_WINDOWS) {
-			applicationDirectory = System.getProperty("AppData");
+			applicationDirectory = System.getenv("APPDATA");
 		} else if (SystemUtils.IS_OS_MAC_OSX) {
 			applicationDirectory = SystemUtils.USER_HOME == null ? null
 					: (SystemUtils.USER_HOME + "/Library/Application Support/qendpoint");

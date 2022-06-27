@@ -39,7 +39,7 @@ public class EndpointController {
 			@RequestParam(value = "update", required = false) final String updateQuery,
 			@RequestParam(value = "format", defaultValue = "json") final String format,
 			@RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-			@RequestHeader(value = "timeout", defaultValue = "0") int timeout,
+			@RequestHeader(value = "timeout", defaultValue = "-1") int timeout,
 			@RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
 			@RequestBody(required = false) String body, HttpServletResponse response) throws IOException {
@@ -62,7 +62,7 @@ public class EndpointController {
 	public void sparqlUpdate(@RequestParam(value = "query") final String query,
 			@RequestParam(value = "format", defaultValue = "json") final String format,
 			@RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
-			@RequestParam(value = "timeout", defaultValue = "0") int timeout, HttpServletResponse response)
+			@RequestParam(value = "timeout", defaultValue = "-1") int timeout, HttpServletResponse response)
 			throws IOException {
 		logger.info("Query " + query);
 		if (format.equals("json")) {
@@ -155,6 +155,11 @@ public class EndpointController {
 	@GetMapping("/reindex")
 	public ResponseEntity<Sparql.LuceneIndexRequestResult> reindex() throws Exception {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.reindexLucene());
+	}
+
+	@GetMapping("/has_index")
+	public ResponseEntity<Sparql.HasLuceneIndexResult> hasIndex() {
+		return ResponseEntity.status(HttpStatus.OK).body(sparql.hasLuceneSail());
 	}
 
 	@GetMapping("/is_merging")

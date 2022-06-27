@@ -2,25 +2,40 @@
 @prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
 
 # Describe the main node to use: _:mainNode
-mdlc:main mdlc:node _:mainNode ;
-          # Describe the storage mode of the endpoint
-          mdlc:storageMode mdlc:endpointStoreStorage ;
-          # Describe the loading method of the HDT, using LOAD or MAP
-          mdlc:hdtReadMode mdlc:hdtLoadReadMode ;
-          # Describe the default split for native store storages
-          mdlc:rdfStoreSplit 1000 ;
-          # Enable to show the time of the executed queries
-          # mdlc:option mdlc:debugShowTime ;
-          # Enable to show the plan of the executed queries
-          # mdlc:option mdlc:debugShowPlan ;
-          # Describe custom strings for the mdlc:parsedString format, will be available with ${key}
-          mdlc:parsedStringParam [
-                                     mdlc:paramKey "luceneEvalMode" ;
-                                     mdlc:paramValue "NATIVE"
-                                 ] , [
-                                     mdlc:paramKey "luceneWktFields" ;
-                                     mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127"
-                                 ] .
+
+# Describe the main node to connect to the source
+mdlc:main mdlc:node _:mainNode .
+
+# Describe the endpoint server port
+# mdlc:main mdlc:serverPort 1234 .
+
+# Describe the maximum time for a non-update query (in seconds), 0 = infinity
+# mdlc:main mdlc:timeoutQuery 300 .
+
+# Describe the maximum time for an update query (in seconds), 0 = infinity
+# mdlc:main mdlc:timeoutUpdate 300 .
+
+# Describe the storage mode of the endpoint
+# mdlc:main mdlc:storageMode mdlc:endpointStoreStorage .
+
+# Describe the loading method of the HDT, using LOAD or MAP
+# mdlc:main mdlc:hdtReadMode mdlc:hdtLoadReadMode .
+
+# Describe the loading specs of the HDT
+# mdlc:main mdlc:hdtSpec "" .
+
+# Describe the default split for native store storages
+# mdlc:main mdlc:rdfStoreSplit 1000 .
+
+# Enable to show the time of the executed queries
+# mdlc:main mdlc:option mdlc:debugShowTime .
+
+# Enable to show the plan of the executed queries
+# mdlc:main mdlc:option mdlc:debugShowPlan .
+
+# Describe custom strings for the mdlc:parsedString format, will be available with ${key}
+mdlc:main mdlc:parsedStringParam [ mdlc:paramKey "luceneEvalMode" ; mdlc:paramValue "NATIVE" ] .
+mdlc:main mdlc:parsedStringParam [ mdlc:paramKey "luceneWktFields" ; mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ] .
 
 # Create a lucene node for full-text search
 _:mainNode mdlc:type mdlc:luceneNode ;

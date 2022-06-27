@@ -17,6 +17,32 @@ export default function Control () {
 
   const [isMerging, setIsMerging] = useState<boolean>()
   const [isMergingTooltipVisible, setIsMergingTooltipVisible] = useState(false)
+  const [hasIndex, setHasIndex] = useState<boolean>()
+
+  // hasIndex request
+  const hasIndexReq = useFastAPI({ autoNotify: true, errorMsg: 'Impossible to know if the endpoint has an index' })
+  const {
+    setRequest: setHasIndexRequest
+  } = hasIndexReq
+
+  const checkHasIndex = useCallback(() => {
+    setHasIndexRequest(fetch(`${config.apiBase}/endpoint/has_index`))
+  }, [setHasIndexRequest])
+
+  // Make hasIndex request on mount
+  useEffect(() => {
+    checkHasIndex()
+  }, [checkHasIndex])
+
+  // Read hasIndex response
+  useAsyncEffect(async () => {
+    if (hasIndexReq.success && hasIndexReq.res !== undefined) {
+      const parsed = await hasIndexReq.res.json()
+      if (typeof parsed.hasLuceneIndex === 'boolean') {
+        setHasIndex(parsed.hasLuceneIndex)
+      }
+    }
+  }, [hasIndexReq.success, hasIndexReq.res])
 
   // isMerging request
   const isMergingReq = useFastAPI({ autoNotify: true, errorMsg: 'Impossible to know whether the endpoint is merging or not' })
@@ -37,7 +63,6 @@ export default function Control () {
   useAsyncEffect(async () => {
     if (isMergingReq.success && isMergingReq.res !== undefined) {
       const parsed = await isMergingReq.res.json()
-      console.log('parsed', parsed)
       setIsMerging(parsed.merging)
     }
   }, [isMergingReq.success, isMergingReq.res])
@@ -87,6 +112,8 @@ export default function Control () {
     return false
   }, [isMerging, isMergingReq.loading, isMergingReq.rawRequest])
 
+  const dontShowIndexButton = !indexReq.loading && (hasIndexReq.loading || (hasIndexReq.success && hasIndex === false))
+
   return (
     <div className={s.container}>
       <div className={s.centered}>
@@ -114,14 +141,16 @@ export default function Control () {
             </LoadingButton>
           </Tooltip>
 
-          <LoadingButton
-            variant='contained'
-            startIcon={<ListIcon />}
-            loading={indexReq.loading}
-            onClick={index}
-          >
-            Re-Index
-          </LoadingButton>
+          {!dontShowIndexButton && (
+            <LoadingButton
+              variant='contained'
+              startIcon={<ListIcon />}
+              loading={indexReq.loading}
+              onClick={index}
+            >
+              Re-Index
+            </LoadingButton>
+          )}
         </div>
       </div>
     </div>
