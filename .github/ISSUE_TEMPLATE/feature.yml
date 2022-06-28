@@ -13,8 +13,8 @@ body:
       description: Part of the endpoint? (leave empty if you don't know)
       options:
         - label: Backend (hdt-qs-backend)
-        - label: Frontend (hdt-qs-benchmark)
-        - label: Benchmark (hdt-qs-frontend)
+        - label: Frontend (hdt-qs-frontend)
+        - label: Benchmark (hdt-qs-benchmark)
         - label: Other
   - type: textarea
     attributes:
