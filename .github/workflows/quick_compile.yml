@@ -1,0 +1,43 @@
+name: Quick compile
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version_get.outputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: version_get
+        run: echo "::set-output name=version::$(scripts/get_version.sh)"
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Use Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache-dependency-path: hdt-qs-frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+        working-directory: hdt-qs-frontend
+      - name: Compiling frontend
+        run: npm run build --if-present
+        working-directory: hdt-qs-frontend
+      - name: Put frontend in backend
+        run: |
+          mkdir -p hdt-qs-backend/src/main/resources/static/
+          cp -r hdt-qs-frontend/build/* hdt-qs-backend/src/main/resources/static/
+      - name: Compile backend
+        run: mvn install -DskipTests
+        working-directory: hdt-qs-backend
+      - name: move endpoint
+        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar endpoint.jar
+      - name: Deploy jar
+        uses: actions/upload-artifact@v3
+        with:
+          name: "endpoint.jar"
+          path: "endpoint.jar"
+
