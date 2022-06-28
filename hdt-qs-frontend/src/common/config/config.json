@@ -1,4 +1,4 @@
 {
-  "apiBase": "http://localhost:1234/api",
+  "apiBaseDev": "http://localhost:1234/api",
   "aboutPage": "https://qanswer.ai/"
 }
