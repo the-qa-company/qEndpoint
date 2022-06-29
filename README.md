@@ -70,11 +70,13 @@ For the frontend (not mandatory to run the backend)
 
 ### Installation
 
-### Application
+#### Installers
 
-For each release we generate we generate installers for Linux, MacOS and Windows. You can find them [here](https://github.com/the-qa-company/qEndpoint/releases)
+Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases)
 
-#### Back-end
+#### Code
+
+##### Back-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
@@ -90,7 +92,7 @@ You can use the project as a dependency (replace the version by the latest versi
 </dependency>
 ```
 
-#### Front-end
+##### Front-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the front-end directory `cd hdt-qs-frontend`
 - Install the packages using `npm install`
