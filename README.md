@@ -194,6 +194,13 @@ If you want to say **thank you** or/and support active development of qEndpoint:
 
 Together, we can make qEndpoint **better**!
 
+## Connecting with your Wikibase
+
+- run the qEndpoint locally
+- `cd wikibase`
+- run ` 
+java -cp wikidata-query-tools-0.3.59-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update --sparqlUrl http://localhost:1234/api/endpoint/sparql --wikibaseHost https://linkedopendata.eu/ --wikibaseUrl https://linkedopendata.eu/ --conceptUri https://linkedopendata.eu/ --wikibaseScheme https --entityNamespaces 120,122 --start 2022-06-28T11:27:08Z` (adapt the parameters to your wikibase, in this case we are querying the "Eu Knowledge Graph")
+
 ## Contributing
 
 First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
