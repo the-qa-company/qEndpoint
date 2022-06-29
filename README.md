@@ -70,6 +70,10 @@ For the frontend (not mandatory to run the backend)
 
 ### Installation
 
+### Application
+
+For each release we generate we generate installers for Linux, MacOS and Windows. You can find them [here](https://github.com/the-qa-company/qEndpoint/releases)
+
 #### Back-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the back-end directory `cd hdt-qs-backend`
