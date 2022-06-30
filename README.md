@@ -70,7 +70,13 @@ For the frontend (not mandatory to run the backend)
 
 ### Installation
 
-#### Back-end
+#### Installers
+
+Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases)
+
+#### Code
+
+##### Back-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
@@ -86,7 +92,7 @@ You can use the project as a dependency (replace the version by the latest versi
 </dependency>
 ```
 
-#### Front-end
+##### Front-end
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the front-end directory `cd hdt-qs-frontend`
 - Install the packages using `npm install`
@@ -161,6 +167,13 @@ You can get the RDF4J with this method
 // get the rdf4j repository (if required)
 SailRepository rdf4jRepo = repository.getRepository();
 ```
+
+## Connecting with your Wikibase
+
+- run the qEndpoint locally
+- `cd wikibase`
+- run ` 
+java -cp wikidata-query-tools-0.3.59-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update --sparqlUrl http://localhost:1234/api/endpoint/sparql --wikibaseHost https://linkedopendata.eu/ --wikibaseUrl https://linkedopendata.eu/ --conceptUri https://linkedopendata.eu/ --wikibaseScheme https --entityNamespaces 120,122 --start 2022-06-28T11:27:08Z` (adapt the parameters to your wikibase, in this case we are querying the "Eu Knowledge Graph")
 
 ## Roadmap
 
