@@ -18,7 +18,7 @@ export default function IsUp () {
 
   // Make the request on mount
   useEffect(() => {
-    setRequest(fetch(`${config.apiBase}/endpoint/`))
+    setRequest(fetch(`${config.apiBase}/api/endpoint/`))
   }, [setRequest])
 
   // Set isUp on success

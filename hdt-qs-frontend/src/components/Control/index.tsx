@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Tooltip, Typography, useTheme } from '@mui/material'
+import { Button, Tooltip, Typography, useTheme } from '@mui/material'
 import { LoadingButton } from '@mui/lab'
 import CallMergeIcon from '@mui/icons-material/CallMerge'
 import ListIcon from '@mui/icons-material/List'
+import FeedIcon from '@mui/icons-material/Feed'
 import { useFastAPI } from 'common/api'
 import config from 'common/config'
 import IsUp from './IsUp'
@@ -26,7 +27,7 @@ export default function Control () {
   } = hasIndexReq
 
   const checkHasIndex = useCallback(() => {
-    setHasIndexRequest(fetch(`${config.apiBase}/endpoint/has_index`))
+    setHasIndexRequest(fetch(`${config.apiBase}/api/endpoint/has_index`))
   }, [setHasIndexRequest])
 
   // Make hasIndex request on mount
@@ -51,7 +52,7 @@ export default function Control () {
   } = isMergingReq
 
   const checkIsMerging = useCallback(() => {
-    setIsMergingReq(fetch(`${config.apiBase}/endpoint/is_merging`))
+    setIsMergingReq(fetch(`${config.apiBase}/api/endpoint/is_merging`))
   }, [setIsMergingReq])
 
   // Make isMerging request on mount
@@ -95,7 +96,7 @@ export default function Control () {
   const indexReq = useFastAPI({ autoNotify: true, label: 'Index request' })
 
   const index = () => {
-    indexReq.setRequest(fetch(`${config.apiBase}/endpoint/reindex`))
+    indexReq.setRequest(fetch(`${config.apiBase}/api/endpoint/reindex`))
   }
 
   // Notify user when indexing is finished successfully
@@ -113,6 +114,10 @@ export default function Control () {
   }, [isMerging, isMergingReq.loading, isMergingReq.rawRequest])
 
   const dontShowIndexButton = !indexReq.loading && (hasIndexReq.loading || (hasIndexReq.success && hasIndex === false))
+
+  const openLogs = () => {
+    window.open(config.apiBase + '/actuator/logfile', '_blank')
+  }
 
   return (
     <div className={s.container}>
@@ -135,7 +140,7 @@ export default function Control () {
               variant='contained'
               startIcon={<CallMergeIcon />}
               loading={isMergingBtnLoading}
-              onClick={() => mergeReq.setRequest(fetch(`${config.apiBase}/endpoint/merge`))}
+              onClick={() => mergeReq.setRequest(fetch(`${config.apiBase}/api/endpoint/merge`))}
             >
               Merge
             </LoadingButton>
@@ -151,6 +156,14 @@ export default function Control () {
               Re-Index
             </LoadingButton>
           )}
+
+          <Button
+            variant='contained'
+            startIcon={<FeedIcon />}
+            onClick={openLogs}
+          >
+            Open logs
+          </Button>
         </div>
       </div>
     </div>

@@ -33,7 +33,7 @@ export default function Prefixes () {
   } = prefixesReq
 
   const checkPrefixes = useCallback(() => {
-    setPrefixesRequest(fetch(`${config.apiBase}/endpoint/prefixes`))
+    setPrefixesRequest(fetch(`${config.apiBase}/api/endpoint/prefixes`))
   }, [setPrefixesRequest])
 
   // Make prefixes request on mount
@@ -57,7 +57,7 @@ export default function Prefixes () {
   } = prefixesSetReq
 
   const sendPrefixes = useCallback(() => {
-    setPrefixesSetRequest(fetch(`${config.apiBase}/endpoint/setprefixes`, {
+    setPrefixesSetRequest(fetch(`${config.apiBase}/api/endpoint/setprefixes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
