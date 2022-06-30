@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.the_qa_company.qendpoint.client.QEndpointClient;
+import com.the_qa_company.qendpoint.client.SplitStream;
 import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.CompiledSailOptions;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
@@ -10,7 +12,9 @@ import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
@@ -30,20 +34,84 @@ import org.springframework.web.server.ServerWebInputException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @Component
 public class Sparql {
+
+	public static class NamespaceData {
+		private String prefix;
+		private String name;
+
+		public NamespaceData(String prefix, String name) {
+			this.prefix = prefix;
+			this.name = name;
+		}
+
+		public NamespaceData() {
+		}
+
+		public NamespaceData(Namespace ns) {
+			this(ns.getPrefix(), ns.getName());
+		}
+
+		public String getPrefix() {
+			return prefix;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setPrefix(String prefix) {
+			this.prefix = prefix;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		@JsonIgnore
+		public Namespace asRDF4J() {
+			return Values.namespace(getPrefix(), getName());
+		}
+	}
+
+	public static class NamespaceDataResult {
+		private Map<String, String> prefixes;
+
+		public NamespaceDataResult(Map<String, String> prefixes) {
+			this.prefixes = prefixes;
+		}
+
+		public NamespaceDataResult() {
+		}
+
+		public Map<String, String> getPrefixes() {
+			return prefixes;
+		}
+
+		public void setPrefixes(Map<String, String> prefixes) {
+			this.prefixes = prefixes;
+		}
+	}
 
 	public static class MergeRequestResult {
 		private final boolean completed;
@@ -110,6 +178,18 @@ public class Sparql {
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
+	private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMdd-HHmmss");
+
+	private static Path backupIfExists(Path p) throws IOException {
+		if (Files.exists(p)) {
+			Path old = p.resolveSibling("old");
+			Files.createDirectories(old);
+			Path next = old.resolve(p.getFileName() + "_" + FORMAT.format(Calendar.getInstance().getTime()));
+			logger.info("move old file to {}", next);
+			Files.move(p, next);
+		}
+		return p;
+	}
 
 	public static int count = 0;
 	public static int countEquals = 0;
@@ -157,6 +237,8 @@ public class Sparql {
 	int queries;
 	int port;
 	private Path applicationDirectory;
+	private Path sparqlPrefixesFile;
+	private Path logFile;
 	private String locationHdt;
 	private String locationNative;
 	boolean init;
@@ -220,10 +302,53 @@ public class Sparql {
 		locationHdt = applicationDirectory.resolve(locationHdtCfg).toAbsolutePath() + "/";
 		locationNative = applicationDirectory.resolve(locationNativeCfg).toAbsolutePath() + "/";
 
+		sparqlPrefixesFile = applicationDirectory.resolve("prefixes.sparql");
+
 		// set default value
 		port = Integer.parseInt(portCfg);
 
+		redirectOutput(applicationDirectory.resolve("logs").resolve("logs.output"));
+
 		init();
+	}
+
+	private void redirectOutput(Path file) throws IOException {
+		Files.createDirectories(file.getParent());
+
+		Path out = backupIfExists(file);
+
+		FileOutputStream f1 = null;
+
+		try {
+			f1 = new FileOutputStream(out.toFile());
+
+			System.setOut(new PrintStream(SplitStream.of(f1, System.out)));
+			System.setErr(new PrintStream(SplitStream.of(f1, System.err)));
+		} catch (Exception e) {
+			logger.warn("Can't redirect streams", e);
+			try {
+				if (f1 != null) {
+					f1.close();
+				}
+			} catch (Exception ee) {
+				// ignore close error
+			}
+		}
+		logFile = file;
+	}
+
+	/**
+	 * write the log file into a stream
+	 *
+	 * @param stream the stream
+	 * @throws IOException io error
+	 */
+	public void writeLogs(OutputStream stream) throws IOException {
+		if (logFile == null || Files.notExists(logFile)) {
+			return;
+		}
+
+		Files.copy(logFile, stream);
 	}
 
 	/**
@@ -316,6 +441,8 @@ public class Sparql {
 
 			sparqlRepository = new SparqlRepository(compiledSail);
 			sparqlRepository.init();
+			sparqlRepository.readDefaultPrefixes(sparqlPrefixesFile);
+			sparqlRepository.saveDefaultPrefixes(sparqlPrefixesFile);
 
 			// set the config
 			if (!serverInit) {
@@ -511,6 +638,28 @@ public class Sparql {
 			Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
 		}
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
+	}
+
+	/**
+	 * save the prefixes
+	 *
+	 * @throws IOException write exception
+	 */
+	public void savePrefixes() throws IOException {
+		sparqlRepository.saveDefaultPrefixes(sparqlPrefixesFile);
+	}
+
+	public void setPrefixes(Map<String, String> namespaceDataList) throws IOException {
+		sparqlRepository.setDefaultPrefixes(namespaceDataList.entrySet().stream()
+				.map(e -> Values.namespace(e.getKey(), e.getValue())).collect(Collectors.toList()));
+		savePrefixes();
+	}
+
+	public Map<String, String> getPrefixes() {
+		// use a tree map to have sorted keys
+		Map<String, String> prefixes = new TreeMap<>();
+		sparqlRepository.getDefaultPrefixes().forEach(p -> prefixes.put(p.getPrefix(), p.getName()));
+		return prefixes;
 	}
 
 	private void sendUpdates(InputStream inputStream, String baseURI, String filename) throws IOException {

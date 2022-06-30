@@ -62,8 +62,7 @@ export default function SparqlEndpoint () {
         }),
         method: 'GET'
       },
-      copyEndpointOnNewTab: false,
-      persistencyExpire: 1 / 1000000 // No persistency
+      copyEndpointOnNewTab: false
     })
 
     // Store reference to Yasgui for later use
@@ -76,16 +75,20 @@ export default function SparqlEndpoint () {
         tab.close()
       }
       const tabs = JSON.parse(params.get('tabs') || '[]') as ExportedYasguiTab[]
-      tabs.forEach((tab) => {
-        yasgui.addTab(
-          true,
-          {
-            ...(yasgui.config as any),
-            name: tab.name,
-            yasqe: { value: tab.query }
-          }
-        )
-      })
+      if (tabs.length !== 0) {
+        tabs.forEach((tab) => {
+          yasgui.addTab(
+            true,
+            {
+              ...(yasgui.config as any),
+              name: tab.name,
+              yasqe: {
+                value: tab.query
+              }
+            }
+          )
+        })
+      }
     }
 
     // Listen for changes in the yasgui instance
@@ -93,7 +96,13 @@ export default function SparqlEndpoint () {
       .current(exportYasguiToParams(yasgui))
     // Listen for changes on existing tabs
     Object.values(yasgui._tabs).forEach((tab) => {
-      (tab.getYasqe() as any)?.on('change', () => onChangeDetected())
+      const yasqe = tab?.getYasqe()
+      if (!yasqe) {
+        return
+      }
+      // disable prefixes autocompletion
+      delete yasqe.autocompleters.prefixes
+      yasqe.on('change', () => onChangeDetected())
     })
     // Listen for changes on new tabs
     yasgui.on('tabAdd', (instance, tabId) => {

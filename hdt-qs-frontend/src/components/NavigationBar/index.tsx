@@ -4,6 +4,7 @@ import DoubleArrowIcon from '@mui/icons-material/DoubleArrow'
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 import InfoIcon from '@mui/icons-material/Info'
 import ControlCameraIcon from '@mui/icons-material/ControlCamera'
+import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
 import { useNavigate } from 'react-router'
 import { Link } from 'react-router-dom'
@@ -48,6 +49,13 @@ const tabs: TabDef[] = [
     matcher: (path) => path === '/upload' || path.startsWith('/upload/'),
     path: '/upload',
     icon: <FileUploadIcon />
+  },
+  {
+    name: 'Prefixes',
+    type: 'regular',
+    matcher: (path) => path === '/prefixes' || path.startsWith('/prefixes/'),
+    path: '/prefixes',
+    icon: <DriveFileRenameOutlineOutlinedIcon />
   },
   {
     name: 'Control',

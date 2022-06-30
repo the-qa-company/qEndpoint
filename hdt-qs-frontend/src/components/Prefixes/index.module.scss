@@ -1,0 +1,63 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  min-width: 600px;
+  max-width: 1000px;
+  margin: 0 auto;
+  gap: 20px;
+
+  .body {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+}
+
+.modalBox input {
+  width: 300px;
+  margin: 4px;
+}
+
+.prefixes {
+  margin: 20px 0;
+}
+
+.prefix {
+  text-align: center;
+  margin: 5px 0;
+}
+
+.prefix_name {
+  color: rgb(76, 138, 149);
+}
+
+.prefix_prefix {
+  color: rgb(144, 81, 139);
+}
+
+.prefix button {
+  width: 150px;
+}
+
+.centered {
+  text-align: center;
+}
+
+.modalBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  background-color: white;
+  border: 2px solid #000;
+  box-shadow: 24;
+  padding: 4%;
+}

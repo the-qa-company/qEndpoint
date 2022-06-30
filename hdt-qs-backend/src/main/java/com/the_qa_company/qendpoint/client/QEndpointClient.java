@@ -8,20 +8,15 @@ import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import java.awt.Desktop;
 import java.awt.image.BufferedImage;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 
 public class QEndpointClient extends JFrame {
 	private static final Logger logger = LoggerFactory.getLogger(QEndpointClient.class);
 	private static final String ICON = "icon.png";
-	private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMdd-HHmmss");
 
 	private final Path applicationDirectory;
 
@@ -54,49 +49,6 @@ public class QEndpointClient extends JFrame {
 		}
 		this.applicationDirectory = Path.of(applicationDirectory).resolve("qendpoint");
 		Files.createDirectories(this.applicationDirectory);
-
-		Path logDir = this.applicationDirectory.resolve("logs");
-		Files.createDirectories(logDir);
-
-		Path out = backupIfExists(logDir.resolve("log.out"));
-		Path err = backupIfExists(logDir.resolve("log.err"));
-
-		FileOutputStream f1 = null;
-		FileOutputStream f2 = null;
-
-		try {
-			f1 = new FileOutputStream(out.toFile());
-			f2 = new FileOutputStream(err.toFile());
-
-			System.setOut(new PrintStream(SplitStream.of(f1, System.out)));
-			System.setErr(new PrintStream(SplitStream.of(f2, System.err)));
-		} catch (Exception e) {
-			logger.warn("Can't redirect streams", e);
-			try {
-				try {
-					if (f1 != null) {
-						f1.close();
-					}
-				} finally {
-					if (f2 != null) {
-						f2.close();
-					}
-				}
-			} catch (Exception ee) {
-				// ignore close error
-			}
-		}
-	}
-
-	private static Path backupIfExists(Path p) throws IOException {
-		if (Files.exists(p)) {
-			Path old = p.resolveSibling("old");
-			Files.createDirectories(old);
-			Path next = old.resolve(p.getFileName() + "_" + FORMAT.format(Calendar.getInstance().getTime()));
-			logger.info("move old file to {}", next);
-			Files.move(p, next);
-		}
-		return p;
 	}
 
 	/**
