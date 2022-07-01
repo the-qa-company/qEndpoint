@@ -21,7 +21,12 @@
 }
 
 .modalBox input {
-  width: 300px;
+  width: 90%;
+  margin: 4px;
+}
+
+.modalBox button {
+  width: 45%;
   margin: 4px;
 }
 
@@ -30,7 +35,7 @@
 }
 
 .prefix {
-  text-align: center;
+  text-align: left;
   margin: 5px 0;
 }
 
@@ -42,12 +47,17 @@
   color: rgb(144, 81, 139);
 }
 
-.prefix button {
-  width: 150px;
-}
-
 .centered {
   text-align: center;
+}
+
+.controlButtons {
+  text-align: center;
+}
+
+.controlButtons button {
+  margin: 4px;
+  width: 30%;
 }
 
 .modalBox {

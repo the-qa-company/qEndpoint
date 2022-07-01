@@ -1,9 +1,10 @@
 import React, { ChangeEventHandler, useCallback, useEffect, useState } from 'react'
-import { Box, Button, Modal, Typography, useTheme } from '@mui/material'
+import { Box, Button, IconButton, Modal, Tooltip, Typography, useTheme } from '@mui/material'
 import ClearIcon from '@mui/icons-material/Clear'
 import EditIcon from '@mui/icons-material/Edit'
 import AddIcon from '@mui/icons-material/Add'
 import SaveIcon from '@mui/icons-material/Save'
+import CachedIcon from '@mui/icons-material/Cached'
 import { useFastAPI } from 'common/api'
 import config from 'common/config'
 
@@ -145,6 +146,12 @@ export default function Prefixes () {
     setUpdates(false)
   }
 
+  const reloadPrefixes = () => {
+    setLoaded(false)
+    setUpdates(false)
+    checkPrefixes()
+  }
+
   const isNotEdit = () => !(prefixes[prefix] || editPrefix !== '')
   return (
     <div className={s.container}>
@@ -170,10 +177,15 @@ export default function Prefixes () {
                 <div
                   className={s.centered}
                 >
+                  <p>
+                    PREFIX&nbsp;
+                    <span className={s.prefix_prefix}>{prefix}:</span>&nbsp;
+                    <span className={s.prefix_name}>&lt;{prefixName}&gt;</span>
+                  </p>
                   <div>Prefix</div>
-                  <div><input type='text' value={prefix} onChange={setPrefixValue} /></div>
+                  <div><input type='text' value={prefix} onChange={setPrefixValue} placeholder='myprefix' /></div>
                   <div>IRI</div>
-                  <div><input type='text' value={prefixName} onChange={setPrefixNameValue} /></div>
+                  <div><input type='text' value={prefixName} onChange={setPrefixNameValue} placeholder='http://website.my/ref/' /></div>
                   {!(prefixes[prefix] && (editPrefix === '' || editPrefix !== prefix)) || (<p>This prefix already exists, changes will overwrite the previous value.</p>)}
                   <p>
                     <Button
@@ -195,17 +207,23 @@ export default function Prefixes () {
                 </div>
               </Box>
             </Modal>
-            <div className={s.centered}>
+            <div className={s.controlButtons}>
               <Button
-                variant='contained'
+                variant='outlined'
                 startIcon={<AddIcon />}
                 onClick={openModal}
               >
                 New
               </Button>
-
               <Button
-                variant='contained'
+                variant='outlined'
+                startIcon={<CachedIcon />}
+                onClick={reloadPrefixes}
+              >
+                Reload
+              </Button>
+              <Button
+                variant='outlined'
                 startIcon={<SaveIcon />}
                 onClick={savePrefix}
                 disabled={!updated}
@@ -213,51 +231,59 @@ export default function Prefixes () {
                 Save
               </Button>
             </div>
-            <div className={s.prefixes}>
-              {Object.entries(prefixes).sort(([prefix1, name1], [prefix2, name2]) => {
-                if (prefix1 < prefix2) {
-                  return -1
-                }
-                if (prefix1 === prefix2) {
-                  return 0
-                }
-                return 1
-              }).map(
-                ([prefix, name]) => {
-                  return (
-                    <div key={prefix} className={s.prefix}>
-                      <p>
-                        PREFIX&nbsp;
-                        <span className={s.prefix_prefix}>{prefix}:</span>&nbsp;
-                        <span className={s.prefix_name}>&lt;{name}&gt;</span>
-                      </p>
-                      <div>
-                        <Button
-                          variant='outlined'
-                          startIcon={<EditIcon />}
-                          onClick={edit({
-                            prefix,
-                            name
-                          })}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant='outlined'
-                          startIcon={<ClearIcon />}
-                          onClick={remove({
-                            prefix,
-                            name
-                          })}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                }
-              )}
-            </div>
+            <table className={s.prefixes}>
+              <tbody>
+                {Object.entries(prefixes).sort(([prefix1, name1], [prefix2, name2]) => {
+                  if (prefix1 < prefix2) {
+                    return -1
+                  }
+                  if (prefix1 === prefix2) {
+                    return 0
+                  }
+                  return 1
+                }).map(
+                  ([prefix, name]) => {
+                    return (
+                      <tr key={prefix} className={s.prefix}>
+                        <td>
+                          PREFIX&nbsp;
+                          <span className={s.prefix_prefix}>{prefix}:</span>&nbsp;
+                          <span className={s.prefix_name}>&lt;{name}&gt;</span>
+                        </td>
+                        <td>
+                          <Tooltip
+                            title='Edit'
+                            placement='bottom'
+                          >
+                            <IconButton
+                              onClick={edit({
+                                prefix,
+                                name
+                              })}
+                            >
+                              <EditIcon fontSize='medium' />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip
+                            title='Remove'
+                            placement='bottom'
+                          >
+                            <IconButton
+                              onClick={remove({
+                                prefix,
+                                name
+                              })}
+                            >
+                              <ClearIcon fontSize='medium' />
+                            </IconButton>
+                          </Tooltip>
+                        </td>
+                      </tr>
+                    )
+                  }
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
