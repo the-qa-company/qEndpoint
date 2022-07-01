@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSyncRef } from 'common/react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { TextField, Typography, useTheme } from '@mui/material'
@@ -8,6 +8,8 @@ import Yasgui from '@triply/yasgui'
 import '@triply/yasgui/build/yasgui.min.css'
 
 import s from './index.module.scss'
+import { useFastAPI } from 'common/api'
+import useAsyncEffect from 'use-async-effect'
 
 interface ExportedYasguiTab {
   query: string;
@@ -34,8 +36,43 @@ export default function SparqlEndpoint () {
   const yasguiDivRef = useRef<HTMLDivElement>(null)
   const [timeoutValue, setTimeoutValue] = useState('5')
 
+  const [prefixes, setPrefixes] = useState<string>('')
+  const [loaded, setLoaded] = useState<boolean>(false)
+
   const timeoutRef = useRef<typeof timeoutValue>()
   timeoutRef.current = timeoutValue
+
+  // prefixes request
+  const prefixesReq = useFastAPI({ autoNotify: true, errorMsg: 'Impossible to get the prefixes' })
+  const {
+    setRequest: setPrefixesRequest
+  } = prefixesReq
+
+  const checkPrefixes = useCallback(() => {
+    setPrefixesRequest(fetch(`${config.apiBase}/api/endpoint/prefixes`))
+  }, [setPrefixesRequest])
+
+  // Make prefixes request on mount
+  useEffect(() => {
+    checkPrefixes()
+  }, [checkPrefixes])
+
+  // Read prefixes response
+  useAsyncEffect(async () => {
+    if (!loaded && prefixesReq.success && prefixesReq.res !== undefined) {
+      const parsed = await prefixesReq.res.json()
+      setPrefixes(Object.entries(parsed).sort(([prefix1, name1], [prefix2, name2]) => {
+        if (prefix1 < prefix2) {
+          return -1
+        }
+        if (prefix1 === prefix2) {
+          return 0
+        }
+        return 1
+      }).map(([prefix, name]) => `PREFIX ${prefix}: <${name}>`).reduce((a, b) => a + '\n' + b))
+      setLoaded(true)
+    }
+  }, [prefixesReq.success, prefixesReq.res])
 
   // Called whenever the yasgui instance is updated and needs to be saved
   const onYasguiParamsChange = useSyncRef((params: URLSearchParams) => {
@@ -50,7 +87,7 @@ export default function SparqlEndpoint () {
 
   // Init Yasgui
   useEffect(() => {
-    if (yasguiDivRef.current === null) return undefined
+    if (yasguiDivRef.current === null || !loaded) return undefined
     yasguiDivRef.current.innerHTML = ''
 
     // Construct Yasgui
@@ -62,6 +99,14 @@ export default function SparqlEndpoint () {
         }),
         method: 'GET'
       },
+      yasqe: {
+        value: `${prefixes}
+
+SELECT * WHERE {
+  ?subj ?pred ?obj
+}
+`
+      } as any,
       copyEndpointOnNewTab: false
     })
 
@@ -100,8 +145,6 @@ export default function SparqlEndpoint () {
       if (!yasqe) {
         return
       }
-      // disable prefixes autocompletion
-      delete yasqe.autocompleters.prefixes
       yasqe.on('change', () => onChangeDetected())
     })
     // Listen for changes on new tabs
@@ -121,7 +164,7 @@ export default function SparqlEndpoint () {
       yasgui.removeAllListeners()
       yasgui.destroy()
     }
-  }, [onYasguiParamsChange, yasguiDivRef])
+  }, [onYasguiParamsChange, yasguiDivRef, prefixes, loaded])
 
   return (
     <div className={s.container}>
