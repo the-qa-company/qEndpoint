@@ -7,6 +7,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import CachedIcon from '@mui/icons-material/Cached'
 import { useFastAPI } from 'common/api'
 import config from 'common/config'
+import { usePrompt } from 'common/block'
 
 import s from './index.module.scss'
 import useAsyncEffect from 'use-async-effect'
@@ -152,6 +153,8 @@ export default function Prefixes () {
     checkPrefixes()
   }
 
+  usePrompt('Some changes weren\'t saved, continue?', updated)
+
   const isNotEdit = () => !(prefixes[prefix] || editPrefix !== '')
   return (
     <div className={s.container}>
@@ -178,7 +181,7 @@ export default function Prefixes () {
                   className={s.centered}
                 >
                   <p>
-                    PREFIX&nbsp;
+                    <span className={s.prefix_decl}>PREFIX</span>&nbsp;
                     <span className={s.prefix_prefix}>{prefix}:</span>&nbsp;
                     <span className={s.prefix_name}>&lt;{prefixName}&gt;</span>
                   </p>
@@ -246,7 +249,7 @@ export default function Prefixes () {
                     return (
                       <tr key={prefix} className={s.prefix}>
                         <td>
-                          PREFIX&nbsp;
+                          <span className={s.prefix_decl}>PREFIX</span>&nbsp;
                           <span className={s.prefix_prefix}>{prefix}:</span>&nbsp;
                           <span className={s.prefix_name}>&lt;{name}&gt;</span>
                         </td>
