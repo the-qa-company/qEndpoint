@@ -168,6 +168,13 @@ You can get the RDF4J with this method
 SailRepository rdf4jRepo = repository.getRepository();
 ```
 
+## Connecting with your Wikibase
+
+- run the qEndpoint locally
+- `cd wikibase`
+- run ` 
+java -cp wikidata-query-tools-0.3.59-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update --sparqlUrl http://localhost:1234/api/endpoint/sparql --wikibaseHost https://linkedopendata.eu/ --wikibaseUrl https://linkedopendata.eu/ --conceptUri https://linkedopendata.eu/ --wikibaseScheme https --entityNamespaces 120,122 --start 2022-06-28T11:27:08Z` (adapt the parameters to your wikibase, in this case we are querying the "Eu Knowledge Graph")
+
 ## Roadmap
 
 See the [open issues](https://github.com/the-qa-company/qEndpoint/issues) for a list of proposed features (and known issues).
