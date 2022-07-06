@@ -1,4 +1,4 @@
-FROM qendpoint-base
+FROM qacompany/qendpoint
 
 WORKDIR /app
 
