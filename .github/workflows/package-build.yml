@@ -187,7 +187,7 @@ jobs:
           bodyFile: "release/RELEASE.md"
           token: ${{ secrets.GITHUB_TOKEN }}
   push_to_docker_hub:
-    name: Push to Docker Hub
+    name: Push to Docker Hub base image
     needs:
       - build
       - create_release
@@ -212,4 +212,31 @@ jobs:
           file: Dockerfile
           push: true
           tags: "qacompany/qendpoint:latest,qacompany/qendpoint:${{ needs.build.outputs.version }}"
+          labels: ${{ steps.meta.outputs.labels }}
+  push_to_docker_hub:
+    name: Push to Docker Hub wikidata image
+    needs:
+      - build
+      - create_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: qacompany/qendpoint
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: scripts
+          file: Dockerfile-wikidata
+          push: true
+          tags: "qacompany/qendpoint-wikidata:latest,qacompany/qendpoint-wikidata:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}

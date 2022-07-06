@@ -1,5 +1,7 @@
 FROM maven:3.6.0-jdk-11-slim AS build-backend
 
+WORKDIR /app
+
 RUN apt-get update
 RUN apt-get install wget -y
 
