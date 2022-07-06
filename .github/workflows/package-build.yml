@@ -235,7 +235,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           file: scripts/Dockerfile-wikidata
-          context:scripts
+          context: scripts
           push: true
           tags: "qacompany/qendpoint-wikidata:latest,qacompany/qendpoint-wikidata:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
