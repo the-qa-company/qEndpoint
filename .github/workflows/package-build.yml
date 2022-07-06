@@ -181,7 +181,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
   push_to_docker_hub:
     needs:
-      deploy
+      - build
+      - deploy
     name: Push to Docker Hub
     runs-on: ubuntu-latest
     steps:
@@ -202,5 +203,5 @@ jobs:
         with:
           context: scripts
           push: true
-          tags: ${{ needs.build.outputs.version }}
+          tags: "v${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
