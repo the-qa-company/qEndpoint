@@ -209,6 +209,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: scripts
+          file: Dockerfile
           push: true
           tags: "qacompany/qendpoint:latest,qacompany/qendpoint:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
