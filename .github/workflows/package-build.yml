@@ -213,7 +213,7 @@ jobs:
           push: true
           tags: "qacompany/qendpoint:latest,qacompany/qendpoint:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
-  push_to_docker_hub:
+  push_to_docker_hub_wikidata:
     name: Push to Docker Hub wikidata image
     needs:
       - build
