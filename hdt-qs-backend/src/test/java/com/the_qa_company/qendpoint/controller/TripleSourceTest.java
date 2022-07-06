@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
+//import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
-@ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
+//@ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
 public class TripleSourceTest {
 	@Parameterized.Parameters(name = "{0}")

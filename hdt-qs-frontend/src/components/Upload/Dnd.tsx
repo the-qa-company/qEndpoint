@@ -61,7 +61,7 @@ export default function Dnd () {
     for (let i = 0; i < fileList.length; i++) {
       formData.append('file', fileList[i])
     }
-    uploadReq.setRequest(fetch(`${config.apiBase}/endpoint/load`, {
+    uploadReq.setRequest(fetch(`${config.apiBase}/api/endpoint/load`, {
       method: 'POST',
       body: formData
     }))

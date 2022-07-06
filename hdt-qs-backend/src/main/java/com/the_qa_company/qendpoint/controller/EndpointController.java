@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 @CrossOrigin(origins = "*")
@@ -165,6 +167,18 @@ public class EndpointController {
 	@GetMapping("/is_merging")
 	public ResponseEntity<Sparql.IsMergingResult> isMerging() {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.isMerging());
+	}
+
+	@GetMapping("/prefixes")
+	public ResponseEntity<Map<String, String>> prefixes() {
+		return ResponseEntity.status(HttpStatus.OK).body(sparql.getPrefixes());
+	}
+
+	@PostMapping("/setprefixes")
+	public ResponseEntity<Map<String, String>> setPrefixes(@RequestBody final Map<String, String> prefixes)
+			throws IOException {
+		sparql.setPrefixes(prefixes);
+		return prefixes();
 	}
 
 	@GetMapping("/")
