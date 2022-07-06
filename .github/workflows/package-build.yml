@@ -208,8 +208,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: scripts
-          file: Dockerfile
+          file: scripts/Dockerfile
           push: true
           tags: "qacompany/qendpoint:latest,qacompany/qendpoint:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
@@ -217,7 +216,7 @@ jobs:
     name: Push to Docker Hub wikidata image
     needs:
       - build
-      - create_release
+      - push_to_docker_hub
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -235,8 +234,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: scripts
-          file: Dockerfile-wikidata
+          file: scripts/Dockerfile-wikidata
           push: true
           tags: "qacompany/qendpoint-wikidata:latest,qacompany/qendpoint-wikidata:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
