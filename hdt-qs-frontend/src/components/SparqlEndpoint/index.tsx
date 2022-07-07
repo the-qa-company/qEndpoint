@@ -69,7 +69,7 @@ export default function SparqlEndpoint () {
           return 0
         }
         return 1
-      }).map(([prefix, name]) => `PREFIX ${prefix}: <${name}>`).reduce((a, b) => a + '\n' + b))
+      }).map(([prefix, name]) => `PREFIX ${prefix}: <${name}>\n`).reduce((a, b) => a + b, ''))
       setLoaded(true)
     }
   }, [prefixesReq.success, prefixesReq.res])
@@ -100,9 +100,7 @@ export default function SparqlEndpoint () {
         method: 'GET'
       },
       yasqe: {
-        value: `${prefixes}
-
-SELECT * WHERE {
+        value: `${prefixes}SELECT * WHERE {
   ?subj ?pred ?obj
 }
 `

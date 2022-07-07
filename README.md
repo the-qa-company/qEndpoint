@@ -30,9 +30,14 @@
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
+    - [Installers](#installers)
+    - [Code](#code)
+      - [Back-end](#back-end)
+      - [Front-end](#front-end)
 - [Usage](#usage)
   - [Standalone](#standalone)
   - [As a dependency](#as-a-dependency)
+- [Connecting with your Wikibase](#connecting-with-your-wikibase)
 - [Roadmap](#roadmap)
 - [Support](#support)
 - [Project assistance](#project-assistance)
@@ -61,7 +66,7 @@ The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL sup
 
 For the backend/benchmark
 
-- Java 11
+- Java 11 or 17
 - Maven
 
 For the frontend (not mandatory to run the backend)
@@ -161,7 +166,7 @@ Don't forget to shutdown the repository after usage
 repository.shutDown();
 ```
 
-You can get the RDF4J with this method
+You can get the RDF4J repository with the `getRepository()` method.
 
 ```java
 // get the rdf4j repository (if required)
@@ -172,8 +177,21 @@ SailRepository rdf4jRepo = repository.getRepository();
 
 - run the qEndpoint locally
 - `cd wikibase`
-- run ` 
-java -cp wikidata-query-tools-0.3.59-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update --sparqlUrl http://localhost:1234/api/endpoint/sparql --wikibaseHost https://linkedopendata.eu/ --wikibaseUrl https://linkedopendata.eu/ --conceptUri https://linkedopendata.eu/ --wikibaseScheme https --entityNamespaces 120,122 --start 2022-06-28T11:27:08Z` (adapt the parameters to your wikibase, in this case we are querying the "Eu Knowledge Graph")
+- move the file `prefixes.sparql` to your qEndpoint installation
+- (re-)start your endpoint to use the prefixes
+- run 
+  ```bash
+  java -cp wikidata-query-tools-0.3.59-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update \
+          --sparqlUrl http://localhost:1234/api/endpoint/sparql \
+          --wikibaseHost https://linkedopendata.eu/ \
+          --wikibaseUrl https://linkedopendata.eu/ \
+          --conceptUri https://linkedopendata.eu/ \
+          --wikibaseScheme https \
+          --entityNamespaces 120,122 \
+          --start 2022-06-28T11:27:08Z
+  ```
+
+  you can adapt the parameters to your wikibase, in this case we are querying the [Eu Knowledge Graph](https://linkedopendata.eu/), you may also change the start time.
 
 ## Roadmap
 

@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update
 RUN apt-get install wget -y
 
-RUN wget https://github.com/the-qa-company/qEndpoint/releases/latest/download/endpoint.jar
+COPY endpoint.jar .
 
 ARG MEM_SIZE=6G
 ENV MEM_SIZE ${MEM_SIZE}
