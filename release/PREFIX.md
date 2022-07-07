@@ -1,2 +1,2 @@
-**Changelogs**
+**Changelog**
 
