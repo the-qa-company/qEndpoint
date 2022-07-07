@@ -165,6 +165,9 @@ jobs:
     name: Push to Docker Hub base image
     needs:
       - build
+    environment: 
+      name: qendpoint docker image
+      url: https://hub.docker.com/r/qacompany/qendpoint/tags
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -195,6 +198,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
   push_to_docker_hub_wikidata:
     name: Push to Docker Hub wikidata image
+    environment: 
+      name: qendpoint-wikidata docker image
+      url: https://hub.docker.com/r/qacompany/qendpoint-wikidata/tags
     needs:
       - build
       - push_to_docker_hub
@@ -222,6 +228,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
   create_release:
     name: Create Github release
+    environment: 
+      name: qendpoint release
+      url: "https://github.com/the-qa-company/qEndpoint/releases/tag/v${{ needs.build.outputs.version }}"
     needs:
       - build
       - linux
