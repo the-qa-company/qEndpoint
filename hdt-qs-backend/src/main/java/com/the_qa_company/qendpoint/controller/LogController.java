@@ -18,7 +18,8 @@ public class LogController {
 
 	@GetMapping("/logfile")
 	public void readLog(HttpServletResponse response) throws IOException {
-		response.setContentType("text");
+		response.setContentType("text/plain");
+		response.setHeader("Content-Disposition", "inline;filename=\"logs.output\"");
 		sparql.writeLogs(response.getOutputStream());
 	}
 }
