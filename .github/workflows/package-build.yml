@@ -1,15 +1,15 @@
 name: Package build and deploy
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       publish_maven:
-        description: 'Publish to Maven'
-        required: true 
+        description: "Publish to Maven"
+        required: true
         type: boolean
       release_made:
         description: "I have used the scripts/set_version.sh script to set the new version."
-        required: true 
+        required: true
         type: boolean
 
 jobs:
@@ -64,11 +64,11 @@ jobs:
   publish:
     name: Publish to Maven Central
     needs: build
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     if: ${{ inputs.publish_maven }}
-    permissions: 
+    permissions:
       contents: read
-      packages: write 
+      packages: write
     steps:
       - name: Import GPG key
         id: import_gpg
@@ -161,36 +161,49 @@ jobs:
         with:
           name: "endpoint.deb"
           path: "endpoint.deb"
-  create_release:
-    name: Create Github release
+  push_to_docker_hub:
+    name: Push to Docker Hub base image
     needs:
       - build
-      - linux
-      - windows
-      - osx
+    environment: 
+      name: qendpoint docker image
+      url: https://hub.docker.com/r/qacompany/qendpoint/tags
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Download artifacts
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Download endpoint jar
         uses: actions/download-artifact@v3
-      - name: Extract artifacts
-        run: |
-          mkdir -p deploy_file
-          mv endpoint.*/* deploy_file
-      - name: Deploy artifacts
-        uses: ncipollo/release-action@v1
         with:
-          commit: ${{ github.sha }}
-          tag: "v${{ needs.build.outputs.version }}"
-          artifacts: "deploy_file/*"
-          name: "Release ${{ needs.build.outputs.version }}"
-          bodyFile: "release/RELEASE.md"
-          token: ${{ secrets.GITHUB_TOKEN }}
-  push_to_docker_hub:
-    name: Push to Docker Hub
+          name: "endpoint.jar"
+      - name: Move endpoint
+        run: mv endpoint.jar scripts
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: qacompany/qendpoint
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: scripts/Dockerfile
+          context: scripts
+          push: true
+          tags: "qacompany/qendpoint:latest,qacompany/qendpoint:${{ needs.build.outputs.version }}"
+          labels: ${{ steps.meta.outputs.labels }}
+  push_to_docker_hub_wikidata:
+    name: Push to Docker Hub wikidata image
+    environment: 
+      name: qendpoint-wikidata docker image
+      url: https://hub.docker.com/r/qacompany/qendpoint-wikidata/tags
     needs:
       - build
-      - create_release
+      - push_to_docker_hub
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -208,8 +221,39 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
+          file: scripts/Dockerfile-wikidata
           context: scripts
-          file: Dockerfile
           push: true
-          tags: "qacompany/qendpoint:latest,qacompany/qendpoint:${{ needs.build.outputs.version }}"
+          tags: "qacompany/qendpoint-wikidata:latest,qacompany/qendpoint-wikidata:${{ needs.build.outputs.version }}"
           labels: ${{ steps.meta.outputs.labels }}
+  create_release:
+    name: Create Github release
+    environment: 
+      name: qendpoint release
+      url: "https://github.com/the-qa-company/qEndpoint/releases/tag/v${{ needs.build.outputs.version }}"
+    needs:
+      - build
+      - linux
+      - windows
+      - osx
+      - push_to_docker_hub_wikidata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+      - name: Extract artifacts
+        run: |
+          mkdir -p deploy_file
+          mv endpoint.*/* deploy_file
+      - name: Create release body
+        run: scripts/build_release_input.sh
+      - name: Create release with artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          commit: ${{ github.sha }}
+          tag: "v${{ needs.build.outputs.version }}"
+          artifacts: "deploy_file/*"
+          name: "Release ${{ needs.build.outputs.version }}"
+          bodyFile: "release/RELEASE_OUTPUT.md"
+          token: ${{ secrets.GITHUB_TOKEN }}

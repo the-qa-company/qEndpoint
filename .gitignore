@@ -31,6 +31,7 @@ hdt-qs-frontend/yarn-debug.log*
 hdt-qs-frontend/yarn-error.log*
 
 scripts/build
+release/RELEASE_OUTPUT.md
 
 .idea
 data

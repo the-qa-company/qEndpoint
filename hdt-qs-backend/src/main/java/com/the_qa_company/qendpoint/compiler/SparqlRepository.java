@@ -9,7 +9,9 @@ import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
@@ -25,6 +27,8 @@ import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
+import org.eclipse.rdf4j.query.parser.QueryPrologLexer;
+import org.eclipse.rdf4j.query.parser.sparql.SPARQLQueries;
 import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriter;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
@@ -35,7 +39,10 @@ import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
@@ -45,11 +52,20 @@ import org.springframework.web.server.ServerWebInputException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Repository to help using SPARQL queries on a sail repository
@@ -60,6 +76,7 @@ public class SparqlRepository {
 	private static final Logger logger = LoggerFactory.getLogger(SparqlRepository.class);
 	private final CompiledSail compiledSail;
 	private final SailRepository repository;
+	private final Map<String, Namespace> defaultPrefixes = new TreeMap<>();
 
 	public SparqlRepository(CompiledSail compiledSail) {
 		this.compiledSail = Objects.requireNonNull(compiledSail, "compiledSail can't be null!");
@@ -316,6 +333,7 @@ public class SparqlRepository {
 			String acceptHeader, Consumer<String> mimeSetter, OutputStream out) {
 		connection = Objects.requireNonNullElseGet(connection, repository::getConnection);
 		try {
+			sparqlQuery = applyPrefixes(sparqlQuery);
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			// sparqlQuery = sparqlPrefixes+sparqlQuery;
 
@@ -420,6 +438,7 @@ public class SparqlRepository {
 	 */
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
 		// logger.info("Running update query:"+sparqlQuery);
+		sparqlQuery = applyPrefixes(sparqlQuery);
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
 		try (SailRepositoryConnection connection = repository.getConnection()) {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
@@ -489,5 +508,150 @@ public class SparqlRepository {
 		logger.info("loaded {} triples (+{})", total, triples);
 
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
+	}
+
+	/**
+	 * add default prefixes
+	 *
+	 * @param namespaces the namespaces to add
+	 */
+	public void addDefaultPrefixes(Namespace namespaces) {
+		addDefaultPrefixes(List.of(namespaces));
+	}
+
+	/**
+	 * add default prefixes
+	 *
+	 * @param namespaces the namespaces to add
+	 */
+	public void addDefaultPrefixes(List<Namespace> namespaces) {
+		for (Namespace ns : namespaces) {
+			defaultPrefixes.put(ns.getPrefix(), ns);
+		}
+		syncPrefix();
+	}
+
+	/**
+	 * set default prefixes
+	 *
+	 * @param namespaces the namespaces to set
+	 */
+	public void setDefaultPrefixes(Namespace... namespaces) {
+		setDefaultPrefixes(List.of(namespaces));
+	}
+
+	/**
+	 * set default prefixes
+	 *
+	 * @param namespaces the namespaces to set
+	 */
+	public void setDefaultPrefixes(List<Namespace> namespaces) {
+		clearDefaultPrefixes();
+		addDefaultPrefixes(namespaces);
+	}
+
+	/**
+	 * remove default prefixes
+	 *
+	 * @param namespaces the namespaces to remove
+	 */
+	public void removeDefaultPrefixes(Namespace... namespaces) {
+		removeDefaultPrefixes(List.of(namespaces));
+	}
+
+	/**
+	 * remove default prefixes
+	 *
+	 * @param namespaces the namespaces to remove
+	 */
+	public void removeDefaultPrefixes(List<Namespace> namespaces) {
+		for (Namespace ns : namespaces) {
+			defaultPrefixes.remove(ns.getPrefix());
+		}
+		addDefaultPrefixes(namespaces);
+	}
+
+	/**
+	 * clear all the default prefixes
+	 */
+	public void clearDefaultPrefixes() {
+		defaultPrefixes.clear();
+	}
+
+	/**
+	 * @return the default prefixes
+	 */
+	public Collection<Namespace> getDefaultPrefixes() {
+		return Collections.unmodifiableCollection(defaultPrefixes.values());
+	}
+
+	private void syncPrefix() {
+		// sync prefixes, will be important when the prefix PR will be available
+	}
+
+	/**
+	 * read the default prefixes from a file, will assume the file is empty if
+	 * the file doesn't exist.
+	 *
+	 * @param file the file, must be a valid turtle file, only the prefixes are
+	 *             used
+	 * @throws IOException       read exception
+	 * @throws RDFParseException rdf parsing exception
+	 */
+	public void readDefaultPrefixes(Path file) throws IOException, RDFParseException {
+		if (Files.exists(file)) {
+			RDFParser parser = Rio.createParser(RDFFormat.TURTLE);
+
+			clearDefaultPrefixes();
+
+			parser.setRDFHandler(new AbstractRDFHandler() {
+				@Override
+				public void handleNamespace(String prefix, String uri) {
+					defaultPrefixes.put(prefix, Values.namespace(prefix, uri));
+					super.handleNamespace(prefix, uri);
+				}
+			});
+			// read the prefixes
+			try (InputStream stream = Files.newInputStream(file)) {
+				parser.parse(stream);
+			}
+		}
+		syncPrefix();
+	}
+
+	/**
+	 * write the default prefixes into a file
+	 *
+	 * @param file the file, will be a valid turtle file with the prefixes
+	 * @throws IOException write exception
+	 */
+	public void saveDefaultPrefixes(Path file) throws IOException {
+		Files.writeString(file,
+				String.join("\n", "# this file will be overwritten, do not write anything except prefixes",
+						"# Write your default prefixes here, example:", "# PREFIX myprefix: <http://mylocation.com/#>",
+						"", SPARQLQueries.getPrefixClauses(defaultPrefixes.values())));
+	}
+
+	private String applyPrefixes(String sparqlQuery) {
+		// temp fix
+		// https://github.com/eclipse/rdf4j/discussions/3980#discussioncomment-3001772
+		try {
+			if (!defaultPrefixes.isEmpty()) {
+				Set<String> prefixes = QueryPrologLexer.lex(sparqlQuery).stream()
+						.filter(token -> token.getType() == QueryPrologLexer.TokenType.PREFIX)
+						.map(QueryPrologLexer.Token::getStringValue).collect(Collectors.toSet());
+
+				List<Namespace> namespaces = defaultPrefixes.entrySet().stream()
+						.filter(e -> !prefixes.contains(e.getKey())).map(Map.Entry::getValue)
+						.collect(Collectors.toList());
+
+				return SPARQLQueries.getPrefixClauses(namespaces) + " " + sparqlQuery;
+
+			}
+		} catch (Exception e) {
+			// ignore, may be linked with a bad query
+		}
+
+		return sparqlQuery;
 	}
 }

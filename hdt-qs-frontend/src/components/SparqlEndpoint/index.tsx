@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSyncRef } from 'common/react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { TextField, Typography, useTheme } from '@mui/material'
@@ -8,6 +8,8 @@ import Yasgui from '@triply/yasgui'
 import '@triply/yasgui/build/yasgui.min.css'
 
 import s from './index.module.scss'
+import { useFastAPI } from 'common/api'
+import useAsyncEffect from 'use-async-effect'
 
 interface ExportedYasguiTab {
   query: string;
@@ -26,7 +28,7 @@ const exportYasguiToParams = (instance: Yasgui): URLSearchParams => {
   return params
 }
 
-export default function SparqlEndpoint () {
+export default function SparqlEndpoint() {
   const navigate = useNavigate()
   const theme = useTheme()
 
@@ -34,8 +36,43 @@ export default function SparqlEndpoint () {
   const yasguiDivRef = useRef<HTMLDivElement>(null)
   const [timeoutValue, setTimeoutValue] = useState('5')
 
+  const [prefixes, setPrefixes] = useState<string>('')
+  const [loaded, setLoaded] = useState<boolean>(false)
+
   const timeoutRef = useRef<typeof timeoutValue>()
   timeoutRef.current = timeoutValue
+
+  // prefixes request
+  const prefixesReq = useFastAPI({ autoNotify: true, errorMsg: 'Impossible to get the prefixes' })
+  const {
+    setRequest: setPrefixesRequest
+  } = prefixesReq
+
+  const checkPrefixes = useCallback(() => {
+    setPrefixesRequest(fetch(`${config.apiBase}/api/endpoint/prefixes`))
+  }, [setPrefixesRequest])
+
+  // Make prefixes request on mount
+  useEffect(() => {
+    checkPrefixes()
+  }, [checkPrefixes])
+
+  // Read prefixes response
+  useAsyncEffect(async () => {
+    if (!loaded && prefixesReq.success && prefixesReq.res !== undefined) {
+      const parsed = await prefixesReq.res.json()
+      setPrefixes(Object.entries(parsed).sort(([prefix1, name1], [prefix2, name2]) => {
+        if (prefix1 < prefix2) {
+          return -1
+        }
+        if (prefix1 === prefix2) {
+          return 0
+        }
+        return 1
+      }).map(([prefix, name]) => `PREFIX ${prefix}: <${name}>\n`).reduce((a, b) => a + b, ''))
+      setLoaded(true)
+    }
+  }, [prefixesReq.success, prefixesReq.res])
 
   // Called whenever the yasgui instance is updated and needs to be saved
   const onYasguiParamsChange = useSyncRef((params: URLSearchParams) => {
@@ -50,20 +87,25 @@ export default function SparqlEndpoint () {
 
   // Init Yasgui
   useEffect(() => {
-    if (yasguiDivRef.current === null) return undefined
+    if (yasguiDivRef.current === null || !loaded) return undefined
     yasguiDivRef.current.innerHTML = ''
 
     // Construct Yasgui
     const yasgui = new Yasgui(yasguiDivRef.current, {
       requestConfig: {
-        endpoint: `${config.apiBase}/endpoint/sparql`,
+        endpoint: `${config.apiBase}/api/endpoint/sparql`,
         headers: () => ({
           timeout: timeoutRef.current || ''
         }),
         method: 'GET'
       },
-      copyEndpointOnNewTab: false,
-      persistencyExpire: 1 / 1000000 // No persistency
+      yasqe: {
+        value: `${prefixes}SELECT * WHERE {
+  ?subj ?pred ?obj
+} LIMIT 10
+`
+      } as any,
+      copyEndpointOnNewTab: false
     })
 
     // Store reference to Yasgui for later use
@@ -76,16 +118,20 @@ export default function SparqlEndpoint () {
         tab.close()
       }
       const tabs = JSON.parse(params.get('tabs') || '[]') as ExportedYasguiTab[]
-      tabs.forEach((tab) => {
-        yasgui.addTab(
-          true,
-          {
-            ...(yasgui.config as any),
-            name: tab.name,
-            yasqe: { value: tab.query }
-          }
-        )
-      })
+      if (tabs.length !== 0) {
+        tabs.forEach((tab) => {
+          yasgui.addTab(
+            true,
+            {
+              ...(yasgui.config as any),
+              name: tab.name,
+              yasqe: {
+                value: tab.query
+              }
+            }
+          )
+        })
+      }
     }
 
     // Listen for changes in the yasgui instance
@@ -93,7 +139,11 @@ export default function SparqlEndpoint () {
       .current(exportYasguiToParams(yasgui))
     // Listen for changes on existing tabs
     Object.values(yasgui._tabs).forEach((tab) => {
-      (tab.getYasqe() as any)?.on('change', () => onChangeDetected())
+      const yasqe = tab?.getYasqe()
+      if (!yasqe) {
+        return
+      }
+      yasqe.on('change', () => onChangeDetected())
     })
     // Listen for changes on new tabs
     yasgui.on('tabAdd', (instance, tabId) => {
@@ -112,7 +162,7 @@ export default function SparqlEndpoint () {
       yasgui.removeAllListeners()
       yasgui.destroy()
     }
-  }, [onYasguiParamsChange, yasguiDivRef])
+  }, [onYasguiParamsChange, yasguiDivRef, prefixes, loaded])
 
   return (
     <div className={s.container}>

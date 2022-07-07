@@ -7,7 +7,7 @@ let apiBase: String
 if (dev) {
   apiBase = config.apiBaseDev
 } else {
-  apiBase = window.location.origin + '/api'
+  apiBase = window.location.origin
 }
 
 export default {
