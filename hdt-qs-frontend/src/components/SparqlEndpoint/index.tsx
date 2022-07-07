@@ -28,7 +28,7 @@ const exportYasguiToParams = (instance: Yasgui): URLSearchParams => {
   return params
 }
 
-export default function SparqlEndpoint () {
+export default function SparqlEndpoint() {
   const navigate = useNavigate()
   const theme = useTheme()
 
@@ -102,7 +102,7 @@ export default function SparqlEndpoint () {
       yasqe: {
         value: `${prefixes}SELECT * WHERE {
   ?subj ?pred ?obj
-}
+} LIMIT 10
 `
       } as any,
       copyEndpointOnNewTab: false
