@@ -173,6 +173,8 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: "endpoint.jar"
+      - name: Move endpoint
+        run: mv endpoint.jar scripts
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
