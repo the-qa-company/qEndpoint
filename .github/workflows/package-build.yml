@@ -135,10 +135,11 @@ jobs:
           scripts/build_package.ps1 scripts/jpackage_windows.cfg endpoint.jar
           mv scripts/build/distributions/*.msi endpoint.msi
       - name: Upload installer
-        uses: actions/upload-artifact@v1
-        with:
-          name: "endpoint.msi"
-          path: "endpoint.msi"
+        run: echo "Disabled"
+  #        uses: actions/upload-artifact@v1
+  #        with:
+  #          name: "endpoint.msi"
+  #          path: "endpoint.msi"
   linux:
     name: Build LINUX version
     needs: build
@@ -165,7 +166,7 @@ jobs:
     name: Push to Docker Hub base image
     needs:
       - build
-    environment: 
+    environment:
       name: qendpoint docker image
       url: https://hub.docker.com/r/qacompany/qendpoint/tags
     runs-on: ubuntu-latest
@@ -198,7 +199,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
   push_to_docker_hub_wikidata:
     name: Push to Docker Hub wikidata image
-    environment: 
+    environment:
       name: qendpoint-wikidata docker image
       url: https://hub.docker.com/r/qacompany/qendpoint-wikidata/tags
     needs:
@@ -228,7 +229,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
   create_release:
     name: Create Github release
-    environment: 
+    environment:
       name: qendpoint release
       url: "https://github.com/the-qa-company/qEndpoint/releases/tag/v${{ needs.build.outputs.version }}"
     needs:
