@@ -123,6 +123,7 @@ public abstract class SailTest {
 	@After
 	public void complete() {
 		logger.info("Completed S/A/R : {}/{}/{} in {}", selectCount, addCount, removeCount, watch.stopAndShow());
+		endpoint.shutDown();
 	}
 
 	/**
@@ -132,9 +133,10 @@ public abstract class SailTest {
 	 * @throws IOException io exception
 	 */
 	protected void configHDT(String indexLocation) throws IOException {
-		HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
-		assert hdt != null;
-		hdt.saveToHDT(indexLocation, null);
+		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			assert hdt != null;
+			hdt.saveToHDT(indexLocation, null);
+		}
 	}
 
 	/**

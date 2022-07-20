@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -148,9 +149,10 @@ public class MergeRestartTest {
 		int count = 4;
 
 		// create a test HDT, saving it and printing it
-		HDT hdt = createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count);
-		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
-		printHDT(hdt, null);
+		try (HDT hdt = createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count)) {
+			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+			printHDT(hdt, null);
+		}
 
 		// write the current triples count
 		writeInfoCount(countFile, count);
@@ -858,7 +860,7 @@ public class MergeRestartTest {
 	public static HDT createTestHDT(String fileName, HDTSpecification spec, int testElements) {
 		try {
 			File inputFile = new File(fileName);
-			String baseURI = inputFile.getAbsolutePath();
+			String baseURI = inputFile.toURI().toString();
 			// adding triples
 
 			ValueFactory vf = new MemValueFactory();

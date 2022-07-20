@@ -291,7 +291,7 @@ public class Sparql {
 	}
 
 	@PostConstruct
-	public void runClient() throws IOException, URISyntaxException {
+	public void runClient() throws IOException {
 		if (client) {
 			qClient = new QEndpointClient();
 			applicationDirectory = qClient.getApplicationDirectory();
@@ -402,9 +402,7 @@ public class Sparql {
 				File tempRDF = new File(locationHdt + "tmp_index.nt");
 				Files.createDirectories(tempRDF.getParentFile().toPath());
 				Files.createFile(tempRDF.toPath());
-				try {
-					HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
-							null);
+				try (HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec, null)){
 					hdt.saveToHDT(hdtFile.getPath(), null);
 				} catch (ParserException e) {
 					throw new IOException("Can't parse the RDF file", e);
@@ -521,7 +519,7 @@ public class Sparql {
 		try {
 			String rdfInput = locationHdt + filename;
 			String hdtOutput = EndpointFiles.getHDTIndex(locationHdt, hdtIndexName);
-			String baseURI = "file://" + rdfInput;
+			String baseURI = new File(rdfInput).toURI().toString();
 
 			Files.createDirectories(Paths.get(locationHdt));
 			Files.deleteIfExists(Paths.get(hdtOutput));

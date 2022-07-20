@@ -4,17 +4,14 @@ import org.eclipse.rdf4j.common.io.NioFile;
 import org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap;
 import org.rdfhdt.hdt.listener.ProgressListener;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Arrays;
 
 /**
  * Implementation of {@link org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap}
  * write on disk
  */
-public class BitArrayDisk implements ModifiableBitmap {
+public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 	protected final static int LOGW = 6;
 	protected final static int W = 64;
@@ -388,12 +385,9 @@ public class BitArrayDisk implements ModifiableBitmap {
 		return str.toString();
 	}
 
-	public void close() {
-		try {
-			this.output.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	@Override
+	public void close() throws IOException {
+		this.output.close();
 	}
 
 	public void force(boolean bool) {

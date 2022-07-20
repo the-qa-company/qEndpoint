@@ -482,7 +482,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	}
 
 	// creates a new array that marks the deleted triples in the new HDT file
-	public void resetDeleteArray(HDT newHdt) {
+	public void resetDeleteArray(HDT newHdt) throws IOException {
 		// delete array created at merge time
 
 		BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements());

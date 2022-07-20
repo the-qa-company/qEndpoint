@@ -60,7 +60,7 @@ public class Utility {
 				throw new IOException("Can't create new empty file for hdt " + fileName);
 			}
 		}
-		String baseURI = inputFile.getAbsolutePath();
+		String baseURI = inputFile.toURI().toString();
 		RDFNotation notation = RDFNotation.guess(fileName);
 		HDT hdt;
 		try {
