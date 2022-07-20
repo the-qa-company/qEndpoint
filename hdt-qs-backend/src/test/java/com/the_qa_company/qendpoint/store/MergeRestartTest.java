@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -21,11 +22,14 @@ import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
+import org.rdfhdt.hdt.util.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,21 +42,19 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.BiConsumer;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class MergeRestartTest {
 	private static final Logger logger = LoggerFactory.getLogger(MergeRestartTest.class);
 	private static final File HALT_TEST_DIR = new File("tests", "halt_test_dir");
 	@Rule
 	public TemporaryFolder tempDir = new TemporaryFolder();
-	@Rule
-	public TemporaryFolder tempDir2 = new TemporaryFolder();
-	HDTSpecification spec;
+	HDTOptions spec;
 
 	@Before
 	public void setUp() {
-		spec = new HDTSpecification();
-		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+		spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		// set the MergeRunnable in test mode
 		MergeRunnableStopPoint.debug = true;
 	}
@@ -115,17 +117,31 @@ public class MergeRestartTest {
 		}
 	}
 
+	private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root)
+			throws IOException, InterruptedException {
+		try (Closer closer = Closer.of()) {
+			mergeRestartTest1(stopPoint, root, closer);
+		}
+	}
+
+	private void mergeRestartTest2(MergeRunnableStopPoint stopPoint, File root)
+			throws IOException, InterruptedException {
+		try (Closer closer = Closer.of()) {
+			mergeRestartTest2(stopPoint, root, closer);
+		}
+	}
+
 	/**
 	 * first stage of the merge test, before the crash
 	 *
 	 * @param stopPoint the stop point to crash
 	 * @param root      the root test directory
+	 * @param closer    closer
 	 * @throws IOException          io errors
 	 * @throws InterruptedException wait errors
-	 * @throws NotFoundException    rdf select errors
 	 */
-	private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root)
-			throws IOException, InterruptedException, NotFoundException {
+	private void mergeRestartTest1(MergeRunnableStopPoint stopPoint, File root, Closer closer)
+			throws IOException, InterruptedException {
 		// lock every point we need
 		lockIfAfter(MergeRunnableStopPoint.STEP1_START, stopPoint);
 		lockIfAfter(MergeRunnableStopPoint.STEP1_TEST_SELECT1, stopPoint);
@@ -149,16 +165,17 @@ public class MergeRestartTest {
 		int count = 4;
 
 		// create a test HDT, saving it and printing it
-		HDT hdt = createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count);
-		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
-		printHDT(hdt, null);
+		try (HDT hdt = createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count)) {
+			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+			printHDT(hdt, null);
+		}
 
 		// write the current triples count
 		writeInfoCount(countFile, count);
 
 		// start an endpoint store
-		EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-				spec, nativeStore.getAbsolutePath() + "/", false);
+		EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + File.separator,
+				EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + File.separator, false);
 		logger.debug("--- launching merge with stopPoint=" + stopPoint.name().toLowerCase());
 
 		// set the threshold to control the number of add required to trigger
@@ -167,6 +184,7 @@ public class MergeRestartTest {
 
 		// create a sail repository to create connections to the store
 		SailRepository endpointStore = new SailRepository(store);
+		closer.with((Closeable) endpointStore::shutDown, (Closeable) store::deleteNativeLocks);
 
 		int step = 0;
 		try {
@@ -204,8 +222,9 @@ public class MergeRestartTest {
 
 			// show the bitmap and the file value
 			logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
-			logger.debug("STEP1_TEST_BITMAP0n: {}",
-					new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr").printInfo());
+			try (BitArrayDisk arr = new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr")) {
+				logger.debug("STEP1_TEST_BITMAP0n: {}", arr.printInfo());
+			}
 			// test if the count is correct
 			executeTestCount(countFile, endpointStore, store);
 			++step;
@@ -351,12 +370,14 @@ public class MergeRestartTest {
 	/**
 	 * second stage of the merge test, after the crash
 	 *
-	 * @param point the stop point of the crash
-	 * @param root  the root test directory
+	 * @param point  the stop point of the crash
+	 * @param root   the root test directory
+	 * @param closer closer
 	 * @throws IOException          io errors
 	 * @throws InterruptedException wait errors
 	 */
-	private void mergeRestartTest2(MergeRunnableStopPoint point, File root) throws IOException, InterruptedException {
+	private void mergeRestartTest2(MergeRunnableStopPoint point, File root, Closer closer)
+			throws IOException, InterruptedException {
 		// lock merge point we need
 		lockIfBefore(MergeRunnableStopPoint.STEP1_TEST_SELECT1, point);
 		lockIfBefore(MergeRunnableStopPoint.STEP1_TEST_SELECT2, point);
@@ -370,13 +391,16 @@ public class MergeRestartTest {
 		File hdtStore = new File(root, "hdt-store");
 		File countFile = new File(root, "count");
 
-		logger.debug("test2 restart, count of deleted in hdt: {}",
-				new BitArrayDisk(4, hdtStore.getAbsolutePath() + "/triples-delete.arr").countOnes());
+		try (BitArrayDisk arr = new BitArrayDisk(4, hdtStore.getAbsolutePath() + "/triples-delete.arr")) {
+			logger.debug("test2 restart, count of deleted in hdt: {}", arr.countOnes());
+		}
 
 		// lock to get the test count 1 into the 2nd step
-		EndpointStore store2 = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-				spec, nativeStore.getAbsolutePath() + "/", false);
+		EndpointStore store2 = new EndpointStore(hdtStore.getAbsolutePath() + File.separator,
+				EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + File.separator, false);
 		SailRepository endpointStore2 = new SailRepository(store2);
+
+		closer.with((Closeable) endpointStore2::shutDown, (Closeable) store2::deleteNativeLocks);
 		// a merge should be triggered
 
 		// test at each step if the count is the same
@@ -439,10 +463,6 @@ public class MergeRestartTest {
 			logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
 		// test if the count is correct
 		executeTestCount(countFile, endpointStore2, store2);
-
-		// delete the test data
-		deleteDir(nativeStore);
-		deleteDir(hdtStore);
 	}
 
 	/**
@@ -480,56 +500,64 @@ public class MergeRestartTest {
 		}
 	}
 
-	public void mergeRestartTest(MergeRunnableStopPoint stopPoint)
-			throws IOException, InterruptedException, NotFoundException {
-		// create a store to tell which dir we are using
-		FileStore store = new FileStore(tempDir.getRoot(), tempDir2.getRoot());
-		Thread knowledgeThread = new Thread(() -> {
-			// lock the points we need, this is done before and after the crash,
-			// so we don't have to check
-			// if this is before or after the stop point
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLock();
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLockTest();
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLock();
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLockTest();
+	public void mergeRestartTest(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException {
+		File testRoot = tempDir.newFolder();
+		File root1 = new File(testRoot, "root1");
+		File root2 = new File(testRoot, "root2");
+		try (Closer closer = Closer.of()) {
+			// create a store to tell which dir we are using
+			FileStore store = new FileStore(root1, root2);
+			Thread knowledgeThread = new Thread(() -> {
+				// lock the points we need, this is done before and after the
+				// crash,
+				// so we don't have to check
+				// if this is before or after the stop point
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLock();
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLockTest();
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLock();
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLockTest();
 
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugWaitForEvent();
-			{
-				// log the bitmap state at STEP1_TEST_BITMAP1
-				try (BitArrayDisk bitmap = new BitArrayDisk(4,
-						store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
-					logger.debug("STEP1_TEST_BITMAP1: {}", bitmap.printInfo());
-				} catch (IOException e) {
-					throw new RuntimeException(e);
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugWaitForEvent();
+				{
+					// log the bitmap state at STEP1_TEST_BITMAP1
+					try (BitArrayDisk bitmap = new BitArrayDisk(4,
+							store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
+						logger.debug("STEP1_TEST_BITMAP1: {}", bitmap.printInfo());
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
 				}
-			}
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugUnlockTest();
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugUnlockTest();
 
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugWaitForEvent();
-			{
-				// log the bitmap state at STEP1_TEST_BITMAP2
-				try (BitArrayDisk bitmap = new BitArrayDisk(4,
-						store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
-					logger.debug("STEP1_TEST_BITMAP2: {}", bitmap.printInfo());
-				} catch (IOException e) {
-					throw new RuntimeException(e);
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugWaitForEvent();
+				{
+					// log the bitmap state at STEP1_TEST_BITMAP2
+					try (BitArrayDisk bitmap = new BitArrayDisk(4,
+							store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
+						logger.debug("STEP1_TEST_BITMAP2: {}", bitmap.printInfo());
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
 				}
-			}
-			MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugUnlockTest();
-		}, "KnowledgeThread");
-		knowledgeThread.start();
+				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugUnlockTest();
+			}, "KnowledgeThread");
+			knowledgeThread.start();
 
-		// start the first phase
-		mergeRestartTest1(stopPoint, tempDir.getRoot());
-		// re-allow the request, this was set to true in the first phase crash
-		MergeRunnableStopPoint.disableRequest = false;
-		// MergeRunnableStopPoint.unlockAllLocks();
+			// start the first phase
+			mergeRestartTest1(stopPoint, root1, closer);
+			// re-allow the request, this was set to true in the first phase
+			// crash
+			MergeRunnableStopPoint.disableRequest = false;
+			// MergeRunnableStopPoint.unlockAllLocks();
 
-		// switch the directory we are using
-		swapDir();
-		store.switchValue();
-		// start the second phase
-		mergeRestartTest2(stopPoint, tempDir2.getRoot());
+			// switch the directory we are using
+			swapDir(root1, root2);
+			store.switchValue();
+			// start the second phase
+			mergeRestartTest2(stopPoint, root2, closer);
+		} finally {
+			FileUtils.deleteDirectory(tempDir.getRoot());
+		}
 	}
 
 	/**
@@ -754,7 +782,6 @@ public class MergeRestartTest {
 	 *
 	 * @param hdt   the hdt to print
 	 * @param store the store, can be null to avoid printing the bitmap
-	 * @throws NotFoundException if we can't search in the HDT
 	 */
 	public static void printHDT(HDT hdt, EndpointStore store) {
 		IteratorTripleString it;
@@ -806,9 +833,9 @@ public class MergeRestartTest {
 	/**
 	 * move all the files from tempDir to tempDir2 and delete tempDir2
 	 */
-	private void swapDir() throws IOException {
-		Path to = Paths.get(tempDir2.getRoot().getAbsolutePath());
-		Path root = Paths.get(tempDir.getRoot().getAbsolutePath());
+	private void swapDir(File root1, File root2) throws IOException {
+		Path to = root2.toPath();
+		Path root = root1.toPath();
 		Files.walkFileTree(root, new FileVisitor<>() {
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -820,7 +847,7 @@ public class MergeRestartTest {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 				Path newFile = to.resolve(root.relativize(file));
-				Files.move(file, newFile);
+				Files.copy(file, newFile);
 				return FileVisitResult.CONTINUE;
 			}
 
@@ -830,8 +857,7 @@ public class MergeRestartTest {
 			}
 
 			@Override
-			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-				Files.delete(dir);
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
 				return FileVisitResult.CONTINUE;
 			}
 		});
@@ -862,10 +888,10 @@ public class MergeRestartTest {
 	 * @param testElements n
 	 * @return the hdt
 	 */
-	public static HDT createTestHDT(String fileName, HDTSpecification spec, int testElements) {
+	public static HDT createTestHDT(String fileName, HDTOptions spec, int testElements) {
 		try {
 			File inputFile = new File(fileName);
-			String baseURI = inputFile.getAbsolutePath();
+			String baseURI = inputFile.toURI().toString();
 			// adding triples
 
 			ValueFactory vf = new MemValueFactory();

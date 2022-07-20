@@ -24,16 +24,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.options.HDTOptions;
 import org.rdfhdt.hdt.options.HDTOptionsKeys;
-import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -105,7 +104,7 @@ public abstract class SailTest {
 	public TemporaryFolder tempDir = new TemporaryFolder();
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected SailRepository repository;
-	protected HDTSpecification spec;
+	protected HDTOptions spec;
 	protected StopWatch watch;
 	protected EndpointStore endpoint;
 	private int addCount = 0;
@@ -119,18 +118,17 @@ public abstract class SailTest {
 		addCount = 0;
 		removeCount = 0;
 		selectCount = 0;
-		spec = new HDTSpecification();
+		spec = HDTOptions.of();
 		if (useMultiSect) {
 			spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		}
-		File nativeStore = tempDir.newFolder("native-store");
-		File hdtStore = tempDir.newFolder("hdt-store");
+		Path nativeStore = tempDir.newFolder("native-store").toPath();
+		Path hdtStore = tempDir.newFolder("hdt-store").toPath();
 
-		configHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
+		configHDT(hdtStore.resolve(EndpointStoreTest.HDT_INDEX_NAME));
 
-		endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
-				nativeStore.getAbsolutePath() + "/", false);
+		endpoint = new EndpointStore(hdtStore, EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore, false);
 
 		Sail store = configStore(endpoint);
 
@@ -159,10 +157,10 @@ public abstract class SailTest {
 	 * @param indexLocation the wanted hdt file location
 	 * @throws IOException io exception
 	 */
-	protected void configHDT(String indexLocation) throws IOException {
+	protected void configHDT(Path indexLocation) throws IOException {
 		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
 			assert hdt != null;
-			hdt.saveToHDT(indexLocation, null);
+			hdt.saveToHDT(indexLocation.toAbsolutePath().toString(), null);
 		}
 	}
 
@@ -431,7 +429,7 @@ public abstract class SailTest {
 		 * @return query
 		 */
 		public String build() {
-			String s = "?" + resultObject + " search:matches [\n" + "  search:query '" + query.replaceAll("'", "\\'")
+			String s = "?" + resultObject + " search:matches [\n" + "  search:query '" + query.replaceAll("'", "'")
 					+ "';\n";
 
 			if (indexId != null) {

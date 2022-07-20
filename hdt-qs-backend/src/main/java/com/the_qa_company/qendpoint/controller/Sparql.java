@@ -24,7 +24,6 @@ import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTOptions;
-import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.rdfhdt.hdt.util.io.CloseSuppressPath;
@@ -37,6 +36,7 @@ import org.springframework.web.server.ServerWebInputException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +44,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -58,6 +57,7 @@ import java.util.stream.Collectors;
 
 @Component
 public class Sparql {
+	private static boolean redirectDone;
 
 	public static class NamespaceData {
 		private String prefix;
@@ -301,7 +301,7 @@ public class Sparql {
 	}
 
 	@PostConstruct
-	public void runClient() throws IOException, URISyntaxException {
+	public void runClient() throws IOException {
 		if (client) {
 			qClient = new QEndpointClient();
 			applicationDirectory = qClient.getApplicationDirectory();
@@ -309,8 +309,8 @@ public class Sparql {
 			qClient = null;
 			applicationDirectory = Path.of(locationEndpointCfg);
 		}
-		locationHdt = applicationDirectory.resolve(locationHdtCfg).toAbsolutePath() + "/";
-		locationNative = applicationDirectory.resolve(locationNativeCfg).toAbsolutePath() + "/";
+		locationHdt = applicationDirectory.resolve(locationHdtCfg).toAbsolutePath() + File.separator;
+		locationNative = applicationDirectory.resolve(locationNativeCfg).toAbsolutePath() + File.separator;
 
 		sparqlPrefixesFile = applicationDirectory.resolve("prefixes.sparql");
 
@@ -327,6 +327,10 @@ public class Sparql {
 	}
 
 	private void redirectOutput(Path file) throws IOException {
+		if (redirectDone) {
+			return;
+		}
+		redirectDone = true;
 		Files.createDirectories(file.getParent());
 
 		Path out = backupIfExists(file);
@@ -514,13 +518,22 @@ public class Sparql {
 		}
 	}
 
+	public static String baseURIFromFilename(String rdfInput) {
+		String rdfInputLow = rdfInput.toLowerCase();
+		if (rdfInputLow.startsWith("http") || rdfInputLow.startsWith("ftp")) {
+			return URI.create(rdfInput).toString();
+		} else {
+			return Path.of(rdfInput).toUri().toString().replace(File.separatorChar, '/');
+		}
+	}
+
 	public LoadFileResult loadFile(InputStream input, String filename) throws IOException {
 		// wait previous loading
 		waitLoading(0);
 		try {
-			String rdfInput = locationHdt + filename;
+			String rdfInput = locationHdt + new File(filename).getName();
 			String hdtOutput = EndpointFiles.getHDTIndex(locationHdt, hdtIndexName);
-			String baseURI = "file://" + rdfInput;
+			String baseURI = baseURIFromFilename(rdfInput);
 
 			Files.createDirectories(Paths.get(locationHdt));
 			Files.deleteIfExists(Paths.get(hdtOutput));
@@ -671,7 +684,7 @@ public class Sparql {
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
 	}
 
-	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTSpecification spec, String hdtOutput)
+	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTOptions spec, String hdtOutput)
 			throws IOException {
 		if (sparqlRepository.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 			// dump the file to the disk to allow 2 passes

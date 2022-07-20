@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.controller.Sparql;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -14,7 +15,7 @@ import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,7 +33,7 @@ public class Utility {
 	 * @return HDT
 	 * @throws IOException io error
 	 */
-	public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTSpecification spec)
+	public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTOptions spec)
 			throws IOException {
 		return createTempHdtIndex(new File(fileName.newFile() + ".nt").getAbsolutePath(), empty, isBig, spec);
 	}
@@ -47,7 +48,7 @@ public class Utility {
 	 * @return HDT
 	 * @throws IOException io error
 	 */
-	public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTSpecification spec)
+	public static HDT createTempHdtIndex(String fileName, boolean empty, boolean isBig, HDTOptions spec)
 			throws IOException {
 		File inputFile = new File(fileName);
 		if (!empty) {
@@ -60,7 +61,7 @@ public class Utility {
 				throw new IOException("Can't create new empty file for hdt " + fileName);
 			}
 		}
-		String baseURI = inputFile.getAbsolutePath();
+		String baseURI = Sparql.baseURIFromFilename(fileName);
 		RDFNotation notation = RDFNotation.guess(fileName);
 		HDT hdt;
 		try {
