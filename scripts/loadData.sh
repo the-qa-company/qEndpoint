@@ -1,5 +1,5 @@
 FILE=/app/qendpoint/hdt-store/index_dev.hdt
-FILE2=/app/qendpoint/hdt-store/index_big.hdt.index.v1-1
+FILE2=$FILE.index.v1-1
 
 if [ -f "$FILE" ]; then
     echo "$FILE exists."
