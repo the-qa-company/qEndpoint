@@ -1,2 +1,1 @@
-- fix path docker image
-
+- fix bug with aggregations
