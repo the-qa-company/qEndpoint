@@ -3,14 +3,12 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.model.SimpleLiteralHDT;
-
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
-import org.rdfhdt.hdt.dictionary.impl.MultipleSectionDictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
@@ -30,7 +28,8 @@ public class HDTConverter {
 	public HDTConverter(EndpointStore endpoint) {
 		this.endpoint = endpoint;
 		this.hdt = endpoint.getHdt();
-		this.optimizeDatatype = hdt.getDictionary() instanceof MultipleSectionDictionary;
+		this.optimizeDatatype = false; // hdt.getDictionary() instanceof
+										// MultipleSectionDictionary;
 	}
 
 	// method to get the ID of a resource
@@ -205,7 +204,7 @@ public class HDTConverter {
 	public Value IdToObjectHDTResource(long objectID) {
 		if (objectID >= endpoint.getHdtProps().getStartLiteral()
 				&& objectID <= endpoint.getHdtProps().getEndLiteral()) {
-			return new SimpleLiteralHDT(endpoint.getHdt(), objectID, endpoint.getValueFactory(), optimizeDatatype);
+			return new SimpleLiteralHDT(endpoint.getHdt(), objectID, valueFactory, optimizeDatatype);
 		} else if ((objectID >= endpoint.getHdtProps().getStartBlankObjects()
 				&& objectID <= endpoint.getHdtProps().getEndBlankObjects())
 				|| (objectID >= endpoint.getHdtProps().getStartBlankShared()
