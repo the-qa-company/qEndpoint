@@ -3,3 +3,6 @@ contact_links:
   - name: The QA Company ✉️
     url: https://the-qa-company.com/
     about: The QA Company web site
+  - name: Support or questions 📚
+    url: https://github.com/the-qa-company/qEndpoint/discussions
+    about: Ask a question about QEndpoint
