@@ -1,8 +1,10 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import com.the_qa_company.qendpoint.utils.CombinedNativeStoreResult;
 
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.common.iteration.EmptyIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -42,6 +44,18 @@ public class EndpointTripleSource implements TripleSource {
 	public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(Resource resource, IRI iri,
 			Value value, Resource... resources) throws QueryEvaluationException {
 
+		if (EndpointStoreConnection.debugWaittime != 0) {
+			try {
+				Thread.sleep(EndpointStoreConnection.debugWaittime);
+			} catch (InterruptedException e) {
+				throw new AssertionError("no interruption during sleep", e);
+			}
+		}
+
+		if (endpointStoreConnection.isTimeout()) {
+			throw new EndpointTimeoutException();
+		}
+
 		// @todo: should we not move this to the EndpointStore in the resetHDT
 		// function?
 		// check if the index changed, then refresh it
@@ -76,7 +90,7 @@ public class EndpointTripleSource implements TripleSource {
 		logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
-		CloseableIteration<? extends Statement, SailException> repositoryResult = null;
+		CloseableIteration<? extends Statement, SailException> repositoryResult;
 		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
 			logger.debug("Searching over native store");
 			count++;
@@ -96,6 +110,7 @@ public class EndpointTripleSource implements TripleSource {
 			}
 		} else {
 			logger.debug("Not searching over native store");
+			repositoryResult = new EmptyIteration<>();
 		}
 
 		// iterate over the HDT file
@@ -111,28 +126,7 @@ public class EndpointTripleSource implements TripleSource {
 
 		// iterate over hdt result, delete the triples marked as deleted and add
 		// the triples from the delta
-		EndpointStoreTripleIterator tripleWithDeleteIter = new EndpointStoreTripleIterator(endpoint, this, iterator,
-				repositoryResult);
-		return new CloseableIteration<>() {
-			@Override
-			public void close() throws QueryEvaluationException {
-			}
-
-			@Override
-			public boolean hasNext() throws QueryEvaluationException {
-				return tripleWithDeleteIter.hasNext();
-			}
-
-			@Override
-			public Statement next() throws QueryEvaluationException {
-				return tripleWithDeleteIter.next();
-			}
-
-			@Override
-			public void remove() throws QueryEvaluationException {
-				tripleWithDeleteIter.remove();
-			}
-		};
+		return new EndpointStoreTripleIterator(endpoint, this, iterator, repositoryResult);
 	}
 
 	// this function determines if a triple pattern should be searched over the
