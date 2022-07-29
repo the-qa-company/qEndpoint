@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -30,10 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EndpointStoreConnection extends SailSourceConnection {
-
+	private static final Timer TIMEOUT_TIMER = new Timer("EndpointStoreConnectionTimer", true);
+	static long debugWaittime = 0L;
 	private static final AtomicLong DEBUG_ID_STORE = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStoreConnection.class);
 	private final EndpointTripleSource tripleSource;
@@ -47,6 +52,8 @@ public class EndpointStoreConnection extends SailSourceConnection {
 	private final long debugId;
 	private final Lock connectionLock;
 	private Lock updateLock;
+	private CloseTask closeTask;
+	private final AtomicBoolean timeout = new AtomicBoolean();
 
 	public EndpointStoreConnection(EndpointStore endpoint) {
 		super(endpoint, endpoint.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
@@ -123,8 +130,21 @@ public class EndpointStoreConnection extends SailSourceConnection {
 	@Override
 	protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred,
 			Value obj, boolean includeInferred, Resource... contexts) throws SailException {
-		if (MergeRunnableStopPoint.disableRequest)
+		if (MergeRunnableStopPoint.disableRequest) {
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+		}
+
+		if (debugWaittime != 0) {
+			try {
+				Thread.sleep(debugWaittime);
+			} catch (InterruptedException e) {
+				throw new AssertionError("no interruption during sleep", e);
+			}
+		}
+
+		if (timeout.get()) {
+			throw new EndpointTimeoutException();
+		}
 		CloseableIteration<? extends Statement, QueryEvaluationException> result = tripleSource.getStatements(subj,
 				pred, obj, contexts);
 		return new ExceptionConvertingIteration<Statement, SailException>(result) {
@@ -327,6 +347,9 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		this.connB_read.close();
 		this.connA_write.close();
 		this.connB_write.close();
+		if (closeTask != null) {
+			closeTask.cancel();
+		}
 		this.connectionLock.release();
 	}
 
@@ -510,5 +533,43 @@ public class EndpointStoreConnection extends SailSourceConnection {
 	// the store
 	private long convertToId(Value iri, TripleComponentRole position) {
 		return endpoint.getHdt().getDictionary().stringToId(iri.toString(), position);
+	}
+
+	/**
+	 * set a max timeout for this connection getStatement
+	 *
+	 * @param timeout timeout (in millis), 0 to unset a previous timeout
+	 */
+	public void setConnectionTimeout(long timeout) {
+		if (closeTask != null) {
+			closeTask.cancel();
+			if (timeout > 0) {
+				logger.warn("a timeout was already set for this connection");
+			} else {
+				closeTask = null;
+				return; // no new timeout to set
+			}
+		}
+		this.timeout.set(false);
+
+		if (timeout <= 0) {
+			return;
+		}
+
+		logger.debug("set timeout {}", timeout);
+		closeTask = new CloseTask();
+		TIMEOUT_TIMER.schedule(closeTask, timeout);
+
+	}
+
+	public boolean isTimeout() {
+		return timeout.get();
+	}
+
+	private class CloseTask extends TimerTask {
+		@Override
+		public void run() {
+			timeout.set(true);
+		}
 	}
 }
