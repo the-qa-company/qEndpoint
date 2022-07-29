@@ -8,6 +8,7 @@ import com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult;
 import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
+import com.the_qa_company.qendpoint.utils.sail.SourceSailConnectionWrapper;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.Namespace;
@@ -328,10 +329,13 @@ public class SparqlRepository {
 			if (connection instanceof EndpointStoreConnection) {
 				return (EndpointStoreConnection) connection;
 			}
-			if (!(connection instanceof SailConnectionWrapper)) {
+			if (connection instanceof SailConnectionWrapper) {
+				connection = ((SailConnectionWrapper) connection).getWrappedConnection();
+			} else if (connection instanceof SourceSailConnectionWrapper) {
+				connection = ((SourceSailConnectionWrapper) connection).getWrapped();
+			} else {
 				break;
 			}
-			connection = ((SailConnectionWrapper) connection).getWrappedConnection();
 		}
 		return null;
 	}
