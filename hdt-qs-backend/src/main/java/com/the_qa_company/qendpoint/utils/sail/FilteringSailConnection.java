@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
+import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailConnectionListener;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.UnknownSailTransactionStateException;
@@ -20,7 +21,7 @@ import org.eclipse.rdf4j.sail.UpdateContext;
 
 import java.util.Objects;
 
-class FilteringSailConnection implements NotifyingSailConnection {
+class FilteringSailConnection implements NotifyingSailConnection, SourceSailConnectionWrapper {
 	private final NotifyingSailConnection connectionIfYes;
 	private final MultiInputFilteringSailConnection connectionIfNo;
 	private final SailFilter filter;
@@ -30,6 +31,11 @@ class FilteringSailConnection implements NotifyingSailConnection {
 		this.connectionIfYes = Objects.requireNonNull(connectionIfYes, "connectionIfYes can't be null!");
 		this.connectionIfNo = Objects.requireNonNull(connectionIfNo, "connectionIfNo can't be null!");
 		this.filter = Objects.requireNonNull(sail, "sail can't be null!").getFilter();
+	}
+
+	@Override
+	public SailConnection getWrapped() {
+		return connectionIfNo.getWrappedConnection();
 	}
 
 	@Override
