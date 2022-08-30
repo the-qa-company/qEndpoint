@@ -636,12 +636,13 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 			// the subject, predicate, objects that are
 			// used in rdf4j
 			try (RepositoryConnection connection = this.getConnectionToChangingStore()) {
-				RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
-				for (Statement statement : statements) {
-					Resource internalSubj = converter.rdf4jToHdtIDsubject(statement.getSubject());
-					IRI internalPredicate = converter.rdf4jToHdtIDpredicate(statement.getPredicate());
-					Value internalObject = converter.rdf4jToHdtIDobject(statement.getObject());
-					this.modifyBitmaps(internalSubj, internalPredicate, internalObject);
+				try (RepositoryResult<Statement> statements = connection.getStatements(null, null, null)) {
+					for (Statement statement : statements) {
+						Resource internalSubj = converter.rdf4jToHdtIDsubject(statement.getSubject());
+						IRI internalPredicate = converter.rdf4jToHdtIDpredicate(statement.getPredicate());
+						Value internalObject = converter.rdf4jToHdtIDobject(statement.getObject());
+						this.modifyBitmaps(internalSubj, internalPredicate, internalObject);
+					}
 				}
 			}
 		} catch (Exception e) {

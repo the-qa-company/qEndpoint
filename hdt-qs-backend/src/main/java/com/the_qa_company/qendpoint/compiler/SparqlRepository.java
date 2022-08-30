@@ -357,7 +357,16 @@ public class SparqlRepository {
 	private ClosableResult<?> execute0(RepositoryConnection customConnection, String sparqlQuery, int timeout,
 			String acceptHeader, Consumer<String> mimeSetter, OutputStream out) {
 
-		RepositoryConnection connection = Objects.requireNonNullElseGet(customConnection, repository::getConnection);
+		RepositoryConnection connectionCloseable;
+		RepositoryConnection connection;
+
+		if (customConnection == null) {
+			connection = repository.getConnection();
+			connectionCloseable = connection;
+		} else {
+			connectionCloseable = null;
+			connection = customConnection;
+		}
 		try {
 			int rTimeout;
 			if (timeout < 0) {
@@ -407,13 +416,13 @@ public class SparqlRepository {
 						}
 						return null;
 					} else {
-						return new ClosableResult<>(query.evaluate(), connection);
+						return new ClosableResult<>(query.evaluate(), connectionCloseable);
 					}
 				} catch (QueryEvaluationException q) {
 					error = true;
 					logger.error("This exception was caught [" + q + "]");
 					q.printStackTrace();
-					throw new RuntimeException(q);
+					throw q;
 				} finally {
 					if (!error && compiledSail.getOptions().isDebugShowTime()) {
 						System.out.println(query.explain(Explanation.Level.Timed));
@@ -436,7 +445,7 @@ public class SparqlRepository {
 						writer.handleBoolean(query.evaluate());
 						return null;
 					} else {
-						return new ClosableResult<>(new BooleanQueryResult(query.evaluate()), connection);
+						return new ClosableResult<>(new BooleanQueryResult(query.evaluate()), connectionCloseable);
 					}
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
@@ -465,7 +474,7 @@ public class SparqlRepository {
 						}
 						return null;
 					} else {
-						return new ClosableResult<>(query.evaluate(), connection);
+						return new ClosableResult<>(query.evaluate(), connectionCloseable);
 					}
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
@@ -475,13 +484,15 @@ public class SparqlRepository {
 			} else {
 				throw new ServerWebInputException("query not supported");
 			}
+		} catch (Throwable t) {
+			if (customConnection == null) {
+				connection.close();
+			}
+			throw t;
 		} finally {
 			if (connection instanceof EndpointStoreConnection) {
 				// unset previous timeout
 				((EndpointStoreConnection) connection).setConnectionTimeout(0);
-			}
-			if (customConnection == null) {
-				connection.close();
 			}
 		}
 	}

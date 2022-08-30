@@ -37,7 +37,9 @@ public class ClosableResult<T extends QueryResult<?>> implements AutoCloseable {
 		try {
 			query.close();
 		} finally {
-			closeable.close();
+			if (closeable != null) {
+				closeable.close();
+			}
 		}
 	}
 }
