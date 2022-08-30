@@ -34,6 +34,8 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 		// named graphs anyway
 		testToIgnore.add("DELETE INSERT 1b");
 		testToIgnore.add("DELETE INSERT 1c");
+		testToIgnore.add("CLEAR NAMED");
+		testToIgnore.add("DROP NAMED");
 		this.setIgnoredTests(testToIgnore);
 	}
 
@@ -46,9 +48,10 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 		File hdtStore = tempDir.newFolder();
 		HDTSpecification spec = new HDTSpecification();
 		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-		HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
-		assert hdt != null;
-		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			assert hdt != null;
+			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+		}
 
 		EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
 				spec, nativeStore.getAbsolutePath() + "/", true);

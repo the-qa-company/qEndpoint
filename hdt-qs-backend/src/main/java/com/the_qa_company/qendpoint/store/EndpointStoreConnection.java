@@ -147,6 +147,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		}
 		CloseableIteration<? extends Statement, QueryEvaluationException> result = tripleSource.getStatements(subj,
 				pred, obj, contexts);
+
 		return new ExceptionConvertingIteration<Statement, SailException>(result) {
 			@Override
 			protected SailException convert(Exception e) {

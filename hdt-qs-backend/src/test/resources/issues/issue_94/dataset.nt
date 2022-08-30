@@ -1,0 +1,120 @@
+<http://commons.wikimedia.org/wiki/Special:FilePath/Screenshot%20of%20QAnswer.png> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/DD> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/DD> <http://www.w3.org/2000/01/rdf-schema#label> "Dennis Diefenbach" .
+<http://qanswer.eu/France> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/France> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://qanswer.eu/country> .
+<http://qanswer.eu/France> <http://www.w3.org/2000/01/rdf-schema#label> "France" .
+<http://qanswer.eu/France> <http://www.w3.org/2000/01/rdf-schema#label> "Frankreich" .
+<http://qanswer.eu/NLP> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/NLP> <http://www.w3.org/2000/01/rdf-schema#label> "Natural Language Processing" .
+<http://qanswer.eu/NLP> <http://www.w3.org/2000/01/rdf-schema#label> "Natural Language Processing"@de .
+<http://qanswer.eu/QACompany> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/QACompany> <http://www.w3.org/2000/01/rdf-schema#label> "The QA Company" .
+<http://qanswer.eu/QACompany> <http://www.wikidata.org/prop/direct/P856> <http://the-qa-company.com> .
+<http://qanswer.eu/SW> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/SW> <http://www.w3.org/2000/01/rdf-schema#label> "Semantic Web" .
+<http://qanswer.eu/SW> <http://www.w3.org/2000/01/rdf-schema#label> "Semantic Web"@de .
+<http://qanswer.eu/city> <http://purl.org/voc/vrank#pagerank> "0.2820156250"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/city> <http://www.w3.org/2000/01/rdf-schema#label> "city" .
+<http://qanswer.eu/city> <http://www.w3.org/2000/01/rdf-schema#label> "stadt"@de .
+<http://qanswer.eu/country> <http://purl.org/voc/vrank#pagerank> "0.2820156250"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/country> <http://www.w3.org/2000/01/rdf-schema#label> "country" .
+<http://qanswer.eu/country> <http://www.w3.org/2000/01/rdf-schema#label> "staat"@de .
+<http://qanswer.eu/graphs> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/graphs> <http://www.w3.org/2000/01/rdf-schema#label> "Graphen"@de .
+<http://qanswer.eu/graphs> <http://www.w3.org/2000/01/rdf-schema#label> "Graphs" .
+<http://qanswer.eu/lang> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/lang> <http://www.w3.org/2000/01/rdf-schema#label> "Languages" .
+<http://qanswer.eu/lang> <http://www.w3.org/2000/01/rdf-schema#label> "Sprachen"@de .
+<http://qanswer.eu/node2> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/node2> <http://www.w3.org/2000/01/rdf-schema#label> "English" .
+<http://qanswer.eu/node2> <http://www.w3.org/2000/01/rdf-schema#label> "English"@de .
+<http://qanswer.eu/node3> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/node3> <http://www.w3.org/2000/01/rdf-schema#label> "Franz\u00F6sish"@de .
+<http://qanswer.eu/node3> <http://www.w3.org/2000/01/rdf-schema#label> "French" .
+<http://qanswer.eu/node4> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/node4> <http://www.w3.org/2000/01/rdf-schema#label> "Deutsch"@de .
+<http://qanswer.eu/node4> <http://www.w3.org/2000/01/rdf-schema#label> "German" .
+<http://qanswer.eu/node5> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/node5> <http://www.w3.org/2000/01/rdf-schema#label> "Italian" .
+<http://qanswer.eu/node5> <http://www.w3.org/2000/01/rdf-schema#label> "Italienish"@de .
+<http://qanswer.eu/saintEtienne> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/saintEtienne> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://qanswer.eu/city> .
+<http://qanswer.eu/saintEtienne> <http://www.w3.org/2000/01/rdf-schema#label> "Saint-Etienne" .
+<http://the-qa-company.com> <http://purl.org/voc/vrank#pagerank> "0.2820156250"^^<http://www.w3.org/2001/XMLSchema#float> .
+<https://qanswer.eu> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<https://twitter.com/QAnswer21634063> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<https://www.youtube.com/channel/UCC88IVHJPUm7Ruf2lvfNMvg> <http://purl.org/voc/vrank#pagerank> "0.1553125000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/birthDate> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/birthDate> <http://www.w3.org/2000/01/rdf-schema#label> "born at" .
+<http://qanswer.eu/birthDate> <http://www.w3.org/2000/01/rdf-schema#label> "geboren am"@de .
+<http://qanswer.eu/birthDate> <http://www.w3.org/2004/02/skos/core#altLabel> "birth date" .
+<http://qanswer.eu/birthDate> <http://www.w3.org/2004/02/skos/core#altLabel> "geburtsdatum"@de .
+<http://qanswer.eu/birthPlace> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/birthPlace> <http://www.w3.org/2000/01/rdf-schema#label> "born" .
+<http://qanswer.eu/birthPlace> <http://www.w3.org/2000/01/rdf-schema#label> "geboren"@de .
+<http://qanswer.eu/birthPlace> <http://www.w3.org/2004/02/skos/core#altLabel> "birth place" .
+<http://qanswer.eu/birthPlace> <http://www.w3.org/2004/02/skos/core#altLabel> "geburts ort"@de .
+<http://qanswer.eu/developer> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/developer> <http://www.w3.org/2000/01/rdf-schema#label> "Entwickler"@de .
+<http://qanswer.eu/developer> <http://www.w3.org/2000/01/rdf-schema#label> "developer" .
+<http://qanswer.eu/developer> <http://www.w3.org/2004/02/skos/core#altLabel> "created by" .
+<http://qanswer.eu/developer> <http://www.w3.org/2004/02/skos/core#altLabel> "developed by" .
+<http://qanswer.eu/developer> <http://www.w3.org/2004/02/skos/core#altLabel> "entwickelt von"@de .
+<http://qanswer.eu/language> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/language> <http://www.w3.org/2000/01/rdf-schema#label> "speaks language" .
+<http://qanswer.eu/language> <http://www.w3.org/2000/01/rdf-schema#label> "spricht"@de .
+<http://qanswer.eu/language> <http://www.w3.org/2004/02/skos/core#altLabel> "Sprachen"@de .
+<http://qanswer.eu/language> <http://www.w3.org/2004/02/skos/core#altLabel> "language" .
+<http://qanswer.eu/language> <http://www.w3.org/2004/02/skos/core#altLabel> "speak" .
+<http://qanswer.eu/language> <http://www.w3.org/2004/02/skos/core#altLabel> "sprechen"@de .
+<http://qanswer.eu/like> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/like> <http://www.w3.org/2000/01/rdf-schema#label> "like" .
+<http://qanswer.eu/like> <http://www.w3.org/2000/01/rdf-schema#label> "magst"@de .
+<http://qanswer.eu/like> <http://www.w3.org/2004/02/skos/core#altLabel> "love" .
+<http://qanswer.eu/like> <http://www.w3.org/2004/02/skos/core#altLabel> "m\u00F6gen"@de .
+<http://qanswer.eu/liveIn> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/liveIn> <http://www.w3.org/2000/01/rdf-schema#label> "lebe in"@de .
+<http://qanswer.eu/liveIn> <http://www.w3.org/2000/01/rdf-schema#label> "live in" .
+<http://qanswer.eu/liveIn> <http://www.w3.org/2004/02/skos/core#altLabel> "residence" .
+<http://qanswer.eu/liveIn> <http://www.w3.org/2004/02/skos/core#altLabel> "wohnort"@de .
+<http://qanswer.eu/node1> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://qanswer.eu/node1> <http://qanswer.eu/birthDate> "2016-07-03"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://qanswer.eu/node1> <http://qanswer.eu/birthPlace> <http://qanswer.eu/France> .
+<http://qanswer.eu/node1> <http://qanswer.eu/birthPlace> <http://qanswer.eu/saintEtienne> .
+<http://qanswer.eu/node1> <http://qanswer.eu/developer> <http://qanswer.eu/DD> .
+<http://qanswer.eu/node1> <http://qanswer.eu/developer> <http://qanswer.eu/QACompany> .
+<http://qanswer.eu/node1> <http://qanswer.eu/language> <http://qanswer.eu/node2> .
+<http://qanswer.eu/node1> <http://qanswer.eu/language> <http://qanswer.eu/node3> .
+<http://qanswer.eu/node1> <http://qanswer.eu/language> <http://qanswer.eu/node4> .
+<http://qanswer.eu/node1> <http://qanswer.eu/language> <http://qanswer.eu/node5> .
+<http://qanswer.eu/node1> <http://qanswer.eu/like> <http://qanswer.eu/NLP> .
+<http://qanswer.eu/node1> <http://qanswer.eu/like> <http://qanswer.eu/SW> .
+<http://qanswer.eu/node1> <http://qanswer.eu/like> <http://qanswer.eu/graphs> .
+<http://qanswer.eu/node1> <http://qanswer.eu/like> <http://qanswer.eu/lang> .
+<http://qanswer.eu/node1> <http://qanswer.eu/liveIn> "I'm on some server, I don't even know where \U0001F648!" .
+<http://qanswer.eu/node1> <http://qanswer.eu/liveIn> "Ich bin auf einem Sewrver, Ich weiss noch nicht mal genau wo \U0001F648!"@de .
+<http://qanswer.eu/node1> <http://www.w3.org/2000/01/rdf-schema#description> "QAnswer is a Question Answering platform, i.e., a platform that allows to make your RDF data accessible via natural language. It is a combination of semantic technologies, information retrieval and machine learning techniques. Welcome!" .
+<http://qanswer.eu/node1> <http://www.w3.org/2000/01/rdf-schema#description> "QAnswer ist eine Question Answering Platform, das heisst eine platform die es erm\u00F6glicht RDF Daten durch nat\u00FCrliche Sprache abzufragen. QAnswer ist eine kombination aus semantischen Technologien, information retrieval and machine learning. Wilkommen!"@de .
+<http://qanswer.eu/node1> <http://www.w3.org/2000/01/rdf-schema#label> "QAnswer" .
+<http://qanswer.eu/node1> <http://www.w3.org/2004/02/skos/core#altLabel> "QA" .
+<http://qanswer.eu/node1> <http://www.w3.org/2004/02/skos/core#altLabel> "QAnswer KG" .
+<http://qanswer.eu/node1> <http://www.w3.org/2004/02/skos/core#altLabel> "du"@de .
+<http://qanswer.eu/node1> <http://www.w3.org/2004/02/skos/core#altLabel> "you" .
+<http://qanswer.eu/node1> <http://www.w3.org/2004/02/skos/core#altLabel> "your" .
+<http://qanswer.eu/node1> <http://www.wikidata.org/prop/direct/P1651> <https://www.youtube.com/channel/UCC88IVHJPUm7Ruf2lvfNMvg> .
+<http://qanswer.eu/node1> <http://www.wikidata.org/prop/direct/P18> <http://commons.wikimedia.org/wiki/Special:FilePath/Screenshot%20of%20QAnswer.png> .
+<http://qanswer.eu/node1> <http://www.wikidata.org/prop/direct/P2002> <https://twitter.com/QAnswer21634063> .
+<http://qanswer.eu/node1> <http://www.wikidata.org/prop/direct/P856> <https://qanswer.eu> .
+<http://www.wikidata.org/prop/direct/P1651> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://www.wikidata.org/prop/direct/P1651> <http://www.w3.org/2000/01/rdf-schema#label> "youtube link" .
+<http://www.wikidata.org/prop/direct/P1651> <http://www.w3.org/2000/01/rdf-schema#label> "youtube link"@de .
+<http://www.wikidata.org/prop/direct/P18> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://www.wikidata.org/prop/direct/P18> <http://www.w3.org/2000/01/rdf-schema#label> "bild"@de .
+<http://www.wikidata.org/prop/direct/P18> <http://www.w3.org/2000/01/rdf-schema#label> "image" .
+<http://www.wikidata.org/prop/direct/P2002> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://www.wikidata.org/prop/direct/P2002> <http://www.w3.org/2000/01/rdf-schema#label> "twitter" .
+<http://www.wikidata.org/prop/direct/P2002> <http://www.w3.org/2000/01/rdf-schema#label> "twitter"@de .
+<http://www.wikidata.org/prop/direct/P856> <http://purl.org/voc/vrank#pagerank> "0.1000000000"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://www.wikidata.org/prop/direct/P856> <http://www.w3.org/2000/01/rdf-schema#label> "homepage" .
+<http://www.wikidata.org/prop/direct/P856> <http://www.w3.org/2000/01/rdf-schema#label> "website"@de .

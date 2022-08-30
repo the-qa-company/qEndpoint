@@ -1,0 +1,12 @@
+PREFIX vrank: <http://purl.org/voc/vrank#>
+
+SELECT DISTINCT ?o (SAMPLE(?label) AS ?l) (SAMPLE(?rank) AS ?pageRank) WHERE {
+  <http://qanswer.eu/node1> ?p ?o.
+  ?o vrank:pagerank ?rank.
+  FILTER(?p != vrank:pagerank)
+  OPTIONAL {
+    ?o rdfs:label ?label.
+    FILTER(((LANG(?label)) = "en") || ((LANG(?label)) = ""))
+  }
+}
+GROUP BY ?o
