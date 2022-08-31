@@ -31,7 +31,7 @@ public class FormatUtils {
 
 		List<ValuedMime> mimes = new ArrayList<>();
 
-		for (String acceptedType : acceptHeader.split("[,]")) {
+		for (String acceptedType : acceptHeader.split("[,]\\s?")) {
 			String[] split = acceptedType.split(";");
 
 			String mime = split[0];
