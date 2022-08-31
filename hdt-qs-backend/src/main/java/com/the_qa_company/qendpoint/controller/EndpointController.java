@@ -47,6 +47,9 @@ public class EndpointController {
 			@RequestBody(required = false) String body, HttpServletResponse response) throws IOException {
 		logger.info("New query");
 
+		System.out.println("Accept "+ acceptHeader);
+		System.out.println("query "+ query);
+
 		if (query != null) {
 			sparql.execute(query, timeout, acceptHeader, response::setContentType, response.getOutputStream());
 		} else if (body != null && content.equals("application/sparql-query")) {
