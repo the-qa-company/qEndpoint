@@ -1,12 +1,14 @@
 package com.the_qa_company.qendpoint.compiler;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.store.EndpointStoreConnection;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult;
 import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
+import com.the_qa_company.qendpoint.utils.sail.SourceSailConnectionWrapper;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.Namespace;
@@ -44,6 +46,8 @@ import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.sail.SailConnection;
+import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -315,24 +319,67 @@ public class SparqlRepository {
 		return (ClosableResult<GraphQueryResult>) res.getResult();
 	}
 
+	private static EndpointStoreConnection getTimeoutEndpointConnection(RepositoryConnection start) {
+		if (!(start instanceof SailRepositoryConnection)) {
+			return null;
+		}
+		SailConnection connection = ((SailRepositoryConnection) start).getSailConnection();
+
+		while (connection != null) {
+			if (connection instanceof EndpointStoreConnection) {
+				return (EndpointStoreConnection) connection;
+			}
+			if (connection instanceof SailConnectionWrapper) {
+				connection = ((SailConnectionWrapper) connection).getWrappedConnection();
+			} else if (connection instanceof SourceSailConnectionWrapper) {
+				connection = ((SourceSailConnectionWrapper) connection).getWrapped();
+			} else {
+				break;
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * execute a sparql query
 	 *
-	 * @param connection   the connection to use (null for new connection)
-	 * @param sparqlQuery  the query
-	 * @param timeout      query timeout
-	 * @param acceptHeader accept header (useless if out is null)
-	 * @param mimeSetter   mime setter (useless if out is null)
-	 * @param out          output stream
+	 * @param customConnection the connection to use (null for new connection)
+	 * @param sparqlQuery      the query
+	 * @param timeout          query timeout
+	 * @param acceptHeader     accept header (useless if out is null)
+	 * @param mimeSetter       mime setter (useless if out is null)
+	 * @param out              output stream
 	 * @return query result if the output stream is null (useless if out isn't
 	 *         null), return
 	 *         {@link com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult}
 	 *         for boolean queries
 	 */
-	private ClosableResult<?> execute0(RepositoryConnection connection, String sparqlQuery, int timeout,
+	private ClosableResult<?> execute0(RepositoryConnection customConnection, String sparqlQuery, int timeout,
 			String acceptHeader, Consumer<String> mimeSetter, OutputStream out) {
-		connection = Objects.requireNonNullElseGet(connection, repository::getConnection);
+
+		RepositoryConnection connectionCloseable;
+		RepositoryConnection connection;
+
+		if (customConnection == null) {
+			connection = repository.getConnection();
+			connectionCloseable = connection;
+		} else {
+			connectionCloseable = null;
+			connection = customConnection;
+		}
 		try {
+			int rTimeout;
+			if (timeout < 0) {
+				rTimeout = getOptions().getTimeoutQuery();
+			} else {
+				rTimeout = timeout;
+			}
+			EndpointStoreConnection epCo;
+			if (rTimeout <= 0) {
+				epCo = null;
+			} else {
+				epCo = getTimeoutEndpointConnection(connection);
+			}
 			sparqlQuery = applyPrefixes(sparqlQuery);
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
 			// sparqlQuery = sparqlPrefixes+sparqlQuery;
@@ -347,10 +394,10 @@ public class SparqlRepository {
 
 			if (parsedQuery instanceof ParsedTupleQuery) {
 				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
-				if (timeout < 0) {
-					query.setMaxExecutionTime(getOptions().getTimeoutQuery());
+				if (epCo != null) {
+					epCo.setConnectionTimeout(rTimeout * 1_000L);
 				} else {
-					query.setMaxExecutionTime(timeout);
+					query.setMaxExecutionTime(rTimeout);
 				}
 				boolean error = false;
 				try {
@@ -369,13 +416,13 @@ public class SparqlRepository {
 						}
 						return null;
 					} else {
-						return new ClosableResult<>(query.evaluate(), connection);
+						return new ClosableResult<>(query.evaluate(), connectionCloseable);
 					}
 				} catch (QueryEvaluationException q) {
 					error = true;
 					logger.error("This exception was caught [" + q + "]");
 					q.printStackTrace();
-					throw new RuntimeException(q);
+					throw q;
 				} finally {
 					if (!error && compiledSail.getOptions().isDebugShowTime()) {
 						System.out.println(query.explain(Explanation.Level.Timed));
@@ -383,20 +430,35 @@ public class SparqlRepository {
 				}
 			} else if (parsedQuery instanceof ParsedBooleanQuery) {
 				BooleanQuery query = connection.prepareBooleanQuery(sparqlQuery);
-				query.setMaxExecutionTime(timeout);
-				if (out != null) {
-					QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader).orElseThrow(
-							() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
-					mimeSetter.accept(format.getDefaultMIMEType());
-					TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance().get(format)
-							.orElseThrow().getWriter(out);
-					writer.handleBoolean(query.evaluate());
-					return null;
-				} else {
-					return new ClosableResult<>(new BooleanQueryResult(query.evaluate()), connection);
+				try {
+					if (epCo != null) {
+						epCo.setConnectionTimeout(rTimeout * 1_000L);
+					} else {
+						query.setMaxExecutionTime(rTimeout);
+					}
+					if (out != null) {
+						QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader).orElseThrow(
+								() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
+						mimeSetter.accept(format.getDefaultMIMEType());
+						TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance().get(format)
+								.orElseThrow().getWriter(out);
+						writer.handleBoolean(query.evaluate());
+						return null;
+					} else {
+						return new ClosableResult<>(new BooleanQueryResult(query.evaluate()), connectionCloseable);
+					}
+				} catch (QueryEvaluationException q) {
+					logger.error("This exception was caught [" + q + "]");
+					q.printStackTrace();
+					throw new RuntimeException(q);
 				}
 			} else if (parsedQuery instanceof ParsedGraphQuery) {
 				GraphQuery query = connection.prepareGraphQuery(sparqlQuery);
+				if (epCo != null) {
+					epCo.setConnectionTimeout(rTimeout * 1_000L);
+				} else {
+					query.setMaxExecutionTime(rTimeout);
+				}
 				try {
 					if (out != null) {
 						RDFFormat format = FormatUtils.getRDFWriterFormat(acceptHeader).orElseThrow(
@@ -412,7 +474,7 @@ public class SparqlRepository {
 						}
 						return null;
 					} else {
-						return new ClosableResult<>(query.evaluate(), connection);
+						return new ClosableResult<>(query.evaluate(), connectionCloseable);
 					}
 				} catch (QueryEvaluationException q) {
 					logger.error("This exception was caught [" + q + "]");
@@ -422,9 +484,15 @@ public class SparqlRepository {
 			} else {
 				throw new ServerWebInputException("query not supported");
 			}
-		} finally {
-			if (out != null) {
+		} catch (Throwable t) {
+			if (customConnection == null) {
 				connection.close();
+			}
+			throw t;
+		} finally {
+			if (connection instanceof EndpointStoreConnection) {
+				// unset previous timeout
+				((EndpointStoreConnection) connection).setConnectionTimeout(0);
 			}
 		}
 	}

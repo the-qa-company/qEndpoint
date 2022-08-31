@@ -1,3 +1,10 @@
+## Version 1.5.3 
+
+- fix bug with aggregations
+## Version 1.5.2 
+
+- fix path docker image
+
 ## Version 1.5.1 
 
 - fix prefixes read

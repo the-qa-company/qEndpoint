@@ -309,6 +309,10 @@ public class Sparql {
 
 		redirectOutput(applicationDirectory.resolve("logs").resolve("logs.output"));
 
+		logger.info("using applicationDirectory: {}", applicationDirectory);
+		logger.info("locationHdt:                {}", locationHdt);
+		logger.info("locationNative:             {}", locationNative);
+
 		init();
 	}
 

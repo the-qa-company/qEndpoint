@@ -29,9 +29,9 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 	private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
 	public EndpointSPARQL11QueryComplianceTest(String displayName, String testURI, String name, String queryFileURL,
-			String resultFileURL, Dataset dataset, boolean ordered)
+			String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality)
 			throws ParserException, NotFoundException, IOException {
-		super(displayName, testURI, name, queryFileURL, resultFileURL, null, ordered);
+		super(displayName, testURI, name, queryFileURL, resultFileURL, null, ordered, laxCardinality);
 		setUpHDT(dataset);
 		List<String> testToIgnore = new ArrayList<>();
 		// @todo these tests are failing and should not, they are skipped so
