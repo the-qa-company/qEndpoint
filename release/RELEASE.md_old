@@ -1,3 +1,9 @@
+## Version 1.6.0 
+
+- update RDF4J to 4.1.0 #94
+- fix issue with non-closed operations
+- fix timeout for complex queries
+
 ## Version 1.5.3 
 
 - fix bug with aggregations
