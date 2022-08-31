@@ -123,6 +123,7 @@ public abstract class SailTest {
 	@After
 	public void complete() {
 		logger.info("Completed S/A/R : {}/{}/{} in {}", selectCount, addCount, removeCount, watch.stopAndShow());
+		repository.shutDown();
 	}
 
 	/**

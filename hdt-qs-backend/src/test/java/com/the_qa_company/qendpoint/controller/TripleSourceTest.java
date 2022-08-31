@@ -63,8 +63,9 @@ public class TripleSourceTest {
 	}
 
 	@After
-	public void complete() {
+	public void complete() throws IOException {
 		DebugOptionTestUtils.clearDebugOption();
+		sparql.shutdown();
 	}
 
 	@Test
