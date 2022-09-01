@@ -34,7 +34,7 @@
         <junit.version>4.13</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
         <rdf4j.version>4.1.0</rdf4j.version>
-        <rdfhdt.version>3.0.2</rdfhdt.version>
+        <rdfhdt.version>3.0.3</rdfhdt.version>
         <spring.version>2.7.3</spring.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
