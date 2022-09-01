@@ -1,3 +1,6 @@
+## Version 1.6.1 
+
+-Fixing bug preventing rdf4j client to work
 ## Version 1.6.0 
 
 - update RDF4J to 4.1.0 #94
