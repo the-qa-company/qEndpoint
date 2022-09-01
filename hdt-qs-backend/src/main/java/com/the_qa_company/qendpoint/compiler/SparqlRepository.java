@@ -359,6 +359,7 @@ public class SparqlRepository {
 
 		RepositoryConnection connectionCloseable;
 		RepositoryConnection connection;
+		boolean connectionClosed = false;
 
 		if (customConnection == null) {
 			connection = repository.getConnection();
@@ -414,6 +415,9 @@ public class SparqlRepository {
 						if (compiledSail.getOptions().isDebugShowCount()) {
 							logger.info("Complete query with {} triples", ((QueryResultCounter) writer).getCount());
 						}
+						if (customConnection == null) {
+							connection.close();
+						}
 						return null;
 					} else {
 						return new ClosableResult<>(query.evaluate(), connectionCloseable);
@@ -443,6 +447,9 @@ public class SparqlRepository {
 						TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance().get(format)
 								.orElseThrow().getWriter(out);
 						writer.handleBoolean(query.evaluate());
+						if (customConnection == null) {
+							connection.close();
+						}
 						return null;
 					} else {
 						return new ClosableResult<>(new BooleanQueryResult(query.evaluate()), connectionCloseable);
@@ -471,6 +478,9 @@ public class SparqlRepository {
 						query.evaluate(handler);
 						if (compiledSail.getOptions().isDebugShowCount()) {
 							logger.info("Complete query with {} triples", ((RDFHandlerCounter) handler).getCount());
+						}
+						if (customConnection == null) {
+							connection.close();
 						}
 						return null;
 					} else {
