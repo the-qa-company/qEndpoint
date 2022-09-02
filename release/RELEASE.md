@@ -1,1 +1,2 @@
--Fixing bug preventing rdf4j client to work
+- fix connection
+- update dependencies
