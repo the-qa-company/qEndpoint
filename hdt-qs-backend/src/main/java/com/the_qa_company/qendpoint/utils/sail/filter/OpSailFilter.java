@@ -106,4 +106,13 @@ public class OpSailFilter implements SailFilter {
 		return operation.apply(() -> filter1.shouldHandleExpression(tupleExpr, dataset, bindings, includeInferred),
 				() -> filter2.shouldHandleExpression(tupleExpr, dataset, bindings, includeInferred));
 	}
+
+	@Override
+	public void close() {
+		try {
+			getFilter1().close();
+		} finally {
+			getFilter2().close();
+		}
+	}
 }

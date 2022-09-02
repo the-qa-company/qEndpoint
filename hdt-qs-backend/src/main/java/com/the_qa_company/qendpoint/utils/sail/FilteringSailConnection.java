@@ -45,7 +45,11 @@ class FilteringSailConnection implements NotifyingSailConnection, SourceSailConn
 
 	@Override
 	public void close() throws SailException {
-		connectionIfYes.close();
+		try {
+			connectionIfYes.close();
+		} finally {
+			filter.close();
+		}
 	}
 
 	@Override

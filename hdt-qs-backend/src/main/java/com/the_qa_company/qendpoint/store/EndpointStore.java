@@ -56,9 +56,12 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class EndpointStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
+	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
+	private final long debugId;
 	// HDT file containing the data
 	private CloseSafeHDT hdt;
 	// specs of the HDT file
@@ -130,6 +133,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public EndpointStore(EndpointFiles files, HDTSpecification spec, boolean inMemDeletes, boolean loadIntoMemory)
 			throws IOException {
+		debugId = ENDPOINT_DEBUG_ID_GEN.incrementAndGet();
+		EndpointStoreUtils.openEndpoint(this);
 		this.endpointFiles = files;
 		this.loadIntoMemory = loadIntoMemory;
 		this.mergeRunnable = new MergeRunnable(this);
@@ -360,6 +365,12 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		logger.info("Shutdown B");
 		this.nativeStoreB.shutDown();
 		logger.info("Shutdown done");
+	}
+
+	@Override
+	public void shutDown() throws SailException {
+		EndpointStoreUtils.closeEndpoint(this);
+		super.shutDown();
 	}
 
 	public boolean isLoadIntoMemory() {
@@ -879,5 +890,9 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
 		MergeRunnable.setExtendsTimeMergeEnd(extendsTimeMergeEnd);
+	}
+
+	long getDebugId() {
+		return debugId;
 	}
 }

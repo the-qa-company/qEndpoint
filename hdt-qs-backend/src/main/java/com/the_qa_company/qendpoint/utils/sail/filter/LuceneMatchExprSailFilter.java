@@ -86,4 +86,8 @@ public class LuceneMatchExprSailFilter implements SailFilter {
 			return find;
 		}
 	}
+
+	@Override
+	public void close() {
+	}
 }

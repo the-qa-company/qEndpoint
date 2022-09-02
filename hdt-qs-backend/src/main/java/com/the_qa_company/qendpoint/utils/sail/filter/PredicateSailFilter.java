@@ -95,4 +95,8 @@ public class PredicateSailFilter implements SailFilter {
 	public Set<IRI> getPredicate() {
 		return predicates != null ? predicates : Set.of(predicate);
 	}
+
+	@Override
+	public void close() {
+	}
 }
