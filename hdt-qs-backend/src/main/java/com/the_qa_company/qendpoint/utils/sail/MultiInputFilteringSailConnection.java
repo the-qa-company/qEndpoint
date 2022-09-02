@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.utils.sail.filter.SailFilter;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnectionListener;
+import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 
 import java.util.ArrayList;
@@ -22,8 +23,22 @@ class MultiInputFilteringSailConnection extends NotifyingSailConnectionWrapper {
 		super(wrappedCon);
 	}
 
+	@Override
+	public void close() throws SailException {
+		try {
+			filter.close();
+		} finally {
+			super.close();
+		}
+	}
+
 	void setFilter(SailFilter newFilter) {
 		boolean init = this.filter != null;
+
+		if (this.filter != null) {
+			this.filter.close();
+		}
+
 		this.filter = Objects.requireNonNull(newFilter, "newFilter can't be null!");
 
 		if (init) {

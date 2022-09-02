@@ -9,6 +9,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.UpdateContext;
@@ -30,7 +31,7 @@ public class TypeSailFilter implements SailFilter {
 	private final Map<Resource, Boolean> typeContainedBuffer = new HashMap<>();
 	private final IRI predicate;
 	private final Set<Value> objects;
-	private final SailConnection subConnection;
+	private final NotifyingSailConnection subConnection;
 
 	/**
 	 * create a type sail filter
@@ -182,5 +183,10 @@ public class TypeSailFilter implements SailFilter {
 	public boolean shouldHandleExpression(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings,
 			boolean includeInferred) {
 		return true; // no type filtering on evaluate
+	}
+
+	@Override
+	public void close() throws SailException {
+		subConnection.close();
 	}
 }

@@ -59,6 +59,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		super(endpoint, endpoint.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
 		this.debugId = DEBUG_ID_STORE.getAndIncrement();
 		this.endpoint = endpoint;
+		EndpointStoreUtils.openConnection(this);
 		// lock logic is here so that the connections is blocked
 		try {
 			this.endpoint.lockToPreventNewConnections.waitForActiveLocks();
@@ -352,6 +353,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 			closeTask.cancel();
 		}
 		this.connectionLock.release();
+		EndpointStoreUtils.closeConnection(this);
 	}
 
 	@Override
@@ -572,5 +574,13 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		public void run() {
 			timeout.set(true);
 		}
+	}
+
+	public EndpointStore getEndpoint() {
+		return endpoint;
+	}
+
+	long getDebugId() {
+		return debugId;
 	}
 }

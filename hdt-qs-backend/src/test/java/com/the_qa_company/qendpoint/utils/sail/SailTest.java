@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.utils.sail;
 
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreTest;
+import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
 import com.the_qa_company.qendpoint.store.Utility;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -97,6 +98,7 @@ public abstract class SailTest {
 
 	@Before
 	public void setup() throws IOException {
+		EndpointStoreUtils.enableDebugConnection();
 		watch = new StopWatch();
 		addCount = 0;
 		removeCount = 0;
@@ -124,6 +126,8 @@ public abstract class SailTest {
 	public void complete() {
 		logger.info("Completed S/A/R : {}/{}/{} in {}", selectCount, addCount, removeCount, watch.stopAndShow());
 		repository.shutDown();
+
+		EndpointStoreUtils.disableDebugConnection();
 	}
 
 	/**
@@ -133,9 +137,10 @@ public abstract class SailTest {
 	 * @throws IOException io exception
 	 */
 	protected void configHDT(String indexLocation) throws IOException {
-		HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
-		assert hdt != null;
-		hdt.saveToHDT(indexLocation, null);
+		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			assert hdt != null;
+			hdt.saveToHDT(indexLocation, null);
+		}
 	}
 
 	/**

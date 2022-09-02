@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.UpdateContext;
 
 /**
@@ -13,7 +14,7 @@ import org.eclipse.rdf4j.sail.UpdateContext;
  *
  * @author Antoine Willerval
  */
-public interface SailFilter {
+public interface SailFilter extends AutoCloseable {
 	/**
 	 * test if an add operation should pass the filter
 	 *
@@ -119,4 +120,6 @@ public interface SailFilter {
 		return op(other, OpSailFilter.OR);
 	}
 
+	@Override
+	void close() throws SailException;
 }

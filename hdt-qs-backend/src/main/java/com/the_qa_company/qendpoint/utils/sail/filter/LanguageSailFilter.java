@@ -113,4 +113,8 @@ public class LanguageSailFilter implements SailFilter {
 	public void setShouldHandleExpression(boolean shouldHandleExpression) {
 		this.shouldHandleExpression = shouldHandleExpression;
 	}
+
+	@Override
+	public void close() {
+	}
 }
