@@ -1,3 +1,7 @@
+## Version 1.6.2 
+
+- fix connection
+- update dependencies
 ## Version 1.6.1 
 
 -Fixing bug preventing rdf4j client to work
