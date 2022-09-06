@@ -1,2 +1,3 @@
-- fix connection
-- update dependencies
+- connection fixes
+- multiple commits during merge phase for large delta
+
