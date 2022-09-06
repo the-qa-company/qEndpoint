@@ -4,7 +4,6 @@ import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -498,31 +497,27 @@ public class EndpointStoreTest {
 			ClassLoader classLoader = getClass().getClassLoader();
 			URL cocktails = classLoader.getResource("cocktails.nt");
 			Assert.assertNotNull(cocktails);
-			InputStream inputStream = new FileInputStream(cocktails.getFile());
-			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
-			rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-			try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser,
-					new WeakReference<>(this))) {
-				int count = 1;
-				ArrayList<Statement> stmtsAdded = new ArrayList<>();
-				while (res.hasNext()) {
-					Statement st = res.next();
-					stmtsAdded.add(st);
-					connection.add(st);
-					if (count % 100 == 0) {
-						System.out.println("Sleeping for 2s...");
-						List<? extends Statement> statements = Iterations
-								.asList(connection.getStatements(null, null, null));
-						compareTriples(stmtsAdded, statements);
+			try (InputStream inputStream = new FileInputStream(cocktails.getFile())) {
+				RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
+				rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
+				try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser,
+						new WeakReference<>(this))) {
+					int count = 1;
+					ArrayList<Statement> stmtsAdded = new ArrayList<>();
+					while (res.hasNext()) {
+						Statement st = res.next();
+						stmtsAdded.add(st);
+						connection.add(st);
+						if (count % 100 == 0) {
+							System.out.println("Sleeping for 2s...");
+							List<? extends Statement> statements = Iterations
+									.asList(connection.getStatements(null, null, null));
+							compareTriples(stmtsAdded, statements);
+						}
+						count++;
 					}
-					count++;
+					Thread.sleep(2000);
 				}
-				Thread.sleep(2000);
-			} catch (RDF4JException e) {
-				// handle unrecoverable error
-				e.printStackTrace();
-			} finally {
-				inputStream.close();
 			}
 		}
 	}
@@ -539,7 +534,7 @@ public class EndpointStoreTest {
 				nativeStore.getAbsolutePath() + "/", false);
 		store.setThreshold(2);
 		SailRepository endpointStore = new SailRepository(store);
-
+		List<? extends Statement> statements;
 		try (RepositoryConnection connection = endpointStore.getConnection()) {
 			ValueFactory vf = new MemValueFactory();
 			String ex = "http://example.com/";
@@ -553,14 +548,14 @@ public class EndpointStoreTest {
 			connection.remove(guo, RDF.TYPE, FOAF.PERSON);
 			connection.remove(ali, RDF.TYPE, FOAF.PERSON);
 			// query everything of type PERSON
-			List<? extends Statement> statements = Iterations.asList(connection.getStatements(null, null, null, true));
-			for (Statement s : statements) {
-				System.out.println(s.toString());
+			try (RepositoryResult<Statement> it = connection.getStatements(null, null, null, true)) {
+				statements = Iterations.asList(it);
+				for (Statement s : statements) {
+					System.out.println(s.toString());
+				}
 			}
-			connection.close();
-			assertEquals(3, statements.size());
-
 		}
+		assertEquals(3, statements.size());
 	}
 
 	@Test

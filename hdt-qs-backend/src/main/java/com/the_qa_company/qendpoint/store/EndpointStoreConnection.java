@@ -55,17 +55,13 @@ public class EndpointStoreConnection extends SailSourceConnection {
 	private CloseTask closeTask;
 	private final AtomicBoolean timeout = new AtomicBoolean();
 
-	public EndpointStoreConnection(EndpointStore endpoint) {
+	public EndpointStoreConnection(EndpointStore endpoint) throws InterruptedException {
 		super(endpoint, endpoint.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
 		this.debugId = DEBUG_ID_STORE.getAndIncrement();
 		this.endpoint = endpoint;
 		EndpointStoreUtils.openConnection(this);
 		// lock logic is here so that the connections is blocked
-		try {
-			this.endpoint.lockToPreventNewConnections.waitForActiveLocks();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		this.endpoint.lockToPreventNewConnections.waitForActiveLocks();
 		if (MergeRunnableStopPoint.disableRequest)
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
 		this.connectionLock = this.endpoint.locksHoldByConnections.createLock("connection-lock");
@@ -305,7 +301,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		try {
 			endpoint.lockToPreventNewUpdate.waitForActiveLocks();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			throw new SailException(e);
 		}
 		if (op != null) {
 			updateLock = endpoint.locksHoldByUpdates.createLock("update #" + debugId);

@@ -1,9 +1,12 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.store.EndpointStore;
+import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.common.io.NioFile;
 import org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap;
 import org.rdfhdt.hdt.listener.ProgressListener;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +17,7 @@ import java.util.Arrays;
  * Implementation of {@link org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap}
  * write on disk
  */
-public class BitArrayDisk implements ModifiableBitmap {
+public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 	protected final static int LOGW = 6;
 	protected final static int W = 64;
@@ -64,7 +67,7 @@ public class BitArrayDisk implements ModifiableBitmap {
 	 * @param nbits    the number of bits to allocate
 	 * @param location the array location
 	 */
-	public BitArrayDisk(long nbits, String location) {
+	public BitArrayDisk(long nbits, String location) throws IOException {
 		this(nbits, new File(location));
 	}
 
@@ -74,7 +77,7 @@ public class BitArrayDisk implements ModifiableBitmap {
 	 *
 	 * @param nbits the number of bits to allocate
 	 */
-	public BitArrayDisk(long nbits) {
+	public BitArrayDisk(long nbits) throws IOException {
 		this.numbits = 0;
 		this.inMemory = true;
 		initWordsArray(nbits);
@@ -86,14 +89,10 @@ public class BitArrayDisk implements ModifiableBitmap {
 	 * @param nbits the number of bits to allocate
 	 * @param file  the array location
 	 */
-	public BitArrayDisk(long nbits, File file) {
+	public BitArrayDisk(long nbits, File file) throws IOException {
 		this.numbits = 0;
-		try {
-			this.output = new NioFile(file);
-			initWordsArray(nbits);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.output = new NioFile(file);
+		initWordsArray(nbits);
 	}
 
 	/**
@@ -103,19 +102,15 @@ public class BitArrayDisk implements ModifiableBitmap {
 	 *
 	 * @param file the file to use
 	 */
-	public void changeToInDisk(File file) {
+	public void changeToInDisk(File file) throws IOException {
 		assert inMemory : "the BitArray should be in memory";
 		inMemory = false;
-		try {
-			this.output = new NioFile(file);
-			writeBits();
-			for (int offset = 0; offset < words.length; offset++) {
-				output.writeLong(words[offset], 8L * (offset + 1));
-			}
-			output.force(true);
-		} catch (IOException e) {
-			e.printStackTrace();
+		this.output = new NioFile(file);
+		writeBits();
+		for (int offset = 0; offset < words.length; offset++) {
+			output.writeLong(words[offset], 8L * (offset + 1));
 		}
+		output.force(true);
 	}
 
 	/**
@@ -129,39 +124,34 @@ public class BitArrayDisk implements ModifiableBitmap {
 		this.output.writeLong(nwords, 0);
 	}
 
-	private void initWordsArray(long nbits) {
+	private void initWordsArray(long nbits) throws IOException {
 		allBits = nbits;
-		try {
-			if (!inMemory) {
-				if (output.size() == 0) { // file empty
-					int nwords = (int) numWords(allBits);
-					this.words = new long[nwords];
-					writeBits();
-				} else {
-					// read the length of the array from the beginning
-					long length = this.output.readLong(0);
-					this.words = new long[(int) length];
-
-					int lastNonZero = -1;
-					// read previous values
-					for (int i = 0; i < length; i++) {
-						long v = this.output.readLong((i + 1) * 8L);
-						if (v != 0) {
-							this.words[i] = v;
-							lastNonZero = i;
-						}
-					}
-					// recompute numbits if we have at least one bit
-					if (lastNonZero != -1)
-						numbits = 8L * lastNonZero + log2(words[lastNonZero]);
-				}
-			} else {
-				int nwords = (int) numWords(nbits);
+		if (!inMemory) {
+			if (output.size() == 0) { // file empty
+				int nwords = (int) numWords(allBits);
 				this.words = new long[nwords];
-			}
+				writeBits();
+			} else {
+				// read the length of the array from the beginning
+				long length = this.output.readLong(0);
+				this.words = new long[(int) length];
 
-		} catch (IOException e) {
-			e.printStackTrace();
+				int lastNonZero = -1;
+				// read previous values
+				for (int i = 0; i < length; i++) {
+					long v = this.output.readLong((i + 1) * 8L);
+					if (v != 0) {
+						this.words[i] = v;
+						lastNonZero = i;
+					}
+				}
+				// recompute numbits if we have at least one bit
+				if (lastNonZero != -1)
+					numbits = 8L * lastNonZero + log2(words[lastNonZero]);
+			}
+		} else {
+			int nwords = (int) numWords(nbits);
+			this.words = new long[nwords];
 		}
 	}
 
@@ -210,8 +200,13 @@ public class BitArrayDisk implements ModifiableBitmap {
 		}
 
 		this.numbits = Math.max(this.numbits, bitIndex + 1);
-		if (!inMemory)
-			writeToDisk(words[wordIndex], wordIndex);
+		if (!inMemory) {
+			try {
+				writeToDisk(words[wordIndex], wordIndex);
+			} catch (IOException e) {
+				throw new EndpointStoreException(e);
+			}
+		}
 	}
 
 	@Override
@@ -219,13 +214,9 @@ public class BitArrayDisk implements ModifiableBitmap {
 		set(numbits, value);
 	}
 
-	private void writeToDisk(long l, int wordIndex) {
-		try {
-			output.writeLong(l, (wordIndex + 1) * 8L); // +1 reserved for the
-														// length of the array
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	private void writeToDisk(long l, int wordIndex) throws IOException {
+		output.writeLong(l, (wordIndex + 1) * 8L); // +1 reserved for the
+		// length of the array
 	}
 
 	public void trimToSize() {
@@ -388,22 +379,16 @@ public class BitArrayDisk implements ModifiableBitmap {
 		return str.toString();
 	}
 
-	public void close() {
-		try {
-			this.output.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	@Override
+	public void close() throws IOException {
+		this.output.close();
 	}
 
-	public void force(boolean bool) {
-		if (inMemory)
+	public void force(boolean bool) throws IOException {
+		if (inMemory) {
 			return;
-		try {
-			this.output.force(bool);
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
+		this.output.force(bool);
 	}
 
 	public String printInfo() {

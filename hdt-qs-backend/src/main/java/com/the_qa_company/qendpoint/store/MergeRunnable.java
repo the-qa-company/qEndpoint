@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -65,8 +66,10 @@ public class MergeRunnable {
 		 *
 		 * @return a lock if required by the step
 		 */
-		T reload();
+		T reload() throws Exception;
 	}
+
+	private static final int MERGE_OLD_TO_NEW_SPLIT = 10_000;
 
 	/////// this part is for testing purposes ///////
 	// it extends the merging process to this amount of seconds. If -1 then it
@@ -258,14 +261,16 @@ public class MergeRunnable {
 			super("MergeThread");
 			this.exceptionRunnable = run;
 			this.restart = restart;
+			setDaemon(true);
 		}
 
 		/**
 		 * preload the data of the merge
 		 */
 		public void preLoad() {
-			if (preload != null)
+			if (preload != null) {
 				preload.run();
+			}
 		}
 
 		@Override
@@ -304,7 +309,11 @@ public class MergeRunnable {
 			}
 			if (reloadData != null) {
 				// reload the data if required
-				data = reloadData.reload();
+				try {
+					data = reloadData.reload();
+				} catch (Exception e) {
+					throw new EndpointStoreException("Can't restart merge", e);
+				}
 			}
 			// start the thread
 			super.start();
@@ -571,7 +580,7 @@ public class MergeRunnable {
 	 *
 	 * @return previous data of step 2
 	 */
-	private Lock reloadDataFromStep2() {
+	private Lock reloadDataFromStep2() throws IOException {
 		// @todo: reload data from step 1
 		endpoint.initTempDump(true);
 		endpoint.initTempDeleteArray();
@@ -593,10 +602,10 @@ public class MergeRunnable {
 		logger.debug("HDT Diff");
 		diffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr());
 		logger.debug("Dump all triples from the native store to file");
-		RepositoryConnection nativeStoreConnection = endpoint.getConnectionToFreezedStore();
-		writeTempFile(nativeStoreConnection, endpointFiles.getRDFTempOutput());
-		nativeStoreConnection.commit();
-		nativeStoreConnection.close();
+		try (RepositoryConnection nativeStoreConnection = endpoint.getConnectionToFreezedStore()) {
+			writeTempFile(nativeStoreConnection, endpointFiles.getRDFTempOutput());
+			nativeStoreConnection.commit();
+		}
 		logger.debug("Create HDT index from dumped file");
 		createHDTDump(endpointFiles.getRDFTempOutput(), endpointFiles.getHDTTempOutput());
 		// cat the original index and the temp index
@@ -692,7 +701,7 @@ public class MergeRunnable {
 	 *
 	 * @return previous data of step 3
 	 */
-	private Lock reloadDataFromStep3() {
+	private Lock reloadDataFromStep3() throws IOException {
 		endpoint.initTempDump(true);
 		endpoint.initTempDeleteArray();
 		endpoint.setMerging(true);
@@ -713,23 +722,25 @@ public class MergeRunnable {
 		debugStepPoint(MergeRunnableStopPoint.STEP3_START);
 		// index the new file
 
-		HDT newHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTNewIndex(), endpoint.getHDTSpec(), null);
-
-		// convert all triples added to the merge store to new IDs of the new
-		// generated HDT
-		logger.debug("ID conversion");
-		// create a lock so that new incoming connections don't do anything
 		Lock translateLock;
-		if (!restarting) {
-			translateLock = createConnectionLock();
-			// wait for all running updates to finish
-			waitForActiveConnections();
-		} else {
-			translateLock = lock;
-		}
 
-		this.endpoint.resetDeleteArray(newHdt);
-		newHdt.close();
+		try (HDT newHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTNewIndex(), endpoint.getHDTSpec(), null)) {
+
+			// convert all triples added to the merge store to new IDs of the
+			// new
+			// generated HDT
+			logger.debug("ID conversion");
+			// create a lock so that new incoming connections don't do anything
+			if (!restarting) {
+				translateLock = createConnectionLock();
+				// wait for all running updates to finish
+				waitForActiveConnections();
+			} else {
+				translateLock = lock;
+			}
+
+			this.endpoint.resetDeleteArray(newHdt);
+		}
 
 		Path hdtIndexV11 = Paths.get(endpointFiles.getHDTIndexV11());
 		// if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so we
@@ -789,78 +800,63 @@ public class MergeRunnable {
 		logger.info("Merge finished");
 	}
 
-	private void diffIndexes(String hdtInput1, String bitArray) {
+	private void diffIndexes(String hdtInput1, String bitArray) throws IOException {
 		String hdtOutput = endpointFiles.getHDTNewIndexDiff();
-		try {
-			File hdtOutputFile = new File(hdtOutput);
-			File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
-			Files.createDirectories(theDir.toPath());
-			String location = theDir.getAbsolutePath() + "/";
-			BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
-					new File(bitArray));
-			// @todo: should we not use the already mapped HDT file instead of
+		File hdtOutputFile = new File(hdtOutput);
+		File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
+		Files.createDirectories(theDir.toPath());
+		String location = theDir.getAbsolutePath() + "/";
+		try (BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
+				new File(bitArray))) {
+			// @todo: should we not use the already mapped HDT file instead
+			// of
 			// remapping
-			HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, deleteBitmap, this.endpoint.getHDTSpec(), null);
-			hdt.saveToHDT(hdtOutput, null);
-			deleteBitmap.close();
-
-			Files.delete(Paths.get(location + "dictionary"));
-			FileUtils.deleteDirectory(theDir.getAbsoluteFile());
-			hdt.close();
-		} catch (Exception e) {
-			endpoint.setMerging(false);
-			e.printStackTrace();
+			try (HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, deleteBitmap, this.endpoint.getHDTSpec(), null)) {
+				hdt.saveToHDT(hdtOutput, null);
+			}
 		}
+
+		Files.delete(Paths.get(location + "dictionary"));
+		FileUtils.deleteDirectory(theDir.getAbsoluteFile());
 	}
 
 	private void catIndexes(String hdtInput1, String hdtInput2, String hdtOutput) throws IOException {
-		HDT hdt = null;
-		try {
-			File file = new File(hdtOutput);
-			File theDir = new File(file.getAbsolutePath() + "_tmp");
-			Files.createDirectories(theDir.toPath());
-			String location = theDir.getAbsolutePath() + "/";
-			logger.info(location);
-			logger.info(hdtInput1);
-			logger.info(hdtInput2);
-			// @todo: should we not use the already mapped HDT file instead of
-			// remapping
-			hdt = HDTManager.catHDT(location, hdtInput1, hdtInput2, this.endpoint.getHDTSpec(), null);
-
-			StopWatch sw = new StopWatch();
+		File file = new File(hdtOutput);
+		File theDir = new File(file.getAbsolutePath() + "_tmp");
+		Files.createDirectories(theDir.toPath());
+		String location = theDir.getAbsolutePath() + "/";
+		logger.info(location);
+		logger.info(hdtInput1);
+		logger.info(hdtInput2);
+		// @todo: should we not use the already mapped HDT file instead of
+		// remapping
+		StopWatch sw;
+		try (HDT hdt = HDTManager.catHDT(location, hdtInput1, hdtInput2, this.endpoint.getHDTSpec(), null)) {
+			sw = new StopWatch();
 			hdt.saveToHDT(hdtOutput, null);
-			hdt.close();
-			logger.info("HDT saved to file in: " + sw.stopAndShow());
-			Files.delete(Paths.get(location + "dictionary"));
-			Files.delete(Paths.get(location + "triples"));
-			Files.delete(theDir.toPath());
-			Files.deleteIfExists(Paths.get(hdtInput1));
-			Files.deleteIfExists(Paths.get(hdtInput1 + HDTVersion.get_index_suffix("-")));
-		} catch (Exception e) {
-			e.printStackTrace();
-			endpoint.setMerging(false);
-		} finally {
-			if (hdt != null)
-				hdt.close();
 		}
+		logger.info("HDT saved to file in: " + sw.stopAndShow());
+		Files.delete(Paths.get(location + "dictionary"));
+		Files.delete(Paths.get(location + "triples"));
+		Files.delete(theDir.toPath());
+		Files.deleteIfExists(Paths.get(hdtInput1));
+		Files.deleteIfExists(Paths.get(hdtInput1 + HDTVersion.get_index_suffix("-")));
 	}
 
-	private void createHDTDump(String rdfInput, String hdtOutput) {
+	private void createHDTDump(String rdfInput, String hdtOutput) throws IOException {
 		String baseURI = "file://" + rdfInput;
-		try {
-			StopWatch sw = new StopWatch();
-			HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
-					this.endpoint.getHDTSpec(), null);
+		StopWatch sw = new StopWatch();
+		try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
+				this.endpoint.getHDTSpec(), null)) {
 			logger.info("File converted in: " + sw.stopAndShow());
 			hdt.saveToHDT(hdtOutput, null);
 			logger.info("HDT saved to file in: " + sw.stopAndShow());
-		} catch (IOException | ParserException e) {
-			e.printStackTrace();
-			endpoint.setMerging(false);
+		} catch (ParserException e) {
+			throw new IOException(e);
 		}
 	}
 
-	private void writeTempFile(RepositoryConnection connection, String file) {
+	private void writeTempFile(RepositoryConnection connection, String file) throws IOException {
 		try (FileOutputStream out = new FileOutputStream(file)) {
 			RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
 			RepositoryResult<Statement> repositoryResult = connection.getStatements(null, null, null, false);
@@ -885,68 +881,73 @@ public class MergeRunnable {
 				writer.handleStatement(stmConverted);
 			}
 			writer.endRDF();
-		} catch (IOException e) {
-			e.printStackTrace();
-			endpoint.setMerging(false);
 		}
 	}
 
-	private void convertOldToNew(HDT newHDT) {
+	private void convertOldToNew(HDT newHDT) throws IOException {
 		logger.info("Started converting IDs in the merge store");
 		try {
 			Stopwatch stopwatch = Stopwatch.createStarted();
-			RepositoryConnection connectionChanging = this.endpoint.getConnectionToChangingStore(); // B
-			RepositoryConnection connectionFreezed = this.endpoint.getConnectionToFreezedStore(); // A
-			connectionFreezed.clear();
-			connectionFreezed.begin();
-			RepositoryResult<Statement> statements = connectionChanging.getStatements(null, null, null);
-			int count = 0;
-			for (Statement s : statements) {
-				count++;
-				// get the string
-				// convert the string using the new dictionary
+			try (RepositoryConnection connectionChanging = this.endpoint.getConnectionToChangingStore(); // B
+					RepositoryConnection connectionFreezed = this.endpoint.getConnectionToFreezedStore() // A
+			) {
+				connectionFreezed.clear();
+				connectionFreezed.begin();
+				try (RepositoryResult<Statement> statements = connectionChanging.getStatements(null, null, null)) {
+					long count = 0;
+					for (Statement s : statements) {
+						count++;
+						// get the string
+						// convert the string using the new dictionary
 
-				// get the old IRIs with old IDs
-				HDTConverter iriConverter = new HDTConverter(this.endpoint);
-				Resource oldSubject = iriConverter.rdf4jToHdtIDsubject(s.getSubject());
-				IRI oldPredicate = iriConverter.rdf4jToHdtIDpredicate(s.getPredicate());
-				Value oldObject = iriConverter.rdf4jToHdtIDobject(s.getObject());
+						// get the old IRIs with old IDs
+						HDTConverter iriConverter = new HDTConverter(this.endpoint);
+						Resource oldSubject = iriConverter.rdf4jToHdtIDsubject(s.getSubject());
+						IRI oldPredicate = iriConverter.rdf4jToHdtIDpredicate(s.getPredicate());
+						Value oldObject = iriConverter.rdf4jToHdtIDobject(s.getObject());
 
-				// if the old string cannot be converted than we can keep the
-				// same
-				Resource newSubjIRI = oldSubject;
-				long id = newHDT.getDictionary().stringToId(oldSubject.toString(), TripleComponentRole.SUBJECT);
-				if (id != -1) {
-					newSubjIRI = iriConverter.subjectIdToIRI(id);
+						// if the old string cannot be converted than we can
+						// keep the
+						// same
+						Resource newSubjIRI = oldSubject;
+						long id = newHDT.getDictionary().stringToId(oldSubject.toString(), TripleComponentRole.SUBJECT);
+						if (id != -1) {
+							newSubjIRI = iriConverter.subjectIdToIRI(id);
+						}
+
+						IRI newPredIRI = oldPredicate;
+						id = newHDT.getDictionary().stringToId(oldPredicate.toString(), TripleComponentRole.PREDICATE);
+
+						if (id != -1) {
+							newPredIRI = iriConverter.predicateIdToIRI(id);
+						}
+						Value newObjIRI = oldObject;
+						id = newHDT.getDictionary().stringToId(oldObject.toString(), TripleComponentRole.OBJECT);
+						if (id != -1) {
+							newObjIRI = iriConverter.objectIdToIRI(id);
+						}
+						logger.debug("old:[{} {} {}]", oldSubject, oldPredicate, oldObject);
+						logger.debug("new:[{} {} {}]", newSubjIRI, newPredIRI, newObjIRI);
+						connectionFreezed.add(newSubjIRI, newPredIRI, newObjIRI);
+						// alternative, i.e. make inplace replacements
+						// connectionChanging.remove(s.getSubject(),
+						// s.getPredicate(),
+						// s.getObject());
+						// connectionChanging.add(newSubjIRI, newPredIRI,
+						// newObjIRI);
+
+						if (count % MERGE_OLD_TO_NEW_SPLIT == 0) {
+							logger.debug("Converted {}", count);
+							connectionFreezed.commit();
+							connectionFreezed.begin();
+						}
+					}
+					if (count % MERGE_OLD_TO_NEW_SPLIT != 0) {
+						connectionFreezed.commit();
+					}
 				}
-
-				IRI newPredIRI = oldPredicate;
-				id = newHDT.getDictionary().stringToId(oldPredicate.toString(), TripleComponentRole.PREDICATE);
-				if (id != -1) {
-					newPredIRI = iriConverter.predicateIdToIRI(id);
-				}
-				Value newObjIRI = oldObject;
-				id = newHDT.getDictionary().stringToId(oldObject.toString(), TripleComponentRole.OBJECT);
-				if (id != -1) {
-					newObjIRI = iriConverter.objectIdToIRI(id);
-				}
-				logger.debug("old:[{} {} {}]", oldSubject, oldPredicate, oldObject);
-				logger.debug("new:[{} {} {}]", newSubjIRI, newPredIRI, newObjIRI);
-				connectionFreezed.add(newSubjIRI, newPredIRI, newObjIRI);
-				// alternative, i.e. make inplace replacements
-				// connectionChanging.remove(s.getSubject(), s.getPredicate(),
-				// s.getObject());
-				// connectionChanging.add(newSubjIRI, newPredIRI, newObjIRI);
-
-				if (count % 10000 == 0) {
-					logger.debug("Converted {}", count);
-				}
-
+				connectionChanging.clear();
 			}
-			connectionFreezed.commit();
-			connectionChanging.clear();
-			connectionChanging.close();
-			connectionFreezed.close();
 			// @todo: why?
 			this.endpoint.switchStore = !this.endpoint.switchStore;
 
@@ -959,10 +960,9 @@ public class MergeRunnable {
 			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitZ()));
 			stopwatch = Stopwatch.createStarted();
 			logger.info("Time elapsed to initialize native store dictionary: " + stopwatch);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.error("Something went wrong during conversion of IDs in merge phase: ");
-			e.printStackTrace();
-			endpoint.setMerging(false);
+			throw e;
 		}
 	}
 

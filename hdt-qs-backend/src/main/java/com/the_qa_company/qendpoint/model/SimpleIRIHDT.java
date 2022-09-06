@@ -1,7 +1,7 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.controller.Sparql;
-
+import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
@@ -63,30 +63,22 @@ public class SimpleIRIHDT extends AbstractIRI {
 		} else {
 			Sparql.count++;
 
-			if (this.postion == SHARED_POS) {
-				return hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT).toString();
-			} else if (this.postion == SUBJECT_POS) {
-				return hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT).toString();
+			CharSequence charSequence;
+			if (this.postion == SHARED_POS || this.postion == SUBJECT_POS) {
+				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT);
 			} else if (this.postion == OBJECT_POS) {
-				CharSequence charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.OBJECT);
-				if (charSequence == null) {
-					throw new NullPointerException("NULL for ID: " + id);
-				}
-				return charSequence.toString();
+				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.OBJECT);
 			} else if (this.postion == PREDICATE_POS) {
-				CharSequence charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
-				if (charSequence == null) {
-					throw new NullPointerException("NULL for ID: " + id);
-				}
-				return charSequence.toString();
+				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
 			} else {
-				try {
-					throw new Exception("The iri could not be mapped");
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				return null;
+				throw new EndpointStoreException("bad postion value: " + postion);
 			}
+
+			if (charSequence == null) {
+				throw new EndpointStoreException("Can't find HDT ID: " + id);
+			}
+
+			return charSequence.toString();
 		}
 	}
 

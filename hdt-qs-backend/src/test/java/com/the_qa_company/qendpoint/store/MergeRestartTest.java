@@ -38,6 +38,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.BiConsumer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class MergeRestartTest {
 	private static final Logger logger = LoggerFactory.getLogger(MergeRestartTest.class);
@@ -495,16 +496,24 @@ public class MergeRestartTest {
 			MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugWaitForEvent();
 			{
 				// log the bitmap state at STEP1_TEST_BITMAP1
-				logger.debug("STEP1_TEST_BITMAP1: {}",
-						new BitArrayDisk(4, store.getHdtStore().getAbsolutePath() + "/triples-delete.arr").printInfo());
+				try (BitArrayDisk bitmap = new BitArrayDisk(4,
+						store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
+					logger.debug("STEP1_TEST_BITMAP1: {}", bitmap.printInfo());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 			MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugUnlockTest();
 
 			MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugWaitForEvent();
 			{
 				// log the bitmap state at STEP1_TEST_BITMAP2
-				logger.debug("STEP1_TEST_BITMAP2: {}",
-						new BitArrayDisk(4, store.getHdtStore().getAbsolutePath() + "/triples-delete.arr").printInfo());
+				try (BitArrayDisk bitmap = new BitArrayDisk(4,
+						store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
+					logger.debug("STEP1_TEST_BITMAP2: {}", bitmap.printInfo());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 			MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugUnlockTest();
 		}, "KnowledgeThread");
@@ -526,7 +535,7 @@ public class MergeRestartTest {
 	/**
 	 * prepare a halt test
 	 */
-	public void startHalt() {
+	public void startHalt() throws IOException {
 		// ask for the usage of halt(int) instead of throw to crash the merge
 		// process
 		MergeRunnableStopPoint.askCompleteFailure();
@@ -541,7 +550,7 @@ public class MergeRestartTest {
 	/**
 	 * end a halt test
 	 */
-	public void endHalt() {
+	public void endHalt() throws IOException {
 		// delete the test data
 		deleteDir(HALT_TEST_DIR);
 		// assert we have deleted the test data
@@ -747,14 +756,20 @@ public class MergeRestartTest {
 	 * @param store the store, can be null to avoid printing the bitmap
 	 * @throws NotFoundException if we can't search in the HDT
 	 */
-	public static void printHDT(HDT hdt, EndpointStore store) throws NotFoundException {
-		IteratorTripleString it = hdt.search("", "", "");
+	public static void printHDT(HDT hdt, EndpointStore store) {
+		IteratorTripleString it;
+		try {
+			it = hdt.search("", "", "");
+		} catch (NotFoundException e) {
+			throw new AssertionError(e);
+		}
 		logger.debug("HDT: ");
 		while (it.hasNext()) {
 			logger.debug("- {}", it.next());
 		}
-		if (store != null)
+		if (store != null) {
 			logger.debug("bitmap: {}", store.getDeleteBitMap().printInfo());
+		}
 	}
 
 	/**
@@ -762,72 +777,64 @@ public class MergeRestartTest {
 	 *
 	 * @param f the directory to delete
 	 */
-	private void deleteDir(File f) {
-		try {
-			Files.walkFileTree(Paths.get(f.getAbsolutePath()), new FileVisitor<>() {
-				@Override
-				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-					return FileVisitResult.CONTINUE;
-				}
+	private void deleteDir(File f) throws IOException {
+		Files.walkFileTree(Paths.get(f.getAbsolutePath()), new FileVisitor<>() {
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+				return FileVisitResult.CONTINUE;
+			}
 
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					Files.delete(file);
-					return FileVisitResult.CONTINUE;
-				}
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				Files.delete(file);
+				return FileVisitResult.CONTINUE;
+			}
 
-				@Override
-				public FileVisitResult visitFileFailed(Path file, IOException exc) {
-					return FileVisitResult.TERMINATE;
-				}
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException exc) {
+				return FileVisitResult.TERMINATE;
+			}
 
-				@Override
-				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					Files.delete(dir);
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				Files.delete(dir);
+				return FileVisitResult.CONTINUE;
+			}
+		});
 	}
 
 	/**
 	 * move all the files from tempDir to tempDir2 and delete tempDir2
 	 */
-	private void swapDir() {
-		try {
-			Path to = Paths.get(tempDir2.getRoot().getAbsolutePath());
-			Path root = Paths.get(tempDir.getRoot().getAbsolutePath());
-			Files.walkFileTree(root, new FileVisitor<>() {
-				@Override
-				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-					Path newPath = to.resolve(root.relativize(dir));
-					Files.createDirectories(newPath);
-					return FileVisitResult.CONTINUE;
-				}
+	private void swapDir() throws IOException {
+		Path to = Paths.get(tempDir2.getRoot().getAbsolutePath());
+		Path root = Paths.get(tempDir.getRoot().getAbsolutePath());
+		Files.walkFileTree(root, new FileVisitor<>() {
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				Path newPath = to.resolve(root.relativize(dir));
+				Files.createDirectories(newPath);
+				return FileVisitResult.CONTINUE;
+			}
 
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					Path newFile = to.resolve(root.relativize(file));
-					Files.move(file, newFile);
-					return FileVisitResult.CONTINUE;
-				}
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				Path newFile = to.resolve(root.relativize(file));
+				Files.move(file, newFile);
+				return FileVisitResult.CONTINUE;
+			}
 
-				@Override
-				public FileVisitResult visitFileFailed(Path file, IOException exc) {
-					return FileVisitResult.TERMINATE;
-				}
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException exc) {
+				return FileVisitResult.TERMINATE;
+			}
 
-				@Override
-				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					Files.delete(dir);
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				Files.delete(dir);
+				return FileVisitResult.CONTINUE;
+			}
+		});
 	}
 
 	/**
@@ -974,12 +981,9 @@ public class MergeRestartTest {
 	 */
 	private void executeTestCount(File out, SailRepository repo, EndpointStore store) throws IOException {
 		int excepted = getInfoCount(out);
-		if (store != null)
-			try {
-				printHDT(store.getHdt(), store);
-			} catch (NotFoundException e) {
-				e.printStackTrace();
-			}
+		if (store != null) {
+			printHDT(store.getHdt(), store);
+		}
 		openConnection(repo, (vf, connection) -> assertEquals(excepted, count(connection)));
 	}
 }
