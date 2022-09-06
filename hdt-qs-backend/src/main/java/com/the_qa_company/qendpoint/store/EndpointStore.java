@@ -6,7 +6,6 @@ import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
-import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -199,7 +198,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		this(locationHdt, hdtIndexName, spec, locationNative, inMemDeletes, false);
 	}
 
-	public void initNativeStoreDictionary(HDT hdt) {
+	public void initNativeStoreDictionary(HDT hdt) throws IOException {
 		this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), endpointFiles.getHDTBitX());
 		this.bitY = new BitArrayDisk(hdt.getDictionary().getNpredicates(), endpointFiles.getHDTBitY());
 		this.bitZ = new BitArrayDisk(hdt.getDictionary().getNobjects() - hdt.getDictionary().getNshared(),
@@ -210,7 +209,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		}
 	}
 
-	public void resetHDT(HDT hdt, boolean closeOld) {
+	public void resetHDT(HDT hdt, boolean closeOld) throws IOException {
 		if (closeOld && this.hdt != null) {
 			try {
 				this.hdt.close();
@@ -235,7 +234,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	}
 
 	// init the delete array upon the first start of the store
-	private void initDeleteArray() {
+	private void initDeleteArray() throws IOException {
 		if (this.inMemDeletes)
 			setDeleteBitMap(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements()));
 		else {
@@ -252,41 +251,20 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		this.nativeStoreB.init();
 	}
 
-	public void checkWhichStore() {
+	public void checkWhichStore() throws IOException {
 		if (!checkFile.exists() || !checkFile.isFile()) {
 			// file does not exist, so this is the first time running the
 			// program.
-			try {
-				Files.createFile(checkFile.toPath());
-				Files.writeString(checkFile.toPath(), "false");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			Files.writeString(checkFile.toPath(), Boolean.toString(switchStore));
 		} else {
 			// This file exists, we already ran the program previously, just
 			// read the value
-			try {
-				String s = Files.readString(checkFile.toPath());
-				if (s.equals("false")) {
-					this.switchStore = false;
-				} else if (s.equals("true")) {
-					this.switchStore = true;
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			this.switchStore = Boolean.parseBoolean(Files.readString(checkFile.toPath()));
 		}
 	}
 
-	public void writeWhichStore() {
-		try {
-			if (switchStore)
-				Files.writeString(checkFile.toPath(), "true");
-			else
-				Files.writeString(checkFile.toPath(), "false");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public void writeWhichStore() throws IOException {
+		Files.writeString(checkFile.toPath(), Boolean.toString(switchStore));
 	}
 
 	/**
@@ -349,21 +327,26 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		// check also that the merge thread is finished
 		logger.info("Shutdown merge");
 		try {
-			if (mergerThread != null) {
-				mergerThread.join();
+			try {
+				if (mergerThread != null) {
+					mergerThread.join();
+				}
+			} finally {
+				try {
+					hdt.close();
+				} finally {
+					try {
+						logger.info("Shutdown A");
+						this.nativeStoreA.shutDown();
+					} finally {
+						logger.info("Shutdown B");
+						this.nativeStoreB.shutDown();
+					}
+				}
 			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} catch (InterruptedException | IOException e) {
+			throw new SailException(e);
 		}
-		try {
-			hdt.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		logger.info("Shutdown A");
-		this.nativeStoreA.shutDown();
-		logger.info("Shutdown B");
-		this.nativeStoreB.shutDown();
 		logger.info("Shutdown done");
 	}
 
@@ -379,10 +362,11 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	@Override
 	public boolean isWritable() throws SailException {
-		if (switchStore)
+		if (switchStore) {
 			return nativeStoreB.isWritable();
-		else
+		} else {
 			return nativeStoreA.isWritable();
+		}
 	}
 
 	@Override
@@ -467,7 +451,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	 * In case of merge, we create a new array to recover all deleted triples
 	 * while merging
 	 */
-	public void initTempDeleteArray() {
+	public void initTempDeleteArray() throws IOException {
 		this.tempdeleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
 				endpointFiles.getTripleDeleteTempArr());
 		this.tempdeleteBitMap.force(false);
@@ -493,7 +477,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	}
 
 	// creates a new array that marks the deleted triples in the new HDT file
-	public void resetDeleteArray(HDT newHdt) {
+	public void resetDeleteArray(HDT newHdt) throws IOException {
 		// delete array created at merge time
 
 		BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements());
@@ -609,7 +593,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		this.setDeleteBitMap(newDeleteArray);
 	}
 
-	public void markDeletedTempTriples() {
+	public void markDeletedTempTriples() throws IOException {
 		this.rdfWriterTempTriples.endRDF();
 		try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples())) {
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
@@ -628,36 +612,28 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 						}
 					}
 				}
-			} catch (RDF4JException | NotFoundException e) {
-				// handle unrecoverable error
-				e.printStackTrace();
+			} catch (NotFoundException e) {
+				// shouldn't happen
+				throw new RuntimeException(e);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
-
 	}
 
 	// called from a locked block
 	private void initBitmaps() {
 		logger.debug("Resetting bitmaps");
-		try {
-			HDTConverter converter = new HDTConverter(this);
-			// iterate over the current rdf4j store and mark in HDT the store
-			// the subject, predicate, objects that are
-			// used in rdf4j
-			try (RepositoryConnection connection = this.getConnectionToChangingStore()) {
-				try (RepositoryResult<Statement> statements = connection.getStatements(null, null, null)) {
-					for (Statement statement : statements) {
-						Resource internalSubj = converter.rdf4jToHdtIDsubject(statement.getSubject());
-						IRI internalPredicate = converter.rdf4jToHdtIDpredicate(statement.getPredicate());
-						Value internalObject = converter.rdf4jToHdtIDobject(statement.getObject());
-						this.modifyBitmaps(internalSubj, internalPredicate, internalObject);
-					}
-				}
+		HDTConverter converter = new HDTConverter(this);
+		// iterate over the current rdf4j store and mark in HDT the store
+		// the subject, predicate, objects that are
+		// used in rdf4j
+		try (RepositoryConnection connection = this.getConnectionToChangingStore();
+				RepositoryResult<Statement> statements = connection.getStatements(null, null, null)) {
+			for (Statement statement : statements) {
+				Resource internalSubj = converter.rdf4jToHdtIDsubject(statement.getSubject());
+				IRI internalPredicate = converter.rdf4jToHdtIDpredicate(statement.getPredicate());
+				Value internalObject = converter.rdf4jToHdtIDobject(statement.getObject());
+				this.modifyBitmaps(internalSubj, internalPredicate, internalObject);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 

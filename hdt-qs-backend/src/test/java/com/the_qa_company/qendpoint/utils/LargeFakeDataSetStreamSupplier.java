@@ -56,7 +56,7 @@ public class LargeFakeDataSetStreamSupplier {
 			try {
 				out.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				// ignore
 			}
 		}, "FakeDatasetStreamLoader");
 		loaded.start();
