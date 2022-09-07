@@ -1,11 +1,13 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.model.SimpleLiteralHDT;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
@@ -224,40 +226,39 @@ public class HDTConverter {
 	}
 
 	public Resource subjectHdtResourceToResource(Resource subject) {
-		Resource newSubj = subject;
-		if (newSubj instanceof SimpleIRIHDT) {
-			newSubj = this.endpoint.getChangingStore().getValueFactory().createIRI(newSubj.stringValue());
-		} else if (newSubj instanceof BNode) {
-			newSubj = this.endpoint.getChangingStore().getValueFactory().createBNode(newSubj.stringValue());
+		if (subject instanceof SimpleIRIHDT) {
+			return this.endpoint.getChangingStore().getValueFactory().createIRI(subject.stringValue());
+		} else if (subject instanceof BNode) {
+			return this.endpoint.getChangingStore().getValueFactory().createBNode(subject.stringValue());
 		}
-		return newSubj;
+		return subject;
 	}
 
 	public IRI predicateHdtResourceToResource(IRI predicate) {
-		IRI newPred = predicate;
-		if (newPred instanceof SimpleIRIHDT) {
-			newPred = this.endpoint.getChangingStore().getValueFactory().createIRI(newPred.stringValue());
+		if (predicate instanceof SimpleIRIHDT) {
+			return this.endpoint.getChangingStore().getValueFactory().createIRI(predicate.stringValue());
 		}
-		return newPred;
+		return predicate;
 	}
 
 	public Value objectHdtResourceToResource(Value object) {
-		Value newObj = object;
-		if (newObj instanceof SimpleIRIHDT) {
-			newObj = this.endpoint.getChangingStore().getValueFactory().createIRI(newObj.stringValue());
-		} else if (newObj instanceof BNode) {
-			newObj = this.endpoint.getChangingStore().getValueFactory().createBNode(newObj.stringValue());
-		} else if (newObj instanceof SimpleLiteralHDT) {
-			SimpleLiteralHDT literal = (SimpleLiteralHDT) newObj;
+		if (object instanceof SimpleIRIHDT) {
+			return this.endpoint.getChangingStore().getValueFactory().createIRI(object.stringValue());
+		}
+		if (object instanceof BNode) {
+			return this.endpoint.getChangingStore().getValueFactory().createBNode(object.stringValue());
+		}
+		if (object instanceof SimpleLiteralHDT) {
+			SimpleLiteralHDT literal = (SimpleLiteralHDT) object;
 			if (literal.getLanguage().isPresent()) {
-				newObj = this.endpoint.getChangingStore().getValueFactory().createLiteral(
-						((SimpleLiteralHDT) newObj).getLabel(), ((SimpleLiteralHDT) newObj).getLanguage().get());
+				return this.endpoint.getChangingStore().getValueFactory().createLiteral(literal.getLabel(),
+						literal.getLanguage().get());
 			} else {
-				newObj = this.endpoint.getChangingStore().getValueFactory().createLiteral(
-						((SimpleLiteralHDT) newObj).getLabel(), ((SimpleLiteralHDT) newObj).getDatatype());
+				return this.endpoint.getChangingStore().getValueFactory().createLiteral(literal.getLabel(),
+						literal.getDatatype());
 			}
 		}
-		return newObj;
+		return object;
 	}
 
 	public Value idToHDTValue(long id, int position) {
@@ -272,5 +273,42 @@ public class HDTConverter {
 		default:
 			throw new IllegalArgumentException("bad position: " + position);
 		}
+	}
+
+	public Statement rdf4ToHdt(Statement statement) {
+		Resource s = rdf4jToHdtIDsubject(statement.getSubject());
+		IRI p = rdf4jToHdtIDpredicate(statement.getPredicate());
+		Value o = rdf4jToHdtIDobject(statement.getObject());
+		if (s == statement.getSubject() && p == statement.getPredicate() && o == statement.getObject()) {
+			return statement;
+		}
+		return valueFactory.createStatement(s, p, o);
+	}
+
+	public Statement hdtStatementToStatement(Statement statement) {
+		if (!(statement.getSubject() instanceof HDTValue || statement.getPredicate() instanceof HDTValue
+				|| statement.getObject() instanceof HDTValue)) {
+			return statement;
+		}
+		Resource s = subjectHdtResourceToResource(statement.getSubject());
+		IRI p = predicateHdtResourceToResource(statement.getPredicate());
+		Value o = objectHdtResourceToResource(statement.getObject());
+		if (s == statement.getSubject() && p == statement.getPredicate() && o == statement.getObject()) {
+			return statement;
+		}
+		return valueFactory.createStatement(s, p, o);
+	}
+
+	public void delegate(Value obj) {
+		if (obj instanceof HDTValue) {
+			((HDTValue) obj).setDelegate(true);
+		}
+	}
+
+	public Statement delegate(Statement statement) {
+		delegate(statement.getSubject());
+		delegate(statement.getPredicate());
+		delegate(statement.getObject());
+		return statement;
 	}
 }

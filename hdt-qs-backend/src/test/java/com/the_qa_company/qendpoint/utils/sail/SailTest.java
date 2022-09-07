@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.utils.sail;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreTest;
 import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
+import com.the_qa_company.qendpoint.store.MergeRunnableStopPoint;
 import com.the_qa_company.qendpoint.store.Utility;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -76,6 +77,18 @@ public abstract class SailTest {
 	}
 
 	/**
+	 * create a statement ex:MOCKS+s ex:MOCKS+p "o"^^xsd:integer
+	 *
+	 * @param s s
+	 * @param p p
+	 * @param o o
+	 * @return statement
+	 */
+	protected static Statement mockStmt(long s, long p, long o) {
+		return VF.createStatement(iri("MOCKS" + s), iri("MOCKP" + p), VF.createLiteral(o));
+	}
+
+	/**
 	 * join lines with \n
 	 *
 	 * @param lines the lines
@@ -124,6 +137,11 @@ public abstract class SailTest {
 
 	@After
 	public void complete() {
+		// unlock points if required
+		MergeRunnableStopPoint.debug = false;
+		logger.info("Unlock merge points");
+		MergeRunnableStopPoint.unlockAll();
+
 		logger.info("Completed S/A/R : {}/{}/{} in {}", selectCount, addCount, removeCount, watch.stopAndShow());
 		repository.shutDown();
 
@@ -149,7 +167,9 @@ public abstract class SailTest {
 	 * @param endpoint the store to use as a triple source
 	 * @return sail
 	 */
-	protected abstract Sail configStore(EndpointStore endpoint);
+	protected Sail configStore(EndpointStore endpoint) {
+		return endpoint;
+	}
 
 	/**
 	 * add statements to the repository

@@ -62,35 +62,66 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		EndpointStoreUtils.openConnection(this);
 		// lock logic is here so that the connections is blocked
 		this.endpoint.lockToPreventNewConnections.waitForActiveLocks();
-		if (MergeRunnableStopPoint.disableRequest)
+		if (MergeRunnableStopPoint.disableRequest) {
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+		}
 		this.connectionLock = this.endpoint.locksHoldByConnections.createLock("connection-lock");
 
 		this.connA_read = endpoint.getNativeStoreA().getConnection();
-		this.connB_read = endpoint.getNativeStoreB().getConnection();
-		this.connA_write = endpoint.getNativeStoreA().getConnection();
-		this.connB_write = endpoint.getNativeStoreB().getConnection();
-
-		SailConnectionListener listener = new SailConnectionListener() {
-			@Override
-			public void statementAdded(Statement statement) {
-				EndpointStoreConnection.this.notifyStatementAdded(statement);
+		try {
+			this.connB_read = endpoint.getNativeStoreB().getConnection();
+			try {
+				this.connA_write = endpoint.getNativeStoreA().getConnection();
+				try {
+					this.connB_write = endpoint.getNativeStoreB().getConnection();
+				} catch (Throwable t) {
+					try {
+						connA_write.close();
+					} catch (Throwable t2) {
+						t.addSuppressed(t);
+					}
+					throw t;
+				}
+			} catch (Throwable t) {
+				try {
+					connB_read.close();
+				} catch (Throwable t2) {
+					t.addSuppressed(t);
+				}
+				throw t;
 			}
-
-			@Override
-			public void statementRemoved(Statement statement) {
-				EndpointStoreConnection.this.notifyStatementRemoved(statement);
+		} catch (Throwable t) {
+			try {
+				connA_read.close();
+			} catch (Throwable t2) {
+				t.addSuppressed(t);
 			}
-		};
+			throw t;
+		}
+
+		// create the listener
+		SailConnectionListener listener = new EndpointStoreConnectionListener();
 		this.connA_read.addConnectionListener(listener);
-		this.connB_read.addConnectionListener(listener);
 		this.connA_write.addConnectionListener(listener);
+		this.connB_read.addConnectionListener(listener);
 		this.connB_write.addConnectionListener(listener);
 
 		// each endpointStoreConnection has a triple source ( ideally it should
 		// be in the query preparer as in rdf4j..)
 		this.tripleSource = new EndpointTripleSource(this, endpoint);
 		this.queryPreparer = new EndpointStoreQueryPreparer(endpoint, tripleSource);
+	}
+
+	@Override
+	protected void notifyStatementAdded(Statement st) {
+		HDTConverter converter = endpoint.getHdtConverter();
+		super.notifyStatementAdded(converter.delegate(converter.rdf4ToHdt(st)));
+	}
+
+	@Override
+	protected void notifyStatementRemoved(Statement st) {
+		HDTConverter converter = endpoint.getHdtConverter();
+		super.notifyStatementRemoved(converter.delegate(converter.rdf4ToHdt(st)));
 	}
 
 	@Override
@@ -565,6 +596,14 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		return timeout.get();
 	}
 
+	public EndpointStore getEndpoint() {
+		return endpoint;
+	}
+
+	long getDebugId() {
+		return debugId;
+	}
+
 	private class CloseTask extends TimerTask {
 		@Override
 		public void run() {
@@ -572,11 +611,23 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		}
 	}
 
-	public EndpointStore getEndpoint() {
-		return endpoint;
-	}
+	private class EndpointStoreConnectionListener implements SailConnectionListener {
+		private boolean shouldHandle() {
+			return !endpoint.isMerging() || !endpoint.isNotificationsFreeze();
+		}
 
-	long getDebugId() {
-		return debugId;
+		@Override
+		public void statementAdded(Statement st) {
+			if (shouldHandle()) {
+				EndpointStoreConnection.this.notifyStatementAdded(st);
+			}
+		}
+
+		@Override
+		public void statementRemoved(Statement st) {
+			if (shouldHandle()) {
+				EndpointStoreConnection.this.notifyStatementRemoved(st);
+			}
+		}
 	}
 }
