@@ -7,7 +7,7 @@ import org.eclipse.rdf4j.model.util.URIUtil;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
-public class SimpleIRIHDT extends AbstractIRI {
+public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 
 	private static final long serialVersionUID = -3220264926968931192L;
 	public static final byte SUBJECT_POS = 1;
@@ -22,6 +22,7 @@ public class SimpleIRIHDT extends AbstractIRI {
 	// An index indicating the first character of the local name in the IRI
 	// string, -1 if not yet set.
 	private int localNameIdx;
+	private boolean delegate;
 
 	public SimpleIRIHDT(HDT hdt, int position, long id) {
 		if (id == -1) {
@@ -115,7 +116,7 @@ public class SimpleIRIHDT extends AbstractIRI {
 
 	@Override
 	public int hashCode() {
-		if (id != -1) {
+		if (id != -1 && !delegate) {
 			String prefix = "http://hdt.org/";
 			if (this.postion == SHARED_POS)
 				prefix += "SO";
@@ -146,5 +147,15 @@ public class SimpleIRIHDT extends AbstractIRI {
 			iriString = stringValue();
 		}
 		this.id = -1;
+	}
+
+	@Override
+	public void setDelegate(boolean delegate) {
+		this.delegate = delegate;
+	}
+
+	@Override
+	public boolean isDelegate() {
+		return delegate;
 	}
 }

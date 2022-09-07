@@ -739,6 +739,8 @@ public class MergeRunnable {
 				translateLock = lock;
 			}
 
+			this.endpoint.setFreezeNotifications(true);
+
 			this.endpoint.resetDeleteArray(newHdt);
 		}
 
@@ -778,6 +780,7 @@ public class MergeRunnable {
 
 		// mark the triples as deleted from the temp file stored while merge
 		this.endpoint.markDeletedTempTriples();
+		this.endpoint.setFreezeNotifications(false);
 		logger.debug("Releasing lock for ID conversion ....");
 		translateLock.release();
 		logger.debug("Translate-Lock released");

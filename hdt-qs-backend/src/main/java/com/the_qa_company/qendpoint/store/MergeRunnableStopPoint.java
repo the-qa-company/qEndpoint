@@ -98,6 +98,13 @@ public enum MergeRunnableStopPoint {
 		completeFailure = true;
 	}
 
+	public static void unlockAll() {
+		for (MergeRunnableStopPoint point : values()) {
+			point.debugUnlock();
+			point.debugUnlockTest();
+		}
+	}
+
 	/**
 	 * set the last (update/read) lock during the merge
 	 *
@@ -244,6 +251,7 @@ public enum MergeRunnableStopPoint {
 	 */
 	public void debugLock() {
 		logger.debug("lock " + name().toLowerCase());
+		assert lock == null || !lock.isActive();
 		lock = lockManager.createLock("stopPointLock_" + name().toLowerCase());
 	}
 
@@ -253,6 +261,7 @@ public enum MergeRunnableStopPoint {
 	 */
 	public void debugLockTest() {
 		logger.debug("lock test " + name().toLowerCase());
+		assert lockTest == null || !lockTest.isActive();
 		lockTest = lockManagerTest.createLock("stopPointLockTest_" + name().toLowerCase());
 	}
 

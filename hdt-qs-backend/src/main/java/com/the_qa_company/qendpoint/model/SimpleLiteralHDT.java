@@ -33,7 +33,7 @@ import static org.eclipse.rdf4j.rio.helpers.NTriplesUtil.parseURI;
  *
  * @author Dennis Diefenbach
  */
-public class SimpleLiteralHDT implements Literal {
+public class SimpleLiteralHDT implements Literal, HDTValue {
 
 	/*-----------*
 	 * Constants *
@@ -331,5 +331,15 @@ public class SimpleLiteralHDT implements Literal {
 			coreDatatype = CoreDatatype.from(getDatatype());
 		}
 		return coreDatatype;
+	}
+
+	@Override
+	public void setDelegate(boolean delegate) {
+		// ignored
+	}
+
+	@Override
+	public boolean isDelegate() {
+		return true;
 	}
 }
