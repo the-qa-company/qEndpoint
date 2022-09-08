@@ -1,3 +1,1 @@
-- connection fixes
-- multiple commits during merge phase for large delta
-
+- fix store notifications
