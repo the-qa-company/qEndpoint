@@ -6,11 +6,12 @@ import org.eclipse.rdf4j.model.base.AbstractBNode;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;
 
-public class SimpleBNodeHDT extends AbstractBNode {
+public class SimpleBNodeHDT extends AbstractBNode implements HDTValue {
 	private final HDT hdt;
 	private final int position;
 	private final long id;
 	private String idValue;
+	private boolean delegate;
 
 	public SimpleBNodeHDT(HDT hdt, int position, long id) {
 		if (id == -1) {
@@ -59,7 +60,7 @@ public class SimpleBNodeHDT extends AbstractBNode {
 
 	@Override
 	public int hashCode() {
-		if (id != -1) {
+		if (id != -1 && !delegate) {
 			String prefix = "http://hdt.org/";
 			if (this.position == SimpleIRIHDT.SHARED_POS)
 				prefix += "SO";
@@ -83,5 +84,15 @@ public class SimpleBNodeHDT extends AbstractBNode {
 
 	public long getHdtId() {
 		return id;
+	}
+
+	@Override
+	public void setDelegate(boolean delegate) {
+		this.delegate = delegate;
+	}
+
+	@Override
+	public boolean isDelegate() {
+		return delegate;
 	}
 }

@@ -101,6 +101,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public boolean isMergeTriggered = false;
 
+	private boolean freezeNotifications = false;
+
 	// threshold above which the merge process is starting
 	private int threshold;
 
@@ -866,6 +868,14 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public void setExtendsTimeMergeEnd(int extendsTimeMergeEnd) {
 		MergeRunnable.setExtendsTimeMergeEnd(extendsTimeMergeEnd);
+	}
+
+	public void setFreezeNotifications(boolean freezeNotifications) {
+		this.freezeNotifications = freezeNotifications;
+	}
+
+	public boolean isNotificationsFreeze() {
+		return freezeNotifications;
 	}
 
 	long getDebugId() {
