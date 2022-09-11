@@ -85,14 +85,14 @@ Installers for Linux, MacOS and Windows can be found [here](https://github.com/t
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
-- Run the project using `java -jar target/hdtSparqlEndpoint-1.2.3-exec.jar` (replace the version by the latest version)
+- Run the project using `java -jar target/qendpoint-1.2.3-exec.jar` (replace the version by the latest version)
 
 You can use the project as a dependency (replace the version by the latest version)
 
 ```
 <dependency>
     <groupId>com.the_qa_company</groupId>
-    <artifactId>hdtSparqlEndpoint</artifactId>
+    <artifactId>qendpoint</artifactId>
     <version>1.2.3</version>
 </dependency>
 ```
