@@ -16,18 +16,18 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.UpdateExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.AbstractQueryPreparer;
 import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.BindingAssigner;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.CompareOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.ConjunctiveConstraintSplitter;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.ConstantOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.DisjunctiveConstraintOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.BindingAssignerOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.CompareOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.ConjunctiveConstraintSplitterOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.ConstantOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.DisjunctiveConstraintOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.ExtendedEvaluationStrategy;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.IterativeEvaluationOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.OrderLimitOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryJoinOptimizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryModelNormalizer;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.SameTermFilterOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.IterativeEvaluationOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.OrderLimitOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.QueryJoinOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.QueryModelNormalizerOptimizer;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.SameTermFilterOptimizer;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
@@ -112,13 +112,13 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		}
 
 		new VariableToIdSubstitution(endpoint).optimize(tupleExpr, dataset, bindings);
-		new BindingAssigner().optimize(tupleExpr, dataset, bindings);
+		new BindingAssignerOptimizer().optimize(tupleExpr, dataset, bindings);
 		new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
 		new CompareOptimizer().optimize(tupleExpr, dataset, bindings);
-		new ConjunctiveConstraintSplitter().optimize(tupleExpr, dataset, bindings);
+		new ConjunctiveConstraintSplitterOptimizer().optimize(tupleExpr, dataset, bindings);
 		new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
 		new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
-		new QueryModelNormalizer().optimize(tupleExpr, dataset, bindings);
+		new QueryModelNormalizerOptimizer().optimize(tupleExpr, dataset, bindings);
 		new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
 		new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
 		// FIXME: remove comment

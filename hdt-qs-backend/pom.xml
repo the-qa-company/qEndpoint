@@ -33,8 +33,8 @@
         <json_simple.version>1.1.1</json_simple.version>
         <junit.version>4.13</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
-        <rdf4j.version>4.1.0</rdf4j.version>
-        <rdfhdt.version>3.0.2</rdfhdt.version>
+        <rdf4j.version>4.2.0</rdf4j.version>
+        <rdfhdt.version>3.0.4</rdfhdt.version>
         <spring.version>2.7.3</spring.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -287,7 +287,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.the_qa_company.qendpoint.Application</mainClass>
-                        <classifier>exec</classifier>
+                    <classifier>exec</classifier>
                 </configuration>
                 <executions>
                     <execution>

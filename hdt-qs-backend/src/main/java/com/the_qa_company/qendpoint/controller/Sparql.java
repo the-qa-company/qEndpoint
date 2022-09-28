@@ -184,8 +184,13 @@ public class Sparql {
 		if (Files.exists(p)) {
 			Path old = p.resolveSibling("old");
 			Files.createDirectories(old);
-			Path next = old.resolve(p.getFileName() + "_" + FORMAT.format(Calendar.getInstance().getTime()));
+			String dateTime = p.getFileName() + "_" + FORMAT.format(Calendar.getInstance().getTime());
+			Path next = old.resolve(dateTime);
 			logger.info("move old file to {}", next);
+			int iteration = 0;
+			while (Files.exists(next)) {
+				next = old.resolve(dateTime + "_" + ++iteration);
+			}
 			Files.move(p, next);
 		}
 		return p;
