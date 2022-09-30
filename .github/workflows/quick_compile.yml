@@ -34,10 +34,9 @@ jobs:
         run: mvn install -DskipTests
         working-directory: hdt-qs-backend
       - name: move endpoint
-        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar endpoint.jar
+        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar qendpoint.jar
       - name: Deploy jar
         uses: actions/upload-artifact@v3
         with:
-          name: "endpoint.jar"
-          path: "endpoint.jar"
-
+          name: "qendpoint.jar"
+          path: "qendpoint.jar"

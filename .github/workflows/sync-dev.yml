@@ -3,18 +3,20 @@ name: Sync dev and master branch
 on:
   push:
     branches:
-    - "master"
+      - "master"
 
 jobs:
   pull-request:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: pull-request
-      uses: repo-sync/pull-request@v2.6.2
-      with:
-        destination_branch: "dev"
-        pr_title: "Sync master into dev"
-        pr_body: "Branch to merge master -> dev."
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: pull-request
+        uses: repo-sync/pull-request@v2.6.2
+        with:
+          destination_branch: "dev"
+          pr_title: "Sync master into dev"
+          pr_body: "Sync master into dev."
+          pr_label: "sync"
+          pr_assignee: "ate47"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
