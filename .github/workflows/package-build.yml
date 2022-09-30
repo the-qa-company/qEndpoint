@@ -55,12 +55,12 @@ jobs:
         run: mvn install
         working-directory: hdt-qs-backend
       - name: move endpoint
-        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar endpoint.jar
+        run: mv hdt-qs-backend/target/qendpoint-*-exec.jar qendpoint.jar
       - name: Deploy jar
         uses: actions/upload-artifact@v3
         with:
-          name: "endpoint.jar"
-          path: "endpoint.jar"
+          name: "qendpoint.jar"
+          path: "qendpoint.jar"
   publish:
     name: Publish to Maven Central
     needs: build
@@ -96,7 +96,7 @@ jobs:
       - name: Download endpoint jar
         uses: actions/download-artifact@v3
         with:
-          name: "endpoint.jar"
+          name: "qendpoint.jar"
       - name: Create Icon
         run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
       - name: Install gon via HomeBrew for code notarization
@@ -111,12 +111,12 @@ jobs:
           MACOS_DEV_ID: ${{ secrets.MACOS_DEVID }}
           MACOS_TEAMID: ${{ secrets.MACOS_TEAMID }}
           AC_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
-        run: scripts/build_package_osx.sh endpoint.jar
+        run: scripts/build_package_osx.sh qendpoint.jar
       - name: Upload dmg
         uses: actions/upload-artifact@v3
         with:
-          name: "endpoint.dmg"
-          path: "endpoint.dmg"
+          name: "qendpoint.dmg"
+          path: "qendpoint.dmg"
   windows:
     name: Build WINDOWS version
     needs: build
@@ -129,17 +129,17 @@ jobs:
       - name: Download endpoint jar
         uses: actions/download-artifact@v3
         with:
-          name: "endpoint.jar"
+          name: "qendpoint.jar"
       - name: Package jar as msi installer
         run: |
-          scripts/build_package.ps1 scripts/jpackage_windows.cfg endpoint.jar
-          mv scripts/build/distributions/*.msi endpoint.msi
+          scripts/build_package.ps1 scripts/jpackage_windows.cfg qendpoint.jar
+          mv scripts/build/distributions/*.msi qendpoint.msi
       - name: Upload installer
         run: echo "Disabled"
   #        uses: actions/upload-artifact@v1
   #        with:
-  #          name: "endpoint.msi"
-  #          path: "endpoint.msi"
+  #          name: "qendpoint.msi"
+  #          path: "qendpoint.msi"
   linux:
     name: Build LINUX version
     needs: build
@@ -152,16 +152,16 @@ jobs:
       - name: Download endpoint jar
         uses: actions/download-artifact@v3
         with:
-          name: "endpoint.jar"
+          name: "qendpoint.jar"
       - name: Package jar as deb installer
         run: |
-          scripts/build_package.sh scripts/jpackage_linux.cfg endpoint.jar
-          mv scripts/build/distributions/*.deb endpoint.deb
+          scripts/build_package.sh scripts/jpackage_linux.cfg qendpoint.jar
+          mv scripts/build/distributions/*.deb qendpoint.deb
       - name: Upload installer
         uses: actions/upload-artifact@v1
         with:
-          name: "endpoint.deb"
-          path: "endpoint.deb"
+          name: "qendpoint.deb"
+          path: "qendpoint.deb"
   push_to_docker_hub:
     name: Push to Docker Hub base image
     needs:
@@ -173,17 +173,15 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
-      - name: Download endpoint jar
+      - name: Download qendpoint jar
         uses: actions/download-artifact@v3
         with:
-          name: "endpoint.jar"
+          name: "qendpoint.jar"
       - name: Move endpoint
-        run: mv endpoint.jar scripts
-      -
-        name: Set up QEMU
+        run: mv qendpoint.jar scripts
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-      -
-        name: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -258,7 +256,7 @@ jobs:
       - name: Extract artifacts
         run: |
           mkdir -p deploy_file
-          mv endpoint.*/* deploy_file
+          mv qendpoint.*/* deploy_file
       - name: Create release body
         run: scripts/build_release_input.sh
       - name: Create release with artifacts
