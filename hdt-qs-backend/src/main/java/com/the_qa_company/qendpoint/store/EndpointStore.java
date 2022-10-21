@@ -600,8 +600,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples())) {
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
 			rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-			try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser,
-					new WeakReference<>(this))) {
+			try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, null)) {
 				while (res.hasNext()) {
 					Statement st = res.next();
 					IteratorTripleString search = this.hdt.search(st.getSubject().toString(),
