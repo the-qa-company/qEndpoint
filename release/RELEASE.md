@@ -1,4 +1,3 @@
-- update RDF4J to 4.2.0
-- update RDF-HDT to 3.0.4
-- fix notification
-
+- at startup there was a messeage that solr index not reachable message, this is gone
+- fixed an issue that was preventing reloading front-end urls https://github.com/the-qa-company/qEndpoint/issues/157
+- fixed an issue that occured when indexing a particular dataset. This was fixed in the HDT repo.
