@@ -8,4 +8,4 @@ RUN chmod +x loadData.sh
 EXPOSE 1234
 ENTRYPOINT ["/usr/bin/env"]
 
-CMD ["/bin/sh", "-c", "./loadData.sh $MEM_SIZE && java -jar -Xmx${MEM_SIZE} endpoint.jar"]
+CMD ["/bin/sh", "-c", "./loadData.sh $MEM_SIZE && java -jar -Xmx${MEM_SIZE} qendpoint.jar"]
