@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if (( $# < 1 )); then
-    1>&2 echo "$0 (endpoint jar)"
+    1>&2 echo "$0 (qendpoint jar)"
     exit -1
 fi
 
@@ -9,7 +9,7 @@ ENDPOINT_JAR=$1
 
 BASE=`dirname $0`
 
-cp $ENDPOINT_JAR "$BASE/endpoint.jar"
+cp $ENDPOINT_JAR "$BASE/qendpoint.jar"
 
 cd $BASE
 
@@ -32,17 +32,17 @@ echo "
 --mac-signing-key-user-name \"$MACOS_DEV_ID\"
 " >> tmp_jpackage_osx.cfg
 
-./build_package.sh tmp_jpackage_osx.cfg endpoint.jar
+./build_package.sh tmp_jpackage_osx.cfg qendpoint.jar
 
 echo "signing dmg file"
 
 
-mv "build/distributions/$(ls build/distributions)" "endpoint.dmg"
+mv "build/distributions/$(ls build/distributions)" "qendpoint.dmg"
 
 gon -log-level=debug -log-json ./gon.json
 
-mv endpoint.dmg ..
+mv qendpoint.dmg ..
 
-rm endpoint.jar tmp_jpackage_osx.cfg
+rm qendpoint.jar tmp_jpackage_osx.cfg
 
 
