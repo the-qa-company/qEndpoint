@@ -501,7 +501,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 			if (this.endpoint.isMerging()) {
 				NTriplesWriter writer = this.endpoint.getRdfWriterTempTriples();
 				if (writer != null) {
-					synchronize(writer) {
+					synchronized (writer) {
 						Statement st = this.endpoint.getValueFactory().createStatement(subj, pred, obj);
 						logger.debug("add to RDFWriter: {}", st);
 						writer.handleStatement(st);
