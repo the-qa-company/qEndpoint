@@ -34,12 +34,14 @@ import org.eclipse.rdf4j.sail.helpers.DirectoryLockManager;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
+import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.triples.TripleID;
+import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -142,6 +145,28 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
 		Optional<MergeRunnable.MergeThread<?>> mergeThread = mergeRunnable.createRestartThread();
 		mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
+
+		Path index = Path.of(endpointFiles.getHDTIndex());
+
+		if (!Files.exists(index)) {
+			Files.createDirectories(index.getParent());
+			try (HDT hdt = HDTManager.generateHDT(new Iterator<>() {
+				@Override
+				public boolean hasNext() {
+					return false;
+				}
+
+				@Override
+				public TripleString next() {
+					return null;
+				}
+			}, "http://the-qa-company/", spec, null)) {
+				hdt.saveToHDT(endpointFiles.getHDTIndex(), null);
+			} catch (ParserException e) {
+				throw new IOException(e);
+			}
+		}
+
 		HDT hdt;
 
 		if (loadIntoMemory) {

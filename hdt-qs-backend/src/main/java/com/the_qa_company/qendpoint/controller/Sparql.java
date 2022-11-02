@@ -395,7 +395,6 @@ public class Sparql {
 			sparqlRepository.shutDown();
 			endpoint = null;
 		}
-		FileUtils.deleteRecursively(Paths.get(locationNative));
 	}
 
 	void initializeEndpointStore(boolean finishLoading) throws IOException {
