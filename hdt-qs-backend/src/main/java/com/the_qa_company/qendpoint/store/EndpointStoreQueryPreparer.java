@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.federation.SPARQLServiceResolverCustom;
 import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -101,7 +102,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			tupleExpr = new QueryRoot(tupleExpr);
 		}
 		EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
-				new SPARQLServiceResolver(), 0L, evaluationStatistics);
+				new SPARQLServiceResolverCustom(tripleSource), 0L, evaluationStatistics);
 
 		if (this.trackResultSize) {
 			strategy.setTrackResultSize(this.trackResultSize);
@@ -122,7 +123,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
 		new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
 		// FIXME: remove comment
-		// new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
+//		 new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 		new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
 
 		return strategy.evaluate(tupleExpr, bindings);
