@@ -33,15 +33,13 @@ public class FederationTest extends SailTest {
 	public void wikibaseLabelService1() {
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDF.TYPE,
 				VF.createIRI("http://the-qa-company.com/type")));
+		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDFS.LABEL, VF.createLiteral("My type1", "en")));
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDFS.LABEL,
-				VF.createLiteral("My type1","en")));
-		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDFS.LABEL,
-				VF.createLiteral("Mon type1","fr")));
+				VF.createLiteral("Mon type1", "fr")));
 		try (RepositoryConnection connection = repository.getConnection()) {
-			String sparqlQuery = "SELECT ?s ?sLabel WHERE {\n" +
-					"  ?s rdf:type <http://the-qa-company.com/type> .\n" +
-					"  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en\". }\n" +
-					"}  limit 10";
+			String sparqlQuery = "SELECT ?s ?sLabel WHERE {\n" + "  ?s rdf:type <http://the-qa-company.com/type> .\n"
+					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en\". }\n"
+					+ "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
 			try (TupleQueryResult result = query.evaluate()) {
 				Assert.assertTrue(result.hasNext());
@@ -52,10 +50,9 @@ public class FederationTest extends SailTest {
 			}
 		}
 		try (RepositoryConnection connection = repository.getConnection()) {
-			String sparqlQuery = "SELECT ?s ?sLabel WHERE {\n" +
-					"  ?s rdf:type <http://the-qa-company.com/type> .\n" +
-					"  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"fr,en\". }\n" +
-					"}  limit 10";
+			String sparqlQuery = "SELECT ?s ?sLabel WHERE {\n" + "  ?s rdf:type <http://the-qa-company.com/type> .\n"
+					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"fr,en\". }\n"
+					+ "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
 			try (TupleQueryResult result = query.evaluate()) {
 				Assert.assertTrue(result.hasNext());
@@ -73,12 +70,11 @@ public class FederationTest extends SailTest {
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDF.TYPE,
 				VF.createIRI("http://the-qa-company.com/type")));
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), SKOS.ALT_LABEL,
-				VF.createLiteral("My alt type1","en")));
+				VF.createLiteral("My alt type1", "en")));
 		try (RepositoryConnection connection = repository.getConnection()) {
-			String sparqlQuery = "SELECT ?s ?sAltLabel WHERE {\n" +
-					"  ?s rdf:type <http://the-qa-company.com/type> .\n" +
-					"  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en,fr\". }\n" +
-					"}  limit 10";
+			String sparqlQuery = "SELECT ?s ?sAltLabel WHERE {\n" + "  ?s rdf:type <http://the-qa-company.com/type> .\n"
+					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en,fr\". }\n"
+					+ "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
 			try (TupleQueryResult result = query.evaluate()) {
 				Assert.assertTrue(result.hasNext());
@@ -96,12 +92,12 @@ public class FederationTest extends SailTest {
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDF.TYPE,
 				VF.createIRI("http://the-qa-company.com/type")));
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), VF.createIRI("https://schema.org/description"),
-				VF.createLiteral("My alt type1","en")));
+				VF.createLiteral("My alt type1", "en")));
 		try (RepositoryConnection connection = repository.getConnection()) {
-			String sparqlQuery = "SELECT ?s ?sDescription WHERE {\n" +
-					"  ?s rdf:type <http://the-qa-company.com/type> .\n" +
-					"  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en,fr\". }\n" +
-					"}  limit 10";
+			String sparqlQuery = "SELECT ?s ?sDescription WHERE {\n"
+					+ "  ?s rdf:type <http://the-qa-company.com/type> .\n"
+					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en,fr\". }\n"
+					+ "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
 			try (TupleQueryResult result = query.evaluate()) {
 				Assert.assertTrue(result.hasNext());

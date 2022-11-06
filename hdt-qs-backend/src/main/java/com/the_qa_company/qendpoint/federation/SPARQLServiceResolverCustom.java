@@ -7,20 +7,20 @@ import org.eclipse.rdf4j.repository.sparql.federation.SPARQLFederatedService;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 
 public class SPARQLServiceResolverCustom extends SPARQLServiceResolver {
-    TripleSource tripleSource;
+	TripleSource tripleSource;
 
-    public SPARQLServiceResolverCustom(TripleSource tripleSource){
-        this.tripleSource = tripleSource;
-    }
+	public SPARQLServiceResolverCustom(TripleSource tripleSource) {
+		this.tripleSource = tripleSource;
+	}
 
-    @Override
-    protected FederatedService createService(String serviceUrl) throws QueryEvaluationException {
-        // for the Wikibase url use a spacial FederatedService implementation
-        if (serviceUrl.equals("http://wikiba.se/ontology#label")){
-            return new WikibaseLabelService(tripleSource);
-        } else {
-            return new SPARQLFederatedService(serviceUrl, this.getHttpClientSessionManager());
-        }
+	@Override
+	protected FederatedService createService(String serviceUrl) throws QueryEvaluationException {
+		// for the Wikibase url use a spacial FederatedService implementation
+		if (serviceUrl.equals("http://wikiba.se/ontology#label")) {
+			return new WikibaseLabelService(tripleSource);
+		} else {
+			return new SPARQLFederatedService(serviceUrl, this.getHttpClientSessionManager());
+		}
 
-    }
+	}
 }
