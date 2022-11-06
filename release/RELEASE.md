@@ -1,3 +1,3 @@
-- at startup there was a messeage that solr index not reachable message, this is gone
-- fixed an issue that was preventing reloading front-end urls https://github.com/the-qa-company/qEndpoint/issues/157
-- fixed an issue that occured when indexing a particular dataset. This was fixed in the HDT repo.
+- sync RDF delete writer during merge
+- fix delete when shutting down the EP
+
