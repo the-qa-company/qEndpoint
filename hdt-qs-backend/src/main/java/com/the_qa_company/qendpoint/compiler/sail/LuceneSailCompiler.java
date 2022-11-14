@@ -55,7 +55,7 @@ public class LuceneSailCompiler extends LinkedSailCompiler {
 		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_EVAL_MODE).map(reader.getSailCompiler()::asLitString)
 				.map(TupleFunctionEvaluationMode::valueOf).ifPresent(builder::withEvaluationMode);
 
-		reader.searchOneOpt(rnode, SailCompilerSchema.DIR_LOCATION).map(reader.getSailCompiler()::asLitString)
+		reader.searchOneOpt(rnode, SailCompilerSchema.DIR_LOCATION).map(reader.getSailCompiler()::asLitStringPath)
 				.ifPresent(builder::withDir);
 
 		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_REINDEX_QUERY)

@@ -7,8 +7,13 @@ import com.the_qa_company.qendpoint.utils.sail.filter.LuceneMatchExprSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.OpSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.PredicateSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.SailFilter;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.impl.TreeModel;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.Rio;
@@ -24,6 +29,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -339,6 +345,89 @@ public class SailCompilerTest {
 		compiler.registerDirObject(new ParsedStringObject("testLocation"));
 		Assert.assertEquals("testLocation", compiler.parseDir("${locationNative}"));
 
+	}
+
+	@Test
+	public void dirTest() {
+		Path p = Path.of("test").toAbsolutePath();
+		SailCompiler compiler = new SailCompiler();
+		String pStr = p.toString();
+		compiler.registerDirString("test", pStr);
+		compiler.setValidator(new SailCompilerValidator() {
+			@Override
+			public void validatePath(Path path) throws SailCompiler.SailCompilerException {
+				Assert.assertEquals(path, p);
+			}
+		});
+		TreeModel tm = new TreeModel();
+		BNode bn = Values.bnode();
+		IRI pred = Values.iri("http://example.org#P");
+		tm.add(bn, pred, Values.literal("${test}", SailCompilerSchema.PARSED_STRING_DATATYPE));
+		compiler.load(tm);
+		List<Value> lst = compiler.getReader().search(bn, pred);
+
+		Assert.assertEquals(lst.size(), 1);
+		Assert.assertEquals(compiler.asLitStringPath(lst.get(0)), p);
+	}
+
+	@Test(expected = SailCompiler.SailCompilerException.class)
+	public void dirErrTest() {
+		Path p = Path.of("test").toAbsolutePath();
+		SailCompiler compiler = new SailCompiler();
+		String pStr = p.toString();
+		compiler.registerDirString("test", pStr);
+		compiler.setValidator(new SailCompilerValidator() {
+			@Override
+			public void validatePath(Path path) throws SailCompiler.SailCompilerException {
+				if (path.equals(p)) {
+					throw new SailCompiler.SailCompilerException("test");
+				}
+			}
+		});
+		TreeModel tm = new TreeModel();
+		BNode bn = Values.bnode();
+		IRI pred = Values.iri("http://example.org#P");
+		tm.add(bn, pred, Values.literal("${test}", SailCompilerSchema.PARSED_STRING_DATATYPE));
+		compiler.load(tm);
+		List<Value> lst = compiler.getReader().search(bn, pred);
+
+		Assert.assertEquals(lst.size(), 1);
+		compiler.asLitStringPath(lst.get(0));
+	}
+
+	@Test(expected = SailCompiler.SailCompilerException.class)
+	public void circularRefTest() {
+		SailCompiler compiler = new SailCompiler();
+		TreeModel tm = new TreeModel();
+		BNode bn = Values.bnode();
+		tm.add(SailCompilerSchema.MAIN, SailCompilerSchema.NODE, bn);
+		tm.add(bn, SailCompilerSchema.TYPE, SailCompilerSchema.LINKED_SAIL_TYPE);
+		tm.add(bn, SailCompilerSchema.NODE, bn);
+		compiler.load(tm);
+
+		compiler.compile(new MemoryStore());
+	}
+
+	@Test
+	public void noCircularRefTest() {
+		SailCompiler compiler = new SailCompiler();
+		TreeModel tm = new TreeModel();
+		BNode bn = Values.bnode();
+		BNode bn2 = Values.bnode();
+		BNode bn3 = Values.bnode();
+		tm.add(SailCompilerSchema.MAIN, SailCompilerSchema.NODE, bn);
+		tm.add(bn, SailCompilerSchema.TYPE, SailCompilerSchema.LINKED_SAIL_TYPE);
+		tm.add(bn, SailCompilerSchema.NODE, bn3);
+		tm.add(bn, SailCompilerSchema.NODE, bn2);
+
+		tm.add(bn2, SailCompilerSchema.TYPE, SailCompilerSchema.LINKED_SAIL_TYPE);
+		tm.add(bn2, SailCompilerSchema.NODE, bn3);
+
+		tm.add(bn3, SailCompilerSchema.TYPE, SailCompilerSchema.LUCENE_TYPE);
+
+		compiler.load(tm);
+
+		compiler.compile(new MemoryStore());
 	}
 
 	private static class LoadData {
