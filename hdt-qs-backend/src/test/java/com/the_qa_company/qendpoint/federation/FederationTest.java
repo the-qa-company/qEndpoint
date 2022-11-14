@@ -37,8 +37,7 @@ public class FederationTest extends SailTest {
 		add(VF.createStatement(VF.createIRI(SailTest.NAMESPACE + "s"), RDFS.LABEL,
 				VF.createLiteral("Mon type1", "fr")));
 		try (RepositoryConnection connection = repository.getConnection()) {
-			String sparqlQuery = "SELECT ?s ?sLabel WHERE {"
-					+ "  ?s rdf:type <http://the-qa-company.com/type> . "
+			String sparqlQuery = "SELECT ?s ?sLabel WHERE {" + "  ?s rdf:type <http://the-qa-company.com/type> . "
 					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en\". } "
 					+ "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
@@ -120,8 +119,7 @@ public class FederationTest extends SailTest {
 		try (RepositoryConnection connection = repository.getConnection()) {
 			String sparqlQuery = "SELECT ?s ?sDescription WHERE {"
 					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en,fr\". }"
-					+ "  ?s rdf:type <http://the-qa-company.com/type> ."
-					+ "}  limit 10";
+					+ "  ?s rdf:type <http://the-qa-company.com/type> ." + "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
 			try (TupleQueryResult result = query.evaluate()) {
 				Assert.assertTrue(result.hasNext());
@@ -144,8 +142,7 @@ public class FederationTest extends SailTest {
 			String sparqlQuery = "SELECT ?s ?sDescription WHERE {"
 					+ "  SERVICE <http://wikiba.se/ontology#label> { <http://www.bigdata.com/rdf#serviceParam> <http://wikiba.se/ontology#language> \"en,fr\". }\n"
 					+ "  ?s rdf:type <http://the-qa-company.com/type> . "
-					+ "  OPTIONAL { ?s rdf:type2 <http://the-qa-company.com/type> . }"
-					+ "}  limit 10";
+					+ "  OPTIONAL { ?s rdf:type2 <http://the-qa-company.com/type> . }" + "}  limit 10";
 			TupleQuery query = connection.prepareTupleQuery(SailTest.joinLines(SailTest.PREFIXES, sparqlQuery));
 			try (TupleQueryResult result = query.evaluate()) {
 				Assert.assertTrue(result.hasNext());
