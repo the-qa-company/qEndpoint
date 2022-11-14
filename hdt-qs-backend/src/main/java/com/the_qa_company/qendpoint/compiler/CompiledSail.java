@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.Sail;
+import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.SailWrapper;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
@@ -65,6 +66,9 @@ public class CompiledSail extends SailWrapper {
 					() -> new EndpointFiles(Path.of("native-store"), Path.of("hdt-store"), "index_dev.hdt"));
 		}
 		SailCompiler sailCompiler = new SailCompiler();
+		if (config.validator != null) {
+			sailCompiler.setValidator(config.validator);
+		}
 		sailCompiler.registerDirObject(files);
 		config.stringObject.forEach(sailCompiler::registerDirObject);
 		config.stringConfig.forEach(sailCompiler::registerDirString);
@@ -164,10 +168,10 @@ public class CompiledSail extends SailWrapper {
 	/**
 	 * reindex all the compiled lucene sails
 	 *
-	 * @throws Exception see
-	 *                   {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
+	 * @throws SailException see
+	 *                       {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
 	 */
-	public void reindexLuceneSails() throws Exception {
+	public void reindexLuceneSails() throws SailException {
 		for (LuceneSail sail : luceneSails) {
 			// bypass filtering system to use the source
 			NotifyingSail oldSail = sail.getBaseSail();
@@ -208,6 +212,7 @@ public class CompiledSail extends SailWrapper {
 		private final Map<String, String> stringConfig = new HashMap<>();
 		private final List<Object> stringObject = new ArrayList<>();
 		private CompiledSailOptions options;
+		private SailCompilerValidator validator;
 
 		private CompiledSailCompiler() {
 		}
@@ -319,6 +324,19 @@ public class CompiledSail extends SailWrapper {
 		 */
 		public CompiledSailCompiler withOptions(CompiledSailOptions options) {
 			this.options = Objects.requireNonNull(options, "options can't be null!");
+			return this;
+		}
+
+		/**
+		 * set the validator for the sail compiler, might be overwritten by the
+		 * config
+		 *
+		 * @param validator the validator
+		 * @return this
+		 * @throws java.lang.NullPointerException a parameter is null
+		 */
+		public CompiledSailCompiler withValidator(SailCompilerValidator validator) {
+			this.validator = Objects.requireNonNull(validator, "validator can't be null!");
 			return this;
 		}
 

@@ -34,7 +34,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -80,6 +82,7 @@ public class SailCompiler {
 	private TripleSourceModel store = new EmptyTripleSourceGetter();
 	private final Map<IRI, LinkedSailCompiler> compilers = new HashMap<>();
 	private final Map<String, String> dirStrings = new HashMap<>();
+	private SailCompilerValidator validator = new SailCompilerValidator() {};
 
 	/**
 	 * create a sail with default LinkedSailCompilers
@@ -183,6 +186,16 @@ public class SailCompiler {
 	}
 
 	/**
+	 * set the validator to check the node
+	 *
+	 * @param validator validator
+	 * @throws java.lang.NullPointerException if validator is null
+	 */
+	public void setValidator(SailCompilerValidator validator) {
+		this.validator = Objects.requireNonNull(validator, "validator can't be null!");
+	}
+
+	/**
 	 * convert a {@link org.eclipse.rdf4j.model.Value} to a String
 	 *
 	 * @param value the value
@@ -200,6 +213,19 @@ public class SailCompiler {
 			}
 		}
 		throw new SailCompilerException(value + " can't be converted to a Literal!");
+	}
+
+	/**
+	 * convert a {@link org.eclipse.rdf4j.model.Value} to a path
+	 *
+	 * @param value the value
+	 * @return the path
+	 * @throws SailCompilerException if this value isn't of the right type
+	 */
+	public Path asLitStringPath(Value value) throws SailCompilerException {
+		Path path = Path.of(this.asLitString(value));
+		validator.validatePath(path);
+		return path;
 	}
 
 	/**
@@ -328,6 +354,7 @@ public class SailCompiler {
 	 */
 	public class SailCompilerReader implements AutoCloseable {
 		private final TripleSourceGetter connection;
+		private final Stack<Value> nodeStack = new Stack<>();
 
 		private SailCompilerReader() throws SailCompilerException {
 			if (store == null) {
@@ -352,8 +379,15 @@ public class SailCompiler {
 		 */
 		public LinkedSail<? extends NotifyingSail> compileNode(Value node) throws SailCompilerException {
 			Resource rnode = asResource(node);
+			if (nodeStack.contains(node)) {
+				throw new SailCompilerException("Circular reference to " + node);
+			}
 			IRI type = asIRI(searchOne(rnode, SailCompilerSchema.TYPE));
-			return getCompiler(type).compileWithParam(this, rnode);
+			nodeStack.push(node);
+			LinkedSail<? extends NotifyingSail> compiledNode = getCompiler(type).compileWithParam(this, rnode);
+			Value pop = nodeStack.pop();
+			assert pop == node : "pop node should be the same as the pushed node";
+			return compiledNode;
 		}
 
 		/**

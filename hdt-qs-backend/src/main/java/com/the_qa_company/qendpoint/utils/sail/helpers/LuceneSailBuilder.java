@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -76,6 +77,16 @@ public class LuceneSailBuilder {
 	 */
 	public LuceneSailBuilder withDir(String dir) {
 		return withParameter(LuceneSail.LUCENE_DIR_KEY, dir);
+	}
+
+	/**
+	 * set the directory of the sail
+	 *
+	 * @param dir the directory
+	 * @return this
+	 */
+	public LuceneSailBuilder withDir(Path dir) {
+		return withDir(dir.toAbsolutePath().toString());
 	}
 
 	/**
