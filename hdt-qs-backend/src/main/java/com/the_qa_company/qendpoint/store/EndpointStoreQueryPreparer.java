@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.federation.SPARQLServiceResolverCustom;
+import com.the_qa_company.qendpoint.federation.ServiceClauseOptimizer;
 import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -24,6 +25,7 @@ import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.ConstantOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.DisjunctiveConstraintOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.ExtendedEvaluationStrategy;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.FilterOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.IterativeEvaluationOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.OrderLimitOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.QueryJoinOptimizer;
@@ -122,9 +124,9 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		new QueryModelNormalizerOptimizer().optimize(tupleExpr, dataset, bindings);
 		new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
 		new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
-		// FIXME: remove comment
-//		 new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
+		new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 		new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);
 
 		return strategy.evaluate(tupleExpr, bindings);
 	}

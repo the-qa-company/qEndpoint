@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedService;
 import org.eclipse.rdf4j.query.impl.ListBindingSet;
+import org.eclipse.rdf4j.sail.SailException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +52,7 @@ public class WikibaseLabelService implements FederatedService {
 	@Override
 	public CloseableIteration<BindingSet, QueryEvaluationException> select(Service service, Set<String> set,
 			BindingSet bindingSet, String s) throws QueryEvaluationException {
+		System.out.println("Should never pass here, report the query if this is the case!");
 		return null;
 	}
 
@@ -113,30 +115,29 @@ public class WikibaseLabelService implements FederatedService {
 				vf.createIRI("https://schema.org/description") };
 		String[] expantionNameSuffix = new String[] { "Label", "AltLabel", "Description" };
 		for (int e = 0; e < 3; e++) {
-			List<String> languageLabels = new ArrayList<String>(Collections.nCopies(languages.size(), (String) null));
-			;
+			String[] languageLabels = new String[languages.size()];
 			for (String name : bindingSet.getBindingNames()) {
 				namesWithLabels.add(name);
 				valuesWithLabels.add(bindingSet.getBinding(name).getValue());
 				namesWithLabels.add(name + expantionNameSuffix[e]);
 				if (bindingSet.getBinding(name).getValue() instanceof Resource) {
-					CloseableIteration<? extends Statement, QueryEvaluationException> iteration = tripleSource
+					try (CloseableIteration<? extends Statement, QueryEvaluationException> iteration = tripleSource
 							.getStatements((Resource) bindingSet.getBinding(name).getValue(), expantionProperties[e],
-									null);
-					while (iteration.hasNext()) {
-						Statement next = iteration.next();
-						if (next.getObject().isLiteral()) {
-							Literal literal = (Literal) next.getObject();
-							if (literal.getLanguage().isPresent()) {
-								for (int i = 0; i < languages.size(); i++) {
-									if (literal.getLanguage().get().equals(languages.get(i))) {
-										languageLabels.set(i, literal.getLabel());
+									null)) {
+						while (iteration.hasNext()) {
+							Statement next = iteration.next();
+							if (next.getObject().isLiteral()) {
+								Literal literal = (Literal) next.getObject();
+								if (literal.getLanguage().isPresent()) {
+									for (int i = 0; i < languages.size(); i++) {
+										if (literal.getLanguage().get().equals(languages.get(i))) {
+											languageLabels[i] = literal.getLabel();
+										}
 									}
 								}
 							}
 						}
 					}
-					iteration.close();
 				}
 				boolean found = false;
 				for (String languageLabel : languageLabels) {
