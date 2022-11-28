@@ -121,6 +121,11 @@ public class SailCompilerSchema {
 	public static final IRI PARAM_FILTER_TYPE_LUCENE_EXP = iri("typeFilterLuceneExp",
 			"Describe the lucene exp predicate type");
 	/**
+	 * mdlc:typeFilterLuceneGeoExp
+	 */
+	public static final IRI PARAM_FILTER_TYPE_LUCENE_GEO_EXP = iri("typeFilterLuceneGeoExp",
+			"Describe the lucene geo exp predicate type");
+	/**
 	 * mdlc:filterNode
 	 */
 	public static final IRI FILTER_TYPE = iri("filterNode", "Describe the type Filter");

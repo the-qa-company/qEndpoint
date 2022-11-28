@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.utils.sail.FilteringSail;
 import com.the_qa_company.qendpoint.compiler.SailCompiler;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.utils.sail.filter.LanguageSailFilter;
+import com.the_qa_company.qendpoint.utils.sail.filter.LuceneGeoExprSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.LuceneMatchExprSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.PredicateSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.SailFilter;
@@ -101,6 +102,9 @@ public class FilterLinkedSailCompiler extends LinkedSailCompiler {
 			function = (sail, connection) -> new TypeSailFilter(sail, predicate, objects);
 		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LUCENE_EXP)) {
 			LuceneMatchExprSailFilter filter = new LuceneMatchExprSailFilter();
+			function = (sail, connection) -> filter;
+		} else if (type.equals(SailCompilerSchema.PARAM_FILTER_TYPE_LUCENE_GEO_EXP)) {
+			LuceneGeoExprSailFilter filter = new LuceneGeoExprSailFilter();
 			function = (sail, connection) -> filter;
 		} else {
 			throw new SailCompiler.SailCompilerException("Can't find the filter type " + type);
