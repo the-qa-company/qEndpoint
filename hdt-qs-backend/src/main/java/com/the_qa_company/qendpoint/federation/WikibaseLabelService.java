@@ -103,7 +103,7 @@ public class WikibaseLabelService implements FederatedService {
 				}
 			}
 		}
-		return null;
+		throw new QueryEvaluationException();
 	}
 
 	private BindingSet expandBindingSet(BindingSet bindingSet, List<String> languages) {
