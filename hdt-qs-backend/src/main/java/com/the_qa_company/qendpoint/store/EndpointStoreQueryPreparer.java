@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
-import com.the_qa_company.qendpoint.federation.SPARQLServiceResolverCustom;
+import com.the_qa_company.qendpoint.federation.SPARQLServiceWikibaseLabelResolver;
 import com.the_qa_company.qendpoint.federation.ServiceClauseOptimizer;
 import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -35,7 +35,6 @@ import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.impl.AbstractParserQuery;
-import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 
 import java.util.ArrayList;
 
@@ -104,7 +103,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			tupleExpr = new QueryRoot(tupleExpr);
 		}
 		EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
-				new SPARQLServiceResolverCustom(tripleSource), 0L, evaluationStatistics);
+				new SPARQLServiceWikibaseLabelResolver(tripleSource), 0L, evaluationStatistics);
 
 		if (this.trackResultSize) {
 			strategy.setTrackResultSize(this.trackResultSize);
