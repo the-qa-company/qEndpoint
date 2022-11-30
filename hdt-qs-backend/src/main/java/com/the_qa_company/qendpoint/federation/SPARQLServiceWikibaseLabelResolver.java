@@ -6,10 +6,10 @@ import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedService;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLFederatedService;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 
-public class SPARQLServiceResolverCustom extends SPARQLServiceResolver {
+public class SPARQLServiceWikibaseLabelResolver extends SPARQLServiceResolver {
 	TripleSource tripleSource;
 
-	public SPARQLServiceResolverCustom(TripleSource tripleSource) {
+	public SPARQLServiceWikibaseLabelResolver(TripleSource tripleSource) {
 		this.tripleSource = tripleSource;
 	}
 
