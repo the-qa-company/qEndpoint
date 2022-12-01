@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.federation.SPARQLServiceWikibaseLabelResolver;
+import com.the_qa_company.qendpoint.federation.ServiceClauseOptimizer;
 import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -23,6 +25,7 @@ import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.ConstantOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.DisjunctiveConstraintOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.ExtendedEvaluationStrategy;
+import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.FilterOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.IterativeEvaluationOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.OrderLimitOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.QueryJoinOptimizer;
@@ -32,7 +35,6 @@ import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.impl.AbstractParserQuery;
-import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 
 import java.util.ArrayList;
 
@@ -101,7 +103,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			tupleExpr = new QueryRoot(tupleExpr);
 		}
 		EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
-				new SPARQLServiceResolver(), 0L, evaluationStatistics);
+				new SPARQLServiceWikibaseLabelResolver(tripleSource), 0L, evaluationStatistics);
 
 		if (this.trackResultSize) {
 			strategy.setTrackResultSize(this.trackResultSize);
@@ -121,9 +123,9 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		new QueryModelNormalizerOptimizer().optimize(tupleExpr, dataset, bindings);
 		new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
 		new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
-		// FIXME: remove comment
-		// new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
+		new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 		new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);
 
 		return strategy.evaluate(tupleExpr, bindings);
 	}
