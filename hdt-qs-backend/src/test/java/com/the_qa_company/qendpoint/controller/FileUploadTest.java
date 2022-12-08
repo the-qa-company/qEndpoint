@@ -1,11 +1,9 @@
 package com.the_qa_company.qendpoint.controller;
 
 import com.the_qa_company.qendpoint.Application;
-import com.the_qa_company.qendpoint.compiler.DebugOptionTestUtils;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
-import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -32,11 +30,8 @@ import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-//import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 import org.springframework.util.FileSystemUtils;
 
@@ -59,7 +54,6 @@ import java.util.function.Consumer;
 //@ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
 @SpringBootTest(classes = Application.class)
 @DirtiesContext
-@Ignore("skip")
 public class FileUploadTest {
 	public static final String COKTAILS_NT = "cocktails.nt";
 	private static final Logger logger = LoggerFactory.getLogger(FileUploadTest.class);
@@ -71,15 +65,6 @@ public class FileUploadTest {
 
 	@Autowired
 	Sparql sparql;
-
-	@Value("${locationHdt}")
-	String locationHdt;
-
-	@Value("${hdtIndexName}")
-	String hdtIndexName;
-
-	@Value("${locationNative}")
-	String locationNative;
 
 	private final String fileName;
 	private final RDFFormat format;
@@ -114,17 +99,17 @@ public class FileUploadTest {
 
 		// remove previous data
 		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationHdt));
+			FileSystemUtils.deleteRecursively(Paths.get(sparql.locationHdt));
 		} catch (IOException e) {
 			//
 		}
 		try {
-			FileSystemUtils.deleteRecursively(Paths.get(locationNative));
+			FileSystemUtils.deleteRecursively(Paths.get(sparql.locationNative));
 		} catch (IOException e) {
 			//
 		}
 		try {
-			FileSystemUtils.deleteRecursively(Paths.get(hdtIndexName));
+			FileSystemUtils.deleteRecursively(Paths.get(sparql.hdtIndexName));
 		} catch (IOException e) {
 			//
 		}
@@ -229,46 +214,9 @@ public class FileUploadTest {
 	}
 
 	@Test
-	public void loadNoSplitOnePassTest() throws IOException {
-		long size = fileSize(fileName);
-		sparql.debugMaxChunkSize = size + 1;
-		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_ONE_PASS_MODE);
-
+	public void loadTest() throws IOException {
+		sparql.init();
 		sparql.loadFile(streamOut(fileName), fileName);
-
-		assertAllCoktailsHDTLoaded();
-	}
-
-	@Test
-	public void loadSplitOnePassTest() throws IOException {
-		long size = fileSize(fileName);
-		sparql.debugMaxChunkSize = size / 10;
-		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_ONE_PASS_MODE);
-
-		sparql.loadFile(streamOut(fileName), fileName);
-
-		assertAllCoktailsHDTLoaded();
-	}
-
-	@Test
-	public void loadNoSplitTwoPassTest() throws IOException {
-		long size = fileSize(fileName);
-		sparql.debugMaxChunkSize = size + 1;
-		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_TWO_PASS_MODE);
-
-		sparql.loadFile(streamOut(fileName), fileName);
-
-		assertAllCoktailsHDTLoaded();
-	}
-
-	@Test
-	public void loadSplitTwoPassTest() throws IOException {
-		long size = fileSize(fileName);
-		sparql.debugMaxChunkSize = size / 10;
-		sparql.sparqlRepository.getOptions().setPassMode(SailCompilerSchema.HDT_TWO_PASS_MODE);
-
-		sparql.loadFile(streamOut(fileName), fileName);
-
 		assertAllCoktailsHDTLoaded();
 	}
 

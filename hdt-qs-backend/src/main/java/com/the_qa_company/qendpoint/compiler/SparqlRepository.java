@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.compiler;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.store.EndpointFiles;
+import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreConnection;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
@@ -48,7 +50,14 @@ import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
+import org.rdfhdt.hdt.exceptions.ParserException;
+import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsBase;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.util.StopWatch;
+import org.rdfhdt.hdt.util.io.CloseSuppressPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ServerWebInputException;
@@ -56,6 +65,7 @@ import org.springframework.web.server.ServerWebInputException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -130,7 +140,7 @@ public class SparqlRepository {
 	 * @throws Exception any exception returned by
 	 *                   {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
 	 */
-	public void reindexLuceneSails() throws Exception {
+	public void reindexLuceneSails() {
 		compiledSail.reindexLuceneSails();
 	}
 

@@ -37,6 +37,7 @@ import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTOptions;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
@@ -67,7 +68,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	// HDT file containing the data
 	private CloseSafeHDT hdt;
 	// specs of the HDT file
-	private HDTSpecification spec;
+	private HDTOptions spec;
 	private HDTConverter hdtConverter;
 
 	// some cached information about the HDT store
@@ -135,7 +136,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
 	}
 
-	public EndpointStore(EndpointFiles files, HDTSpecification spec, boolean inMemDeletes, boolean loadIntoMemory)
+	public EndpointStore(EndpointFiles files, HDTOptions spec, boolean inMemDeletes, boolean loadIntoMemory)
 			throws IOException {
 		debugId = ENDPOINT_DEBUG_ID_GEN.incrementAndGet();
 		EndpointStoreUtils.openEndpoint(this);
@@ -854,7 +855,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		return bitZ;
 	}
 
-	public HDTSpecification getHDTSpec() {
+	public HDTOptions getHDTSpec() {
 		return spec;
 	}
 

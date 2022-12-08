@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	LICENSE
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.the-qa-company</groupId>
+    <artifactId>qendpoint-parent</artifactId>
+    <version>1.7.2</version>
+
+    <packaging>pom</packaging>
+
+    <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
+    <url>https://github.com/the-qa-company/qEndpoint</url>
+
+    <organization>
+        <name>The QA Company</name>
+        <url>http://the-qa-company.com</url>
+    </organization>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.version>11</jdk.version>
+    </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/rdfhdt/hdt-java.git</connection>
+        <developerConnection>scm:git:git@github.com:rdfhdt/hdt-java.git</developerConnection>
+        <url>https://github.com/rdfhdt/hdt-java</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <modules>
+        <module>hdt-qs-backend</module>
+    </modules>
+
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/the-qa-company/qEndpoint/issues</url>
+    </issueManagement>
+</project>

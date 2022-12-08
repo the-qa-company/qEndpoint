@@ -20,7 +20,7 @@ if [[ "edit" == "${VERSION}" ]]; then
     exit 0
 fi
 
-cd ../hdt-qs-backend/
+cd ../
 
 OLD_VERSION=$(../scripts/get_version.sh)
 echo "old version: $OLD_VERSION"
@@ -49,7 +49,7 @@ if [[ "${VERSION}" != "${NEW_VERSION}" ]]; then
 fi
 
 
-cd ../release/
+cd release/
 
 
 touch RELEASE.md_old

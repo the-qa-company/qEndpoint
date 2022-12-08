@@ -9,22 +9,26 @@ import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
-import com.the_qa_company.qendpoint.utils.FileTripleIterator;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.rdfhdt.hdt.enums.CompressionType;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTOptions;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
+import org.rdfhdt.hdt.util.io.CloseSuppressPath;
+import org.rdfhdt.hdt.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +37,6 @@ import org.springframework.web.server.ServerWebInputException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -203,30 +206,31 @@ public class Sparql {
 	public long debugMaxChunkSize = -1;
 
 	@Value("${hdtStoreName}")
-	private String locationHdtCfg;
+	String locationHdtCfg;
 
 	@Value("${hdtIndexName}")
-	private String hdtIndexName;
+	String hdtIndexName;
 
 	@Value("${nativeStoreName}")
-	private String locationNativeCfg;
+	String locationNativeCfg;
 
 	@Value("${locationEndpoint}")
-	private String locationEndpointCfg;
+	String locationEndpointCfg;
 
 	@Value("${threshold}")
-	private int threshold;
+	int threshold;
 
 	@Value("${hdtSpecification}")
-	private String hdtSpec;
+	String hdtSpec;
 
 	@Value("${repoModel}")
-	private String repoModel;
+	String repoModel;
 
 	@Value("${maxTimeout}")
-	private int maxTimeoutCfg;
+	int maxTimeoutCfg;
+
 	@Value("${maxTimeoutUpdate}")
-	private int maxTimeoutUpdateCfg;
+	int maxTimeoutUpdateCfg;
 
 	@Value("${server.port}")
 	String portCfg;
@@ -235,6 +239,7 @@ public class Sparql {
 	boolean client;
 
 	EndpointStore endpoint;
+	CompiledSail compiledSail;
 	SparqlRepository sparqlRepository;
 	QEndpointClient qClient;
 	final Object storeLock = new Object() {};
@@ -244,8 +249,8 @@ public class Sparql {
 	private Path applicationDirectory;
 	private Path sparqlPrefixesFile;
 	private Path logFile;
-	private String locationHdt;
-	private String locationNative;
+	String locationHdt;
+	String locationNative;
 	boolean init;
 	boolean serverInit;
 
@@ -393,6 +398,7 @@ public class Sparql {
 			logger.info("Clear old store");
 			init = false;
 			sparqlRepository.shutDown();
+			sparqlRepository = null;
 			endpoint = null;
 		}
 	}
@@ -400,25 +406,8 @@ public class Sparql {
 	void initializeEndpointStore(boolean finishLoading) throws IOException {
 		if (!init) {
 			init = true;
-			HDTSpecification spec = new HDTSpecification();
-			spec.setOptions(hdtSpec);
 
 			Files.createDirectories(applicationDirectory);
-
-			File hdtFile = new File(EndpointFiles.getHDTIndex(locationHdt, hdtIndexName));
-			if (!hdtFile.exists()) {
-				File tempRDF = new File(locationHdt + "tmp_index.nt");
-				Files.createDirectories(tempRDF.getParentFile().toPath());
-				Files.createFile(tempRDF.toPath());
-				try {
-					HDT hdt = HDTManager.generateHDT(tempRDF.getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
-							null);
-					hdt.saveToHDT(hdtFile.getPath(), null);
-				} catch (ParserException e) {
-					throw new IOException("Can't parse the RDF file", e);
-				}
-				Files.delete(Paths.get(tempRDF.getAbsolutePath()));
-			}
 
 			// keep the config in application.properties
 			CompiledSailOptions options = new CompiledSailOptions();
@@ -437,7 +426,7 @@ public class Sparql {
 				Files.copy(FileUtils.openFile(applicationDirectory, repoModel), p);
 			}
 
-			CompiledSail compiledSail = CompiledSail.compiler().withOptions(options)
+			compiledSail = CompiledSail.compiler().withOptions(options)
 					.withConfig(Files.newInputStream(p), Rio.getParserFormatForFileName(repoModel).orElseThrow(), true)
 					.withEndpointFiles(files).compile();
 
@@ -445,6 +434,8 @@ public class Sparql {
 
 			if (source instanceof EndpointStore) {
 				endpoint = (EndpointStore) source;
+			} else {
+				assert !compiledSail.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE);
 			}
 
 			sparqlRepository = new SparqlRepository(compiledSail);
@@ -537,12 +528,55 @@ public class Sparql {
 
 			if (sparqlRepository.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				shutdown();
-				HDTSpecification spec = new HDTSpecification();
-				spec.setOptions(hdtSpec);
-				if (SailCompilerSchema.HDT_TWO_PASS_MODE.equals(sparqlRepository.getOptions().getPassMode())) {
-					spec.set("loader.type", "two-pass");
+
+				RDFFormat format = Rio.getParserFormatForFileName(filename)
+						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename));
+
+				EndpointStore endpoint = (EndpointStore) compiledSail.getSource();
+				EndpointFiles files = endpoint.getEndpointFiles();
+				Path hdtStore = files.getLocationHdtPath();
+				Path endIndex = hdtStore.resolve(files.getHDTIndex());
+
+				Path backupIndex = endIndex.resolveSibling(endIndex.getFileName() + ".bckp");
+				if (Files.exists(endIndex)) {
+					// move previous dataset in case of error
+					Files.move(endIndex, backupIndex);
 				}
-				compressToHdt(input, baseURI, filename, hdtOutput, spec);
+
+				try (CloseSuppressPath hdtStoreWork = CloseSuppressPath.of(hdtStore.resolve("work"))) {
+					hdtStoreWork.closeWithDeleteRecurse();
+					Files.createDirectories(hdtStoreWork);
+					CloseSuppressPath endHDT = hdtStoreWork.resolve("workhdt.hdt");
+					Files.deleteIfExists(endHDT);
+
+					HDTOptions opt = compiledSail.getOptions().createHDTOptions(endHDT, hdtStoreWork);
+
+					Iterator<TripleString> stream = RDFStreamUtils.readRDFStreamAsTripleStringIterator(
+							IOUtil.asUncompressed(input, CompressionType.guess(filename)), format, true);
+
+					try (HDT hdt = HDTManager.generateHDT(stream, baseURI, opt, this::listener)) {
+						if (!Files.exists(endHDT)) {
+							// it doesn't exist, probably because someone
+							// changed the future location,
+							// write manually the file
+							hdt.saveToHDT(endHDT.toAbsolutePath().toString(), this::listener);
+						}
+					} catch (ParserException e) {
+						throw new IOException(e);
+					}
+
+					Files.move(endHDT, endIndex);
+				} finally {
+					if (Files.exists(endIndex)) {
+						// everything worked
+						Files.deleteIfExists(backupIndex);
+					} else {
+						// error
+						if (Files.exists(backupIndex)) {
+							Files.move(backupIndex, endIndex);
+						}
+					}
+				}
 
 				initializeEndpointStore(false);
 			} else {
@@ -561,6 +595,10 @@ public class Sparql {
 		return new LoadFileResult(true);
 	}
 
+	private void listener(float perc, String msg) {
+		// ignore
+	}
+
 	/**
 	 * @return a theoretical maximum amount of memory the JVM will attempt to
 	 *         use
@@ -571,81 +609,6 @@ public class Sparql {
 				* 0.85);
 		logger.info("Maximal available memory {}", presFreeMemory);
 		return presFreeMemory;
-	}
-
-	private void compressToHdt(InputStream inputStream, String baseURI, String filename, String hdtLocation,
-			HDTSpecification specs) throws IOException {
-		long chunkSize = getMaxChunkSize();
-
-		if (debugMaxChunkSize > 0) {
-			assert debugMaxChunkSize < chunkSize : "debugMaxChunkSize can't be higher than chunkSize";
-			chunkSize = debugMaxChunkSize;
-		}
-		File hdtParentFile = new File(hdtLocation).getParentFile();
-		String hdtParent = hdtParentFile.getAbsolutePath();
-		Files.createDirectories(hdtParentFile.toPath());
-
-		StopWatch timeWatch = new StopWatch();
-
-		File tempFile = new File(hdtParentFile, filename);
-		// the compression will not fit in memory, cat the files in chunks and
-		// use hdtCat
-
-		// uncompress the file if required
-		InputStream fileStream = RDFStreamUtils.uncompressedStream(inputStream, filename);
-		// get a triple iterator for this stream
-		Iterator<TripleString> tripleIterator = RDFStreamUtils.readRDFStreamAsTripleStringIterator(fileStream,
-				Rio.getParserFormatForFileName(filename)
-						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename)),
-				true);
-		// split this triple iterator to filed triple iterator
-		FileTripleIterator it = new FileTripleIterator(tripleIterator, chunkSize);
-
-		int file = 0;
-		String lastFile = null;
-		while (it.hasNewFile()) {
-			logger.info("Compressing #" + file);
-			String hdtOutput = new File(tempFile.getParent(),
-					tempFile.getName() + "." + String.format("%03d", file) + ".hdt").getAbsolutePath();
-
-			generateHDT(it, baseURI, specs, hdtOutput);
-
-			System.gc();
-			logger.info("Competed into " + hdtOutput);
-			if (file > 0) {
-				// not the first file, so we have at least 2 files
-				logger.info("Cat " + hdtOutput);
-				String nextIndex = hdtParent + "/index_cat_tmp_" + file + ".hdt";
-				HDT tmp = HDTManager.catHDT(nextIndex, lastFile, hdtOutput, specs, null);
-
-				System.out.println(
-						"saving hdt with " + tmp.getTriples().getNumberOfElements() + " triple(s) into " + nextIndex);
-				tmp.saveToHDT(nextIndex, null);
-				tmp.close();
-				System.gc();
-
-				Files.delete(Paths.get(hdtOutput));
-				if (file > 1) {
-					// at least the 2nd
-					Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdt"));
-					Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdtdictionary"));
-					Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
-				} else {
-					Files.delete(Paths.get(lastFile));
-				}
-				lastFile = nextIndex;
-			} else {
-				lastFile = hdtOutput;
-			}
-			file++;
-		}
-		assert lastFile != null : "Last file can't be null";
-		Files.move(Paths.get(lastFile), Paths.get(hdtLocation));
-		if (file != 1) {
-			Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdtdictionary"));
-			Files.delete(Paths.get(hdtParent, "/index_cat_tmp_" + (file - 1) + ".hdttriples"));
-		}
-		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
 	}
 
 	/**

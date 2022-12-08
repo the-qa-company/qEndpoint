@@ -2,14 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.the-qa-company</groupId>
     <artifactId>qendpoint</artifactId>
-    <version>1.7.2</version>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.5</version>
+        <groupId>com.the-qa-company</groupId>
+        <artifactId>qendpoint-parent</artifactId>
+        <version>1.7.2</version>
     </parent>
 
     <distributionManagement>
@@ -34,7 +32,7 @@
         <junit.version>4.13</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
         <rdf4j.version>4.2.0</rdf4j.version>
-        <rdfhdt.version>3.0.5</rdfhdt.version>
+        <rdfhdt.version>3.0.7</rdfhdt.version>
         <spring.version>2.7.5</spring.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,18 +43,22 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -193,6 +195,7 @@
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
+                        <version>2.4.12</version>
                         <configuration>
                             <mainClass>com.the_qa_company.qendpoint.compiler.SailCompilerSchema</mainClass>
                             <classifier>exec</classifier>
@@ -285,6 +288,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.4.12</version>
                 <configuration>
                     <mainClass>com.the_qa_company.qendpoint.Application</mainClass>
                     <classifier>exec</classifier>
@@ -299,10 +303,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
                 <configuration>
                     <source>${java.source.version}</source>
                     <target>${java.target.version}</target>
-
                 </configuration>
             </plugin>
             <plugin>
