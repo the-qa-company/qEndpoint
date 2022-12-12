@@ -34,6 +34,7 @@ public class EndpointFiles {
 
 	// basic locations
 	private final String locationNative, locationHdt, hdtIndexName;
+	private final Path locationNativePath, locationHdtPath;
 
 	/**
 	 * create a file getter for a store
@@ -43,9 +44,7 @@ public class EndpointFiles {
 	 * @param hdtIndexName   the hdt index name
 	 */
 	public EndpointFiles(String locationNative, String locationHdt, String hdtIndexName) {
-		this.locationNative = locationNative;
-		this.locationHdt = locationHdt;
-		this.hdtIndexName = hdtIndexName;
+		this(Path.of(locationNative), Path.of(locationHdt), hdtIndexName);
 	}
 
 	/**
@@ -59,6 +58,22 @@ public class EndpointFiles {
 		this.locationNative = locationNative.toAbsolutePath() + "/";
 		this.locationHdt = locationHdt.toAbsolutePath() + "/";
 		this.hdtIndexName = hdtIndexName;
+		this.locationNativePath = locationNative;
+		this.locationHdtPath = locationHdt;
+	}
+
+	/**
+	 * @return path of {@link #getLocationHdt()}
+	 */
+	public Path getLocationHdtPath() {
+		return locationHdtPath;
+	}
+
+	/**
+	 * @return path of {@link #getLocationNative()}
+	 */
+	public Path getLocationNativePath() {
+		return locationNativePath;
 	}
 
 	/**

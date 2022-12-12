@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.store;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
+import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
@@ -15,12 +16,14 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.rdfhdt.hdt.compact.bitmap.BitmapFactory;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.hdt.HDTVersion;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 
 public class MergeRunnable {
@@ -225,7 +229,7 @@ public class MergeRunnable {
 	 */
 	private static void rename(String oldFile, String newFile) {
 		try {
-			Files.move(Paths.get(oldFile), Paths.get(newFile));
+			Files.move(Path.of(oldFile), Path.of(newFile));
 		} catch (IOException e) {
 			logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -599,8 +603,6 @@ public class MergeRunnable {
 	private synchronized void step2(boolean restarting, Lock lock) throws InterruptedException, IOException {
 		debugStepPoint(MergeRunnableStopPoint.STEP2_START);
 		// diff hdt indexes...
-		logger.debug("HDT Diff");
-		diffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr());
 		logger.debug("Dump all triples from the native store to file");
 		try (RepositoryConnection nativeStoreConnection = endpoint.getConnectionToFreezedStore()) {
 			writeTempFile(nativeStoreConnection, endpointFiles.getRDFTempOutput());
@@ -609,8 +611,9 @@ public class MergeRunnable {
 		logger.debug("Create HDT index from dumped file");
 		createHDTDump(endpointFiles.getRDFTempOutput(), endpointFiles.getHDTTempOutput());
 		// cat the original index and the temp index
-		catIndexes(endpointFiles.getHDTNewIndexDiff(), endpointFiles.getHDTTempOutput(),
-				endpointFiles.getHDTNewIndex());
+		logger.debug("HDT Cat/Diff");
+		catDiffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr(),
+				endpointFiles.getHDTTempOutput(), endpointFiles.getHDTNewIndex());
 		logger.debug("CAT completed!!!!! " + endpointFiles.getLocationHdt());
 
 		debugStepPoint(MergeRunnableStopPoint.STEP2_END);
@@ -823,7 +826,8 @@ public class MergeRunnable {
 		FileUtils.deleteDirectory(theDir.getAbsoluteFile());
 	}
 
-	private void catIndexes(String hdtInput1, String hdtInput2, String hdtOutput) throws IOException {
+	private void catDiffIndexes(String hdtInput1, String bitArray, String hdtInput2, String hdtOutput)
+			throws IOException {
 		File file = new File(hdtOutput);
 		File theDir = new File(file.getAbsolutePath() + "_tmp");
 		Files.createDirectories(theDir.toPath());
@@ -834,16 +838,22 @@ public class MergeRunnable {
 		// @todo: should we not use the already mapped HDT file instead of
 		// remapping
 		StopWatch sw;
-		try (HDT hdt = HDTManager.catHDT(location, hdtInput1, hdtInput2, this.endpoint.getHDTSpec(), null)) {
-			sw = new StopWatch();
-			hdt.saveToHDT(hdtOutput, null);
+		OverrideHDTOptions catOpt = new OverrideHDTOptions(endpoint.getHDTSpec());
+		catOpt.setOverride(HDTOptionsKeys.HDTCAT_LOCATION, location);
+		catOpt.setOverride(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, file.getAbsolutePath());
+		try (BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
+				new File(bitArray))) {
+			try (HDT hdt = HDTManager.diffBitCatHDT(List.of(hdtInput1, hdtInput2),
+					List.of(deleteBitmap, BitmapFactory.empty()), catOpt, null)) {
+				sw = new StopWatch();
+				// useless to copy the file if it's already there (future
+				// location set)
+				if (!file.exists()) {
+					hdt.saveToHDT(hdtOutput, null);
+				}
+			}
 		}
 		logger.info("HDT saved to file in: " + sw.stopAndShow());
-		Files.delete(Paths.get(location + "dictionary"));
-		Files.delete(Paths.get(location + "triples"));
-		Files.delete(theDir.toPath());
-		Files.deleteIfExists(Paths.get(hdtInput1));
-		Files.deleteIfExists(Paths.get(hdtInput1 + HDTVersion.get_index_suffix("-")));
 	}
 
 	private void createHDTDump(String rdfInput, String hdtOutput) throws IOException {

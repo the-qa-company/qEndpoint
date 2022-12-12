@@ -14,17 +14,25 @@ import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
+import org.rdfhdt.hdt.exceptions.ParserException;
+import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsBase;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.triples.TripleString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -100,16 +108,33 @@ public class CompiledSail extends SailWrapper {
 		// create a source sail if required
 		if (config.sourceSail == null) {
 			EndpointStore endpoint;
-			HDTSpecification spec = Objects.requireNonNullElseGet(config.spec, HDTSpecification::new);
+			HDTOptions spec = options.createSpecHDTOptions();
 			if (config.hdtSpec != null) {
 				spec.setOptions(config.hdtSpec);
-			} else {
-				spec.setOptions(options.getHdtSpec());
 			}
 			// set the storage
 			if (options.getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				if (options.getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
 					spec.set("loader.type", "two-pass");
+				}
+				Path hdtIndexLocation = files.getLocationHdtPath().resolve(files.getHDTIndex());
+				Files.createDirectories(files.getLocationHdtPath());
+				if (!Files.exists(hdtIndexLocation)) {
+					try (HDT hdt = HDTManager.generateHDT(new Iterator<>() {
+						@Override
+						public boolean hasNext() {
+							return false;
+						}
+
+						@Override
+						public TripleString next() {
+							return null;
+						}
+					}, "uri", spec, null)) {
+						hdt.saveToHDT(hdtIndexLocation.toAbsolutePath().toString(), null);
+					} catch (ParserException e) {
+						throw new IOException("Can't parse the RDF file", e);
+					}
 				}
 				endpoint = new EndpointStore(files, spec, false,
 						options.getHdtReadMode().equals(SailCompilerSchema.HDT_READ_MODE_LOAD));
@@ -207,7 +232,7 @@ public class CompiledSail extends SailWrapper {
 		private Model configModel;
 		private NotifyingSail sourceSail;
 		private EndpointFiles endpointFiles;
-		private HDTSpecification spec;
+		private HDTOptions spec;
 		private String hdtSpec;
 		private final Map<String, String> stringConfig = new HashMap<>();
 		private final List<Object> stringObject = new ArrayList<>();
@@ -364,19 +389,6 @@ public class CompiledSail extends SailWrapper {
 		 */
 		public CompiledSailCompiler withEndpointFiles(EndpointFiles endpointFiles) {
 			this.endpointFiles = Objects.requireNonNull(endpointFiles, "endpointFiles can't be null!");
-			return this;
-		}
-
-		/**
-		 * set the hdt spec for the endpoint store, won't be used if the source
-		 * is defined or if the generated source isn't an endpoint store
-		 *
-		 * @param spec the spec
-		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
-		 */
-		public CompiledSailCompiler withHDTSpec(HDTSpecification spec) {
-			this.spec = Objects.requireNonNull(spec, "spec can't be null!");
 			return this;
 		}
 

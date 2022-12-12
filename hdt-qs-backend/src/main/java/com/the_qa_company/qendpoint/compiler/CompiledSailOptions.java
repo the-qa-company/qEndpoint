@@ -2,6 +2,13 @@ package com.the_qa_company.qendpoint.compiler;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsBase;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
+
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Options loaded from the
@@ -31,6 +38,7 @@ public class CompiledSailOptions {
 	private String hdtSpec;
 	private int timeoutUpdate;
 	private int timeoutQuery;
+	private Map<String, String> hdtOptions;
 
 	public CompiledSailOptions() {
 		// set debug default values
@@ -49,6 +57,7 @@ public class CompiledSailOptions {
 			hdtSpec = debugOptions.hdtSpec;
 			timeoutUpdate = debugOptions.timeoutUpdate;
 			timeoutQuery = debugOptions.timeoutQuery;
+			hdtOptions = debugOptions.hdtOptions;
 			return;
 		}
 		// set default values
@@ -66,6 +75,7 @@ public class CompiledSailOptions {
 		hdtSpec = "";
 		timeoutUpdate = SailCompilerSchema.TIMEOUT_UPDATE.getHandler().defaultValue();
 		timeoutQuery = SailCompilerSchema.TIMEOUT_QUERY.getHandler().defaultValue();
+		hdtOptions = Map.of();
 	}
 
 	/**
@@ -85,6 +95,18 @@ public class CompiledSailOptions {
 		hdtSpec = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_SPEC_PROPERTY);
 		timeoutUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_UPDATE);
 		timeoutQuery = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_QUERY);
+		hdtOptions = reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.GEN_HDT_OPTION_PARAM).stream()
+				.map(SailCompiler::asResource).collect(
+						Collectors.toMap(
+								node -> reader.searchOneOpt(node, SailCompilerSchema.PARAM_KEY)
+										.map(reader.getSailCompiler()::asLitString)
+										.orElseThrow(() -> new SailCompiler.SailCompilerException(
+												"Found HDT param without key!")),
+								node -> reader.searchOneOpt(node, SailCompilerSchema.PARAM_VALUE)
+										.map(reader.getSailCompiler()::asLitString)
+										.orElseThrow(() -> new SailCompiler.SailCompilerException(
+												"Found HDT param without value!"))));
+
 	}
 
 	private void add(Value value) {
@@ -197,6 +219,51 @@ public class CompiledSailOptions {
 		return hdtSpec;
 	}
 
+	/**
+	 * create {@link org.rdfhdt.hdt.options.HDTOptions} from the config
+	 *
+	 * @return HDTOptions
+	 */
+	public HDTOptions createSpecHDTOptions() {
+		HDTOptions opt = new HDTOptionsBase();
+
+		// set hdtspec config
+		opt.setOptions(getHdtSpec());
+
+		// set model config
+		getHdtOptions().forEach(opt::set);
+
+		return opt;
+	}
+
+	/**
+	 * create {@link org.rdfhdt.hdt.options.HDTOptions} from the config
+	 *
+	 * @param endHDT       end HDT location, might be ignored with config
+	 * @param workLocation work location, might be ignored with config
+	 * @return HDTOptions
+	 */
+	public HDTOptions createHDTOptions(Path endHDT, Path workLocation) {
+		HDTOptions opt = new HDTOptionsBase();
+		opt.set(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_CAT);
+		opt.set(HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, endHDT);
+		opt.set(HDTOptionsKeys.LOADER_CATTREE_LOADERTYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK);
+		opt.set(HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, workLocation.resolve("cattree"));
+		opt.set(HDTOptionsKeys.LOADER_CATTREE_MEMORY_FAULT_FACTOR, 1);
+		opt.set(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, workLocation.resolve("disk.hdt"));
+		opt.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, 20);
+		opt.set(HDTOptionsKeys.HDTCAT_LOCATION, workLocation.resolve("hdtcat"));
+		opt.set(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, workLocation.resolve("catgen.hdt"));
+
+		// set hdtspec config
+		opt.setOptions(getHdtSpec());
+
+		// set model config
+		getHdtOptions().forEach(opt::set);
+
+		return opt;
+	}
+
 	public void setHdtSpec(String hdtSpec) {
 		this.hdtSpec = hdtSpec;
 	}
@@ -215,5 +282,9 @@ public class CompiledSailOptions {
 
 	public void setTimeoutQuery(int timeoutQuery) {
 		this.timeoutQuery = timeoutQuery;
+	}
+
+	public Map<String, String> getHdtOptions() {
+		return hdtOptions;
 	}
 }

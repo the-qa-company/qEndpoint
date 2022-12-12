@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.hdt.HDT;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
@@ -61,6 +62,8 @@ public abstract class SailTest {
 	 * basic SPO query "SELECT * {?s ?p ?o}"
 	 */
 	public static final String SPO_QUERY = "SELECT * {?s ?p ?o}";
+
+	public static final boolean useMultiSect = true;
 	/**
 	 * Value factory
 	 */
@@ -117,8 +120,10 @@ public abstract class SailTest {
 		removeCount = 0;
 		selectCount = 0;
 		spec = new HDTSpecification();
-		spec.set("tempDictionary.impl", DictionaryFactory.MOD_DICT_IMPL_MULT_HASH);
-		spec.set("dictionary.type", DictionaryFactory.DICTIONARY_TYPE_MULTI_OBJECTS);
+		if (useMultiSect) {
+			spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
+			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
+		}
 		File nativeStore = tempDir.newFolder("native-store");
 		File hdtStore = tempDir.newFolder("hdt-store");
 

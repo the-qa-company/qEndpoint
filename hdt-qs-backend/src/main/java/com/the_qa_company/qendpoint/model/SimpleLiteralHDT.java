@@ -112,7 +112,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 			return;
 		}
 		if (datatype == null) {
-			String datatype = hdt.getDictionary().dataTypeOfId(hdtID);
+			String datatype = hdt.getDictionary().dataTypeOfId(hdtID).toString();
 			if (datatype.isEmpty()) {
 				parseLiteral(); // we need to check if it is a LANGSTRING or not
 			} else {

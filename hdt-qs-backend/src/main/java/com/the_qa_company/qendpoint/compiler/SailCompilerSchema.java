@@ -150,6 +150,10 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI LUCENE_TYPE_EVAL_MODE = iri("luceneEvalMode", "Describe the Lucene evaluation mode");
 	/**
+	 * mdlc:genHDTOption
+	 */
+	public static final IRI GEN_HDT_OPTION_PARAM = iri("genHDTOption", "Describe the HDT options");
+	/**
 	 * mdlc:luceneParam
 	 */
 	public static final IRI LUCENE_TYPE_PARAM = iri("luceneParam", "Describe a Lucene param");
