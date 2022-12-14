@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.controller;
 
+import com.the_qa_company.qendpoint.utils.ChunkInputStream;
 import org.apache.tomcat.util.http.fileupload.MultipartStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +21,10 @@ import org.springframework.web.server.ServerWebInputException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +87,12 @@ public class EndpointController {
 				.filter(s -> s.startsWith("Content-Disposition: "))
 				.map(s -> s.substring("Content-Disposition: ".length())).flatMap(s -> Arrays.stream(s.split("; ")))
 				.map(s -> s.split("=", 2)).toArray(String[][]::new);
+	}
+
+	@RequestMapping(value = "/loadURL")
+	public ResponseEntity<Sparql.LoadFileResult> loadURL(@RequestParam(value = "url") final String url,
+			@RequestParam(value = "format", defaultValue = "") final String format) throws IOException {
+		return ResponseEntity.status(HttpStatus.OK).body(sparql.loadFileURL(new URL(url), format));
 	}
 
 	@PostMapping(value = "/load", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

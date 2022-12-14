@@ -770,13 +770,7 @@ public class MergeRunnable {
 		rename(endpointFiles.getHDTNewIndexV11(), endpointFiles.getHDTIndexV11());
 		// AFTER_INDEX_V11_RENAME
 
-		HDT tempHdt;
-
-		if (endpoint.isLoadIntoMemory()) {
-			tempHdt = HDTManager.loadIndexedHDT(endpointFiles.getHDTIndex(), null, this.endpoint.getHDTSpec());
-		} else {
-			tempHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), this.endpoint.getHDTSpec(), null);
-		}
+		HDT tempHdt = endpoint.loadIndex();
 
 		convertOldToNew(tempHdt);
 		this.endpoint.resetHDT(tempHdt, true);

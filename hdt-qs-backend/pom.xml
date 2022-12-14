@@ -9,7 +9,6 @@
         <artifactId>qendpoint-parent</artifactId>
         <version>1.7.2</version>
     </parent>
-
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -38,6 +37,24 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Override SLF4J provided by Spring Boot -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.30</version>
+            </dependency>
+            <dependency>
+                <!-- Import dependency management from Spring Boot -->
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -288,13 +305,16 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.4.12</version>
+                <version>${spring.version}</version>
                 <configuration>
                     <mainClass>com.the_qa_company.qendpoint.Application</mainClass>
                     <classifier>exec</classifier>
                 </configuration>
                 <executions>
                     <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
                         <id>spring-repackage</id>
                         <phase>package</phase>
                     </execution>

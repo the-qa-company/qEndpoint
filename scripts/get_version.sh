@@ -4,4 +4,10 @@ BASE=`dirname $0`
 
 cd $BASE/../hdt-qs-backend
 
-mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+EXPRESSION="project.version"
+
+if (( $# > 0 )); then
+    EXPRESSION=$1
+fi
+
+mvn help:evaluate "-Dexpression=$EXPRESSION" -q -DforceStdout

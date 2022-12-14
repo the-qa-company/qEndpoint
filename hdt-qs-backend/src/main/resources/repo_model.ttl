@@ -9,6 +9,9 @@ mdlc:main mdlc:node _:mainNode .
 # Describe the endpoint server port
 # mdlc:main mdlc:serverPort 1234 .
 
+# Describe the chunk size when loading a dataset with an URL
+# mdlc:main mdlc:downloadChunkSize 100000000 .
+
 # Describe the maximum time for a non-update query (in seconds), 0 = infinity
 # mdlc:main mdlc:timeoutQuery 300 .
 

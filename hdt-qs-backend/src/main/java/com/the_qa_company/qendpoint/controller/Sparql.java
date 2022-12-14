@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
+import com.the_qa_company.qendpoint.utils.ChunkInputStream;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import org.eclipse.rdf4j.model.Namespace;
@@ -23,14 +24,17 @@ import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.listener.MultiThreadListener;
 import org.rdfhdt.hdt.options.HDTOptions;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdt.util.StopWatch;
+import org.rdfhdt.hdt.util.StringUtil;
 import org.rdfhdt.hdt.util.io.CloseSuppressPath;
 import org.rdfhdt.hdt.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebInputException;
@@ -45,6 +49,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -301,7 +306,7 @@ public class Sparql {
 	}
 
 	@PostConstruct
-	public void runClient() throws IOException, URISyntaxException {
+	public void runClient() throws IOException {
 		if (client) {
 			qClient = new QEndpointClient();
 			applicationDirectory = qClient.getApplicationDirectory();
@@ -443,6 +448,9 @@ public class Sparql {
 			sparqlRepository.readDefaultPrefixes(sparqlPrefixesFile);
 			sparqlRepository.saveDefaultPrefixes(sparqlPrefixesFile);
 
+			logger.info("Sparql Repository init with max memory {}B",
+					StringUtil.humanReadableByteCount(Runtime.getRuntime().maxMemory(), true));
+
 			// set the config
 			if (!serverInit) {
 				serverInit = true;
@@ -514,13 +522,54 @@ public class Sparql {
 		}
 	}
 
+	static String getFileName(URL url) {
+		String path = url.getPath();
+
+		int index = path.lastIndexOf('/');
+		if (index == -1) {
+			return path;
+		}
+
+		return path.substring(index + 1);
+	}
+
+	public LoadFileResult loadFileURL(URL url, String format) throws IOException {
+		RDFFormat rdfFormat;
+		String filename = getFileName(url);
+
+		if (format == null || format.isEmpty()) {
+			rdfFormat = null;
+		} else {
+			rdfFormat = Rio.getParserFormatForMIMEType(format)
+					.orElseThrow(() -> new ServerWebInputException("MIME not supported: " + format));
+		}
+		Path chunkLoading = applicationDirectory.resolve("chunkLoading");
+		Files.createDirectories(chunkLoading);
+		listener("load", 0, "Start loading (waiting for the first chunk)");
+		return loadFile(new ChunkInputStream(chunkLoading, url.openStream(),
+				sparqlRepository.getOptions().getDownloadChunkSize()), filename, rdfFormat);
+	}
+
 	public LoadFileResult loadFile(InputStream input, String filename) throws IOException {
+		return loadFile(input, filename, null);
+	}
+
+	public LoadFileResult loadFile(InputStream input, String filename, RDFFormat format) throws IOException {
 		// wait previous loading
 		waitLoading(0);
 		try {
 			String rdfInput = locationHdt + filename;
 			String hdtOutput = EndpointFiles.getHDTIndex(locationHdt, hdtIndexName);
-			String baseURI = "file://" + rdfInput;
+			String baseURI;
+
+			String rdfInputLow = rdfInput.toLowerCase();
+			if (rdfInputLow.startsWith("http") || rdfInputLow.startsWith("ftp")) {
+				baseURI = URI.create(rdfInput).toString();
+			} else {
+				baseURI = Path.of(rdfInput).toUri().toString();
+			}
+
+			logger.info("Index using baseURI {}", baseURI);
 
 			Files.createDirectories(Paths.get(locationHdt));
 			Files.deleteIfExists(Paths.get(hdtOutput));
@@ -529,8 +578,9 @@ public class Sparql {
 			if (sparqlRepository.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				shutdown();
 
-				RDFFormat format = Rio.getParserFormatForFileName(filename)
-						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename));
+				RDFFormat guessFormat = format != null ? format
+						: Rio.getParserFormatForFileName(filename).orElseThrow(
+								() -> new ServerWebInputException("file format not supported " + filename));
 
 				EndpointStore endpoint = (EndpointStore) compiledSail.getSource();
 				EndpointFiles files = endpoint.getEndpointFiles();
@@ -552,14 +602,14 @@ public class Sparql {
 					HDTOptions opt = compiledSail.getOptions().createHDTOptions(endHDT, hdtStoreWork);
 
 					Iterator<TripleString> stream = RDFStreamUtils.readRDFStreamAsTripleStringIterator(
-							IOUtil.asUncompressed(input, CompressionType.guess(filename)), format, true);
+							IOUtil.asUncompressed(input, CompressionType.guess(filename)), guessFormat, true);
 
-					try (HDT hdt = HDTManager.generateHDT(stream, baseURI, opt, this::listener)) {
+					try (HDT hdt = HDTManager.generateHDT(stream, baseURI, opt, (MultiThreadListener) this::listener)) {
 						if (!Files.exists(endHDT)) {
 							// it doesn't exist, probably because someone
 							// changed the future location,
 							// write manually the file
-							hdt.saveToHDT(endHDT.toAbsolutePath().toString(), this::listener);
+							hdt.saveToHDT(endHDT.toAbsolutePath().toString(), (MultiThreadListener) this::listener);
 						}
 					} catch (ParserException e) {
 						throw new IOException(e);
@@ -595,8 +645,8 @@ public class Sparql {
 		return new LoadFileResult(true);
 	}
 
-	private void listener(float perc, String msg) {
-		// ignore
+	private void listener(String thread, float perc, String msg) {
+		logger.info("hdt loading: [{}] {} - {}", thread, perc, msg);
 	}
 
 	/**

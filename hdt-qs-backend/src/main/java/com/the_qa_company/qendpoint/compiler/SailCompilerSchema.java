@@ -238,6 +238,11 @@ public class SailCompilerSchema {
 	public static final Property<Integer, NumberTypeValueHandler> SERVER_PORT = propertyInt("serverPort",
 			"The endpoint server port", 1234, 1, (2 << 15) - 1);
 	/**
+	 * mdlc:downloadChunkSize
+	 */
+	public static final Property<Long, NumberLongTypeValueHandler> DOWNLOAD_CHUNK_SIZE = propertyLong(
+			"downloadChunkSize", "Chunk size of the download URL load", 100_000_000L, 1000, Long.MAX_VALUE);
+	/**
 	 * mdlc:timeoutUpdate
 	 */
 	public static final Property<Integer, NumberTypeValueHandler> TIMEOUT_UPDATE = propertyInt("timeoutUpdate",
@@ -326,6 +331,11 @@ public class SailCompilerSchema {
 	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc, int defaultValue,
 			int min, int max) {
 		return property(name, desc, new NumberTypeValueHandler(defaultValue).withRange(min, max));
+	}
+
+	private static Property<Long, NumberLongTypeValueHandler> propertyLong(String name, String desc, long defaultValue,
+			long min, long max) {
+		return property(name, desc, new NumberLongTypeValueHandler(defaultValue).withRange(min, max));
 	}
 
 	private static Property<Value, ValueHandler<Value>> propertyVoid(String name, String desc) {
@@ -694,6 +704,73 @@ public class SailCompilerSchema {
 
 		@Override
 		public Integer defaultValue() {
+			return defaultValue;
+		}
+	}
+
+	public static class NumberLongTypeValueHandler implements ValueHandler<Long> {
+		private Property<Long, ? extends ValueHandler<Long>> parent;
+		private long min = Long.MIN_VALUE;
+		private long max = Long.MAX_VALUE;
+		private final long defaultValue;
+
+		public NumberLongTypeValueHandler(long defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		public long getMax() {
+			return max;
+		}
+
+		public long getMin() {
+			return min;
+		}
+
+		@Override
+		public void setParent(Property<Long, ? extends ValueHandler<Long>> p) {
+			if (parent != null) {
+				throw new IllegalArgumentException("parent not null");
+			}
+			parent = p;
+		}
+
+		public NumberLongTypeValueHandler withMax(long max) {
+			this.max = max;
+			return this;
+		}
+
+		public NumberLongTypeValueHandler withMin(long min) {
+			this.min = min;
+			return this;
+		}
+
+		public NumberLongTypeValueHandler withRange(long min, long max) {
+			return withMin(min).withMax(max);
+		}
+
+		@Override
+		public Long validate(Value v) throws SailCompiler.SailCompilerException {
+			if (!(v instanceof Literal)) {
+				throw new SailCompiler.SailCompilerException(
+						v + " is not a valid literal value for the property " + parent);
+			}
+			Literal l = (Literal) v;
+			if (!l.getCoreDatatype().asXSDDatatype().orElseThrow(() -> new SailCompiler.SailCompilerException(
+					l + " is not a valid number xsd literal for the property " + parent)).isIntegerDatatype()) {
+				throw new SailCompiler.SailCompilerException(
+						l + " is not a valid number literal for the property " + parent);
+			}
+			long value = ((Literal) v).longValue();
+
+			if (value > max || value < min) {
+				throw new SailCompiler.SailCompilerException(
+						l + " out of range(" + min + ", " + max + ") for the property " + parent);
+			}
+			return value;
+		}
+
+		@Override
+		public Long defaultValue() {
 			return defaultValue;
 		}
 	}

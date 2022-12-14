@@ -35,6 +35,7 @@ public class CompiledSailOptions {
 	private int rdf4jSplitUpdate;
 	private int endpointThreshold;
 	private int port;
+	private long downloadChunkSize;
 	private String hdtSpec;
 	private int timeoutUpdate;
 	private int timeoutQuery;
@@ -58,6 +59,7 @@ public class CompiledSailOptions {
 			timeoutUpdate = debugOptions.timeoutUpdate;
 			timeoutQuery = debugOptions.timeoutQuery;
 			hdtOptions = debugOptions.hdtOptions;
+			downloadChunkSize = debugOptions.downloadChunkSize;
 			return;
 		}
 		// set default values
@@ -72,6 +74,7 @@ public class CompiledSailOptions {
 		rdf4jSplitUpdate = SailCompilerSchema.RDF_STORE_SPLIT_STORAGE.getHandler().defaultValue();
 		endpointThreshold = SailCompilerSchema.ENDPOINT_THRESHOLD.getHandler().defaultValue();
 		port = SailCompilerSchema.SERVER_PORT.getHandler().defaultValue();
+		downloadChunkSize = SailCompilerSchema.DOWNLOAD_CHUNK_SIZE.getHandler().defaultValue();
 		hdtSpec = "";
 		timeoutUpdate = SailCompilerSchema.TIMEOUT_UPDATE.getHandler().defaultValue();
 		timeoutQuery = SailCompilerSchema.TIMEOUT_QUERY.getHandler().defaultValue();
@@ -95,6 +98,7 @@ public class CompiledSailOptions {
 		hdtSpec = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_SPEC_PROPERTY);
 		timeoutUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_UPDATE);
 		timeoutQuery = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_QUERY);
+		downloadChunkSize = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.DOWNLOAD_CHUNK_SIZE);
 		hdtOptions = reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.GEN_HDT_OPTION_PARAM).stream()
 				.map(SailCompiler::asResource).collect(
 						Collectors.toMap(
@@ -219,6 +223,14 @@ public class CompiledSailOptions {
 		return hdtSpec;
 	}
 
+	public long getDownloadChunkSize() {
+		return downloadChunkSize;
+	}
+
+	public void setDownloadChunkSize(long downloadChunkSize) {
+		this.downloadChunkSize = downloadChunkSize;
+	}
+
 	/**
 	 * create {@link org.rdfhdt.hdt.options.HDTOptions} from the config
 	 *
@@ -252,6 +264,9 @@ public class CompiledSailOptions {
 		opt.set(HDTOptionsKeys.LOADER_CATTREE_MEMORY_FAULT_FACTOR, 1);
 		opt.set(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, workLocation.resolve("disk.hdt"));
 		opt.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, 20);
+		// it's useless to have more than 4 workers
+		opt.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY,
+				Math.min(Runtime.getRuntime().availableProcessors(), 4));
 		opt.set(HDTOptionsKeys.HDTCAT_LOCATION, workLocation.resolve("hdtcat"));
 		opt.set(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, workLocation.resolve("catgen.hdt"));
 
