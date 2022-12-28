@@ -1,3 +1,3 @@
-- sync RDF delete writer during merge
-- fix delete when shutting down the EP
-
+- better support for full-text search
+- support for Wikibase SERVICE language clause
+- better indexing algorithm

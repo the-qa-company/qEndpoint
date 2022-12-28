@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.the-qa-company</groupId>
         <artifactId>qendpoint-parent</artifactId>
-        <version>1.7.2</version>
+        <version>1.7.3</version>
     </parent>
 
     <distributionManagement>
