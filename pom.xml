@@ -13,6 +13,7 @@
 
     <packaging>pom</packaging>
 
+    <name>qendpoint</name>
     <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
     <url>https://github.com/the-qa-company/qEndpoint</url>
 
