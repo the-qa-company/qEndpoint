@@ -29,6 +29,37 @@
         <url>http://the-qa-company.com</url>
     </organization>
 
+    <developers>
+        <developer>
+            <id>dennis.diefenbach</id>
+            <name>Dennis Diefenbach</name>
+            <email>dennis.diefenbach@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+        <developer>
+            <id>ali.haidar</id>
+            <name>Ali Haidar</name>
+            <email>ali.haidar@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+        <developer>
+            <id>antoine.willerval</id>
+            <name>Antoine Willerval</name>
+            <email>antoine.willerval@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+        <developer>
+            <id>clement.defretiere</id>
+            <name>Clément Defrétière</name>
+            <email>clement.defretiere@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+    </developers>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>11</jdk.version>
