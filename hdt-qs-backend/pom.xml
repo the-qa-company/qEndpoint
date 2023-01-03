@@ -5,11 +5,24 @@
     <groupId>com.the-qa-company</groupId>
     <version>1.7.4</version>
 
+    <packaging>jar</packaging>
+
+
+    <name>qendpoint core</name>
+    <description>SPARQL Endpoint of the qendpoint.</description>
+
     <parent>
         <groupId>com.the-qa-company</groupId>
         <artifactId>qendpoint-parent</artifactId>
         <version>1.7.4</version>
     </parent>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) 3.0 with notice</name>
+            <url>https://github.com/the-qa-company/qEndpoint/blob/master/LICENSE.md</url>
+        </license>
+    </licenses>
 
     <properties>
         <java.source.version>11</java.source.version>

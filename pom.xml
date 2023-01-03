@@ -17,6 +17,13 @@
     <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
     <url>https://github.com/the-qa-company/qEndpoint</url>
 
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) 3.0 with notice</name>
+            <url>https://github.com/the-qa-company/qEndpoint/blob/master/LICENSE.md</url>
+        </license>
+    </licenses>
+
     <organization>
         <name>The QA Company</name>
         <url>http://the-qa-company.com</url>
