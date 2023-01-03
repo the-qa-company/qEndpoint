@@ -21,6 +21,11 @@
         <url>http://the-qa-company.com</url>
     </organization>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.version>11</jdk.version>
+    </properties>
+
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -115,15 +120,10 @@
         </profile>
     </profiles>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>11</jdk.version>
-    </properties>
-
     <scm>
-        <connection>scm:git:git://github.com/rdfhdt/hdt-java.git</connection>
-        <developerConnection>scm:git:git@github.com:rdfhdt/hdt-java.git</developerConnection>
-        <url>https://github.com/rdfhdt/hdt-java</url>
+        <connection>scm:git:git://github.com/the-qa-company/qEndpoint.git</connection>
+        <developerConnection>scm:git:git@github.com:the-qa-company/qEndpoint.git</developerConnection>
+        <url>https://github.com/the-qa-company/qEndpoint</url>
         <tag>HEAD</tag>
     </scm>
 

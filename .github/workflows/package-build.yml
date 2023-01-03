@@ -11,17 +11,21 @@ on:
         description: "I have used the scripts/set_version.sh script to set the new version."
         required: true
         type: boolean
+      publish_only_maven:
+        description: "(DEV) Publish only to Maven"
+        required: true
+        type: boolean
 
 jobs:
   check_release:
     name: Check input parameters
-    if: ${{ !inputs.release_made }}
+    if: ${{ !inputs.publish_only_maven && !inputs.release_made }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Release check wasn't checked"
   build:
     name: Building project
-    if: ${{ inputs.release_made }}
+    if: ${{ inputs.publish_only_maven || inputs.release_made }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version_get.outputs.version }}
@@ -65,7 +69,7 @@ jobs:
     name: Publish to Maven Central
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ inputs.publish_maven }}
+    if: ${{ inputs.publish_only_maven || inputs.publish_maven }}
     permissions:
       contents: read
       packages: write
@@ -87,6 +91,7 @@ jobs:
     name: Build OSX version
     needs: build
     runs-on: macos-latest
+    if: ${{ !inputs.publish_only_maven }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -120,6 +125,7 @@ jobs:
     name: Build WINDOWS version
     needs: build
     runs-on: windows-latest
+    if: ${{ !inputs.publish_only_maven }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -143,6 +149,7 @@ jobs:
     name: Build LINUX version
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ !inputs.publish_only_maven }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
@@ -169,6 +176,7 @@ jobs:
       name: qendpoint docker image
       url: https://hub.docker.com/r/qacompany/qendpoint/tags
     runs-on: ubuntu-latest
+    if: ${{ !inputs.publish_only_maven }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -210,6 +218,7 @@ jobs:
       - build
       - push_to_docker_hub
     runs-on: ubuntu-latest
+    if: ${{ !inputs.publish_only_maven }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -248,6 +257,7 @@ jobs:
       - osx
       - push_to_docker_hub_wikidata
     runs-on: ubuntu-latest
+    if: ${{ !inputs.publish_only_maven }}
     steps:
       - uses: actions/checkout@v2
       - name: Download artifacts
