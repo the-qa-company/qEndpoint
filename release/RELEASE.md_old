@@ -1,3 +1,9 @@
+## Version 1.7.3
+
+- better support for full-text search
+- support for Wikibase SERVICE language clause
+- better indexing algorithm
+
 ## Version 1.7.2 
 
 - sync RDF delete writer during merge

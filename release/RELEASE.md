@@ -1,3 +1,1 @@
-- better support for full-text search
-- support for Wikibase SERVICE language clause
-- better indexing algorithm
+- Fix Maven dependencies
