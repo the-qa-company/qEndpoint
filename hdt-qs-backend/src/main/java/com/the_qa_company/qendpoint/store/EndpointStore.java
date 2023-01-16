@@ -39,7 +39,6 @@ import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTOptions;
-import org.rdfhdt.hdt.options.HDTOptionsBase;
 import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
@@ -55,7 +54,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -141,10 +139,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public EndpointStore(EndpointFiles files, HDTOptions spec, boolean inMemDeletes, boolean loadIntoMemory)
 			throws IOException {
-		if (spec == null) {
-			// set default options
-			spec = new HDTOptionsBase();
-		}
+		// load HDT file
+		this.spec = (spec = HDTOptions.ofNullable(spec));
 		debugId = ENDPOINT_DEBUG_ID_GEN.incrementAndGet();
 		EndpointStoreUtils.openEndpoint(this);
 		this.endpointFiles = files;
@@ -202,8 +198,6 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		this.locksHoldByUpdates = new LockManager();
 
 		initDeleteArray();
-		// load HDT file
-		this.spec = spec;
 
 		// initialize the count of the triples
 		mergeThread.ifPresent(thread -> {
@@ -395,12 +389,12 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		} else {
 			// use disk implementation to generate the index if required
 			OverrideHDTOptions specOver = new OverrideHDTOptions(spec);
-			// specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK,
-			// true);
-			// specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX,
-			// true);
-			// specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,
-			// endpointFiles.getLocationHdtPath().resolve("indexload").toAbsolutePath());
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
+					HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK, true);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, true);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,
+					endpointFiles.getLocationHdtPath().resolve("indexload").toAbsolutePath());
 			return HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), specOver, null);
 		}
 	}
