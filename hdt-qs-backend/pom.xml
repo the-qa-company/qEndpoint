@@ -32,7 +32,7 @@
         <junit.version>4.13</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
         <rdf4j.version>4.2.0</rdf4j.version>
-        <rdfhdt.version>3.0.7</rdfhdt.version>
+        <rdfhdt.version>3.0.8</rdfhdt.version>
         <spring.version>2.7.5</spring.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -308,21 +308,6 @@
                     <source>${java.source.version}</source>
                     <target>${java.target.version}</target>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>net.revelc.code.formatter</groupId>
-                <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.19.0</version>
-                <configuration>
-                    <configFile>${project.basedir}/formatter-config.xml</configFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>format</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

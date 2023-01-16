@@ -24,7 +24,7 @@ public class EndpointStoreUtils {
 	 * disable the connection debug
 	 */
 	public static void disableDebugConnection() {
-		debugConnection = true;
+		debugConnection = false;
 	}
 
 	static void openConnection(EndpointStoreConnection connection) {
