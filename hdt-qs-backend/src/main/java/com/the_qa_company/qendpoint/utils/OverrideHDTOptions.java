@@ -1,16 +1,18 @@
 package com.the_qa_company.qendpoint.utils;
 
 import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsBase;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class OverrideHDTOptions implements HDTOptions {
 	private final HDTOptions handle;
 	private final Map<String, String> override = new HashMap<>();
 
 	public OverrideHDTOptions(HDTOptions handle) {
-		this.handle = handle;
+		this.handle = Objects.requireNonNullElseGet(handle, HDTOptionsBase::new);
 	}
 
 	@Override

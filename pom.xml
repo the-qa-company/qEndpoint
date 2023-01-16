@@ -13,7 +13,10 @@
 
     <packaging>pom</packaging>
 
-    <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
+    <description>
+        The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a
+        standalone SPARQL endpoint, or as a dependency.
+    </description>
     <url>https://github.com/the-qa-company/qEndpoint</url>
 
     <organization>
@@ -32,6 +35,30 @@
         <url>https://github.com/rdfhdt/hdt-java</url>
         <tag>HEAD</tag>
     </scm>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <version>2.19.0</version>
+                <configuration>
+                    <includes>
+                        <include>**/*.java</include>
+                    </includes>
+                    <lineEnding>LF</lineEnding>
+                    <configFile>${project.basedir}/formatter-config.xml</configFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <modules>
         <module>hdt-qs-backend</module>
