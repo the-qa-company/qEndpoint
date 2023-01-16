@@ -1,1 +1,1 @@
-- Fix Maven dependencies
+- update to RDFHDT 3.0.9
