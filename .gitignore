@@ -5,6 +5,8 @@ hdt-qs-backend/qendpoint/hdt-store/
 hdt-qs-backend/qendpoint/native-store/
 hdt-qs-backend/COMPILER_SCHEMA.MD
 hdt-qs-backend/qendpoint/
+hdt-qs-backend/tests/
+/qendpoint/
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 

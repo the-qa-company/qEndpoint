@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
+import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -38,6 +39,7 @@ import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
@@ -52,7 +54,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -138,6 +139,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public EndpointStore(EndpointFiles files, HDTOptions spec, boolean inMemDeletes, boolean loadIntoMemory)
 			throws IOException {
+		// load HDT file
+		this.spec = (spec = HDTOptions.ofNullable(spec));
 		debugId = ENDPOINT_DEBUG_ID_GEN.incrementAndGet();
 		EndpointStoreUtils.openEndpoint(this);
 		this.endpointFiles = files;
@@ -168,13 +171,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 			}
 		}
 
-		HDT hdt;
-
-		if (loadIntoMemory) {
-			hdt = HDTManager.loadIndexedHDT(endpointFiles.getHDTIndex(), null, spec);
-		} else {
-			hdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), spec, null);
-		}
+		HDT hdt = loadIndex();
 
 		this.nativeStoreA = new NativeStore(new File(getEndpointFiles().getNativeStoreA()), "spoc,posc,cosp");
 		this.nativeStoreB = new NativeStore(new File(getEndpointFiles().getNativeStoreB()), "spoc,posc,cosp");
@@ -201,8 +198,6 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		this.locksHoldByUpdates = new LockManager();
 
 		initDeleteArray();
-		// load HDT file
-		this.spec = spec;
 
 		// initialize the count of the triples
 		mergeThread.ifPresent(thread -> {
@@ -211,9 +206,9 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 			thread.start();
 			logger.info("MERGE RESTART THREAD LAUNCHED");
 		});
-		SailConnection connection = getChangingStore().getConnection();
-		this.triplesCount = connection.size();
-		connection.close();
+		try (SailConnection connection = getChangingStore().getConnection()) {
+			this.triplesCount = connection.size();
+		}
 	}
 
 	public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative,
@@ -386,6 +381,22 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public boolean isLoadIntoMemory() {
 		return loadIntoMemory;
+	}
+
+	public HDT loadIndex() throws IOException {
+		if (isLoadIntoMemory()) {
+			return HDTManager.loadIndexedHDT(endpointFiles.getHDTIndex(), null, spec);
+		} else {
+			// use disk implementation to generate the index if required
+			OverrideHDTOptions specOver = new OverrideHDTOptions(spec);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
+					HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK, true);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, true);
+			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,
+					endpointFiles.getLocationHdtPath().resolve("indexload").toAbsolutePath());
+			return HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), specOver, null);
+		}
 	}
 
 	@Override

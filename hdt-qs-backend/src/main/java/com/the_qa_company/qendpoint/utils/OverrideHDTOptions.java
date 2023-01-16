@@ -2,15 +2,16 @@ package com.the_qa_company.qendpoint.utils;
 
 import org.rdfhdt.hdt.options.HDTOptions;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class OverrideHDTOptions implements HDTOptions {
 	private final HDTOptions handle;
-	private final Map<String, String> override = new HashMap<>();
+	private final HDTOptions override = HDTOptions.of();
 
 	public OverrideHDTOptions(HDTOptions handle) {
-		this.handle = handle;
+		this.handle = HDTOptions.ofNullable(handle);
 	}
 
 	@Override
@@ -33,9 +34,9 @@ public class OverrideHDTOptions implements HDTOptions {
 
 	public void setOverride(String key, Object value) {
 		if (value == null) {
-			override.remove(key);
+			override.set(key, (String) null);
 		} else {
-			override.put(key, String.valueOf(value));
+			override.set(key, value);
 		}
 	}
 
@@ -45,12 +46,10 @@ public class OverrideHDTOptions implements HDTOptions {
 	}
 
 	@Override
-	public void setInt(String s, long l) {
-		handle.set(s, String.valueOf(l));
-	}
-
-	@Override
-	public void setOptions(String s) {
-		handle.setOptions(s);
+	public Set<?> getKeys() {
+		Set<Object> keys = new HashSet<>();
+		keys.addAll(handle.getKeys());
+		keys.addAll(override.getKeys());
+		return Collections.unmodifiableSet(keys);
 	}
 }

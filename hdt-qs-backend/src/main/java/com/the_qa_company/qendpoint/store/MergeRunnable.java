@@ -22,7 +22,6 @@ import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.hdt.HDTVersion;
 import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.rdfhdt.hdt.util.StopWatch;
 import org.slf4j.Logger;
@@ -770,13 +769,7 @@ public class MergeRunnable {
 		rename(endpointFiles.getHDTNewIndexV11(), endpointFiles.getHDTIndexV11());
 		// AFTER_INDEX_V11_RENAME
 
-		HDT tempHdt;
-
-		if (endpoint.isLoadIntoMemory()) {
-			tempHdt = HDTManager.loadIndexedHDT(endpointFiles.getHDTIndex(), null, this.endpoint.getHDTSpec());
-		} else {
-			tempHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), this.endpoint.getHDTSpec(), null);
-		}
+		HDT tempHdt = endpoint.loadIndex();
 
 		convertOldToNew(tempHdt);
 		this.endpoint.resetHDT(tempHdt, true);
