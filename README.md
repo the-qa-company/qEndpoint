@@ -35,6 +35,11 @@
       - [Back-end](#back-end)
       - [Front-end](#front-end)
 - [Usage](#usage)
+  - [Docker Image](#docker-image)
+  - [`qacompany/qendpoint`](#qacompanyqendpoint)
+    - [Useful tools](#useful-tools)
+  - [`qacompany/qendpoint-wikidata`](#qacompanyqendpoint-wikidata)
+    - [Useful tools](#useful-tools-1)
   - [Standalone](#standalone)
   - [As a dependency](#as-a-dependency)
 - [Connecting with your Wikibase](#connecting-with-your-wikibase)
@@ -42,7 +47,7 @@
 - [Support](#support)
 - [Project assistance](#project-assistance)
 - [Contributing](#contributing)
-- [Authors & contributors](#authors--contributors)
+- [Authors \& contributors](#authors--contributors)
 - [Security](#security)
 - [License](#license)
 
@@ -84,6 +89,7 @@ Installers for Linux, MacOS and ~~Windows~~\* can be found [here](https://github
 #### Code
 
 ##### Back-end
+
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the back-end directory `cd hdt-qs-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
@@ -100,13 +106,120 @@ You can use the project as a dependency (replace the version by the latest versi
 ```
 
 ##### Front-end
+
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
 - Move to the front-end directory `cd hdt-qs-frontend`
 - Install the packages using `npm install`
 - Run the project using `npm start`
 
-
 ## Usage
+
+### Docker Image
+
+You can use one of our preconfigured Docker images.
+
+### `qacompany/qendpoint`
+
+**DockerHub**: [qacompany/qendpoint](https://hub.docker.com/r/qacompany/qendpoint)
+
+This Docker image contains the endpoint, you can upload your dataset and start using it.
+
+You just have to run the image and it will prepare the environment by downloading the index and setting up the repository
+
+```bash
+docker run -p 1234:1234 --name qendpoint qacompany/qendpoint
+```
+
+You can also specify the size of the memory allocated by setting the docker environnement value _MEM_SIZE_. By default this value is set to 6G. You should not set this value below 4G because you will certainly run out of memory with large dataset. For bigger dataset, a bigger value is also recommended for big dataset, as an example, Wikidata-all won't run without at least 10GB.
+
+```bash
+docker run -p 1234:1234 --name qendpoint --env MEM_SIZE=6G qacompany/qendpoint
+```
+
+You can stop the container and rerun it at anytime maintaining the data inside (qendpoint is the name of the container):
+
+```bash
+docker stop qendpoint
+docker start qendpoint
+```
+
+Note: this container may occupy a huge portion of the disk due to the size of the data index, so make sure to delete the container if you don't need it anymore like so
+
+```bash
+docker rm qendpoint
+```
+
+#### Useful tools
+
+You can access http://localhost:1234 where there is a GUI where you can write SPARQL queries and execute them, and there is the RESTful API available which you can use to run queries from any application over HTTP like so:
+
+```bash
+curl -H 'Accept: application/sparql-results+json' localhost:1234/api/endpoint/sparql --data-urlencode 'query=select * where{ ?s ?p ?o } limit 10'
+```
+
+Note: first query will take some time in order to map the index to memory, later on it will be much faster!
+
+Most of the result formats are available, you can use for example:
+
+- JSON: `application/sparql-results+json`
+- XML: `application/sparql-results+xml`
+- Binary RDF: `application/x-binary-rdf-results-table`
+
+### `qacompany/qendpoint-wikidata`
+
+**DockerHub**: [qacompany/qendpoint-wikidata](https://hub.docker.com/r/qacompany/qendpoint-wikidata)
+
+This Docker image contains the endpoint with a script to download an index containing the Wikidata Truthy statements from our servers, so you simply have to wait for the index download and start using it.
+
+You just have to run the image and it will prepare the environment by downloading the index and setting up the repository
+
+```bash
+docker run -p 1234:1234 --name qendpoint-wikidata qacompany/qendpoint-wikidata
+```
+
+You can also specify the size of the memory allocated by setting the docker environnement value _MEM_SIZE_. By default this value is set to 6G, a bigger value is also recommended for big dataset, as an example, Wikidata-all won't run without at least 10GB.
+
+```bash
+docker run -p 1234:1234 --name qendpoint-wikidata --env MEM_SIZE=6G qacompany/qendpoint-wikidata
+```
+
+You can specify the dataset to download using the environnement value _HDT_BASE_, by default the value is `wikidata_truthy`, but the current available values are:
+
+- `wikidata_truthy` - Wikidata truthy statements (need at least `6G` of memory)
+- `wikidata_all` - Wikidata all statements (need at least `10G` of memory)
+
+```bash
+docker run -p 1234:1234 --name qendpoint-wikidata --env MEM_SIZE=10G --env HDT_BASE=wikidata_all qacompany/qendpoint-wikidata
+```
+
+You can stop the container and rerun it at anytime maintaining the data inside (qendpoint is the name of the container):
+
+```bash
+docker stop qendpoint-wikidata
+docker start qendpoint-wikidata
+```
+
+Note: this container may occupy a huge portion of the disk due to the size of the data index, so make sure to delete the container if you don't need it anymore like so
+
+```bash
+docker rm qendpoint-wikidata
+```
+
+#### Useful tools
+
+You can access http://localhost:1234 where there is a GUI where you can write SPARQL queries and execute them, and there is the RESTful API available which you can use to run queries from any application over HTTP like so:
+
+```bash
+curl -H 'Accept: application/sparql-results+json' localhost:1234/api/endpoint/sparql --data-urlencode 'query=select * where{ ?s ?p ?o } limit 10'
+```
+
+Note: first query will take some time in order to map the index to memory, later on it will be much faster!
+
+Most of the result formats are available, you can use for example:
+
+- JSON: `application/sparql-results+json`
+- XML: `application/sparql-results+xml`
+- Binary RDF: `application/x-binary-rdf-results-table`
 
 ### Standalone
 
@@ -181,7 +294,8 @@ SailRepository rdf4jRepo = repository.getRepository();
 - `cd wikibase`
 - move the file `prefixes.sparql` to your qEndpoint installation
 - (re-)start your endpoint to use the prefixes
-- run 
+- run
+
   ```bash
   java -cp wikidata-query-tools-0.3.59-SNAPSHOT-jar-with-dependencies.jar org.wikidata.query.rdf.tool.Update \
           --sparqlUrl http://localhost:1234/api/endpoint/sparql \
