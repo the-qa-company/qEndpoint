@@ -1,0 +1,11 @@
+FROM qacompany/qendpoint
+
+WORKDIR /app
+
+COPY loadDataAll.sh .
+RUN chmod +x loadDataAll.sh
+
+EXPOSE 1234
+ENTRYPOINT ["/usr/bin/env"]
+
+CMD ["/bin/sh", "-c", "./loadDataAll.sh $MEM_SIZE && java -jar -Xmx${MEM_SIZE} qendpoint.jar"]
