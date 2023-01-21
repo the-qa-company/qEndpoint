@@ -1,11 +1,6 @@
 @prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
 @prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
 
-# Describe the main node to use: _:mainNode
-
-# Describe the main node to connect to the source
-mdlc:main mdlc:node _:mainNode .
-
 # Describe the endpoint server port
 # mdlc:main mdlc:serverPort 1234 .
 
@@ -37,17 +32,21 @@ mdlc:main mdlc:node _:mainNode .
 mdlc:main mdlc:parsedStringParam [ mdlc:paramKey "luceneEvalMode" ; mdlc:paramValue "NATIVE" ] .
 mdlc:main mdlc:parsedStringParam [ mdlc:paramKey "luceneWktFields" ; mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ] .
 
+# Describe the main node to use: _:mainNode
 # Create a lucene node for full-text search
-_:mainNode mdlc:type mdlc:luceneNode ;
-            # Describe the location of the lucene directory, you can use mdlc:parsedString for template strings
-            mdlc:dirLocation "${locationNative}lucene"^^mdlc:parsedString ;
-            # Define custom parameters, here the wkt fields for Geo-SPARQL
-            mdlc:luceneParam [
-                mdlc:paramKey "wktFields" ;
-                mdlc:paramValue "${luceneWktFields}"^^mdlc:parsedString ;
-            ] ;
-            # Define the reindex query for the lucene sail, the query should be ordered by ?s
-            mdlc:luceneReindexQuery "SELECT * {?s ?p ?o} order by ?s" ;
-            # Describe the evaluation mode of the queries, for native or endpointStore storage, use NATIVE
-            mdlc:luceneEvalMode "${luceneEvalMode}"^^mdlc:parsedString.
+# uncomment to enable full-text capabilities (heavy in memory)
+#
+# mdlc:main mdlc:node _:mainNode .
+#_:mainNode mdlc:type mdlc:luceneNode ;
+#            # Describe the location of the lucene directory, you can use mdlc:parsedString for template strings
+#            mdlc:dirLocation "${locationNative}lucene"^^mdlc:parsedString ;
+#            # Define custom parameters, here the wkt fields for Geo-SPARQL
+#            mdlc:luceneParam [
+#                mdlc:paramKey "wktFields" ;
+#                mdlc:paramValue "${luceneWktFields}"^^mdlc:parsedString ;
+#            ] ;
+#            # Define the reindex query for the lucene sail, the query should be ordered by ?s
+#            mdlc:luceneReindexQuery "SELECT * {?s ?p ?o} order by ?s" ;
+#            # Describe the evaluation mode of the queries, for native or endpointStore storage, use NATIVE
+#            mdlc:luceneEvalMode "${luceneEvalMode}"^^mdlc:parsedString.
 
