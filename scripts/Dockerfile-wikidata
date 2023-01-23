@@ -5,7 +5,10 @@ WORKDIR /app
 COPY loadData.sh .
 RUN chmod +x loadData.sh
 
+ARG HDT_BASE=wikidata_truthy
+ENV HDT_BASE ${HDT_BASE}
+
 EXPOSE 1234
 ENTRYPOINT ["/usr/bin/env"]
 
-CMD ["/bin/sh", "-c", "./loadData.sh $MEM_SIZE && java -jar -Xmx${MEM_SIZE} qendpoint.jar"]
+CMD ["/bin/sh", "-c", "./loadData.sh ${HDT_BASE} && java -jar -Xmx${MEM_SIZE} qendpoint.jar"]
