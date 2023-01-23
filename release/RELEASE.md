@@ -1,1 +1,2 @@
-- update to RDFHDT 3.0.9
+- remove default full-text lucene sail
+- update Wikidata Docker image

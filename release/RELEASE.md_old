@@ -1,3 +1,6 @@
+## Version 1.7.5 
+    
+- update to RDFHDT 3.0.9
 ## Version 1.7.4 
     
 - Fix Maven dependencies
