@@ -1,3 +1,17 @@
+## Version 1.7.4 
+    
+- Fix Maven dependencies
+## Version 1.7.3
+
+- better support for full-text search
+- support for Wikibase SERVICE language clause
+- better indexing algorithm
+
+## Version 1.7.2 
+
+- sync RDF delete writer during merge
+- fix delete when shutting down the EP
+
 ## Version 1.7.1 
 
 - at startup there was a messeage that solr index not reachable message, this is gone

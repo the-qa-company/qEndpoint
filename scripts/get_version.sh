@@ -2,6 +2,6 @@
 
 BASE=`dirname $0`
 
-cd $BASE/../hdt-qs-backend
+cd $BASE/..
 
 mvn help:evaluate -Dexpression=project.version -q -DforceStdout

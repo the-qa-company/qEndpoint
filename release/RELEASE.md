@@ -1,3 +1,1 @@
-- sync RDF delete writer during merge
-- fix delete when shutting down the EP
-
+- update to RDFHDT 3.0.9

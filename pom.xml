@@ -9,30 +9,160 @@
 
     <groupId>com.the-qa-company</groupId>
     <artifactId>qendpoint-parent</artifactId>
-    <version>1.7.2</version>
+    <version>1.7.5</version>
 
     <packaging>pom</packaging>
 
-    <description>
-        The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a
-        standalone SPARQL endpoint, or as a dependency.
-    </description>
+    <name>qendpoint</name>
+    <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
     <url>https://github.com/the-qa-company/qEndpoint</url>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) 3.0 with notice</name>
+            <url>https://github.com/the-qa-company/qEndpoint/blob/master/LICENSE.md</url>
+        </license>
+    </licenses>
 
     <organization>
         <name>The QA Company</name>
         <url>http://the-qa-company.com</url>
     </organization>
 
+    <developers>
+        <developer>
+            <id>dennis.diefenbach</id>
+            <name>Dennis Diefenbach</name>
+            <email>dennis.diefenbach@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+        <developer>
+            <id>ali.haidar</id>
+            <name>Ali Haidar</name>
+            <email>ali.haidar@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+        <developer>
+            <id>antoine.willerval</id>
+            <name>Antoine Willerval</name>
+            <email>antoine.willerval@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+        <developer>
+            <id>clement.defretiere</id>
+            <name>Clément Defrétière</name>
+            <email>clement.defretiere@the-qa-company.com</email>
+            <organization>The QA Company</organization>
+            <organizationUrl>https://the-qa-company.com/</organizationUrl>
+        </developer>
+    </developers>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>11</jdk.version>
     </properties>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>sonatype-nexus-staging</id>
+            <name>Nexus Release Repository</name>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.4.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <doclint>none</doclint>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>2.5.3</version>
+                        <configuration>
+                            <autoVersionSubmodules>true</autoVersionSubmodules>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <releaseProfiles>release</releaseProfiles>
+                            <goals>deploy</goals>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.13</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>sonatype-nexus-staging</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <scm>
-        <connection>scm:git:git://github.com/rdfhdt/hdt-java.git</connection>
-        <developerConnection>scm:git:git@github.com:rdfhdt/hdt-java.git</developerConnection>
-        <url>https://github.com/rdfhdt/hdt-java</url>
+        <connection>scm:git:git://github.com/the-qa-company/qEndpoint.git</connection>
+        <developerConnection>scm:git:git@github.com:the-qa-company/qEndpoint.git</developerConnection>
+        <url>https://github.com/the-qa-company/qEndpoint</url>
         <tag>HEAD</tag>
     </scm>
 
