@@ -82,9 +82,7 @@ For the frontend (not mandatory to run the backend)
 
 #### Installers
 
-Installers for Linux, MacOS and ~~Windows~~\* can be found [here](https://github.com/the-qa-company/qEndpoint/releases)
-
-\* Windows version isn't available yet [#150](https://github.com/the-qa-company/qEndpoint/issues/150).
+Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases)
 
 #### Code
 

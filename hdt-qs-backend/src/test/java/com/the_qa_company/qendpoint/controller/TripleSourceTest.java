@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.controller;
 import com.the_qa_company.qendpoint.Application;
 import com.the_qa_company.qendpoint.compiler.DebugOptionTestUtils;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
+import com.the_qa_company.qendpoint.store.MergeRunnableStopPoint;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.After;
 import org.junit.Before;
@@ -11,10 +12,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-//import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 import org.springframework.util.FileSystemUtils;
 
@@ -53,7 +52,9 @@ public class TripleSourceTest {
 		testContextManager.prepareTestInstance(this);
 
 		// clear map to recreate endpoint store
-		sparql.init = false;
+
+		MergeRunnableStopPoint.debug = true;
+
 		DebugOptionTestUtils.getOrCreateDebugOption().setStorageMode(mode);
 
 		// remove previous data
@@ -68,6 +69,7 @@ public class TripleSourceTest {
 	public void complete() throws IOException {
 		DebugOptionTestUtils.clearDebugOption();
 		sparql.shutdown();
+		MergeRunnableStopPoint.debug = false;
 	}
 
 	@Test

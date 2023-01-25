@@ -11,7 +11,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 
 import java.io.IOException;
 
@@ -20,12 +21,13 @@ public class IRITest {
 	@Rule
 	public TemporaryFolder tempDir = new TemporaryFolder();
 
-	HDTSpecification spec;
+	HDTOptions spec;
 
 	@Before
 	public void setUp() {
-		spec = new HDTSpecification();
-		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+		spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 	}
 
 	@Test

@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.compiler.sail;
 
-import com.the_qa_company.qendpoint.utils.sail.FilteringSail;
 import com.the_qa_company.qendpoint.compiler.SailCompiler;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
+import com.the_qa_company.qendpoint.utils.sail.FilteringSail;
 import com.the_qa_company.qendpoint.utils.sail.filter.LanguageSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.LuceneGeoExprSailFilter;
 import com.the_qa_company.qendpoint.utils.sail.filter.LuceneMatchExprSailFilter;

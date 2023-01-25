@@ -19,11 +19,9 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedService;
 import org.eclipse.rdf4j.query.impl.ListBindingSet;
-import org.eclipse.rdf4j.sail.SailException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -73,10 +71,10 @@ public class WikibaseLabelService implements FederatedService {
 				// datatype
 				if (statement.getObjectVar().getValue().isLiteral()) {
 					Literal literal = (Literal) statement.getObjectVar().getValue();
-					if (!literal.getLanguage().isPresent() && literal.getDatatype() == XSD.STRING) {
+					if (literal.getLanguage().isEmpty() && literal.getDatatype() == XSD.STRING) {
 						List<String> languages = Arrays.asList(literal.getLabel().split(","));
 						if (languages.size() > 0) {
-							return new CloseableIteration<BindingSet, QueryEvaluationException>() {
+							return new CloseableIteration<>() {
 								@Override
 								public void close() throws QueryEvaluationException {
 									closeableIteration.close();
@@ -148,7 +146,7 @@ public class WikibaseLabelService implements FederatedService {
 					}
 
 				}
-				if (found == false) {
+				if (!found) {
 					valuesWithLabels.add(vf.createLiteral(""));
 				}
 			}

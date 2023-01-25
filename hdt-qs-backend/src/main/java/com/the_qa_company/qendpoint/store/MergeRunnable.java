@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.controller.Sparql;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
@@ -804,7 +805,7 @@ public class MergeRunnable {
 		File hdtOutputFile = new File(hdtOutput);
 		File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
 		Files.createDirectories(theDir.toPath());
-		String location = theDir.getAbsolutePath() + "/";
+		String location = theDir.getAbsolutePath() + File.separator;
 		try (BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
 				new File(bitArray))) {
 			// @todo: should we not use the already mapped HDT file instead
@@ -824,7 +825,7 @@ public class MergeRunnable {
 		File file = new File(hdtOutput);
 		File theDir = new File(file.getAbsolutePath() + "_tmp");
 		Files.createDirectories(theDir.toPath());
-		String location = theDir.getAbsolutePath() + "/";
+		String location = theDir.getAbsolutePath() + File.separator;
 		logger.info(location);
 		logger.info(hdtInput1);
 		logger.info(hdtInput2);
@@ -850,7 +851,7 @@ public class MergeRunnable {
 	}
 
 	private void createHDTDump(String rdfInput, String hdtOutput) throws IOException {
-		String baseURI = "file://" + rdfInput;
+		String baseURI = Sparql.baseURIFromFilename(rdfInput);
 		StopWatch sw = new StopWatch();
 		try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
 				this.endpoint.getHDTSpec(), null)) {

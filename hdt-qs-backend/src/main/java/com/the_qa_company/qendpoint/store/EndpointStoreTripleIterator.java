@@ -13,7 +13,6 @@ import org.rdfhdt.hdt.triples.TripleID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 

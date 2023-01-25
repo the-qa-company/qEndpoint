@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.utils;
 
-import com.the_qa_company.qendpoint.store.HDTConverter;
-import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
+import com.the_qa_company.qendpoint.store.EndpointStore;
+import com.the_qa_company.qendpoint.store.HDTConverter;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.algebra.BindingSetAssignment;

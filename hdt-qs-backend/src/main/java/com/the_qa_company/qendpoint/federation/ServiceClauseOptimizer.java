@@ -30,7 +30,7 @@ public class ServiceClauseOptimizer implements QueryOptimizer {
 		@Override
 		public void meet(Service node) {
 			// this optimization applies only for the wikibase language service
-			if (node instanceof Service) {
+			if (node != null) {
 				Value serviceUrl = node.getServiceRef().getValue();
 				if (serviceUrl instanceof IRI) {
 					if (serviceUrl.stringValue().equals("http://wikiba.se/ontology#label")) {
@@ -71,14 +71,13 @@ public class ServiceClauseOptimizer implements QueryOptimizer {
 							}
 						}
 					}
-					;
 				}
 			}
 		}
 	}
 
 	/**
-	 * @param node
+	 * @param node node
 	 * @return the last node in the block that is a JOIN of a LEFT JOIN
 	 */
 	private static QueryModelNode findRoot(QueryModelNode node) {

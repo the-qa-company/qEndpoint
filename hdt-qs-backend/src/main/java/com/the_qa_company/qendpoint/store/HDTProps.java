@@ -1,7 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.utils.BinarySearch;
-
 import org.rdfhdt.hdt.dictionary.impl.MultipleSectionDictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDT;

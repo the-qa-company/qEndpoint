@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
+import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -31,7 +32,6 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
-import org.eclipse.rdf4j.sail.helpers.DirectoryLockManager;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
@@ -40,7 +40,6 @@ import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.options.HDTOptions;
 import org.rdfhdt.hdt.options.HDTOptionsKeys;
-import org.rdfhdt.hdt.options.HDTSpecification;
 import org.rdfhdt.hdt.triples.IteratorTripleID;
 import org.rdfhdt.hdt.triples.IteratorTripleString;
 import org.rdfhdt.hdt.triples.TripleID;
@@ -130,11 +129,17 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	private final EndpointFiles endpointFiles;
 	private MergeRunnable.MergeThread<?> mergerThread;
 
-	private void deleteNativeLocks() {
+	public void deleteNativeLocks() throws IOException {
 		// remove lock files of a hard shutdown (SAIL is already locked by
 		// [...])
-		new DirectoryLockManager(this.nativeStoreA.getDataDir()).revokeLock();
-		new DirectoryLockManager(this.nativeStoreB.getDataDir()).revokeLock();
+		Path lockA = nativeStoreA.getDataDir().toPath().resolve("lock");
+		Path lockB = nativeStoreB.getDataDir().toPath().resolve("lock");
+		if (Files.exists(lockA)) {
+			PathUtils.deleteDirectory(lockA);
+		}
+		if (Files.exists(lockB)) {
+			PathUtils.deleteDirectory(lockB);
+		}
 	}
 
 	public EndpointStore(EndpointFiles files, HDTOptions spec, boolean inMemDeletes, boolean loadIntoMemory)
@@ -173,10 +178,15 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 		HDT hdt = loadIndex();
 
-		this.nativeStoreA = new NativeStore(new File(getEndpointFiles().getNativeStoreA()), "spoc,posc,cosp");
-		this.nativeStoreB = new NativeStore(new File(getEndpointFiles().getNativeStoreB()), "spoc,posc,cosp");
-
+		File dataDir1 = new File(getEndpointFiles().getNativeStoreA());
+		File dataDir2 = new File(getEndpointFiles().getNativeStoreB());
+		Files.createDirectories(dataDir1.toPath());
+		Files.createDirectories(dataDir2.toPath());
 		Files.createDirectories(Path.of(getEndpointFiles().getLocationNative()));
+
+		this.nativeStoreA = new NativeStore(dataDir1, "spoc,posc,cosp");
+		this.nativeStoreB = new NativeStore(dataDir2, "spoc,posc,cosp");
+
 		this.checkFile = new File(getEndpointFiles().getWhichStore());
 		// init the store before creating the check store file
 		if (MergeRunnableStopPoint.debug) {
@@ -211,12 +221,22 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		}
 	}
 
-	public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative,
+	public EndpointStore(String locationHdt, String hdtIndexName, HDTOptions spec, String locationNative,
 			boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
 		this(new EndpointFiles(locationNative, locationHdt, hdtIndexName), spec, inMemDeletes, loadIntoMemory);
 	}
 
-	public EndpointStore(String locationHdt, String hdtIndexName, HDTSpecification spec, String locationNative,
+	public EndpointStore(String locationHdt, String hdtIndexName, HDTOptions spec, String locationNative,
+			boolean inMemDeletes) throws IOException {
+		this(locationHdt, hdtIndexName, spec, locationNative, inMemDeletes, false);
+	}
+
+	public EndpointStore(Path locationHdt, String hdtIndexName, HDTOptions spec, Path locationNative,
+			boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
+		this(new EndpointFiles(locationNative, locationHdt, hdtIndexName), spec, inMemDeletes, loadIntoMemory);
+	}
+
+	public EndpointStore(Path locationHdt, String hdtIndexName, HDTOptions spec, Path locationNative,
 			boolean inMemDeletes) throws IOException {
 		this(locationHdt, hdtIndexName, spec, locationNative, inMemDeletes, false);
 	}
@@ -356,7 +376,13 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 				}
 			} finally {
 				try {
-					hdt.close();
+					try {
+						hdt.close();
+					} finally {
+						if (rdfWriterTempTriples != null) {
+							rdfWriterTempTriples.getWriter().close();
+						}
+					}
 				} finally {
 					try {
 						logger.info("Shutdown A");
@@ -505,10 +531,11 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	public void initTempDump(boolean isRestarting) {
 		try {
 			File file = new File(endpointFiles.getTempTriples());
-			if (!file.exists())
+			if (!file.exists()) {
 				Files.createFile(file.toPath());
-			FileOutputStream out = new FileOutputStream(file, isRestarting);
-			this.rdfWriterTempTriples = new NTriplesWriter(out);
+			}
+			FileOutputStream rdfWriterTempTriplesOut = new FileOutputStream(file, isRestarting);
+			this.rdfWriterTempTriples = new NTriplesWriter(rdfWriterTempTriplesOut);
 			this.rdfWriterTempTriples.startRDF();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -634,6 +661,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public void markDeletedTempTriples() throws IOException {
 		this.rdfWriterTempTriples.endRDF();
+		this.rdfWriterTempTriples.getWriter().close();
 		try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples())) {
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
 			rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
@@ -870,7 +898,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		return spec;
 	}
 
-	public void setSpec(HDTSpecification spec) {
+	public void setSpec(HDTOptions spec) {
 		this.spec = spec;
 	}
 
