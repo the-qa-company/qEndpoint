@@ -1,13 +1,13 @@
 package com.the_qa_company.qendpoint.utils;
 
-import org.rdfhdt.hdt.dictionary.Dictionary;
-import org.rdfhdt.hdt.exceptions.NotFoundException;
-import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.hdt.impl.HDTImpl;
-import org.rdfhdt.hdt.header.Header;
-import org.rdfhdt.hdt.listener.ProgressListener;
-import org.rdfhdt.hdt.triples.IteratorTripleString;
-import org.rdfhdt.hdt.triples.Triples;
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.impl.HDTImpl;
+import com.the_qa_company.qendpoint.core.header.Header;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.Triples;
 
 import java.io.IOException;
 import java.io.OutputStream;

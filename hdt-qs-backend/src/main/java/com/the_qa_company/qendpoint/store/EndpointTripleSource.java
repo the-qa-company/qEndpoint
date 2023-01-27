@@ -12,10 +12,10 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.sail.SailException;
-import org.rdfhdt.hdt.enums.TripleComponentOrder;
-import org.rdfhdt.hdt.triples.IteratorTripleID;
-import org.rdfhdt.hdt.triples.TripleID;
-import org.rdfhdt.hdt.triples.impl.EmptyTriplesIterator;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

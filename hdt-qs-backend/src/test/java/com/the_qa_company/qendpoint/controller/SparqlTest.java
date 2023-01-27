@@ -1,10 +1,9 @@
 package com.the_qa_company.qendpoint.controller;
 
 import org.junit.Test;
-import org.rdfhdt.hdt.header.HeaderUtil;
-import org.rdfhdt.hdt.header.PlainHeader;
-import org.rdfhdt.hdt.triples.IteratorTripleString;
-import org.rdfhdt.hdt.util.UnicodeEscape;
+import com.the_qa_company.qendpoint.core.header.HeaderUtil;
+import com.the_qa_company.qendpoint.core.header.PlainHeader;
+import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
 
 import static org.junit.Assert.assertEquals;
 

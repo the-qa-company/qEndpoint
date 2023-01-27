@@ -26,6 +26,7 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
       - name: Run tests
         run: mvn test
+        working-directory: hdt-qs-backend
   build_window:
     name: Compile and run tests (Windows)
     runs-on: windows-latest
@@ -47,3 +48,4 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
       - name: Run tests
         run: mvn test
+        working-directory: hdt-qs-backend

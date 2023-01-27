@@ -14,7 +14,7 @@ import org.eclipse.rdf4j.repository.util.Repositories;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.rdfhdt.hdt.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 
 import java.io.IOException;
 import java.nio.file.Path;

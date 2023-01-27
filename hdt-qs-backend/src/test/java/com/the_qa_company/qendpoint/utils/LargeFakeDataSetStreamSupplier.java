@@ -10,7 +10,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
-import org.rdfhdt.hdt.triples.TripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
 import java.io.InputStream;

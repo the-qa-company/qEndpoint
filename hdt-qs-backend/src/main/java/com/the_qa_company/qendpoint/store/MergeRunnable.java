@@ -17,14 +17,14 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
-import org.rdfhdt.hdt.compact.bitmap.BitmapFactory;
-import org.rdfhdt.hdt.enums.RDFNotation;
-import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.exceptions.ParserException;
-import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTOptionsKeys;
-import org.rdfhdt.hdt.util.StopWatch;
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -798,26 +798,6 @@ public class MergeRunnable {
 		debugStepPoint(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
 
 		logger.info("Merge finished");
-	}
-
-	private void diffIndexes(String hdtInput1, String bitArray) throws IOException {
-		String hdtOutput = endpointFiles.getHDTNewIndexDiff();
-		File hdtOutputFile = new File(hdtOutput);
-		File theDir = new File(hdtOutputFile.getAbsolutePath() + "_tmp");
-		Files.createDirectories(theDir.toPath());
-		String location = theDir.getAbsolutePath() + File.separator;
-		try (BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
-				new File(bitArray))) {
-			// @todo: should we not use the already mapped HDT file instead
-			// of
-			// remapping
-			try (HDT hdt = HDTManager.diffHDTBit(location, hdtInput1, deleteBitmap, this.endpoint.getHDTSpec(), null)) {
-				hdt.saveToHDT(hdtOutput, null);
-			}
-		}
-
-		Files.delete(Paths.get(location + "dictionary"));
-		FileUtils.deleteDirectory(theDir.getAbsoluteFile());
 	}
 
 	private void catDiffIndexes(String hdtInput1, String bitArray, String hdtInput2, String hdtOutput)

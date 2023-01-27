@@ -11,8 +11,8 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
-import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.hdt.HDT;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 // there are 4 types of resources:
 // resources coming from outside,

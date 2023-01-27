@@ -1,3 +1,7 @@
+## QENDPOINT CORE
+
+The core of the endpoint is based on the RDFHDT core, it has a GNU LGPL3 license, see [the license file in the core module](qendpoint-core/LICENSE).
+
 ## NOTICE
 
 This package contains software licensed under different

@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.utils;
 
-import org.rdfhdt.hdt.triples.TripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

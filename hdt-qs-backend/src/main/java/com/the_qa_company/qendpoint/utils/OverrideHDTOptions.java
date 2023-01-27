@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.utils;
 
-import org.rdfhdt.hdt.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 
 import java.util.Collections;
 import java.util.HashSet;

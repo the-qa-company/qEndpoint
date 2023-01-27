@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.utils.BinarySearch;
-import org.rdfhdt.hdt.dictionary.impl.MultipleSectionDictionary;
-import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.hdt.HDT;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 public class HDTProps {
 

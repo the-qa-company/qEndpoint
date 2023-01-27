@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
-import org.rdfhdt.hdt.triples.TripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
 import java.io.InputStream;

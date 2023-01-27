@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>qendpoint</artifactId>
-    <groupId>com.the-qa-company</groupId>
-    <version>1.8.0</version>
+    <version>1.7.5</version>
 
     <packaging>jar</packaging>
 
 
-    <name>qendpoint core</name>
+    <name>qendpoint endpoint</name>
     <description>SPARQL Endpoint of the qendpoint.</description>
 
     <parent>
         <groupId>com.the-qa-company</groupId>
         <artifactId>qendpoint-parent</artifactId>
-        <version>1.8.0</version>
+        <version>1.7.5</version>
     </parent>
 
     <licenses>
@@ -25,15 +26,11 @@
     </licenses>
 
     <properties>
-        <java.source.version>11</java.source.version>
-        <java.target.version>11</java.target.version>
-
         <common_codec.version>1.15</common_codec.version>
         <json_simple.version>1.1.1</json_simple.version>
         <junit.version>4.13</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
         <rdf4j.version>4.2.0</rdf4j.version>
-        <rdfhdt.version>3.0.9</rdfhdt.version>
         <spring.version>2.7.5</spring.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -183,9 +180,9 @@
             <version>${rdf4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.rdfhdt</groupId>
-            <artifactId>hdt-java-core</artifactId>
-            <version>${rdfhdt.version}</version>
+            <groupId>com.the-qa-company</groupId>
+            <artifactId>qendpoint-core</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
     </dependencies>
     <profiles>

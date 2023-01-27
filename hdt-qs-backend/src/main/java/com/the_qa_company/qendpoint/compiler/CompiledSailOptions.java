@@ -2,9 +2,9 @@ package com.the_qa_company.qendpoint.compiler;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
-import org.rdfhdt.hdt.options.HDTOptions;
-import org.rdfhdt.hdt.options.HDTOptionsBase;
-import org.rdfhdt.hdt.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsBase;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -220,7 +220,7 @@ public class CompiledSailOptions {
 	}
 
 	/**
-	 * create {@link org.rdfhdt.hdt.options.HDTOptions} from the config
+	 * create {@link HDTOptions} from the config
 	 *
 	 * @return HDTOptions
 	 */
@@ -237,7 +237,7 @@ public class CompiledSailOptions {
 	}
 
 	/**
-	 * create {@link org.rdfhdt.hdt.options.HDTOptions} from the config
+	 * create {@link HDTOptions} from the config
 	 *
 	 * @param endHDT       end HDT location, might be ignored with config
 	 * @param workLocation work location, might be ignored with config

@@ -2,9 +2,9 @@ package com.the_qa_company.qendpoint.utils;
 
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.common.io.NioFile;
-import org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap;
-import org.rdfhdt.hdt.listener.ProgressListener;
-import org.rdfhdt.hdt.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 import java.io.Closeable;
 import java.io.File;
@@ -14,8 +14,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 /**
- * Implementation of {@link org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap}
- * write on disk
+ * Implementation of {@link ModifiableBitmap} write on disk
  */
 public class BitArrayDisk implements ModifiableBitmap, Closeable {
 

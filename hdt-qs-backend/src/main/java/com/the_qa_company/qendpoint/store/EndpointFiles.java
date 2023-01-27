@@ -1,7 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.ParsedStringValue;
-import org.rdfhdt.hdt.hdt.HDTVersion;
+import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 
 import java.io.File;
 import java.nio.file.Path;

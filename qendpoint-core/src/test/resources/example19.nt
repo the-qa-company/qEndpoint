@@ -1,0 +1,6 @@
+<C2> <link1> <C2> .
+<O1> <link1> <S1> .
+<O2> <link1> <S2> .
+<S2> <link2> "0.1602265625"^^<http://www.w3.org/2001/XMLSchema#float> .
+<S2> <link3> "1"^^<http://www.w3.org/2001/XMLSchema#int> .
+<S2> <link1> "3"^^<http://www.w3.org/2001/XMLSchema#int> .
