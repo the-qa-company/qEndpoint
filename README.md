@@ -20,7 +20,7 @@
 
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/the-qa-company/qEndpoint/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
-</div>
+</div>   
 
 <details open="open">
 <summary>Table of Contents</summary>
