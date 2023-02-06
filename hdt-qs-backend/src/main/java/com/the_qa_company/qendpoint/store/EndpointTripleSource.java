@@ -126,7 +126,7 @@ public class EndpointTripleSource implements TripleSource {
 
 		// iterate over hdt result, delete the triples marked as deleted and add
 		// the triples from the delta
-		return new EndpointStoreTripleIterator(endpoint, this, iterator, repositoryResult);
+		return new EndpointStoreTripleIterator(endpointStoreConnection, this, iterator, repositoryResult);
 	}
 
 	// this function determines if a triple pattern should be searched over the
