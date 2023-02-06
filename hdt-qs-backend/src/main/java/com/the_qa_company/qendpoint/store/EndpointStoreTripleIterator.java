@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -22,14 +23,16 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 
 	private final AtomicBoolean closed = new AtomicBoolean();
 	private final EndpointStore endpoint;
+	private final EndpointStoreConnection connection;
 	private final EndpointTripleSource endpointTripleSource;
 	private final IteratorTripleID iterator;
 	private final CloseableIteration<? extends Statement, SailException> repositoryResult;
 	private Statement next;
 
-	public EndpointStoreTripleIterator(EndpointStore endpoint, EndpointTripleSource endpointTripleSource,
+	public EndpointStoreTripleIterator(EndpointStoreConnection connection, EndpointTripleSource endpointTripleSource,
 			IteratorTripleID iter, CloseableIteration<? extends Statement, SailException> repositoryResult) {
-		this.endpoint = Objects.requireNonNull(endpoint, "endpoint can't be null!");
+		this.connection = Objects.requireNonNull(connection, "connection can't be null!");
+		this.endpoint = Objects.requireNonNull(connection.getEndpoint(), "endpoint can't be null!");
 		this.endpointTripleSource = Objects.requireNonNull(endpointTripleSource, "endpointTripleSource can't be null!");
 		this.iterator = Objects.requireNonNull(iter, "iter can't be null!");
 		this.repositoryResult = Objects.requireNonNull(repositoryResult, "repositoryResult can't be null!");
@@ -42,6 +45,9 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		}
 		if (closed.get()) {
 			throw new QueryInterruptedException("closed iterator");
+		}
+		if (connection.isTimeout()) {
+			throw new EndpointTimeoutException();
 		}
 		// iterate over the result of hdt
 		while (iterator.hasNext()) {
