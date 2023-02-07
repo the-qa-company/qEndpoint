@@ -105,7 +105,7 @@
             <groupId>org.tukaani</groupId>
             <artifactId>xz</artifactId>
             <version>
-                1.6
+                1.9
             </version>
         </dependency>
         <dependency>
