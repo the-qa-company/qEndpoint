@@ -77,9 +77,9 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
       - name: Run tests
-        run: mvn -B -U clean install -Dmaven.javadoc.skip=true -DskipTests
+        run: mvn -B -U clean install "-Dmaven.javadoc.skip=true" -DskipTests
       - name: Test
-        run: mvn -B clean test -Dmaven.javadoc.skip=true
+        run: mvn -B clean test "-Dmaven.javadoc.skip=true"
         working-directory: qendpoint-core
 
   build_endpoint:
@@ -134,9 +134,9 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
       - name: Run tests
-        run: mvn -B -U clean install -Dmaven.javadoc.skip=true -DskipTests
+        run: mvn -B -U clean install "-Dmaven.javadoc.skip=true" -DskipTests
       - name: Test
-        run: mvn -B clean test -Dmaven.javadoc.skip=true
+        run: mvn -B clean test "-Dmaven.javadoc.skip=true"
         working-directory: hdt-qs-backend
   build_frontend:
     name: Frontend
