@@ -271,6 +271,7 @@ jobs:
         run: |
           mkdir -p deploy_file
           mv qendpoint.*/* deploy_file
+          mv qendpoint-cli*/* deploy_file
       - name: Create release body
         run: scripts/build_release_input.sh
       - name: Create release with artifacts
