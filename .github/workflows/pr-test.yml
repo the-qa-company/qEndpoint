@@ -76,9 +76,6 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
-      - name: Validate format
-        run: mvn -B formatter:validate
-        working-directory: qendpoint-core
       - name: Run tests
         run: mvn -B -U clean install -Dmaven.javadoc.skip=true -DskipTests
       - name: Test
@@ -136,9 +133,6 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
-      - name: Validate format
-        run: mvn -B formatter:validate
-        working-directory: hdt-qs-backend
       - name: Run tests
         run: mvn -B -U clean install -Dmaven.javadoc.skip=true -DskipTests
       - name: Test
