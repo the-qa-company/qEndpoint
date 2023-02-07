@@ -3,6 +3,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]
     $JavaStartClass,
+    [Switch]
+    $UseDoubleMinus,
     $RequiredParameters
 )
 
@@ -27,7 +29,11 @@ return & $javaenv.JAVACMD @($javaenv.JAVAOPTIONS) "-classpath" $libs $JavaStartC
             $it
         }
         else {
-            "-$_"
+            if ($UseDoubleMinus) {
+                "--$_"
+            } else {
+                "-$_"
+            }
             if ($it.GetType() -ne [System.Management.Automation.SwitchParameter]) { 
                 $it
             }
