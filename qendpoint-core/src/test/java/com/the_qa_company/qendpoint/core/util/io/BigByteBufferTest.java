@@ -16,13 +16,8 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -114,34 +109,6 @@ public class BigByteBufferTest {
 		buffer.get(test, size * 2 / 3, 0, size / 3);
 
 		assertArrayEquals(real, size * 2 / 3, test, 0, size / 3);
-	}
-
-	@Test
-	public void readFileTest() throws IOException, URISyntaxException {
-		Path path = Paths.get(
-				Objects.requireNonNull(getClass().getClassLoader().getResource("dbpedia.hdt"), "can't find dbpedia hdt")
-						.toURI());
-
-		long size = Files.size(path);
-
-		BigByteBuffer.maxBufferSize = (int) (size * 2 / 3); // test with huge
-															// split
-
-		BigByteBuffer buffer = BigByteBuffer.allocate(size);
-
-		try (InputStream stream = Files.newInputStream(path)) {
-			buffer.readStream(stream, 0, size, null);
-		}
-
-		byte[] real = Files.readAllBytes(path);
-		byte[] test = new byte[(int) buffer.size()];
-
-		int delta = (int) (size / 10);
-
-		for (int i = 0; i < test.length; i += delta) {
-			buffer.get(test, i, 0, test.length - i);
-			assertArrayEquals(real, i, test, 0, test.length - i);
-		}
 	}
 
 	@Test

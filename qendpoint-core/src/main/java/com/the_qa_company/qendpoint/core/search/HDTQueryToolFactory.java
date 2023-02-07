@@ -34,7 +34,8 @@ public abstract class HDTQueryToolFactory {
 		if (factory != null) {
 			return factory;
 		}
-		List<HDTQueryToolFactory> list = LOADER.stream().map(ServiceLoader.Provider::get).collect(Collectors.toCollection(ArrayList::new));
+		List<HDTQueryToolFactory> list = LOADER.stream().map(ServiceLoader.Provider::get)
+				.collect(Collectors.toCollection(ArrayList::new));
 		list.add(new HDTQueryToolFactoryImpl());
 		return factory = list;
 	}

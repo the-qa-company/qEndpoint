@@ -79,7 +79,7 @@ public class NestedJoinQueryIteratorTest {
 		long sl = System.currentTimeMillis();
 		long end = sl + millis;
 		do {
-			//noinspection BusyWait
+			// noinspection BusyWait
 			Thread.sleep(Math.max(1, end - sl));
 		} while ((sl = System.currentTimeMillis()) < end);
 	}
