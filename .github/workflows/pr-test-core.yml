@@ -25,6 +25,8 @@ jobs:
           key: ${{ runner.os }}-jdk${{ matrix.jdk }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-jdk${{ matrix.jdk }}-maven-
+      - name: Build tools
+        run: mvn install -DskipTests
       - name: Validate format
         run: mvn -B formatter:validate
         working-directory: qendpoint-core
