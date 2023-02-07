@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.search;
 
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
@@ -33,11 +34,8 @@ public abstract class HDTQueryToolFactory {
 		if (factory != null) {
 			return factory;
 		}
-		List<HDTQueryToolFactory> list = LOADER.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
-		if (list.isEmpty()) {
-			throw new IllegalArgumentException("Can't find service for class " + HDTQueryToolFactory.class
-					+ "! Did you add the core to the libraries?");
-		}
+		List<HDTQueryToolFactory> list = LOADER.stream().map(ServiceLoader.Provider::get).collect(Collectors.toCollection(ArrayList::new));
+		list.add(new HDTQueryToolFactoryImpl());
 		return factory = list;
 	}
 

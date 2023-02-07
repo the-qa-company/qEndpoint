@@ -68,9 +68,20 @@ public class NestedJoinQueryIteratorTest {
 			NestedJoinQueryIterator iterator = new NestedJoinQueryIterator(hdt, query, query.getTimeout());
 			assertTrue(iterator.hasNext());
 			iterator.next(); // consume the next
-			Thread.sleep(waitTime); // take out time
+			StopWatch sw = new StopWatch();
+			sleepReal(waitTime * 2); // take out time
+			System.out.println(sw.stopAndShow());
 			assertTrue(iterator.hasNext()); // should cause the Timeout
 		}
+	}
+
+	public static void sleepReal(long millis) throws InterruptedException {
+		long sl = System.currentTimeMillis();
+		long end = sl + millis;
+		do {
+			//noinspection BusyWait
+			Thread.sleep(Math.max(1, end - sl));
+		} while ((sl = System.currentTimeMillis()) < end);
 	}
 
 	@Ignore("hand test")

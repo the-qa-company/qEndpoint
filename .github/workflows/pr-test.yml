@@ -23,7 +23,7 @@ jobs:
             endpoint:
               - 'hdt-qs-backend/**'
   build_core:
-    name: Compile and run tests (Linux)
+    name: Core (Linux)
     needs: find_changes
     if: ${{ needs.find_changes.outputs.core }}
     runs-on: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
         run: mvn -B clean test -Dmaven.javadoc.skip=true
         working-directory: qendpoint-core
   build_core_window:
-    name: Compile and run tests (Windows)
+    name: Core (Windows)
     runs-on: windows-latest
     needs:
       - build_core
@@ -85,7 +85,7 @@ jobs:
         working-directory: qendpoint-core
 
   build_endpoint:
-    name: Compile and run tests (Linux)
+    name: Endpoint (Linux)
     runs-on: ubuntu-latest
     needs:
       - find_changes
@@ -114,7 +114,7 @@ jobs:
         run: mvn -B clean test -Dmaven.javadoc.skip=true
         working-directory: hdt-qs-backend
   build_endpoint_window:
-    name: Compile and run tests (Windows)
+    name: Endpoint (Windows)
     runs-on: windows-latest
     needs:
       - build_endpoint
@@ -144,6 +144,7 @@ jobs:
         run: mvn -B clean test -Dmaven.javadoc.skip=true
         working-directory: hdt-qs-backend
   build_frontend:
+    name: Frontend
     runs-on: ubuntu-latest
     needs:
       - find_changes
