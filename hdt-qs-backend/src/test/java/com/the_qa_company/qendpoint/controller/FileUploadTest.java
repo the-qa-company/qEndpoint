@@ -94,8 +94,7 @@ public class FileUploadTest {
 		TestContextManager testContextManager = new TestContextManager(getClass());
 		testContextManager.prepareTestInstance(this);
 
-		// clear map to recreate endpoint store
-		sparql.init = false;
+		sparql.shutdown();
 
 		// remove previous data
 		try {
