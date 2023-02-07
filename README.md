@@ -96,11 +96,8 @@ The qEndpoint is a highly scalable triple store with full-text and  [GeoSPARQL](
 
 For the backend/benchmark
 
-<ul>
-  <h4><li>Java 11 or 17 &nbsp;<img src="docs/images/java logo.png" alt= "Java logo" width="18px"/> </li></h4>
-  <h4><li>Maven &nbsp;<img src="docs/images/maven logo.png" alt= "Maven logo" width="40px"/> </li></h4>
-</ul>
-
+- Java 11 or 17
+- Maven
 
 For the frontend (not mandatory to run the backend)
 
