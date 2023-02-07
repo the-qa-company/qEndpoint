@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,15 +34,16 @@ public class EndpointStorePhaseTest {
 	@Before
 	public void setUp() throws IOException {
 		MergeRunnableStopPoint.debug = true;
-		HDTSpecification spec = new HDTSpecification();
+		HDTOptions spec = HDTOptions.of();
 		// spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 		logger.info("Initialize the store ... ");
 		File nativeStore = tempDir.newFolder("native-store");
 		File hdtStore = tempDir.newFolder("hdt-store/");
 		File tmp = new File(hdtStore, "temp.nt");
-		HDT hdt = Utility.createTempHdtIndex(tmp.getAbsolutePath(), true, false, spec);
-		assert hdt != null;
-		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+		try (HDT hdt = Utility.createTempHdtIndex(tmp.getAbsolutePath(), true, false, spec)) {
+			assert hdt != null;
+			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+		}
 		store = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
 				nativeStore.getAbsolutePath() + "/", false);
 	}
@@ -77,22 +78,24 @@ public class EndpointStorePhaseTest {
 		for (int i = 0; i < numbeOfTriples; i++) {
 			sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
 			TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-			assertTrue(tupleQueryResult.hasNext());
-			while (tupleQueryResult.hasNext()) {
-				BindingSet b = tupleQueryResult.next();
-				assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+			try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+				assertTrue(tupleQueryResult.hasNext());
+				while (tupleQueryResult.hasNext()) {
+					BindingSet b = tupleQueryResult.next();
+					assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+				}
 			}
 		}
 		logger.info("QUERY 2");
 		for (int i = 0; i < numbeOfTriples; i++) {
 			sparqlQuery = new StringBuilder("SELECT ?p WHERE { <http://s" + i + ">  ?p  <http://o" + i + "> . } ");
 			TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-			assertTrue(tupleQueryResult.hasNext());
-			while (tupleQueryResult.hasNext()) {
-				BindingSet b = tupleQueryResult.next();
-				assertEquals("http://p" + i, b.getBinding("p").getValue().toString());
+			try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+				assertTrue(tupleQueryResult.hasNext());
+				while (tupleQueryResult.hasNext()) {
+					BindingSet b = tupleQueryResult.next();
+					assertEquals("http://p" + i, b.getBinding("p").getValue().toString());
+				}
 			}
 		}
 		logger.info("DELETE");
@@ -110,11 +113,12 @@ public class EndpointStorePhaseTest {
 		for (int i = 10; i < numbeOfTriples; i++) {
 			sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
 			TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-			assertTrue(tupleQueryResult.hasNext());
-			while (tupleQueryResult.hasNext()) {
-				BindingSet b = tupleQueryResult.next();
-				assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+			try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+				assertTrue(tupleQueryResult.hasNext());
+				while (tupleQueryResult.hasNext()) {
+					BindingSet b = tupleQueryResult.next();
+					assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+				}
 			}
 		}
 
@@ -122,11 +126,12 @@ public class EndpointStorePhaseTest {
 		for (int i = 10; i < numbeOfTriples; i++) {
 			sparqlQuery = new StringBuilder("SELECT ?p WHERE { <http://s" + i + ">  ?p  <http://o" + i + "> . } ");
 			TupleQuery tupleQuery2 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult2 = tupleQuery2.evaluate();
-			assertTrue(tupleQueryResult2.hasNext());
-			while (tupleQueryResult2.hasNext()) {
-				BindingSet b = tupleQueryResult2.next();
-				assertEquals("http://p" + i, b.getBinding("p").getValue().toString());
+			try (TupleQueryResult tupleQueryResult2 = tupleQuery2.evaluate()) {
+				assertTrue(tupleQueryResult2.hasNext());
+				while (tupleQueryResult2.hasNext()) {
+					BindingSet b = tupleQueryResult2.next();
+					assertEquals("http://p" + i, b.getBinding("p").getValue().toString());
+				}
 			}
 		}
 		connection.close();
@@ -169,11 +174,12 @@ public class EndpointStorePhaseTest {
 		for (int i = 0; i < numbeOfTriples; i++) {
 			sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
 			TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-			assertTrue(tupleQueryResult.hasNext());
-			while (tupleQueryResult.hasNext()) {
-				BindingSet b = tupleQueryResult.next();
-				assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+			try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+				assertTrue(tupleQueryResult.hasNext());
+				while (tupleQueryResult.hasNext()) {
+					BindingSet b = tupleQueryResult.next();
+					assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+				}
 			}
 		}
 
@@ -260,11 +266,12 @@ public class EndpointStorePhaseTest {
 		for (int i = 0; i < numbeOfTriples; i++) {
 			sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p" + i + ">  <http://o" + i + "> . } ");
 			TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-			assertTrue(tupleQueryResult.hasNext());
-			while (tupleQueryResult.hasNext()) {
-				BindingSet b = tupleQueryResult.next();
-				assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+			try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+				assertTrue(tupleQueryResult.hasNext());
+				while (tupleQueryResult.hasNext()) {
+					BindingSet b = tupleQueryResult.next();
+					assertEquals("http://s" + i, b.getBinding("s").getValue().toString());
+				}
 			}
 		}
 
@@ -402,7 +409,7 @@ public class EndpointStorePhaseTest {
 		try (RepositoryConnection connection = endpointStore.getConnection()) {
 			sparqlQuery = new StringBuilder("SELECT * WHERE { <http://s200>  ?p  ?o . } ");
 			TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			tupleQuery1.evaluate();
+			tupleQuery1.evaluate().close();
 
 			logger.info("DELETE");
 			sparqlQuery = new StringBuilder("DELETE { ?s <http://p1> ?o } WHERE { ?s  <http://p1>  ?o .} ");
@@ -412,8 +419,9 @@ public class EndpointStorePhaseTest {
 			logger.info("QUERY");
 			sparqlQuery = new StringBuilder("SELECT * WHERE { <http://s200>  <http://p1>  \"1\"@pl . } ");
 			tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-			TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-			assertFalse(tupleQueryResult.hasNext());
+			try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+				assertFalse(tupleQueryResult.hasNext());
+			}
 		} finally {
 			logger.info("SHUTTING DOWN");
 			endpointStore.shutDown();

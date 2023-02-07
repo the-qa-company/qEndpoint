@@ -140,11 +140,10 @@ jobs:
           scripts/build_package.ps1 scripts/jpackage_windows.cfg qendpoint.jar
           mv scripts/build/distributions/*.msi qendpoint.msi
       - name: Upload installer
-        run: echo "Disabled"
-  #        uses: actions/upload-artifact@v1
-  #        with:
-  #          name: "qendpoint.msi"
-  #          path: "qendpoint.msi"
+        uses: actions/upload-artifact@v1
+        with:
+          name: "qendpoint.msi"
+          path: "qendpoint.msi"
   linux:
     name: Build LINUX version
     needs: build

@@ -35,6 +35,7 @@ public class BitArrayDiskTest {
 	@Test
 	public void testReinitialize() throws IOException {
 		File file = tempDir.newFile("triples-delete.arr");
+
 		try (BitArrayDisk bitArrayDisk = new BitArrayDisk(100, file)) {
 			bitArrayDisk.set(99, true);
 		}

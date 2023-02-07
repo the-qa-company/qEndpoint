@@ -11,7 +11,8 @@ import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,10 +71,13 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 	protected Repository newRepository() throws Exception {
 		nativeStore = tempDir.newFolder();
 		hdtStore = tempDir.newFolder();
-		HDTSpecification spec = new HDTSpecification();
-		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
-		if (this.hdt == null)
+
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
+		if (this.hdt == null) {
 			hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+		}
 		assert hdt != null;
 
 		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
@@ -111,7 +115,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		JarURLConnection con = (JarURLConnection) url.openConnection();
 		File file = new File(tmpDir, con.getEntryName());
 
-		HDTSpecification spec = new HDTSpecification();
+		HDTOptions spec = HDTOptions.of();
 
 		hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec,
 				null);

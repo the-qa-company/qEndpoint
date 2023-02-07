@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
 import org.rdfhdt.hdt.triples.TripleString;
 
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class QueryTest {
 			public TripleString next() {
 				return null;
 			}
-		}, Utility.EXAMPLE_NAMESPACE, new HDTSpecification(), null)) {
+		}, Utility.EXAMPLE_NAMESPACE, HDTOptions.of(), null)) {
 			hdt.saveToHDT(hdtstore.resolve(indexName).toAbsolutePath().toString(), null);
 		} catch (Error | RuntimeException e) {
 			throw e;

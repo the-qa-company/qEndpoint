@@ -7,7 +7,8 @@ import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateCo
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.options.HDTOptions;
+import org.rdfhdt.hdt.options.HDTOptionsKeys;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,8 +47,9 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 	protected Repository newRepository() throws Exception {
 		File nativeStore = tempDir.newFolder();
 		File hdtStore = tempDir.newFolder();
-		HDTSpecification spec = new HDTSpecification();
-		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
 			assert hdt != null;
 			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);

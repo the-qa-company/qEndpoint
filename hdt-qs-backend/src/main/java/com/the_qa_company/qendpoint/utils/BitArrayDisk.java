@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.utils;
 
-import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.common.io.NioFile;
 import org.rdfhdt.hdt.compact.bitmap.ModifiableBitmap;
 import org.rdfhdt.hdt.listener.ProgressListener;
+import org.rdfhdt.hdt.util.io.IOUtil;
 
 import java.io.Closeable;
 import java.io.File;
@@ -381,7 +381,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		this.output.close();
+		IOUtil.closeObject(output);
 	}
 
 	public void force(boolean bool) throws IOException {

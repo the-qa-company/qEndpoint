@@ -112,7 +112,6 @@ For the frontend (not mandatory to run the backend)
 
 Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases).
 
-
 #### Code
 
 ##### Back-end 

@@ -1,10 +1,9 @@
 package com.the_qa_company.qendpoint.compiler.sail;
 
-import com.the_qa_company.qendpoint.utils.sail.MultiTypeFilteringSail;
 import com.the_qa_company.qendpoint.compiler.SailCompiler;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
+import com.the_qa_company.qendpoint.utils.sail.MultiTypeFilteringSail;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.sail.NotifyingSail;
