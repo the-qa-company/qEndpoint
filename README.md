@@ -18,11 +18,11 @@
 <div align="center">
 <br />
 
-[![Package build and deploy](https://github.com/the-qa-company/qEndpoint/actions/workflows/package-build.yml/badge.svg)](https://github.com/the-qa-company/qEndpoint/actions/workflows/package-build.yml) [![Backend Tests](https://github.com/the-qa-company/qEndpoint/actions/workflows/be-test.yml/badge.svg)](https://github.com/the-qa-company/qEndpoint/actions/workflows/be-test.yml) [![Frontend Tests](https://github.com/the-qa-company/qEndpoint/actions/workflows/fe-test.yml/badge.svg)](https://github.com/the-qa-company/qEndpoint/actions/workflows/fe-test.yml) 
+[![Package build and deploy](https://github.com/the-qa-company/qEndpoint/actions/workflows/package-build.yml/badge.svg)](https://github.com/the-qa-company/qEndpoint/actions/workflows/package-build.yml) [![Tests](https://github.com/the-qa-company/qEndpoint/actions/workflows/test.yml/badge.svg)](https://github.com/the-qa-company/qEndpoint/actions/workflows/test.yml) 
 
 **dev**
 
-[![Backend Tests](https://github.com/the-qa-company/qEndpoint/actions/workflows/be-test.yml/badge.svg?branch=dev)](https://github.com/the-qa-company/qEndpoint/actions/workflows/be-test.yml) [![Frontend Tests](https://github.com/the-qa-company/qEndpoint/actions/workflows/fe-test.yml/badge.svg?branch=dev)](https://github.com/the-qa-company/qEndpoint/actions/workflows/fe-test.yml)
+[![Tests](https://github.com/the-qa-company/qEndpoint/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/the-qa-company/qEndpoint/actions/workflows/test.yml)
 
 The QA Company over the social networks
 
