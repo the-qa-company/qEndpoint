@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.utils;
 
-import org.rdfhdt.hdt.dictionary.Dictionary;
-import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 
 /**
  * Small utility class to find literals in the dictionary using binary search

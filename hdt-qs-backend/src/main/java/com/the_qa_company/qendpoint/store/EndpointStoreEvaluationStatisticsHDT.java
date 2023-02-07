@@ -6,7 +6,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.Var;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
-import org.rdfhdt.hdt.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
 	private final EndpointStore endpoint;

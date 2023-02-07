@@ -1,0 +1,4 @@
+<C2> <link1> <C2> .
+<S1> <link1> <O1> .
+<S1> <link1> <O2> .
+<S2> <link1> "2"^^<http://www.w3.org/2001/XMLSchema#int> .

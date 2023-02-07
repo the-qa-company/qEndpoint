@@ -1,0 +1,6 @@
+<C2> <link1> <O2> .
+<S1> <link1> <C2> .
+<S1> <link2> <C3> .
+<C4> <link2> "Ali" .
+<S2> <link1> "2"^^<http://www.w3.org/2001/XMLSchema#int> .
+<S3> <link3> "🇫🇷"@ro .

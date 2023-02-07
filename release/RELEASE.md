@@ -1,2 +1,3 @@
-- remove default full-text lucene sail
-- update Wikidata Docker image
+- add core in the endpoint from rdfhdt
+- add cli to test core
+

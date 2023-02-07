@@ -55,9 +55,8 @@ jobs:
         run: |
           mkdir -p hdt-qs-backend/src/main/resources/static/
           cp -r hdt-qs-frontend/build/* hdt-qs-backend/src/main/resources/static/
-      - name: Compile backend
+      - name: Compile qendpoint
         run: mvn install
-        working-directory: hdt-qs-backend
       - name: move endpoint
         run: mv hdt-qs-backend/target/qendpoint-*-exec.jar qendpoint.jar
       - name: Deploy jar
@@ -65,6 +64,13 @@ jobs:
         with:
           name: "qendpoint.jar"
           path: "qendpoint.jar"
+      - name: move endpoint package
+        run: mv qendpoint-cli/target/qendpoint-cli-*-distribution.zip qendpoint-cli.zip
+      - name: Deploy jar
+        uses: actions/upload-artifact@v3
+        with:
+          name: "qendpoint-cli.zip"
+          path: "qendpoint-cli.zip"
   publish:
     name: Publish to Maven Central
     needs: build

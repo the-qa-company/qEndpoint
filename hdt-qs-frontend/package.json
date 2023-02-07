@@ -7,6 +7,7 @@
   },
   "scripts": {
     "start": "REACT_APP_DEV=true PORT=3001 react-scripts start",
+    "start-win": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

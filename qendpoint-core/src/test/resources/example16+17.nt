@@ -1,0 +1,4 @@
+<C2> <link1> <C2> .
+<S3> <link1> <S3> .
+<C2> <link1> "0.1602265625"^^<http://www.w3.org/2001/XMLSchema#float> .
+<S3> <link1> "0.1602265625"^^<http://www.w3.org/2001/XMLSchema#float> .

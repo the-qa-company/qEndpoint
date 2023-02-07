@@ -9,12 +9,13 @@
 
     <groupId>com.the-qa-company</groupId>
     <artifactId>qendpoint-parent</artifactId>
-    <version>1.8.0</version>
+    <version>1.9.0</version>
 
     <packaging>pom</packaging>
 
     <name>qendpoint</name>
-    <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
+    <description>The qEndpoint is a highly scalable triple store with full-text and GeoSPARQL
+        support. It can be used as a standalone SPARQL endpoint, or as a dependency.</description>
     <url>https://github.com/the-qa-company/qEndpoint</url>
 
     <licenses>
@@ -62,7 +63,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>11</jdk.version>
+        <java.source.version>11</java.source.version>
+        <java.target.version>11</java.target.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
     </properties>
 
     <distributionManagement>
@@ -192,6 +196,8 @@
 
     <modules>
         <module>hdt-qs-backend</module>
+        <module>qendpoint-core</module>
+        <module>qendpoint-cli</module>
     </modules>
 
     <issueManagement>
