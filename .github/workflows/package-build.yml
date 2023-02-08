@@ -64,9 +64,9 @@ jobs:
         with:
           name: "qendpoint.jar"
           path: "qendpoint.jar"
-      - name: move endpoint package
+      - name: move cli
         run: mv qendpoint-cli/target/qendpoint-cli-*-distribution.zip qendpoint-cli.zip
-      - name: Deploy jar
+      - name: Deploy CLI zip
         uses: actions/upload-artifact@v3
         with:
           name: "qendpoint-cli.zip"
@@ -109,10 +109,6 @@ jobs:
           name: "qendpoint.jar"
       - name: Create Icon
         run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
-      - name: Install gon via HomeBrew for code notarization
-        run: |
-          brew tap mitchellh/gon
-          brew install mitchellh/gon/gon
       - name: Package jar as dmg installer
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
