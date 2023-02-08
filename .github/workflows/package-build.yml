@@ -121,6 +121,10 @@ jobs:
           MACOS_DEV_ID: ${{ secrets.MACOS_DEVID }}
           MACOS_TEAMID: ${{ secrets.MACOS_TEAMID }}
           AC_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+          NOTARIZATION_USERNAME_NEW: ${{ secrets.NOTARIZATION_USERNAME_NEW }}
+          NOTARIZATION_TEAM_NEW: ${{ secrets.NOTARIZATION_TEAM_NEW }}
+          NOTARIZATION_PASSWORD_NEW: ${{ secrets.NOTARIZATION_PASSWORD_NEW }}
+
         run: scripts/build_package_osx.sh qendpoint.jar
       - name: Upload dmg
         uses: actions/upload-artifact@v3

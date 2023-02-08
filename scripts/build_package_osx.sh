@@ -39,7 +39,9 @@ echo "signing dmg file"
 
 mv "build/distributions/$(ls build/distributions)" "qendpoint.dmg"
 
-gon -log-level=debug -log-json ./gon.json
+xcrun notarytool store-credentials "AC_PASSWORD" --apple-id "$NOTARIZATION_USERNAME_NEW" --team-id "$NOTARIZATION_TEAM_NEW" --password "$NOTARIZATION_PASSWORD_NEW"
+xcrun notarytool submit qendpoint.dmg --keychain-profile "AC_PASSWORD" --wait
+xcrun stapler staple qendpoint.dmg
 
 mv qendpoint.dmg ..
 
