@@ -40,11 +40,32 @@ public class NestedJoinQueryIteratorTest {
 			HDTQueryTool tool = HDTQueryToolFactory.createQueryTool(hdt);
 
 			HDTQuery query = tool.createQuery(tool.triple("<a>", "<p>", "?o"), tool.triple("?o", "<p2>", "?o2"));
-			NestedJoinQueryIterator iterator = new NestedJoinQueryIterator(hdt, query, 0);
+			NestedJoinQueryIterator iterator = new NestedJoinQueryIterator(tool, query, 0);
 			assertTrue(iterator.hasNext());
 			HDTQueryResult result = iterator.next();
 			assertEquals("d", result.getComponent("o").stringValue());
 			assertEquals("\"ccc\"", result.getComponent("o2").stringValue());
+			assertFalse(iterator.hasNext());
+		}
+	}
+
+	@Test
+	public void dupeJoinTest() throws ParserException, IOException {
+		List<TripleString> triples = List.of(new TripleString("a", "p", "a"), new TripleString("a", "p", "b"),
+				new TripleString("b", "p2", "\"bbb\""), new TripleString("a", "p2", "\"aaa\""),
+				new TripleString("c", "p2", "\"ccc\""));
+		try (HDT hdt = HDTManager.generateHDT(triples.iterator(), HDTTestUtils.BASE_URI, HDTOptions.of(),
+				ProgressListener.ignore())) {
+			HDTManager.indexedHDT(hdt, ProgressListener.ignore());
+
+			HDTQueryTool tool = HDTQueryToolFactory.createQueryTool(hdt);
+
+			HDTQuery query = tool.createQuery(tool.triple("?x", "<p>", "?x"), tool.triple("?x", "<p2>", "?o"));
+			NestedJoinQueryIterator iterator = new NestedJoinQueryIterator(tool, query, 0);
+			assertTrue(iterator.hasNext());
+			HDTQueryResult result = iterator.next();
+			assertEquals("a", result.getComponent("x").stringValue());
+			assertEquals("\"aaa\"", result.getComponent("o").stringValue());
 			assertFalse(iterator.hasNext());
 		}
 	}
@@ -65,7 +86,7 @@ public class NestedJoinQueryIteratorTest {
 			HDTQuery query = tool.createQuery(tool.triple("<a>", "<p>", "?o"), tool.triple("?o", "<p2>", "?o2"));
 			query.setTimeout(waitTime);
 
-			NestedJoinQueryIterator iterator = new NestedJoinQueryIterator(hdt, query, query.getTimeout());
+			NestedJoinQueryIterator iterator = new NestedJoinQueryIterator(tool, query, query.getTimeout());
 			assertTrue(iterator.hasNext());
 			iterator.next(); // consume the next
 			StopWatch sw = new StopWatch();

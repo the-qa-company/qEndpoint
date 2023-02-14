@@ -78,16 +78,20 @@ public class SimpleHDTConstant implements HDTConstant {
 		this.value = null;
 		Objects.requireNonNull(role);
 		if (role == DictionarySectionRole.PREDICATE) {
-			predicate = id;
-			this.shid = 0;
-			sharedLocation = null;
+			if (this.predicate != id) {
+				predicate = id;
+				this.shid = 0;
+				sharedLocation = null;
+			}
 		} else {
-			predicate = 0;
-			this.shid = id;
-			if (id > hdt.getDictionary().getShared().getNumberOfElements()) {
-				sharedLocation = role;
-			} else {
-				sharedLocation = DictionarySectionRole.SHARED;
+			if (this.shid != id || this.sharedLocation != role) {
+				predicate = 0;
+				this.shid = id;
+				if (id > hdt.getDictionary().getShared().getNumberOfElements()) {
+					sharedLocation = role;
+				} else {
+					sharedLocation = DictionarySectionRole.SHARED;
+				}
 			}
 		}
 	}

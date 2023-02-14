@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.search.component.HDTComponent;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponentTriple;
 import com.the_qa_company.qendpoint.core.search.component.HDTConstant;
 import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -83,6 +84,14 @@ public interface HDTQueryTool {
 	 * @return component
 	 */
 	HDTComponent component(String component);
+
+	/**
+	 * search a TP in the hdt
+	 *
+	 * @param pattern pattern
+	 * @return iterator
+	 */
+	Iterator<TripleID> search(HDTComponentTriple pattern);
 
 	/**
 	 * create triple from 3 components, same as using {@link #component(String)}

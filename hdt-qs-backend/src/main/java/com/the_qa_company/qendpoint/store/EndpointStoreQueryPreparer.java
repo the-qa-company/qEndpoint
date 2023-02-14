@@ -113,6 +113,9 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			strategy.setTrackTime(this.trackTime);
 		}
 
+		System.out.println(tupleExpr);
+		System.out.println("------------------------------------------------------");
+
 		new VariableToIdSubstitution(endpoint).optimize(tupleExpr, dataset, bindings);
 		new BindingAssignerOptimizer().optimize(tupleExpr, dataset, bindings);
 		new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
@@ -126,6 +129,8 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 		new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
 		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);
+
+		System.out.println(tupleExpr);
 
 		return strategy.evaluate(tupleExpr, bindings);
 	}

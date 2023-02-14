@@ -9,12 +9,16 @@ import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
 import com.the_qa_company.qendpoint.core.search.component.SimpleHDTComponentTriple;
 import com.the_qa_company.qendpoint.core.search.component.SimpleHDTConstant;
 import com.the_qa_company.qendpoint.core.search.component.SimpleHDTVariable;
+import com.the_qa_company.qendpoint.core.search.component.VarPattern;
 import com.the_qa_company.qendpoint.core.search.query.NestedJoinQueryIterator;
+import com.the_qa_company.qendpoint.core.search.utils.iterator.DupeSearchIterator;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -128,6 +132,51 @@ public class SimpleQueryTool implements HDTQueryTool {
 
 	@Override
 	public Iterator<HDTQueryResult> query(HDTQuery q) {
-		return new NestedJoinQueryIterator(getHDT(), q, q.getTimeout());
+		return new NestedJoinQueryIterator(this, q, q.getTimeout());
+	}
+
+	/**
+	 * search if at least 2 vars are equal
+	 *
+	 * @param pattern pattern
+	 * @return triple id iterator
+	 */
+	protected Iterator<TripleID> dupeSearch(HDTComponentTriple pattern, VarPattern varPattern) {
+		return new DupeSearchIterator(hdt, noDupeSearch(pattern), varPattern);
+	}
+
+	/**
+	 * search if no vars are equal
+	 *
+	 * @param pattern pattern
+	 * @return triple id iterator
+	 */
+	protected Iterator<TripleID> noDupeSearch(HDTComponentTriple pattern) {
+		long s, p, o;
+		if (pattern.getSubject() != null && pattern.getSubject().isConstant()) {
+			s = pattern.getSubject().asConstant().getId(DictionarySectionRole.SUBJECT);
+		} else {
+			s = 0;
+		}
+		if (pattern.getPredicate() != null && pattern.getPredicate().isConstant()) {
+			p = pattern.getPredicate().asConstant().getId(DictionarySectionRole.PREDICATE);
+		} else {
+			p = 0;
+		}
+		if (pattern.getObject() != null && pattern.getObject().isConstant()) {
+			o = pattern.getObject().asConstant().getId(DictionarySectionRole.OBJECT);
+		} else {
+			o = 0;
+		}
+		return hdt.getTriples().search(new TripleID(s, p, o));
+	}
+
+	@Override
+	public Iterator<TripleID> search(HDTComponentTriple pattern) {
+		VarPattern varPattern = VarPattern.of(pattern);
+		if (varPattern.hasDuplicated()) {
+			return dupeSearch(pattern, varPattern);
+		}
+		return noDupeSearch(pattern);
 	}
 }

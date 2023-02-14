@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.search.query;
 
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.search.HDTQuery;
 import com.the_qa_company.qendpoint.core.search.HDTQueryResult;
+import com.the_qa_company.qendpoint.core.search.HDTQueryTool;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponent;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponentTriple;
 import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
@@ -12,24 +12,25 @@ import com.the_qa_company.qendpoint.core.search.component.SimpleHDTComponentTrip
 import com.the_qa_company.qendpoint.core.search.component.SimpleHDTConstant;
 import com.the_qa_company.qendpoint.core.search.exception.HDTSearchTimeoutException;
 import com.the_qa_company.qendpoint.core.search.result.MapHDTQueryResult;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
-	private final HDT hdt;
+	private final HDTQueryTool tool;
 	private final HDTComponentTriple[] patterns;
 	private final List<Iterator<TripleID>> iterators;
 	private final MapHDTQueryResult result = new MapHDTQueryResult();
 	private final long timeout;
 
-	public NestedJoinQueryIterator(HDT hdt, HDTQuery query, long timeout) {
-		this.hdt = hdt;
+	public NestedJoinQueryIterator(HDTQueryTool tool, HDTQuery query, long timeout) {
+		this.tool = tool;
 		if (timeout == 0) {
 			this.timeout = Long.MAX_VALUE;
 		} else {
@@ -44,11 +45,14 @@ public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 		// mapping variable -> id
 		Map<HDTVariable, WipHDTVariable> idMapping = new HashMap<>();
 
+		Map<String, WipHDTVariable> tripleComponent = new HashMap<>(4);
 		List<HDTComponentTriple> updatedPatterns = new ArrayList<>();
 		for (HDTComponentTriple pattern : query.getPatterns()) {
 			HDTComponent sp = pattern.getSubject();
 			HDTComponent pp = pattern.getPredicate();
 			HDTComponent op = pattern.getObject();
+
+			tripleComponent.clear();
 
 			HDTComponent s;
 			HDTComponent p;
@@ -59,6 +63,7 @@ public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 				if (ivc == null) {
 					WipHDTVariable iv = new WipHDTVariable(variable);
 					result.set(variable.getName(), iv.constant);
+					tripleComponent.put(variable.getName(), iv);
 					idMapping.put(variable, iv);
 					s = iv;
 				} else {
@@ -72,34 +77,48 @@ public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 			}
 			if (pp.isVariable()) {
 				HDTVariable variable = pp.asVariable();
-				WipHDTVariable ivc = idMapping.get(variable);
-				if (ivc == null) {
-					WipHDTVariable iv = new WipHDTVariable(variable);
-					result.set(variable.getName(), iv.constant);
-					idMapping.put(variable, iv);
-					p = iv;
+				WipHDTVariable dupeV = tripleComponent.get(variable.getName());
+				if (dupeV != null) {
+					p = dupeV;
 				} else {
-					// replace by this constant, we can't update this variable
-					// because a previous value is
-					// already defining it
-					p = ivc.constant;
+					WipHDTVariable ivc = idMapping.get(variable);
+					if (ivc == null) {
+						WipHDTVariable iv = new WipHDTVariable(variable);
+						result.set(variable.getName(), iv.constant);
+						tripleComponent.put(variable.getName(), iv);
+						idMapping.put(variable, iv);
+						p = iv;
+					} else {
+						// replace by this constant, we can't update this
+						// variable
+						// because a previous value is
+						// already defining it
+						p = ivc.constant;
+					}
 				}
 			} else {
 				p = pp;
 			}
 			if (op.isVariable()) {
 				HDTVariable variable = op.asVariable();
-				WipHDTVariable ivc = idMapping.get(variable);
-				if (ivc == null) {
-					WipHDTVariable iv = new WipHDTVariable(variable);
-					result.set(variable.getName(), iv.constant);
-					idMapping.put(variable, iv);
-					o = iv;
+				WipHDTVariable dupeV = tripleComponent.get(variable.getName());
+				if (dupeV != null) {
+					o = dupeV;
 				} else {
-					// replace by this constant, we can't update this variable
-					// because a previous value is
-					// already defining it
-					o = ivc.constant;
+					WipHDTVariable ivc = idMapping.get(variable);
+					if (ivc == null) {
+						WipHDTVariable iv = new WipHDTVariable(variable);
+						result.set(variable.getName(), iv.constant);
+						tripleComponent.put(variable.getName(), iv);
+						idMapping.put(variable, iv);
+						o = iv;
+					} else {
+						// replace by this constant, we can't update this
+						// variable
+						// because a previous value is
+						// already defining it
+						o = ivc.constant;
+					}
 				}
 			} else {
 				o = op;
@@ -182,31 +201,14 @@ public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 		if (iterators.get(id) != null) {
 			return iterators.get(id);
 		}
-		HDTComponentTriple pattern = patterns[id];
-		long s, p, o;
-		if (pattern.getSubject() != null && pattern.getSubject().isConstant()) {
-			s = pattern.getSubject().asConstant().getId(DictionarySectionRole.SUBJECT);
-		} else {
-			s = 0;
-		}
-		if (pattern.getPredicate() != null && pattern.getPredicate().isConstant()) {
-			p = pattern.getPredicate().asConstant().getId(DictionarySectionRole.PREDICATE);
-		} else {
-			p = 0;
-		}
-		if (pattern.getObject() != null && pattern.getObject().isConstant()) {
-			o = pattern.getObject().asConstant().getId(DictionarySectionRole.OBJECT);
-		} else {
-			o = 0;
-		}
-		IteratorTripleID it = hdt.getTriples().search(new TripleID(s, p, o));
+		Iterator<TripleID> it = tool.search(patterns[id]);
 		iterators.set(id, it);
 		return it;
 	}
 
 	private class WipHDTVariable implements HDTVariable {
 		final HDTVariable original;
-		final SimpleHDTConstant constant = new SimpleHDTConstant(hdt, "");
+		final SimpleHDTConstant constant = new SimpleHDTConstant(tool.getHDT(), "");
 
 		private WipHDTVariable(HDTVariable original) {
 			this.original = original;

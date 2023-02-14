@@ -13,6 +13,10 @@ public class SimpleHDTComponentTriple implements HDTComponentTriple {
 		this.object = object;
 	}
 
+	public SimpleHDTComponentTriple(HDTComponentTriple triple) {
+		this(triple.getSubject(), triple.getPredicate(), triple.getObject());
+	}
+
 	/**
 	 * @return subject component
 	 */
