@@ -1,8 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
+import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
-import org.visnow.jlargearrays.LargeArrayUtils;
-import org.visnow.jlargearrays.LongLargeArray;
 
 import java.io.IOException;
 
@@ -12,23 +11,23 @@ import java.io.IOException;
  * @author Antoine Willerval
  */
 public class LargeLongArray implements LongArray {
-	private LongLargeArray array;
+	private UnsafeLongArray array;
 
 	/**
 	 * @param array large array
 	 */
-	public LargeLongArray(LongLargeArray array) {
+	public LargeLongArray(UnsafeLongArray array) {
 		this.array = array;
 	}
 
 	@Override
 	public long get(long index) {
-		return array.getLong(index);
+		return array.get(index);
 	}
 
 	@Override
 	public void set(long index, long value) {
-		array.setLong(index, value);
+		array.set(index, value);
 	}
 
 	@Override
@@ -38,15 +37,15 @@ public class LargeLongArray implements LongArray {
 
 	@Override
 	public int sizeOf() {
-		return (int) array.getType().sizeOf() * 8;
+		return array.sizeOf() * 8;
 	}
 
 	@Override
 	public void resize(long newSize) throws IOException {
 		if (newSize > 0) {
 			if (array.length() != newSize) {
-				LongLargeArray a = IOUtil.createLargeArray(newSize, false);
-				LargeArrayUtils.arraycopy(array, 0, a, 0, Math.min(newSize, array.length()));
+				UnsafeLongArray a = IOUtil.createLargeArray(newSize, false);
+				UnsafeLongArray.arraycopy(array, 0, a, 0, Math.min(newSize, array.length()));
 				array = a;
 			}
 		}
@@ -54,6 +53,6 @@ public class LargeLongArray implements LongArray {
 
 	@Override
 	public void clear() {
-		IOUtil.fillLargeArray(array, 0);
+		array.clear();
 	}
 }

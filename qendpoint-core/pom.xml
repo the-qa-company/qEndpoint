@@ -87,13 +87,6 @@
             <version>${jena.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.visnow</groupId>
-            <artifactId>JLargeArrays</artifactId>
-            <version>
-                1.7-20220624.150242-7
-            </version>
-        </dependency>
-        <dependency>
             <groupId>pl.pragmatists</groupId>
             <artifactId>
                 JUnitParams
@@ -114,10 +107,4 @@
             <version>1.78</version>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>gitlab-maven</id>
-            <url>https://gitlab.com/api/v4/projects/375779/packages/maven</url>
-        </repository>
-    </repositories>
 </project>

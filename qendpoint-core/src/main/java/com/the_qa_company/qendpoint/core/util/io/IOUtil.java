@@ -20,14 +20,12 @@ package com.the_qa_company.qendpoint.core.util.io;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
+import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.math3.util.FastMath;
-import org.visnow.jlargearrays.ConcurrencyUtils;
-import org.visnow.jlargearrays.LargeArrayUtils;
-import org.visnow.jlargearrays.LongLargeArray;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -42,6 +40,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -51,12 +51,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 /**
  * @author mario.arias
@@ -75,7 +70,7 @@ public class IOUtil {
 			return;
 		}
 
-		LargeArrayUtils.UNSAFE.invokeCleaner(buffer);
+		MemoryUtils.getUnsafe().invokeCleaner(buffer);
 	}
 
 	/**
@@ -113,7 +108,7 @@ public class IOUtil {
 	 * @param size size
 	 * @return array
 	 */
-	public static LongLargeArray createLargeArray(long size) {
+	public static UnsafeLongArray createLargeArray(long size) {
 		return createLargeArray(size, true);
 	}
 
@@ -124,78 +119,8 @@ public class IOUtil {
 	 * @param init is the array filled with 0 or not
 	 * @return array
 	 */
-	public static LongLargeArray createLargeArray(long size, boolean init) {
-		if (init) {
-			return createLargeArray(size, 0);
-		}
-		return new LongLargeArray(size, false);
-	}
-
-	/**
-	 * create a large array with an initial value
-	 *
-	 * @param size         size
-	 * @param initialValue initial value to fill the array
-	 * @return array
-	 */
-	public static LongLargeArray createLargeArray(long size, long initialValue) {
-		LongLargeArray array = new LongLargeArray(size, false);
-		fillLargeArray(array, initialValue);
-		return array;
-	}
-
-	/**
-	 * Set long large array all values, faster than default implementation
-	 * because there is
-	 * <a href="https://gitlab.com/visnow.org/JLargeArrays/-/issues/7">a
-	 * bug</a>.
-	 *
-	 * @param array     array
-	 * @param initValue initialization value
-	 */
-	public static void fillLargeArray(LongLargeArray array, long initValue) {
-		fillLargeArray(array, 0, array.length(), initValue);
-	}
-
-	/**
-	 * Set long large array all values, faster than default implementation
-	 * because there is
-	 * <a href="https://gitlab.com/visnow.org/JLargeArrays/-/issues/7">a
-	 * bug</a>.
-	 *
-	 * @param array     array
-	 * @param start     start (inclusive)
-	 * @param end       end index (exclusive)
-	 * @param initValue initialization value
-	 */
-	public static void fillLargeArray(LongLargeArray array, long start, long end, long initValue) {
-		if (start >= end) {
-			return;
-		}
-		long length = end - start;
-		final int nthreads = (int) FastMath.min(length, ConcurrencyUtils.getNumberOfThreads());
-		if (nthreads <= 2 || length < ConcurrencyUtils.getConcurrentThreshold() || !array.isLarge()) {
-			for (long k = 0; k < length; k++) {
-				array.setLong(k, initValue);
-			}
-		} else {
-			final long perThreadElem = length / nthreads;
-			final Future<?>[] threads = new Future[nthreads];
-			for (int thread = 0; thread < nthreads; thread++) {
-				final long firstIdx = start + thread * perThreadElem;
-				final long lastIdx = (thread == nthreads - 1) ? end : (firstIdx + perThreadElem);
-				threads[thread] = ConcurrencyUtils.submit(() -> {
-					for (long k1 = firstIdx; k1 < lastIdx; k1++) {
-						array.setLong(k1, initValue);
-					}
-				});
-			}
-			try {
-				ConcurrencyUtils.waitForCompletion(threads);
-			} catch (InterruptedException | ExecutionException ex) {
-				throw new IllegalStateException(ex);
-			}
-		}
+	public static UnsafeLongArray createLargeArray(long size, boolean init) {
+		return UnsafeLongArray.allocate(size, init);
 	}
 
 	/**

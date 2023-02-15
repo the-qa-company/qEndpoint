@@ -2,6 +2,7 @@ hdt-qs-backend/target/
 hdt-qs-backend/*.iml
 hdt-qs-backend/.idea/
 hdt-qs-backend/qendpoint/hdt-store/
+hdt-qs-backend/src/main/resources/static/
 hdt-qs-backend/qendpoint/native-store/
 hdt-qs-backend/COMPILER_SCHEMA.MD
 hdt-qs-backend/qendpoint/
