@@ -1,11 +1,11 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
 
 /**
  * HDT Operations that are using internally from the implementation.

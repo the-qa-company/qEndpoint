@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.iterator.utils;
 
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.string.AssertionCharSequence;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.List;
@@ -13,11 +13,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.the_qa_company.qendpoint.core.iterator.utils.IndexNodeDeltaMergeExceptionIterator.compareToDelta;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static com.the_qa_company.qendpoint.core.iterator.utils.IndexNodeDeltaMergeExceptionIterator.compareToDelta;
 
 public class IndexNodeDeltaMergeExceptionIteratorTest {
 

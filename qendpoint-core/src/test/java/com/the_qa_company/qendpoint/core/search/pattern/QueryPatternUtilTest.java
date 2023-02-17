@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.search.pattern;
 
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.search.AbstractQueryTest;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponentTriple;
 import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;

@@ -27,16 +27,19 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
-import com.the_qa_company.qendpoint.core.dictionary.impl.utilCat.*;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.PrefixListener;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class FourSectionDictionaryCat implements DictionaryCat {
 

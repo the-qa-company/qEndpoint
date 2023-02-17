@@ -14,6 +14,8 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryCat;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
@@ -29,8 +31,6 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;

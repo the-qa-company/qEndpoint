@@ -1,10 +1,5 @@
 package com.the_qa_company.qendpoint.core.util.concurrent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
@@ -12,11 +7,20 @@ import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.SizeFetcher;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

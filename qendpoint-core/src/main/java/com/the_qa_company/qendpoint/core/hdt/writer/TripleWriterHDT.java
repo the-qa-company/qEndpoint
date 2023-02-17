@@ -1,11 +1,5 @@
 package com.the_qa_company.qendpoint.core.hdt.writer;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.zip.GZIPOutputStream;
-
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
@@ -21,6 +15,12 @@ import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
+
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class TripleWriterHDT implements TripleWriter {
 

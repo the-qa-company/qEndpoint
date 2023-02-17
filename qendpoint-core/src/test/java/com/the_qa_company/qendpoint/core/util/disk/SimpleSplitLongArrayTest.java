@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 import java.io.IOException;
 import java.util.Collection;

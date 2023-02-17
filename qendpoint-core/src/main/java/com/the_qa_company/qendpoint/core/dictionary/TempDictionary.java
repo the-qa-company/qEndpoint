@@ -18,10 +18,10 @@ package com.the_qa_company.qendpoint.core.dictionary;
  * migumar2@infor.uva.es Alejandro Andres: fuzzy.alej@gmail.com
  */
 
-import java.io.Closeable;
-
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
+
+import java.io.Closeable;
 
 /**
  * Interface that specifies the methods for a dictionary that can be modified.

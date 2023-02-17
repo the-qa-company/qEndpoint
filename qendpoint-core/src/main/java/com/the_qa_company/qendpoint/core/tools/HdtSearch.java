@@ -1,12 +1,7 @@
 package com.the_qa_company.qendpoint.core.tools;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
@@ -18,9 +13,13 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
+import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

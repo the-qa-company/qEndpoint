@@ -19,9 +19,9 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.io.Closeable;
-
 import com.the_qa_company.qendpoint.core.header.Header;
+
+import java.io.Closeable;
 
 /**
  * Interface for Triples implementation.

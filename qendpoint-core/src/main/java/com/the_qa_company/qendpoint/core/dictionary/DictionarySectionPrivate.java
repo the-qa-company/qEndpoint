@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.dictionary;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 
 public interface DictionarySectionPrivate extends DictionarySection {
 	/**

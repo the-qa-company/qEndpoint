@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 
 import java.io.IOException;
 import java.io.OutputStream;

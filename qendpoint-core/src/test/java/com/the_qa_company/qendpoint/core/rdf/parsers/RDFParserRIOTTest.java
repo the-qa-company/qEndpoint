@@ -6,6 +6,6 @@ public class RDFParserRIOTTest extends AbstractNTriplesParserTest {
 
 	@Override
 	protected RDFParserCallback createParser() {
-		return new RDFParserRIOT();
+		return new RDFParserRio();
 	}
 }

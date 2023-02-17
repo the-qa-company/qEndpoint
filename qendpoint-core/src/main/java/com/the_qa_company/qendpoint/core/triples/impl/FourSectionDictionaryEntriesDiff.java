@@ -1,13 +1,13 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.triples.DictionaryEntriesDiff;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 
 import java.util.HashMap;
 import java.util.Map;

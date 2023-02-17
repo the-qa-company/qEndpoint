@@ -7,13 +7,12 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,7 +37,7 @@ public class RDFParserHDTTest {
 		String filename = root.toAbsolutePath().toString();
 		RDFNotation dir = RDFNotation.guess(filename);
 		Assert.assertEquals(dir, RDFNotation.HDT);
-		RDFParserCallback callback = RDFParserFactory.getParserCallback(dir);
+		RDFParserCallback callback = dir.createCallback();
 		Assert.assertTrue(callback instanceof RDFParserHDT);
 
 		IteratorTripleString it = hdt.search("", "", "");

@@ -1,11 +1,8 @@
 package com.the_qa_company.qendpoint.core.tools;
 
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
-
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -19,13 +16,15 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
-
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
 import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author mario.arias

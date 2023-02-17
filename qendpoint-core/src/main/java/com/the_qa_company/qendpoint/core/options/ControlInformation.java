@@ -19,16 +19,16 @@
 
 package com.the_qa_company.qendpoint.core.options;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Enumeration;
-
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.util.crc.CRC16;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Enumeration;
 
 /**
  * @author mario.arias

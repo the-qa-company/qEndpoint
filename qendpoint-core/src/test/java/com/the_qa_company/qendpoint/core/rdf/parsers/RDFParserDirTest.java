@@ -6,16 +6,15 @@ import com.the_qa_company.qendpoint.core.header.HeaderUtil;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
+import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,7 +79,7 @@ public class RDFParserDirTest {
 		String filename = root.toAbsolutePath().toString();
 		RDFNotation dir = RDFNotation.guess(filename);
 		Assert.assertEquals(dir, RDFNotation.DIR);
-		RDFParserCallback callback = RDFParserFactory.getParserCallback(dir);
+		RDFParserCallback callback = dir.createCallback(HDTOptions.of());
 		assertTrue(callback instanceof RDFParserDir);
 
 		callback.doParse(filename, "http://example.org/#", dir, true,
@@ -118,7 +117,7 @@ public class RDFParserDirTest {
 			RDFContainer containerSimple = new RDFContainer();
 			{
 				for (Path path : allFiles) {
-					RDFParserCallback parser = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES);
+					RDFParserCallback parser = RDFNotation.NTRIPLES.createCallback();
 					parser.doParse(path.toAbsolutePath().toString(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true,
 							containerSimple);
 				}
@@ -133,8 +132,8 @@ public class RDFParserDirTest {
 			{
 				RDFNotation notation = RDFNotation.guess(root);
 				assertEquals(notation, RDFNotation.DIR);
-				RDFParserCallback parser = RDFParserFactory.getParserCallback(notation,
-						HDTOptions.of(Map.of(HDTOptionsKeys.ASYNC_DIR_PARSER_KEY, "" + maxThread)));
+				RDFParserCallback parser = notation
+						.createCallback(HDTOptions.of(Map.of(HDTOptionsKeys.ASYNC_DIR_PARSER_KEY, "" + maxThread)));
 				assertTrue(parser instanceof RDFParserDir);
 				assertEquals(maxThread, ((RDFParserDir) parser).async);
 
@@ -153,7 +152,7 @@ public class RDFParserDirTest {
 			{
 				RDFNotation notation = RDFNotation.guess(root);
 				assertEquals(notation, RDFNotation.DIR);
-				RDFParserCallback parser = RDFParserFactory.getParserCallback(notation, HDTOptions.EMPTY);
+				RDFParserCallback parser = notation.createCallback();
 				assertTrue(parser instanceof RDFParserDir);
 				assertEquals(1, ((RDFParserDir) parser).async);
 

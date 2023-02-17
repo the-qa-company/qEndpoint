@@ -1,15 +1,15 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.iterator.utils.CombinedIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapFilterIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 import java.util.ArrayList;
 import java.util.Comparator;

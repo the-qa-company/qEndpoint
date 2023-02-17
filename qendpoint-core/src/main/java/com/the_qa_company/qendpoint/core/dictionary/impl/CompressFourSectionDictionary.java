@@ -7,17 +7,17 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.OneReadDictiona
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import com.the_qa_company.qendpoint.core.triples.TempTriples;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
-import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.NotificationExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
+import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
 
 import java.io.IOException;
 import java.util.Comparator;

@@ -1,7 +1,9 @@
 package com.the_qa_company.qendpoint.model;
 
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.store.Utility;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -10,9 +12,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 
 import java.io.IOException;
 

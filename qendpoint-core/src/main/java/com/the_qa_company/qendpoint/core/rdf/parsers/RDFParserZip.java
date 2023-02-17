@@ -1,16 +1,15 @@
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
-import java.io.InputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.NonCloseInputStream;
+
+import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Parses a tar file (optionally .tgz or .tar.gz or .tar.bz2) directly,
@@ -65,7 +64,7 @@ public class RDFParserZip implements RDFParserCallback {
 					try {
 						RDFNotation guessnot = RDFNotation.guess(zipEntry.getName());
 						System.out.println("Parse from zip: " + zipEntry.getName() + " as " + guessnot);
-						RDFParserCallback parser = RDFParserFactory.getParserCallback(guessnot, spec);
+						RDFParserCallback parser = guessnot.createCallback(spec);
 
 						parser.doParse(nonCloseIn, baseUri, guessnot, keepBNode, callback);
 					} catch (IllegalArgumentException | ParserException e1) {

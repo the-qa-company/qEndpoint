@@ -1,5 +1,13 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.Statement;
@@ -18,14 +26,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
-import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
-import com.the_qa_company.qendpoint.core.util.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -19,11 +19,11 @@
 
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author mario.arias

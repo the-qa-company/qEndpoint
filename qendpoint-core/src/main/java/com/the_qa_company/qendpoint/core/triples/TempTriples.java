@@ -18,11 +18,11 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.io.Closeable;
-
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryIDMapping;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+
+import java.io.Closeable;
 
 /**
  * Interface for TempTriples implementation. This is a dynamic interface. For

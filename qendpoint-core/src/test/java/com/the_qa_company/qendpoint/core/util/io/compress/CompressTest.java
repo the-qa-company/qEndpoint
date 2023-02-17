@@ -1,12 +1,12 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import org.junit.Assert;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

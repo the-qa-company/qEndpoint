@@ -13,12 +13,9 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
@@ -28,12 +25,15 @@ import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class BitmapTriplesCat {
 

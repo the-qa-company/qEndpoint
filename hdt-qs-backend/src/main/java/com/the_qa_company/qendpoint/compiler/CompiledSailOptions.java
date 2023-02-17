@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.compiler;
 
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Value;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsBase;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 
 import java.nio.file.Path;
 import java.util.Map;

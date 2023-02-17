@@ -19,14 +19,14 @@
 
 package com.the_qa_company.qendpoint.core.compact.sequence;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author mario.arias

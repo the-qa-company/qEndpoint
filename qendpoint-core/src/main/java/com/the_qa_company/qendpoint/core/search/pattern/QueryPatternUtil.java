@@ -3,8 +3,8 @@ package com.the_qa_company.qendpoint.core.search.pattern;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.search.HDTQuery;
-import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponentTriple;
+import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
+import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 

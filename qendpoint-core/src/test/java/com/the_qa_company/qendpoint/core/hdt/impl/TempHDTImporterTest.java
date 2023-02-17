@@ -3,9 +3,9 @@ package com.the_qa_company.qendpoint.core.hdt.impl;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import org.junit.Test;
@@ -14,7 +14,6 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -24,15 +23,15 @@ import java.util.Objects;
 public class TempHDTImporterTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<Object> setup() {
-		return Arrays.asList("one-pass", "two-pass");
+		return List.of(HDTOptionsKeys.LOADER_TYPE_VALUE_ONE_PASS, HDTOptionsKeys.LOADER_TYPE_VALUE_TWO_PASS);
 	}
 
 	private final HDTSpecification spec;
 
 	public TempHDTImporterTest(String mode) {
 		spec = new HDTSpecification();
-		spec.set("loader.type", mode);
-		spec.set("loader.bnode.seed", "1234567");
+		spec.set(HDTOptionsKeys.LOADER_TYPE_KEY, mode);
+		spec.set(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
 	}
 
 	private String getFile(String f) {
@@ -54,7 +53,7 @@ public class TempHDTImporterTest {
 	private Iterator<TripleString> asIt(String file) throws ParserException {
 		List<TripleString> triples = new ArrayList<>();
 		RDFNotation notation = RDFNotation.guess(file);
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(notation);
+		RDFParserCallback parser = notation.createCallback(spec);
 		parser.doParse(file, HDTTestUtils.BASE_URI, notation, true, (triple, pos) -> {
 			// force duplication of the triple string data
 			triples.add(new TripleString(triple.getSubject().toString(), triple.getPredicate().toString(),

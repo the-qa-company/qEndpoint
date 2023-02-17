@@ -1,8 +1,10 @@
 package com.the_qa_company.qendpoint.core.iterator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.the_qa_company.qendpoint.core.iterator.utils.MultiMerge;
+import com.the_qa_company.qendpoint.core.iterator.utils.ReducerLeft;
+import com.the_qa_company.qendpoint.core.iterator.utils.SortedReduceIterator;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,11 +12,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import com.the_qa_company.qendpoint.core.iterator.utils.MultiMerge;
-import com.the_qa_company.qendpoint.core.iterator.utils.ReducerLeft;
-import com.the_qa_company.qendpoint.core.iterator.utils.SortedReduceIterator;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class MultiMergeTest {
 	List<Integer> listA, listB, listC, listOut, listOutB;

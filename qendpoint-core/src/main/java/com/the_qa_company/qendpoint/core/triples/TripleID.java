@@ -19,9 +19,9 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.io.Serializable;
-
 import com.the_qa_company.qendpoint.core.util.LongCompare;
+
+import java.io.Serializable;
 
 /**
  * TripleID holds a triple using Long IDs

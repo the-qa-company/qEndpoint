@@ -9,6 +9,8 @@
  */
 package com.the_qa_company.qendpoint.model;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -20,8 +22,6 @@ import org.eclipse.rdf4j.model.impl.NumericLiteral;
 import org.eclipse.rdf4j.model.impl.SimpleBNode;
 import org.eclipse.rdf4j.model.impl.SimpleIRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 /**
  * Abstract base class for {@link ValueFactory} implementations. It implements

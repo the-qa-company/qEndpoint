@@ -5,8 +5,8 @@ import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.search.HDTQuery;
 import com.the_qa_company.qendpoint.core.search.HDTQueryResult;
 import com.the_qa_company.qendpoint.core.search.exception.HDTSearchTimeoutException;
-import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.search.result.MapHDTQueryResult;
+import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 
 public class BitmapTriplesHDTQueryIterator extends FetcherIterator<HDTQueryResult> {
 	private final MapHDTQueryResult result = new MapHDTQueryResult();

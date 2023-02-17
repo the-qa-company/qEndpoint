@@ -6,7 +6,8 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdtCat.utils.Utility;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.junit.Test;
 
@@ -39,22 +40,22 @@ public class HdtCatTest extends AbstractMapMemoryTest implements ProgressListene
 
 		String hdt1Location = file1.replace(".nt", ".hdt");
 		String hdt2Location = file2.replace(".nt", ".hdt");
-		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES,
-				new HDTSpecification(), this)) {
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
+		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
+				this)) {
 			hdt.saveToHDT(hdt1Location, null);
 		}
-		try (HDT hdt = HDTManager.generateHDT(new File(file2).getAbsolutePath(), "uri", RDFNotation.NTRIPLES,
-				new HDTSpecification(), this)) {
+		try (HDT hdt = HDTManager.generateHDT(new File(file2).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
+				this)) {
 			hdt.saveToHDT(hdt2Location, null);
 		}
 		try (HDT hdtCatOld = HDTManager.generateHDT(new File(concat).getAbsolutePath(), "uri", RDFNotation.NTRIPLES,
-				new HDTSpecification(), this)) {
+				spec, this)) {
 
 			File file = new File(file1);
 			File theDir = new File(file.getAbsolutePath() + "_tmp");
 			Files.createDirectories(theDir.toPath());
-			try (HDT hdtCatNew = HDTManager.catHDT(theDir.getAbsolutePath(), hdt1Location, hdt2Location,
-					new HDTSpecification(), null)) {
+			try (HDT hdtCatNew = HDTManager.catHDT(theDir.getAbsolutePath(), hdt1Location, hdt2Location, spec, null)) {
 
 				// HDTCat hdtCatNew = new HDTCat(new
 				// HDTSpecification(),hdt1,hdt2,this);

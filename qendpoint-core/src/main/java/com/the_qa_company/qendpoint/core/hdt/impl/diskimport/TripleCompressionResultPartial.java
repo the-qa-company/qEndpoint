@@ -1,14 +1,14 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressTripleMergeIterator;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressTripleReader;
-import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.triples.impl.OneReadTempTriples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressTripleMergeIterator;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressTripleReader;
 
 import java.io.IOException;
 import java.util.ArrayList;

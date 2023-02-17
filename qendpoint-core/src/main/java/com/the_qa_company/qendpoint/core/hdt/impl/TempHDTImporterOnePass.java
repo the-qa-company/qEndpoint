@@ -30,7 +30,6 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback.RDFCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
@@ -59,9 +58,9 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 					dict.insert(triple.getObject(), TripleComponentRole.OBJECT));
 			num++;
 			size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4; // Spaces
-																														// and
-																														// final
-																														// dot
+			// and
+			// final
+			// dot
 			ListenerUtil.notifyCond(listener, "Loaded " + num + " triples", num, 0, 100);
 		}
 	}
@@ -76,7 +75,7 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 	public TempHDT loadFromRDF(HDTOptions specs, String filename, String baseUri, RDFNotation notation,
 			ProgressListener listener) throws ParserException {
 
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(notation, spec);
+		RDFParserCallback parser = notation.createCallback(spec);
 
 		// Create Modifiable Instance
 		TempHDT modHDT = new TempHDTImpl(specs, baseUri, ModeOfLoading.ONE_PASS);
@@ -117,9 +116,9 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 					dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT));
 			num++;
 			size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4; // Spaces
-																														// and
-																														// final
-																														// dot
+			// and
+			// final
+			// dot
 			ListenerUtil.notifyCond(listener, "Loaded " + num + " triples", num, 0, 100);
 		}
 		dictionary.endProcessing();

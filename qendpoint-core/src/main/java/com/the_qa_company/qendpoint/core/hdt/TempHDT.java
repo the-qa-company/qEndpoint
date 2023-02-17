@@ -18,12 +18,12 @@
 
 package com.the_qa_company.qendpoint.core.hdt;
 
-import java.io.Closeable;
-
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
+
+import java.io.Closeable;
 
 /**
  * A TempHDT holds a TempDictionary and TempTriples that are used to gather the

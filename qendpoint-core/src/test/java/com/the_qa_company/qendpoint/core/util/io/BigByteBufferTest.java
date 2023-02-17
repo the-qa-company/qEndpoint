@@ -1,5 +1,10 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -7,11 +12,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import com.the_qa_company.qendpoint.core.util.string.CompactString;
-import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.File;
 import java.io.FileOutputStream;

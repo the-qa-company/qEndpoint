@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.AppendableWriteBitmap;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -16,8 +18,6 @@ import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.compact.bitmap.AppendableWriteBitmap;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;

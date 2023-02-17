@@ -22,7 +22,6 @@ import org.eclipse.rdf4j.sail.SailConnectionListener;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
-import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

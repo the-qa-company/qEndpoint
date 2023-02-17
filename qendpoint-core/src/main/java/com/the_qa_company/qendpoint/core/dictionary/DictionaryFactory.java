@@ -19,7 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.dictionary;
 
-import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryDiff;
@@ -32,6 +31,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.WriteFourSectionDiction
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.FourSectionDictionaryKCat;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionDictionaryKCat;
+import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionSectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.SectionCompressor;

@@ -1,7 +1,12 @@
 package com.the_qa_company.qendpoint.core.compact.array;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -10,13 +15,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
-import com.the_qa_company.qendpoint.core.util.BitUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class LogArray64Test {

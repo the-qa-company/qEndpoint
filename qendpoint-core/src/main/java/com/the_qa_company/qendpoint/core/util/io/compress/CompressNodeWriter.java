@@ -1,7 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;

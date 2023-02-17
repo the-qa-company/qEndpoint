@@ -1,12 +1,12 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
-import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertTrue;
 
 public class CRCStreamTest {
 

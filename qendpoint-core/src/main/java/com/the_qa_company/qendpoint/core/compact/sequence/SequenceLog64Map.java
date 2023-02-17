@@ -19,6 +19,21 @@
 
 package com.the_qa_company.qendpoint.core.compact.sequence;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.exceptions.CRCException;
+import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
+import com.the_qa_company.qendpoint.core.util.crc.CRC32;
+import com.the_qa_company.qendpoint.core.util.crc.CRC8;
+import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
+import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -31,21 +46,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Paths;
 import java.util.Iterator;
-
-import com.the_qa_company.qendpoint.core.exceptions.CRCException;
-import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
-import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.util.crc.CRC32;
-import com.the_qa_company.qendpoint.core.util.crc.CRC8;
-import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
-import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
-import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
-import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * @author mario.arias

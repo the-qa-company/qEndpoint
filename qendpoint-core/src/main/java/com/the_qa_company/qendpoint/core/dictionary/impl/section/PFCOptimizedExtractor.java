@@ -1,12 +1,12 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import java.io.IOException;
-
-import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
+import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
+
+import java.io.IOException;
 
 /**
  * Performs extract keeping local state that can be reused to read consecutive

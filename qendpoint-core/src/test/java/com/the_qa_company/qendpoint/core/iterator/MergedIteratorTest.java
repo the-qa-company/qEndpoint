@@ -1,16 +1,18 @@
 package com.the_qa_company.qendpoint.core.iterator;
 
+import com.the_qa_company.qendpoint.core.iterator.utils.MergedIterator;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import com.the_qa_company.qendpoint.core.iterator.utils.MergedIterator;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class MergedIteratorTest {
 	List<Integer> listA, listB, listC;

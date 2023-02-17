@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.core.dictionary;
 
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.dictionary.impl.utilCat.CatMapping;
 import com.the_qa_company.qendpoint.core.dictionary.impl.utilCat.CatMappingBack;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
 import java.io.Closeable;

@@ -1,12 +1,12 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.Var;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
 	private final EndpointStore endpoint;

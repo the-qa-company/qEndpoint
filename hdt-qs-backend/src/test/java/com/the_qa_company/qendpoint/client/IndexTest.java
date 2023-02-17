@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.client;
 
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.sail.SailTest;
@@ -14,7 +15,6 @@ import org.eclipse.rdf4j.repository.util.Repositories;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
 
 import java.io.IOException;
 import java.nio.file.Path;

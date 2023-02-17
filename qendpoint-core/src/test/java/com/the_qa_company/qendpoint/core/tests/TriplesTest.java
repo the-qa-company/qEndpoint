@@ -1,14 +1,14 @@
 package com.the_qa_company.qendpoint.core.tests;
 
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIteratorY;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIteratorYFOQ;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
+
+import java.util.Iterator;
 
 public class TriplesTest {
 

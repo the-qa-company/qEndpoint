@@ -1,5 +1,8 @@
 package com.the_qa_company.qendpoint.core.hdt.writer;
 
+import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -9,9 +12,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.zip.GZIPOutputStream;
-
-import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 public class TripleWriterNtriples implements TripleWriter {
 

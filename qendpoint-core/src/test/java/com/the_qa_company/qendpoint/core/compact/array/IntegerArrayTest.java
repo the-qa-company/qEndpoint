@@ -1,16 +1,16 @@
 package com.the_qa_company.qendpoint.core.compact.array;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceInt32;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
 
-import org.junit.Before;
-import org.junit.Test;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceInt32;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class IntegerArrayTest {
 

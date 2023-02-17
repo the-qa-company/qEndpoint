@@ -19,10 +19,10 @@
 
 package com.the_qa_company.qendpoint.core.util.string;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+
 import java.io.Serializable;
 import java.util.Arrays;
-
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 
 /**
  * Implementation of CharSequence that uses only one byte per character to save

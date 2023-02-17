@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 
 /**
  * Class to compute inside a bitmap the elements that are into 2 HDTs

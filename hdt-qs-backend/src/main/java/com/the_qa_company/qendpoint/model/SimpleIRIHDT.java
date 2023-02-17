@@ -1,11 +1,11 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.controller.Sparql;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 

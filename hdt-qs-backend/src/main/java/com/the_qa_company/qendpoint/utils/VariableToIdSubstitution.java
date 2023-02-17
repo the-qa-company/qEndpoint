@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.HDTConverter;
@@ -10,8 +12,6 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.Var;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizer;
 import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 /**
  * QueryOptimizer to replace Var by IRIHDT Var in a query

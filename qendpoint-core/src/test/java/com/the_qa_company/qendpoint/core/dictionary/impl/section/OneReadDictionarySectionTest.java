@@ -1,13 +1,13 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import org.junit.Assert;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
+import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;

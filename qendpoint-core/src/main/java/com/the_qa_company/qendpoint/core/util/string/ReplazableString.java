@@ -19,16 +19,16 @@
 
 package com.the_qa_company.qendpoint.core.util.string;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
-import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
-import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * CharSequence implementation suitable for appending or replacing the suffix of

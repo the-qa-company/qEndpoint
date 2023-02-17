@@ -18,12 +18,12 @@
 
 package com.the_qa_company.qendpoint.core.hdt;
 
-import java.io.IOException;
-
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+
+import java.io.IOException;
 
 /**
  * Interface for classes that want to support loading data from RDF to a

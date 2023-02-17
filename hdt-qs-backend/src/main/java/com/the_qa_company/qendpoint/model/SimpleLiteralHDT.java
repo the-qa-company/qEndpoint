@@ -9,6 +9,8 @@
  */
 package com.the_qa_company.qendpoint.model;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -17,8 +19,6 @@ import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.math.BigDecimal;

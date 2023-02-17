@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.utils.sail.MultiLanguageTypedLuceneIndexTest;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -10,7 +11,6 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
 import java.io.InputStream;

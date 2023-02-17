@@ -1,11 +1,9 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
-import com.the_qa_company.qendpoint.core.rdf.parsers.JenaNodeFormatter;
-import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.graph.NodeFactory;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.DelayedString;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -34,13 +32,13 @@ public class PSFCFourSectionDictionaryTest {
 
 	@Test
 	public void testLocalizedLiteral() {
-		String literal = JenaNodeFormatter.format(NodeFactory.createLiteral("abc", "en"));
+		String literal = "\"abc\"@en";
 		doRoundTrip(literal, "@en\"abc\"");
 	}
 
 	@Test
 	public void testTypedLiteral() {
-		String literal = JenaNodeFormatter.format(NodeFactory.createLiteral("123", XSDDatatype.XSDinteger));
+		String literal = "\"123\"^^<" + CoreDatatype.XSD.INTEGER.getIri() + ">";
 		doRoundTrip(literal, "^^<http://www.w3.org/2001/XMLSchema#integer>\"123\"");
 	}
 

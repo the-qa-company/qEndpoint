@@ -1,11 +1,11 @@
 package com.the_qa_company.qendpoint.core.iterator.utils;
 
-import java.util.List;
-
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
+
+import java.util.List;
 
 /**
  * Iterator implementation to iterate over a List&lt;TripleID&gt; object

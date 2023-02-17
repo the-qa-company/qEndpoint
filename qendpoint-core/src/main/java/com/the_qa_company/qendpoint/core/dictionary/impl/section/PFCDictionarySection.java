@@ -19,12 +19,8 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Iterator;
-
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
@@ -33,8 +29,6 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Mutable;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
@@ -46,6 +40,12 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
 
 /**
  * @author mario.arias

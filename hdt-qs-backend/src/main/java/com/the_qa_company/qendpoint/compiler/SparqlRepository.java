@@ -1,6 +1,9 @@
 package com.the_qa_company.qendpoint.compiler;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.store.EndpointStoreConnection;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
@@ -9,8 +12,6 @@ import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
 import com.the_qa_company.qendpoint.utils.sail.SourceSailConnectionWrapper;
-import jakarta.json.Json;
-import jakarta.json.stream.JsonGenerator;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.util.Values;
@@ -48,7 +49,6 @@ import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ServerWebInputException;
@@ -514,7 +514,7 @@ public class SparqlRepository {
 	 * @param timeout     query timeout
 	 * @param out         the output stream, can be null
 	 */
-	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
+	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) throws IOException {
 		// logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = applyPrefixes(sparqlQuery);
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
@@ -534,8 +534,10 @@ public class SparqlRepository {
 			stopwatch.stop(); // optional
 			logger.info("Time elapsed to execute update query: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 			if (out != null) {
-				try (JsonGenerator gen = Json.createGenerator(out)) {
-					gen.writeStartObject().write("ok", true).writeEnd();
+				try (JsonGenerator gen = JsonFactory.builder().build().createGenerator(out)) {
+					gen.writeStartObject();
+					gen.writeBooleanField("ok", true);
+					gen.writeEndObject();
 				}
 			}
 		}

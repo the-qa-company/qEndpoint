@@ -2,8 +2,8 @@ package com.the_qa_company.qendpoint.core.compact.sequence;
 
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtilsTest;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.junit.Test;
 
 public class LargeArrayTest {
 

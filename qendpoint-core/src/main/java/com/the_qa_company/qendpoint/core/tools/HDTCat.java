@@ -3,10 +3,6 @@ package com.the_qa_company.qendpoint.core.tools;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
-
-import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
-import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
-import org.apache.commons.io.FileUtils;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
@@ -14,6 +10,9 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
+import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
+import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;

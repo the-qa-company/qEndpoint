@@ -19,14 +19,14 @@
 
 package com.the_qa_company.qendpoint.core.util.string;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
-import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
-import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

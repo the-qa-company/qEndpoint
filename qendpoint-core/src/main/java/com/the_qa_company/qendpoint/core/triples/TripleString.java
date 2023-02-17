@@ -19,10 +19,10 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.io.IOException;
-
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
+
+import java.io.IOException;
 
 /**
  * TripleString holds a triple as Strings

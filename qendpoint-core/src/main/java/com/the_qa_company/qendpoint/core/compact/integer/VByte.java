@@ -18,15 +18,15 @@
 
 package com.the_qa_company.qendpoint.core.compact.integer;
 
+import com.the_qa_company.qendpoint.core.util.Mutable;
+import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
-import com.the_qa_company.qendpoint.core.util.Mutable;
-import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
-import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 
 /**
  * Typical implementation of Variable-Byte encoding for integers. <a href=

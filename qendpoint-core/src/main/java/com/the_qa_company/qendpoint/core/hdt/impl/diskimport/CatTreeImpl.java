@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTSupplier;
+import com.the_qa_company.qendpoint.core.iterator.utils.FluxStopTripleStringIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -11,7 +12,6 @@ import com.the_qa_company.qendpoint.core.options.HideHDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.Profiler;
-import com.the_qa_company.qendpoint.core.iterator.utils.FluxStopTripleStringIterator;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.listener.PrefixListener;
 

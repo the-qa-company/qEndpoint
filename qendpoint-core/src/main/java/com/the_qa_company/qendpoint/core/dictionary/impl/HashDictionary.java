@@ -19,14 +19,14 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.HashDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * @author mario.arias, Eugen

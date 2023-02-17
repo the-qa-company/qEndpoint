@@ -1,26 +1,16 @@
 package com.the_qa_company.qendpoint.federation;
 
-import com.google.common.collect.Sets;
-
-import com.the_qa_company.qendpoint.functions.ParseDateFunction;
-import com.the_qa_company.qendpoint.functions.Split;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.sail.SailTest;
-
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.sail.Sail;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Set;
 
 public class FederationTest extends SailTest {
 

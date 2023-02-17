@@ -19,11 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
@@ -38,6 +33,11 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * @author mario.arias,Lyudmila Balakireva

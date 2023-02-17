@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * CRC16-ANSI Width = 16 Poly = 0x8005 XorIn = 0x0000 ReflectIn = True XorOut =

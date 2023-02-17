@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.compact.array;
 
-import java.io.FileOutputStream;
-
-import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
+
+import java.io.FileOutputStream;
 
 public class LogArray64Dump {
 

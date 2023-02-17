@@ -19,9 +19,9 @@
 
 package com.the_qa_company.qendpoint.core.header;
 
+import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 
 /**
  * @author mario.arias

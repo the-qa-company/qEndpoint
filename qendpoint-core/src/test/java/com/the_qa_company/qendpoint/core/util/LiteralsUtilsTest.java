@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.core.util;
 
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

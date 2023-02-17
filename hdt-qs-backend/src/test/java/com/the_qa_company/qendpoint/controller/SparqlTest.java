@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.controller;
 
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.header.HeaderUtil;
 import com.the_qa_company.qendpoint.core.header.PlainHeader;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

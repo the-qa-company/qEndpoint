@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.hdtDiff;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -18,7 +19,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
 
 import java.io.File;
 import java.io.IOException;

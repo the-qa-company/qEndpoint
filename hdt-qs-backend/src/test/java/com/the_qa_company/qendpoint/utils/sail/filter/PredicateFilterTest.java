@@ -2,8 +2,8 @@ package com.the_qa_company.qendpoint.utils.sail.filter;
 
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.sail.FilteringSail;
-import com.the_qa_company.qendpoint.utils.sail.helpers.LuceneSailBuilder;
 import com.the_qa_company.qendpoint.utils.sail.SailTest;
+import com.the_qa_company.qendpoint.utils.sail.helpers.LuceneSailBuilder;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;

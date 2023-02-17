@@ -1,7 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
 import java.io.IOException;
-import java.nio.*;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;

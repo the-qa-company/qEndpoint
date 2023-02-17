@@ -1,18 +1,16 @@
 package com.the_qa_company.qendpoint.core.util;
 
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

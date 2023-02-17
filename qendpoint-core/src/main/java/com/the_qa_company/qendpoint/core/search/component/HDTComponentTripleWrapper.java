@@ -1,7 +1,5 @@
 package com.the_qa_company.qendpoint.core.search.component;
 
-import java.util.List;
-
 public class HDTComponentTripleWrapper implements HDTComponentTriple {
 	private final HDTComponentTriple handle;
 

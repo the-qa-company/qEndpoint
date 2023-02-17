@@ -19,9 +19,9 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
+
+import java.util.Iterator;
 
 /**
  * Iterator of TripleStrings based on IteratorTripleID

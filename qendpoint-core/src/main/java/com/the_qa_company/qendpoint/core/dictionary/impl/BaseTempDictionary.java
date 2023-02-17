@@ -19,8 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
@@ -28,6 +26,8 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
+
+import java.util.Iterator;
 
 /**
  * This abstract class implements all methods that have implementation common to

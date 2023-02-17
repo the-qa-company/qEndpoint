@@ -5,13 +5,17 @@ import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 
@@ -21,10 +25,10 @@ public class UnicodeEscapeTest {
 		String file = Objects.requireNonNull(UnicodeEscapeTest.class.getClassLoader().getResource("unicodeTest.nt"),
 				"can't find file").getFile();
 
-		RDFParserCallback factory = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES,
-				HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "true")));
-		RDFParserCallback factory2 = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES,
-				HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "false")));
+		RDFParserCallback factory = RDFNotation.NTRIPLES
+				.createCallback(HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true)));
+		RDFParserCallback factory2 = RDFNotation.NTRIPLES
+				.createCallback(HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, false)));
 
 		Set<TripleString> ts1 = new TreeSet<>(Comparator.comparing(t -> {
 			try {

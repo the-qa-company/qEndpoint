@@ -19,18 +19,18 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
+import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;

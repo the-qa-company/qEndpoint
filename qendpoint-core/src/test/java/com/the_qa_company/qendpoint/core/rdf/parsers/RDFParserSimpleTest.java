@@ -4,10 +4,10 @@ import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.junit.Assert;
 import org.junit.Test;
-import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 
 import java.io.IOException;
 import java.io.PipedInputStream;

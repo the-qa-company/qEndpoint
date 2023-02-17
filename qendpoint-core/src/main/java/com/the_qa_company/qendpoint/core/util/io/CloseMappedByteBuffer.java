@@ -1,7 +1,15 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
 import java.io.Closeable;
-import java.nio.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.ShortBuffer;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;

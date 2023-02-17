@@ -19,11 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
@@ -35,6 +30,11 @@ import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * Keeps a bitmap as an array of long values (64 bit per word). The first bit is

@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.util.listener;
 
+import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
+
 import java.util.Map;
 import java.util.TreeMap;
-
-import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 
 public class MultiThreadListenerConsole implements MultiThreadListener {
 	private static final int BAR_SIZE = 10;

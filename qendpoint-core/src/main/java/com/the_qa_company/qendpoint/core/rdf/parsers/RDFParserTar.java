@@ -1,15 +1,14 @@
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
-import org.apache.commons.compress.archivers.ArchiveStreamFactory;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.NonCloseInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +71,7 @@ public class RDFParserTar implements RDFParserCallback {
 					try {
 						RDFNotation guessnot = RDFNotation.guess(entry.getName());
 						log.info("Parse from tar: {} as {}", entry.getName(), guessnot);
-						RDFParserCallback parser = RDFParserFactory.getParserCallback(guessnot, spec);
+						RDFParserCallback parser = guessnot.createCallback(spec);
 
 						parser.doParse(nonCloseIn, baseUri, guessnot, keepBNode, callback);
 					} catch (IllegalArgumentException | ParserException e1) {

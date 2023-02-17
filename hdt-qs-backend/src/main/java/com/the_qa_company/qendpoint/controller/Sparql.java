@@ -7,6 +7,16 @@ import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.CompiledSailOptions;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
+import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.FileUtils;
@@ -18,16 +28,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
-import com.the_qa_company.qendpoint.core.enums.CompressionType;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
-import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -507,7 +507,7 @@ public class Sparql {
 		}
 	}
 
-	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
+	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) throws IOException {
 		logger.info("timeout: " + timeout);
 		// logger.info("Running update query:"+sparqlQuery);
 		waitLoading(1);

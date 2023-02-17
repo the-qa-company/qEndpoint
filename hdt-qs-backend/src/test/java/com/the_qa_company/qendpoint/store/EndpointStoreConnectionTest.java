@@ -2,6 +2,11 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -11,11 +16,6 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
 import java.io.InputStream;

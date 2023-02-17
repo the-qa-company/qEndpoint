@@ -18,6 +18,17 @@
 
 package com.the_qa_company.qendpoint.core.iterator;
 
+import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryPFCOptimizedExtractor;
+import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultDictionaryPFCOptimizedExtractor;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.OptimizedExtractor;
+import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,18 +36,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryPFCOptimizedExtractor;
-import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultDictionaryPFCOptimizedExtractor;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
-import com.the_qa_company.qendpoint.core.dictionary.impl.OptimizedExtractor;
-import com.the_qa_company.qendpoint.core.dictionary.impl.*;
-import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 /**
  * Iterator of TripleStrings based on IteratorTripleID

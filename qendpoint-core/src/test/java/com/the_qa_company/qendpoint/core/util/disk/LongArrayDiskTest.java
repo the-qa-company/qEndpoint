@@ -1,12 +1,12 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
+import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
-import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -5,6 +5,9 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.hdt.HDTManagerTest;
+import com.the_qa_company.qendpoint.core.iterator.utils.CombinedIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
@@ -15,9 +18,6 @@ import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.hdt.HDTManagerTest;
-import com.the_qa_company.qendpoint.core.iterator.utils.CombinedIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -48,9 +48,8 @@ public class LargeFakeDataSetStreamSupplierTest {
 
 		Iterator<TripleString> it2 = triples.createTripleStringStream();
 		try (InputStream is = Files.newInputStream(testNt)) {
-			try (PipedCopyIterator<TripleString> it = RDFParserFactory.readAsIterator(
-					RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES), is, HDTTestUtils.BASE_URI, true,
-					RDFNotation.NTRIPLES)) {
+			try (PipedCopyIterator<TripleString> it = RDFNotation.NTRIPLES.createCallback().readAsIterator(is,
+					HDTTestUtils.BASE_URI, true, RDFNotation.NTRIPLES)) {
 				it.forEachRemaining(s -> {
 					assertTrue(it2.hasNext());
 					assertEquals(it2.next(), s);
@@ -181,8 +180,8 @@ public class LargeFakeDataSetStreamSupplierTest {
 
 		supplier2.createNTFile(p3);
 
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES,
-				HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "true")));
+		RDFParserCallback parser = RDFNotation.NTRIPLES
+				.createCallback(HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "true")));
 		try {
 			try (InputStream stream = new BufferedInputStream(Files.newInputStream(p12));
 					InputStream stream2 = new BufferedInputStream(Files.newInputStream(p3));

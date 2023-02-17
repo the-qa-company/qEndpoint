@@ -6,7 +6,6 @@ import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,11 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 /**
@@ -78,7 +81,7 @@ public class RDFParserDir implements RDFParserCallback {
 						try {
 							// get the notation of the file
 							childNotation = RDFNotation.guess(child.toFile());
-							rdfParserCallback = RDFParserFactory.getParserCallback(childNotation, spec);
+							rdfParserCallback = childNotation.createCallback(spec);
 						} catch (IllegalArgumentException e) {
 							log.warn("Ignore file {}", child, e);
 							return;
@@ -221,7 +224,7 @@ public class RDFParserDir implements RDFParserCallback {
 				RDFParserCallback rdfParserCallback;
 				try {
 					// get the parser for the file
-					rdfParserCallback = RDFParserFactory.getParserCallback(notation, spec);
+					rdfParserCallback = notation.createCallback(spec);
 				} catch (IllegalArgumentException | NotImplementedException e) {
 					log.warn("Ignore file {}", path, e);
 					return list;

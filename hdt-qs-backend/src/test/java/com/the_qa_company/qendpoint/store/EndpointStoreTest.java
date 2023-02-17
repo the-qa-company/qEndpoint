@@ -1,5 +1,13 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.file.PathUtils;
@@ -29,14 +37,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.File;
 import java.io.IOException;

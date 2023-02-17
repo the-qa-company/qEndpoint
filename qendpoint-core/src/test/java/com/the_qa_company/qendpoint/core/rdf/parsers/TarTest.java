@@ -1,14 +1,13 @@
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
+import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
-
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
-import com.the_qa_company.qendpoint.core.util.io.NonCloseInputStream;
 
 public class TarTest {
 

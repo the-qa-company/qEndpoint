@@ -19,9 +19,9 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.util.Comparator;
-
 import com.the_qa_company.qendpoint.core.util.LongCompare;
+
+import java.util.Comparator;
 
 /**
  * Comparator between triples, based on the TripleComponentOrder

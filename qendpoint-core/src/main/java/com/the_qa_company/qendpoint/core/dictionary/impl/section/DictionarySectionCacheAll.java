@@ -19,16 +19,16 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 
 /**
  * DictionarySection that caches results returned by a child DictionarySection

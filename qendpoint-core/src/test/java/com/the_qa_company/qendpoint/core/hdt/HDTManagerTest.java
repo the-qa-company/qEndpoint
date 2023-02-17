@@ -1,11 +1,16 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -19,7 +24,11 @@ import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -30,15 +39,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
-import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
-import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
-import com.the_qa_company.qendpoint.core.util.string.ByteString;
-import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
-import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.File;
 import java.io.IOException;
@@ -737,8 +737,8 @@ public class HDTManagerTest {
 			// create DISK HDT
 			try (InputStream in = IOUtil.getFileInputStream(ntFile)) {
 				try (PipedCopyIterator<TripleString> it = RDFParserFactory.readAsIterator(
-						RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES,
-								HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "true"))),
+						RDFNotation.NTRIPLES
+								.createCallback(HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "true"))),
 						in, HDTTestUtils.BASE_URI, true, RDFNotation.NTRIPLES)) {
 					try (HDT expected = HDTManager.generateHDT(it, HDTTestUtils.BASE_URI, spec, quiet ? null : this)) {
 						String testCopy = tempDir.newFile().getAbsolutePath();

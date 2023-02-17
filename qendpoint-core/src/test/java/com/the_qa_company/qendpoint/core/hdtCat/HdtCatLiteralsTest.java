@@ -6,8 +6,8 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdtCat.utils.Utility;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.Rule;
@@ -59,10 +59,10 @@ public class HdtCatLiteralsTest extends AbstractMapMemoryTest implements Progres
 		String hdt1Location = tempDir.newFile().getAbsolutePath();
 		String hdt2Location = tempDir.newFile().getAbsolutePath();
 
-		HDTSpecification spec = new HDTSpecification();
-		spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
-		spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-		spec.set(HDTOptionsKeys.LOAD_HDT_TYPE_KEY, loadingMethod);
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.LOAD_HDT_TYPE_KEY, loadingMethod,
+				HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
 
 		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
 				this)) {

@@ -1,19 +1,18 @@
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -92,7 +91,7 @@ public class RDFParserRAR implements RDFParserCallback {
 				if (guessnot != null) {
 					// Create
 					log.info("Parse from rar: {} as {}", fileName, guessnot);
-					RDFParserCallback parser = RDFParserFactory.getParserCallback(guessnot, spec);
+					RDFParserCallback parser = guessnot.createCallback(spec);
 
 					cmdExtract[4] = fileName;
 					ProcessBuilder extractProcessBuilder = new ProcessBuilder(cmdExtract);

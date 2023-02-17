@@ -19,13 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -33,6 +26,13 @@ import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceCustomComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author mario.arias

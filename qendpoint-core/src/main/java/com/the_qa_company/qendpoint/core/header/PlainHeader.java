@@ -18,6 +18,22 @@
 
 package com.the_qa_company.qendpoint.core.header;
 
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.ControlInfo;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback.RDFCallback;
+import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserSimple;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,22 +41,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.options.ControlInfo;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
-import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserSimple;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
-import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback.RDFCallback;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author mario.arias

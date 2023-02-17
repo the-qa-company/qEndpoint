@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.triples;
 
-import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
-import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.triples.impl.FourSectionDictionaryEntriesDiff;

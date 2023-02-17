@@ -1,7 +1,5 @@
 package com.the_qa_company.qendpoint.core.hdtCat;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -11,6 +9,8 @@ import com.the_qa_company.qendpoint.core.hdtCat.utils.Utility;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;

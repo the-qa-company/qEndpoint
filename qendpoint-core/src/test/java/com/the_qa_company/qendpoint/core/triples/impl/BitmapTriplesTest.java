@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -9,6 +11,8 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.triples.Triples;
+import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
+import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -17,10 +21,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
-import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
-import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
-import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +29,13 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ BitmapTriplesTest.HandTest.class, BitmapTriplesTest.DynamicTest.class })

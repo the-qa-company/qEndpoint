@@ -19,11 +19,12 @@
 
 package com.the_qa_company.qendpoint.core.rdf;
 
-import java.io.InputStream;
-
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+
+import java.io.InputStream;
 
 /**
  * Parser that uses a callback to notify of each successfully parsed triple.
@@ -52,4 +53,18 @@ public interface RDFParserCallback {
 
 	void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException;
+
+	/**
+	 * convert a stream to a triple iterator
+	 *
+	 * @param stream   the stream to parse
+	 * @param baseUri  the base uri to parse
+	 * @param notation the rdf notation to parse
+	 * @return iterator
+	 */
+	default PipedCopyIterator<TripleString> readAsIterator(InputStream stream, String baseUri, boolean keepBNode,
+			RDFNotation notation) {
+		return PipedCopyIterator.createOfCallback(pipe -> doParse(stream, baseUri, notation, keepBNode,
+				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+	}
 }

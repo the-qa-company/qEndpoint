@@ -18,11 +18,10 @@
 
 package com.the_qa_company.qendpoint.core.util;
 
-import java.lang.management.ManagementFactory;
+import com.sun.management.HotSpotDiagnosticMXBean;
 
 import javax.management.MBeanServer;
-
-import com.sun.management.HotSpotDiagnosticMXBean;
+import java.lang.management.ManagementFactory;
 
 /**
  * @author mario.arias

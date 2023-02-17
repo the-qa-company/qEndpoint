@@ -19,15 +19,15 @@
 
 package com.the_qa_company.qendpoint.core.hdt;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
-
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.rdf.RDFAccess;
 import com.the_qa_company.qendpoint.core.triples.Triples;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Interface that specifies the methods for a HDT implementation

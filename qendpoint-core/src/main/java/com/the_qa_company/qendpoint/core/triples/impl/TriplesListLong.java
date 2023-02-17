@@ -19,14 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryIDMapping;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
@@ -49,6 +41,14 @@ import com.the_qa_company.qendpoint.core.util.RDFInfo;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Implementation of TempTriples using a List of TripleID.

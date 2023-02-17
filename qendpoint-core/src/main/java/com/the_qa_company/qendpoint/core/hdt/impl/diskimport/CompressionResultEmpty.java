@@ -1,7 +1,7 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 
 import java.io.IOException;
 

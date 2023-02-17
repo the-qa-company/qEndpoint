@@ -18,19 +18,18 @@
 
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * @author mario.arias
@@ -94,7 +93,7 @@ public class RDFParserList implements RDFParserCallback {
 
 					RDFNotation guessnot = RDFNotation.guess(line);
 					System.out.println("Parse from list: " + line + " as " + guessnot);
-					RDFParserCallback parser = RDFParserFactory.getParserCallback(guessnot, spec);
+					RDFParserCallback parser = guessnot.createCallback(spec);
 
 					parser.doParse(line, baseUri, guessnot, keepBNode, callback);
 				}

@@ -1,11 +1,8 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Path;
-
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
@@ -15,14 +12,17 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
 
 class PredicateIndexArray implements PredicateIndex {
 	private static final Logger log = LoggerFactory.getLogger(PredicateIndexArray.class);

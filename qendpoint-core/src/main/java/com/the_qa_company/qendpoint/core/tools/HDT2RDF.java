@@ -18,10 +18,9 @@
  */
 package com.the_qa_company.qendpoint.core.tools;
 
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
@@ -29,9 +28,9 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.internal.Lists;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * @author mario.arias

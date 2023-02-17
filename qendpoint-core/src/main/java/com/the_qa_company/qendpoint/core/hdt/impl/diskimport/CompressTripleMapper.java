@@ -1,13 +1,13 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
-import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
-import com.the_qa_company.qendpoint.core.util.io.compress.WriteLongArrayBuffer;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.impl.CompressFourSectionDictionary;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.disk.LongArray;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.WriteLongArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -19,12 +19,12 @@
 
 package com.the_qa_company.qendpoint.core.header;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.rdf.RDFStorage;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Provides the basic functionality for a header

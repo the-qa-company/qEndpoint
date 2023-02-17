@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.controller.Sparql;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.base.AbstractBNode;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.base.AbstractBNode;
 
 public class SimpleBNodeHDT extends AbstractBNode implements HDTValue {
 	private final HDT hdt;

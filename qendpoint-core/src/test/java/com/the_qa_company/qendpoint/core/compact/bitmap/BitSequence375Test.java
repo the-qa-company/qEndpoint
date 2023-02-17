@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
+import com.the_qa_company.qendpoint.core.util.io.Closer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -7,8 +9,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
-import com.the_qa_company.qendpoint.core.util.io.Closer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

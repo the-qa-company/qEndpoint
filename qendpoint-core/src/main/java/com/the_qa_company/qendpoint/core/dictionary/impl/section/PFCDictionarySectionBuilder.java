@@ -1,11 +1,11 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class PFCDictionarySectionBuilder {
 

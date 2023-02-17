@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.triples.TripleIDComparator;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleIDComparator;
 
 import java.io.IOException;
 

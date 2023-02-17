@@ -1,9 +1,8 @@
 package com.the_qa_company.qendpoint.core.hdt.writer;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
+
+import java.io.OutputStream;
 
 public class TripleWriterFactory {
 

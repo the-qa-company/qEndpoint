@@ -19,14 +19,14 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author mario.arias

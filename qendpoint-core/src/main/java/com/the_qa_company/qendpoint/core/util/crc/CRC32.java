@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * Implementation of CRC32-C Algorithm. Width = 32 Poly = 0x1edc6f41 XorIn =

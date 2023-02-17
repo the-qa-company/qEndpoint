@@ -19,12 +19,12 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.util.LongCompare;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Comparator;
-
-import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.util.LongCompare;
 
 /**
  * Comparator between triples, based on the TripleComponentOrder

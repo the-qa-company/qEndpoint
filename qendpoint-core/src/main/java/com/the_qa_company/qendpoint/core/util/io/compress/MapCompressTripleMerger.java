@@ -7,19 +7,18 @@ import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionRe
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResultEmpty;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResultFile;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResultPartial;
+import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
+import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.SizeFetcher;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleIDComparator;
 import com.the_qa_company.qendpoint.core.util.ParallelSortableArrayList;
-import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
-import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.SizeFetcher;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

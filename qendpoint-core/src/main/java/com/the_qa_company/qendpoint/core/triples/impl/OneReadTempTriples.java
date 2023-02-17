@@ -14,8 +14,8 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.Triples;
-import com.the_qa_company.qendpoint.core.util.io.compress.NoDuplicateTripleIDIterator;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+import com.the_qa_company.qendpoint.core.util.io.compress.NoDuplicateTripleIDIterator;
 
 import java.io.File;
 import java.io.IOException;

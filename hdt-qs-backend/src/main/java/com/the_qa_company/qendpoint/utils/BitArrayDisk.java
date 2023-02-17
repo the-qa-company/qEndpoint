@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.utils;
 
-import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
-import org.eclipse.rdf4j.common.io.NioFile;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
+import org.eclipse.rdf4j.common.io.NioFile;
 
 import java.io.Closeable;
 import java.io.File;

@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressNodeReader;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressNodeReader;
 
 import java.io.IOException;
 

@@ -1,15 +1,15 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
-import org.junit.Assert;
-import org.junit.Test;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;

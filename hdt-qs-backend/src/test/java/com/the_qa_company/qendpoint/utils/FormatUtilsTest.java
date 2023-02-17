@@ -1,11 +1,10 @@
 package com.the_qa_company.qendpoint.utils;
 
-import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class FormatUtilsTest {
 

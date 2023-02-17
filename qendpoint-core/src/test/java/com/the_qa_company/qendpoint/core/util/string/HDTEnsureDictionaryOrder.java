@@ -1,10 +1,10 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
-import java.util.Comparator;
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+
+import java.util.Comparator;
+import java.util.Iterator;
 
 public class HDTEnsureDictionaryOrder {
 

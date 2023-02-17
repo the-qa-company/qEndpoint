@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 public class BitmapTriplesIteratorTest {
 

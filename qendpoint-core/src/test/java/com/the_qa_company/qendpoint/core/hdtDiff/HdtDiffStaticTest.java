@@ -40,6 +40,7 @@ public class HdtDiffStaticTest extends AbstractMapMemoryTest {
 		spec = new HDTSpecification();
 		spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 		spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, tempDictionaryImpl);
+		spec.set(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
 	}
 
 	private void ntFilesDiffTest(String a, String b, String amb) throws IOException, ParserException {

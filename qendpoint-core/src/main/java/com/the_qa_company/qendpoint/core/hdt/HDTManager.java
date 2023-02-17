@@ -1,14 +1,6 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -18,7 +10,15 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class HDTManager {
 

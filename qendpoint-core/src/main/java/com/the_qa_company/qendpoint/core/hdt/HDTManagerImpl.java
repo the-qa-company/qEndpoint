@@ -1,5 +1,8 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.KCatImpl;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
@@ -8,8 +11,11 @@ import com.the_qa_company.qendpoint.core.hdt.impl.HDTDiskImporter;
 import com.the_qa_company.qendpoint.core.hdt.impl.HDTImpl;
 import com.the_qa_company.qendpoint.core.hdt.impl.TempHDTImporterOnePass;
 import com.the_qa_company.qendpoint.core.hdt.impl.TempHDTImporterTwoPass;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CatTreeImpl;
 import com.the_qa_company.qendpoint.core.hdt.writer.TripleWriterHDT;
 import com.the_qa_company.qendpoint.core.header.HeaderUtil;
+import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -21,12 +27,6 @@ import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Profiler;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
-import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.KCatImpl;
-import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CatTreeImpl;
-import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,7 +188,7 @@ public class HDTManagerImpl extends HDTManager {
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
 		// create a parser for this rdf stream
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation);
+		RDFParserCallback parser = rdfNotation.createCallback(hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
 				true, rdfNotation)) {
@@ -267,7 +267,7 @@ public class HDTManagerImpl extends HDTManager {
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
 		// create a parser for this rdf stream
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
+		RDFParserCallback parser = rdfNotation.createCallback(hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
 				true, rdfNotation)) {
@@ -396,9 +396,8 @@ public class HDTManagerImpl extends HDTManager {
 	protected HDT doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream stream, String baseURI,
 			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
-		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, stream, baseURI, true,
-				rdfNotation)) {
+		RDFParserCallback parser = rdfNotation.createCallback(hdtFormat);
+		try (PipedCopyIterator<TripleString> iterator = parser.readAsIterator(stream, baseURI, true, rdfNotation)) {
 			return doHDTCatTree(fluxStop, supplier, iterator, baseURI, hdtFormat, listener);
 		}
 	}

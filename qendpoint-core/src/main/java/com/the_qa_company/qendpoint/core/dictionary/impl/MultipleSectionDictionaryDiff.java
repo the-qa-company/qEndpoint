@@ -1,5 +1,8 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryDiff;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
@@ -13,9 +16,6 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 

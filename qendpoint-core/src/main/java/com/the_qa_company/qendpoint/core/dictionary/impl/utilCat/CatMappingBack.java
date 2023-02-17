@@ -14,12 +14,12 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.utilCat;
 
+import com.the_qa_company.qendpoint.core.util.disk.LongArrayDisk;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import com.the_qa_company.qendpoint.core.util.disk.LongArrayDisk;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * @author Dennis Diefenbach &amp; Jose Gimenez Garcia

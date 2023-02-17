@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.literalsDict;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
@@ -8,11 +9,11 @@ import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdtCat.utils.Utility;
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import org.junit.Test;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +28,7 @@ public class HDTLiteralsDictTest {
 	public void testIdConversion() throws ParserException, IOException, NotFoundException {
 		ClassLoader classLoader = getClass().getClassLoader();
 		String file1 = Objects.requireNonNull(classLoader.getResource("example4+5.nt")).getFile();
-		HDTSpecification spec = new HDTSpecification();
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
 		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 		try (HDT hdt1 = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
 				null)) {
@@ -56,8 +57,9 @@ public class HDTLiteralsDictTest {
 	public void testGetDataTypeRange() throws IOException, ParserException {
 		ClassLoader classLoader = getClass().getClassLoader();
 		String file1 = Objects.requireNonNull(classLoader.getResource("example22.nt")).getFile();
-		HDTSpecification spec = new HDTSpecification();
-		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
 		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
 				null)) {
 			Dictionary dictionary = hdt.getDictionary();
@@ -75,8 +77,9 @@ public class HDTLiteralsDictTest {
 	public void testGetDataTypeOfId() throws IOException, ParserException {
 		ClassLoader classLoader = getClass().getClassLoader();
 		String file1 = Objects.requireNonNull(classLoader.getResource("example22.nt")).getFile();
-		HDTSpecification spec = new HDTSpecification();
-		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, true);
 		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
 				null)) {
 			Dictionary dictionary = hdt.getDictionary();

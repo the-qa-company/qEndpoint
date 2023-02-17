@@ -16,11 +16,9 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 	private final HDTQueryTool tool;

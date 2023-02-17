@@ -1,5 +1,9 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import com.the_qa_company.qendpoint.utils.CombinedNativeStoreResult;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -12,10 +16,6 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.sail.SailException;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,11 +1,11 @@
 package com.the_qa_company.qendpoint.core.util.concurrent;
 
+import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -19,8 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.hdt.impl;
 
-import java.io.IOException;
-
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
@@ -31,6 +29,8 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TriplesFactory;
+
+import java.io.IOException;
 
 /**
  * @author mario.arias, Eugen

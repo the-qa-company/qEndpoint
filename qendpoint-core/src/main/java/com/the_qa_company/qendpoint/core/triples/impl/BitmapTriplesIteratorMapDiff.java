@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryDiff;
 import com.the_qa_company.qendpoint.core.dictionary.impl.utilCat.CatMapping;
 import com.the_qa_company.qendpoint.core.dictionary.impl.utilCat.SectionUtil;
@@ -11,7 +12,6 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleIDComparator;
 import com.the_qa_company.qendpoint.core.triples.Triples;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 
 import java.util.ArrayList;
 import java.util.Iterator;

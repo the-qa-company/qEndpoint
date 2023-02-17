@@ -1,13 +1,13 @@
 package com.the_qa_company.qendpoint.core.dictionary;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.ControlInfo;
+import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.options.ControlInfo;
-import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 
 public interface DictionaryPrivate extends Dictionary {
 	/**

@@ -1,9 +1,12 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.writer.TripleWriterHDT;
+import com.the_qa_company.qendpoint.core.hdtDiff.utils.TripleStringUtility;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
@@ -15,9 +18,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.hdtDiff.utils.TripleStringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -10,13 +10,13 @@ import com.the_qa_company.qendpoint.core.search.HDTQuery;
 import com.the_qa_company.qendpoint.core.search.HDTQueryResult;
 import com.the_qa_company.qendpoint.core.search.HDTQueryTool;
 import com.the_qa_company.qendpoint.core.search.HDTQueryToolFactory;
+import com.the_qa_company.qendpoint.core.search.component.HDTConstant;
+import com.the_qa_company.qendpoint.core.search.exception.HDTSearchTimeoutException;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.junit.Ignore;
 import org.junit.Test;
-import com.the_qa_company.qendpoint.core.search.component.HDTConstant;
-import com.the_qa_company.qendpoint.core.search.exception.HDTSearchTimeoutException;
 
 import java.io.IOException;
 import java.nio.file.Path;

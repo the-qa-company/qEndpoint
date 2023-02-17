@@ -1,9 +1,9 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
+import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import org.junit.Assert;
 import org.junit.Test;
-import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 
 import java.io.IOException;
 import java.io.PipedInputStream;

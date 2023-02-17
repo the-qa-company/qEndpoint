@@ -18,10 +18,10 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.util.Comparator;
-
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.triples.impl.TripleIDInt;
+
+import java.util.Comparator;
 
 /**
  * Comparator between triples, based on the TripleComponentOrder

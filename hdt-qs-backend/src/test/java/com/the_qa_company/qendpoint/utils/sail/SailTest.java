@@ -1,5 +1,9 @@
 package com.the_qa_company.qendpoint.utils.sail;
 
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreTest;
 import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
@@ -24,10 +28,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
