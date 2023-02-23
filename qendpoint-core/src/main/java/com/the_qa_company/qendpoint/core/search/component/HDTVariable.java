@@ -21,4 +21,10 @@ public interface HDTVariable extends HDTComponent {
 	 * @return the variable's name, or null if this variable is nameless
 	 */
 	String getName();
+
+	/**
+	 * @return a copy of this component
+	 */
+	@Override
+	HDTVariable copy();
 }

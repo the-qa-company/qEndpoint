@@ -42,8 +42,9 @@ import java.util.function.Function;
 
 /**
  * Enumeration of the different valid notations for RDF data. It is used for
- * read/write operations by Jena.
+ * read/write operations by the core.
  */
+@SuppressWarnings("unused")
 public abstract class RDFNotation {
 	private static final Map<String, RDFNotation> EXTENSIONS = new HashMap<>();
 	private static final Map<RDFFormat, RDFNotation> RDF4J_FORMATS = new HashMap<>();

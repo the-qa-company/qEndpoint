@@ -10,7 +10,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class HDTSearchOptimizerTest extends AbstractQueryTest {
-	private final Optimizer optimizer = HDTSearchOptimizer.getInstance();
+	private final Optimizer optimizer = new HDTSearchOptimizer();
 
 	@Test
 	public void optimizerTest() {

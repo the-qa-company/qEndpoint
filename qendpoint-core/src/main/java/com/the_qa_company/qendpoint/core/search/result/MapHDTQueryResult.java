@@ -7,6 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Implementation of {@link HDTQueryResult} using a hash map
+ *
+ * @author Antoine Willerval
+ */
 public class MapHDTQueryResult implements HDTQueryResult {
 	private final Map<String, HDTConstant> results = new HashMap<>();
 
@@ -25,21 +30,34 @@ public class MapHDTQueryResult implements HDTQueryResult {
 	}
 
 	/**
-	 * add all the other variables from another result
+	 * add all the other variables from another result without doing any copy
 	 *
 	 * @param other other result
+	 * @see #addDeep(MapHDTQueryResult)
 	 */
 	public void add(MapHDTQueryResult other) {
 		this.results.putAll(other.results);
 	}
 
 	/**
-	 * @return a copy of the results
+	 * add all the other variables from another result with a deep copy
+	 *
+	 * @param other other result
+	 * @see #add(MapHDTQueryResult)
+	 */
+	public void addDeep(MapHDTQueryResult other) {
+		// faster than map and put
+		results.putAll(other.results);
+		results.replaceAll((str, cst) -> cst.copy());
+	}
+
+	/**
+	 * @return a deep copy of the results
 	 */
 	@Override
 	public MapHDTQueryResult copy() {
 		MapHDTQueryResult copy = new MapHDTQueryResult();
-		copy.add(this);
+		copy.addDeep(copy);
 		return copy;
 	}
 

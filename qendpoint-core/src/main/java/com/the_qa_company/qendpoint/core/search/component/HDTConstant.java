@@ -48,4 +48,10 @@ public interface HDTConstant extends HDTComponent {
 
 	@Override
 	boolean equals(Object other);
+
+	/**
+	 * @return a copy of this component
+	 */
+	@Override
+	HDTConstant copy();
 }

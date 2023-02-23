@@ -43,4 +43,8 @@ public interface HDTComponent {
 		throw new IllegalArgumentException("This pattern component isn't a variable!");
 	}
 
+	/**
+	 * @return a copy of this component
+	 */
+	HDTComponent copy();
 }

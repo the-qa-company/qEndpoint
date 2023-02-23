@@ -9,8 +9,26 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
  * @author Antoine Willerval
  */
 public enum VarPattern {
-	CCC((hdt, s, p, o) -> true), XCX((hdt, s, p, o) -> s == o), CXX((hdt, s, p, o) -> poe(hdt, p, o)),
-	XXC((hdt, s, p, o) -> spe(hdt, s, p)), XXX((hdt, s, p, o) -> s == o && poe(hdt, p, o));
+	/**
+	 * full spo
+	 */
+	CCC((hdt, s, p, o) -> true),
+	/**
+	 * XPX
+	 */
+	XCX((hdt, s, p, o) -> s == o),
+	/**
+	 * SXX
+	 */
+	CXX((hdt, s, p, o) -> poe(hdt, p, o)),
+	/**
+	 * XXO
+	 */
+	XXC((hdt, s, p, o) -> spe(hdt, s, p)),
+	/**
+	 * XXX
+	 */
+	XXX((hdt, s, p, o) -> s == o && poe(hdt, p, o));
 
 	private static boolean spe(HDT hdt, long s, long p) {
 		return testSectionElementEquals(hdt, TripleComponentRole.SUBJECT, s, TripleComponentRole.PREDICATE, p);

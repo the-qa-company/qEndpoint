@@ -14,11 +14,6 @@ import java.util.List;
 import java.util.OptionalInt;
 
 public class HDTSearchOptimizer implements Optimizer {
-	private static final HDTSearchOptimizer instance = new HDTSearchOptimizer();
-
-	public static Optimizer getInstance() {
-		return instance;
-	}
 
 	private static <T> OptionalInt min(List<T> list, Comparator<T> comparator) {
 		if (list.isEmpty()) {
@@ -112,10 +107,14 @@ public class HDTSearchOptimizer implements Optimizer {
 	}
 
 	private int compareMask(HDTComponentTripleMask o1, HDTComponentTripleMask o2) {
+		// compare via the count of variable
 		int c = Integer.compare(varSize(o1), varSize(o2));
+
 		if (c != 0) {
 			return c;
 		}
+
+		// compare using the pattern priority
 
 		return Integer.compare(patternPriority(o1), patternPriority(o2));
 	}
@@ -188,7 +187,12 @@ public class HDTSearchOptimizer implements Optimizer {
 
 		@Override
 		public long getId(DictionarySectionRole role) {
-			throw new NotImplementedException();
+			return 0;
+		}
+
+		@Override
+		public HDTConstant copy() {
+			return this;
 		}
 
 		@Override

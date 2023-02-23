@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponent;
 import com.the_qa_company.qendpoint.core.search.component.HDTComponentTriple;
 import com.the_qa_company.qendpoint.core.search.component.HDTVariable;
+import com.the_qa_company.qendpoint.core.search.optimizer.HDTSearchOptimizer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +35,8 @@ public class SimpleQueryPattern implements HDTQuery {
 			registerVariable(pattern.getPredicate());
 			registerVariable(pattern.getObject());
 		}
+
+		new HDTSearchOptimizer().optimize(this.patterns);
 	}
 
 	private void registerVariable(HDTComponent component) {

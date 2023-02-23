@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.search.query;
 
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.search.HDTQuery;
 import com.the_qa_company.qendpoint.core.search.HDTQueryResult;
@@ -20,6 +21,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Basic nested join iterator for search over unknown order patterns
+ *
+ * @author Antoine Willerval
+ */
 public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 	private final HDTQueryTool tool;
 	private final HDTComponentTriple[] patterns;
@@ -220,6 +226,12 @@ public class NestedJoinQueryIterator extends FetcherIterator<HDTQueryResult> {
 		@Override
 		public String getName() {
 			return original.getName();
+		}
+
+		@Override
+		public HDTVariable copy() {
+			// this variable is only used internally
+			throw new NotImplementedException();
 		}
 	}
 }

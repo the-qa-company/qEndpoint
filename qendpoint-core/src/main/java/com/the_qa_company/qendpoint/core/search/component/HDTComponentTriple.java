@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.search.component;
 
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+
 import java.util.List;
 
 /**
@@ -100,5 +102,38 @@ public interface HDTComponentTriple {
 				}
 			}
 		}
+	}
+
+	/**
+	 * @return this triple as a {@link TripleID}
+	 */
+	default TripleID asTripleId() {
+		HDTComponent s = getSubject();
+		HDTComponent p = getPredicate();
+		HDTComponent o = getObject();
+
+		long sid;
+		long pid;
+		long oid;
+
+		if (s == null || s.isVariable()) {
+			sid = 0;
+		} else {
+			sid = s.asConstant().getAsSubjectId();
+		}
+
+		if (p == null || p.isVariable()) {
+			pid = 0;
+		} else {
+			pid = p.asConstant().getAsPredicate();
+		}
+
+		if (o == null || o.isVariable()) {
+			oid = 0;
+		} else {
+			oid = o.asConstant().getAsObjectId();
+		}
+
+		return new TripleID(sid, pid, oid);
 	}
 }

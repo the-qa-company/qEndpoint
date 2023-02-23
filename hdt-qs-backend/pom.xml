@@ -64,7 +64,6 @@
             <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- v1.15 is needed for Jena 3.14+ - copied from org.apache.jena:jena:pom -->
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>

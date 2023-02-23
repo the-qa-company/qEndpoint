@@ -21,6 +21,11 @@ public class SimpleHDTVariable implements HDTVariable {
 		return name;
 	}
 
+	@Override
+	public HDTVariable copy() {
+		return new SimpleHDTVariable(hdt, name);
+	}
+
 	public HDT getHdt() {
 		return hdt;
 	}

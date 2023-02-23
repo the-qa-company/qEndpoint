@@ -18,6 +18,9 @@
 
 package com.the_qa_company.qendpoint.core.util;
 
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.DelayedString;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -29,6 +32,25 @@ import java.util.TimeZone;
 public class StringUtil {
 
 	private StringUtil() {
+	}
+
+	/**
+	 * copy this char sequence into a new one, only works for core CS, otherwise
+	 * it will convert it to a string
+	 *
+	 * @param s char sequence
+	 * @return copy of the char sequence
+	 */
+	public static CharSequence copy(CharSequence s) {
+		s = DelayedString.unwrap(s);
+
+		if (s instanceof ByteString) {
+			return ((ByteString) s).copy();
+		}
+		if (s == null) {
+			return null;
+		}
+		return s.toString();
 	}
 
 	public static String getPercent(long v1, long max) {

@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.search.component;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 
@@ -18,6 +19,14 @@ public class SimpleHDTConstant implements HDTConstant {
 	private DictionarySectionRole sharedLocation;
 	private long predicate;
 	private CharSequence value;
+
+	private SimpleHDTConstant(SimpleHDTConstant other) {
+		this.hdt = other.hdt;
+		this.sharedLocation = other.sharedLocation;
+		this.shid = other.shid;
+		this.predicate = other.predicate;
+		this.value = StringUtil.copy(other.value);
+	}
 
 	public SimpleHDTConstant(HDT hdt, long id, DictionarySectionRole location) {
 		this.hdt = hdt;
@@ -199,6 +208,11 @@ public class SimpleHDTConstant implements HDTConstant {
 		}
 		// we load the strings because we can't compare with IDs
 		return CharSequenceComparator.getInstance().compare(getValue(), ((HDTConstant) obj).getValue()) == 0;
+	}
+
+	@Override
+	public HDTConstant copy() {
+		return new SimpleHDTConstant(this);
 	}
 
 	@Override

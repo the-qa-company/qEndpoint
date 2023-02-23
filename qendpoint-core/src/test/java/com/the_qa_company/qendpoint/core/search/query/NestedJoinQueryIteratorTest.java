@@ -10,7 +10,6 @@ import com.the_qa_company.qendpoint.core.search.HDTQuery;
 import com.the_qa_company.qendpoint.core.search.HDTQueryResult;
 import com.the_qa_company.qendpoint.core.search.HDTQueryTool;
 import com.the_qa_company.qendpoint.core.search.HDTQueryToolFactory;
-import com.the_qa_company.qendpoint.core.search.component.HDTConstant;
 import com.the_qa_company.qendpoint.core.search.exception.HDTSearchTimeoutException;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
@@ -113,8 +112,10 @@ public class NestedJoinQueryIteratorTest {
 					HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,
 					Path.of("N:\\qEndpoint\\qendpoint\\hdt-store\\indexWork"));
 			StopWatch watch = new StopWatch();
-			String path = "C:\\Users\\wilat\\AppData\\Roaming\\qendpoint\\hdt-store\\index_dev.hdt";
+			// String path =
+			// "C:\\Users\\wilat\\AppData\\Roaming\\qendpoint\\hdt-store\\index_dev.hdt";
 			// String path = "N:\\qEndpoint\\qendpoint\\hdt-store\\wdb.hdt";
+			String path = "C:\\Users\\wilat\\workspace\\qEndpoint\\qendpoint\\hdt-store\\all.hdt";
 			try (HDT hdt = HDTManager.mapIndexedHDT(path, spec, ProgressListener.sout())) {
 				System.out.println("HDT INDEXED WITH " + hdt.getTriples().getNumberOfElements() + " triples in "
 						+ watch.stopAndShow());
@@ -133,11 +134,15 @@ public class NestedJoinQueryIteratorTest {
 				tool.registerPrefix("wd", "http://www.wikidata.org/entity/");
 				tool.registerPrefix("wdt", "http://www.wikidata.org/prop/direct/");
 
-				HDTQuery query = tool.createQuery(tool.triple("?s", "wdt:P31", "wd:Q5"), tool.triple("?s", "?p", "?o"),
-						tool.triple("?o", "wdt:P31", "?type"));
+				// HDTQuery query = tool.createQuery(tool.triple("?s",
+				// "wdt:P31", "wd:Q5"), tool.triple("?s", "?p", "?o"),
+				// tool.triple("?o", "wdt:P31", "?type"));
+				HDTQuery query = tool.createQuery(
+						// tool.triple("?pid", "wdt:P31", "wd:Q5"),
+						tool.triple("?pid", "wdt:P106", "?prid"));
 
 				// 5min
-				query.setTimeout(300_000_000L);
+				query.setTimeout(300_000L);
 
 				System.out.println("----- query -----");
 				System.out.println(query);
@@ -158,16 +163,20 @@ public class NestedJoinQueryIteratorTest {
 
 					while (it.hasNext()) {
 						HDTQueryResult result = it.next();
-						HDTConstant pValue = result.getComponent("p");
-						HDTConstant typeValue = result.getComponent("type");
+
+						// HDTConstant pValue = result.getComponent("p");
+						// HDTConstant typeValue = result.getComponent("type");
 
 						++count;
-						System.out.println(
-								count + " - [" + watch.stopAndShow() + "] p=" + pValue + " / type=" + typeValue);
-						if (count == 100) {
-							break;
+						// System.out.println(
+						// count + " - [" + watch.stopAndShow() + "] p=" +
+						// pValue + " / type=" + typeValue);
+						if (count % 10_000 == 0) {
+							System.out.println((watch.stopAndGet() / 1_000_000_000L) + " s " + count + " pid="
+									+ result.getComponent("pid") + ", prid=" + result.getComponent("prid"));
 						}
 					}
+					System.out.println(count);
 				} catch (HDTSearchTimeoutException e) {
 					e.printStackTrace();
 				}
@@ -182,11 +191,6 @@ public class NestedJoinQueryIteratorTest {
 				// without any stop using WDBench dataset (only direct property)
 				// 112833152 in 2 min 34 sec 889 ms 946 us
 			}
-		}
-
-		@Test
-		public void test() {
-
 		}
 	}
 }
