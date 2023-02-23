@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        jdk: [11, 17]
+        jdk: [17]
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
@@ -63,7 +63,7 @@ jobs:
     if: needs.find_changes.outputs.core == 'true'
     strategy:
       matrix:
-        jdk: [11, 17]
+        jdk: [17]
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
@@ -90,7 +90,7 @@ jobs:
     if: needs.find_changes.outputs.endpoint == 'true'
     strategy:
       matrix:
-        jdk: [ 11, 17 ]
+        jdk: [ 17 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
@@ -120,7 +120,7 @@ jobs:
     if: needs.find_changes.outputs.endpoint == 'true'
     strategy:
       matrix:
-        jdk: [ 11, 17 ]
+        jdk: [ 17 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
