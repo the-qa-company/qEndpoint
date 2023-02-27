@@ -2,7 +2,6 @@ package com.the_qa_company.qendpoint;
 
 import com.the_qa_company.qendpoint.controller.Sparql;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -10,7 +9,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
-@SpringBootApplication(exclude = { SolrAutoConfiguration.class })
+@SpringBootApplication
 public class Application {
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		System.setProperty("org.eclipse.rdf4j.rio.verify_uri_syntax", "false");
