@@ -80,6 +80,10 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v4
