@@ -1,3 +1,8 @@
+## Version 1.9.0 
+    
+- add core in the endpoint as a fork from rdfhdt, package `org.rdfhdt.hdt` was moved to `com.the_qa_company.qendpoint.core`
+- add cli to test core
+- fix Windows version
 ## Version 1.8.0 
     
 - remove default full-text lucene sail

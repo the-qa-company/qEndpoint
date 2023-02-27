@@ -1,3 +1,3 @@
-- add core in the endpoint as a fork from rdfhdt, package `org.rdfhdt.hdt` was moved to `com.the_qa_company.qendpoint.core`
-- add cli to test core
-- fix Windows version
+- update to Springboot 3.0.2
+- remove JLargeArray dependency
+- set Java version to 17
