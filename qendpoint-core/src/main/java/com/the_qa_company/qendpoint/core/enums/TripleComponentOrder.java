@@ -26,29 +26,52 @@ public enum TripleComponentOrder {
 	/**
 	 * Subject, predicate, object
 	 */
-	Unknown,
+	Unknown(null, null, null),
 	/**
 	 * Subject, predicate, object
 	 */
-	SPO,
+	SPO(TripleComponentRole.SUBJECT, TripleComponentRole.PREDICATE, TripleComponentRole.OBJECT),
 	/**
 	 * Subject, object, predicate
 	 */
-	SOP,
+	SOP(TripleComponentRole.SUBJECT, TripleComponentRole.OBJECT, TripleComponentRole.PREDICATE),
 	/**
 	 * Predicate, subject, object
 	 */
-	PSO,
+	PSO(TripleComponentRole.PREDICATE, TripleComponentRole.SUBJECT, TripleComponentRole.OBJECT),
 	/**
 	 * Predicate, object, subject
 	 */
-	POS,
+	POS(TripleComponentRole.PREDICATE, TripleComponentRole.OBJECT, TripleComponentRole.SUBJECT),
 	/**
 	 * Object, subject, predicate
 	 */
-	OSP,
+	OSP(TripleComponentRole.OBJECT, TripleComponentRole.SUBJECT, TripleComponentRole.PREDICATE),
 	/**
 	 * Object, predicate, subject
 	 */
-	OPS,
+	OPS(TripleComponentRole.OBJECT, TripleComponentRole.PREDICATE, TripleComponentRole.SUBJECT);
+
+	private final TripleComponentRole subjectMapping;
+	private final TripleComponentRole predicateMapping;
+	private final TripleComponentRole objectMapping;
+
+	TripleComponentOrder(TripleComponentRole subjectMapping, TripleComponentRole predicateMapping,
+			TripleComponentRole objectMapping) {
+		this.subjectMapping = subjectMapping;
+		this.predicateMapping = predicateMapping;
+		this.objectMapping = objectMapping;
+	}
+
+	public TripleComponentRole getSubjectMapping() {
+		return subjectMapping;
+	}
+
+	public TripleComponentRole getPredicateMapping() {
+		return predicateMapping;
+	}
+
+	public TripleComponentRole getObjectMapping() {
+		return objectMapping;
+	}
 }
