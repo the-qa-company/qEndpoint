@@ -64,9 +64,9 @@ jobs:
         with:
           name: "qendpoint.jar"
           path: "qendpoint.jar"
-      - name: move endpoint package
+      - name: move cli
         run: mv qendpoint-cli/target/qendpoint-cli-*-distribution.zip qendpoint-cli.zip
-      - name: Deploy jar
+      - name: Deploy CLI zip
         uses: actions/upload-artifact@v3
         with:
           name: "qendpoint-cli.zip"
@@ -109,10 +109,6 @@ jobs:
           name: "qendpoint.jar"
       - name: Create Icon
         run: scripts/create_osx_icon.sh docs/images/logo_fill_icon.png docs/images/mac_icons.icns
-      - name: Install gon via HomeBrew for code notarization
-        run: |
-          brew tap mitchellh/gon
-          brew install mitchellh/gon/gon
       - name: Package jar as dmg installer
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -121,6 +117,10 @@ jobs:
           MACOS_DEV_ID: ${{ secrets.MACOS_DEVID }}
           MACOS_TEAMID: ${{ secrets.MACOS_TEAMID }}
           AC_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+          NOTARIZATION_USERNAME_NEW: ${{ secrets.NOTARIZATION_USERNAME_NEW }}
+          NOTARIZATION_TEAM_NEW: ${{ secrets.NOTARIZATION_TEAM_NEW }}
+          NOTARIZATION_PASSWORD_NEW: ${{ secrets.NOTARIZATION_PASSWORD_NEW }}
+
         run: scripts/build_package_osx.sh qendpoint.jar
       - name: Upload dmg
         uses: actions/upload-artifact@v3
@@ -271,6 +271,7 @@ jobs:
         run: |
           mkdir -p deploy_file
           mv qendpoint.*/* deploy_file
+          mv qendpoint-cli*/* deploy_file
       - name: Create release body
         run: scripts/build_release_input.sh
       - name: Create release with artifacts
