@@ -11,7 +11,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       endpoint: ${{ steps.filter.outputs.endpoint }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -32,10 +32,11 @@ jobs:
       matrix:
         jdk: [17]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
         uses: actions/cache@v2
@@ -59,10 +60,11 @@ jobs:
       matrix:
         jdk: [17]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
         uses: actions/cache@v2
@@ -86,10 +88,11 @@ jobs:
       matrix:
         jdk: [ 17 ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
         uses: actions/cache@v2
@@ -113,10 +116,11 @@ jobs:
       matrix:
         jdk: [ 17 ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
         uses: actions/cache@v2

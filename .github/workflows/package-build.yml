@@ -30,12 +30,13 @@ jobs:
     outputs:
       version: ${{ steps.version_get.outputs.version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: version_get
-        run: echo "::set-output name=version::$(scripts/get_version.sh)"
+        run: echo "version=$(scripts/get_version.sh)" >> $GITHUB_OUTPUT
       - name: Set up JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: 17
       - name: Use Node.js 16
         uses: actions/setup-node@v3
@@ -81,8 +82,9 @@ jobs:
       packages: write
     steps:
       - name: Set up JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: 17
       - name: Import GPG key
         id: import_gpg
@@ -90,7 +92,7 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: maven-settings-action
         uses: s4u/maven-settings-action@v2.5.0
         with:
@@ -103,9 +105,11 @@ jobs:
     runs-on: macos-latest
     if: ${{ !inputs.publish_only_maven }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: 17
       - name: Download qendpoint jar
         uses: actions/download-artifact@v3
@@ -137,9 +141,11 @@ jobs:
     runs-on: windows-latest
     if: ${{ !inputs.publish_only_maven }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: actions/checkout@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: 17
       - name: Download endpoint jar
         uses: actions/download-artifact@v3
@@ -160,9 +166,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !inputs.publish_only_maven }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
+          distribution: 'microsoft'
           java-version: 17
       - name: Download endpoint jar
         uses: actions/download-artifact@v3
@@ -268,7 +276,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !inputs.publish_only_maven }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download artifacts
         uses: actions/download-artifact@v3
       - name: Extract artifacts
