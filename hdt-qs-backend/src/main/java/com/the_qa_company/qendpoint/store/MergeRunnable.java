@@ -5,7 +5,7 @@ import com.the_qa_company.qendpoint.controller.Sparql;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.model.IRI;
@@ -833,13 +833,30 @@ public class MergeRunnable {
 	private void createHDTDump(String rdfInput, String hdtOutput) throws IOException {
 		String baseURI = Sparql.baseURIFromFilename(rdfInput);
 		StopWatch sw = new StopWatch();
-		try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
-				this.endpoint.getHDTSpec(), null)) {
-			logger.info("File converted in: " + sw.stopAndShow());
-			hdt.saveToHDT(hdtOutput, null);
-			logger.info("HDT saved to file in: " + sw.stopAndShow());
-		} catch (ParserException e) {
-			throw new IOException(e);
+		Path location = endpointFiles.getLocationHdtPath().resolve("merger");
+
+		OverrideHDTOptions oopt = new OverrideHDTOptions(this.endpoint.getHDTSpec());
+		oopt.setOverride(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK);
+		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location);
+		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("wip.hdt"));
+		try {
+			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
+					oopt, null)) {
+				logger.info("File converted in: " + sw.stopAndShow());
+				hdt.saveToHDT(hdtOutput, null);
+				logger.info("HDT saved to file in: " + sw.stopAndShow());
+			} catch (ParserException e) {
+				throw new IOException(e);
+			}
+		} finally {
+			try {
+				if (Files.exists(location)) {
+					PathUtils.deleteDirectory(location);
+				}
+			} catch (IOException e) {
+				// ignore exception
+				e.printStackTrace();
+			}
 		}
 	}
 
