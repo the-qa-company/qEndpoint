@@ -13,6 +13,7 @@ body:
       description: Part of the endpoint? (leave empty if you don't know)
       options:
         - label: Backend (hdt-qs-backend)
+        - label: Core (qendpoint-core)
         - label: Frontend (hdt-qs-frontend)
         - label: Benchmark (hdt-qs-benchmark)
         - label: Other
