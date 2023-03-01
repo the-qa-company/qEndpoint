@@ -837,7 +837,7 @@ public class MergeRunnable {
 
 		OverrideHDTOptions oopt = new OverrideHDTOptions(this.endpoint.getHDTSpec());
 		oopt.setOverride(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK);
-		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location);
+		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gen"));
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("wip.hdt"));
 		try {
 			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
