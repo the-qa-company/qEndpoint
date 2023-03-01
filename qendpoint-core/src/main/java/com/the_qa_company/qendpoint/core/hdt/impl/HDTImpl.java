@@ -107,6 +107,13 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		triples = TriplesFactory.createTriples(this.spec);
 	}
 
+	public HDTImpl(HeaderPrivate header, DictionaryPrivate dictionary, TriplesPrivate triples, HDTOptions spec) {
+		super(spec);
+		this.header = header;
+		this.dictionary = dictionary;
+		this.triples = triples;
+	}
+
 	@Override
 	public void loadFromHDT(InputStream input, ProgressListener listener) throws IOException {
 		ControlInfo ci = new ControlInformation();

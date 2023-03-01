@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
@@ -8,16 +9,15 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySe
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
+import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.StopIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.CustomIterator;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.StopIterator;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
@@ -47,6 +47,16 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 		predicates = new PFCDictionarySection(spec);
 		objects = new TreeMap<>(CharSequenceComparator.getInstance());
 		shared = new PFCDictionarySection(spec);
+	}
+
+	public MultipleSectionDictionary(HDTOptions spec, DictionarySectionPrivate subjects,
+			DictionarySectionPrivate predicates, TreeMap<ByteString, DictionarySectionPrivate> objects,
+			DictionarySectionPrivate shared) {
+		super(spec);
+		this.subjects = subjects;
+		this.predicates = predicates;
+		this.objects = objects;
+		this.shared = shared;
 	}
 
 	/*

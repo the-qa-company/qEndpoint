@@ -1,13 +1,13 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -18,6 +18,7 @@ import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -55,6 +56,11 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void load(TempDictionarySection other, ProgressListener plistener) {
 		load(other.getSortedEntries(), other.getNumberOfElements(), plistener);
+	}
+
+	public WriteDictionarySectionAppender createAppender(long count, ProgressListener listener) throws IOException {
+		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, count / blockSize);
+		return new WriteDictionarySectionAppender(count, listener);
 	}
 
 	public void load(Iterator<? extends CharSequence> it, long count, ProgressListener plistener) {
@@ -153,5 +159,69 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		IOUtil.closeAll(blocks, tempFilename, blockTempFilename);
+	}
+
+	public class WriteDictionarySectionAppender implements Closeable {
+		private final ProgressListener listener;
+		private final long count;
+
+		private final long block;
+		private final CountOutputStream out;
+		long currentCount = 0;
+		CRCOutputStream crcout;
+		ByteString previousStr = null;
+
+		public WriteDictionarySectionAppender(long count, ProgressListener listener) throws IOException {
+			this.listener = ProgressListener.ofNullable(listener);
+			this.count = count;
+			this.block = count < 10 ? 1 : count / 10;
+			out = new CountOutputStream(tempFilename.openOutputStream(bufferSize));
+			crcout = new CRCOutputStream(out, new CRC32());
+		}
+
+		public void append(ByteString str) throws IOException {
+			assert str != null;
+			if (numberElements % blockSize == 0) {
+				blocks.append(out.getTotalBytes());
+
+				// Copy full string
+				ByteStringUtil.append(crcout, str, 0);
+			} else {
+				// Find common part.
+				int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+				// Write Delta in VByte
+				VByte.encode(crcout, delta);
+				// Write remaining
+				ByteStringUtil.append(crcout, str, delta);
+			}
+			crcout.write(0);
+			previousStr = str;
+			numberElements++;
+			if (currentCount % block == 0) {
+				listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+			}
+			currentCount++;
+		}
+
+		public long getNumberElements() {
+			return numberElements;
+		}
+
+		@Override
+		public void close() throws IOException {
+			try {
+				byteoutSize = out.getTotalBytes();
+				crcout.writeCRC();
+				blocks.append(byteoutSize);
+				// Trim text/blocks
+				blocks.aggressiveTrimToSize();
+				if (numberElements % 100_000 == 0) {
+					listener.notifyProgress(100, "Completed section filling");
+				}
+
+			} finally {
+				IOUtil.closeObject(out);
+			}
+		}
 	}
 }

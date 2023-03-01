@@ -106,6 +106,20 @@ public class MergeExceptionIterator<T, E extends Exception> implements Exception
 	/**
 	 * Create a tree of merge iterators from an array of element
 	 *
+	 * @param array      the elements
+	 * @param comparator comparator for the merge iterator
+	 * @param <T>        type of the element
+	 * @param <E>        exception returned by the iterator
+	 * @return the iterator
+	 */
+	public static <T, E extends Exception> ExceptionIterator<T, E> buildOfTree(List<ExceptionIterator<T, E>> array,
+			Comparator<T> comparator) {
+		return buildOfTree(Function.identity(), comparator, array, 0, array.size());
+	}
+
+	/**
+	 * Create a tree of merge iterators from an array of element
+	 *
 	 * @param itFunction a function to create an iterator from an element
 	 * @param comp       comparator for the merge iterator
 	 * @param array      the elements

@@ -1,18 +1,17 @@
 package com.the_qa_company.qendpoint.core.util;
 
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -259,6 +258,18 @@ public class LargeFakeDataSetStreamSupplier {
 	 * @throws ParserException parsing exception
 	 * @throws IOException     io exception
 	 */
+	public void createAndSaveFakeHDT(HDTOptions spec, Path location) throws ParserException, IOException {
+		createAndSaveFakeHDT(spec, location.toAbsolutePath().toString());
+	}
+
+	/**
+	 * create an HDT from the stream and save it to a file
+	 *
+	 * @param spec     hdt options
+	 * @param location save location
+	 * @throws ParserException parsing exception
+	 * @throws IOException     io exception
+	 */
 	public void createAndSaveFakeHDT(HDTOptions spec, String location) throws ParserException, IOException {
 		try (HDT hdt = createFakeHDT(spec)) {
 			hdt.saveToHDT(location, null);
@@ -303,6 +314,13 @@ public class LargeFakeDataSetStreamSupplier {
 			// no type/language node
 			return text;
 		}
+	}
+
+	/**
+	 * @return the stream of the objects
+	 */
+	public Iterator<? extends CharSequence> objectIterator() {
+		return new MapIterator<>(createTripleStringStream(), TripleString::getObject);
 	}
 
 	private class FakeStatementIterator implements Iterator<TripleString> {

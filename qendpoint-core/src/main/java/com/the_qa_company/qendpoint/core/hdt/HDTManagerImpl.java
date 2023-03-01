@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 
@@ -44,6 +45,10 @@ public class HDTManagerImpl extends HDTManager {
 	@Override
 	public HDTOptions doReadOptions(String file) throws IOException {
 		return new HDTSpecification(file);
+	}
+
+	public static HDT loadOrMapHDT(Path hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+		return loadOrMapHDT(hdtFileName.toAbsolutePath().toString(), listener, spec);
 	}
 
 	public static HDT loadOrMapHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {

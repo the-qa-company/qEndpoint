@@ -321,7 +321,7 @@ public class HDTOptionsKeys {
 	/**
 	 * 4 Section dictionary
 	 */
-	@Value(key = DICTIONARY_TYPE_KEY, desc = "Four sectiob dictionary")
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Four section dictionary")
 	public static final String DICTIONARY_TYPE_VALUE_FOUR_SECTION = HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION;
 	/**
 	 * Prefix AND Suffix front-coded (PSFC) 4 Section dictionary

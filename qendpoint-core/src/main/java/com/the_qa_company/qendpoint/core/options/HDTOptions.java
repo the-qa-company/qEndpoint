@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -327,6 +328,42 @@ public interface HDTOptions {
 	 */
 	default long getInt(String key, long defaultValue) {
 		return getInt(key, () -> defaultValue);
+	}
+
+	/**
+	 * get a long value
+	 *
+	 * @param key key
+	 * @return value or 0 if not defined
+	 */
+	default int getInt32(String key) {
+		return getInt32(key, 0);
+	}
+
+	/**
+	 * get a long
+	 *
+	 * @param key          key
+	 * @param defaultValue default value
+	 * @return long or defaultValue if the value isn't defined
+	 */
+	default int getInt32(String key, IntSupplier defaultValue) {
+		String l = get(key);
+		if (l == null) {
+			return defaultValue.getAsInt();
+		}
+		return Integer.parseInt(l);
+	}
+
+	/**
+	 * get a long
+	 *
+	 * @param key          key
+	 * @param defaultValue default value
+	 * @return long or defaultValue if the value isn't defined
+	 */
+	default int getInt32(String key, int defaultValue) {
+		return getInt32(key, () -> defaultValue);
 	}
 
 	/**

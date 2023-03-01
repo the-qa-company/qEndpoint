@@ -77,6 +77,26 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	}
 
 	/**
+	 * copy this string and append another string
+	 *
+	 * @param other other string
+	 * @return new byte string
+	 */
+	default ByteString copyPreAppend(CharSequence other) {
+		return ByteString.of(other).copyAppend(this);
+	}
+
+	/**
+	 * copy this string and append another string
+	 *
+	 * @param other other string
+	 * @return new byte string
+	 */
+	default ByteString copyPreAppend(ByteString other) {
+		return other.copyAppend(this);
+	}
+
+	/**
 	 * @return copy this byte string into another one
 	 */
 	default ByteString copy() {

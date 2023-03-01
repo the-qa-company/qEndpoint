@@ -64,6 +64,25 @@ public class EndpointFiles {
 	}
 
 	/**
+	 * create a file getter for a store
+	 *
+	 * @param locationEndpoint the qendpoint location dir
+	 * @param hdtIndexName     the hdt index name
+	 */
+	public EndpointFiles(Path locationEndpoint, String hdtIndexName) {
+		this(locationEndpoint.resolve("native-store"), locationEndpoint.resolve("hdt-store"), hdtIndexName);
+	}
+
+	/**
+	 * create a file getter for a store
+	 *
+	 * @param locationEndpoint the qendpoint location dir
+	 */
+	public EndpointFiles(Path locationEndpoint) {
+		this(locationEndpoint, "index_dev.hdt");
+	}
+
+	/**
 	 * @return path of {@link #getLocationHdt()}
 	 */
 	public Path getLocationHdtPath() {
