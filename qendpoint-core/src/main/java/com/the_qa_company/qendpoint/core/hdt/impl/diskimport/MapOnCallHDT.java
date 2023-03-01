@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
  * HDT implementation delaying the map method to avoid mapping into memory a
@@ -68,7 +69,7 @@ public class MapOnCallHDT implements HDT {
 		Path future = Path.of(fileName).toAbsolutePath();
 		if (!future.equals(hdtFile)) {
 			// copy file if not equals
-			Files.copy(hdtFile, future);
+			Files.copy(hdtFile, future, StandardCopyOption.REPLACE_EXISTING);
 		}
 		// otherwise, no need to copy a file if it's already there
 	}
