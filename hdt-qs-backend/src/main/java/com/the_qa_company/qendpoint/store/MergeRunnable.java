@@ -776,9 +776,9 @@ public class MergeRunnable {
 		this.endpoint.markDeletedTempTriples();
 		this.endpoint.setFreezeNotifications(false);
 		logger.debug("Releasing lock for ID conversion ....");
-		translateLock.release();
-		logger.debug("Translate-Lock released");
-		logger.debug("Lock released");
+
+		this.endpoint.setMerging(false);
+		this.endpoint.isMergeTriggered = false;
 
 		debugStepPoint(MergeRunnableStopPoint.STEP3_END);
 		completedMerge();
@@ -787,10 +787,11 @@ public class MergeRunnable {
 		deleteOld(endpointFiles.getHDTIndex());
 		deleteOld(endpointFiles.getHDTIndexV11());
 
-		debugStepPoint(MergeRunnableStopPoint.MERGE_END);
+		translateLock.release();
+		logger.debug("Translate-Lock released");
+		logger.debug("Lock released");
 
-		this.endpoint.setMerging(false);
-		this.endpoint.isMergeTriggered = false;
+		debugStepPoint(MergeRunnableStopPoint.MERGE_END);
 
 		debugStepPoint(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
 
