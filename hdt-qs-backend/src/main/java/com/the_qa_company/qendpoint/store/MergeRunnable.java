@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 
@@ -148,7 +148,7 @@ public class MergeRunnable {
 	 */
 	private static void delete(String file) {
 		try {
-			Files.delete(Paths.get(file));
+			Files.delete(Path.of(file));
 		} catch (IOException e) {
 			logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -163,7 +163,7 @@ public class MergeRunnable {
 	 */
 	private static void deleteIfExists(String file) {
 		try {
-			Files.deleteIfExists(Paths.get(file));
+			Files.deleteIfExists(Path.of(file));
 		} catch (IOException e) {
 			logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -190,7 +190,7 @@ public class MergeRunnable {
 	 * @return true if the file exists, false otherwise
 	 */
 	private static boolean exists(String file) {
-		return Files.exists(Paths.get(file));
+		return Files.exists(Path.of(file));
 	}
 
 	/**
@@ -229,7 +229,7 @@ public class MergeRunnable {
 	 */
 	private static void rename(String oldFile, String newFile) {
 		try {
-			Files.move(Path.of(oldFile), Path.of(newFile));
+			Files.move(Path.of(oldFile), Path.of(newFile), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -429,16 +429,12 @@ public class MergeRunnable {
 		// thread with the runStep
 		int step = getRestartStep();
 		logger.debug("Restart step: {}", step);
-		switch (step) {
-		case 0:
-			return Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
-		case 2:
-			return Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
-		case 3:
-			return Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
-		default:
-			return Optional.empty();
-		}
+		return switch (step) {
+		case 0 -> Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
+		case 2 -> Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
+		case 3 -> Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
+		default -> Optional.empty();
+		};
 	}
 
 	/**
@@ -450,7 +446,7 @@ public class MergeRunnable {
 	 *                     ioe
 	 */
 	private void markRestartStepCompleted(int step) throws IOException {
-		Files.writeString(Paths.get(endpointFiles.getPreviousMergeFile()), String.valueOf(step));
+		Files.writeString(Path.of(endpointFiles.getPreviousMergeFile()), String.valueOf(step));
 	}
 
 	/**
@@ -458,7 +454,7 @@ public class MergeRunnable {
 	 */
 	private int getRestartStep() {
 		try {
-			String text = Files.readString(Paths.get(endpointFiles.getPreviousMergeFile()));
+			String text = Files.readString(Path.of(endpointFiles.getPreviousMergeFile()));
 			return Integer.parseInt(text.trim());
 		} catch (IOException | NumberFormatException e) {
 			return -1;
@@ -471,7 +467,7 @@ public class MergeRunnable {
 	 * @throws IOException see {@link Files#delete(Path)} ioe
 	 */
 	private void completedMerge() throws IOException {
-		Files.delete(Paths.get(endpointFiles.getPreviousMergeFile()));
+		Files.delete(Path.of(endpointFiles.getPreviousMergeFile()));
 	}
 
 	/**
@@ -562,9 +558,10 @@ public class MergeRunnable {
 		// a lock is needed here
 		if (restarting) {
 			// delete previous array in case of restart
-			Files.deleteIfExists(Paths.get(endpointFiles.getTripleDeleteCopyArr()));
+			Files.deleteIfExists(Path.of(endpointFiles.getTripleDeleteCopyArr()));
 		}
-		Files.copy(Paths.get(endpointFiles.getTripleDeleteArr()), Paths.get(endpointFiles.getTripleDeleteCopyArr()));
+		Files.copy(Path.of(endpointFiles.getTripleDeleteArr()), Path.of(endpointFiles.getTripleDeleteCopyArr()),
+				StandardCopyOption.REPLACE_EXISTING);
 		// release the lock so that the connections can continue
 		switchLock.release();
 		debugStepPoint(MergeRunnableStopPoint.STEP1_END);
@@ -747,7 +744,7 @@ public class MergeRunnable {
 			this.endpoint.resetDeleteArray(newHdt);
 		}
 
-		Path hdtIndexV11 = Paths.get(endpointFiles.getHDTIndexV11());
+		Path hdtIndexV11 = Path.of(endpointFiles.getHDTIndexV11());
 		// if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so we
 		// create a mock index file
 		// (ignored by RDF-HDT)
@@ -959,9 +956,9 @@ public class MergeRunnable {
 			logger.info("Time elapsed for conversion: " + stopwatch);
 
 			// initialize bitmaps again with the new dictionary
-			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitX()));
-			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitY()));
-			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitZ()));
+			Files.deleteIfExists(Path.of(endpointFiles.getHDTBitX()));
+			Files.deleteIfExists(Path.of(endpointFiles.getHDTBitY()));
+			Files.deleteIfExists(Path.of(endpointFiles.getHDTBitZ()));
 			stopwatch = Stopwatch.createStarted();
 			logger.info("Time elapsed to initialize native store dictionary: " + stopwatch);
 		} catch (Throwable e) {

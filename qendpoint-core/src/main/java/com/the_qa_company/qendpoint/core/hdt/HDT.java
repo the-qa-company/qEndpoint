@@ -22,6 +22,7 @@ package com.the_qa_company.qendpoint.core.hdt;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.header.Header;
@@ -76,6 +77,18 @@ public interface HDT extends RDFAccess, Closeable {
 	 * @throws IOException when the file cannot be found
 	 */
 	void saveToHDT(String fileName, ProgressListener listener) throws IOException;
+
+	/**
+	 * Saves to a file in HDT format
+	 *
+	 * @param fileName The OutputStream to save to
+	 * @param listener A listener that can be used to see the progress of the
+	 *                 saving
+	 * @throws IOException when the file cannot be found
+	 */
+	default void saveToHDT(Path fileName, ProgressListener listener) throws IOException {
+		saveToHDT(fileName.toAbsolutePath().toString(), listener);
+	}
 
 	/**
 	 * Returns the size of the Data Structure in bytes.

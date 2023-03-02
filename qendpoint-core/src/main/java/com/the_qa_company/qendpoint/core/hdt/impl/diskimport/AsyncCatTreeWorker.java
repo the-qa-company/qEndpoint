@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -139,8 +140,7 @@ public class AsyncCatTreeWorker implements Closeable {
 				break; // end read
 			}
 
-			List<String> gen = lst.stream().map(CatTreeImpl.HDTFile::getHdtFile).map(Path::toAbsolutePath)
-					.map(Path::toString).collect(Collectors.toList());
+			List<Path> gen = lst.stream().map(CatTreeImpl.HDTFile::getHdtFile).collect(Collectors.toList());
 
 			cat++;
 			profiler.pushSection("catHDT #" + cat);
@@ -151,7 +151,7 @@ public class AsyncCatTreeWorker implements Closeable {
 			spec.overrideValue(HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY,
 					hdtCatFileLocation.toAbsolutePath());
 
-			try (HDT abcat = HDTManager.catHDT(gen, spec, ilc)) {
+			try (HDT abcat = HDTManager.catHDTPath(gen, spec, ilc)) {
 				abcat.saveToHDT(hdtCatFileLocation.toAbsolutePath().toString(), ilc);
 			}
 
@@ -219,8 +219,7 @@ public class AsyncCatTreeWorker implements Closeable {
 				// the HDT
 				if (impl.getFutureHDTLocation() != null) {
 					Files.createDirectories(impl.getFutureHDTLocation().toAbsolutePath().getParent());
-					Files.deleteIfExists(impl.getFutureHDTLocation());
-					Files.move(hdtFile, impl.getFutureHDTLocation());
+					Files.move(hdtFile, impl.getFutureHDTLocation(), StandardCopyOption.REPLACE_EXISTING);
 					hdt = new MapOnCallHDT(impl.getFutureHDTLocation());
 				} else {
 					// if no future location has been asked, load the HDT and
