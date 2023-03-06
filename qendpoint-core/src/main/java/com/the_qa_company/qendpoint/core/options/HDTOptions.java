@@ -68,6 +68,13 @@ public interface HDTOptions {
 	};
 
 	/**
+	 * @return get empty unmodifiable options
+	 */
+	static HDTOptions empty() {
+		return EMPTY;
+	}
+
+	/**
 	 * create modifiable options
 	 *
 	 * @return options

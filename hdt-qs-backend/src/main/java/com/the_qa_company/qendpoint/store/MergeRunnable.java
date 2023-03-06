@@ -5,7 +5,7 @@ import com.the_qa_company.qendpoint.controller.Sparql;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
 import org.eclipse.rdf4j.model.IRI;
@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 
@@ -148,7 +148,7 @@ public class MergeRunnable {
 	 */
 	private static void delete(String file) {
 		try {
-			Files.delete(Paths.get(file));
+			Files.delete(Path.of(file));
 		} catch (IOException e) {
 			logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -163,7 +163,7 @@ public class MergeRunnable {
 	 */
 	private static void deleteIfExists(String file) {
 		try {
-			Files.deleteIfExists(Paths.get(file));
+			Files.deleteIfExists(Path.of(file));
 		} catch (IOException e) {
 			logger.warn("Can't delete the file {} ({})", file, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -190,7 +190,7 @@ public class MergeRunnable {
 	 * @return true if the file exists, false otherwise
 	 */
 	private static boolean exists(String file) {
-		return Files.exists(Paths.get(file));
+		return Files.exists(Path.of(file));
 	}
 
 	/**
@@ -229,7 +229,7 @@ public class MergeRunnable {
 	 */
 	private static void rename(String oldFile, String newFile) {
 		try {
-			Files.move(Path.of(oldFile), Path.of(newFile));
+			Files.move(Path.of(oldFile), Path.of(newFile), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -429,16 +429,12 @@ public class MergeRunnable {
 		// thread with the runStep
 		int step = getRestartStep();
 		logger.debug("Restart step: {}", step);
-		switch (step) {
-		case 0:
-			return Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
-		case 2:
-			return Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
-		case 3:
-			return Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
-		default:
-			return Optional.empty();
-		}
+		return switch (step) {
+		case 0 -> Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
+		case 2 -> Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
+		case 3 -> Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
+		default -> Optional.empty();
+		};
 	}
 
 	/**
@@ -450,7 +446,7 @@ public class MergeRunnable {
 	 *                     ioe
 	 */
 	private void markRestartStepCompleted(int step) throws IOException {
-		Files.writeString(Paths.get(endpointFiles.getPreviousMergeFile()), String.valueOf(step));
+		Files.writeString(Path.of(endpointFiles.getPreviousMergeFile()), String.valueOf(step));
 	}
 
 	/**
@@ -458,7 +454,7 @@ public class MergeRunnable {
 	 */
 	private int getRestartStep() {
 		try {
-			String text = Files.readString(Paths.get(endpointFiles.getPreviousMergeFile()));
+			String text = Files.readString(Path.of(endpointFiles.getPreviousMergeFile()));
 			return Integer.parseInt(text.trim());
 		} catch (IOException | NumberFormatException e) {
 			return -1;
@@ -471,7 +467,7 @@ public class MergeRunnable {
 	 * @throws IOException see {@link Files#delete(Path)} ioe
 	 */
 	private void completedMerge() throws IOException {
-		Files.delete(Paths.get(endpointFiles.getPreviousMergeFile()));
+		Files.delete(Path.of(endpointFiles.getPreviousMergeFile()));
 	}
 
 	/**
@@ -562,9 +558,10 @@ public class MergeRunnable {
 		// a lock is needed here
 		if (restarting) {
 			// delete previous array in case of restart
-			Files.deleteIfExists(Paths.get(endpointFiles.getTripleDeleteCopyArr()));
+			Files.deleteIfExists(Path.of(endpointFiles.getTripleDeleteCopyArr()));
 		}
-		Files.copy(Paths.get(endpointFiles.getTripleDeleteArr()), Paths.get(endpointFiles.getTripleDeleteCopyArr()));
+		Files.copy(Path.of(endpointFiles.getTripleDeleteArr()), Path.of(endpointFiles.getTripleDeleteCopyArr()),
+				StandardCopyOption.REPLACE_EXISTING);
 		// release the lock so that the connections can continue
 		switchLock.release();
 		debugStepPoint(MergeRunnableStopPoint.STEP1_END);
@@ -747,7 +744,7 @@ public class MergeRunnable {
 			this.endpoint.resetDeleteArray(newHdt);
 		}
 
-		Path hdtIndexV11 = Paths.get(endpointFiles.getHDTIndexV11());
+		Path hdtIndexV11 = Path.of(endpointFiles.getHDTIndexV11());
 		// if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so we
 		// create a mock index file
 		// (ignored by RDF-HDT)
@@ -779,9 +776,9 @@ public class MergeRunnable {
 		this.endpoint.markDeletedTempTriples();
 		this.endpoint.setFreezeNotifications(false);
 		logger.debug("Releasing lock for ID conversion ....");
-		translateLock.release();
-		logger.debug("Translate-Lock released");
-		logger.debug("Lock released");
+
+		this.endpoint.setMerging(false);
+		this.endpoint.isMergeTriggered = false;
 
 		debugStepPoint(MergeRunnableStopPoint.STEP3_END);
 		completedMerge();
@@ -790,10 +787,11 @@ public class MergeRunnable {
 		deleteOld(endpointFiles.getHDTIndex());
 		deleteOld(endpointFiles.getHDTIndexV11());
 
-		debugStepPoint(MergeRunnableStopPoint.MERGE_END);
+		translateLock.release();
+		logger.debug("Translate-Lock released");
+		logger.debug("Lock released");
 
-		this.endpoint.setMerging(false);
-		this.endpoint.isMergeTriggered = false;
+		debugStepPoint(MergeRunnableStopPoint.MERGE_END);
 
 		debugStepPoint(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
 
@@ -833,13 +831,30 @@ public class MergeRunnable {
 	private void createHDTDump(String rdfInput, String hdtOutput) throws IOException {
 		String baseURI = Sparql.baseURIFromFilename(rdfInput);
 		StopWatch sw = new StopWatch();
-		try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
-				this.endpoint.getHDTSpec(), null)) {
-			logger.info("File converted in: " + sw.stopAndShow());
-			hdt.saveToHDT(hdtOutput, null);
-			logger.info("HDT saved to file in: " + sw.stopAndShow());
-		} catch (ParserException e) {
-			throw new IOException(e);
+		Path location = endpointFiles.getLocationHdtPath().resolve("merger");
+
+		OverrideHDTOptions oopt = new OverrideHDTOptions(this.endpoint.getHDTSpec());
+		oopt.setOverride(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK);
+		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gen"));
+		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("wip.hdt"));
+		try {
+			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
+					oopt, null)) {
+				logger.info("File converted in: " + sw.stopAndShow());
+				hdt.saveToHDT(hdtOutput, null);
+				logger.info("HDT saved to file in: " + sw.stopAndShow());
+			} catch (ParserException e) {
+				throw new IOException(e);
+			}
+		} finally {
+			try {
+				if (Files.exists(location)) {
+					PathUtils.deleteDirectory(location);
+				}
+			} catch (IOException e) {
+				// ignore exception
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -942,9 +957,9 @@ public class MergeRunnable {
 			logger.info("Time elapsed for conversion: " + stopwatch);
 
 			// initialize bitmaps again with the new dictionary
-			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitX()));
-			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitY()));
-			Files.deleteIfExists(Paths.get(endpointFiles.getHDTBitZ()));
+			Files.deleteIfExists(Path.of(endpointFiles.getHDTBitX()));
+			Files.deleteIfExists(Path.of(endpointFiles.getHDTBitY()));
+			Files.deleteIfExists(Path.of(endpointFiles.getHDTBitZ()));
 			stopwatch = Stopwatch.createStarted();
 			logger.info("Time elapsed to initialize native store dictionary: " + stopwatch);
 		} catch (Throwable e) {

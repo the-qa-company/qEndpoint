@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -221,7 +222,6 @@ public class CatTreeImpl implements Closeable {
 
 		Path hdtStore = basePath.resolve("hdt-store");
 		Path hdtCatLocationPath = basePath.resolve("cat");
-		String hdtCatLocation = hdtCatLocationPath.toAbsolutePath().toString();
 
 		Files.createDirectories(hdtStore);
 		Files.createDirectories(hdtCatLocationPath);
@@ -251,10 +251,9 @@ public class CatTreeImpl implements Closeable {
 					profiler.pushSection("catHDT #" + cat);
 					PrefixListener ilc = PrefixListener.of("cat#" + cat, listener);
 					Path hdtCatFileLocation = hdtStore.resolve("hdtcat-" + cat + ".hdt");
-					try (HDT abcat = HDTManager.catHDT(hdtCatLocation,
-							lastHDTFile.getHdtFile().toAbsolutePath().toString(),
-							hdtFile.getHdtFile().toAbsolutePath().toString(), hdtFormat, ilc)) {
-						abcat.saveToHDT(hdtCatFileLocation.toAbsolutePath().toString(), ilc);
+					try (HDT abcat = HDTManager.catHDT(hdtCatLocationPath, lastHDTFile.getHdtFile(),
+							hdtFile.getHdtFile(), hdtFormat, ilc)) {
+						abcat.saveToHDT(hdtCatFileLocation, ilc);
 					}
 					ilc.clearThreads();
 					// delete previous chunks
@@ -321,8 +320,7 @@ public class CatTreeImpl implements Closeable {
 			// HDT
 			if (futureHDTLocation != null) {
 				Files.createDirectories(futureHDTLocation.toAbsolutePath().getParent());
-				Files.deleteIfExists(futureHDTLocation);
-				Files.move(hdtFile, futureHDTLocation);
+				Files.move(hdtFile, futureHDTLocation, StandardCopyOption.REPLACE_EXISTING);
 				return new MapOnCallHDT(futureHDTLocation);
 			}
 
