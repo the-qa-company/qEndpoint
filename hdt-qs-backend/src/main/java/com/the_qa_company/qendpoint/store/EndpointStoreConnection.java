@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.compiler.ConfigSailConnection;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -31,12 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class EndpointStoreConnection extends SailSourceConnection {
+public class EndpointStoreConnection extends SailSourceConnection implements ConfigSailConnection {
 	private static final Timer TIMEOUT_TIMER = new Timer("EndpointStoreConnectionTimer", true);
 	static long debugWaittime = 0L;
 	private static final AtomicLong DEBUG_ID_STORE = new AtomicLong();
@@ -54,6 +57,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 	private Lock updateLock;
 	private CloseTask closeTask;
 	private final AtomicBoolean timeout = new AtomicBoolean();
+	private final Map<String, String> config = new HashMap<>();
 
 	public EndpointStoreConnection(EndpointStore endpoint) throws InterruptedException {
 		super(endpoint, endpoint.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
@@ -109,7 +113,7 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		// each endpointStoreConnection has a triple source ( ideally it should
 		// be in the query preparer as in rdf4j..)
 		this.tripleSource = new EndpointTripleSource(this, endpoint);
-		this.queryPreparer = new EndpointStoreQueryPreparer(endpoint, tripleSource);
+		this.queryPreparer = new EndpointStoreQueryPreparer(endpoint, tripleSource, this);
 	}
 
 	@Override
@@ -189,6 +193,26 @@ public class EndpointStoreConnection extends SailSourceConnection {
 		// super.setNamespaceInternal(prefix,name);
 		this.getCurrentConnectionWrite().setNamespace(prefix, name);
 		// this.getCurrentConnectionRead().setNamespace(prefix, name);
+	}
+
+	@Override
+	public void setConfig(String cfg) {
+		config.put(cfg, "");
+	}
+
+	@Override
+	public void setConfig(String cfg, String value) {
+		config.put(cfg, value);
+	}
+
+	@Override
+	public boolean hasConfig(String cfg) {
+		return config.containsKey(cfg);
+	}
+
+	@Override
+	public String getConfig(String cfg) {
+		return config.get(cfg);
 	}
 
 	@Override

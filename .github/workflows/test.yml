@@ -15,7 +15,7 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter
         with:
-          base: ${{ github.event.before }}
+          base: ${{ github.event.base_ref }}
           filters: |
             core:
               - 'qendpoint-core/**'

@@ -48,11 +48,14 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 	private boolean trackResultSize;
 	private boolean cloneTupleExpression;
 	private boolean trackTime;
+	private final EndpointStoreConnection conn;
 
-	public EndpointStoreQueryPreparer(EndpointStore endpoint, EndpointTripleSource tripleSource) {
+	public EndpointStoreQueryPreparer(EndpointStore endpoint, EndpointTripleSource tripleSource,
+			EndpointStoreConnection conn) {
 		super(tripleSource);
 		this.tripleSource = tripleSource;
 		this.endpoint = endpoint;
+		this.conn = conn;
 		cloneTupleExpression = true;
 
 		evaluationStatistics = new EndpointStoreEvaluationStatistics(new EndpointStoreEvaluationStatisticsHDT(endpoint),
@@ -114,17 +117,21 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		}
 
 		new VariableToIdSubstitution(endpoint).optimize(tupleExpr, dataset, bindings);
-		new BindingAssignerOptimizer().optimize(tupleExpr, dataset, bindings);
-		new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
-		new CompareOptimizer().optimize(tupleExpr, dataset, bindings);
-		new ConjunctiveConstraintSplitterOptimizer().optimize(tupleExpr, dataset, bindings);
-		new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
-		new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
-		new QueryModelNormalizerOptimizer().optimize(tupleExpr, dataset, bindings);
-		new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
-		new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
-		new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
-		new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+
+		if (!conn.hasConfig(EndpointStore.QUERY_CONFIG_NO_OPTIMIZER)) {
+			new BindingAssignerOptimizer().optimize(tupleExpr, dataset, bindings);
+			new ConstantOptimizer(strategy).optimize(tupleExpr, dataset, bindings);
+			new CompareOptimizer().optimize(tupleExpr, dataset, bindings);
+			new ConjunctiveConstraintSplitterOptimizer().optimize(tupleExpr, dataset, bindings);
+			new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
+			new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
+			new QueryModelNormalizerOptimizer().optimize(tupleExpr, dataset, bindings);
+			new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
+			new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
+			new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
+			new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+		}
+
 		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);
 
 		return strategy.evaluate(tupleExpr, bindings);
