@@ -357,6 +357,10 @@ public class SparqlRepository {
 	private ClosableResult<?> execute0(RepositoryConnection customConnection, String sparqlQuery, int timeout,
 			String acceptHeader, Consumer<String> mimeSetter, OutputStream out) {
 
+		if (sparqlQuery.isEmpty()) {
+			throw new ServerWebInputException("Empty query");
+		}
+
 		RepositoryConnection connectionCloseable;
 		RepositoryConnection connection;
 		boolean connectionClosed = false;
@@ -381,9 +385,50 @@ public class SparqlRepository {
 			} else {
 				epCo = getTimeoutEndpointConnection(connection);
 			}
+			if (sparqlQuery.charAt(0) == '#') {
+				// at least one config or a comment, but let's say it's a config
+				ConfigSailConnection epConn;
+				if (connection instanceof SailRepositoryConnection sailRepoConn
+						&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
+						&& csConn.getSourceConnection() instanceof ConfigSailConnection epConnC) {
+					epConn = epConnC;
+				} else {
+					epConn = null;
+				}
+
+				int start = 0;
+				int cfg = 0;
+				do {
+					// ignore '#'
+					start++;
+					int endLine = sparqlQuery.indexOf('\n', start);
+					cfg++;
+
+					if (endLine == -1) {
+						throw new ServerWebInputException("Bad config at line " + cfg + ": no end line");
+					}
+
+					if (epConn != null) {
+						// we only parse this if we can actually set it, maybe
+						// change epConn to an interface later
+
+						int equalChar = sparqlQuery.indexOf(':', start);
+
+						if (equalChar == -1 || equalChar > endLine) {
+							epConn.setConfig(sparqlQuery.substring(start, endLine));
+						} else {
+							epConn.setConfig(sparqlQuery.substring(start, equalChar),
+									sparqlQuery.substring(equalChar + 1, endLine));
+						}
+					}
+
+					start = endLine + 1;
+				} while (sparqlQuery.charAt(start) == '#');
+				// remove the config lines
+				sparqlQuery = sparqlQuery.substring(start);
+			}
 			sparqlQuery = applyPrefixes(sparqlQuery);
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
-			// sparqlQuery = sparqlPrefixes+sparqlQuery;
 
 			logger.info("Running given sparql query: {}", sparqlQuery);
 

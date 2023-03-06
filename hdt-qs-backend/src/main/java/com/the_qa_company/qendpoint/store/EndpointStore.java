@@ -62,6 +62,10 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EndpointStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
+	/**
+	 * disable the optimizer
+	 */
+	public static final String QUERY_CONFIG_NO_OPTIMIZER = "no_optimizer";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;

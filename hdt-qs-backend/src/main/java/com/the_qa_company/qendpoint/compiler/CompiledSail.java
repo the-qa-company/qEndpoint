@@ -3,12 +3,18 @@ package com.the_qa_company.qendpoint.compiler;
 import com.the_qa_company.qendpoint.compiler.sail.LuceneSailCompiler;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
+import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.sail.OptimizingSail;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.Sail;
+import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
+import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
+import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.SailWrapper;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
@@ -35,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * SailWrapper containing a compiled sail with
@@ -54,6 +62,7 @@ public class CompiledSail extends SailWrapper {
 	private static final Logger logger = LoggerFactory.getLogger(CompiledSail.class);
 	private final CompiledSailOptions options;
 	private final NotifyingSail source;
+	private final BellowSail bellow;
 	private final Set<LuceneSail> luceneSails = new HashSet<>();
 
 	private CompiledSail(CompiledSailCompiler config) throws IOException, SailCompiler.SailCompilerException {
@@ -169,7 +178,8 @@ public class CompiledSail extends SailWrapper {
 			source = config.sourceSail;
 		}
 
-		setBaseSail(sailCompiler.compile(source));
+		bellow = new BellowSail(source);
+		setBaseSail(sailCompiler.compile(bellow));
 		// write the lucene sails
 		luceneSails.addAll(luceneCompiler.getSails());
 	}
@@ -213,6 +223,85 @@ public class CompiledSail extends SailWrapper {
 	 */
 	public boolean hasLuceneSail() {
 		return !luceneSails.isEmpty();
+	}
+
+	@Override
+	public SailConnection getConnection() throws SailException {
+		bellow.beginConnectionBuilding();
+		try {
+			NotifyingSailConnection sourceConnection = bellow.getConnection();
+			SailConnection treeConnection = super.getConnection();
+			return new CompiledSailConnection(treeConnection, sourceConnection);
+		} finally {
+			bellow.endConnectionBuilding();
+		}
+	}
+
+	/**
+	 * Compiled Sail connection, allows to get the source connection
+	 *
+	 * @author Antoine Willerval
+	 */
+	public static class CompiledSailConnection extends SailConnectionWrapper {
+		private final NotifyingSailConnection sourceConnection;
+
+		public CompiledSailConnection(SailConnection wrappedCon, NotifyingSailConnection sourceConnection) {
+			super(wrappedCon);
+			this.sourceConnection = sourceConnection;
+		}
+
+		/**
+		 * @return the source connection, won't pass by the compiled nodes
+		 */
+		public NotifyingSailConnection getSourceConnection() {
+			return sourceConnection;
+		}
+	}
+
+	/**
+	 * Sail to ge the connection to the source sail
+	 */
+	static class BellowSail extends NotifyingSailWrapper {
+		private final Lock lock = new ReentrantLock();
+		private NotifyingSailConnection connection;
+
+		public BellowSail(NotifyingSail baseSail) {
+			super(baseSail);
+		}
+
+		public void beginConnectionBuilding() {
+			lock.lock();
+			try {
+				if (connection != null) {
+					throw new AssertionError("connection already set");
+				}
+				connection = super.getConnection();
+			} catch (Throwable t) {
+				try {
+					lock.unlock();
+				} catch (Throwable t2) {
+					t.addSuppressed(t2);
+				}
+				throw t;
+			}
+		}
+
+		@Override
+		public NotifyingSailConnection getConnection() throws SailException {
+			if (connection == null) {
+				throw new EndpointStoreException("Can't read connection without calling begin/end connection building");
+			}
+			return connection;
+		}
+
+		public void endConnectionBuilding() {
+			try {
+				lock.unlock();
+			} finally {
+				// closed by the user
+				connection = null;
+			}
+		}
 	}
 
 	/**
