@@ -1,3 +1,8 @@
+## Version 1.10.0 
+    
+- update to Springboot 3.0.2
+- remove JLargeArray dependency
+- set Java version to 17
 ## Version 1.9.0 
     
 - add core in the endpoint as a fork from rdfhdt, package `org.rdfhdt.hdt` was moved to `com.the_qa_company.qendpoint.core`

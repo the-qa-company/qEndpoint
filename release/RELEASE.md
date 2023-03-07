@@ -1,3 +1,1 @@
-- update to Springboot 3.0.2
-- remove JLargeArray dependency
-- set Java version to 17
+- set docker image to Java 17
