@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.concurrent.locks.LockManager;
@@ -188,8 +189,8 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		Files.createDirectories(dataDir2.toPath());
 		Files.createDirectories(Path.of(getEndpointFiles().getLocationNative()));
 
-		this.nativeStoreA = new NativeStore(dataDir1, "spoc,posc,cosp");
-		this.nativeStoreB = new NativeStore(dataDir2, "spoc,posc,cosp");
+		this.nativeStoreA = createStore(dataDir1);
+		this.nativeStoreB = createStore(dataDir2);
 
 		this.checkFile = new File(getEndpointFiles().getWhichStore());
 		// init the store before creating the check store file
@@ -223,6 +224,16 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		try (SailConnection connection = getChangingStore().getConnection()) {
 			this.triplesCount = connection.size();
 		}
+	}
+
+	/**
+	 * create a delta store with the datadir
+	 *
+	 * @param dataDir the datadir
+	 * @return store
+	 */
+	private AbstractNotifyingSail createStore(File dataDir) {
+		return new NativeStore(dataDir, "spoc,posc,cosp");
 	}
 
 	public EndpointStore(String locationHdt, String hdtIndexName, HDTOptions spec, String locationNative,
@@ -330,7 +341,6 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 			logger.debug("Changing store is A");
 			return nativeStoreA;
 		}
-
 	}
 
 	public Sail getFreezedStoreStore() {
@@ -341,7 +351,22 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 			logger.debug("Freezed store is A");
 			return nativeStoreA;
 		}
+	}
 
+	public void setChangingStore(AbstractNotifyingSail sail) {
+		if (switchStore) {
+			nativeStoreB = sail;
+		} else {
+			nativeStoreA = sail;
+		}
+	}
+
+	public void setFreezedStoreStore(AbstractNotifyingSail sail) {
+		if (!switchStore) {
+			nativeStoreB = sail;
+		} else {
+			nativeStoreA = sail;
+		}
 	}
 
 	// force access to the store via reflection, the library does not allow
@@ -474,6 +499,28 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	public RepositoryConnection getConnectionToFreezedStore() {
 		return new SailRepository(getFreezedStoreStore()).getConnection();
+	}
+
+	/**
+	 * shutdown, clear the data and recreate the changing store
+	 */
+	public void regenChangingStore() throws IOException {
+		Sail changingStore = getChangingStore();
+		changingStore.shutDown();
+		File store = changingStore.getDataDir();
+		FileUtils.deleteDirectory(store);
+		setChangingStore(createStore(store));
+	}
+
+	/**
+	 * shutdown, clear the data and recreate the changing store
+	 */
+	public void regenFreezedStore() throws IOException {
+		Sail freezedStore = getFreezedStoreStore();
+		freezedStore.shutDown();
+		File store = freezedStore.getDataDir();
+		FileUtils.deleteDirectory(store);
+		setFreezedStoreStore(createStore(store));
 	}
 
 	public boolean isMerging() {
