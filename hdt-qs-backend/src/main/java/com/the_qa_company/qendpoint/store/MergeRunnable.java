@@ -890,10 +890,10 @@ public class MergeRunnable {
 		logger.info("Started converting IDs in the merge store");
 		try {
 			Stopwatch stopwatch = Stopwatch.createStarted();
+			endpoint.regenFreezedStore();
 			try (RepositoryConnection connectionChanging = this.endpoint.getConnectionToChangingStore(); // B
 					RepositoryConnection connectionFreezed = this.endpoint.getConnectionToFreezedStore() // A
 			) {
-				connectionFreezed.clear();
 				connectionFreezed.begin();
 				try (RepositoryResult<Statement> statements = connectionChanging.getStatements(null, null, null)) {
 					long count = 0;
@@ -948,8 +948,8 @@ public class MergeRunnable {
 						connectionFreezed.commit();
 					}
 				}
-				connectionChanging.clear();
 			}
+			endpoint.regenChangingStore();
 			// @todo: why?
 			this.endpoint.switchStore = !this.endpoint.switchStore;
 
