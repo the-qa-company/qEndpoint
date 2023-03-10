@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.compiler;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+
 /**
  * Interface to implement into a {@link org.eclipse.rdf4j.sail.SailConnection}
  * returned by the source of a {@link CompiledSail}, the configs will be added
@@ -8,6 +10,34 @@ package com.the_qa_company.qendpoint.compiler;
  * @author Antoine Willerval
  */
 public interface ConfigSailConnection {
+	ConfigSailConnection EMPTY = new ConfigSailConnection() {
+
+		@Override
+		public void setConfig(String cfg) {
+			// ignore
+		}
+
+		@Override
+		public void setConfig(String cfg, String value) {
+			// ignore
+		}
+
+		@Override
+		public boolean hasConfig(String cfg) {
+			return false;
+		}
+
+		@Override
+		public String getConfig(String cfg) {
+			return null;
+		}
+
+		@Override
+		public boolean allowUpdate() {
+			return false;
+		}
+	};
+
 	/**
 	 * set a config without any value
 	 *
@@ -38,4 +68,9 @@ public interface ConfigSailConnection {
 	 * @return the config value or null if unset
 	 */
 	String getConfig(String cfg);
+
+	/**
+	 * @return if the connection allows to set config
+	 */
+	boolean allowUpdate();
 }

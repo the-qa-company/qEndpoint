@@ -67,6 +67,10 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	 * disable the optimizer
 	 */
 	public static final String QUERY_CONFIG_NO_OPTIMIZER = "no_optimizer";
+	/**
+	 * get the query plan
+	 */
+	public static final String QUERY_CONFIG_FETCH_QUERY_PLAN = "get_plan";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;
