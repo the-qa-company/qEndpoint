@@ -50,4 +50,4 @@ $CONFIG_DATA
 
 echo "JPackage creation $PACKAGE_FILE_FINAL"
 
-jpackage "@$PACKAGE_FILE_FINAL"
+jpackage "@$PACKAGE_FILE_FINAL" --verbose
