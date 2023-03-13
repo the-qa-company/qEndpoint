@@ -89,5 +89,10 @@ public class ConfigSailConnectionTest {
 		public String getConfig(String cfg) {
 			return config.get(cfg);
 		}
+
+		@Override
+		public boolean allowUpdate() {
+			return true;
+		}
 	}
 }

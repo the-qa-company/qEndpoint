@@ -1,11 +1,13 @@
 package com.the_qa_company.qendpoint.compiler;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreConnection;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult;
 import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
+import com.the_qa_company.qendpoint.utils.rdf.QEPSPARQLResultsJSONWriter;
 import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
 import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
 import com.the_qa_company.qendpoint.utils.sail.SourceSailConnectionWrapper;
@@ -24,6 +26,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResultHandler;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.explanation.Explanation;
+import org.eclipse.rdf4j.query.explanation.GenericPlanNode;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
@@ -31,9 +34,12 @@ import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.query.parser.QueryPrologLexer;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLQueries;
+import org.eclipse.rdf4j.query.resultio.BooleanQueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriter;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
+import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -340,6 +346,26 @@ public class SparqlRepository {
 		return null;
 	}
 
+	private void writeExplanation(com.fasterxml.jackson.core.JsonGenerator jg, Explanation explanation)
+			throws IOException {
+		jg.writeFieldName("plan");
+		GenericPlanNode plan = explanation.toGenericPlanNode();
+		writeDeep(jg, plan);
+	}
+
+	private void writeDeep(com.fasterxml.jackson.core.JsonGenerator jg, GenericPlanNode plan) throws IOException {
+		jg.writeStartObject();
+		jg.writeStringField("id", plan.getType());
+		jg.writeArrayFieldStart("plans");
+		if (plan.getPlans() != null) {
+			for (GenericPlanNode subPlan : plan.getPlans()) {
+				writeDeep(jg, subPlan);
+			}
+		}
+		jg.writeEndArray();
+		jg.writeEndObject();
+	}
+
 	/**
 	 * execute a sparql query
 	 *
@@ -385,15 +411,15 @@ public class SparqlRepository {
 			} else {
 				epCo = getTimeoutEndpointConnection(connection);
 			}
+			ConfigSailConnection epConn;
 			if (sparqlQuery.charAt(0) == '#') {
 				// at least one config or a comment, but let's say it's a config
-				ConfigSailConnection epConn;
 				if (connection instanceof SailRepositoryConnection sailRepoConn
 						&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
 						&& csConn.getSourceConnection() instanceof ConfigSailConnection epConnC) {
 					epConn = epConnC;
 				} else {
-					epConn = null;
+					epConn = ConfigSailConnection.EMPTY;
 				}
 
 				int start = 0;
@@ -408,7 +434,7 @@ public class SparqlRepository {
 						throw new ServerWebInputException("Bad config at line " + cfg + ": no end line");
 					}
 
-					if (epConn != null) {
+					if (epConn.allowUpdate()) {
 						// we only parse this if we can actually set it, maybe
 						// change epConn to an interface later
 
@@ -426,6 +452,8 @@ public class SparqlRepository {
 				} while (sparqlQuery.charAt(start) == '#');
 				// remove the config lines
 				sparqlQuery = sparqlQuery.substring(start);
+			} else {
+				epConn = ConfigSailConnection.EMPTY;
 			}
 			sparqlQuery = applyPrefixes(sparqlQuery);
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
@@ -451,11 +479,24 @@ public class SparqlRepository {
 						QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader).orElseThrow(
 								() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
 						mimeSetter.accept(format.getDefaultMIMEType());
-						TupleQueryResultHandler writer = TupleQueryResultWriterRegistry.getInstance().get(format)
-								.orElseThrow().getWriter(out);
+						TupleQueryResultHandler writer;
+						if (TupleQueryResultFormat.JSON.equals(format)) {
+							writer = new QEPSPARQLResultsJSONWriter(out);
+						} else {
+							writer = TupleQueryResultWriterRegistry.getInstance().get(format).orElseThrow()
+									.getWriter(out);
+						}
+
+						if (writer instanceof QEPSPARQLResultsJSONWriter json
+								&& epConn.hasConfig(EndpointStore.QUERY_CONFIG_FETCH_QUERY_PLAN)) {
+							Explanation explain = query.explain(Explanation.Level.Optimized);
+							json.setHeaderWriter(jg -> writeExplanation(jg, explain));
+						}
+
 						if (compiledSail.getOptions().isDebugShowCount()) {
 							writer = new QueryResultCounter(writer);
 						}
+
 						query.evaluate(writer);
 						if (compiledSail.getOptions().isDebugShowCount()) {
 							logger.info("Complete query with {} triples", ((QueryResultCounter) writer).getCount());
@@ -489,8 +530,21 @@ public class SparqlRepository {
 						QueryResultFormat format = FormatUtils.getResultWriterFormat(acceptHeader).orElseThrow(
 								() -> new ServerWebInputException("accept formats not supported: " + acceptHeader));
 						mimeSetter.accept(format.getDefaultMIMEType());
-						TupleQueryResultWriter writer = TupleQueryResultWriterRegistry.getInstance().get(format)
-								.orElseThrow().getWriter(out);
+
+						TupleQueryResultWriter writer;
+						if (BooleanQueryResultFormat.JSON.equals(format)) {
+							writer = new QEPSPARQLResultsJSONWriter(out);
+						} else {
+							writer = TupleQueryResultWriterRegistry.getInstance().get(format).orElseThrow()
+									.getWriter(out);
+						}
+
+						if (writer instanceof QEPSPARQLResultsJSONWriter json
+								&& epConn.hasConfig(EndpointStore.QUERY_CONFIG_FETCH_QUERY_PLAN)) {
+							Explanation explain = query.explain(Explanation.Level.Optimized);
+							json.setHeaderWriter(jg -> writeExplanation(jg, explain));
+						}
+
 						writer.handleBoolean(query.evaluate());
 						if (customConnection == null) {
 							connection.close();

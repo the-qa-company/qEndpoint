@@ -216,6 +216,11 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	}
 
 	@Override
+	public boolean allowUpdate() {
+		return true;
+	}
+
+	@Override
 	public boolean isActive() throws UnknownSailTransactionStateException {
 		return this.connA_write.isActive() || this.connB_write.isActive();
 	}
