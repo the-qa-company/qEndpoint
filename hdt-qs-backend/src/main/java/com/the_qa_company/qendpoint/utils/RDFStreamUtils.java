@@ -1,14 +1,19 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,6 +114,88 @@ public class RDFStreamUtils {
 		return new MapIterator<>(readRDFStreamAsIterator(stream, format, keepBNode),
 				statement -> new TripleString(statement.getSubject().toString(), statement.getPredicate().toString(),
 						statement.getObject().toString()));
+	}
+
+	/**
+	 * Convert a CharSequence containing a component into a {@link Value}
+	 *
+	 * @param vf  value factory
+	 * @param seq component
+	 * @return value
+	 */
+	public static Value convertCharSequence(ValueFactory vf, CharSequence seq) {
+		if (seq == null || seq.isEmpty()) {
+			return null;
+		}
+
+		switch (seq.charAt(0)) {
+		case '_' -> {
+			// bnode
+			if (seq.length() <= 2 || seq.charAt(1) != ':') {
+				throw new IllegalArgumentException("Bad BNode sequence: " + seq);
+			}
+			return vf.createBNode(seq.subSequence(2, seq.length()).toString());
+		}
+		case '"' -> {
+			// literal
+			if (seq.length() < 2) {
+				throw new IllegalArgumentException("Bad literal: " + seq);
+			}
+
+			int typeIndex = LiteralsUtils.getTypeIndex(seq);
+			if (typeIndex == -1) {
+				int langIndex = LiteralsUtils.getLangIndex(seq);
+				if (langIndex == -1) {
+					if (seq.charAt(seq.length() - 1) != '"') {
+						throw new IllegalArgumentException("Bad literal: " + seq);
+					}
+
+					return vf.createLiteral(seq.subSequence(1, seq.length() - 1).toString());
+				}
+
+				String lit = seq.subSequence(1, langIndex - 2).toString();
+				String lang = seq.subSequence(langIndex, seq.length()).toString();
+				return vf.createLiteral(lit, lang);
+			}
+			String lit = seq.subSequence(1, typeIndex - 3).toString();
+			String type = seq.subSequence(typeIndex + 1, seq.length() - 1).toString();
+
+			return vf.createLiteral(lit, vf.createIRI(type));
+		}
+		case '<' -> {
+			// literal
+			if (seq.length() < 2 || seq.charAt(seq.length() - 1) != '>') {
+				throw new IllegalArgumentException("Bad iri: " + seq);
+			}
+			return vf.createIRI(seq.subSequence(1, seq.length() - 1).toString());
+		}
+		default -> {
+			return vf.createIRI(seq.toString());
+		}
+		}
+	}
+
+	/**
+	 * Convert HDT {@link TripleString} to {@link Statement}
+	 *
+	 * @param vf     value factor
+	 * @param string HDT triple
+	 * @return statement
+	 */
+	public static Statement convertStatement(ValueFactory vf, TripleString string) {
+		Value s = convertCharSequence(vf, string.getSubject());
+		Value p = convertCharSequence(vf, string.getPredicate());
+		Value o = convertCharSequence(vf, string.getObject());
+
+		if (!s.isResource()) {
+			throw new IllegalArgumentException("Triple subject isn't a resource: " + string.getSubject());
+		}
+
+		if (!p.isIRI()) {
+			throw new IllegalArgumentException("Triple predicate isn't an iri: " + string.getPredicate());
+		}
+
+		return vf.createStatement((Resource) s, (IRI) p, o);
 	}
 
 	private RDFStreamUtils() {

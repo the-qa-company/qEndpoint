@@ -132,12 +132,12 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 				writeBits();
 			} else {
 				// read the length of the array from the beginning
-				long length = this.output.readLong(0);
+				long length = numWords(allBits);
 				this.words = new long[(int) length];
 
 				int lastNonZero = -1;
 				// read previous values
-				for (int i = 0; i < length; i++) {
+				for (int i = 0; i < this.words.length; i++) {
 					long v = this.output.readLong((i + 1) * 8L);
 					if (v != 0) {
 						this.words[i] = v;
@@ -219,7 +219,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 	}
 
 	public void trimToSize() {
-		int wordNum = (int) numWords(numbits);
+		int wordNum = (int) numWords(allBits) + 1;
 		if (wordNum != words.length) {
 			words = Arrays.copyOf(words, wordNum);
 		}

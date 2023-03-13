@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.ConfigSailConnection;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
+import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -258,7 +259,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
 		}
 
-		logger.debug("Adding triple {} {} {}", newSubj.toString(), newPred.toString(), newObj.toString());
+		logger.debug("Adding triple {} {} {}", newSubj, newPred, newObj);
 
 		// note that in the native store we insert a mix of native IRIs and HDT
 		// IRIs, depending if the resource is in

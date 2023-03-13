@@ -133,26 +133,44 @@ public class EndpointTripleSource implements TripleSource {
 	// the case if the subject, predicate and object were marked as used in the
 	// bitmaps
 	private boolean shouldSearchOverNativeStore(long subject, long predicate, long object) {
-		boolean containsSubject = true;
-		boolean containsPredicate = true;
-		boolean containsObject = true;
+		if (logger.isDebugEnabled()) {
+			boolean containsSubject = true;
+			boolean containsPredicate = true;
+			boolean containsObject = true;
 
-		if (subject != 0 && subject != -1) {
-			containsSubject = this.endpoint.getBitX().access(subject - 1);
-		}
-		if (predicate != 0 && predicate != -1) {
-			containsPredicate = this.endpoint.getBitY().access(predicate - 1);
-		}
-		if (object != 0 && object != -1) {
-			if (object <= this.endpoint.getHdt().getDictionary().getNshared()) {
-				containsObject = this.endpoint.getBitX().access(object - 1);
-			} else {
-				containsObject = this.endpoint.getBitZ()
-						.access(object - this.endpoint.getHdt().getDictionary().getNshared() - 1);
+			if (subject != 0 && subject != -1) {
+				containsSubject = this.endpoint.getBitX().access(subject - 1);
+			}
+			if (predicate != 0 && predicate != -1) {
+				containsPredicate = this.endpoint.getBitY().access(predicate - 1);
+			}
+			if (object != 0 && object != -1) {
+				if (object <= this.endpoint.getHdt().getDictionary().getNshared()) {
+					containsObject = this.endpoint.getBitX().access(object - 1);
+				} else {
+					containsObject = this.endpoint.getBitZ()
+							.access(object - this.endpoint.getHdt().getDictionary().getNshared() - 1);
+				}
+			}
+			logger.debug("Search over native store? {} {} {}", containsSubject, containsPredicate, containsObject);
+			return containsSubject && containsPredicate && containsObject;
+		} else {
+			if (subject != 0 && subject != -1 && !this.endpoint.getBitX().access(subject - 1)) {
+				return false;
+			}
+			if (predicate != 0 && predicate != -1 && !this.endpoint.getBitY().access(predicate - 1)) {
+				return false;
+			}
+			if (object != 0 && object != -1) {
+				if (object <= this.endpoint.getHdt().getDictionary().getNshared()) {
+					return this.endpoint.getBitX().access(object - 1);
+				} else {
+					return this.endpoint.getBitZ()
+							.access(object - this.endpoint.getHdt().getDictionary().getNshared() - 1);
+				}
 			}
 		}
-		logger.debug("Search over native store? {} {} {}", containsSubject, containsPredicate, containsObject);
-		return containsSubject && containsPredicate && containsObject;
+		return true;
 	}
 
 	@Override

@@ -256,14 +256,20 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	 */
 	@Override
 	public String toString() {
-		getLabel();
-		if (Literals.isLanguageLiteral(this)) {
-			return '"' + label + '"' + '@' + language;
-		} else if (XSD.STRING.equals(datatype) || datatype == null) {
-			return '"' + label + '"';
-		} else {
-			return '"' + label + '"' + "^^<" + datatype + ">";
-		}
+		final String label = '"' + getLabel() + '"';
+
+		return getLanguage()
+
+				.map(language -> label + '@' + language)
+
+				.orElseGet(() -> {
+
+					final CoreDatatype datatype = getCoreDatatype();
+
+					return datatype.equals(CoreDatatype.XSD.STRING) ? label
+							: label + "^^<" + getDatatype().stringValue() + ">";
+
+				});
 	}
 
 	public long getHdtID() {

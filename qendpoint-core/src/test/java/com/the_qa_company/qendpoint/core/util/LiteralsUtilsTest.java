@@ -54,6 +54,16 @@ public class LiteralsUtilsTest {
 	}
 
 	@Test
+	public void removeLangTest() {
+		assertEqualsCompact("\"hello\"", LiteralsUtils.removeLang("\"hello\"@fr"));
+		assertEqualsCompact("\"hello\"", LiteralsUtils.removeLang("\"hello\"@fr-ca"));
+		assertEqualsCompact("\"hello\"^^<http://test@example.org>",
+				LiteralsUtils.removeLang("\"hello\"^^<http://test@example.org>"));
+		assertEqualsCompact("\"hello\"", LiteralsUtils.removeLang("\"hello\""));
+		assertEqualsCompact("<http://test@example.org>", LiteralsUtils.removeLang("<http://test@example.org>"));
+	}
+
+	@Test
 	public void getTypeTest() {
 		assertEqualsCompact(LiteralsUtils.LITERAL_LANG_TYPE, LiteralsUtils.getType("\"hello\"@fr"));
 		assertEqualsCompact(LiteralsUtils.LITERAL_LANG_TYPE, LiteralsUtils.getType("\"hello\"@fr-ca"));

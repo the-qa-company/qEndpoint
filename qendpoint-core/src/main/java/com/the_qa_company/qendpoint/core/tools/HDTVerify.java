@@ -60,27 +60,25 @@ public class HDTVerify {
 		return load ? HDTManager.loadHDT(file, listener) : HDTManager.mapHDT(file, listener);
 	}
 
-	private void print(byte[] arr) {
+	private static void print(byte[] arr) {
 		for (byte b : arr) {
 			System.out.printf("%02X ", b);
 		}
 		System.out.println();
 	}
 
-	private void print(CharSequence seq) {
-		if (seq instanceof CompactString) {
-			CompactString cs1 = (CompactString) seq;
+	private static void print(CharSequence seq) {
+		if (seq instanceof CompactString cs1) {
 			print(cs1.getData());
 		}
 
-		if (seq instanceof String) {
-			String rs1 = (String) seq;
+		if (seq instanceof String rs1) {
 			print(rs1.getBytes());
 		}
 	}
 
-	public boolean checkDictionarySectionOrder(String name, DictionarySection section,
-			MultiThreadListenerConsole console) {
+	public static boolean checkDictionarySectionOrder(boolean binary, boolean unicode, ColorTool colorTool, String name,
+			DictionarySection section, MultiThreadListenerConsole console) {
 		Iterator<? extends CharSequence> it = section.getSortedEntries();
 		long size = section.getNumberOfElements();
 		IntermediateListener il = new IntermediateListener(console);
@@ -241,11 +239,12 @@ public class HDTVerify {
 						long count = 0;
 						if (hdt.getDictionary() instanceof MultipleBaseDictionary) {
 							colorTool.log("Checking subject entries");
-							error = checkDictionarySectionOrder("subject", hdt.getDictionary().getSubjects(), console);
+							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
+									hdt.getDictionary().getSubjects(), console);
 							count += hdt.getDictionary().getSubjects().getNumberOfElements();
 							colorTool.log("Checking predicate entries");
-							error |= checkDictionarySectionOrder("predicate", hdt.getDictionary().getPredicates(),
-									console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "predicate",
+									hdt.getDictionary().getPredicates(), console);
 							count += hdt.getDictionary().getPredicates().getNumberOfElements();
 							colorTool.log("Checking object entries");
 							Map<? extends CharSequence, DictionarySection> allObjects = hdt.getDictionary()
@@ -254,25 +253,30 @@ public class HDTVerify {
 								CharSequence sectionName = entry.getKey();
 								DictionarySection section = entry.getValue();
 								colorTool.log("Checking object section " + sectionName);
-								error |= checkDictionarySectionOrder("sectionName", section, console);
+								error |= checkDictionarySectionOrder(binary, unicode, colorTool, "sectionName", section,
+										console);
 								count += section.getNumberOfElements();
 							}
 							colorTool.log("Checking shared entries");
-							error |= checkDictionarySectionOrder("shared", hdt.getDictionary().getShared(), console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
+									hdt.getDictionary().getShared(), console);
 							count += hdt.getDictionary().getShared().getNumberOfElements();
 						} else {
 							colorTool.log("Checking subject entries");
-							error = checkDictionarySectionOrder("subject", hdt.getDictionary().getSubjects(), console);
+							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
+									hdt.getDictionary().getSubjects(), console);
 							count += hdt.getDictionary().getSubjects().getNumberOfElements();
 							colorTool.log("Checking predicate entries");
-							error |= checkDictionarySectionOrder("predicate", hdt.getDictionary().getPredicates(),
-									console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "predicate",
+									hdt.getDictionary().getPredicates(), console);
 							count += hdt.getDictionary().getPredicates().getNumberOfElements();
 							colorTool.log("Checking object entries");
-							error |= checkDictionarySectionOrder("object", hdt.getDictionary().getObjects(), console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "object",
+									hdt.getDictionary().getObjects(), console);
 							count += hdt.getDictionary().getObjects().getNumberOfElements();
 							colorTool.log("Checking shared entries");
-							error |= checkDictionarySectionOrder("shared", hdt.getDictionary().getShared(), console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
+									hdt.getDictionary().getShared(), console);
 							count += hdt.getDictionary().getShared().getNumberOfElements();
 						}
 

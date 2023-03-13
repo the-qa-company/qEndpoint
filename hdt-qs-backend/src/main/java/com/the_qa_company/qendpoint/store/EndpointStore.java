@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
+import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
@@ -240,6 +242,14 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		return new NativeStore(dataDir, "spoc,posc,cosp");
 	}
 
+	public EndpointStore(Path location) throws IOException {
+		this(new EndpointFiles(location));
+	}
+
+	public EndpointStore(EndpointFiles files) throws IOException {
+		this(files, HDTOptions.of());
+	}
+
 	public EndpointStore(String locationHdt, String hdtIndexName, HDTOptions spec, String locationNative,
 			boolean inMemDeletes, boolean loadIntoMemory) throws IOException {
 		this(new EndpointFiles(locationNative, locationHdt, hdtIndexName), spec, inMemDeletes, loadIntoMemory);
@@ -255,16 +265,45 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		this(new EndpointFiles(locationNative, locationHdt, hdtIndexName), spec, inMemDeletes, loadIntoMemory);
 	}
 
+	public EndpointStore(Path location, HDTOptions spec) throws IOException {
+		this(new EndpointFiles(location), spec);
+	}
+
+	public EndpointStore(EndpointFiles files, HDTOptions spec) throws IOException {
+		this(files, spec, false, false);
+	}
+
 	public EndpointStore(Path locationHdt, String hdtIndexName, HDTOptions spec, Path locationNative,
 			boolean inMemDeletes) throws IOException {
 		this(locationHdt, hdtIndexName, spec, locationNative, inMemDeletes, false);
 	}
 
-	public void initNativeStoreDictionary(HDT hdt) throws IOException {
+	public void reloadBitX() throws IOException {
+		if (this.bitX != null) {
+			bitX.close();
+		}
 		this.bitX = new BitArrayDisk(hdt.getDictionary().getNsubjects(), endpointFiles.getHDTBitX());
+	}
+
+	public void reloadBitY() throws IOException {
+		if (this.bitY != null) {
+			bitY.close();
+		}
 		this.bitY = new BitArrayDisk(hdt.getDictionary().getNpredicates(), endpointFiles.getHDTBitY());
+	}
+
+	public void reloadBitZ() throws IOException {
+		if (this.bitZ != null) {
+			bitZ.close();
+		}
 		this.bitZ = new BitArrayDisk(hdt.getDictionary().getNobjects() - hdt.getDictionary().getNshared(),
 				endpointFiles.getHDTBitZ());
+	}
+
+	public void initNativeStoreDictionary() throws IOException {
+		reloadBitX();
+		reloadBitY();
+		reloadBitZ();
 		// if the bitmaps have not been initialized with the native store
 		if (this.bitX.countOnes() == 0 && this.bitY.countOnes() == 0 && this.bitZ.countOnes() == 0) {
 			initBitmaps();
@@ -281,7 +320,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 		}
 		this.setHdt(hdt);
 		this.setHdtProps(new HDTProps(hdt));
-		initNativeStoreDictionary(this.hdt);
+		initNativeStoreDictionary();
 		this.setValueFactory(new EndpointStoreValueFactory(hdt));
 		this.hdtConverter = new HDTConverter(this);
 	}
@@ -410,7 +449,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 			} finally {
 				try {
 					try {
-						hdt.close();
+						Closer.closeAll(hdt, bitX, bitY, bitZ, deleteBitMap);
 					} finally {
 						if (rdfWriterTempTriples != null) {
 							rdfWriterTempTriples.getWriter().close();
@@ -761,17 +800,27 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	public void modifyBitmaps(Resource subject, IRI predicate, Value object) {
 		// mark in HDT the store the subject, predicate, objects that are used
 		// in rdf4j
-		long subjectID = -1;
-		if (subject instanceof SimpleIRIHDT) {
-			subjectID = ((SimpleIRIHDT) subject).getId();
+		long subjectID;
+		if (subject instanceof SimpleIRIHDT iriHDT) {
+			subjectID = iriHDT.getId();
+		} else if (subject instanceof SimpleBNodeHDT bNodeHDT) {
+			subjectID = bNodeHDT.getHdtId();
+		} else {
+			subjectID = -1;
 		}
-		long predicateID = -1;
-		if (predicate instanceof SimpleIRIHDT) {
-			predicateID = ((SimpleIRIHDT) predicate).getId();
+		long predicateID;
+		if (predicate instanceof SimpleIRIHDT iriHDT) {
+			predicateID = iriHDT.getId();
+		} else {
+			predicateID = -1;
 		}
-		long objectID = -1;
-		if (object instanceof SimpleIRIHDT) {
-			objectID = ((SimpleIRIHDT) object).getId();
+		long objectID;
+		if (object instanceof SimpleIRIHDT iriHDT) {
+			objectID = iriHDT.getId();
+		} else if (object instanceof SimpleBNodeHDT bNodeHDT) {
+			objectID = bNodeHDT.getHdtId();
+		} else {
+			objectID = -1;
 		}
 		modifyBitmaps(subjectID, predicateID, objectID);
 	}

@@ -57,8 +57,7 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 				IRI predicate = endpoint.getHdtConverter().IdToPredicateHDTResource(tripleID.getPredicate());
 				Value object = endpoint.getHdtConverter().IdToObjectHDTResource(tripleID.getObject());
 				if (logger.isTraceEnabled()) {
-					logger.trace("From HDT   {} {} {} ", subject.stringValue(), predicate.stringValue(),
-							object.stringValue());
+					logger.trace("From HDT   {} {} {} ", subject, predicate, object);
 				}
 				next = endpointTripleSource.getValueFactory().createStatement(subject, predicate, object);
 				return true;
@@ -73,8 +72,7 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			next = endpointTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject,
 					stm.getContext());
 			if (logger.isTraceEnabled()) {
-				logger.trace("From RDF4j {} {} {}", next.getSubject().stringValue(), next.getPredicate().stringValue(),
-						next.getObject().stringValue());
+				logger.trace("From RDF4j {} {} {}", next.getSubject(), next.getPredicate(), next.getObject());
 			}
 			return true;
 		}
