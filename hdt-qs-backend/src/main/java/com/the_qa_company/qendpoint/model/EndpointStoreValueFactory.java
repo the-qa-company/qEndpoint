@@ -19,7 +19,6 @@ import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.model.impl.NumericLiteral;
 import org.eclipse.rdf4j.model.impl.SimpleBNode;
 import org.eclipse.rdf4j.model.impl.SimpleIRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 
@@ -35,8 +34,6 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 public class EndpointStoreValueFactory extends AbstractValueFactory {
 
 	private final HDT hdt;
-	private final ValueFactory valueFactory;
-
 	/*--------------*
 	 * Constructors *
 	 *--------------*/
@@ -44,9 +41,6 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
 	public EndpointStoreValueFactory(HDT hdt) {
 		super();
 		this.hdt = hdt;
-		// @todo: this should be changed and the value factory of the store
-		// should be used
-		this.valueFactory = SimpleValueFactory.getInstance();
 	}
 
 	/*---------*
@@ -76,7 +70,7 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
 		if (id != -1) {
 			return new SimpleBNodeHDT(hdt, position, id);
 		} else {
-			return valueFactory.createBNode(nodeID);
+			return super.createBNode(nodeID);
 		}
 	}
 
@@ -107,23 +101,8 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
 		if (id != -1) {
 			return new SimpleIRIHDT(hdt, position, id);
 		} else {
-			return valueFactory.createIRI(iri);
+			return super.createIRI(iri);
 		}
-	}
-
-	@Override
-	public IRI createIRI(String namespace, String localName) {
-		return createIRI(namespace + localName);
-	}
-
-	@Override
-	public Literal createLiteral(String value) {
-		return new SimpleLiteral2(value);
-	}
-
-	@Override
-	public Literal createLiteral(String value, String language) {
-		return new SimpleLiteral2(value, language);
 	}
 
 	@Override
@@ -131,7 +110,7 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
 		if (datatype instanceof SimpleIRIHDT) {
 			((SimpleIRIHDT) datatype).convertToNonHDTIRI();
 		}
-		return new SimpleLiteral2(value, datatype);
+		return super.createLiteral(value, datatype);
 	}
 
 }

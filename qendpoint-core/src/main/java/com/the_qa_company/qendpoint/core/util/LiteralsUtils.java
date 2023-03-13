@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.util.ConcurrentModificationException;
+import java.util.Optional;
 
 /**
  * The type Literals utils.
@@ -26,7 +27,7 @@ public class LiteralsUtils {
 	/**
 	 * The Literal lang type str.
 	 */
-	static final String LITERAL_LANG_TYPE_STR = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
+	public static final String LITERAL_LANG_TYPE_STR = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
 	/**
 	 * no datatype type
 	 */
@@ -78,7 +79,7 @@ public class LiteralsUtils {
 	 * @throws java.util.ConcurrentModificationException if the node is updated
 	 *                                                   while reading
 	 */
-	private static int getTypeIndex(CharSequence str) {
+	public static int getTypeIndex(CharSequence str) {
 		if (str.length() == 0 || str.charAt(0) != '"' || str.charAt(str.length() - 1) != '>') {
 			return -1; // not a literal
 		}
@@ -107,11 +108,47 @@ public class LiteralsUtils {
 	}
 
 	/**
+	 * get the index of the last @ of the literal language
+	 *
+	 * @param str node
+	 * @return index of the start of the uri type
+	 * @throws java.util.ConcurrentModificationException if the node is updated
+	 *                                                   while reading
+	 */
+	public static int getLangIndex(CharSequence str) {
+		if (str.length() == 0 || str.charAt(0) != '"' || str.charAt(str.length() - 1) == '"'
+				|| str.charAt(str.length() - 1) == '>') {
+			return -1; // not a lang literal
+		}
+		int i = str.length() - 1;
+
+		// find end of the type
+		while (i > 0) {
+			if (str.charAt(i) == '@') {
+				break;
+			}
+			i--;
+		}
+
+		char c = str.charAt(i);
+
+		// https://www.w3.org/TR/n-triples/#n-triples-grammar
+		if (c == '"') {
+			return -1; // no lang, syntax error????
+		}
+
+		if (c == '@') {
+			return i + 1;
+		}
+
+		throw new ConcurrentModificationException("Update of the char sequence while reading!");
+	}
+
+	/**
 	 * test if the node is a literal and contains a language
 	 *
 	 * @param str the node
-	 * @return true if the node is a literal and contains a language, false
-	 *         otherwise
+	 * @return the type of this literal
 	 * @throws java.util.ConcurrentModificationException if the node is updated
 	 *                                                   while reading
 	 */
@@ -130,6 +167,24 @@ public class LiteralsUtils {
 	}
 
 	/**
+	 * test if the node is a literal and contains a language
+	 *
+	 * @param str the node
+	 * @return the type of this literal
+	 * @throws java.util.ConcurrentModificationException if the node is updated
+	 *                                                   while reading
+	 */
+	public static Optional<CharSequence> getLanguage(CharSequence str) {
+		int index = getLangIndex(str);
+
+		if (index != -1 && index < str.length()) {
+			return Optional.of(str.subSequence(index + 1, str.length()));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	/**
 	 * remove the node type if the node is a typed literal, this method return
 	 * the char sequence or a subSequence of this char sequence
 	 *
@@ -143,6 +198,25 @@ public class LiteralsUtils {
 
 		if (index != -1 && index < str.length()) {
 			return str.subSequence(0, index - 2);
+		} else {
+			return str;
+		}
+	}
+
+	/**
+	 * remove the node lang if the node is a lang literal, this method return
+	 * the char sequence or a subSequence of this char sequence
+	 *
+	 * @param str the node
+	 * @return node or the typed literal
+	 * @throws java.util.ConcurrentModificationException if the node is updated
+	 *                                                   while reading
+	 */
+	public static CharSequence removeLang(CharSequence str) {
+		int index = getLangIndex(str);
+
+		if (index != -1 && index < str.length()) {
+			return str.subSequence(0, index - 1);
 		} else {
 			return str;
 		}

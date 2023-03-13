@@ -383,7 +383,7 @@ public class EndpointStoreTest {
 					int i = 0;
 					while (query.hasNext()) {
 						i++;
-						query.next();
+						System.out.println(query.next());
 					}
 					// 1 triple in hdt and 2 added to native = 3 triples
 					assertEquals(3, i);
@@ -575,6 +575,11 @@ public class EndpointStoreTest {
 		File hdtStore = tempDir.newFolder("hdt-store");
 		try (HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec)) {
 			assert hdt != null;
+			try {
+				hdt.search("", "", "").forEachRemaining(System.out::println);
+			} catch (NotFoundException e) {
+				throw new RuntimeException(e);
+			}
 			hdt.saveToHDT(hdtStore.getAbsolutePath() + File.separatorChar + HDT_INDEX_NAME, null);
 		}
 		EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + File.separatorChar, HDT_INDEX_NAME, spec,
@@ -600,7 +605,7 @@ public class EndpointStoreTest {
 					int count = 0;
 					while (result.hasNext()) {
 						count++;
-						result.next();
+						System.out.println(result.next());
 					}
 					assertEquals(3, count);
 				}

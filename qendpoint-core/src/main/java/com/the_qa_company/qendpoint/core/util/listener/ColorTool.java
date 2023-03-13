@@ -18,7 +18,11 @@ public class ColorTool {
 		this.console = console;
 	}
 
-	private void print(String str) {
+	public MultiThreadListenerConsole getConsole() {
+		return console;
+	}
+
+	public void print(String str) {
 		if (console != null) {
 			console.printLine(str);
 		} else {
@@ -88,6 +92,38 @@ public class ColorTool {
 		}
 		int color = 16 + 36 * r + 6 * g + b;
 		return "\033[38;5;" + color + "m";
+	}
+
+	public String red() {
+		return color(5, 1, 1);
+	}
+
+	public String blue() {
+		return color(1, 1, 5);
+	}
+
+	public String green() {
+		return color(1, 5, 1);
+	}
+
+	public String yellow() {
+		return color(5, 5, 1);
+	}
+
+	public String cyan() {
+		return color(1, 5, 5);
+	}
+
+	public String magenta() {
+		return color(5, 1, 5);
+	}
+
+	public String black() {
+		return color(0, 0, 0);
+	}
+
+	public String white() {
+		return color(5, 5, 5);
 	}
 
 	public String colorReset() {

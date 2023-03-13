@@ -4,6 +4,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.sail.lucene.LuceneSailSchema;
 import org.eclipse.rdf4j.sparqlbuilder.core.Prefix;
+import org.eclipse.rdf4j.sparqlbuilder.core.QueryPattern;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -126,5 +127,12 @@ public class LuceneMatch implements GraphPattern {
 			matches = matchesObject;
 		}
 		return subject.has(LuceneSailSchema.MATCHES, matches).getQueryString();
+	}
+
+	/**
+	 * @return QueryPattern
+	 */
+	public QueryPattern asQueryPattern() {
+		return SparqlBuilder.where(this);
 	}
 }
