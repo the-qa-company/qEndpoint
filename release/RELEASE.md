@@ -1,1 +1,3 @@
-- set docker image to Java 17
+- add query plan to API (#280)
+- fix issue with bitmaps (#286)
+- regen native store (#276)

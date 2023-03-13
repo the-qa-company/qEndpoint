@@ -1,3 +1,6 @@
+## Version 1.10.1 
+    
+- set docker image to Java 17
 ## Version 1.10.0 
     
 - update to Springboot 3.0.2
