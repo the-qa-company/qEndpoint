@@ -1,3 +1,1 @@
-- add query plan to API (#280)
-- fix issue with bitmaps (#286)
-- regen native store (#276)
+- fix NullPointerException (#292)
