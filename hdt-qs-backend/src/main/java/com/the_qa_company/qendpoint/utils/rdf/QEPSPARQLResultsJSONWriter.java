@@ -32,7 +32,7 @@ public class QEPSPARQLResultsJSONWriter extends SPARQLResultsJSONWriter {
 			startDocument();
 		}
 
-		if (!headerOpen) {
+		if (!headerOpen && componentBuilder != null) {
 			try {
 				componentBuilder.accept(jg);
 			} catch (IOException e) {
