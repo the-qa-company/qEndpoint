@@ -198,6 +198,7 @@
         <module>hdt-qs-backend</module>
         <module>qendpoint-core</module>
         <module>qendpoint-cli</module>
+        <module>qendpoint-benchmark</module>
     </modules>
 
     <issueManagement>

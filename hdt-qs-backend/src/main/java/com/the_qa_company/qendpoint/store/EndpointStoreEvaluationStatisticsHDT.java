@@ -1,23 +1,27 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.Var;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
 	private final EndpointStore endpoint;
+	private final HDTConverter hdtConverter;
+	private final HDTCardinalityCalculator calculator = new HDTCardinalityCalculator();
 
 	public EndpointStoreEvaluationStatisticsHDT(EndpointStore endpoint) {
 		this.endpoint = endpoint;
+		this.hdtConverter = endpoint.getHdtConverter();
 	}
 
 	@Override
 	protected CardinalityCalculator createCardinalityCalculator() {
-		return new HDTCardinalityCalculator();
+		return calculator;
 	}
 
 	protected class HDTCardinalityCalculator extends CardinalityCalculator {
@@ -28,12 +32,9 @@ public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
 			Value predicate = getConstantValue(sp.getPredicateVar());
 			Value object = getConstantValue(sp.getObjectVar());
 
-			HDTConverter hdtConverter = new HDTConverter(endpoint);
 			long subId = hdtConverter.subjectToID((Resource) subject);
 			long predId = hdtConverter.predicateToID((IRI) predicate);
 			long objId = hdtConverter.objectToID(object);
-
-			double cardinality;
 
 			if (subId == 0 && predId == 0 && objId == 0) {
 				/*
@@ -42,16 +43,35 @@ public class EndpointStoreEvaluationStatisticsHDT extends EvaluationStatistics {
 				 * we put a high card to put this triple on last in the ordering
 				 * scenario
 				 */
-				cardinality = Double.MAX_VALUE;
+				return Double.MAX_VALUE;
 			} else {
-				cardinality = endpoint.getHdt().getTriples().search(new TripleID(subId, predId, objId))
-						.estimatedNumResults();
+				TripleID tid = new TripleID(subId, predId, objId);
+
+				IteratorTripleID it = endpoint.getHdt().getTriples().search(tid);
+				switch (it.numResultEstimation()) {
+				case APPROXIMATE, EXACT, UP_TO -> {
+					double cardinality = it.estimatedNumResults();
+
+					double multiplier = switch (tid.getPatternString()) {
+					case "S??", "SP?", "SPO" -> 1; // SPO INDEX
+					case "??O", "?PO" -> 2; // OPS INDEX
+					case "?P?" -> 4; // P INDEX
+					default -> 8; // no INDEX
+					};
+
+					return cardinality * multiplier;
+				}
+				case UNKNOWN, MORE_THAN -> {
+					// We don't know
+					return Double.MAX_VALUE;
+				}
+				default -> throw new AssertionError("Unknown estimation: " + it.numResultEstimation());
+				}
 			}
-			return cardinality;
 		}
 
 		protected Value getConstantValue(Var var) {
-			if (var != null) {
+			if (var.hasValue()) {
 				return var.getValue();
 			}
 

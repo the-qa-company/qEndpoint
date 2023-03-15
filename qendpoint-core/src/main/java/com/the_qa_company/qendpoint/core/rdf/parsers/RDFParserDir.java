@@ -58,7 +58,8 @@ public class RDFParserDir implements RDFParserCallback {
 		}
 	}
 
-	private void doParse(Path path, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
+	@Override
+	public void doParse(Path path, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {
 		if (notation != RDFNotation.DIR) {
 			throw new IllegalArgumentException("Can't parse notation different than " + RDFNotation.DIR + "!");
