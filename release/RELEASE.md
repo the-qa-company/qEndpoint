@@ -1,1 +1,1 @@
-- set docker image to Java 17
+- fix NullPointerException (#292)
