@@ -1,5 +1,12 @@
 package com.the_qa_company.qendpoint.store;
 
+import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.parser.ParsedQuery;
+import org.eclipse.rdf4j.query.parser.QueryParser;
+import org.eclipse.rdf4j.query.parser.QueryParserUtil;
+import org.eclipse.rdf4j.queryrender.QueryRenderer;
+import org.eclipse.rdf4j.queryrender.sparql.experimental.SparqlQueryRenderer;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +17,8 @@ import java.util.Map;
  */
 public class EndpointStoreUtils {
 	private static final Map<Long, Map<Long, Throwable>> EP_TO_CO_TO_THR = new HashMap<>();
+	private static final QueryRenderer QUERY_RENDERER = new SparqlQueryRenderer();
+	private static final QueryParser QUERY_PARSER = QueryParserUtil.createParser(QueryLanguage.SPARQL);
 	private static boolean debugConnection = false;
 
 	/**
@@ -103,6 +112,40 @@ public class EndpointStoreUtils {
 	 */
 	public static long getDebugId(EndpointStoreConnection connection) {
 		return connection.getDebugId();
+	}
+
+	/**
+	 * format a SPARQL query from string
+	 *
+	 * @param query query string
+	 * @return formatter query
+	 * @throws Exception formatting exception
+	 */
+	public static String formatSPARQLQuery(String query) throws Exception {
+		return formatSPARQLQuery(query, null);
+	}
+
+	/**
+	 * format a SPARQL query from string
+	 *
+	 * @param query   query string
+	 * @param baseURI base URI
+	 * @return formatter query
+	 * @throws Exception formatting exception
+	 */
+	public static String formatSPARQLQuery(String query, String baseURI) throws Exception {
+		return formatSPARQLQuery(QUERY_PARSER.parseQuery(query, baseURI));
+	}
+
+	/**
+	 * format a SPARQL query from query
+	 *
+	 * @param query query
+	 * @return formatter query
+	 * @throws Exception formatting exception
+	 */
+	public static String formatSPARQLQuery(ParsedQuery query) throws Exception {
+		return QUERY_RENDERER.render(query);
 	}
 
 	private EndpointStoreUtils() {
