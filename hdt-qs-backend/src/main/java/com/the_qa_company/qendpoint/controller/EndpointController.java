@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.controller;
 
+import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.tomcat.util.http.fileupload.MultipartStream;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebInputException;
@@ -30,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @RestController
 @RequestMapping("/api/endpoint")
 public class EndpointController {
+	public record FormatReturn(String query) {}
+
 	private static final Logger logger = LoggerFactory.getLogger(EndpointController.class);
 
 	@Autowired
@@ -177,6 +181,21 @@ public class EndpointController {
 			throws IOException {
 		sparql.setPrefixes(prefixes);
 		return prefixes();
+	}
+
+	@RequestMapping(path = "format", method = { RequestMethod.POST, RequestMethod.GET })
+	public ResponseEntity<FormatReturn> format(@RequestBody(required = false) final String query,
+			@RequestParam(value = "query", required = false) final String paramQuery,
+			@RequestParam(value = "baseURI", required = false) final String baseURI) throws Exception {
+		String q;
+		if (query != null) {
+			q = query;
+		} else if (paramQuery != null) {
+			q = paramQuery;
+		} else {
+			return ResponseEntity.badRequest().build();
+		}
+		return ResponseEntity.ok(new FormatReturn(EndpointStoreUtils.formatSPARQLQuery(q, baseURI)));
 	}
 
 	@GetMapping("/")

@@ -23,8 +23,14 @@ public class ColorTool {
 	}
 
 	public void print(String str) {
+		print(str, false);
+	}
+
+	public void print(String str, boolean serr) {
 		if (console != null) {
 			console.printLine(str);
+		} else if (serr) {
+			System.err.println(str);
 		} else {
 			System.out.println(str);
 		}
@@ -64,6 +70,12 @@ public class ColorTool {
 		}
 	}
 
+	public void warn(String msg, boolean ignoreQuiet, boolean serr) {
+		if (!quiet || ignoreQuiet) {
+			print(prefix("WARN", 5, 5, 0) + " " + colorReset() + msg, serr);
+		}
+	}
+
 	public void error(String text) {
 		error(text, false);
 	}
@@ -77,11 +89,15 @@ public class ColorTool {
 	}
 
 	public void error(String title, String text, boolean ignoreQuiet) {
+		error(title, text, ignoreQuiet, false);
+	}
+
+	public void error(String title, String text, boolean ignoreQuiet, boolean serr) {
 		if (!quiet || ignoreQuiet) {
 			if (title != null) {
-				print(prefix("ERRR", 5, 0, 0) + " " + prefix(title, 5, 3, 0) + " " + colorReset() + text);
+				print(prefix("ERRR", 5, 0, 0) + " " + prefix(title, 5, 3, 0) + " " + colorReset() + text, serr);
 			} else {
-				print(prefix("ERRR", 5, 0, 0) + " " + colorReset() + text);
+				print(prefix("ERRR", 5, 0, 0) + " " + colorReset() + text, serr);
 			}
 		}
 	}
