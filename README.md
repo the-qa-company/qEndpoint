@@ -55,7 +55,7 @@ The QA Company over the social networks
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
     - [Installers](#installers)
-    - [Scoop](#scoop-windows)
+    - [Scoop](#scoop)
     - [Code](#code)
       - [Back-end](#back-end)
       - [Front-end](#front-end)
