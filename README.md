@@ -55,6 +55,7 @@ The QA Company over the social networks
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
     - [Installers](#installers)
+    - [Scoop](#scoop)
     - [Code](#code)
       - [Back-end](#back-end)
       - [Front-end](#front-end)
@@ -108,6 +109,19 @@ For the frontend (not mandatory to run the backend)
 #### Installers
 
 Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases).
+
+#### Scoop
+
+You can install qEndpoint using the [Scoop package manager](http://scoop.sh/).
+
+You need to add the [`the-qa-company` bucket](https://github.com/the-qa-company/scoop-bucket), and then you will be able to install the `qendpoint` manifest, it can be done using these commands
+
+```powershell
+# Add the-qa-company bucket
+scoop bucket add the-qa-company https://github.com/the-qa-company/scoop-bucket.git
+# Install qEndpoint CLI
+scoop install qendpoint
+```
 
 #### Code
 
