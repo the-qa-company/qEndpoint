@@ -283,10 +283,12 @@ jobs:
         run: |
           mkdir -p deploy_file
           mv qendpoint.*/* deploy_file
+          mv qendpoint-cli.*/* deploy_file
       - name: Compute hashes
         run: |
           chmod u+x scripts/hashfiles.sh
-          echo "" >> release/SUFFIX.md
+          echo " " >> release/SUFFIX.md
+          echo " " >> release/SUFFIX.md
           echo '**SHA512**' >> release/SUFFIX.md
           echo '' >> release/SUFFIX.md
           echo '```' >> release/SUFFIX.md
