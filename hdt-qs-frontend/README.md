@@ -31,6 +31,8 @@ In the project directory, you can run:
 
 You may have to run it like this: `npm i --legacy-peer-deps`
 
+If you run into issues during compilation on Macos, try with Node 18 (`nvm use 18`)
+
 ### `npm start`
 
 Runs the app in the development mode.\
