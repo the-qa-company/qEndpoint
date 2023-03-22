@@ -285,6 +285,7 @@ jobs:
           mv qendpoint.*/* deploy_file
       - name: Compute hashes
         run: |
+          chmod u+x scripts/hashfiles.sh
           echo "" >> release/SUFFIX.md
           echo '**SHA512**' >> release/SUFFIX.md
           echo '' >> release/SUFFIX.md
@@ -292,7 +293,9 @@ jobs:
           scripts/hashfiles.sh deploy_file >> release/SUFFIX.md
           echo '```' >> release/SUFFIX.md
       - name: Create release body
-        run: scripts/build_release_input.sh
+        run: |
+          chmod u+x scripts/build_release_input.sh
+          scripts/build_release_input.sh
       - name: Create release with artifacts
         uses: ncipollo/release-action@v1
         with:
