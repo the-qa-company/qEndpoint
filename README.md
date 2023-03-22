@@ -55,6 +55,7 @@ The QA Company over the social networks
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
     - [Installers](#installers)
+    - [Scoop](#scoop-windows)
     - [Code](#code)
       - [Back-end](#back-end)
       - [Front-end](#front-end)
@@ -109,7 +110,7 @@ For the frontend (not mandatory to run the backend)
 
 Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases).
 
-#### Scoop (Windows)
+#### Scoop
 
 You can install qEndpoint using the [Scoop package manager](http://scoop.sh/).
 
