@@ -1,3 +1,8 @@
+## Version 1.11.2 
+    
+- fix prefix page links
+- add sha512 hashes in the release note
+
 ## Version 1.11.1 
     
 - fix NullPointerException (#292)
