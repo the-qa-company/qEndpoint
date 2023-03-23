@@ -289,7 +289,7 @@ jobs:
           chmod u+x scripts/hashfiles.sh
           echo " " >> release/SUFFIX.md
           echo " " >> release/SUFFIX.md
-          echo '**SHA512**' >> release/SUFFIX.md
+          echo '**SHA256**' >> release/SUFFIX.md
           echo '' >> release/SUFFIX.md
           echo '```' >> release/SUFFIX.md
           scripts/hashfiles.sh deploy_file >> release/SUFFIX.md

@@ -12,6 +12,6 @@ FILE=`realpath $1`
 cd $BASE/..
 
 for f in `ls $FILE` ; do
-    echo "$f : $(sha512sum -b "$FILE/$f" | cut -d " " -f 1)"
+    echo "$f : $(sha256sum -b "$FILE/$f" | cut -d " " -f 1)"
 done
 
