@@ -56,6 +56,7 @@ The QA Company over the social networks
   - [Installation](#installation)
     - [Installers](#installers)
     - [Scoop](#scoop)
+    - [Brew](#brew)
     - [Code](#code)
       - [Back-end](#back-end)
       - [Front-end](#front-end)
@@ -121,6 +122,16 @@ You need to add the [`the-qa-company` bucket](https://github.com/the-qa-company/
 scoop bucket add the-qa-company https://github.com/the-qa-company/scoop-bucket.git
 # Install qEndpoint CLI
 scoop install qendpoint
+```
+
+#### Brew
+
+You can install qEndpoint using the [Brew package manager](http://brew.sh/).
+
+You can install is using this command
+
+```bash
+brew install the-qa-company/tap/qendpoint
 ```
 
 #### Code
