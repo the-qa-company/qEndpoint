@@ -211,7 +211,7 @@
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
-                        <version>2.4.12</version>
+                        <version>3.0.5</version>
                         <configuration>
                             <mainClass>com.the_qa_company.qendpoint.compiler.SailCompilerSchema</mainClass>
                             <classifier>exec</classifier>
@@ -226,7 +226,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.4.12</version>
+                <version>3.0.5</version>
                 <configuration>
                     <mainClass>com.the_qa_company.qendpoint.Application</mainClass>
                     <classifier>exec</classifier>
