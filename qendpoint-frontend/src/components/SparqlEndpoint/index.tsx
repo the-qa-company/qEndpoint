@@ -3,13 +3,18 @@ import { useSyncRef } from 'common/react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { TextField, Typography, useTheme } from '@mui/material'
 import config from 'common/config'
+import { useFastAPI } from 'common/api'
+import useAsyncEffect from 'use-async-effect'
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
+import { useSnackbar } from 'notistack'
+import { LoadingButton } from '@mui/lab'
 
 import Yasgui from '@triply/yasgui'
 import '@triply/yasgui/build/yasgui.min.css'
 
 import s from './index.module.scss'
-import { useFastAPI } from 'common/api'
-import useAsyncEffect from 'use-async-effect'
+
+const spfmt = require('sparql-formatter')
 
 interface ExportedYasguiTab {
   query: string;
@@ -31,6 +36,7 @@ const exportYasguiToParams = (instance: Yasgui): URLSearchParams => {
 export default function SparqlEndpoint () {
   const navigate = useNavigate()
   const theme = useTheme()
+  const { enqueueSnackbar } = useSnackbar()
 
   const yasguiRef = useRef<Yasgui>()
   const yasguiDivRef = useRef<HTMLDivElement>(null)
@@ -47,6 +53,9 @@ export default function SparqlEndpoint () {
   const {
     setRequest: setPrefixesRequest
   } = prefixesReq
+
+  // Format request
+  const [tabToFormat, setTabToFormat] = useState<string>()
 
   const checkPrefixes = useCallback(() => {
     setPrefixesRequest(fetch(`${config.apiBase}/api/endpoint/prefixes`))
@@ -73,6 +82,26 @@ export default function SparqlEndpoint () {
       setLoaded(true)
     }
   }, [prefixesReq.success, prefixesReq.res])
+
+  /** Called when the user presses the button "format" */
+  const onClickFormat = () => {
+    const query = yasguiRef.current?.getTab()?.getQuery()
+    const tabId = yasguiRef.current?.getTab()?.getId()
+    // Check validity
+    if (query === undefined || tabId === undefined) {
+      enqueueSnackbar('No query to format', { variant: 'warning' })
+      return
+    }
+    // Save the tab to format and make the request
+    setTabToFormat(tabId)
+
+    const formatted = spfmt(query) as string
+
+    const tab = yasguiRef.current?.getTab(tabToFormat)
+    if (tab === undefined) return // Handle only if the tab is still open
+    // Set the query
+    tab.setQuery(formatted)
+  }
 
   // Called whenever the yasgui instance is updated and needs to be saved
   const onYasguiParamsChange = useSyncRef((params: URLSearchParams) => {
@@ -183,6 +212,16 @@ export default function SparqlEndpoint () {
           }}
           onChange={event => setTimeoutValue(event.currentTarget.value)}
         />
+      </div>
+      <div style={{ width: '100%' }}>
+        <LoadingButton
+          color='primary'
+          variant='contained'
+          startIcon={<AutoFixHighIcon />}
+          onClick={onClickFormat}
+        >
+          Format SPARQL
+        </LoadingButton>
       </div>
       <div ref={yasguiDivRef} className={s.yasgui} />
     </div>
