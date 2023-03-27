@@ -1,2 +1,2 @@
-- fix unix start endpoint and qepSearch scripts
+- split hdt-qs-backend into qendpoint-store and qendpoint-backend, introducing the new artifact id qendpoint-backend to use the Spring endpoint
 
