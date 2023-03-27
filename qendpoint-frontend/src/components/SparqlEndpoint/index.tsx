@@ -14,6 +14,8 @@ import '@triply/yasgui/build/yasgui.min.css'
 
 import s from './index.module.scss'
 
+const spfmt = require('sparql-formatter')
+
 interface ExportedYasguiTab {
   query: string;
   name: string;
@@ -54,7 +56,6 @@ export default function SparqlEndpoint () {
 
   // Format request
   const [tabToFormat, setTabToFormat] = useState<string>()
-  const formatReq = useFastAPI({ autoNotify: true, errorMsg: 'Failed to format the query' })
 
   const checkPrefixes = useCallback(() => {
     setPrefixesRequest(fetch(`${config.apiBase}/api/endpoint/prefixes`))
@@ -93,26 +94,14 @@ export default function SparqlEndpoint () {
     }
     // Save the tab to format and make the request
     setTabToFormat(tabId)
-    formatReq.setRequest(fetch(`${config.apiBase}/api/endpoint/format`, {
-      method: 'POST',
-      body: query
-    }))
-  }
 
-  // Handle format response
-  useAsyncEffect(async () => {
-    // Handle only successful responses
-    if (!formatReq.success) return
-    // Shouldn't happen
-    if (tabToFormat === undefined) throw new Error('tabToFormat is undefined')
-    // Get the formatted query
-    const formatted = await formatReq.res?.json()
-    // Get the tab to format
+    const formatted = spfmt(query) as string
+
     const tab = yasguiRef.current?.getTab(tabToFormat)
     if (tab === undefined) return // Handle only if the tab is still open
     // Set the query
-    tab.setQuery(formatted?.query)
-  }, [formatReq.success])
+    tab.setQuery(formatted)
+  }
 
   // Called whenever the yasgui instance is updated and needs to be saved
   const onYasguiParamsChange = useSyncRef((params: URLSearchParams) => {
@@ -230,7 +219,6 @@ export default function SparqlEndpoint () {
           variant='contained'
           startIcon={<AutoFixHighIcon />}
           onClick={onClickFormat}
-          loading={formatReq.loading}
         >
           Format SPARQL
         </LoadingButton>
