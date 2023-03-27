@@ -8,16 +8,16 @@ body:
         label: Part of the endpoint? (leave empty if you don't know)
         description: Part of the endpoint? (leave empty if you don't know)
         options:
-          - label: Backend (hdt-qs-backend)
+          - label: Backend (qendpoint-backend)
+          - label: Store (qendpoint-backend)
           - label: Core (qendpoint-core)
-          - label: Frontend (hdt-qs-benchmark)
-          - label: Benchmark (hdt-qs-frontend)
+          - label: Frontend (qendpoint-frontend)
           - label: Other
-  - type: markdown
-    attributes:
-      value: |
-        What needs to be done!
-  - type: textarea
-    attributes:
-      label: Task to perform
-      description: Description of the task
+    - type: markdown
+      attributes:
+        value: |
+          What needs to be done!
+    - type: textarea
+      attributes:
+        label: Task to perform
+        description: Description of the task

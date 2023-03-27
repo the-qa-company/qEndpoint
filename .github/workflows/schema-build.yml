@@ -4,11 +4,11 @@ on:
   push:
     branches: [master]
     paths:
-      - "hdt-qs-backend/**"
+      - "qendpoint-backend/**"
 
 defaults:
   run:
-    working-directory: hdt-qs-backend
+    working-directory: qendpoint-backend
 
 jobs:
   build:
@@ -39,6 +39,6 @@ jobs:
         uses: crazy-max/ghaction-github-pages@v2
         with:
           target_branch: schema-pages
-          build_dir: hdt-qs-backend/deploy
+          build_dir: qendpoint-backend/deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

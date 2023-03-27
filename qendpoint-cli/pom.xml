@@ -25,6 +25,11 @@
             <artifactId>qendpoint</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.the-qa-company</groupId>
+            <artifactId>qendpoint-backend</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

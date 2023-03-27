@@ -104,7 +104,7 @@ For the backend/benchmark
 
 For the frontend (not mandatory to run the backend)
 
-- see specific [README](./hdt-qs-frontend/README.md).
+- see specific [README](./qendpoint-frontend/README.md).
 
 ### Installation
 
@@ -140,9 +140,9 @@ brew install the-qa-company/tap/qendpoint
 ##### Back-end 
 
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
-- Move to the back-end directory `cd hdt-qs-backend`
+- Move to the back-end directory `cd qendpoint-backend`
 - Compile the project using this command: `mvn clean install -DskipTests`
-- Run the project using `java -jar target/qendpoint-1.2.3-exec.jar` (replace the version by the latest version)
+- Run the project using `java -jar target/qendpoint-backend-1.2.3-exec.jar` (replace the version by the latest version)
 
  
   You can use the project as a dependency (replace the version by the latest version)
@@ -158,7 +158,7 @@ brew install the-qa-company/tap/qendpoint
 ##### Front-end
 
 - Clone the qEndpoint from this link: `git clone https://github.com/the-qa-company/qEndpoint.git`
-- Move to the front-end directory `cd hdt-qs-frontend`
+- Move to the front-end directory `cd qendpoint-frontend`
 - Install the packages using `npm install`
 - Run the project using `npm start`
 
@@ -266,7 +266,7 @@ You can run the endpoint with this command:
 java -jar endpoint.jar &
 ```
 
-you can find a template of [the application.properties file in the backend source](hdt-qs-backend/src/main/resources/application.properties)
+you can find a template of [the application.properties file in the backend source](qendpoint-backend/src/main/resources/application.properties)
 
 If you have the HDT file of your graph, you can put it before loading the endpoint in the hdt-store directory (by default `hdt-store/index_dev.hdt`)
 

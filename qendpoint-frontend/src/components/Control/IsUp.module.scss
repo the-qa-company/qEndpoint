@@ -1,0 +1,31 @@
+.greenDot {
+  $color: #00de00;
+  $diffusion: 180%;
+
+  position: relative;
+  background-color: transparent;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+  margin-left: 10px;
+  border: 1px solid #0003;
+
+  &.on {
+    background-color: $color;
+    .diffusion {
+      display: unset;
+    }
+  }
+
+  .diffusion {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: $diffusion;
+    height: $diffusion;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba($color, 1) 0%, rgba($color, 0) 100%);
+  }
+}
