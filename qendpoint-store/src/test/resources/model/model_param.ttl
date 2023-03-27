@@ -1,0 +1,12 @@
+@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
+@prefix my: <http://example.org/> .
+@prefix search: <http://www.openrdf.org/contrib/lucenesail#> .
+
+# Describe the main node to use: my:mainNode
+mdlc:main mdlc:parsedStringParam [
+                                     mdlc:paramKey "test" ;
+                                     mdlc:paramValue "my value"
+                                 ] , [
+                                     mdlc:paramKey "test2" ;
+                                     mdlc:paramValue "my value 2"
+                                 ] .

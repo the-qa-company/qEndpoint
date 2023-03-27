@@ -78,7 +78,7 @@ cd ..
 
 if [ ! -f "release/RELEASE.md" ]; then
     1>&2 echo "no release file created, abort"
-    mv hdt-qs-backend/pom.xml_backupsv hdt-qs-backend/pom.xml
+    mv qendpoint-backend/pom.xml_backupsv qendpoint-backend/pom.xml
     mv release/RELEASE.md_backupsv release/RELEASE.md
     mv release/RELEASE.md_old_backupsv release/RELEASE.md_old
     exit -1
@@ -86,4 +86,4 @@ fi
 
 echo "Remove backup files"
 
-rm -f hdt-qs-backend/pom.xml_backupsv release/RELEASE.md_backupsv release/RELEASE.md_old_backupsv
+rm -f qendpoint-backend/pom.xml_backupsv release/RELEASE.md_backupsv release/RELEASE.md_old_backupsv

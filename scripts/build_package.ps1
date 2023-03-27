@@ -23,7 +23,7 @@ Copy-Item $EndpointJar "$PSScriptRoot/$inputDir/$execJarName" > $null
 Push-Location
 Set-Location $PSScriptRoot
 
-Set-Location ../hdt-qs-backend
+Set-Location ../qendpoint-backend
 
 $Version = $(mvn help:evaluate "-Dexpression=project.version" -q -DforceStdout)
 

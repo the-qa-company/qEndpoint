@@ -1,0 +1,45 @@
+.drawer {
+  & :global(.MuiDrawer-paper) {
+    overflow: hidden;
+    transition: width 0.25s ease-in-out;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    padding: 10px 0 10px 0;
+    text-decoration: none;
+    color: inherit;
+    .logo {
+      box-sizing: border-box;
+      padding: 0 6px 0 6px;
+    }
+    .title {
+      padding-left: 4px;
+      white-space: pre;
+    }
+  }
+
+}
+
+.modalCard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  height: 200px;
+  width: 350px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .buttons {
+    display: flex;
+    justify-content: space-between;
+  }
+}

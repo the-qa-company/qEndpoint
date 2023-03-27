@@ -1,12 +1,19 @@
-hdt-qs-backend/target/
-hdt-qs-backend/*.iml
-hdt-qs-backend/.idea/
-hdt-qs-backend/qendpoint/hdt-store/
-hdt-qs-backend/src/main/resources/static/
-hdt-qs-backend/qendpoint/native-store/
-hdt-qs-backend/COMPILER_SCHEMA.MD
-hdt-qs-backend/qendpoint/
-hdt-qs-backend/tests/
+qendpoint-store/qendpoint/hdt-store/
+qendpoint-store/qendpoint/native-store/
+qendpoint-store/COMPILER_SCHEMA.MD
+qendpoint-store/tests/
+qendpoint-store/target/
+qendpoint-store/*.iml
+qendpoint-store/.idea/
+qendpoint-backend/tests/
+qendpoint-backend/target/
+qendpoint-backend/*.iml
+qendpoint-backend/.idea/
+qendpoint-backend/src/main/resources/static/
+qendpoint-backend/qendpoint/hdt-store/
+qendpoint-backend/qendpoint/native-store/
+qendpoint-backend/qendpoint/
+qendpoint-qendpoint/tests/
 qendpoint-core/target/
 qendpoint-core/*.iml
 qendpoint-core/.idea/
@@ -18,26 +25,26 @@ qendpoint-cli/.idea/
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-hdt-qs-frontend/node_modules
-hdt-qs-frontend/.pnp
-hdt-qs-frontend/.pnp.js
+qendpoint-frontend/node_modules
+qendpoint-frontend/.pnp
+qendpoint-frontend/.pnp.js
 .DS_Store
 # testing
-hdt-qs-frontend/coverage
+qendpoint-frontend/coverage
 
 # production
-hdt-qs-frontend/build
+qendpoint-frontend/build
 
 # misc
-hdt-qs-frontend/.DS_Store
-hdt-qs-frontend/.env.local
-hdt-qs-frontend/.env.development.local
-hdt-qs-frontend/.env.test.local
-hdt-qs-frontend/.env.production.local
+qendpoint-frontend/.DS_Store
+qendpoint-frontend/.env.local
+qendpoint-frontend/.env.development.local
+qendpoint-frontend/.env.test.local
+qendpoint-frontend/.env.production.local
 
-hdt-qs-frontend/npm-debug.log*
-hdt-qs-frontend/yarn-debug.log*
-hdt-qs-frontend/yarn-error.log*
+qendpoint-frontend/npm-debug.log*
+qendpoint-frontend/yarn-debug.log*
+qendpoint-frontend/yarn-error.log*
 
 scripts/build
 release/RELEASE_OUTPUT.md

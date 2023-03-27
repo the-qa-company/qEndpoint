@@ -25,7 +25,7 @@ cp $ENDPOINT_JAR "$BASE/$INPUT_DIR/$EXEC_JAR_NAME"
 
 cd $BASE
 
-cd ../hdt-qs-backend
+cd ../qendpoint-backend
 
 VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 
