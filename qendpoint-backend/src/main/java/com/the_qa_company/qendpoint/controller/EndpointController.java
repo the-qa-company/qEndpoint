@@ -4,7 +4,6 @@ import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreInputException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.tomcat.util.http.fileupload.MultipartStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebInputException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -48,16 +46,18 @@ public class EndpointController {
 			@RequestParam(value = "update", required = false) final String updateQuery,
 			@RequestParam(value = "format", defaultValue = "json") final String format,
 			@RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
+			@RequestHeader(value = "QueryConfig", defaultValue = "") String queryConfig,
 			@RequestHeader(value = "timeout", defaultValue = "-1") int timeout,
 			@RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
 
 			@RequestBody(required = false) String body, HttpServletResponse response) throws IOException {
-		logger.info("New query");
 		try {
 			if (query != null) {
-				sparql.execute(query, timeout, acceptHeader, response::setContentType, response.getOutputStream());
+				sparql.execute(query, timeout, acceptHeader, response::setContentType, response.getOutputStream(),
+						queryConfig);
 			} else if (body != null && content.equals("application/sparql-query")) {
-				sparql.execute(body, timeout, acceptHeader, response::setContentType, response.getOutputStream());
+				sparql.execute(body, timeout, acceptHeader, response::setContentType, response.getOutputStream(),
+						queryConfig);
 			} else if (updateQuery != null) {
 				sparql.executeUpdate(updateQuery, timeout, response.getOutputStream());
 			} else if (body != null) {

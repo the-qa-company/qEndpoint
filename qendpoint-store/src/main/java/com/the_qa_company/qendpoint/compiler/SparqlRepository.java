@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.compiler;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreConnection;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreInputException;
@@ -40,7 +41,6 @@ import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriter;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
-import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -55,7 +55,6 @@ import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,11 +154,49 @@ public class SparqlRepository {
 	 * @param acceptHeader accept header
 	 * @param mimeSetter   mime setter, null for no set
 	 * @param out          output stream
+	 * @param queryParam   query parameters
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
+			OutputStream out, String queryParam) {
+		execute(null, sparqlQuery, timeout, acceptHeader, mimeSetter, out, queryParam);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
 	 * @throws java.lang.NullPointerException if an argument is null
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out) {
-		execute(null, sparqlQuery, timeout, acceptHeader, mimeSetter, out);
+		execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out, "");
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection   the connection to use
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @param queryParam   query parameters
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
+			Consumer<String> mimeSetter, OutputStream out, String queryParam) {
+		Objects.requireNonNull(sparqlQuery, "sparqlQuery can't be null");
+		Objects.requireNonNull(acceptHeader, "acceptHeader can't be null");
+		mimeSetter = Objects.requireNonNullElseGet(mimeSetter, () -> s -> {});
+		Objects.requireNonNull(out, "output stream can't be null");
+
+		execute0(connection, sparqlQuery, timeout, acceptHeader, mimeSetter, out, queryParam);
 	}
 
 	/**
@@ -175,12 +212,7 @@ public class SparqlRepository {
 	 */
 	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
 			Consumer<String> mimeSetter, OutputStream out) {
-		Objects.requireNonNull(sparqlQuery, "sparqlQuery can't be null");
-		Objects.requireNonNull(acceptHeader, "acceptHeader can't be null");
-		mimeSetter = Objects.requireNonNullElseGet(mimeSetter, () -> s -> {});
-		Objects.requireNonNull(out, "output stream can't be null");
-
-		execute0(connection, sparqlQuery, timeout, acceptHeader, mimeSetter, out);
+		execute(connection, sparqlQuery, timeout, acceptHeader, mimeSetter, out, "");
 	}
 
 	/**
@@ -201,7 +233,7 @@ public class SparqlRepository {
 	 * @param timeout     query timeout
 	 */
 	public ClosableResult<?> execute(RepositoryConnection connection, String sparqlQuery, int timeout) {
-		return execute0(connection, sparqlQuery, timeout, null, null, null);
+		return execute0(connection, sparqlQuery, timeout, null, null, null, "");
 	}
 
 	/**
@@ -228,7 +260,7 @@ public class SparqlRepository {
 	@SuppressWarnings("unchecked")
 	public ClosableResult<TupleQueryResult> executeTupleQuery(RepositoryConnection connection, String sparqlQuery,
 			int timeout) {
-		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, "");
 		assert res != null;
 		if (!(res.getResult() instanceof TupleQueryResult)) {
 			try {
@@ -272,7 +304,7 @@ public class SparqlRepository {
 	 *                                                          be closed
 	 */
 	public boolean executeBooleanQuery(RepositoryConnection connection, String sparqlQuery, int timeout) {
-		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, "");
 		assert res != null;
 		try {
 			if (!(res.getResult() instanceof BooleanQueryResult)) {
@@ -311,7 +343,7 @@ public class SparqlRepository {
 	@SuppressWarnings("unchecked")
 	public ClosableResult<GraphQueryResult> executeGraphQuery(RepositoryConnection connection, String sparqlQuery,
 			int timeout) {
-		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null);
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, "");
 		assert res != null;
 		if (!(res.getResult() instanceof GraphQueryResult)) {
 			try {
@@ -375,13 +407,14 @@ public class SparqlRepository {
 	 * @param acceptHeader     accept header (useless if out is null)
 	 * @param mimeSetter       mime setter (useless if out is null)
 	 * @param out              output stream
+	 * @param queryParam       query parameters
 	 * @return query result if the output stream is null (useless if out isn't
 	 *         null), return
 	 *         {@link com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult}
 	 *         for boolean queries
 	 */
 	private ClosableResult<?> execute0(RepositoryConnection customConnection, String sparqlQuery, int timeout,
-			String acceptHeader, Consumer<String> mimeSetter, OutputStream out) {
+			String acceptHeader, Consumer<String> mimeSetter, OutputStream out, String queryParam) {
 
 		if (sparqlQuery.isEmpty()) {
 			throw new EndpointStoreInputException("Empty query");
@@ -412,7 +445,7 @@ public class SparqlRepository {
 				epCo = getTimeoutEndpointConnection(connection);
 			}
 			ConfigSailConnection epConn;
-			if (sparqlQuery.charAt(0) == '#') {
+			if (sparqlQuery.charAt(0) == '#' || !queryParam.isEmpty()) {
 				// at least one config or a comment, but let's say it's a config
 				if (connection instanceof SailRepositoryConnection sailRepoConn
 						&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
@@ -422,36 +455,60 @@ public class SparqlRepository {
 					epConn = ConfigSailConnection.EMPTY;
 				}
 
-				int start = 0;
-				int cfg = 0;
-				do {
-					// ignore '#'
-					start++;
-					int endLine = sparqlQuery.indexOf('\n', start);
-					cfg++;
-
-					if (endLine == -1) {
-						throw new EndpointStoreInputException("Bad config at line " + cfg + ": no end line");
-					}
-
-					if (epConn.allowUpdate()) {
-						// we only parse this if we can actually set it, maybe
-						// change epConn to an interface later
-
-						int equalChar = sparqlQuery.indexOf(':', start);
-
-						if (equalChar == -1 || equalChar > endLine) {
-							epConn.setConfig(sparqlQuery.substring(start, endLine));
-						} else {
-							epConn.setConfig(sparqlQuery.substring(start, equalChar),
-									sparqlQuery.substring(equalChar + 1, endLine));
+				if (epConn.allowUpdate() && !queryParam.isEmpty()) {
+					int start = 0;
+					while (start < queryParam.length()) {
+						int end = queryParam.indexOf(';', start);
+						if (end == -1) {
+							end = queryParam.length();
 						}
-					}
 
-					start = endLine + 1;
-				} while (sparqlQuery.charAt(start) == '#');
-				// remove the config lines
-				sparqlQuery = sparqlQuery.substring(start);
+						int equalChar = queryParam.indexOf(':', start);
+
+						if (equalChar == -1 || equalChar > end) {
+							epConn.setConfig(queryParam.substring(start, end));
+						} else {
+							epConn.setConfig(queryParam.substring(start, equalChar),
+									queryParam.substring(equalChar + 1, end));
+						}
+
+						start = end + 1;
+					}
+				}
+
+				if (sparqlQuery.charAt(0) == '#') {
+					int start = 0;
+					int cfg = 0;
+					do {
+						// ignore '#'
+						start++;
+						int endLine = sparqlQuery.indexOf('\n', start);
+						cfg++;
+
+						if (endLine == -1) {
+							throw new EndpointStoreInputException("Bad config at line " + cfg + ": no end line");
+						}
+
+						if (epConn.allowUpdate()) {
+							// we only parse this if we can actually set it,
+							// maybe
+							// change epConn to an interface later
+
+							int equalChar = sparqlQuery.indexOf(':', start);
+
+							if (equalChar == -1 || equalChar > endLine) {
+								epConn.setConfig(sparqlQuery.substring(start, endLine));
+							} else {
+								epConn.setConfig(sparqlQuery.substring(start, equalChar),
+										sparqlQuery.substring(equalChar + 1, endLine));
+							}
+						}
+
+						start = endLine + 1;
+					} while (sparqlQuery.charAt(start) == '#');
+					// remove the config lines
+					sparqlQuery = sparqlQuery.substring(start);
+				}
 			} else {
 				epConn = ConfigSailConnection.EMPTY;
 			}

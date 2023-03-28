@@ -493,10 +493,10 @@ public class Sparql {
 	}
 
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
-			OutputStream out) {
+			OutputStream out, String queryParam) {
 		waitLoading(1);
 		try {
-			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out);
+			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out, queryParam);
 		} finally {
 			completeQuery();
 		}
