@@ -24,7 +24,7 @@ const buildPlan = (plan: any) => {
 export default class QueryPlanPlugin {
   // A priority value. If multiple plugin support rendering of a result, this value is used
   // to select the correct plugin
-  priority = 10;
+  priority = 10
 
   // Whether to show a select-button for this plugin
   yasr: Yasr
