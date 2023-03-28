@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSyncRef } from 'common/react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { TextField, Typography, useTheme } from '@mui/material'
+import QueryPlanPlugin from './plugins/queryPlan'
 import config from 'common/config'
 import { useFastAPI } from 'common/api'
 import useAsyncEffect from 'use-async-effect'
@@ -16,6 +17,7 @@ import s from './index.module.scss'
 
 const spfmt = require('sparql-formatter')
 
+Yasgui.Yasr.registerPlugin('QueryPlanPlugin', QueryPlanPlugin as any)
 interface ExportedYasguiTab {
   query: string;
   name: string;
@@ -25,6 +27,7 @@ const exportYasguiToParams = (instance: Yasgui): URLSearchParams => {
   const params = new URLSearchParams()
   try {
     const tabs = Object.values(instance._tabs)
+      .filter((tab) => tab.getYasr())
       .map((tab): ExportedYasguiTab => ({ query: tab.getQuery(), name: tab.getName() }))
     params.set('tabs', JSON.stringify(tabs))
   } catch (e) {
@@ -124,7 +127,8 @@ export default function SparqlEndpoint () {
       requestConfig: {
         endpoint: `${config.apiBase}/api/endpoint/sparql`,
         headers: () => ({
-          timeout: timeoutRef.current || ''
+          timeout: timeoutRef.current || '',
+          QueryConfig: 'get_plan'
         }),
         method: 'GET'
       },
@@ -134,7 +138,12 @@ export default function SparqlEndpoint () {
 } LIMIT 10
 `
       } as any,
-      copyEndpointOnNewTab: false
+      copyEndpointOnNewTab: false,
+      yasr: {
+        plugins: {
+          QueryPlanPlugin: {}
+        }
+      }
     })
 
     // Store reference to Yasgui for later use
