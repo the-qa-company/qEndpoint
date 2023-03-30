@@ -42,6 +42,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -85,6 +86,22 @@ public class IOUtil {
 		}
 	}
 
+	/**
+	 * map a FileChannel, same as
+	 * {@link FileChannel#map(FileChannel.MapMode, long, long)}, but used to fix
+	 * unclean map.
+	 *
+	 * @param ch       channel to map
+	 * @param mode     mode of the map
+	 * @param position position to map
+	 * @param size     size to map
+	 * @return map buffer
+	 * @throws IOException io exception
+	 */
+	public static CloseMappedByteBuffer mapChannel(Path filename, FileChannel ch, FileChannel.MapMode mode,
+	                                               long position, long size) throws IOException {
+		return mapChannel(filename.toAbsolutePath().toString(), ch, mode, position, size);
+	}
 	/**
 	 * map a FileChannel, same as
 	 * {@link FileChannel#map(FileChannel.MapMode, long, long)}, but used to fix
@@ -281,6 +298,25 @@ public class IOUtil {
 			out.append((char) c);
 		}
 		return out.toString();
+	}
+
+	public static void writeCString(CloseMappedByteBuffer map, String string, int index) {
+		byte[] encoded = string.getBytes(ByteStringUtil.STRING_ENCODING);
+
+		int i = 0;
+		for (; i < encoded.length; i++) {
+			map.put(index + i, encoded[i]);
+		}
+		map.put(index + i, (byte) 0);
+	}
+	public static String readCString(CloseMappedByteBuffer map, int start, int maxSize) {
+		byte[] buffer = new byte[maxSize];
+		byte c;
+		int i = 0;
+		while ((c = map.get(start++)) != 0) {
+			buffer[i++] = c;
+		}
+		return new String(buffer, 0, i, ByteStringUtil.STRING_ENCODING);
 	}
 
 	public static void writeString(OutputStream out, String str) throws IOException {

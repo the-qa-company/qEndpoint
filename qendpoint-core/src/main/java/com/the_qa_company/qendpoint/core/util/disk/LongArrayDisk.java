@@ -34,9 +34,11 @@ import java.nio.file.StandardOpenOption;
 
 public class LongArrayDisk implements Closeable, LongArray {
 	private static final long MAPPING_SIZE = 1 << 30;
-	private FileChannel channel;
+	private final boolean closeChannel;
+	private final FileChannel channel;
 	private CloseMappedByteBuffer[] mappings;
 	private long size;
+	private final long startByte;
 	private final Path location;
 
 	public LongArrayDisk(String location, long size) {
@@ -52,24 +54,38 @@ public class LongArrayDisk implements Closeable, LongArray {
 	}
 
 	public LongArrayDisk(Path location, long size, boolean overwrite) {
+		this(location, size, overwrite, 0);
+	}
+
+	public LongArrayDisk(Path location, long size, boolean overwrite, long start) {
+		this(location, null, true, size, overwrite, start);
+	}
+	public LongArrayDisk(Path location, FileChannel channel, boolean closeChannel, long size, boolean overwrite, long start) {
 		this.location = location;
+		this.startByte = start;
 		try {
 			this.size = size;
-			this.channel = FileChannel.open(location, StandardOpenOption.READ, StandardOpenOption.WRITE,
-					StandardOpenOption.CREATE);
-			long sizeBits = getSizeBits();
-			int blocks = (int) Math.ceil((double) sizeBits / MAPPING_SIZE);
+			if (channel == null) {
+				this.channel = FileChannel.open(location, StandardOpenOption.READ, StandardOpenOption.WRITE,
+						StandardOpenOption.CREATE);
+				this.closeChannel = true;
+			} else {
+				this.channel = channel;
+				this.closeChannel = closeChannel;
+			}
+			long sizeBytes = getSizeBytes();
+			int blocks = (int) Math.ceil((double) sizeBytes / MAPPING_SIZE);
 			mappings = new CloseMappedByteBuffer[blocks];
 			for (int block = 0; block < blocks; block++) {
 				long sizeMapping;
-				if (block + 1 == blocks && sizeBits % MAPPING_SIZE != 0) {
-					sizeMapping = Math.min(MAPPING_SIZE, sizeBits % MAPPING_SIZE);
+				if (block + 1 == blocks && sizeBytes % MAPPING_SIZE != 0) {
+					sizeMapping = Math.min(MAPPING_SIZE, sizeBytes % MAPPING_SIZE);
 				} else {
 					sizeMapping = MAPPING_SIZE;
 				}
 				assert mappings[block] == null;
-				mappings[block] = IOUtil.mapChannel(location.toAbsolutePath().toString(), channel,
-						FileChannel.MapMode.READ_WRITE, block * MAPPING_SIZE, sizeMapping);
+				mappings[block] = IOUtil.mapChannel(location.toAbsolutePath().toString(), this.channel,
+						FileChannel.MapMode.READ_WRITE, start + block * MAPPING_SIZE, sizeMapping);
 			}
 			if (overwrite) {
 				clear();
@@ -81,7 +97,7 @@ public class LongArrayDisk implements Closeable, LongArray {
 						IOUtil.closeAll(mappings);
 					}
 				} finally {
-					if (channel != null) {
+					if (closeChannel && channel != null) {
 						channel.close();
 					}
 				}
@@ -98,10 +114,14 @@ public class LongArrayDisk implements Closeable, LongArray {
 	 */
 	@Override
 	public void close() throws IOException {
-		IOUtil.closeAll(mappings);
-		channel.close();
-		mappings = null;
-		channel = null;
+		try {
+			IOUtil.closeAll(mappings);
+		} finally {
+			mappings = null;
+			if (closeChannel) {
+				channel.close();
+			}
+		}
 	}
 
 	@Override
@@ -126,6 +146,20 @@ public class LongArrayDisk implements Closeable, LongArray {
 	@Override
 	public long length() {
 		return size;
+	}
+
+	/**
+	 * @return the start byte of this array in the file
+	 */
+	public long getStartByte() {
+		return startByte;
+	}
+
+	/**
+	 * @return the byte after end of this array in the file, equals to {@link #getStartByte()} + {@link #getSizeBytes()}
+	 */
+	public long getEndByte() {
+		return getStartByte() + getSizeBytes();
 	}
 
 	@Override
@@ -205,9 +239,9 @@ public class LongArrayDisk implements Closeable, LongArray {
 		}
 		long oldSize = this.size;
 		this.size = newSize;
-		long sizeBit = getSizeBits();
+		long sizeBytes = getSizeBytes();
 
-		int blocks = (int) Math.ceil((double) sizeBit / MAPPING_SIZE);
+		int blocks = (int) Math.ceil((double) sizeBytes / MAPPING_SIZE);
 		CloseMappedByteBuffer[] mappings = new CloseMappedByteBuffer[blocks];
 		try {
 			for (CloseMappedByteBuffer mapping : mappings) {
@@ -219,17 +253,17 @@ public class LongArrayDisk implements Closeable, LongArray {
 			this.mappings = null;
 
 			// resize the file to the new size
-			channel.truncate(sizeBit);
+			channel.truncate(sizeBytes);
 
 			for (int block = 0; block < blocks; block++) {
 				long sizeMapping;
-				if (block + 1 == blocks && sizeBit % MAPPING_SIZE != 0) {
-					sizeMapping = Math.min(MAPPING_SIZE, sizeBit % MAPPING_SIZE);
+				if (block + 1 == blocks && sizeBytes % MAPPING_SIZE != 0) {
+					sizeMapping = Math.min(MAPPING_SIZE, sizeBytes % MAPPING_SIZE);
 				} else {
 					sizeMapping = MAPPING_SIZE;
 				}
 				mappings[block] = IOUtil.mapChannel(location.toAbsolutePath().toString(), channel,
-						FileChannel.MapMode.READ_WRITE, block * MAPPING_SIZE, sizeMapping);
+						FileChannel.MapMode.READ_WRITE, startByte + block * MAPPING_SIZE, sizeMapping);
 			}
 
 			// close previous mapping
@@ -261,7 +295,7 @@ public class LongArrayDisk implements Closeable, LongArray {
 		return size;
 	}
 
-	public long getSizeBits() {
+	public long getSizeBytes() {
 		return size * 8L;
 	}
 

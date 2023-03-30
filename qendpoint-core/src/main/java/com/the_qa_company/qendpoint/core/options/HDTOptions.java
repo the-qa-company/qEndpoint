@@ -24,12 +24,18 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.util.Profiler;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
@@ -72,6 +78,19 @@ public interface HDTOptions {
 	 */
 	static HDTOptions empty() {
 		return EMPTY;
+	}
+
+	/**
+	 * create modifiable options from a clone of another option
+	 *
+	 * @param other other option to clone
+	 * @return options
+	 */
+	static HDTOptions of(HDTOptions other) {
+		HDTOptions opt = of();
+		other.getKeys()
+				.forEach(key -> opt.set(String.valueOf(key), other.get(String.valueOf(key))));
+		return opt;
 	}
 
 	/**
@@ -137,7 +156,7 @@ public interface HDTOptions {
 	 *
 	 * @param options options
 	 * @return options or {@link #EMPTY}, this result has no guaranty or
-	 *         mutability
+	 * mutability
 	 */
 	static HDTOptions ofNullable(HDTOptions options) {
 		return Objects.requireNonNullElse(options, EMPTY);
@@ -418,8 +437,12 @@ public interface HDTOptions {
 	 * @param value value
 	 */
 	default void set(String key, Object value) {
-		if (value instanceof RDFFluxStop) {
-			set(key, (RDFFluxStop) value);
+		if (value instanceof RDFFluxStop fs) {
+			set(key, fs);
+		} else if (value instanceof Path p) {
+			set(key, p.toAbsolutePath().toString());
+		} else if (value instanceof File f) {
+			set(key, f.getAbsolutePath());
 		} else {
 			set(key, String.valueOf(value));
 		}
@@ -544,5 +567,91 @@ public interface HDTOptions {
 			}
 			w.write(key + "=" + value + "\n");
 		}
+	}
+
+	/**
+	 * create a new modifiable options with a push top opt, all new set will be made on top of the previous options,
+	 * it can be used to overwrite options, deletion isn't working.
+	 *
+	 * @return top pushed hdt options
+	 */
+	default HDTOptions pushTop() {
+		HDTOptions top = of();
+
+		return new HDTOptions() {
+			@Override
+			public void clear() {
+				HDTOptions.this.clear();
+				top.clear();
+			}
+
+			@Override
+			public String get(String key) {
+				String other = top.get(key);
+				if (other != null) {
+					return other;
+				}
+				return HDTOptions.this.get(key);
+			}
+
+			@Override
+			public void set(String key, String value) {
+				top.set(key, value);
+			}
+		};
+	}
+
+	/**
+	 * create a new modifiable options with a push bottom opt, all new set will be made on the bottom of the previous
+	 * options, it can be used to create default options, deletion isn't working.
+	 *
+	 * @return top pushed hdt options
+	 */
+	default HDTOptions pushBottom() {
+		HDTOptions bottom = of();
+
+		return new HDTOptions() {
+			@Override
+			public void clear() {
+				HDTOptions.this.clear();
+				bottom.clear();
+			}
+
+			@Override
+			public String get(String key) {
+				String other = HDTOptions.this.get(key);
+				if (other != null) {
+					return other;
+				}
+				return bottom.get(key);
+			}
+
+			@Override
+			public void set(String key, String value) {
+				bottom.set(key, value);
+			}
+		};
+	}
+
+	/**
+	 * @return a readonly version of these options
+	 */
+	default HDTOptions readOnly() {
+		return new HDTOptions() {
+			@Override
+			public void clear() {
+				throw new IllegalArgumentException("trying to clear a readonly HDTOptions!");
+			}
+
+			@Override
+			public String get(String key) {
+				return HDTOptions.this.get(key);
+			}
+
+			@Override
+			public void set(String key, String value) {
+				throw new IllegalArgumentException("trying to set into a readonly HDTOptions!");
+			}
+		};
 	}
 }
