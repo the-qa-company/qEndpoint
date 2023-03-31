@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.utilCat.SectionUtil;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.iterator.utils.CatIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -16,6 +17,7 @@ import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	protected final HDTOptions spec;
@@ -31,29 +33,28 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 
 	protected long getGlobalId(long id, DictionarySectionRole position, CharSequence str) {
 		switch (position) {
-		case SUBJECT:
-			return id + shared.getNumberOfElements();
-		case OBJECT: {
-			Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> iter = objects.entrySet().iterator();
-			int count = 0;
-			ByteString type = (ByteString) LiteralsUtils.getType(ByteStringUtil.asByteString(str));
-			while (iter.hasNext()) {
-				Map.Entry<ByteString, DictionarySectionPrivate> entry = iter.next();
-				count += entry.getValue().getNumberOfElements();
-				if (type.equals(entry.getKey())) {
-					count -= entry.getValue().getNumberOfElements();
-					break;
-				}
-
+			case SUBJECT -> {
+				return id + shared.getNumberOfElements();
 			}
-			return shared.getNumberOfElements() + count + id;
-		}
+			case OBJECT -> {
+				Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> iter = objects.entrySet().iterator();
+				int count = 0;
+				ByteString type = (ByteString) LiteralsUtils.getType(ByteStringUtil.asByteString(str));
+				while (iter.hasNext()) {
+					Map.Entry<ByteString, DictionarySectionPrivate> entry = iter.next();
+					count += entry.getValue().getNumberOfElements();
+					if (type.equals(entry.getKey())) {
+						count -= entry.getValue().getNumberOfElements();
+						break;
+					}
 
-		case PREDICATE:
-		case SHARED:
-			return id;
-		default:
-			throw new IllegalArgumentException();
+				}
+				return shared.getNumberOfElements() + count + id;
+			}
+			case PREDICATE, SHARED -> {
+				return id;
+			}
+			default -> throw new IllegalArgumentException();
 		}
 	}
 
@@ -63,43 +64,45 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	 */
 	protected long getLocalId(long id, TripleComponentRole position) {
 		switch (position) {
-		case SUBJECT:
-			if (id <= shared.getNumberOfElements())
-				return id;
-			else
-				return id - shared.getNumberOfElements();
-		case OBJECT:
-			if (id <= shared.getNumberOfElements()) {
-				return id;
-			} else {
-				Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> hmIterator = objects.entrySet().iterator();
-				// iterate over all subsections in the objects section
-				long count = 0;
-				while (hmIterator.hasNext()) {
-					Map.Entry<ByteString, DictionarySectionPrivate> entry = hmIterator.next();
-					long numElts;
-
-					// what???
-					// if (entry.getValue() instanceof PFCOptimizedExtractor) {
-					// numElts =
-					// ((PFCOptimizedExtractor)entry.getValue()).getNumStrings();
-					// } else {
-					numElts = entry.getValue().getNumberOfElements();
-					// }
-					count += numElts;
-					if (id <= shared.getNumberOfElements() + count) {
-						count -= numElts;
-						break;
-					}
-				}
-				// subtract the number of elements in the shared + the
-				// subsections in the objects section
-				return id - count - shared.getNumberOfElements();
+			case SUBJECT -> {
+				if (id <= shared.getNumberOfElements())
+					return id;
+				else
+					return id - shared.getNumberOfElements();
 			}
-		case PREDICATE:
-			return id;
-		default:
-			throw new IllegalArgumentException();
+			case OBJECT -> {
+				if (id <= shared.getNumberOfElements()) {
+					return id;
+				} else {
+					Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> hmIterator = objects.entrySet().iterator();
+					// iterate over all subsections in the objects section
+					long count = 0;
+					while (hmIterator.hasNext()) {
+						Map.Entry<ByteString, DictionarySectionPrivate> entry = hmIterator.next();
+						long numElts;
+
+						// what???
+						// if (entry.getValue() instanceof PFCOptimizedExtractor) {
+						// numElts =
+						// ((PFCOptimizedExtractor)entry.getValue()).getNumStrings();
+						// } else {
+						numElts = entry.getValue().getNumberOfElements();
+						// }
+						count += numElts;
+						if (id <= shared.getNumberOfElements() + count) {
+							count -= numElts;
+							break;
+						}
+					}
+					// subtract the number of elements in the shared + the
+					// subsections in the objects section
+					return id - count - shared.getNumberOfElements();
+				}
+			}
+			case PREDICATE -> {
+				return id;
+			}
+			default -> throw new IllegalArgumentException();
 		}
 	}
 
@@ -118,41 +121,43 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 
 		long ret;
 		switch (position) {
-		case SUBJECT:
-			ret = shared.locate(str);
-			if (ret != 0) {
-				return getGlobalId(ret, DictionarySectionRole.SHARED, str);
-			}
-			ret = subjects.locate(str);
-			if (ret != 0) {
-				return getGlobalId(ret, DictionarySectionRole.SUBJECT, str);
-			}
-			return -1;
-		case PREDICATE:
-			ret = predicates.locate(str);
-			if (ret != 0) {
-				return getGlobalId(ret, DictionarySectionRole.PREDICATE, str);
-			}
-			return -1;
-		case OBJECT:
-			if (str.charAt(0) != '"') {
+			case SUBJECT -> {
 				ret = shared.locate(str);
 				if (ret != 0) {
 					return getGlobalId(ret, DictionarySectionRole.SHARED, str);
 				}
-			}
-			DictionarySectionPrivate subSection = getSubSection(str);
-			if (subSection != null) {
-				ret = subSection.locate(LiteralsUtils.removeType(str));
-			} else {
+				ret = subjects.locate(str);
+				if (ret != 0) {
+					return getGlobalId(ret, DictionarySectionRole.SUBJECT, str);
+				}
 				return -1;
 			}
-			if (ret != 0) {
-				return getGlobalId(ret, DictionarySectionRole.OBJECT, str);
+			case PREDICATE -> {
+				ret = predicates.locate(str);
+				if (ret != 0) {
+					return getGlobalId(ret, DictionarySectionRole.PREDICATE, str);
+				}
+				return -1;
 			}
-			return -1;
-		default:
-			throw new IllegalArgumentException();
+			case OBJECT -> {
+				if (str.charAt(0) != '"') {
+					ret = shared.locate(str);
+					if (ret != 0) {
+						return getGlobalId(ret, DictionarySectionRole.SHARED, str);
+					}
+				}
+				DictionarySectionPrivate subSection = getSubSection(str);
+				if (subSection != null) {
+					ret = subSection.locate(LiteralsUtils.removeType(str));
+				} else {
+					return -1;
+				}
+				if (ret != 0) {
+					return getGlobalId(ret, DictionarySectionRole.OBJECT, str);
+				}
+				return -1;
+			}
+			default -> throw new IllegalArgumentException();
 		}
 	}
 
@@ -222,38 +227,40 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	private AbstractMap.SimpleEntry<CharSequence, DictionarySectionPrivate> getSection(long id,
 			TripleComponentRole role) {
 		switch (role) {
-		case SUBJECT:
-			if (id <= shared.getNumberOfElements()) {
-				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, shared);
-			} else {
-				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, subjects);
-			}
-		case PREDICATE:
-			return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, predicates);
-		case OBJECT:
-			if (id <= shared.getNumberOfElements()) {
-				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, shared);
-			} else {
-
-				Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> hmIterator = objects.entrySet().iterator();
-				// iterate over all subsections in the objects section
-				DictionarySectionPrivate desiredSection = null;
-				ByteString type = ByteString.empty();
-				int count = 0;
-				while (hmIterator.hasNext()) {
-					Map.Entry<ByteString, DictionarySectionPrivate> entry = hmIterator.next();
-					DictionarySectionPrivate subSection = entry.getValue();
-					count += subSection.getNumberOfElements();
-					if (id <= shared.getNumberOfElements() + count) {
-						desiredSection = subSection;
-						type = entry.getKey();
-						break;
-					}
+			case SUBJECT -> {
+				if (id <= shared.getNumberOfElements()) {
+					return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, shared);
+				} else {
+					return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, subjects);
 				}
-				return new AbstractMap.SimpleEntry<>(type, desiredSection);
 			}
-		default:
-			throw new IllegalArgumentException();
+			case PREDICATE -> {
+				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, predicates);
+			}
+			case OBJECT -> {
+				if (id <= shared.getNumberOfElements()) {
+					return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, shared);
+				} else {
+
+					Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> hmIterator = objects.entrySet().iterator();
+					// iterate over all subsections in the objects section
+					DictionarySectionPrivate desiredSection = null;
+					ByteString type = ByteString.empty();
+					int count = 0;
+					while (hmIterator.hasNext()) {
+						Map.Entry<ByteString, DictionarySectionPrivate> entry = hmIterator.next();
+						DictionarySectionPrivate subSection = entry.getValue();
+						count += subSection.getNumberOfElements();
+						if (id <= shared.getNumberOfElements() + count) {
+							desiredSection = subSection;
+							type = entry.getKey();
+							break;
+						}
+					}
+					return new AbstractMap.SimpleEntry<>(type, desiredSection);
+				}
+			}
+			default -> throw new IllegalArgumentException();
 		}
 	}
 
@@ -263,27 +270,48 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	 * datatypes.TripleComponentRole)
 	 */
 	@Override
-	public CharSequence idToString(long id, TripleComponentRole role) {
+	public ByteString idToString(long id, TripleComponentRole role) {
 		AbstractMap.SimpleEntry<CharSequence, DictionarySectionPrivate> section = getSection(id, role);
 		long localId = getLocalId(id, role);
 		if (section.getKey().equals(LiteralsUtils.NO_DATATYPE) || section.getKey().equals(SectionUtil.SECTION))
-			return section.getValue().extract(localId);
+			return ByteString.of(section.getValue().extract(localId));
 		else {
-			if (section.getValue() == null) {
-				// this should not happen, means that the given id wasn't found
-				// in any section
-				System.out.println("Error couldn't find the section for the given ID: [" + id + "]");
-				return null;
+			assert section.getValue() != null : "Error couldn't find the section for the given ID: [" + id + "]";
+
+			CharSequence label = section.getValue().extract(localId);
+			CharSequence dType = section.getKey();
+			// Matcher matcher = pattern.matcher(label);
+			if (LiteralsUtils.containsLanguage(label)) {
+				return ByteString.of(label);
 			} else {
-				CharSequence label = section.getValue().extract(localId);
-				CharSequence dType = section.getKey();
-				// Matcher matcher = pattern.matcher(label);
-				if (LiteralsUtils.containsLanguage(label)) {
-					return label;
-				} else {
-					return label + "^^" + dType;
-				}
+				return ByteString.of(label + "^^" + dType);
 			}
+		}
+	}
+
+	@Override
+	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
+		switch (role) {
+			case SUBJECT -> {
+				if (!includeShared) {
+					return getSubjects().getSortedEntries();
+				}
+
+				return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+			}
+			case PREDICATE -> {
+				return getPredicates().getSortedEntries();
+			}
+			case OBJECT -> {
+				Stream<? extends Iterator<? extends CharSequence>> os = getAllObjects().values().stream()
+						.map(DictionarySection::getSortedEntries);
+				if (!includeShared) {
+					return CatIterator.of(os.toList());
+				}
+
+				return CatIterator.of(Stream.concat(Stream.of(getShared().getSortedEntries()), os).toList());
+			}
+			default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
 

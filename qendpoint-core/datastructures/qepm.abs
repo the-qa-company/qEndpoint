@@ -1,0 +1,25 @@
+// QEPMap header file
+// com.the_qa_company.qendpoint.core.storage.QEPMap
+
+QEPMapHeaderSections {
+    long shared;
+    long subject;
+    long predicate;
+    long object;
+}
+
+QEPMapHeader {
+    string magic = "$QML";
+    byte[101] id1;
+    byte[101] id2;
+    QEPMapHeaderSections dataset1;
+    QEPMapHeaderSections dataset2;
+    struct {
+        long subject;
+        long predicate;
+        long object;
+    } selectSectionSizes;
+}
+
+
+file(QEPMapHeader, "header\\.qepm");

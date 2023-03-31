@@ -486,4 +486,27 @@ public class LiteralsUtils {
 		}
 		return true;
 	}
+
+	/**
+	 * cat 2 strings
+	 * @param a a
+	 * @param b b
+	 * @return a + b
+	 */
+	public static ByteString cat(CharSequence a, CharSequence b) {
+		ByteString bsa = ByteString.of(a);
+		ByteString bsb = ByteString.of(b);
+		return bsa.copyAppend(bsb);
+	}
+	/**
+	 * cat 3 strings
+	 * @param a a
+	 * @param b b
+	 * @return a + b
+	 */
+	public static ByteString cat(CharSequence a, CharSequence b, CharSequence c) {
+		ByteString bsa = ByteString.of(a);
+		ByteString bsb = ByteString.of(b);
+		return bsa.copyAppend(bsb);
+	}
 }

@@ -67,6 +67,7 @@ public class QEPCore implements AutoCloseable {
 	public static final String FILE_DATASET_SUFFIX = ".hdt";
 
 	private final Map<String, QEPDataset> dataset = new HashMap<>();
+	private final Map<QEPMap.Uid, QEPMap> map = new HashMap<>();
 
 	// config
 	private final HDTOptions options;
@@ -268,12 +269,42 @@ public class QEPCore implements AutoCloseable {
 	public void syncDatasetMaps() throws QEPCoreException {
 		Path mapsDir = getMapsPath();
 		try {
+			// close the previous maps
+			Closer.closeAll(map.values());
+			map.clear();
 			Files.createDirectories(mapsDir);
 
-
-
+			for (QEPDataset d1 : dataset.values()) {
+				for (QEPDataset d2 : dataset.values()) {
+					bindDataset(d1, d2);
+				}
+			}
 		} catch (IOException e) {
 			throw new QEPCoreException("Can't sync map data!", e);
+		}
+	}
+
+	/**
+	 * bind 2 datasets in the core
+	 *
+	 * @param dataset1 dataset 1
+	 * @param dataset2 dataset 2
+	 * @throws IOException bind exception
+	 */
+	public void bindDataset(QEPDataset dataset1, QEPDataset dataset2) throws IOException {
+		if (dataset1.uid() == dataset2.uid()) {
+			return;
+		}
+
+		// create a map for our 2 datasets
+		QEPMap qepMap = new QEPMap(getMapsPath(), dataset1, dataset2);
+
+		// try to add this map to our maps
+		QEPMap old = map.putIfAbsent(qepMap.getUid(), qepMap);
+
+		if (old == null) {
+			// it was added, meaning we need to sync it
+			qepMap.sync();
 		}
 	}
 

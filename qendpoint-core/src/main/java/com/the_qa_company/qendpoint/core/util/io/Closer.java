@@ -2,6 +2,8 @@ package com.the_qa_company.qendpoint.core.util.io;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -12,7 +14,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * Class to close many {@link java.io.Closeable} objects at once without having
- * to do a large try-finally tree
+ * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable}, array, record, {@link Map}
  *
  * @author Antoine Willerval
  */
@@ -44,6 +46,16 @@ public class Closer implements Iterable<Closeable>, Closeable {
 	public static void closeAll(Object... other) throws IOException {
 		of(other).close();
 	}
+	/**
+	 * close all the whatever closeable contained by these objects, easier and
+	 * faster to write than a large try-finally tree
+	 *
+	 * @param other objects to close
+	 * @throws IOException close exception
+	 */
+	public static void closeSingle(Object other) throws IOException {
+		closeAll(other);
+	}
 
 	/**
 	 * add closeables to this closer
@@ -58,26 +70,39 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 	private Stream<Closeable> explore(Object obj) {
 		// already a closeable, no need to map
-		if (obj instanceof Closeable) {
-			return Stream.of((Closeable) obj);
+		if (obj instanceof Closeable c) {
+			return Stream.of(c);
 		}
 
 		// collection object, we need to map all the elements
-		if (obj instanceof Iterable) {
-			return StreamSupport.stream(((Iterable<?>) obj).spliterator(), false).flatMap(this::explore);
+		if (obj instanceof Iterable<?> it) {
+			return StreamSupport.stream(it.spliterator(), false).flatMap(this::explore);
 		}
 
 		// array object
-		if (obj instanceof Object[]) {
-			return Stream.of((Object[]) obj).flatMap(this::explore);
+		if (obj instanceof Object[] arr) {
+			return Stream.of(arr).flatMap(this::explore);
 		}
 
 		// map object, we need to map all the key+values
-		if (obj instanceof Map) {
-			Map<?, ?> map = (Map<?, ?>) obj;
-			return Stream.concat(explore((map).keySet()), explore((map).values()));
+		if (obj instanceof Map<?, ?> map) {
+			return Stream.concat(explore(map.keySet()), explore(map.values()));
 		}
 
+		// a record, hello Java 17
+		if (obj != null && obj.getClass().isRecord()) {
+			return Arrays.stream(obj.getClass().getRecordComponents()).flatMap(c -> {
+				try {
+					Method method = c.getAccessor();
+					method.setAccessible(true);
+					return explore(method.invoke(obj));
+				} catch (IllegalAccessException | InvocationTargetException e) {
+					throw new CloserException(
+							new IOException("Can't search over component of record " + obj.getClass() + "#" + c.getName(), e)
+					);
+				}
+			});
+		}
 		// nothing known
 		return Stream.of();
 	}
@@ -89,6 +114,16 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		IOUtil.closeAll(list);
+		try {
+			IOUtil.closeAll(list);
+		} catch (CloserException e) {
+			throw (IOException) e.getCause();
+		}
+	}
+
+	private static class CloserException extends RuntimeException {
+		public CloserException(IOException cause) {
+			super(cause);
+		}
 	}
 }

@@ -1,0 +1,17 @@
+// HDT Index used for non SPO patterns
+// https://doi.org/10.1007/978-3-642-30284-8_36
+
+#include "hdt.abs"
+
+HDTIndex {
+    ControlInfo ci{type = INDEX};
+}
+
+HDTIndexFoQ : HDTIndex{ci.format = "<http://purl.org/HDT/hdt#indexFoQ>"} {
+    Bitmap bitmapIndexZ;
+    Sequence indexZ;
+    PredicateIndex predicateIndex;
+    Sequence predicateCount;
+}
+
+file(HDTIndex, ".*\\.hdt\\.index\\.v1-1");

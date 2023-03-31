@@ -26,11 +26,15 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.iterator.utils.CatIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.DelayedString;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.TreeMap;
 
 /**
@@ -53,32 +57,50 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	}
 
 	protected long getGlobalId(long id, DictionarySectionRole position) {
-		switch (position) {
-		case SUBJECT:
-		case OBJECT:
-			return shared.getNumberOfElements() + id;
-
-		case PREDICATE:
-		case SHARED:
-			return id;
-		default:
-			throw new IllegalArgumentException();
-		}
+		return switch (position) {
+			case SUBJECT, OBJECT -> shared.getNumberOfElements() + id;
+			case PREDICATE, SHARED -> id;
+			default -> throw new IllegalArgumentException();
+		};
 	}
 
 	protected long getLocalId(long id, TripleComponentRole position) {
 		switch (position) {
-		case SUBJECT:
-		case OBJECT:
-			if (id <= shared.getNumberOfElements()) {
-				return id;
-			} else {
-				return id - shared.getNumberOfElements();
+			case SUBJECT, OBJECT -> {
+				if (id <= shared.getNumberOfElements()) {
+					return id;
+				} else {
+					return id - shared.getNumberOfElements();
+				}
 			}
-		case PREDICATE:
-			return id;
-		default:
-			throw new IllegalArgumentException();
+			case PREDICATE -> {
+				return id;
+			}
+			default -> throw new IllegalArgumentException();
+		}
+	}
+
+	@Override
+	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
+		switch (role) {
+			case SUBJECT -> {
+				if (!includeShared) {
+					return getSubjects().getSortedEntries();
+				}
+
+				return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+			}
+			case PREDICATE -> {
+				return getPredicates().getSortedEntries();
+			}
+			case OBJECT -> {
+				if (!includeShared) {
+					return getObjects().getSortedEntries();
+				}
+
+				return CatIterator.of(getShared().getSortedEntries(), getObjects().getSortedEntries());
+			}
+			default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
 
@@ -225,8 +247,8 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	}
 
 	@Override
-	public TreeMap<String, DictionarySection> getAllObjects() {
-		throw new IllegalArgumentException("Method is not applicable on this dictionary");
+	public TreeMap<? extends CharSequence, DictionarySection> getAllObjects() {
+		return new TreeMap<>(Map.of(LiteralsUtils.NO_DATATYPE, objects));
 	}
 
 	@Override
