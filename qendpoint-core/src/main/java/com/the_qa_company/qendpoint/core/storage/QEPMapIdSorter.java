@@ -46,6 +46,7 @@ public class QEPMapIdSorter implements Closeable {
 
 	public QEPMapIdSorter(Path computeLocation, long maxElementCount, long maxValue) {
 		this.computeLocation = CloseSuppressPath.of(computeLocation);
+		this.computeLocation.closeWithDeleteRecurse();
 		int bits = BitUtil.log2(maxValue);
 		if (maxElementCount * bits * 2 < MAX_ELEMENT_SIZE_THRESHOLD) {
 			ids = new SequenceLog64Big(bits, maxElementCount * 2);
@@ -194,7 +195,10 @@ public class QEPMapIdSorter implements Closeable {
 		protected QEPMapIds getNext() throws IOException {
 			long origin = VByte.decode(stream);
 			long destination = VByte.decode(stream);
-			if (origin == 0 && destination == 0) {
+			if (origin == 0 || destination == 0) {
+				if (origin != 0 || destination != 0) {
+					throw new IOException("bad reading: " + origin + "/" + destination);
+				}
 				return null;
 			}
 			return new QEPMapIds(origin, destination);

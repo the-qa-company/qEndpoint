@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
@@ -66,6 +67,7 @@ public class LongArrayDisk implements Closeable, LongArray {
 		try {
 			this.size = size;
 			if (channel == null) {
+				Files.createDirectories(location.getParent());
 				this.channel = FileChannel.open(location, StandardOpenOption.READ, StandardOpenOption.WRITE,
 						StandardOpenOption.CREATE);
 				this.closeChannel = true;

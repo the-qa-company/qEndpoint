@@ -7,6 +7,10 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.storage.converter.DirectNodeConverter;
+import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
+import com.the_qa_company.qendpoint.core.storage.converter.SelectNodeConverter;
+import com.the_qa_company.qendpoint.core.storage.converter.SharedWrapperNodeConverter;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
@@ -24,12 +28,19 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.OBJECT;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.SUBJECT;
+
 /**
  * Linker to fetch data from a dataset to another one
  *
  * @author Antoine Willerval
  */
 public class QEPMap implements Closeable {
+	public static final long SECTION_MAST = 1;
+	public static final long SECTION_SHIFT = 1;
+	public static final long SECTION_TYPE_SUBJECT = 0;
+	public static final long SECTION_TYPE_OBJECT = 1;
 	private static final long HEADER_SIZE;
 	private static final byte[] MAGIC = "$QML".getBytes(ByteStringUtil.STRING_ENCODING);
 
@@ -44,7 +55,7 @@ public class QEPMap implements Closeable {
 		headerSize += Long.BYTES * 4 * 2;
 
 		// select section sizes
-		headerSize += Long.BYTES * 4;
+		headerSize += (long) Long.BYTES * TripleComponentRole.values().length;
 
 		HEADER_SIZE = headerSize;
 	}
@@ -53,13 +64,27 @@ public class QEPMap implements Closeable {
 	                          DynamicSequence directSequence) {
 	}
 
+	private record DatasetNodeConverter(NodeConverter dataset1to2, NodeConverter dataset2to1) {
+	}
+
 	/**
-	 * UID class for this linker
+	 * get the role of a mapped id
 	 *
-	 * @param uid1 uid of the lower dataset
-	 * @param uid2 uid of the greater dataset
+	 * @param mappedId the mapped id
+	 * @return role
 	 */
-	public record Uid(int uid1, int uid2) {
+	public static TripleComponentRole getRoleOfMapped(long mappedId) {
+		return (mappedId & SECTION_MAST) == SECTION_TYPE_SUBJECT ? SUBJECT : OBJECT;
+	}
+
+	/**
+	 * extract the component id of a mapped id
+	 *
+	 * @param mappedId mapped id
+	 * @return id
+	 */
+	public static long getIdOfMapped(long mappedId) {
+		return mappedId >>> SECTION_SHIFT;
 	}
 
 	private final QEPDataset dataset1;
@@ -68,9 +93,10 @@ public class QEPMap implements Closeable {
 	private final Path path;
 	private final Uid uid;
 	private final SectionMap[] maps = new SectionMap[TripleComponentRole.values().length];
-	private final boolean[] useDataset1 = new boolean[TripleComponentRole.values().length];
+	private final boolean[] useDataset1 = new boolean[maps.length];
+	private final DatasetNodeConverter[] nodeConverters = new DatasetNodeConverter[maps.length];
 
-	public QEPMap(Path parent, QEPDataset dataset1, QEPDataset dataset2) {
+	QEPMap(Path parent, QEPDataset dataset1, QEPDataset dataset2) {
 		String id1 = dataset1.id();
 		String id2 = dataset2.id();
 
@@ -91,11 +117,13 @@ public class QEPMap implements Closeable {
 		}
 
 		path = parent.resolve("map-" + getMapId());
-		uid = new Uid(this.dataset1.uid(), this.dataset2.uid());
+		uid = Uid.of(this.dataset1.uid(), this.dataset2.uid());
 
 		// compute the useDataset1 array
 		for (TripleComponentRole role : TripleComponentRole.values()) {
-			useDataset1[role.ordinal()] = isMapDataset1Direct0(role);
+			int roleid = role.ordinal();
+			boolean direct = isMapDataset1Direct0(role);
+			useDataset1[roleid] = direct;
 		}
 	}
 
@@ -105,12 +133,13 @@ public class QEPMap implements Closeable {
 	 * @throws IOException error while syncing
 	 */
 	public void sync() throws IOException {
-		// create the sync path
-		Files.createDirectories(path);
-
 		Path mapHeaderPath = getMapHeaderPath();
 		try {
 			close();
+			// create the sync path
+			Files.createDirectories(path);
+			boolean created = !Files.exists(mapHeaderPath);
+			// race condition
 			// we open the header file to see if it's actually the right map
 			try (
 					FileChannel channel = FileChannel.open(
@@ -124,7 +153,6 @@ public class QEPMap implements Closeable {
 					)
 			) {
 				// if the file is empty, it means it was created (I hope)
-				boolean created = channel.size() == 0;
 				long[] indexSelectSize = new long[TripleComponentRole.values().length];
 				int[] indexSelectLocation = new int[indexSelectSize.length];
 
@@ -148,7 +176,7 @@ public class QEPMap implements Closeable {
 					header.putLong(shift += Long.BYTES, d1.getNobjects() - nshared1);
 					shift += Long.BYTES;
 
-					Dictionary d2 = dataset1.dataset().getDictionary();
+					Dictionary d2 = dataset2.dataset().getDictionary();
 					long nshared2 = d2.getNshared();
 					header.putLong(shift, nshared2);
 					header.putLong(shift += Long.BYTES, d2.getNsubjects() - nshared2);
@@ -161,7 +189,7 @@ public class QEPMap implements Closeable {
 						shift += Long.BYTES;
 					}
 
-					assert shift == HEADER_SIZE;
+					assert shift == HEADER_SIZE : shift + "!=" + HEADER_SIZE;
 				} else {
 					// we check the magic
 					for (; shift < MAGIC.length; shift++) {
@@ -192,7 +220,7 @@ public class QEPMap implements Closeable {
 						shift += Long.BYTES;
 					}
 
-					assert shift == HEADER_SIZE;
+					assert shift == HEADER_SIZE : shift + "!=" + HEADER_SIZE;
 				}
 
 				// load the sections
@@ -223,17 +251,38 @@ public class QEPMap implements Closeable {
 						long directSize = directMapSize(role);
 						// size of the big dictionary
 						long selectSize = selectBitmapSize(role);
+						boolean predicateRole = role == TripleComponentRole.PREDICATE;
 						if (!regenRole) {
 							selectBitmap = Bitmap375Big.map(selectBitmapPath, selectSize, true);
-							selectSequence = new SequenceLog64BigDisk(directSequencePath, BitUtil.log2(directSize), indexSelectSize[roleId], true, false);
-							directSequence = new SequenceLog64BigDisk(directSequencePath, BitUtil.log2(selectSize), directSize, true, false);
+							selectSequence = new SequenceLog64BigDisk(
+									selectSequencePath,
+									(predicateRole ? 0 : 1) + BitUtil.log2(directMaxMapSize(role)),
+									indexSelectSize[roleId] + 1,
+									true, false
+							);
+							directSequence = new SequenceLog64BigDisk(
+									directSequencePath,
+									(predicateRole ? 0 : 1) + BitUtil.log2(selectMaxMapSize(role)),
+									directSize + 1,
+									true, false
+							);
 						} else {
 							selectBitmap = Bitmap375Big.disk(selectBitmapPath, selectSize, true);
 							// we use direct size because we know that the size can't be higher than the small dictionary
 							// we overwrite the direct to set everything to 0 because we might have 0
 							// we don't overwrite the select because the 0s will be trimmed
-							selectSequence = new SequenceLog64BigDisk(directSequencePath, BitUtil.log2(selectSize), directSize, true, false);
-							directSequence = new SequenceLog64BigDisk(directSequencePath, BitUtil.log2(selectSize), directSize, true, true);
+							selectSequence = new SequenceLog64BigDisk(
+									selectSequencePath,
+									(predicateRole ? 0 : 1) + BitUtil.log2(directMaxMapSize(role)),
+									directSize + 1,
+									true, false
+							);
+							directSequence = new SequenceLog64BigDisk(
+									directSequencePath,
+									(predicateRole ? 0 : 1) + BitUtil.log2(selectMaxMapSize(role)),
+									directSize + 1,
+									true, true
+							);
 
 							// generate the index
 							QEPDataset dsDirect;
@@ -248,29 +297,44 @@ public class QEPMap implements Closeable {
 							}
 
 							Iterator<? extends CharSequence> components = dsDirect.dataset().getDictionary()
-									.stringIterator(role, role == TripleComponentRole.SUBJECT);
+									.stringIterator(role, role == SUBJECT);
 
+							try (QEPMapIdSorter sorter = new QEPMapIdSorter(path.resolve("sorter"), directSize, Math.max(directSize, selectSize))) {
+								long directIndex = 1;
+								long componentIndex = 1;
 
-							long directIndex;
-							long componentIndex = 0;
-
-							if (role == TripleComponentRole.OBJECT) {
-								directIndex = dsDirect.dataset().getDictionary().getNshared() + 1;
-							} else {
-								directIndex = 1;
-							}
-
-							try (QEPMapIdSorter sorter = new QEPMapIdSorter(path, directSize, Math.max(directSize, selectSize))) {
 								while (components.hasNext()) {
 									CharSequence next = components.next();
-									long mappedIndex = dsSelect.dataset().getDictionary().stringToId(next, role);
+									Dictionary dictionary = dsSelect.dataset().getDictionary();
+									long mappedIndex = dictionary.stringToId(next, role);
 
 									if (mappedIndex > 0) {
-										// we map the [componentIndex] -> mappedIndex
-										directSequence.set(componentIndex, mappedIndex);
-										// we map the [mappedIndex]
-										sorter.addElement(mappedIndex, directIndex);
+										if (predicateRole) {
+											// we map the [componentIndex] -> mappedIndex
+											directSequence.set(componentIndex, mappedIndex);
+											// we map the [mappedIndex]
+											sorter.addElement(mappedIndex, directIndex);
+										} else {
+											long type = role == OBJECT ? SECTION_TYPE_OBJECT : SECTION_TYPE_SUBJECT;
 
+											// we map the [componentIndex] -> mappedIndex
+											directSequence.set(componentIndex, (mappedIndex << SECTION_SHIFT) | type);
+											// we map the [mappedIndex]
+											sorter.addElement(mappedIndex, (directIndex << SECTION_SHIFT) | type);
+										}
+									} else if (!predicateRole) {
+										// we search in the opposite section
+										TripleComponentRole other = role == OBJECT ? SUBJECT : OBJECT;
+										long mappedIndex2 = dictionary.stringToId(next, other);
+
+										if (mappedIndex2 > 0) {
+											long type = other == OBJECT ? SECTION_TYPE_OBJECT : SECTION_TYPE_SUBJECT;
+
+											// we map the [componentIndex] -> mappedIndex
+											directSequence.set(componentIndex, (mappedIndex2 << SECTION_SHIFT) | type);
+											// we map the [mappedIndex]
+											sorter.addElement(mappedIndex2, (directIndex << SECTION_SHIFT) | type);
+										}
 									}
 
 									componentIndex++;
@@ -310,6 +374,41 @@ public class QEPMap implements Closeable {
 
 					maps[roleId] = new SectionMap(selectBitmap, selectSequence, directSequence);
 				}
+				for (TripleComponentRole role : TripleComponentRole.values()) {
+					int roleId = role.ordinal();
+					SectionMap map = maps[roleId];
+
+					DirectNodeConverter directNodeConverter = new DirectNodeConverter(map.directSequence);
+					SelectNodeConverter selectNodeConverter = new SelectNodeConverter(map.selectBitmap, map.selectSequence);
+
+					if (isMapDataset1Direct(role)) {
+						nodeConverters[roleId] = new DatasetNodeConverter(
+								directNodeConverter,
+								selectNodeConverter
+						);
+					} else {
+						nodeConverters[roleId] = new DatasetNodeConverter(
+								selectNodeConverter,
+								directNodeConverter
+						);
+					}
+				}
+
+				int subjectId = SUBJECT.ordinal();
+				int objectId = OBJECT.ordinal();
+				DatasetNodeConverter subjectConverters = nodeConverters[subjectId];
+				DatasetNodeConverter objectConverters = nodeConverters[objectId];
+				// add shared wrapper to switch to the subject converter with shared elements
+				nodeConverters[objectId] = new DatasetNodeConverter(
+						new SharedWrapperNodeConverter(
+								dataset1.dataset().getDictionary().getNshared(),
+								subjectConverters.dataset1to2, objectConverters.dataset1to2
+						),
+						new SharedWrapperNodeConverter(
+								dataset2.dataset().getDictionary().getNshared(),
+								subjectConverters.dataset2to1, objectConverters.dataset2to1
+						)
+				);
 			}
 		} catch (
 				Throwable t) {
@@ -356,6 +455,16 @@ public class QEPMap implements Closeable {
 		long o = header.getLong(shift + Long.BYTES * 3);
 		if (o != nobject) {
 			throw new IOException("Bad count for section OBJECT for dataset header " + id + " " + o + "!=" + nobject);
+		}
+	}
+
+	public NodeConverter getConverter(int dataset1, int dataset2, TripleComponentRole role) {
+		if (this.dataset1.uid() == dataset1 && this.dataset2.uid() == dataset2) {
+			return nodeConverters[role.ordinal()].dataset1to2;
+		} else if (this.dataset1.uid() == dataset2 && this.dataset2.uid() == dataset1) {
+			return nodeConverters[role.ordinal()].dataset2to1;
+		} else {
+			throw new AssertionError("using bad ids to fetch converter " + dataset1 + "/" + dataset2 + " with dataset " + this.dataset1.uid() + "/" + this.dataset2.uid());
 		}
 	}
 
@@ -417,6 +526,18 @@ public class QEPMap implements Closeable {
 		}
 	}
 
+	private long getMapMaxDatasetSize(QEPDataset dataset, TripleComponentRole role) {
+		switch (role) {
+			case SUBJECT, OBJECT -> {
+				return Math.max(getDatasetSize(dataset, SUBJECT), getDatasetSize(dataset, OBJECT));
+			}
+			case PREDICATE -> {
+				return getDatasetSize(dataset, role);
+			}
+			default -> throw new IllegalFormatException("bad triple role: " + role);
+		}
+	}
+
 	private long directMapSize(TripleComponentRole role) {
 		if (isMapDataset1Direct(role)) {
 			return getDatasetSize(dataset1, role);
@@ -430,6 +551,22 @@ public class QEPMap implements Closeable {
 			return getDatasetSize(dataset1, role);
 		} else {
 			return getDatasetSize(dataset2, role);
+		}
+	}
+
+	private long directMaxMapSize(TripleComponentRole role) {
+		if (isMapDataset1Direct(role)) {
+			return getMapMaxDatasetSize(dataset1, role);
+		} else {
+			return getMapMaxDatasetSize(dataset2, role);
+		}
+	}
+
+	private long selectMaxMapSize(TripleComponentRole role) {
+		if (!isMapDataset1Direct(role)) {
+			return getMapMaxDatasetSize(dataset1, role);
+		} else {
+			return getMapMaxDatasetSize(dataset2, role);
 		}
 	}
 
@@ -451,38 +588,6 @@ public class QEPMap implements Closeable {
 	 */
 	public boolean isMapDataset1Direct(TripleComponentRole role) {
 		return useDataset1[role.ordinal()];
-	}
-
-	public long convertToDataset(int originUid, TripleComponentRole role, long id) {
-		SectionMap map = maps[role.ordinal()];
-		if (originUid == dataset1.uid()) {
-			if (isMapDataset1Direct(role)) {
-				// using the direct map
-				return map.directSequence.get(id);
-			} else {
-				if (!map.selectBitmap.access(id)) {
-					// not mapped
-					return 0;
-				}
-				long loc = map.selectBitmap.rank1(id);
-				return map.selectSequence.get(loc);
-			}
-		} else {
-			assert originUid == dataset2.uid();
-
-			if (!isMapDataset1Direct(role)) {
-				// using the direct map
-				return map.directSequence.get(id);
-			} else {
-				if (!map.selectBitmap.access(id)) {
-					// not mapped
-					return 0;
-				}
-				long loc = map.selectBitmap.rank1(id);
-				return map.selectSequence.get(loc);
-			}
-
-		}
 	}
 
 	/**

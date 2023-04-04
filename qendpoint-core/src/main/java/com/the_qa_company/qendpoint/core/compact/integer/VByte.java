@@ -94,8 +94,9 @@ public class VByte {
 		long out = 0;
 		int shift = 0;
 		long readbyte = in.read();
-		if (readbyte == -1)
+		if (readbyte == -1) {
 			throw new EOFException();
+		}
 
 		while ((readbyte & 0x80) == 0) {
 			if (shift >= 50) { // We read more bytes than required to load the

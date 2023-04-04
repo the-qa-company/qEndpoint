@@ -17,15 +17,21 @@
  */
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.apache.commons.io.file.PathUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -42,7 +48,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -52,6 +57,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -59,6 +66,68 @@ import java.util.zip.GZIPInputStream;
  */
 public class IOUtil {
 	private IOUtil() {
+	}
+
+	/**
+	 * print a path in the standard output
+	 *
+	 * @param path root
+	 */
+	public static void printPath(Path path) {
+		String title = "--- " + path + " ---";
+		System.out.println(title);
+		try (Stream<Path> w = Files.walk(path)) {
+			w.forEach(s -> System.out.println(File.separator + path.relativize(s)));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		System.out.println("-".repeat(title.length()));
+	}
+
+	/**
+	 * split an HDT into multiple HDTs using slow, memory intensive algorithm (for tests only)
+	 *
+	 * @param origin origin HDT
+	 * @param base   base path, end path will be base-ID.hdt
+	 * @param count  count of split
+	 * @return paths
+	 * @throws IOException io exception
+	 */
+	public static Path[] splitHDT(Path origin, Path base, int count) throws IOException {
+		long triples;
+		try (HDT hdt = HDTManager.mapHDT(origin)) {
+			triples = hdt.getTriples().getNumberOfElements();
+		}
+		if (triples < count) {
+			count = (int) triples;
+		}
+		Path[] paths = new Path[count];
+		if (count == 0) {
+			return paths;
+		}
+		long split = triples / count;
+		for (int i = 0; i < count; i++) {
+			paths[i] = base.resolveSibling(base.getFileName() + "-" + i + ".hdt");
+			Path work = base.resolve("workHDT" + new Random().nextInt(100000));
+			HDTOptions spec = HDTOptions.of(
+					HDTOptionsKeys.HDTCAT_LOCATION, work
+			);
+			try (Bitmap64Big deleteBM = Bitmap64Big.memory(triples)) {
+				for (long j = 0; j < split * i; j++) {
+					deleteBM.set(j, true);
+				}
+				if (i != count - 1) {
+					for (long j = split * (i + 1); j < triples; j++) {
+						deleteBM.set(j, true);
+					}
+				}
+				try (HDT diff = HDTManager.diffBitCatHDTPath(List.of(origin), List.of(deleteBM), spec, ProgressListener.ignore())) {
+					diff.saveToHDT(paths[i], ProgressListener.ignore());
+				}
+
+			}
+		}
+		return paths;
 	}
 
 	/**
@@ -102,6 +171,7 @@ public class IOUtil {
 	                                               long position, long size) throws IOException {
 		return mapChannel(filename.toAbsolutePath().toString(), ch, mode, position, size);
 	}
+
 	/**
 	 * map a FileChannel, same as
 	 * {@link FileChannel#map(FileChannel.MapMode, long, long)}, but used to fix
@@ -115,7 +185,7 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static CloseMappedByteBuffer mapChannel(String filename, FileChannel ch, FileChannel.MapMode mode,
-			long position, long size) throws IOException {
+	                                               long position, long size) throws IOException {
 		return new CloseMappedByteBuffer(filename, ch.map(mode, position, size), false);
 	}
 
@@ -309,6 +379,7 @@ public class IOUtil {
 		}
 		map.put(index + i, (byte) 0);
 	}
+
 	public static String readCString(CloseMappedByteBuffer map, int start, int maxSize) {
 		byte[] buffer = new byte[maxSize];
 		byte c;
@@ -334,13 +405,13 @@ public class IOUtil {
 	}
 
 	public static void writeSizedBuffer(OutputStream output, byte[] buffer, int offset, int length,
-			ProgressListener listener) throws IOException {
+	                                    ProgressListener listener) throws IOException {
 		VByte.encode(output, length);
 		writeBuffer(output, buffer, offset, length, listener);
 	}
 
 	public static void writeBuffer(OutputStream output, byte[] buffer, int offset, int length,
-			ProgressListener listener) throws IOException {
+	                               ProgressListener listener) throws IOException {
 		listener = ProgressListener.ofNullable(listener);
 		if (length < CloseSuppressPath.BUFFER_SIZE) {
 			output.write(buffer, offset, length);
@@ -549,14 +620,14 @@ public class IOUtil {
 
 	public static InputStream asUncompressed(InputStream inputStream, CompressionType type) throws IOException {
 		switch (type) {
-		case GZIP:
-			return new GZIPInputStream(inputStream);
-		case BZIP:
-			return new BZip2CompressorInputStream(inputStream, true);
-		case XZ:
-			return new XZCompressorInputStream(inputStream, true);
-		case NONE:
-			return inputStream;
+			case GZIP:
+				return new GZIPInputStream(inputStream);
+			case BZIP:
+				return new BZip2CompressorInputStream(inputStream, true);
+			case XZ:
+				return new XZCompressorInputStream(inputStream, true);
+			case NONE:
+				return inputStream;
 		}
 		throw new IllegalArgumentException("CompressionType not yet implemented: " + type);
 	}

@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+
+
 /**
  * Class to close many {@link java.io.Closeable} objects at once without having
  * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable}, array, record, {@link Map}

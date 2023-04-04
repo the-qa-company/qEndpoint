@@ -8,6 +8,7 @@ package com.the_qa_company.qendpoint.core.iterator.utils;
  */
 public abstract class FetcherExceptionIterator<T, E extends Exception> implements ExceptionIterator<T, E> {
 	private T next;
+	private boolean end;
 
 	protected FetcherExceptionIterator() {
 	}
@@ -19,11 +20,18 @@ public abstract class FetcherExceptionIterator<T, E extends Exception> implement
 
 	@Override
 	public boolean hasNext() throws E {
+		if (end) {
+			return false;
+		}
 		if (next != null) {
 			return true;
 		}
 		next = getNext();
-		return next != null;
+		if (next != null) {
+			return true;
+		}
+		end = true;
+		return false;
 	}
 
 	@Override

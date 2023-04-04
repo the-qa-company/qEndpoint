@@ -1,20 +1,29 @@
 package com.the_qa_company.qendpoint.core.storage;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -67,7 +76,8 @@ public class QEPCore implements AutoCloseable {
 	public static final String FILE_DATASET_SUFFIX = ".hdt";
 
 	private final Map<String, QEPDataset> dataset = new HashMap<>();
-	private final Map<QEPMap.Uid, QEPMap> map = new HashMap<>();
+	private final Map<Integer, QEPDataset> datasetByUid = new HashMap<>();
+	private final Map<Uid, QEPMap> map = new HashMap<>();
 
 	// config
 	private final HDTOptions options;
@@ -174,18 +184,41 @@ public class QEPCore implements AutoCloseable {
 	}
 
 
-	private HDT openDataset(Path path) throws IOException {
+	private QEPDataset openDataset(String id, Path path) throws IOException {
+		HDT dataset;
 		if (memoryDataset) {
 			if (noCoIndex) {
-				return HDTManager.loadHDT(path, ProgressListener.ignore(), options);
+				dataset = HDTManager.loadHDT(path, ProgressListener.ignore(), options);
+			} else {
+				dataset = HDTManager.loadIndexedHDT(path, ProgressListener.ignore(), options);
 			}
-			return HDTManager.loadIndexedHDT(path, ProgressListener.ignore(), options);
 		} else {
 			if (noCoIndex) {
-				return HDTManager.mapHDT(path, ProgressListener.ignore(), options);
+				dataset = HDTManager.mapHDT(path, ProgressListener.ignore(), options);
+			} else {
+				dataset = HDTManager.mapIndexedHDT(path, options, ProgressListener.ignore());
 			}
-			return HDTManager.mapIndexedHDT(path, options, ProgressListener.ignore());
 		}
+		ModifiableBitmap bitmap;
+		try {
+			Path deleteBitmapPath = path.resolveSibling(path.getFileName() + ".dbm");
+			if (Files.exists(deleteBitmapPath)) {
+				bitmap = Bitmap64Big.map(deleteBitmapPath, dataset.getTriples().getNumberOfElements());
+			} else {
+				bitmap = Bitmap64Big.disk(deleteBitmapPath, dataset.getTriples().getNumberOfElements());
+			}
+		} catch (Throwable t) {
+			try {
+				dataset.close();
+			} catch (Exception e2) {
+				t.addSuppressed(e2);
+			} catch (Error err) {
+				err.addSuppressed(t);
+				throw err;
+			}
+			throw t;
+		}
+		return new QEPDataset(this, id, path, dataset, bitmap);
 	}
 
 	/**
@@ -198,6 +231,7 @@ public class QEPCore implements AutoCloseable {
 			// clear the pool
 			Closer.closeAll(dataset);
 			dataset.clear();
+			datasetByUid.clear();
 			try (Stream<Path> files = Files.list(getDatasetPath())) {
 				files.forEach(path -> {
 					String filename = path.getFileName().toString();
@@ -217,7 +251,7 @@ public class QEPCore implements AutoCloseable {
 					}
 					// load the dataset
 					try {
-						QEPDataset ds = new QEPDataset(indexId, path, openDataset(path));
+						QEPDataset ds = openDataset(indexId, path);
 						QEPDataset other = dataset.put(ds.id(), ds);
 
 						// Windows compatibility, it would also be a bad practice to use datasets
@@ -238,6 +272,7 @@ public class QEPCore implements AutoCloseable {
 							}
 							throw e;
 						}
+						datasetByUid.put(ds.uid(), ds);
 					} catch (IOException e) {
 						throw new ContainerException(new QEPCoreException(e));
 					}
@@ -285,15 +320,70 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
+	 * get a node converter from 2 UIDs and a role
+	 *
+	 * @param originUID      origin UID
+	 * @param destinationUID destination UID
+	 * @param role           role
+	 * @return converter
+	 * @throws QEPCoreException can't find the map in the core
+	 */
+	public NodeConverter getConverter(int originUID, int destinationUID, TripleComponentRole role) throws QEPCoreException {
+		Uid uid = Uid.of(originUID, destinationUID);
+
+		QEPMap qepMap = map.get(uid);
+		if (qepMap == null) {
+			throw new QEPCoreException("Can't find map with UID " + uid);
+		}
+
+		return qepMap.getConverter(originUID, destinationUID, role);
+	}
+
+	/**
+	 * get a mapping between 2 datasets
+	 *
+	 * @param uid uid of the 2 datasets
+	 * @return mapping, or null if unavailable, bad uid or unsync maps?
+	 */
+	public QEPMap getMappingById(Uid uid) {
+		return map.get(uid);
+	}
+
+	/**
+	 * @return all the dataset UIDs
+	 */
+	public Set<Integer> getDatasetUids() {
+		return Collections.unmodifiableSet(datasetByUid.keySet());
+	}
+
+	/**
+	 * @return all the dataset IDs
+	 */
+	public Set<String> getDatasetIds() {
+		return Collections.unmodifiableSet(dataset.keySet());
+	}
+
+	/**
+	 * @return the datasets
+	 */
+	public Collection<QEPDataset> getDatasets() {
+		return Collections.unmodifiableCollection(dataset.values());
+	}
+
+	/**
 	 * bind 2 datasets in the core
 	 *
 	 * @param dataset1 dataset 1
 	 * @param dataset2 dataset 2
 	 * @throws IOException bind exception
 	 */
-	public void bindDataset(QEPDataset dataset1, QEPDataset dataset2) throws IOException {
+	private void bindDataset(QEPDataset dataset1, QEPDataset dataset2) throws IOException {
 		if (dataset1.uid() == dataset2.uid()) {
-			return;
+			return; // same object
+		}
+
+		if (dataset1.id().equals(dataset2.id())) {
+			return; // same id
 		}
 
 		// create a map for our 2 datasets
@@ -307,6 +397,7 @@ public class QEPCore implements AutoCloseable {
 			qepMap.sync();
 		}
 	}
+
 
 	/**
 	 * @return the dataset path
@@ -343,5 +434,61 @@ public class QEPCore implements AutoCloseable {
 		} catch (IOException e) {
 			throw new QEPCoreException(e);
 		}
+	}
+
+	/**
+	 * get a dataset by its id
+	 *
+	 * @param id the dataset id
+	 * @return dataset, or null if undefined in this core
+	 */
+	public QEPDataset getDatasetById(String id) {
+		return dataset.get(id);
+	}
+
+	/**
+	 * get a dataset by its uid
+	 *
+	 * @param uid the dataset uid
+	 * @return dataset, or null if undefined in this core
+	 */
+	public QEPDataset getDatasetByUid(int uid) {
+		return datasetByUid.get(uid);
+	}
+
+	/**
+	 * create a component from a CharSequence
+	 *
+	 * @param seq the sequence
+	 * @return QEPComponent
+	 */
+	public QEPComponent createComponentByString(CharSequence seq) {
+		// convert it to avoid overhead in dict methods
+		ByteString bs = ByteString.of(seq);
+		return new QEPComponent(this, null, null, 0, bs);
+	}
+
+	/**
+	 * create a component using its id in a dataset
+	 *
+	 * @param dataset the dataset
+	 * @param id      the id in the dataset
+	 * @param role    the role in the dataset
+	 * @return QEPComponent
+	 */
+	public QEPComponent createComponentById(QEPDataset dataset, long id, DictionarySectionRole role) {
+		return dataset.component(id, role);
+	}
+
+	/**
+	 * create a component using its id in a dataset
+	 *
+	 * @param dataset the dataset
+	 * @param id      the id in the dataset
+	 * @param role    the role in the dataset
+	 * @return QEPComponent
+	 */
+	public QEPComponent createComponentById(QEPDataset dataset, long id, TripleComponentRole role) {
+		return dataset.component(id, role);
 	}
 }
