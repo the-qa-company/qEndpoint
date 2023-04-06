@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.storage.QEPComponent;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import com.the_qa_company.qendpoint.core.storage.QEPDataset;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 /**
  * A triple of {@link QEPComponent}
@@ -68,6 +69,11 @@ public interface QEPComponentTriple {
 	long getId();
 
 	/**
+	 * @return the dataset id
+	 */
+	int getDatasetId();
+
+	/**
 	 * set the subject
 	 *
 	 * @param subject subject
@@ -96,6 +102,13 @@ public interface QEPComponentTriple {
 	void setId(long id);
 
 	/**
+	 * set the dataset id
+	 *
+	 * @param id id
+	 */
+	void setDatasetId(int id);
+
+	/**
 	 * set all the components
 	 *
 	 * @param subject   subject
@@ -116,11 +129,12 @@ public interface QEPComponentTriple {
 	 * @param object    object
 	 * @param id        triple id
 	 */
-	default void setAll(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id) {
+	default void setAll(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id, int datasetId) {
 		setSubject(subject);
 		setPredicate(predicate);
 		setObject(object);
 		setId(id);
+		setDatasetId(datasetId);
 	}
 
 	/**
@@ -130,14 +144,67 @@ public interface QEPComponentTriple {
 		return new QEPComponentTripleFreeze(getSubject(), getPredicate(), getObject());
 	}
 
+	/**
+	 * convert this triple into a triple id for a particular dataset
+	 *
+	 * @param dataset dataset
+	 * @return triple id
+	 * @throws QEPCoreException exception while converting the ID
+	 */
 	default TripleID tripleID(QEPDataset dataset) throws QEPCoreException {
 		QEPComponent s = getSubject();
 		QEPComponent p = getPredicate();
 		QEPComponent o = getObject();
-		return new TripleID(
-				s == null ? 0 : s.getId(dataset.uid(), TripleComponentRole.SUBJECT),
-				p == null ? 0 : p.getId(dataset.uid(), TripleComponentRole.PREDICATE),
-				o == null ? 0 : o.getId(dataset.uid(), TripleComponentRole.OBJECT)
+
+		long sid, pid, oid;
+
+		if (s == null) {
+			sid = 0;
+		} else {
+			long id = s.getId(dataset.uid(), TripleComponentRole.SUBJECT);
+			if (id == 0) {
+				sid = -1;
+			} else {
+				sid = id;
+			}
+		}
+
+		if (s == null) {
+			pid = 0;
+		} else {
+			long id = p.getId(dataset.uid(), TripleComponentRole.PREDICATE);
+			if (id == 0) {
+				pid = -1;
+			} else {
+				pid = id;
+			}
+		}
+
+		if (s == null) {
+			oid = 0;
+		} else {
+			long id = o.getId(dataset.uid(), TripleComponentRole.OBJECT);
+			if (id == 0) {
+				oid = -1;
+			} else {
+				oid = id;
+			}
+		}
+
+		return new TripleID(sid, pid, oid);
+	}
+
+	/**
+	 * @return convert to triple string
+	 */
+	default TripleString tripleString() {
+		QEPComponent subject = getSubject();
+		QEPComponent predicate = getPredicate();
+		QEPComponent object = getObject();
+		return new TripleString(
+				subject == null ? "" : subject.getString(),
+				predicate == null ? "" : predicate.getString(),
+				object == null ? "" : object.getString()
 		);
 	}
 

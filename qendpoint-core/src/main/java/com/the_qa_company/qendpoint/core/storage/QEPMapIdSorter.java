@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -31,7 +33,8 @@ import java.util.function.Supplier;
  *
  * @author Antoine Willerval
  */
-public class QEPMapIdSorter implements Closeable {
+public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMapIds> {
+
 	public record QEPMapIds(long origin, long destination) implements Comparable<QEPMapIds> {
 		@Override
 		public int compareTo(QEPMapIds o) {
@@ -48,8 +51,8 @@ public class QEPMapIdSorter implements Closeable {
 		this.computeLocation = CloseSuppressPath.of(computeLocation);
 		this.computeLocation.closeWithDeleteRecurse();
 		int bits = BitUtil.log2(maxValue);
-		if (maxElementCount * bits * 2 < MAX_ELEMENT_SIZE_THRESHOLD) {
-			ids = new SequenceLog64Big(bits, maxElementCount * 2);
+		if (maxElementCount * bits * 2 / 8 < MAX_ELEMENT_SIZE_THRESHOLD) {
+			ids = new SequenceLog64Big(bits, maxElementCount << 1);
 		} else {
 			ids = new SequenceLog64BigDisk(computeLocation, bits, maxElementCount * 2);
 		}
@@ -62,8 +65,9 @@ public class QEPMapIdSorter implements Closeable {
 	 * @param destination destination id
 	 */
 	public void addElement(long origin, long destination) {
-		ids.set(index * 2, origin);
-		ids.set(index++ * 2 + 1, destination);
+		ids.set((index << 1), origin);
+		ids.set((index << 1) | 1, destination);
+		index++;
 	}
 
 	/**
@@ -128,6 +132,24 @@ public class QEPMapIdSorter implements Closeable {
 		Closer.closeAll(ids, computeLocation);
 	}
 
+	@Override
+	public Iterator<QEPMapIds> iterator() {
+		return new IdIterator();
+	}
+
+	private class IdIterator extends FetcherIterator<QEPMapIds> {
+		long itIndex;
+
+		@Override
+		protected QEPMapIds getNext() {
+			if (itIndex < size()) {
+				return get(itIndex++);
+			} else {
+				return null;
+			}
+		}
+	}
+
 
 	private record Merger(long chunkSize) implements KWayMerger.KWayMergerImpl<QEPMapIds, Supplier<QEPMapIds>> {
 
@@ -136,9 +158,19 @@ public class QEPMapIdSorter implements Closeable {
 			try (BufferedOutputStream stream = new BufferedOutputStream(Files.newOutputStream(output))) {
 				QEPMapIds ids;
 
+				List<QEPMapIds> idList = new ArrayList<>();
+
 				while ((ids = flux.get()) != null) {
-					VByte.encode(stream, ids.origin());
-					VByte.encode(stream, ids.destination());
+					idList.add(ids);
+				}
+
+				idList.sort(QEPMapIds::compareTo);
+
+				long lastId = -1;
+				for (QEPMapIds qepMapIds : idList) {
+					lastId = qepMapIds.origin();
+					VByte.encode(stream, qepMapIds.origin());
+					VByte.encode(stream, qepMapIds.destination());
 				}
 
 				VByte.encode(stream, 0);

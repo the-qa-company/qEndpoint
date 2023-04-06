@@ -31,6 +31,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -598,6 +599,14 @@ public interface HDTOptions {
 			public void set(String key, String value) {
 				top.set(key, value);
 			}
+
+			@Override
+			public Set<?> getKeys() {
+				Set<Object> keys = new HashSet<>();
+				keys.addAll(top.getKeys());
+				keys.addAll(HDTOptions.this.getKeys());
+				return keys;
+			}
 		};
 	}
 
@@ -630,6 +639,14 @@ public interface HDTOptions {
 			public void set(String key, String value) {
 				bottom.set(key, value);
 			}
+
+			@Override
+			public Set<?> getKeys() {
+				Set<Object> keys = new HashSet<>();
+				keys.addAll(bottom.getKeys());
+				keys.addAll(HDTOptions.this.getKeys());
+				return keys;
+			}
 		};
 	}
 
@@ -651,6 +668,11 @@ public interface HDTOptions {
 			@Override
 			public void set(String key, String value) {
 				throw new IllegalArgumentException("trying to set into a readonly HDTOptions!");
+			}
+
+			@Override
+			public Set<?> getKeys() {
+				return HDTOptions.this.getKeys();
 			}
 		};
 	}

@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -13,16 +14,19 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
-
 /**
  * Class to close many {@link java.io.Closeable} objects at once without having
- * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable}, array, record, {@link Map}
+ * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable}, array, record, {@link Map},
+ * the {@link Throwable} are also rethrown, it can be useful to close and throw at the same time.
+ * <p>
+ * It's using a deep search over the elements.
  *
  * @author Antoine Willerval
  */
 public class Closer implements Iterable<Closeable>, Closeable {
 	private final List<Closeable> list;
 
+	@SuppressWarnings("resource")
 	private Closer(Object... other) {
 		list = new ArrayList<>(other.length);
 		with(other);
@@ -48,6 +52,7 @@ public class Closer implements Iterable<Closeable>, Closeable {
 	public static void closeAll(Object... other) throws IOException {
 		of(other).close();
 	}
+
 	/**
 	 * close all the whatever closeable contained by these objects, easier and
 	 * faster to write than a large try-finally tree
@@ -105,6 +110,22 @@ public class Closer implements Iterable<Closeable>, Closeable {
 				}
 			});
 		}
+
+		// a throwable
+		if (obj instanceof Throwable t) {
+			return Stream.of(() -> {
+				if (obj instanceof Error err) {
+					throw err;
+				}
+				if (obj instanceof RuntimeException re) {
+					throw new HighValueException(re);
+				}
+				if (obj instanceof IOException ioe) {
+					throw new HighValueException(ioe);
+				}
+				throw new HighValueException(new IOException(t));
+			});
+		}
 		// nothing known
 		return Stream.of();
 	}
@@ -117,7 +138,58 @@ public class Closer implements Iterable<Closeable>, Closeable {
 	@Override
 	public void close() throws IOException {
 		try {
-			IOUtil.closeAll(list);
+			Throwable start = null;
+			List<Throwable> throwableList = null;
+			for (Closeable runnable : list) {
+				try {
+					if (runnable != null) {
+						runnable.close();
+					}
+				} catch (Throwable e) {
+					if (start != null) {
+						if (throwableList == null) {
+							throwableList = new ArrayList<>();
+							throwableList.add(start);
+						}
+						throwableList.add(e);
+					} else {
+						start = e;
+					}
+				}
+			}
+
+			// do we have an Exception?
+			if (start == null) {
+				return;
+			}
+
+			if (throwableList == null) {
+				IOUtil.throwIOOrRuntime(start);
+				return; // remove warnings
+			}
+
+			// add the start to the list
+
+			Throwable main = HighValueException.extractException(throwableList.stream()
+					// get the maximum of severity of the throwable (Error > Runtime
+					// > Exception)
+					.max(Comparator.comparing(t -> {
+						if (t instanceof Error) {
+							// worst that can happen
+							return 3;
+						}
+						if (t instanceof HighValueException) {
+							// we want to add high valued exception higher than the others, these exceptions are
+							// described by the user and not by the closed elements
+							return 2;
+						}
+						if (t instanceof RuntimeException) {
+							return 1;
+						}
+						return 0;
+					})).orElseThrow());
+
+			throwableList.stream().filter(t -> t != main).forEach(main::addSuppressed);
 		} catch (CloserException e) {
 			throw (IOException) e.getCause();
 		}
@@ -127,5 +199,19 @@ public class Closer implements Iterable<Closeable>, Closeable {
 		public CloserException(IOException cause) {
 			super(cause);
 		}
+	}
+
+	private static class HighValueException extends RuntimeException {
+		public static Throwable extractException(Throwable t) {
+			if (!(t instanceof HighValueException hve)) {
+				return t;
+			}
+			return hve.getCause();
+		}
+
+		public HighValueException(Throwable cause) {
+			super(cause);
+		}
+
 	}
 }

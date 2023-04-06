@@ -38,8 +38,10 @@ public class QEPDatasetIterator implements Iterator<QEPComponentTriple> {
 					dataset.component(tid.getSubject(), TripleComponentRole.SUBJECT),
 					dataset.component(tid.getPredicate(), TripleComponentRole.PREDICATE),
 					dataset.component(tid.getObject(), TripleComponentRole.OBJECT),
-					position
+					position,
+					dataset.uid()
 			);
+			next = true;
 
 			return true;
 		}

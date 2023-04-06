@@ -250,8 +250,6 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public long select0(long x) {
-		// System.out.println("\t**Select0 for: "+ x);
-
 		if (x < 0) {
 			return -1;
 		}
@@ -313,8 +311,6 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public long select1(long x) {
-		// System.out.println("\t**Select1 for: "+ x);
-
 		if (x < 0) {
 			return -1;
 		}

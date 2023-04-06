@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.core.storage;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -16,8 +18,15 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class QEPMapTest {
+	private static final ModifiableBitmap[] EMPTY_DELTA;
+
+	static {
+		EMPTY_DELTA = new ModifiableBitmap[TripleComponentRole.values().length];
+		Arrays.fill(EMPTY_DELTA,EmptyBitmap.of(0));
+	}
 	@Rule
 	public TemporaryFolder tempDir = new TemporaryFolder();
 
@@ -57,16 +66,16 @@ public class QEPMapTest {
 		supplier.createAndSaveFakeHDT(spec, d2);
 
 		try (
-				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0));
-				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0));
+				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0), EMPTY_DELTA);
 				QEPMap map = new QEPMap(root.resolve("maps"), dataset1, dataset2)
 		) {
 			map.sync();
 		}
 
 		try (
-				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0));
-				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0));
+				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0), EMPTY_DELTA);
 				QEPMap map = new QEPMap(root.resolve("maps"), dataset1, dataset2)
 		) {
 			map.sync();
@@ -101,8 +110,8 @@ public class QEPMapTest {
 		supplier.createAndSaveFakeHDT(spec, d4);
 
 		try (
-				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0));
-				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0));
+				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0), EMPTY_DELTA);
 				QEPMap map = new QEPMap(root.resolve("maps"), dataset1, dataset2)
 		) {
 			map.sync();
@@ -110,8 +119,8 @@ public class QEPMapTest {
 
 		try (
 				// use same id with different HDT to create an error
-				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d3), EmptyBitmap.of(0));
-				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d4), EmptyBitmap.of(0));
+				QEPDataset dataset1 = new QEPDataset(null, "d1", d1, HDTManager.mapHDT(d3), EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(null, "d2", d2, HDTManager.mapHDT(d4), EmptyBitmap.of(0), EMPTY_DELTA);
 				QEPMap map = new QEPMap(root.resolve("maps"), dataset1, dataset2)
 		) {
 			map.sync();

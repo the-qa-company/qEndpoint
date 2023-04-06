@@ -6,9 +6,12 @@ import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.iterator.utils.CatIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
+import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -18,9 +21,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -55,6 +61,7 @@ import static com.the_qa_company.qendpoint.core.options.HDTOptionsKeys.LOADER_TY
  * @author Antoine Willerval
  */
 public class QEPCore implements AutoCloseable {
+	private static final Logger logger = LoggerFactory.getLogger(QEPCore.class);
 	/**
 	 * the max size of a dataset id
 	 */
@@ -63,7 +70,6 @@ public class QEPCore implements AutoCloseable {
 	 * regex to check id file
 	 */
 	public static final Pattern ID_REGEX = Pattern.compile("[0-9a-z_\\-]{1," + MAX_ID_SIZE + "}");
-	private static final Logger logger = LoggerFactory.getLogger(QEPCore.class);
 	/**
 	 * load the dataset into memory
 	 */
@@ -72,8 +78,26 @@ public class QEPCore implements AutoCloseable {
 	 * do not load dataset except the SPO dataset
 	 */
 	public static final String OPTION_NO_CO_INDEX = "qep.dataset.no_co_index";
+	/**
+	 * prefix of the datasets in the {@link #FILE_DATASET_STORE} directory
+	 */
 	public static final String FILE_DATASET_PREFIX = "index_";
+	/**
+	 * suffix of the datasets in the {@link #FILE_DATASET_STORE} directory
+	 */
 	public static final String FILE_DATASET_SUFFIX = ".hdt";
+	/**
+	 * directory where the datasets are
+	 */
+	public static final String FILE_DATASET_STORE = "store";
+	/**
+	 * directory where the maps are
+	 */
+	public static final String FILE_DATASET_MAPS = "maps";
+	/**
+	 * config file of the core
+	 */
+	public static final String FILE_CORE_CONFIG_OPT = "config.opt";
 
 	private final Map<String, QEPDataset> dataset = new HashMap<>();
 	private final Map<Integer, QEPDataset> datasetByUid = new HashMap<>();
@@ -183,42 +207,59 @@ public class QEPCore implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * @return the number of triples
+	 */
+	public long triplesCount() {
+		return dataset.values().stream()
+				.mapToLong(d -> d.dataset().getTriples().getNumberOfElements())
+				.sum();
+	}
 
+	@SuppressWarnings("resource")
 	private QEPDataset openDataset(String id, Path path) throws IOException {
-		HDT dataset;
-		if (memoryDataset) {
-			if (noCoIndex) {
-				dataset = HDTManager.loadHDT(path, ProgressListener.ignore(), options);
-			} else {
-				dataset = HDTManager.loadIndexedHDT(path, ProgressListener.ignore(), options);
-			}
-		} else {
-			if (noCoIndex) {
-				dataset = HDTManager.mapHDT(path, ProgressListener.ignore(), options);
-			} else {
-				dataset = HDTManager.mapIndexedHDT(path, options, ProgressListener.ignore());
-			}
-		}
-		ModifiableBitmap bitmap;
+		HDT dataset = null;
+		ModifiableBitmap bitmap = null;
+		ModifiableBitmap[] deltaBitmaps = new ModifiableBitmap[TripleComponentRole.values().length];
 		try {
-			Path deleteBitmapPath = path.resolveSibling(path.getFileName() + ".dbm");
+			if (memoryDataset) {
+				if (noCoIndex) {
+					dataset = HDTManager.loadHDT(path, ProgressListener.ignore(), options);
+				} else {
+					dataset = HDTManager.loadIndexedHDT(path, ProgressListener.ignore(), options);
+				}
+			} else {
+				if (noCoIndex) {
+					dataset = HDTManager.mapHDT(path, ProgressListener.ignore(), options);
+				} else {
+					dataset = HDTManager.mapIndexedHDT(path, options, ProgressListener.ignore());
+				}
+			}
+
+			Path deleteBitmapPath = path.resolveSibling(path.getFileName() + ".delete.bm");
+
 			if (Files.exists(deleteBitmapPath)) {
 				bitmap = Bitmap64Big.map(deleteBitmapPath, dataset.getTriples().getNumberOfElements());
 			} else {
 				bitmap = Bitmap64Big.disk(deleteBitmapPath, dataset.getTriples().getNumberOfElements());
 			}
-		} catch (Throwable t) {
-			try {
-				dataset.close();
-			} catch (Exception e2) {
-				t.addSuppressed(e2);
-			} catch (Error err) {
-				err.addSuppressed(t);
-				throw err;
+
+			for (TripleComponentRole role : TripleComponentRole.values()) {
+				Path deltaBitmapPath = path.resolveSibling(path.getFileName() + ".delta-" + role.getTitle() + ".bm");
+				long size = dataset.getDictionary().getNSection(role, role == TripleComponentRole.SUBJECT);
+
+				if (Files.exists(deltaBitmapPath)) {
+					deltaBitmaps[role.ordinal()] = Bitmap64Big.map(deltaBitmapPath, size);
+				} else {
+					deltaBitmaps[role.ordinal()] = Bitmap64Big.disk(deltaBitmapPath, size);
+				}
 			}
-			throw t;
+
+			return new QEPDataset(this, id, path, dataset, bitmap, deltaBitmaps);
+		} catch (Throwable t) {
+			Closer.closeAll(t, dataset, bitmap, deltaBitmaps);
+			throw new AssertionError();
 		}
-		return new QEPDataset(this, id, path, dataset, bitmap);
 	}
 
 	/**
@@ -398,26 +439,89 @@ public class QEPCore implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * search a triple into the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public Iterator<? extends QEPComponentTriple> search(CharSequence subject, CharSequence predicate, CharSequence object) throws QEPCoreException {
+		return search(
+				createComponentByString(subject),
+				createComponentByString(predicate),
+				createComponentByString(object)
+		);
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public Iterator<? extends QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate, QEPComponent object) throws QEPCoreException {
+		return search(QEPComponentTriple.of(subject, predicate, object));
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param triple triple to search
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public Iterator<? extends QEPComponentTriple> search(TripleString triple) throws QEPCoreException {
+		return search(
+				triple.getSubject().isEmpty() ? null : triple.getSubject(),
+				triple.getPredicate().isEmpty() ? null : triple.getPredicate(),
+				triple.getObject().isEmpty() ? null : triple.getObject()
+		);
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param triple triple to search
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public Iterator<? extends QEPComponentTriple> search(QEPComponentTriple triple) throws QEPCoreException {
+		List<Iterator<QEPComponentTriple>> iterators = new ArrayList<>();
+		QEPComponentTriple clone = triple.freeze();
+
+		for (QEPDataset value : dataset.values()) {
+			iterators.add(value.search(clone));
+		}
+
+		// cat all the iterators
+		return CatIterator.of(iterators);
+	}
 
 	/**
 	 * @return the dataset path
 	 */
 	public Path getDatasetPath() {
-		return location.resolve("store");
+		return location.resolve(FILE_DATASET_STORE);
 	}
 
 	/**
 	 * @return the maps path
 	 */
 	public Path getMapsPath() {
-		return location.resolve("maps");
+		return location.resolve(FILE_DATASET_MAPS);
 	}
 
 	/**
 	 * @return the options file path
 	 */
 	public Path getOptionsPath() {
-		return location.resolve("config.opt");
+		return location.resolve(FILE_CORE_CONFIG_OPT);
 	}
 
 	/**
@@ -463,6 +567,9 @@ public class QEPCore implements AutoCloseable {
 	 * @return QEPComponent
 	 */
 	public QEPComponent createComponentByString(CharSequence seq) {
+		if (seq == null || seq.isEmpty()) {
+			return null;
+		}
 		// convert it to avoid overhead in dict methods
 		ByteString bs = ByteString.of(seq);
 		return new QEPComponent(this, null, null, 0, bs);

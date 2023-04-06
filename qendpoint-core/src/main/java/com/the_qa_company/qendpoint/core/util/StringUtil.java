@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.util;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 /**
@@ -45,15 +46,23 @@ public class StringUtil {
 	}
 
 	public static String toHuman(long amount) {
-		return humanReadableByteCount(amount, true);
+		return humanReadableByteCount(Locale.getDefault(Locale.Category.FORMAT), amount, true);
+	}
+
+	public static String toHuman(Locale locale, long amount) {
+		return humanReadableByteCount(locale, amount, true);
 	}
 
 	public static String humanReadableByteCount(long bytes, boolean si) {
+		return humanReadableByteCount(Locale.getDefault(Locale.Category.FORMAT), bytes, true);
+	}
+
+	public static String humanReadableByteCount(Locale locale, long bytes, boolean si) {
 		int unit = si ? 1000 : 1024;
 		if (bytes < unit)
 			return Long.toString(bytes);
 		int exp = (int) (Math.log(bytes) / Math.log(unit));
 		char pre = "KMGTPE".charAt(exp - 1);
-		return String.format("%.1f%c", bytes / Math.pow(unit, exp), pre);
+		return String.format(locale, "%.1f%c", bytes / Math.pow(unit, exp), pre);
 	}
 }

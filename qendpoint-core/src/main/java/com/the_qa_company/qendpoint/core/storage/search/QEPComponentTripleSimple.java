@@ -6,15 +6,21 @@ import java.util.Objects;
 
 public class QEPComponentTripleSimple implements QEPComponentTriple {
 	private long id;
+	private int datasetId;
 	private QEPComponent subject;
 	private QEPComponent predicate;
 	private QEPComponent object;
 
-	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id) {
+	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id, int datasetId) {
 		this.subject = subject;
 		this.predicate = predicate;
 		this.object = object;
 		this.id = id;
+		this.datasetId = datasetId;
+	}
+
+	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id) {
+		this(subject, predicate, object, id, 0);
 	}
 
 	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object) {
@@ -25,48 +31,54 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 		this(null, null, null, 0);
 	}
 
+	@Override
 	public QEPComponent getSubject() {
 		return subject;
 	}
 
+	@Override
 	public QEPComponent getPredicate() {
 		return predicate;
 	}
 
+	@Override
 	public QEPComponent getObject() {
 		return object;
 	}
 
+	@Override
 	public long getId() {
 		return id;
 	}
 
+	@Override
+	public int getDatasetId() {
+		return datasetId;
+	}
+
+	@Override
 	public void setSubject(QEPComponent subject) {
 		this.subject = subject;
 	}
 
+	@Override
 	public void setPredicate(QEPComponent predicate) {
 		this.predicate = predicate;
 	}
 
+	@Override
 	public void setObject(QEPComponent object) {
 		this.object = object;
 	}
+
+	@Override
 	public void setId(long id) {
 		this.id = id;
 	}
 
-	public void setAll(QEPComponent subject, QEPComponent predicate, QEPComponent object) {
-		setSubject(subject);
-		setPredicate(predicate);
-		setObject(object);
-	}
-
-	public void setAll(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id) {
-		setSubject(subject);
-		setPredicate(predicate);
-		setObject(object);
-		setId(id);
+	@Override
+	public void setDatasetId(int datasetId) {
+		this.datasetId = datasetId;
 	}
 
 	@Override

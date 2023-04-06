@@ -8,6 +8,7 @@ import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.iterator.utils.CatIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.StringSuffixIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -303,8 +304,14 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 				return getPredicates().getSortedEntries();
 			}
 			case OBJECT -> {
-				Stream<? extends Iterator<? extends CharSequence>> os = getAllObjects().values().stream()
-						.map(DictionarySection::getSortedEntries);
+				Stream<? extends Iterator<? extends CharSequence>> os = getAllObjects().entrySet().stream()
+						.map(e -> {
+							if (LiteralsUtils.NO_DATATYPE.equals(e.getKey())) {
+								return e.getValue().getSortedEntries();
+							}
+							ByteString suffix = ByteString.of("^^").copyAppend(e.getKey());
+							return new StringSuffixIterator(suffix, e.getValue().getSortedEntries());
+						});
 				if (!includeShared) {
 					return CatIterator.of(os.toList());
 				}

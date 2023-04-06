@@ -41,6 +41,11 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 	}
 
 	@Override
+	public int getDatasetId() {
+		return wrapper.getDatasetId();
+	}
+
+	@Override
 	public void setSubject(QEPComponent subject) {
 		if (this.subject == null) {
 			wrapper.setSubject(subject);
@@ -66,6 +71,10 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 		wrapper.setId(id);
 	}
 
+	@Override
+	public void setDatasetId(int id) {
+		wrapper.setDatasetId(id);
+	}
 
 
 	@Override
