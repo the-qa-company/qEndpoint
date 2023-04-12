@@ -27,6 +27,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
+import com.the_qa_company.qendpoint.core.util.crc.CRC;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
@@ -507,6 +508,15 @@ public class IOUtil {
 		output.write(writeBuffer, 0, 4);
 	}
 
+	public static void writeInt(CloseMappedByteBuffer out, int offset, int value) {
+		byte[] writeBuffer = new byte[4];
+		writeBuffer[0] = (byte) (value & 0xFF);
+		writeBuffer[1] = (byte) ((value >> 8) & 0xFF);
+		writeBuffer[2] = (byte) ((value >> 16) & 0xFF);
+		writeBuffer[3] = (byte) ((value >> 24) & 0xFF);
+		out.put(offset, writeBuffer);
+	}
+
 	/**
 	 * Read int, little endian
 	 *
@@ -521,6 +531,20 @@ public class IOUtil {
 		int ch4 = in.read();
 		if ((ch1 | ch2 | ch3 | ch4) < 0)
 			throw new EOFException();
+		return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1);
+	}
+
+	/**
+	 * Read int, little endian
+	 *
+	 * @param in input
+	 * @return integer
+	 */
+	public static int readInt(CloseMappedByteBuffer in, int offset) {
+		int ch1 = in.get(offset) & 0xFF;
+		int ch2 = in.get(offset + 1) & 0xFF;
+		int ch3 = in.get(offset + 2) & 0xFF;
+		int ch4 = in.get(offset + 3) & 0xFF;
 		return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1);
 	}
 
@@ -579,6 +603,17 @@ public class IOUtil {
 	public static void writeShort(OutputStream out, short value) throws IOException {
 		out.write(value & 0xFF);
 		out.write((value >> 8) & 0xFF);
+	}
+
+	public static short readShort(CloseMappedByteBuffer out, int offset) {
+		int ch1 = out.get(offset) & 0xFF;
+		int ch2 = out.get(offset + 1) & 0xFF;
+		return (short) ((ch2 << 8) + (ch1));
+	}
+
+	public static void writeShort(CloseMappedByteBuffer out, int offset, short value) {
+		out.put(offset, (byte) (value & 0xFF));
+		out.put(offset + 1, (byte) ((value >> 8) & 0xFF));
 	}
 
 	public static byte readByte(InputStream in) throws IOException {

@@ -1,10 +1,11 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * Implementation of CRC32-C Algorithm. Width = 32 Poly = 0x1edc6f41 XorIn =
@@ -20,7 +21,7 @@ public class CRC32 implements CRC {
 	}
 
 	// See the blonde?
-	private static final int[] crc32_table = { 0x00000000, 0xf26b8303, 0xe13b70f7, 0x1350f3f4, 0xc79a971f, 0x35f1141c,
+	private static final int[] crc32_table = {0x00000000, 0xf26b8303, 0xe13b70f7, 0x1350f3f4, 0xc79a971f, 0x35f1141c,
 			0x26a1e7e8, 0xd4ca64eb, 0x8ad958cf, 0x78b2dbcc, 0x6be22838, 0x9989ab3b, 0x4d43cfd0, 0xbf284cd3, 0xac78bf27,
 			0x5e133c24, 0x105ec76f, 0xe235446c, 0xf165b798, 0x030e349b, 0xd7c45070, 0x25afd373, 0x36ff2087, 0xc494a384,
 			0x9a879fa0, 0x68ec1ca3, 0x7bbcef57, 0x89d76c54, 0x5d1d08bf, 0xaf768bbc, 0xbc267848, 0x4e4dfb4b, 0x20bd8ede,
@@ -48,7 +49,7 @@ public class CRC32 implements CRC {
 			0x7fab5e8c, 0x8dc0dd8f, 0xe330a81a, 0x115b2b19, 0x020bd8ed, 0xf0605bee, 0x24aa3f05, 0xd6c1bc06, 0xc5914ff2,
 			0x37faccf1, 0x69e9f0d5, 0x9b8273d6, 0x88d28022, 0x7ab90321, 0xae7367ca, 0x5c18e4c9, 0x4f48173d, 0xbd23943e,
 			0xf36e6f75, 0x0105ec76, 0x12551f82, 0xe03e9c81, 0x34f4f86a, 0xc69f7b69, 0xd5cf889d, 0x27a40b9e, 0x79b737ba,
-			0x8bdcb4b9, 0x988c474d, 0x6ae7c44e, 0xbe2da0a5, 0x4c4623a6, 0x5f16d052, 0xad7d5351 };
+			0x8bdcb4b9, 0x988c474d, 0x6ae7c44e, 0xbe2da0a5, 0x4c4623a6, 0x5f16d052, 0xad7d5351};
 
 	@Override
 	public void update(byte[] buffer, int offset, int length) {
@@ -58,6 +59,19 @@ public class CRC32 implements CRC {
 		int i = offset;
 		while (len-- != 0) {
 			tbl_idx = (crc32 ^ buffer[i]) & 0xff;
+			crc32 = crc32_table[tbl_idx] ^ (crc32 >>> 8);
+			i++;
+		}
+	}
+
+	@Override
+	public void update(CloseMappedByteBuffer buffer, int offset, int length) {
+		int tbl_idx;
+
+		int len = length;
+		int i = offset;
+		while (len-- != 0) {
+			tbl_idx = (crc32 ^ buffer.get(i)) & 0xff;
 			crc32 = crc32_table[tbl_idx] ^ (crc32 >>> 8);
 			i++;
 		}
@@ -75,8 +89,20 @@ public class CRC32 implements CRC {
 	}
 
 	@Override
+	public int writeCRC(CloseMappedByteBuffer channel, int offset) throws IOException {
+		IOUtil.writeInt(channel, offset, crc32 ^ 0xFFFFFFFF);
+		return 4;
+	}
+
+	@Override
 	public boolean readAndCheck(InputStream in) throws IOException {
 		int readCRC = IOUtil.readInt(in);
+		return readCRC == (crc32 ^ 0xFFFFFFFF);
+	}
+
+	@Override
+	public boolean readAndCheck(CloseMappedByteBuffer channel, int offset) {
+		int readCRC = IOUtil.readInt(channel, offset);
 		return readCRC == (crc32 ^ 0xFFFFFFFF);
 	}
 
@@ -101,5 +127,10 @@ public class CRC32 implements CRC {
 	@Override
 	public String toString() {
 		return Long.toHexString(getValue() & 0xFFFFFFFFL);
+	}
+
+	@Override
+	public int sizeof() {
+		return 4;
 	}
 }

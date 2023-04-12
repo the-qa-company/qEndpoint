@@ -122,6 +122,14 @@ public class CloseMappedByteBuffer implements Closeable {
 		return buffer.put(index, b);
 	}
 
+	public ByteBuffer put(int index, byte[] bytes) {
+		return buffer.put(index, bytes);
+	}
+
+	public ByteBuffer put(int index, byte[] bytes, int offset, int length) {
+		return buffer.put(index, bytes, offset, length);
+	}
+
 	public ByteBuffer get(byte[] dst, int offset, int length) {
 		return buffer.get(dst, offset, length);
 	}

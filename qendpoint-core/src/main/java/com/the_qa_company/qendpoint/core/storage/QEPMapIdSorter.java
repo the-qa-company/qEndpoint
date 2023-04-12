@@ -166,9 +166,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 
 				idList.sort(QEPMapIds::compareTo);
 
-				long lastId = -1;
 				for (QEPMapIds qepMapIds : idList) {
-					lastId = qepMapIds.origin();
 					VByte.encode(stream, qepMapIds.origin());
 					VByte.encode(stream, qepMapIds.destination());
 				}

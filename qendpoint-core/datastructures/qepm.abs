@@ -9,16 +9,19 @@ QEPMapHeaderSections {
 }
 
 QEPMapHeader {
-    string magic = "$QML";
-    byte[101] id1;
-    byte[101] id2;
-    QEPMapHeaderSections dataset1;
-    QEPMapHeaderSections dataset2;
     struct {
-        long subject;
-        long predicate;
-        long object;
-    } selectSectionSizes;
+        string magic = "$QML";
+        byte[101] id1;
+        byte[101] id2;
+        QEPMapHeaderSections dataset1;
+        QEPMapHeaderSections dataset2;
+        struct {
+            long subject;
+            long predicate;
+            long object;
+        } selectSectionSizes;
+    } headerData;
+    crc16 headerDataCRC;
 }
 
 

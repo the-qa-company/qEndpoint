@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,7 +15,7 @@ import java.io.OutputStream;
 public class CRC8 implements CRC {
 	byte crc8;
 
-	private static final byte[] crc8_table = { (byte) 0x00, (byte) 0x07, (byte) 0x0e, (byte) 0x09, (byte) 0x1c,
+	private static final byte[] crc8_table = {(byte) 0x00, (byte) 0x07, (byte) 0x0e, (byte) 0x09, (byte) 0x1c,
 			(byte) 0x1b, (byte) 0x12, (byte) 0x15, (byte) 0x38, (byte) 0x3f, (byte) 0x36, (byte) 0x31, (byte) 0x24,
 			(byte) 0x23, (byte) 0x2a, (byte) 0x2d, (byte) 0x70, (byte) 0x77, (byte) 0x7e, (byte) 0x79, (byte) 0x6c,
 			(byte) 0x6b, (byte) 0x62, (byte) 0x65, (byte) 0x48, (byte) 0x4f, (byte) 0x46, (byte) 0x41, (byte) 0x54,
@@ -45,7 +47,7 @@ public class CRC8 implements CRC {
 			(byte) 0xb5, (byte) 0xbc, (byte) 0xbb, (byte) 0x96, (byte) 0x91, (byte) 0x98, (byte) 0x9f, (byte) 0x8a,
 			(byte) 0x8d, (byte) 0x84, (byte) 0x83, (byte) 0xde, (byte) 0xd9, (byte) 0xd0, (byte) 0xd7, (byte) 0xc2,
 			(byte) 0xc5, (byte) 0xcc, (byte) 0xcb, (byte) 0xe6, (byte) 0xe1, (byte) 0xe8, (byte) 0xef, (byte) 0xfa,
-			(byte) 0xfd, (byte) 0xf4, (byte) 0xf3 };
+			(byte) 0xfd, (byte) 0xf4, (byte) 0xf3};
 
 	@Override
 	public void update(byte[] buffer, int offset, int length) {
@@ -53,6 +55,16 @@ public class CRC8 implements CRC {
 		int len = length;
 		while (len-- != 0) {
 			crc8 = crc8_table[(crc8 ^ buffer[i]) & 0xFF];
+			i++;
+		}
+	}
+
+	@Override
+	public void update(CloseMappedByteBuffer buffer, int offset, int length) {
+		int i = offset;
+		int len = length;
+		while (len-- != 0) {
+			crc8 = crc8_table[(crc8 ^ buffer.get(i)) & 0xFF];
 			i++;
 		}
 	}
@@ -73,8 +85,26 @@ public class CRC8 implements CRC {
 	}
 
 	@Override
+	public int writeCRC(CloseMappedByteBuffer buffer, int offset) throws IOException {
+		buffer.put(offset, crc8);
+		return 1;
+	}
+
+	@Override
 	public boolean readAndCheck(InputStream in) throws IOException {
 		int val = in.read();
+
+		if (val == -1) {
+			throw new IOException("Could not read from input.");
+		}
+		byte othercrc = (byte) (val & 0xFF);
+
+		return othercrc == crc8;
+	}
+
+	@Override
+	public boolean readAndCheck(CloseMappedByteBuffer in, int offset) throws IOException {
+		byte val = in.get(offset);
 
 		if (val == -1) {
 			throw new IOException("Could not read from input.");
@@ -105,5 +135,10 @@ public class CRC8 implements CRC {
 	@Override
 	public String toString() {
 		return Long.toHexString(getValue() & 0xFFL);
+	}
+
+	@Override
+	public int sizeof() {
+		return 1;
 	}
 }

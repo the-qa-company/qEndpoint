@@ -35,17 +35,19 @@ public class QEPMapTest {
 	@Before
 	public void setup() throws IOException {
 		root = tempDir.getRoot().toPath();
+		QEPMap.debugGeneration = true;
 	}
 
 	@After
 	public void complete() throws IOException {
 		PathUtils.deleteDirectory(root);
+		QEPMap.debugGeneration = false;
 	}
 
 	@Test
 	public void linkReloadTest() throws IOException, ParserException {
 		LargeFakeDataSetStreamSupplier supplier
-				= LargeFakeDataSetStreamSupplier.createSupplierWithMaxSize(10_000, 34)
+				= LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 34)
 				.withMaxElementSplit(50)
 				.withMaxLiteralSize(100)
 				.withUnicode(true);
@@ -85,7 +87,7 @@ public class QEPMapTest {
 	@Test(expected = IOException.class)
 	public void linkReloadErrTest() throws IOException, ParserException {
 		LargeFakeDataSetStreamSupplier supplier
-				= LargeFakeDataSetStreamSupplier.createSupplierWithMaxSize(10_000, 34)
+				= LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 34)
 				.withMaxElementSplit(50)
 				.withMaxLiteralSize(100)
 				.withUnicode(true);

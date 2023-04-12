@@ -4,17 +4,21 @@ import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
 import com.the_qa_company.qendpoint.core.storage.converter.PermutationNodeConverter;
 import com.the_qa_company.qendpoint.core.storage.converter.SharedWrapperNodeConverter;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
+import com.the_qa_company.qendpoint.core.util.crc.CRC;
+import com.the_qa_company.qendpoint.core.util.crc.CRC16;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +36,7 @@ import java.util.List;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.OBJECT;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.PREDICATE;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.SUBJECT;
+import static java.lang.String.format;
 
 /**
  * Linker to fetch data from a dataset to another one
@@ -40,15 +45,16 @@ import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.SUBJEC
  */
 public class QEPMap implements Closeable {
 	private static final Logger logger = LoggerFactory.getLogger(QEPMap.class);
+	static boolean debugGeneration;
 	public static final long SECTION_MAST = 1;
 	public static final int SECTION_SHIFT = 1;
 	public static final long SECTION_TYPE_SUBJECT = 0;
 	public static final long SECTION_TYPE_OBJECT = 1;
-	private static final long HEADER_SIZE;
+	private static final int HEADER_SIZE;
 	private static final byte[] MAGIC = "$QML".getBytes(ByteStringUtil.STRING_ENCODING);
 
 	static {
-		long headerSize = 0;
+		int headerSize = 0;
 
 		// magic: byte[MAGIC.length]
 		headerSize += MAGIC.length * Byte.BYTES;
@@ -58,7 +64,7 @@ public class QEPMap implements Closeable {
 		headerSize += Long.BYTES * 4 * 2;
 
 		// select section sizes
-		headerSize += (long) Long.BYTES * TripleComponentRole.values().length;
+		headerSize += Long.BYTES * TripleComponentRole.values().length;
 
 		HEADER_SIZE = headerSize;
 	}
@@ -128,10 +134,10 @@ public class QEPMap implements Closeable {
 
 		// compute the useDataset1 var
 		long sizeDataset1 = Arrays.stream(TripleComponentRole.values())
-				.mapToLong(r -> getDatasetSize(dataset1, r))
+				.mapToLong(r -> dataset1.dataset().getDictionary().getNSection(r, r == SUBJECT))
 				.sum();
 		long sizeDataset2 = Arrays.stream(TripleComponentRole.values())
-				.mapToLong(r -> getDatasetSize(dataset2, r))
+				.mapToLong(r -> dataset2.dataset().getDictionary().getNSection(r, r == SUBJECT))
 				.sum();
 		useDataset1 = sizeDataset1 < sizeDataset2;
 	}
@@ -145,6 +151,8 @@ public class QEPMap implements Closeable {
 		Path mapHeaderPath = getMapHeaderPath();
 		try {
 			close();
+			// the CRC used to check the header
+			CRC crc = new CRC16();
 			// create the sync path
 			Files.createDirectories(path);
 			boolean created = !Files.exists(mapHeaderPath);
@@ -159,6 +167,12 @@ public class QEPMap implements Closeable {
 							mapHeaderPath, channel,
 							FileChannel.MapMode.READ_WRITE,
 							0, HEADER_SIZE
+					);
+
+					CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(
+							mapHeaderPath, channel,
+							FileChannel.MapMode.READ_WRITE,
+							HEADER_SIZE, crc.sizeof()
 					)
 			) {
 				long[] indexMapSize = new long[TripleComponentRole.values().length];
@@ -196,7 +210,6 @@ public class QEPMap implements Closeable {
 						indexMapLocation[i] = shift;
 						shift += Long.BYTES;
 					}
-
 				} else {
 					// we check the magic
 					for (; shift < MAGIC.length; shift++) {
@@ -227,6 +240,10 @@ public class QEPMap implements Closeable {
 						shift += Long.BYTES;
 					}
 
+					crc.update(header, 0, HEADER_SIZE);
+					if (!crc.readAndCheck(crcBuffer, 0)) {
+						throw new CRCException("CRC Error while reading QEPMap header.");
+					}
 				}
 				assert shift == HEADER_SIZE : shift + "!=" + HEADER_SIZE;
 
@@ -295,8 +312,8 @@ public class QEPMap implements Closeable {
 									if (mappedId > 0) {
 
 										// we add the componentId -> mappedId permutation
-										idSequence2.set(sequenceIndex, componentId);
-										mapSequence2.set(sequenceIndex, mappedId);
+										idSequence1.set(sequenceIndex, componentId);
+										mapSequence1.set(sequenceIndex, mappedId);
 										sequenceIndex++;
 
 										// we store the mappedId -> componentId for future sorting
@@ -308,10 +325,10 @@ public class QEPMap implements Closeable {
 								header.putLong(indexMapLocation[roleId], sequenceIndex);
 
 								// we resize our files to reduce space usage
-								idSequence1.resize(sequenceIndex + 1);
-								idSequence2.resize(sequenceIndex + 1);
-								mapSequence1.resize(sequenceIndex + 1);
-								mapSequence2.resize(sequenceIndex + 1);
+								idSequence1.resize(sequenceIndex);
+								idSequence2.resize(sequenceIndex);
+								mapSequence1.resize(sequenceIndex);
+								mapSequence2.resize(sequenceIndex);
 
 								// we can now sort the ids for the 2nd map
 								sorter.sort();
@@ -416,12 +433,12 @@ public class QEPMap implements Closeable {
 							try (
 									QEPMapIdSorter subjectSorter = new QEPMapIdSorter(
 											path.resolve("subjectIdSorter"),
-											subjectNSection2,
+											Math.max(subjectNSection1, objectNSection1),
 											maxNSection
 									);
 									QEPMapIdSorter objectSorter = new QEPMapIdSorter(
 											path.resolve("objectIdSorter"),
-											objectNSection2,
+											Math.max(subjectNSection1, objectNSection1),
 											maxNSection
 									)
 							) {
@@ -524,13 +541,13 @@ public class QEPMap implements Closeable {
 								header.putLong(indexMapLocation[OBJECT.ordinal()], sequenceIndexObject);
 
 								// we resize our files to reduce space usage
-								subjectIdSequence1.resize(sequenceIndexSubject + 1);
-								subjectMapSequence1.resize(sequenceIndexSubject + 1);
+								subjectIdSequence1.resize(sequenceIndexSubject);
+								subjectMapSequence1.resize(sequenceIndexSubject);
 								subjectIdSequence2.resize(subjectSorter.size() + 1);
 								subjectMapSequence2.resize(subjectSorter.size() + 1);
 
-								objectIdSequence1.resize(sequenceIndexObject + 1);
-								objectMapSequence1.resize(sequenceIndexObject + 1);
+								objectIdSequence1.resize(sequenceIndexObject);
+								objectMapSequence1.resize(sequenceIndexObject);
 								objectIdSequence2.resize(objectSorter.size() + 1);
 								objectMapSequence2.resize(objectSorter.size() + 1);
 
@@ -539,25 +556,21 @@ public class QEPMap implements Closeable {
 								objectSorter.sort();
 
 								// we can write the sorted ids
-								long lastId = -1;
 								long sequenceIndex2 = 1;
 								for (QEPMapIdSorter.QEPMapIds ids : subjectSorter) {
-									assert lastId < ids.origin() : "non increasing values!";
-									lastId = ids.origin();
 									subjectIdSequence2.set(sequenceIndex2, ids.origin());
 									subjectMapSequence2.set(sequenceIndex2, ids.destination());
 									sequenceIndex2++;
 								}
+								logger.debug("subjectIdSequence2 {}", subjectIdSequence2.length());
 
-								lastId = -1;
 								sequenceIndex2 = 1;
 								for (QEPMapIdSorter.QEPMapIds ids : objectSorter) {
-									assert lastId < ids.origin() : "non increasing values!";
-									lastId = ids.origin();
 									objectIdSequence2.set(sequenceIndex2, ids.origin());
 									objectMapSequence2.set(sequenceIndex2, ids.destination());
 									sequenceIndex2++;
 								}
+								logger.debug("objectIdSequence2 {}", objectIdSequence2.length());
 							}
 						}
 						maps[SUBJECT.ordinal()] = new SectionMap(
@@ -615,6 +628,15 @@ public class QEPMap implements Closeable {
 								subjectConverters.dataset2to1, objectConverters.dataset2to1
 						)
 				);
+
+				// compute the CRC
+				if (created) {
+					crc.update(header, 0, HEADER_SIZE);
+					crc.writeCRC(crcBuffer, 0);
+				}
+			}
+			if (debugGeneration) {
+				debugMapAssertion();
 			}
 		} catch (Throwable t) {
 			try {
@@ -771,22 +793,6 @@ public class QEPMap implements Closeable {
 		return path.resolve(role.getTitle() + ".map2.dest.seq");
 	}
 
-	private long getDatasetSize(QEPDataset dataset, TripleComponentRole role) {
-		switch (role) {
-			case SUBJECT -> {
-				return dataset.dataset().getDictionary().getNsubjects();
-			}
-			case PREDICATE -> {
-				return dataset.dataset().getDictionary().getNpredicates();
-			}
-			case OBJECT -> {
-				final Dictionary d = dataset.dataset().getDictionary();
-				return d.getNobjects() - d.getNshared();
-			}
-			default -> throw new IllegalFormatException("bad triple role: " + role);
-		}
-	}
-
 	/**
 	 * say if the dataset 1 is the dataset1 is using a direct map for a particular role
 	 *
@@ -833,6 +839,46 @@ public class QEPMap implements Closeable {
 			Closer.closeSingle(maps);
 		} finally {
 			Arrays.fill(maps, null);
+		}
+	}
+
+	private void debugMapAssertion() {
+		for (TripleComponentRole role : TripleComponentRole.values()) {
+			int roleId = role.ordinal();
+			SectionMap map = maps[roleId];
+			logger.debug("test {} in {}", role, this);
+			logger.debug("{} {} {} {}", map.idSequence1.length(), map.mapSequence1.length(), map.idSequence2.length(), map.mapSequence2.length());
+
+			long lastId = 0;
+			for (int i = 1; i < map.idSequence1.length(); i++) {
+				long id = map.idSequence1.get(i);
+				if (id <= lastId) {
+					StringBuilder s = new StringBuilder(format("Bad order IDS1/%s, [%d/%d]: %d >= %d\n",
+							role, i, map.idSequence1.length() - 1, id, lastId));
+
+					for (int j = Math.max(1, i - 10); j < Math.min(map.idSequence1.length(), i + 10); j++) {
+						s.append(format("%d/%d ",j, map.idSequence1.get(j)));
+					}
+
+					throw new AssertionError(s.toString());
+				}
+				lastId = id;
+			}
+			lastId = 0;
+			for (int i = 1; i < map.idSequence2.length(); i++) {
+				long id = map.idSequence2.get(i);
+				if (id <= lastId) {
+					StringBuilder s = new StringBuilder(format("Bad order IDS2/%s, [%d/%d]: %d >= %d\n",
+							role, i, map.idSequence2.length() - 1, id, lastId));
+
+					for (int j = Math.max(1, i - 10); j < Math.min(map.idSequence2.length(), i + 10); j++) {
+						s.append(format("%d/%d ",j, map.idSequence2.get(j)));
+					}
+
+					throw new AssertionError(s.toString());
+				}
+				lastId = id;
+			}
 		}
 	}
 }
