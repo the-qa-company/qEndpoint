@@ -12,13 +12,13 @@ import com.the_qa_company.qendpoint.core.storage.converter.SharedWrapperNodeConv
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.crc.CRC;
 import com.the_qa_company.qendpoint.core.util.crc.CRC16;
+import com.the_qa_company.qendpoint.core.util.debug.DebugInjectionPointManager;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,6 @@ import java.util.List;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.OBJECT;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.PREDICATE;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.SUBJECT;
-import static java.lang.String.format;
 
 /**
  * Linker to fetch data from a dataset to another one
@@ -45,7 +44,8 @@ import static java.lang.String.format;
  */
 public class QEPMap implements Closeable {
 	private static final Logger logger = LoggerFactory.getLogger(QEPMap.class);
-	static boolean debugGeneration;
+	static DebugInjectionPointManager.DebugInjectionPoint<QEPMap> endSync =
+			DebugInjectionPointManager.getInstance().registerInjectionPoint(QEPMap.class);
 	public static final long SECTION_MAST = 1;
 	public static final int SECTION_SHIFT = 1;
 	public static final long SECTION_TYPE_SUBJECT = 0;
@@ -63,17 +63,34 @@ public class QEPMap implements Closeable {
 		// 4 sections * 2 datasets
 		headerSize += Long.BYTES * 4 * 2;
 
-		// select section sizes
+		// id size
+		headerSize += Long.BYTES * TripleComponentRole.values().length;
+		// map size
 		headerSize += Long.BYTES * TripleComponentRole.values().length;
 
 		HEADER_SIZE = headerSize;
 	}
 
-	private record SectionMap(DynamicSequence idSequence1, DynamicSequence mapSequence1, DynamicSequence idSequence2,
-	                          DynamicSequence mapSequence2) {
+	record SectionMap(DynamicSequence idSequence1, DynamicSequence mapSequence1, DynamicSequence idSequence2,
+	                  DynamicSequence mapSequence2) {
+		DynamicSequence idByNumber(int number) {
+			return switch (number) {
+				case 0 -> idSequence1;
+				case 1 -> idSequence2;
+				default -> throw new AssertionError();
+			};
+		}
+
+		DynamicSequence mapByNumber(int number) {
+			return switch (number) {
+				case 0 -> mapSequence1;
+				case 1 -> mapSequence2;
+				default -> throw new AssertionError();
+			};
+		}
 	}
 
-	private record DatasetNodeConverter(NodeConverter dataset1to2, NodeConverter dataset2to1) {
+	record DatasetNodeConverter(NodeConverter dataset1to2, NodeConverter dataset2to1) {
 	}
 
 	/**
@@ -100,14 +117,14 @@ public class QEPMap implements Closeable {
 		return id + countShared;
 	}
 
-	private final QEPDataset dataset1;
-	private final QEPDataset dataset2;
+	final QEPDataset dataset1;
+	final QEPDataset dataset2;
 
-	private final Path path;
-	private final Uid uid;
-	private final SectionMap[] maps = new SectionMap[TripleComponentRole.values().length];
-	private final boolean useDataset1;
-	private final DatasetNodeConverter[] nodeConverters = new DatasetNodeConverter[maps.length];
+	final Path path;
+	final Uid uid;
+	final SectionMap[] maps = new SectionMap[TripleComponentRole.values().length];
+	final boolean useDataset1;
+	final DatasetNodeConverter[] nodeConverters = new DatasetNodeConverter[maps.length];
 
 	QEPMap(Path parent, QEPDataset dataset1, QEPDataset dataset2) {
 		String id1 = dataset1.id();
@@ -175,8 +192,10 @@ public class QEPMap implements Closeable {
 							HEADER_SIZE, crc.sizeof()
 					)
 			) {
-				long[] indexMapSize = new long[TripleComponentRole.values().length];
-				int[] indexMapLocation = new int[indexMapSize.length];
+				long[] index1Size = new long[TripleComponentRole.values().length];
+				int[] index1Location = new int[index1Size.length];
+				long[] index2Size = new long[TripleComponentRole.values().length];
+				int[] index2Location = new int[index2Size.length];
 
 				int shift = 0;
 
@@ -206,8 +225,12 @@ public class QEPMap implements Closeable {
 					header.putLong(shift += Long.BYTES, d2.getNobjects() - nshared2);
 					shift += Long.BYTES;
 
-					for (int i = 0; i < indexMapLocation.length; i++) {
-						indexMapLocation[i] = shift;
+					for (int i = 0; i < index1Location.length; i++) {
+						index1Location[i] = shift;
+						shift += Long.BYTES;
+					}
+					for (int i = 0; i < index2Location.length; i++) {
+						index2Location[i] = shift;
 						shift += Long.BYTES;
 					}
 				} else {
@@ -235,8 +258,12 @@ public class QEPMap implements Closeable {
 					checkHeader(header, shift, "2", this.dataset2);
 					shift += Long.BYTES * 4;
 
-					for (int i = 0; i < indexMapSize.length; i++) {
-						indexMapSize[i] = header.getLong(shift);
+					for (int i = 0; i < index1Size.length; i++) {
+						index1Size[i] = header.getLong(shift);
+						shift += Long.BYTES;
+					}
+					for (int i = 0; i < index2Size.length; i++) {
+						index2Size[i] = header.getLong(shift);
 						shift += Long.BYTES;
 					}
 
@@ -281,10 +308,10 @@ public class QEPMap implements Closeable {
 						int numbitsId2 = BitUtil.log2(nSection2);
 						// add one bit in the map section to store the subject/object type
 						if (!regen) {
-							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, indexMapSize[roleId], true, false);
-							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, indexMapSize[roleId], true, false);
-							idSequence2 = new SequenceLog64BigDisk(map2OriginPath, numbitsId2, indexMapSize[roleId], true, false);
-							mapSequence2 = new SequenceLog64BigDisk(map2DestinationPath, numbitsId1, indexMapSize[roleId], true, false);
+							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, index1Size[roleId], true, false);
+							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, index1Size[roleId], true, false);
+							idSequence2 = new SequenceLog64BigDisk(map2OriginPath, numbitsId2, index2Size[roleId], true, false);
+							mapSequence2 = new SequenceLog64BigDisk(map2DestinationPath, numbitsId1, index2Size[roleId], true, false);
 						} else {
 							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, nSection1, true, true);
 							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, nSection1, true, true);
@@ -321,8 +348,9 @@ public class QEPMap implements Closeable {
 									}
 								}
 
-								// we write the size in the header
-								header.putLong(indexMapLocation[roleId], sequenceIndex);
+								// we write the size in the header, same because of the lack of SH/S/O conversion
+								header.putLong(index1Location[roleId], sequenceIndex);
+								header.putLong(index2Location[roleId], sequenceIndex);
 
 								// we resize our files to reduce space usage
 								idSequence1.resize(sequenceIndex);
@@ -400,15 +428,15 @@ public class QEPMap implements Closeable {
 						int sharedNumbits2 = Math.max(subjectNumbitsId2, objectNumbitsId2);
 						// add one bit in the map section to store the subject/object type
 						if (!regen) {
-							subjectIdSequence1 = new SequenceLog64BigDisk(subjectMap1OriginPath, subjectNumbitsId1, indexMapSize[SUBJECT.ordinal()], true, false);
-							subjectMapSequence1 = new SequenceLog64BigDisk(subjectMap1DestinationPath, sharedNumbits2 + SECTION_SHIFT, indexMapSize[SUBJECT.ordinal()], true, false);
-							subjectIdSequence2 = new SequenceLog64BigDisk(subjectMap2OriginPath, subjectNumbitsId2, indexMapSize[SUBJECT.ordinal()], true, false);
-							subjectMapSequence2 = new SequenceLog64BigDisk(subjectMap2DestinationPath, sharedNumbits1 + SECTION_SHIFT, indexMapSize[SUBJECT.ordinal()], true, false);
+							subjectIdSequence1 = new SequenceLog64BigDisk(subjectMap1OriginPath, subjectNumbitsId1, index1Size[SUBJECT.ordinal()], true, false);
+							subjectMapSequence1 = new SequenceLog64BigDisk(subjectMap1DestinationPath, sharedNumbits2 + SECTION_SHIFT, index1Size[SUBJECT.ordinal()], true, false);
+							subjectIdSequence2 = new SequenceLog64BigDisk(subjectMap2OriginPath, subjectNumbitsId2, index2Size[SUBJECT.ordinal()], true, false);
+							subjectMapSequence2 = new SequenceLog64BigDisk(subjectMap2DestinationPath, sharedNumbits1 + SECTION_SHIFT, index2Size[SUBJECT.ordinal()], true, false);
 
-							objectIdSequence1 = new SequenceLog64BigDisk(objectMap1OriginPath, objectNumbitsId1, indexMapSize[OBJECT.ordinal()], true, false);
-							objectMapSequence1 = new SequenceLog64BigDisk(objectMap1DestinationPath, sharedNumbits2 + SECTION_SHIFT, indexMapSize[OBJECT.ordinal()], true, false);
-							objectIdSequence2 = new SequenceLog64BigDisk(objectMap2OriginPath, objectNumbitsId2, indexMapSize[OBJECT.ordinal()], true, false);
-							objectMapSequence2 = new SequenceLog64BigDisk(objectMap2DestinationPath, sharedNumbits1 + SECTION_SHIFT, indexMapSize[OBJECT.ordinal()], true, false);
+							objectIdSequence1 = new SequenceLog64BigDisk(objectMap1OriginPath, objectNumbitsId1, index1Size[OBJECT.ordinal()], true, false);
+							objectMapSequence1 = new SequenceLog64BigDisk(objectMap1DestinationPath, sharedNumbits2 + SECTION_SHIFT, index1Size[OBJECT.ordinal()], true, false);
+							objectIdSequence2 = new SequenceLog64BigDisk(objectMap2OriginPath, objectNumbitsId2, index2Size[OBJECT.ordinal()], true, false);
+							objectMapSequence2 = new SequenceLog64BigDisk(objectMap2DestinationPath, sharedNumbits1 + SECTION_SHIFT, index2Size[OBJECT.ordinal()], true, false);
 						} else {
 							subjectIdSequence1 = new SequenceLog64BigDisk(subjectMap1OriginPath, subjectNumbitsId1, subjectNSection1, true, true);
 							subjectMapSequence1 = new SequenceLog64BigDisk(subjectMap1DestinationPath, sharedNumbits2 + SECTION_SHIFT, subjectNSection1, true, true);
@@ -443,7 +471,7 @@ public class QEPMap implements Closeable {
 									)
 							) {
 								Dictionary d2d = dataset2.dataset().getDictionary();
-								long nshared = d2d.getNshared();
+								long d2nshared = d2d.getNshared();
 
 								long sequenceIndexSubject = 1;
 								long componentIdCounterSubject = 1;
@@ -466,10 +494,10 @@ public class QEPMap implements Closeable {
 										// we add the componentId -> mappedId permutation
 										subjectIdSequence1.set(sequenceIndexSubject, componentId);
 										subjectMapSequence1.set(sequenceIndexSubject,
-												((mappedId - nshared) << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
+												((mappedId - d2nshared) << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
 
 										// we store the mappedId -> componentId for future sorting
-										objectSorter.addElement((mappedId - nshared),
+										objectSorter.addElement((mappedId - d2nshared),
 												(componentId << SECTION_SHIFT) | SECTION_TYPE_SUBJECT);
 									} else {
 										// the id was find in the subject section
@@ -520,16 +548,16 @@ public class QEPMap implements Closeable {
 										objectIdSequence1.set(sequenceIndexObject, componentId);
 
 										// we describe shared element as subjects
-										if (mappedId <= nshared) {
+										if (mappedId <= d2nshared) {
 											objectMapSequence1.set(sequenceIndexObject,
 													(mappedId << SECTION_SHIFT) | SECTION_TYPE_SUBJECT);
 											subjectSorter.addElement(mappedId,
 													(componentId << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
 										} else {
 											objectMapSequence1.set(sequenceIndexObject,
-													((mappedId - nshared) << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
-											objectSorter.addElement(mappedId - nshared,
-													(componentId << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
+													((mappedId - d2nshared) << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
+											objectSorter.addElement(mappedId - d2nshared,
+													((componentId) << SECTION_SHIFT) | SECTION_TYPE_OBJECT);
 										}
 
 										sequenceIndexObject++;
@@ -537,8 +565,10 @@ public class QEPMap implements Closeable {
 								}
 
 								// we write the size in the header
-								header.putLong(indexMapLocation[SUBJECT.ordinal()], sequenceIndexSubject);
-								header.putLong(indexMapLocation[OBJECT.ordinal()], sequenceIndexObject);
+								header.putLong(index1Location[SUBJECT.ordinal()], sequenceIndexSubject);
+								header.putLong(index2Location[SUBJECT.ordinal()], subjectSorter.size() + 1);
+								header.putLong(index1Location[OBJECT.ordinal()], sequenceIndexObject);
+								header.putLong(index2Location[OBJECT.ordinal()], objectSorter.size() + 1);
 
 								// we resize our files to reduce space usage
 								subjectIdSequence1.resize(sequenceIndexSubject);
@@ -562,7 +592,6 @@ public class QEPMap implements Closeable {
 									subjectMapSequence2.set(sequenceIndex2, ids.destination());
 									sequenceIndex2++;
 								}
-								logger.debug("subjectIdSequence2 {}", subjectIdSequence2.length());
 
 								sequenceIndex2 = 1;
 								for (QEPMapIdSorter.QEPMapIds ids : objectSorter) {
@@ -570,7 +599,6 @@ public class QEPMap implements Closeable {
 									objectMapSequence2.set(sequenceIndex2, ids.destination());
 									sequenceIndex2++;
 								}
-								logger.debug("objectIdSequence2 {}", objectIdSequence2.length());
 							}
 						}
 						maps[SUBJECT.ordinal()] = new SectionMap(
@@ -635,9 +663,7 @@ public class QEPMap implements Closeable {
 					crc.writeCRC(crcBuffer, 0);
 				}
 			}
-			if (debugGeneration) {
-				debugMapAssertion();
-			}
+			endSync.runAction(this);
 		} catch (Throwable t) {
 			try {
 				close();
@@ -839,46 +865,6 @@ public class QEPMap implements Closeable {
 			Closer.closeSingle(maps);
 		} finally {
 			Arrays.fill(maps, null);
-		}
-	}
-
-	private void debugMapAssertion() {
-		for (TripleComponentRole role : TripleComponentRole.values()) {
-			int roleId = role.ordinal();
-			SectionMap map = maps[roleId];
-			logger.debug("test {} in {}", role, this);
-			logger.debug("{} {} {} {}", map.idSequence1.length(), map.mapSequence1.length(), map.idSequence2.length(), map.mapSequence2.length());
-
-			long lastId = 0;
-			for (int i = 1; i < map.idSequence1.length(); i++) {
-				long id = map.idSequence1.get(i);
-				if (id <= lastId) {
-					StringBuilder s = new StringBuilder(format("Bad order IDS1/%s, [%d/%d]: %d >= %d\n",
-							role, i, map.idSequence1.length() - 1, id, lastId));
-
-					for (int j = Math.max(1, i - 10); j < Math.min(map.idSequence1.length(), i + 10); j++) {
-						s.append(format("%d/%d ",j, map.idSequence1.get(j)));
-					}
-
-					throw new AssertionError(s.toString());
-				}
-				lastId = id;
-			}
-			lastId = 0;
-			for (int i = 1; i < map.idSequence2.length(); i++) {
-				long id = map.idSequence2.get(i);
-				if (id <= lastId) {
-					StringBuilder s = new StringBuilder(format("Bad order IDS2/%s, [%d/%d]: %d >= %d\n",
-							role, i, map.idSequence2.length() - 1, id, lastId));
-
-					for (int j = Math.max(1, i - 10); j < Math.min(map.idSequence2.length(), i + 10); j++) {
-						s.append(format("%d/%d ",j, map.idSequence2.get(j)));
-					}
-
-					throw new AssertionError(s.toString());
-				}
-				lastId = id;
-			}
 		}
 	}
 }

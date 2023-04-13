@@ -185,19 +185,11 @@ public class QEPComponent {
 						}
 					} else {
 						TripleComponentRole roleOfMapped = QEPMap.getRoleOfMapped(mapValue);
-						if (idOfMapped <= 0) {
-							sharedIds.put(dataset, new SharedElement(
-									0,
-									roleOfMapped.asDictionarySectionRole(),
-									d2
-							));
-						} else {
-							sharedIds.put(dataset, new SharedElement(
-									idOfMapped,
-									roleOfMapped.asDictionarySectionRole(),
-									d2
-							));
-						}
+						sharedIds.put(dataset, new SharedElement(
+								idOfMapped,
+								roleOfMapped.asDictionarySectionRole(),
+								d2
+						));
 						if (role != roleOfMapped) {
 							// not in the same section
 							return 0;
@@ -226,5 +218,32 @@ public class QEPComponent {
 			}
 			default -> throw new AssertionError("unknown triple role: " + role);
 		}
+	}
+
+	public String dumpBinding() {
+		StringBuilder bld = new StringBuilder(this.toString());
+
+		bld.append("\npredicateIds: ");
+
+		if (predicateIds.isEmpty()) {
+			bld.append("NONE");
+		}
+
+		predicateIds.forEach((id, map) -> bld.append("\n- D[")
+				.append(map.dataset.id()).append("] => ").append(map.id()));
+
+		bld.append("\nsharedIds: ");
+
+		if (sharedIds.isEmpty()) {
+			bld.append("NONE");
+		}
+
+		sharedIds.forEach((id, map) -> bld.append("\n- D[")
+				.append(map.dataset.uid()).append("/").append(map.role)
+				.append("] => ").append(map.id()));
+
+		bld.append("\n");
+
+		return bld.toString();
 	}
 }

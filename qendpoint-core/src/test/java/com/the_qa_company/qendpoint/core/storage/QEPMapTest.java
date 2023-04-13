@@ -2,6 +2,8 @@ package com.the_qa_company.qendpoint.core.storage;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
+import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -20,6 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 public class QEPMapTest {
 	private static final ModifiableBitmap[] EMPTY_DELTA;
 
@@ -35,13 +41,60 @@ public class QEPMapTest {
 	@Before
 	public void setup() throws IOException {
 		root = tempDir.getRoot().toPath();
-		QEPMap.debugGeneration = true;
+		QEPMap.endSync.registerAction(this::mapOrderTest);
 	}
 
 	@After
-	public void complete() throws IOException {
+	public void complete() throws Exception {
 		PathUtils.deleteDirectory(root);
-		QEPMap.debugGeneration = false;
+		QEPMap.endSync.throwExceptionResult();
+	}
+
+	@SuppressWarnings("resource")
+	private void mapOrderTest(QEPMap qepMap) {
+		for (TripleComponentRole role : TripleComponentRole.values()) {
+			int roleId = role.ordinal();
+			QEPMap.SectionMap map = qepMap.maps[roleId];
+
+			for (int seqId = 0; seqId < 2; seqId++) {
+				QEPDataset current;
+				QEPDataset other;
+				if (qepMap.isMapDataset1Smaller() == (seqId == 0)) {
+					current = qepMap.dataset1;
+					other = qepMap.dataset2;
+				} else {
+					current = qepMap.dataset2;
+					other = qepMap.dataset1;
+				}
+
+				DynamicSequence idSequence = map.idByNumber(seqId);
+				DynamicSequence mapSequence = map.mapByNumber(seqId);
+
+				assertEquals(format("bad sequence length map#%s", seqId+1), idSequence.length(), mapSequence.length());
+
+				long lastId = 0;
+				for (int i = 1; i < idSequence.length(); i++) {
+					long id = idSequence.get(i);
+
+					if (id <= lastId) {
+						StringBuilder s = new StringBuilder(format("Bad order IDS%d/%s, [%d/%d]: %d >= %d\n",
+								seqId, role, i, idSequence.length() - 1, id, lastId));
+
+						for (int j = Math.max(1, i - 10); j < Math.min(idSequence.length(), i + 10); j++) {
+							s.append(format("%d/%d ", j, idSequence.get(j)));
+						}
+
+						throw new AssertionError(s.toString());
+					}
+					long bsid = idSequence.binarySearch(id);
+					assertNotEquals(bsid, -1);
+					if (i != bsid) {
+						throw new AssertionError(format("bad bsid: %d != %d", i, bsid));
+					}
+					lastId = id;
+				}
+			}
+		}
 	}
 
 	@Test

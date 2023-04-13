@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.storage;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -230,16 +231,19 @@ public class QEPCoreTest {
 		}
 	}
 
-	private void checkSection(TripleComponentRole role, QEPCore core, DictionarySection section) throws QEPCoreException {
+	private void checkSection(DictionarySectionRole drole, QEPCore core, DictionarySection section) throws QEPCoreException {
+		TripleComponentRole role = drole.asTripleComponentRole();
 		List<QEPDataset> datasets = core.getDatasets().stream().toList();
 
 		Iterator<? extends CharSequence> it = section.getSortedEntries();
 
+		long n = 0;
 		while (it.hasNext()) {
 			CharSequence component = it.next();
 			QEPComponent qepComponent = core.createComponentByString(component);
 
 			for (QEPDataset dataset : datasets) {
+				n++;
 				long guessedId = dataset.dataset().getDictionary().stringToId(component, role);
 
 				if (guessedId < 0) {
@@ -249,11 +253,29 @@ public class QEPCoreTest {
 				assertEquals(guessedId, core.createComponentByString(component).getId(dataset.uid(), role));
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
-				assertEquals(
-						"ids aren't the same for component " + qepComponent + " (" + role + "/" + dataset + ")",
-						guessedId,
-						actualId
-				);
+				if (guessedId != actualId) {
+					System.out.println("ids aren't the same for component " + qepComponent.dumpBinding() + "\n (" + n + "/" + drole + "/" + dataset + ")");
+					assertEquals(guessedId, actualId);
+				}
+			}
+			// reverse the search order
+			qepComponent = core.createComponentByString(component);
+			for (int i = datasets.size() - 1; i >= 0; i--) {
+				QEPDataset dataset = datasets.get(i);
+				n++;
+				long guessedId = dataset.dataset().getDictionary().stringToId(component, role);
+
+				if (guessedId < 0) {
+					guessedId = 0;
+				}
+
+				assertEquals(guessedId, core.createComponentByString(component).getId(dataset.uid(), role));
+
+				long actualId = qepComponent.getId(dataset.uid(), role);
+				if (guessedId != actualId) {
+					System.out.println("ids aren't the same for component " + qepComponent.dumpBinding() + "\n (" + n + "/" + drole + "/" + dataset + ")");
+					assertEquals(guessedId, actualId);
+				}
 			}
 		}
 	}
@@ -264,12 +286,12 @@ public class QEPCoreTest {
 				HDT hdt = HDTManager.mapHDT(rootHDT);
 				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
 		) {
-			checkSection(TripleComponentRole.PREDICATE, core, hdt.getDictionary().getPredicates());
-			checkSection(TripleComponentRole.SUBJECT, core, hdt.getDictionary().getSubjects());
-			checkSection(TripleComponentRole.SUBJECT, core, hdt.getDictionary().getShared());
-			checkSection(TripleComponentRole.OBJECT, core, hdt.getDictionary().getShared());
+			checkSection(DictionarySectionRole.PREDICATE, core, hdt.getDictionary().getPredicates());
+			checkSection(DictionarySectionRole.SUBJECT, core, hdt.getDictionary().getSubjects());
+			checkSection(DictionarySectionRole.SHARED, core, hdt.getDictionary().getShared());
+			checkSection(DictionarySectionRole.OBJECT, core, hdt.getDictionary().getShared());
 			for (DictionarySection section : hdt.getDictionary().getAllObjects().values()) {
-				checkSection(TripleComponentRole.OBJECT, core, section);
+				checkSection(DictionarySectionRole.OBJECT, core, section);
 			}
 		}
 	}
@@ -280,10 +302,10 @@ public class QEPCoreTest {
 				HDT hdt = HDTManager.mapHDT(rootHDT);
 				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
 		) {
-			checkSection(TripleComponentRole.OBJECT, core, hdt.getDictionary().getShared());
 			for (DictionarySection section : hdt.getDictionary().getAllObjects().values()) {
-				checkSection(TripleComponentRole.OBJECT, core, section);
+				checkSection(DictionarySectionRole.OBJECT, core, section);
 			}
+			checkSection(DictionarySectionRole.OBJECT, core, hdt.getDictionary().getShared());
 		}
 	}
 
@@ -293,7 +315,7 @@ public class QEPCoreTest {
 				HDT hdt = HDTManager.mapHDT(rootHDT);
 				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
 		) {
-			checkSection(TripleComponentRole.PREDICATE, core, hdt.getDictionary().getPredicates());
+			checkSection(DictionarySectionRole.PREDICATE, core, hdt.getDictionary().getPredicates());
 		}
 	}
 
@@ -303,8 +325,8 @@ public class QEPCoreTest {
 				HDT hdt = HDTManager.mapHDT(rootHDT);
 				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
 		) {
-			checkSection(TripleComponentRole.SUBJECT, core, hdt.getDictionary().getSubjects());
-			checkSection(TripleComponentRole.SUBJECT, core, hdt.getDictionary().getShared());
+			checkSection(DictionarySectionRole.SUBJECT, core, hdt.getDictionary().getSubjects());
+			checkSection(DictionarySectionRole.SHARED, core, hdt.getDictionary().getShared());
 		}
 	}
 
