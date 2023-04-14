@@ -74,6 +74,7 @@ The QA Company over the social networks
 - [Contributing](#contributing)
 - [Authors \& contributors](#authors--contributors)
 - [Security](#security)
+- [Publications](#publications)
 - [License](#license)
 
 </details>
