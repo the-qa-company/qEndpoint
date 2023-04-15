@@ -406,8 +406,8 @@ _For more information and to report security issues, please refer to our [securi
 
 ## Publications
 
-- Willerval Antoine, Dennis Diefenbach, and Pierre Maret. "Easily setting up a local Wikidata SPARQL endpoint using the qEndpoint." Workshop ISWC (2022). [PDF](https://www.researchgate.net/publication/369693531_qEndpoint_A_Wikidata_SPARQL_endpoint_on_commodity_hardware)
-- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Wikidata SPARQL endpoint on commodity hardware" Demo at The Web Conference (2023) [PDF](https://www.researchgate.net/publication/364321138_Easily_setting_up_a_local_Wikidata_SPARQL_endpoint_using_the_qEndpoint)
+- Willerval Antoine, Dennis Diefenbach, and Pierre Maret. "Easily setting up a local Wikidata SPARQL endpoint using the qEndpoint." Workshop ISWC (2022). [PDF](https://www.researchgate.net/publication/364321138_Easily_setting_up_a_local_Wikidata_SPARQL_endpoint_using_the_qEndpoint)
+- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Wikidata SPARQL endpoint on commodity hardware" Demo at The Web Conference (2023)  [PDF](https://www.researchgate.net/publication/369693531_qEndpoint_A_Wikidata_SPARQL_endpoint_on_commodity_hardware)
 
 ---
 
