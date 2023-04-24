@@ -100,7 +100,7 @@ The qEndpoint is for example used in [Kohesio](https://kohesio.ec.europa.eu/) wh
 
 For the backend/benchmark
 
-- Java 11 or 17
+- Java 17
 - Maven
 
 For the frontend (not mandatory to run the backend)
