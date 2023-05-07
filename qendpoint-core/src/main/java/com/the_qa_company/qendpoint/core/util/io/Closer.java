@@ -13,11 +13,11 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-
 /**
  * Class to close many {@link java.io.Closeable} objects at once without having
- * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable}, array, record, {@link Map},
- * the {@link Throwable} are also rethrown, it can be useful to close and throw at the same time.
+ * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable},
+ * array, record, {@link Map}, the {@link Throwable} are also rethrown, it can
+ * be useful to close and throw at the same time.
  * <p>
  * It's using a deep search over the elements.
  *
@@ -104,9 +104,8 @@ public class Closer implements Iterable<Closeable>, Closeable {
 					method.setAccessible(true);
 					return explore(method.invoke(obj));
 				} catch (IllegalAccessException | InvocationTargetException e) {
-					throw new CloserException(
-							new IOException("Can't search over component of record " + obj.getClass() + "#" + c.getName(), e)
-					);
+					throw new CloserException(new IOException(
+							"Can't search over component of record " + obj.getClass() + "#" + c.getName(), e));
 				}
 			});
 		}
@@ -171,7 +170,8 @@ public class Closer implements Iterable<Closeable>, Closeable {
 			// add the start to the list
 
 			Throwable main = HighValueException.extractException(throwableList.stream()
-					// get the maximum of severity of the throwable (Error > Runtime
+					// get the maximum of severity of the throwable (Error >
+					// Runtime
 					// > Exception)
 					.max(Comparator.comparing(t -> {
 						if (t instanceof Error) {
@@ -179,8 +179,10 @@ public class Closer implements Iterable<Closeable>, Closeable {
 							return 3;
 						}
 						if (t instanceof HighValueException) {
-							// we want to add high valued exception higher than the others, these exceptions are
-							// described by the user and not by the closed elements
+							// we want to add high valued exception higher than
+							// the others, these exceptions are
+							// described by the user and not by the closed
+							// elements
 							return 2;
 						}
 						if (t instanceof RuntimeException) {

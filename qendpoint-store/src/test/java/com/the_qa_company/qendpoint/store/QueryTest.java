@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 
 public class QueryTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	private SparqlRepository repository;
 
 	@Before

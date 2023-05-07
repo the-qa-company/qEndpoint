@@ -34,13 +34,9 @@ public class QEPDatasetIterator implements Iterator<QEPComponentTriple> {
 			}
 
 			// small overhead with the frozen components, but negligible (?)
-			triple.setAll(
-					dataset.component(tid.getSubject(), TripleComponentRole.SUBJECT),
+			triple.setAll(dataset.component(tid.getSubject(), TripleComponentRole.SUBJECT),
 					dataset.component(tid.getPredicate(), TripleComponentRole.PREDICATE),
-					dataset.component(tid.getObject(), TripleComponentRole.OBJECT),
-					position,
-					dataset.uid()
-			);
+					dataset.component(tid.getObject(), TripleComponentRole.OBJECT), position, dataset.uid());
 			next = true;
 
 			return true;

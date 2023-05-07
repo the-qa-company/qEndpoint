@@ -1,7 +1,8 @@
 package com.the_qa_company.qendpoint.core.storage.converter;
 
 /**
- * Converter switching the mapping to a subject or an object converter depending on the id
+ * Converter switching the mapping to a subject or an object converter depending
+ * on the id
  *
  * @author Antoine Willerval
  */
@@ -25,15 +26,16 @@ public class SharedWrapperNodeConverter implements NodeConverter {
 
 	@Override
 	public long mapValue(long id) {
-		if (id <= 0) {
-			return 0;
-		}
-		if (id <= sharedCount) {
-			// using the subject converter to fetch the id
-			return subjectConverter.mapValue(id);
-		} else {
+		if (id > sharedCount) {
 			// using the object converter to fetch the id
 			return objectConverter.mapValue(id - sharedCount);
 		}
+
+		if (id <= 0) {
+			// oob
+			return 0;
+		}
+		// using the subject converter to fetch the id
+		return subjectConverter.mapValue(id);
 	}
 }

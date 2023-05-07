@@ -15,7 +15,6 @@ import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
-import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -47,16 +46,13 @@ public class QEPCoreTest {
 		Path[] splitHDT;
 		try {
 
-			LargeFakeDataSetStreamSupplier supplier
-					= LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 34)
-					.withMaxElementSplit(20)
-					.withMaxLiteralSize(100);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(10_000, 34).withMaxElementSplit(20).withMaxLiteralSize(100);
 
-			HDTOptions spec = HDTOptions.of(
-					HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
-					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gen")
-			);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.LOADER_TYPE_KEY,
+					HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY,
+					root.resolve("gen"));
 
 			rootHDT = root.resolve("root.hdt");
 			try (HDT fakeHDT = supplier.createFakeHDT(spec)) {
@@ -69,9 +65,7 @@ public class QEPCoreTest {
 			PathUtils.deleteDirectory(root);
 			throw t;
 		}
-		return List.of(new Object[][]{
-				{root, rootHDT, splitHDT}
-		});
+		return List.of(new Object[][]{{root, rootHDT, splitHDT}});
 	}
 
 	@Parameterized.AfterParam
@@ -117,21 +111,16 @@ public class QEPCoreTest {
 
 	@Test
 	public void coreInitTest() throws QEPCoreException, IOException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
 		}
 	}
 
 	@Test
 	public void coreSearchTest() throws QEPCoreException, IOException, NotFoundException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
-				Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT);
+		     QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
+		     Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 			assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
 			Iterator<? extends QEPComponentTriple> search = core.search("", "", "");
 
@@ -154,20 +143,14 @@ public class QEPCoreTest {
 				assertFalse("multiple find, wtf?", searchIt.hasNext());
 			}
 
-			assertEquals(
-					"the searched number of values isn't the same as the number of elements in the HDT",
-					hdt.getTriples().getNumberOfElements(),
-					count
-			);
+			assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
+					hdt.getTriples().getNumberOfElements(), count);
 		}
 	}
 
 	@Test
 	public void coreDatasetSearchTest() throws QEPCoreException, IOException, NotFoundException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
 
 			for (QEPDataset dataset : core.getDatasets()) {
@@ -187,10 +170,7 @@ public class QEPCoreTest {
 
 	@Test
 	public void coreSearchInvTest() throws QEPCoreException, IOException, NotFoundException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			Map<Integer, Bitmap64Big> bitmaps = new HashMap<>();
 
 			core.getDatasets().forEach(qds -> {
@@ -216,22 +196,21 @@ public class QEPCoreTest {
 				Bitmap64Big bitmap = bitmaps.get(datasetId);
 
 				assertNotNull("empty bitmap for dataset: " + datasetId, bitmap);
-				assertFalse("position " + position + " was already checked for dataset " + datasetId, bitmap.access(position));
+				assertFalse("position " + position + " was already checked for dataset " + datasetId,
+						bitmap.access(position));
 
 				bitmap.set(position, true);
 
 				assertFalse("multiple find, wtf?", searchIt.hasNext());
 			}
 
-			assertEquals(
-					"the searched number of values isn't the same as the number of elements in the HDT",
-					hdt.getTriples().getNumberOfElements(),
-					count
-			);
+			assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
+					hdt.getTriples().getNumberOfElements(), count);
 		}
 	}
 
-	private void checkSection(DictionarySectionRole drole, QEPCore core, DictionarySection section) throws QEPCoreException {
+	private void checkSection(DictionarySectionRole drole, QEPCore core, DictionarySection section)
+			throws QEPCoreException {
 		TripleComponentRole role = drole.asTripleComponentRole();
 		List<QEPDataset> datasets = core.getDatasets().stream().toList();
 
@@ -250,12 +229,23 @@ public class QEPCoreTest {
 					guessedId = 0;
 				}
 
-				assertEquals(guessedId, core.createComponentByString(component).getId(dataset.uid(), role));
+				QEPComponent mappedComponent = core.createComponentByString(component);
+				long mappedId = mappedComponent.getId(dataset.uid(), role);
+				if (guessedId != mappedId) {
+					throw new AssertionError("""
+							%d != %d for role %s
+							%s
+							""".formatted(guessedId, mappedId, role, mappedComponent.dumpBinding())
+					);
+				}
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
 				if (guessedId != actualId) {
-					System.out.println("ids aren't the same for component " + qepComponent.dumpBinding() + "\n (" + n + "/" + drole + "/" + dataset + ")");
-					assertEquals(guessedId, actualId);
+					throw new AssertionError("""
+							ids aren't the same for component %s
+							(%d / %s / %s)
+							""".formatted(qepComponent.dumpBinding(), n, drole, dataset)
+					);
 				}
 			}
 			// reverse the search order
@@ -269,12 +259,29 @@ public class QEPCoreTest {
 					guessedId = 0;
 				}
 
-				assertEquals(guessedId, core.createComponentByString(component).getId(dataset.uid(), role));
+				QEPComponent mappedComponent = core.createComponentByString(component);
+				long mappedId = mappedComponent.getId(dataset.uid(), role);
+				if (guessedId != mappedId) {
+					throw new AssertionError("""
+							%d != %d for role %s
+							%s
+							""".formatted(guessedId, mappedId, role, mappedComponent.dumpBinding())
+					);
+				}
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
 				if (guessedId != actualId) {
-					System.out.println("ids aren't the same for component " + qepComponent.dumpBinding() + "\n (" + n + "/" + drole + "/" + dataset + ")");
-					assertEquals(guessedId, actualId);
+					throw new AssertionError("""
+							%d != %d
+							(%d / %s / %s)
+							find: %s
+							component: %s
+							ids aren't the same for component
+							%s
+							""".formatted(guessedId, actualId, n, drole, dataset,
+							dataset.find(component), component,
+							qepComponent.dumpBinding())
+					);
 				}
 			}
 		}
@@ -282,10 +289,7 @@ public class QEPCoreTest {
 
 	@Test
 	public void coreDictionaryTest() throws QEPCoreException, IOException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			checkSection(DictionarySectionRole.PREDICATE, core, hdt.getDictionary().getPredicates());
 			checkSection(DictionarySectionRole.SUBJECT, core, hdt.getDictionary().getSubjects());
 			checkSection(DictionarySectionRole.SHARED, core, hdt.getDictionary().getShared());
@@ -298,10 +302,7 @@ public class QEPCoreTest {
 
 	@Test
 	public void coreDictionaryObjectTest() throws QEPCoreException, IOException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			for (DictionarySection section : hdt.getDictionary().getAllObjects().values()) {
 				checkSection(DictionarySectionRole.OBJECT, core, section);
 			}
@@ -311,20 +312,14 @@ public class QEPCoreTest {
 
 	@Test
 	public void coreDictionaryPredicateTest() throws QEPCoreException, IOException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			checkSection(DictionarySectionRole.PREDICATE, core, hdt.getDictionary().getPredicates());
 		}
 	}
 
 	@Test
 	public void coreDictionarySubjectTest() throws QEPCoreException, IOException {
-		try (
-				HDT hdt = HDTManager.mapHDT(rootHDT);
-				QEPCore core = new QEPCore(coreRoot, HDTOptions.of())
-		) {
+		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 			checkSection(DictionarySectionRole.SUBJECT, core, hdt.getDictionary().getSubjects());
 			checkSection(DictionarySectionRole.SHARED, core, hdt.getDictionary().getShared());
 		}

@@ -18,7 +18,7 @@ import java.io.IOException;
 public class MergeMethodTest {
 	private EndpointStore store;
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Before
 	public void setup() throws IOException, NotFoundException {

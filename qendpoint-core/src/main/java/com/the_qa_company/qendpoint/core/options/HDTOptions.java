@@ -89,8 +89,7 @@ public interface HDTOptions {
 	 */
 	static HDTOptions of(HDTOptions other) {
 		HDTOptions opt = of();
-		other.getKeys()
-				.forEach(key -> opt.set(String.valueOf(key), other.get(String.valueOf(key))));
+		other.getKeys().forEach(key -> opt.set(String.valueOf(key), other.get(String.valueOf(key))));
 		return opt;
 	}
 
@@ -157,7 +156,7 @@ public interface HDTOptions {
 	 *
 	 * @param options options
 	 * @return options or {@link #EMPTY}, this result has no guaranty or
-	 * mutability
+	 *         mutability
 	 */
 	static HDTOptions ofNullable(HDTOptions options) {
 		return Objects.requireNonNullElse(options, EMPTY);
@@ -571,8 +570,9 @@ public interface HDTOptions {
 	}
 
 	/**
-	 * create a new modifiable options with a push top opt, all new set will be made on top of the previous options,
-	 * it can be used to overwrite options, deletion isn't working.
+	 * create a new modifiable options with a push top opt, all new set will be
+	 * made on top of the previous options, it can be used to overwrite options,
+	 * deletion isn't working.
 	 *
 	 * @return top pushed hdt options
 	 */
@@ -611,8 +611,9 @@ public interface HDTOptions {
 	}
 
 	/**
-	 * create a new modifiable options with a push bottom opt, all new set will be made on the bottom of the previous
-	 * options, it can be used to create default options, deletion isn't working.
+	 * create a new modifiable options with a push bottom opt, all new set will
+	 * be made on the bottom of the previous options, it can be used to create
+	 * default options, deletion isn't working.
 	 *
 	 * @return top pushed hdt options
 	 */

@@ -11,7 +11,8 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 	private QEPComponent predicate;
 	private QEPComponent object;
 
-	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id, int datasetId) {
+	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id,
+			int datasetId) {
 		this.subject = subject;
 		this.predicate = predicate;
 		this.object = object;
@@ -88,9 +89,12 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof QEPComponentTriple that)) return false;
-		return Objects.equals(getSubject(), that.getSubject()) && Objects.equals(getSubject(), that.getPredicate()) && Objects.equals(getObject(), that.getObject());
+		if (this == o)
+			return true;
+		if (!(o instanceof QEPComponentTriple that))
+			return false;
+		return Objects.equals(getSubject(), that.getSubject()) && Objects.equals(getSubject(), that.getPredicate())
+				&& Objects.equals(getObject(), that.getObject());
 	}
 
 	@Override

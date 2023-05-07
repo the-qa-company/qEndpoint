@@ -42,19 +42,19 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 		}
 	}
 
-	public static final long MAX_ELEMENT_SIZE_THRESHOLD = 500_000_000L; // max 500MB
+	public static final long MAX_ELEMENT_SIZE_THRESHOLD = 500_000_000L; // max
+																		// 500MB
 	private final LongArray ids;
 	private long index;
 	private final CloseSuppressPath computeLocation;
 
-	public QEPMapIdSorter(Path computeLocation, long maxElementCount, long maxValue) {
+	public QEPMapIdSorter(Path computeLocation, long maxElementCount, long maxValue) throws IOException {
 		this.computeLocation = CloseSuppressPath.of(computeLocation);
-		this.computeLocation.closeWithDeleteRecurse();
 		int bits = BitUtil.log2(maxValue);
 		if (maxElementCount * bits * 2 / 8 < MAX_ELEMENT_SIZE_THRESHOLD) {
 			ids = new SequenceLog64Big(bits, maxElementCount << 1);
 		} else {
-			ids = new SequenceLog64BigDisk(computeLocation, bits, maxElementCount * 2);
+			ids = new SequenceLog64BigDisk(computeLocation, bits, maxElementCount << 1);
 		}
 	}
 
@@ -83,11 +83,10 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 			try {
 				Runtime runtime = Runtime.getRuntime();
 				int workers = runtime.availableProcessors();
-				long chunkSize = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) / (0.85 * workers));
-				KWayMerger<QEPMapIds, Supplier<QEPMapIds>> merger = new KWayMerger<>(
-						arrSort, new AsyncIteratorFetcher<>(new IdSupplier()), new Merger(chunkSize),
-						workers, 16
-				);
+				long chunkSize = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory()))
+						/ (0.85 * workers));
+				KWayMerger<QEPMapIds, Supplier<QEPMapIds>> merger = new KWayMerger<>(arrSort,
+						new AsyncIteratorFetcher<>(iterator()), new Merger(chunkSize), workers, 16);
 				merger.start();
 
 				CloseSuppressPath output = merger.waitResult().orElse(null);
@@ -124,7 +123,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 	 * @return ids
 	 */
 	public QEPMapIds get(long index) {
-		return new QEPMapIds(ids.get(index * 2), ids.get(index * 2 + 1));
+		return new QEPMapIds(ids.get(index << 1), ids.get((index << 1) | 1));
 	}
 
 	@Override
@@ -150,11 +149,11 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 		}
 	}
 
-
 	private record Merger(long chunkSize) implements KWayMerger.KWayMergerImpl<QEPMapIds, Supplier<QEPMapIds>> {
 
 		@Override
-		public void createChunk(Supplier<QEPMapIds> flux, CloseSuppressPath output) throws KWayMerger.KWayMergerException {
+		public void createChunk(Supplier<QEPMapIds> flux, CloseSuppressPath output)
+				throws KWayMerger.KWayMergerException {
 			try (BufferedOutputStream stream = new BufferedOutputStream(Files.newOutputStream(output))) {
 				QEPMapIds ids;
 
@@ -179,7 +178,8 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 		}
 
 		@Override
-		public void mergeChunks(List<CloseSuppressPath> inputs, CloseSuppressPath output) throws KWayMerger.KWayMergerException {
+		public void mergeChunks(List<CloseSuppressPath> inputs, CloseSuppressPath output)
+				throws KWayMerger.KWayMergerException {
 			try {
 				InputStream[] pathInput = new InputStream[inputs.size()];
 
@@ -189,7 +189,8 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 
 				try {
 
-					ExceptionIterator<QEPMapIds, IOException> tree = MergeExceptionIterator.buildOfTree(QEPMapReader::new, Arrays.asList(pathInput), 0, inputs.size());
+					ExceptionIterator<QEPMapIds, IOException> tree = MergeExceptionIterator
+							.buildOfTree(QEPMapReader::new, Arrays.asList(pathInput), 0, inputs.size());
 
 					try (BufferedOutputStream stream = new BufferedOutputStream(Files.newOutputStream(output))) {
 						while (tree.hasNext()) {
@@ -231,22 +232,6 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 				}
 				return null;
 			}
-			return new QEPMapIds(origin, destination);
-		}
-	}
-
-	private class IdSupplier extends FetcherIterator<QEPMapIds> {
-		long i;
-
-		@Override
-		protected QEPMapIds getNext() {
-			if (i >= index) {
-				return null;
-			}
-
-			long origin = ids.get(i * 2);
-			long destination = ids.get(i * 2 + 1);
-			i++;
 			return new QEPMapIds(origin, destination);
 		}
 	}

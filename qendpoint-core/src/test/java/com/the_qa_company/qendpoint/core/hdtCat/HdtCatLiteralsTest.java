@@ -36,7 +36,7 @@ public class HdtCatLiteralsTest extends AbstractMapMemoryTest implements Progres
 	public String loadingMethod;
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	private void help(String filename1, String filename2, String concatFilename) throws ParserException, IOException {
 		ClassLoader classLoader = getClass().getClassLoader();

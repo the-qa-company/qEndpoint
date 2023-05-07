@@ -23,6 +23,29 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see QEPCore
  */
 public class QEPDataset implements Closeable {
+	public record ComponentFind(QEPDataset dataset, TripleComponentRole role, long id, long pid) {
+		public boolean isFind() {
+			return role != null || pid != 0;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder buffer = new StringBuilder("ComponentFind:").append(dataset.uid);
+			if (!isFind()) {
+				buffer.append("[unknown]");
+			} else {
+				if (pid != 0) {
+					buffer.append("[pid=").append(pid).append("]");
+				}
+				if (role != null) {
+					buffer.append("[id=").append(id).append("/").append(role).append("]");
+				}
+			}
+
+			return buffer.toString();
+		}
+	}
+
 	private static final AtomicInteger DATASET_UID_FETCHER = new AtomicInteger();
 	private final QEPCore core;
 	private final String id;
@@ -40,7 +63,8 @@ public class QEPDataset implements Closeable {
 	 * @param deleteBitmap delete bitmap
 	 * @param deltaBitmaps
 	 */
-	public QEPDataset(QEPCore core, String id, Path path, HDT dataset, ModifiableBitmap deleteBitmap, ModifiableBitmap[] deltaBitmaps) {
+	public QEPDataset(QEPCore core, String id, Path path, HDT dataset, ModifiableBitmap deleteBitmap,
+	                  ModifiableBitmap[] deltaBitmaps) {
 		this.core = core;
 		this.id = id;
 		this.path = path;
@@ -73,6 +97,20 @@ public class QEPDataset implements Closeable {
 
 	public int uid() {
 		return uid;
+	}
+
+	public ComponentFind find(CharSequence seq) {
+		long pid = Math.max(0, dataset.getDictionary().stringToId(seq, TripleComponentRole.PREDICATE));
+
+		long sid = dataset.getDictionary().stringToId(seq, TripleComponentRole.SUBJECT);
+		if (sid > 0) {
+			return new ComponentFind(this, TripleComponentRole.SUBJECT, sid, pid);
+		}
+		long oid = dataset.getDictionary().stringToId(seq, TripleComponentRole.OBJECT);
+		if (oid > 0) {
+			return new ComponentFind(this, TripleComponentRole.OBJECT, oid, pid);
+		}
+		return new ComponentFind(this, null, 0, pid);
 	}
 
 	public ModifiableBitmap deleteBitmap() {
@@ -198,7 +236,8 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(CharSequence, CharSequence, CharSequence)
 	 */
-	public Iterator<QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate, QEPComponent object) throws QEPCoreException {
+	public Iterator<QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate, QEPComponent object)
+			throws QEPCoreException {
 		return search(QEPComponentTriple.of(subject, predicate, object));
 	}
 
@@ -213,22 +252,20 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public Iterator<QEPComponentTriple> search(CharSequence subject, CharSequence predicate, CharSequence object) throws QEPCoreException {
-		return search(
-				core.createComponentByString(subject),
-				core.createComponentByString(predicate),
-				core.createComponentByString(object)
-		);
+	public Iterator<QEPComponentTriple> search(CharSequence subject, CharSequence predicate, CharSequence object)
+			throws QEPCoreException {
+		return search(core.createComponentByString(subject), core.createComponentByString(predicate),
+				core.createComponentByString(object));
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this) return true;
-		if (obj == null || obj.getClass() != this.getClass()) return false;
+		if (obj == this)
+			return true;
+		if (obj == null || obj.getClass() != this.getClass())
+			return false;
 		var that = (QEPDataset) obj;
-		return Objects.equals(this.id, that.id) &&
-				Objects.equals(this.path, that.path) &&
-				this.uid == that.uid;
+		return Objects.equals(this.id, that.id) && Objects.equals(this.path, that.path) && this.uid == that.uid;
 	}
 
 	@Override
@@ -238,10 +275,7 @@ public class QEPDataset implements Closeable {
 
 	@Override
 	public String toString() {
-		return "QEPDataset[" +
-				"id=" + id + ", " +
-				"path=" + path + ", " +
-				"uid=" + uid + ']';
+		return "QEPDataset[" + "id=" + id + ", " + "path=" + path + ", " + "uid=" + uid + ']';
 	}
 
 	/**

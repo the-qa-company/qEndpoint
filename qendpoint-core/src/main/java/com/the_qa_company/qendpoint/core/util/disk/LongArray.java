@@ -1,12 +1,25 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.stream.LongStream;
 
 /**
  * Describe a large array of longs
  */
-public interface LongArray {
+public interface LongArray extends Iterable<Long> {
+	/**
+	 * create an in memory long array
+	 *
+	 * @param size size
+	 * @return long array
+	 */
+	static LongArray of(long size) {
+		return new LargeLongArray(IOUtil.createLargeArray(size));
+	}
+
 	/**
 	 * get an element at a particular index
 	 *
@@ -69,8 +82,21 @@ public interface LongArray {
 	 * @see #linearSearch(long)
 	 */
 	default long binarySearch(long value) {
-		long min = 0;
-		long max = length();
+		return binarySearch(value, 0, length());
+	}
+
+	/**
+	 * run a binary search over this array, the array should be sorted!
+	 *
+	 * @param value      the value to search
+	 * @param startIndex start index (inclusive)
+	 * @param endIndex   end index (exclusive)
+	 * @return index of the value, -1 if it doesn't appear in the array
+	 * @see #linearSearch(long)
+	 */
+	default long binarySearch(long value, long startIndex, long endIndex) {
+		long min = startIndex;
+		long max = endIndex;
 
 		while (min < max) {
 			long mid = (min + max) / 2;
@@ -96,7 +122,20 @@ public interface LongArray {
 	 * @see #binarySearch(long)
 	 */
 	default long linearSearch(long value) {
-		for (int i = 0; i < length(); i++) {
+		return linearSearch(value, 0, length());
+	}
+
+	/**
+	 * run a linear search over this array
+	 *
+	 * @param value      the value to search
+	 * @param startIndex start index (inclusive)
+	 * @param endIndex   end index (exclusive)
+	 * @return index of the value, -1 if it doesn't appear in the array
+	 * @see #binarySearch(long)
+	 */
+	default long linearSearch(long value, long startIndex, long endIndex) {
+		for (long i = startIndex; i < endIndex; i++) {
 			if (get(i) == value) {
 				return i;
 			}
@@ -110,5 +149,21 @@ public interface LongArray {
 	 */
 	default LongStream stream() {
 		return LongStream.range(0, length()).map(this::get);
+	}
+
+	@Override
+	default Iterator<Long> iterator() {
+		return new Iterator<>() {
+			long index;
+			@Override
+			public boolean hasNext() {
+				return index < length();
+			}
+
+			@Override
+			public Long next() {
+				return get(index++);
+			}
+		};
 	}
 }

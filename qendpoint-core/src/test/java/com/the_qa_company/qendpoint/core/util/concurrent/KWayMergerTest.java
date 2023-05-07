@@ -51,7 +51,7 @@ public class KWayMergerTest {
 	@Parameterized.Parameter(3)
 	public int elements;
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void simpleMerge() throws IOException, KWayMerger.KWayMergerException, InterruptedException {

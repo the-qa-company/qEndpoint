@@ -16,7 +16,7 @@ import java.io.OutputStream;
 public class CRC16 implements CRC {
 	int crc16;
 
-	private static final short[] crc16_table = {(short) 0x0000, (short) 0xc0c1, (short) 0xc181, (short) 0x0140,
+	private static final short[] crc16_table = { (short) 0x0000, (short) 0xc0c1, (short) 0xc181, (short) 0x0140,
 			(short) 0xc301, (short) 0x03c0, (short) 0x0280, (short) 0xc241, (short) 0xc601, (short) 0x06c0,
 			(short) 0x0780, (short) 0xc741, (short) 0x0500, (short) 0xc5c1, (short) 0xc481, (short) 0x0440,
 			(short) 0xcc01, (short) 0x0cc0, (short) 0x0d80, (short) 0xcd41, (short) 0x0f00, (short) 0xcfc1,
@@ -58,7 +58,7 @@ public class CRC16 implements CRC {
 			(short) 0x4e00, (short) 0x8ec1, (short) 0x8f81, (short) 0x4f40, (short) 0x8d01, (short) 0x4dc0,
 			(short) 0x4c80, (short) 0x8c41, (short) 0x4400, (short) 0x84c1, (short) 0x8581, (short) 0x4540,
 			(short) 0x8701, (short) 0x47c0, (short) 0x4680, (short) 0x8641, (short) 0x8201, (short) 0x42c0,
-			(short) 0x4380, (short) 0x8341, (short) 0x4100, (short) 0x81c1, (short) 0x8081, (short) 0x4040};
+			(short) 0x4380, (short) 0x8341, (short) 0x4100, (short) 0x81c1, (short) 0x8081, (short) 0x4040 };
 
 	@Override
 	public void update(byte[] buffer, int offset, int length) {

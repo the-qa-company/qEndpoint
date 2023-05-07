@@ -51,7 +51,8 @@ public interface Dictionary extends Closeable {
 	long stringToId(CharSequence str, TripleComponentRole position);
 
 	/**
-	 * get a string iterator of a triple component role including the shared elements
+	 * get a string iterator of a triple component role including the shared
+	 * elements
 	 *
 	 * @param role role
 	 * @return iterator
@@ -128,24 +129,24 @@ public interface Dictionary extends Closeable {
 	 */
 	default long getNSection(TripleComponentRole role, boolean includeShared) {
 		switch (role) {
-			case PREDICATE -> {
-				return getNpredicates();
+		case PREDICATE -> {
+			return getNpredicates();
+		}
+		case SUBJECT -> {
+			if (includeShared) {
+				return getNsubjects();
+			} else {
+				return getNsubjects() - getNshared();
 			}
-			case SUBJECT -> {
-				if (includeShared) {
-					return getNsubjects();
-				} else {
-					return getNsubjects() - getNshared();
-				}
+		}
+		case OBJECT -> {
+			if (includeShared) {
+				return getNobjects();
+			} else {
+				return getNobjects() - getNshared();
 			}
-			case OBJECT -> {
-				if (includeShared) {
-					return getNobjects();
-				} else {
-					return getNobjects() - getNshared();
-				}
-			}
-			default -> throw new AssertionError();
+		}
+		default -> throw new AssertionError();
 		}
 	}
 

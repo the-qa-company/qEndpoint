@@ -13,11 +13,11 @@ import static org.junit.Assert.*;
 
 public class ProfilerTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void ioTest() throws IOException, InterruptedException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 
 		try (Profiler profiler = new Profiler("test")) {
 			profiler.setDisabled(false);

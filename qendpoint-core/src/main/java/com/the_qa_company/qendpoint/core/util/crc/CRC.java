@@ -38,6 +38,7 @@ public interface CRC extends Comparable<CRC> {
 	 * @throws IOException
 	 */
 	boolean readAndCheck(InputStream in) throws IOException;
+
 	/**
 	 * Read CRC from Buffer and compare it to this.
 	 *

@@ -191,7 +191,8 @@ public class QEPSailStore implements SailStore {
 		}
 
 		@Override
-		public CloseableIteration<? extends Statement, SailException> getStatements(Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
+		public CloseableIteration<? extends Statement, SailException> getStatements(Resource subj, IRI pred, Value obj,
+				Resource... contexts) throws SailException {
 			return null;
 		}
 	}

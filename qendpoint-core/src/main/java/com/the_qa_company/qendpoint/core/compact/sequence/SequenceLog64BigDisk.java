@@ -366,7 +366,10 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		IOUtil.closeObject(data);
-		data = null;
+		try {
+			IOUtil.closeObject(data);
+		} finally {
+			data = null;
+		}
 	}
 }

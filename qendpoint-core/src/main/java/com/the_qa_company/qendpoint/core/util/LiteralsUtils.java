@@ -489,6 +489,7 @@ public class LiteralsUtils {
 
 	/**
 	 * cat 2 strings
+	 *
 	 * @param a a
 	 * @param b b
 	 * @return a + b
@@ -498,8 +499,10 @@ public class LiteralsUtils {
 		ByteString bsb = ByteString.of(b);
 		return bsa.copyAppend(bsb);
 	}
+
 	/**
 	 * cat 3 strings
+	 *
 	 * @param a a
 	 * @param b b
 	 * @return a + b

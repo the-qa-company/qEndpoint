@@ -32,7 +32,7 @@ public class BigByteBufferTest {
 	private int oldSize;
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Before
 	public void prepare() {

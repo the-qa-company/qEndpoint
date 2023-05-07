@@ -12,11 +12,11 @@ import static org.junit.Assert.*;
 
 public class CloseSuppressPathTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void createDelTest() throws IOException {
-		Path path = tempDir.getRoot().toPath();
+		Path path = tempDir.newFolder().toPath();
 
 		CloseSuppressPath test = CloseSuppressPath.of(path.resolve("test"));
 
@@ -28,7 +28,7 @@ public class CloseSuppressPathTest {
 
 	@Test
 	public void createDelRecTest() throws IOException {
-		Path path = tempDir.getRoot().toPath();
+		Path path = tempDir.newFolder().toPath();
 
 		CloseSuppressPath test = CloseSuppressPath.of(path.resolve("test"));
 		test.closeWithDeleteRecurse();
@@ -44,8 +44,8 @@ public class CloseSuppressPathTest {
 	}
 
 	@Test
-	public void pathTest() {
-		Path path = tempDir.getRoot().toPath();
+	public void pathTest() throws IOException {
+		Path path = tempDir.newFolder().toPath();
 
 		assertEquals(CloseSuppressPath.of(path), path);
 		// known unresolvable issue

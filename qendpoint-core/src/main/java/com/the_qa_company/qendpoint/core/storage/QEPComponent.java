@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.util.map.CopyOnWriteMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -15,7 +16,7 @@ import java.util.Objects;
  *
  * @author Antoine Willerval
  */
-public class QEPComponent {
+public class QEPComponent implements Cloneable {
 	private record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset) {
 	}
 
@@ -24,10 +25,17 @@ public class QEPComponent {
 
 	private static final Logger logger = LoggerFactory.getLogger(QEPComponent.class);
 
-	private final Map<Integer, PredicateElement> predicateIds;
-	private final Map<Integer, SharedElement> sharedIds;
+	private Map<Integer, PredicateElement> predicateIds;
+	private Map<Integer, SharedElement> sharedIds;
 	private final QEPCore core;
 	private CharSequence value;
+
+	private QEPComponent(QEPComponent other) {
+		this.predicateIds = new HashMap<>(other.predicateIds);
+		this.sharedIds = new HashMap<>(other.sharedIds);
+		this.core = other.core;
+		this.value = other.value;
+	}
 
 	QEPComponent(QEPCore core, QEPDataset dataset, DictionarySectionRole role, long id, CharSequence value) {
 		this.core = core;
@@ -53,19 +61,21 @@ public class QEPComponent {
 	}
 
 	/**
-	 * @return the string value of this component
+	 * @return the string value of this component, warning: will search it
 	 */
 	@SuppressWarnings("resource")
 	public CharSequence getString() {
 		if (value == null) {
-			// searching over the predicates first because the dictionary is probably smaller
+			// searching over the predicates first because the dictionary is
+			// probably smaller
 			for (PredicateElement pe : predicateIds.values()) {
 				if (pe.id != 0) {
 					value = pe.dataset().dataset().getDictionary().idToString(pe.id, TripleComponentRole.PREDICATE);
 					if (value != null) {
 						return value;
 					} else {
-						logger.warn("value is contained inside a component but isn't linked to a string, id: {}/{}", pe.id, TripleComponentRole.PREDICATE);
+						logger.warn("value is contained inside a component but isn't linked to a string, id: {}/{}",
+								pe.id, TripleComponentRole.PREDICATE);
 					}
 				}
 			}
@@ -75,7 +85,8 @@ public class QEPComponent {
 					if (value != null) {
 						return value;
 					} else {
-						logger.warn("value is contained inside a component but isn't linked to a string, id: {}/{}", se.id, se.role);
+						logger.warn("value is contained inside a component but isn't linked to a string, id: {}/{}",
+								se.id, se.role);
 					}
 				}
 			}
@@ -92,6 +103,43 @@ public class QEPComponent {
 	@Override
 	public String toString() {
 		return Objects.requireNonNullElse(getString(), "undefined").toString();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		}
+		if (!(obj instanceof QEPComponent other)) {
+			return false;
+		}
+		// check if a predicate id is in both component
+		if (!other.predicateIds.isEmpty()) {
+			for (var e : predicateIds.entrySet()) {
+				if (e.getValue().id == 0) {
+					continue; // not defined for this dataset
+				}
+				PredicateElement pe = other.predicateIds.get(e.getKey());
+				if (pe == null || pe.id == 0) {
+					continue; // not defined for the other component
+				}
+				return pe.id == e.getValue().id;
+			}
+		}
+		if (!other.sharedIds.isEmpty()) {
+			for (var e : sharedIds.entrySet()) {
+				if (e.getValue().id == 0) {
+					continue; // not defined for this dataset
+				}
+				SharedElement se = other.sharedIds.get(e.getKey());
+				if (se == null || se.id == 0) {
+					continue;
+				}
+				return se.id == e.getValue().id;
+			}
+		}
+		// we have to check using the strings because no ids are corresponding
+		return toString().equals(other.toString());
 	}
 
 	/**
@@ -129,7 +177,8 @@ public class QEPComponent {
 					predicateIds.put(dataset, new PredicateElement(mapValue, d2));
 					return mapValue;
 				}
-				// we can reach this part if no other dataset are describing this component
+				// we can reach this part if no other dataset are describing this
+				// component
 
 				// search by string
 
@@ -172,7 +221,8 @@ public class QEPComponent {
 					int originDataset = e.getKey();
 					long originId = e.getValue().id();
 
-					NodeConverter converter = core.getConverter(originDataset, dataset, e.getValue().role.asTripleComponentRole());
+					NodeConverter converter = core.getConverter(originDataset, dataset,
+							e.getValue().role.asTripleComponentRole());
 					long mapValue = converter.mapValue(originId);
 					long idOfMapped = QEPMap.getIdOfMapped(mapValue, nshared);
 
@@ -185,11 +235,7 @@ public class QEPComponent {
 						}
 					} else {
 						TripleComponentRole roleOfMapped = QEPMap.getRoleOfMapped(mapValue);
-						sharedIds.put(dataset, new SharedElement(
-								idOfMapped,
-								roleOfMapped.asDictionarySectionRole(),
-								d2
-						));
+						sharedIds.put(dataset, new SharedElement(idOfMapped, roleOfMapped.asDictionarySectionRole(), d2));
 						if (role != roleOfMapped) {
 							// not in the same section
 							return 0;
@@ -206,7 +252,20 @@ public class QEPComponent {
 
 				if (id <= nshared) {
 					if (id <= 0) {
-						sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2));
+						// not in the same section, we search on the other side to know if we should put 0 or an ID
+						TripleComponentRole otherRole = switch (role) {
+							case OBJECT -> TripleComponentRole.SUBJECT;
+							case SUBJECT -> TripleComponentRole.OBJECT;
+							default -> throw new AssertionError();
+						};
+						id = d2.dataset().getDictionary().stringToId(seq, otherRole);
+						if (id <= nshared) {
+							assert id <= 0 : "found shared id";
+							sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2));
+						} else {
+							sharedIds.put(dataset, new SharedElement(id, otherRole.asDictionarySectionRole(), d2));
+							return 0; // not the same role
+						}
 					} else {
 						sharedIds.put(dataset, new SharedElement(id, DictionarySectionRole.SHARED, d2));
 					}
@@ -220,6 +279,9 @@ public class QEPComponent {
 		}
 	}
 
+	/**
+	 * @return dump the component information, warning: will call {@link #getString()}
+	 */
 	public String dumpBinding() {
 		StringBuilder bld = new StringBuilder(this.toString());
 
@@ -229,8 +291,8 @@ public class QEPComponent {
 			bld.append("NONE");
 		}
 
-		predicateIds.forEach((id, map) -> bld.append("\n- D[")
-				.append(map.dataset.id()).append("] => ").append(map.id()));
+		predicateIds
+				.forEach((id, map) -> bld.append("\n- D[").append(map.dataset.id()).append("] => ").append(map.id()));
 
 		bld.append("\nsharedIds: ");
 
@@ -238,12 +300,23 @@ public class QEPComponent {
 			bld.append("NONE");
 		}
 
-		sharedIds.forEach((id, map) -> bld.append("\n- D[")
-				.append(map.dataset.uid()).append("/").append(map.role)
+		sharedIds.forEach((id, map) -> bld.append("\n- D[").append(map.dataset.uid()).append("/").append(map.role)
 				.append("] => ").append(map.id()));
 
 		bld.append("\n");
 
 		return bld.toString();
+	}
+
+	@Override
+	public QEPComponent clone() {
+		try {
+			QEPComponent clone = (QEPComponent) super.clone();
+			clone.predicateIds = new HashMap<>(predicateIds);
+			clone.sharedIds = new HashMap<>(sharedIds);
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			return new QEPComponent(this);
+		}
 	}
 }

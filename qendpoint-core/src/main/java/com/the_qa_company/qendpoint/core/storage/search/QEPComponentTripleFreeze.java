@@ -5,7 +5,8 @@ import com.the_qa_company.qendpoint.core.storage.QEPComponent;
 import java.util.Objects;
 
 /**
- * a triple with frozen components, all non-null components won't be mutable anymore
+ * a triple with frozen components, all non-null components won't be mutable
+ * anymore
  */
 public class QEPComponentTripleFreeze implements QEPComponentTriple {
 	private final QEPComponentTriple wrapper;
@@ -76,7 +77,6 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 		wrapper.setDatasetId(id);
 	}
 
-
 	@Override
 	public String toString() {
 		return getSubject() + " " + getPredicate() + " " + getObject();
@@ -84,9 +84,12 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof QEPComponentTriple that)) return false;
-		return Objects.equals(getSubject(), that.getSubject()) && Objects.equals(getSubject(), that.getPredicate()) && Objects.equals(getObject(), that.getObject());
+		if (this == o)
+			return true;
+		if (!(o instanceof QEPComponentTriple that))
+			return false;
+		return Objects.equals(getSubject(), that.getSubject()) && Objects.equals(getSubject(), that.getPredicate())
+				&& Objects.equals(getObject(), that.getObject());
 	}
 
 	@Override

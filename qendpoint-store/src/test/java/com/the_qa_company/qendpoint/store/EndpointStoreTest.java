@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class EndpointStoreTest {
 	public static final String HDT_INDEX_NAME = "index_tst.hdt";
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	HDTOptions spec;
 
 	@Before

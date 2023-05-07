@@ -32,7 +32,7 @@ public class RDFParserDirTest {
 	private static final boolean LOG_TIME = false;
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void dirTest() throws IOException, ParserException {

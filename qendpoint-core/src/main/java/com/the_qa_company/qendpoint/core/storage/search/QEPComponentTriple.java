@@ -138,7 +138,8 @@ public interface QEPComponentTriple {
 	}
 
 	/**
-	 * @return convert this triple to an overlay, all the non-null elements won't be updatable anymore
+	 * @return convert this triple to an overlay, all the non-null elements
+	 *         won't be updatable anymore
 	 */
 	default QEPComponentTriple freeze() {
 		return new QEPComponentTripleFreeze(getSubject(), getPredicate(), getObject());
@@ -201,11 +202,8 @@ public interface QEPComponentTriple {
 		QEPComponent subject = getSubject();
 		QEPComponent predicate = getPredicate();
 		QEPComponent object = getObject();
-		return new TripleString(
-				subject == null ? "" : subject.getString(),
-				predicate == null ? "" : predicate.getString(),
-				object == null ? "" : object.getString()
-		);
+		return new TripleString(subject == null ? "" : subject.getString(),
+				predicate == null ? "" : predicate.getString(), object == null ? "" : object.getString());
 	}
 
 	@Override

@@ -29,7 +29,7 @@ public class SequenceTest {
 	public SequenceGenerator sequenceGenerator;
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	private void sequenceTest(int bits, long elements, boolean trim) throws IOException {
 		long maxMask = (~0L) >>> (Long.SIZE - bits);

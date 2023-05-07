@@ -20,7 +20,7 @@ import java.util.Iterator;
 
 public class WriteDictionarySectionTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	private LargeFakeDataSetStreamSupplier stream() {
 		return LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 75).withUnicode(true)
@@ -29,7 +29,7 @@ public class WriteDictionarySectionTest {
 
 	@Test
 	public void appenderTest() throws IOException {
-		Path dir = tempDir.getRoot().toPath();
+		Path dir = tempDir.newFolder().toPath();
 		try {
 
 			try (WriteDictionarySection section1 = new WriteDictionarySection(HDTOptions.of(), dir.resolve("t1"), 4096);

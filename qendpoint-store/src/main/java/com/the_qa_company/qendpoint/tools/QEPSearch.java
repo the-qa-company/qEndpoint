@@ -1,43 +1,35 @@
 package com.the_qa_company.qendpoint.tools;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.tools.HDTVerify;
-import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
-import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
-import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.tools.HDTVerify;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
+import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
-
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
+import com.the_qa_company.qendpoint.core.util.disk.LongArray;
+import com.the_qa_company.qendpoint.core.util.io.Closer;
+import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
+import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.model.SimpleLiteralHDT;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.HDTConverter;
-import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -52,6 +44,20 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -73,7 +79,7 @@ public class QEPSearch {
 	@Parameter(names = "-quiet", description = "Do not show progress of the conversion")
 	public boolean quiet;
 
-	@Parameter(names = "-type", description = "partition type, 'delta', 'hdt', 'qendpoint' or 'guess' (default)")
+	@Parameter(names = "-type", description = "partition type, 'delta', 'hdt', 'qendpoint', 'sequence', 'reader' or 'guess' (default)")
 	public String type;
 
 	@Parameter(names = "-version", description = "Prints the HDT version number")
@@ -282,8 +288,8 @@ public class QEPSearch {
 
 		if (posb == -1)
 			throw new ParserException("Make sure that you included three terms."); // Not
-																					// found,
-																					// error.
+		// found,
+		// error.
 
 		dest.setSubject(UnicodeEscape.unescapeString(line.substring(posa, posb)));
 
@@ -877,6 +883,8 @@ public class QEPSearch {
 				}
 			} else if (path.getFileName().toString().endsWith(".hdt")) {
 				type = "hdt";
+			} else if (path.getFileName().toString().endsWith(".prof")) {
+				type = "profiler";
 			} else {
 				throw new IllegalArgumentException("Can't guess type for store " + path + "!");
 			}
@@ -888,7 +896,267 @@ public class QEPSearch {
 		case "delta" -> executeDelta();
 		case "qendpoint" -> executeDeltaQEndpoint();
 		case "hdt" -> executeHDT();
+		case "reader" -> executeReader();
+		case "profiler" -> executeProfiler();
 		default -> throw new IllegalArgumentException("Can't understand store of type " + this.type + "!");
+		}
+	}
+
+	private void executeProfiler() throws IOException {
+		try (Profiler p = Profiler.readFromDisk(Path.of(input))) {
+			p.setDisabled(false);
+			p.writeProfiling();
+		}
+	}
+
+	private void executeReader() throws IOException {
+		colorTool.log("Reader REPL");
+
+		Path pwd = Path.of(input).toAbsolutePath();
+
+		Map<String, Object> loadedEntities = new HashMap<>();
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in, UTF_8));
+		String line;
+
+		try {
+			while ((line = in.readLine()) != null) {
+				line = line.trim();
+
+				if (line.isEmpty() || line.charAt(0) == '#') {
+					continue;
+				}
+
+				String[] args = line.split("\\s");
+
+				try {
+					switch (args[0]) {
+					case "q", "quit", "exit", "leave" -> {
+						colorTool.log("bye.");
+						return;
+					}
+					case "pwd" -> {
+						System.out.println(pwd);
+					}
+					case "ls" -> {
+						try (Stream<Path> list = Files.list(pwd)) {
+							System.out.println("File for " + pwd);
+							list.forEach(path -> System.out.println("- " + path.getFileName()));
+						}
+					}
+					case "cd" -> {
+						if (args.length < 2) {
+							colorTool.error("cd (path)");
+							continue;
+						}
+						Path npwd = pwd.resolve(args[1]);
+						if (!Files.exists(npwd) || !Files.isDirectory(npwd)) {
+							colorTool.error(format("the path %s isn't a directory", npwd));
+							continue;
+						}
+
+						pwd = npwd;
+					}
+					case "load" -> {
+						if (args.length < 4) {
+							colorTool.error("load (name) (type) (path) [config]");
+							continue;
+						}
+						String name = args[1].toLowerCase();
+						String type = args[2].toLowerCase();
+						Path obj = pwd.resolve(args[3]);
+
+						Object ent = loadedEntities.remove(name);
+						if (ent != null) {
+							colorTool.warn("redefining " + name);
+							Closer.closeSingle(ent);
+						}
+
+						if (!Files.exists(obj)) {
+							colorTool.error(format("the file %s doesn't exist", obj));
+							continue;
+						}
+
+						switch (type) {
+						case "bm", "bitmap" -> {
+							if (args.length < 5) {
+								colorTool.error("load (name) bitmap (path) (size)");
+								continue;
+							}
+
+							long size = Long.parseLong(args[4]);
+							loadedEntities.put(name, Bitmap64Big.map(obj, size));
+							colorTool.log(format("$%s defined", name));
+						}
+						case "sq", "sequence" -> {
+							if (args.length < 5) {
+								colorTool.error("load (name) sequence (path) (size) (numbits)");
+								continue;
+							}
+							long size = Long.parseLong(args[4]);
+							int numbits = Integer.parseInt(args[5]);
+
+							loadedEntities.put(name, new SequenceLog64BigDisk(obj, numbits, size, true, false));
+							colorTool.log(format("$%s defined", name));
+						}
+						default -> colorTool.error(format("Unknown load type %s", type));
+						}
+					}
+					default -> {
+						if (args[0].charAt(0) != '$') {
+							colorTool.error("Unknown command", "type help for help");
+							continue;
+						}
+
+						String vid = args[0].substring(1).toLowerCase();
+						Object obj = loadedEntities.get(vid);
+
+						if (obj == null) {
+							colorTool.error(format("Can't find the object %s", args[0]));
+							continue;
+						}
+
+						if (args.length == 1) {
+							colorTool.error(format("%s [close]|[id]", args[0]));
+							continue;
+						}
+
+						switch (args[1]) {
+						case "close" -> {
+							colorTool.log("object closed");
+							Closer.closeSingle(obj);
+							loadedEntities.remove(vid);
+						}
+						case "?" -> {
+							if (obj instanceof LongArray la) {
+								colorTool.log(format("[array$%d] %s [close]|[id]", la.sizeOf(), args[0]));
+								continue;
+							} else if (obj instanceof Bitmap) {
+								colorTool.log(format("[bitmap] %s [close]|[id]", args[0]));
+								continue;
+							} else {
+								colorTool.error("unknown type: " + obj.getClass());
+							}
+						}
+						default -> {
+							long size;
+							if (obj instanceof LongArray la) {
+								size = la.length();
+							} else if (obj instanceof Bitmap bm) {
+								size = bm.getNumBits();
+							} else {
+								colorTool.error("unknown type: " + obj.getClass());
+								continue;
+							}
+							long id;
+							long endId;
+							try {
+								int sliceSymb = args[1].indexOf(':');
+								int rangeSymb = args[1].indexOf('/');
+								int endRange;
+								if (rangeSymb != -1) {
+									if (sliceSymb > rangeSymb) {
+										System.err.println(colorTool.red() + "Syntax error can't put '/' before ':' in "
+												+ args[1] + colorTool.colorReset());
+										continue;
+									}
+									endRange = rangeSymb;
+								} else {
+									endRange = args[1].length();
+								}
+								if (sliceSymb == -1) {
+									id = endId = readLong(args[1], 0, endRange);
+								} else {
+									// at least the slice modifier
+									id = readLong(args[1], 0, sliceSymb);
+									endId = readLong(args[1], sliceSymb + 1, endRange);
+								}
+								if (rangeSymb != -1) {
+									// have the range modifier
+									long delta = readLong(args[1], endRange + 1, args[1].length());
+									id = Math.min(size, Math.max(1, id - delta));
+									endId = Math.max(1, Math.min(size, endId + delta));
+								}
+							} catch (NumberFormatException e) {
+								System.err.println(colorTool.red() + e.getMessage() + colorTool.colorReset());
+								continue;
+							}
+
+							if (id <= 0 || id > size) {
+								System.err.println(colorTool.red() + "Index out of bound " + id + " / " + size
+										+ colorTool.colorReset());
+								continue;
+							}
+							if (endId <= 0 || endId > size) {
+								System.err.println(colorTool.red() + "End index out of bound " + endId + " / " + size
+										+ colorTool.colorReset());
+								continue;
+							}
+
+							if (obj instanceof LongArray la) {
+								if (endId == id) {
+									System.out.println(
+											colorTool.yellow() + vid + colorTool.colorReset() + "[" + colorTool.green()
+													+ id + colorTool.colorReset() + "]" + colorTool.colorReset() + " = "
+													+ colorTool.white() + (la.get(id - 1)) + colorTool.colorReset());
+								} else {
+									long shift = 0;
+									System.out.println(colorTool.yellow() + vid + colorTool.colorReset() + "["
+											+ colorTool.green() + id + colorTool.colorReset() + ":" + colorTool.green()
+											+ endId + colorTool.colorReset() + "]");
+									System.out.print(colorTool.white());
+									for (long cid = id; cid <= endId; cid++) {
+										System.out.print((la.get(cid - 1)));
+										shift++;
+										if (shift % 32 == 0) {
+											System.out.println();
+										} else if (shift % 8 == 0) {
+											System.out.print(" ");
+										}
+									}
+									if (shift % 32 != 0) {
+										System.out.println();
+									}
+								}
+							} else {
+								Bitmap bm = (Bitmap) obj;
+								if (endId == id) {
+									System.out.println(colorTool.yellow() + vid + colorTool.colorReset() + "["
+											+ colorTool.green() + id + colorTool.colorReset() + "]"
+											+ colorTool.colorReset() + " = " + colorTool.white()
+											+ (bm.access(id - 1) ? 1 : 0) + colorTool.colorReset());
+								} else {
+									long shift = 0;
+									System.out.println(colorTool.yellow() + vid + colorTool.colorReset() + "["
+											+ colorTool.green() + id + colorTool.colorReset() + ":" + colorTool.green()
+											+ endId + colorTool.colorReset() + "]");
+									System.out.print(colorTool.white());
+									for (long cid = id; cid <= endId; cid++) {
+										System.out.print((bm.access(cid - 1) ? 1 : 0));
+										shift++;
+										if (shift % 32 == 0) {
+											System.out.println();
+										} else if (shift % 8 == 0) {
+											System.out.print(" ");
+										}
+									}
+									if (shift % 32 != 0) {
+										System.out.println();
+									}
+								}
+							}
+
+						}
+						}
+
+					}
+					}
+				} catch (Exception e) {
+					colorTool.error("Error while running command", e.getMessage());
+				}
+			}
+		} finally {
+			Closer.closeAll(loadedEntities);
 		}
 	}
 

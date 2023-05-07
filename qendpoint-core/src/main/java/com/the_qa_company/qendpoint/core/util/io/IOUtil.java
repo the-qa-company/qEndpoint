@@ -86,7 +86,8 @@ public class IOUtil {
 	}
 
 	/**
-	 * split an HDT into multiple HDTs using slow, memory intensive algorithm (for tests only)
+	 * split an HDT into multiple HDTs using slow, memory intensive algorithm
+	 * (for tests only)
 	 *
 	 * @param origin origin HDT
 	 * @param base   base path, end path will be base-ID.hdt
@@ -110,9 +111,7 @@ public class IOUtil {
 		for (int i = 0; i < count; i++) {
 			paths[i] = base.resolveSibling(base.getFileName() + "-" + i + ".hdt");
 			Path work = base.resolve("workHDT" + new Random().nextInt(100000));
-			HDTOptions spec = HDTOptions.of(
-					HDTOptionsKeys.HDTCAT_LOCATION, work
-			);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.HDTCAT_LOCATION, work);
 			try (Bitmap64Big deleteBM = Bitmap64Big.memory(triples)) {
 				for (long j = 0; j < split * i; j++) {
 					deleteBM.set(j, true);
@@ -122,7 +121,8 @@ public class IOUtil {
 						deleteBM.set(j, true);
 					}
 				}
-				try (HDT diff = HDTManager.diffBitCatHDTPath(List.of(origin), List.of(deleteBM), spec, ProgressListener.ignore())) {
+				try (HDT diff = HDTManager.diffBitCatHDTPath(List.of(origin), List.of(deleteBM), spec,
+						ProgressListener.ignore())) {
 					diff.saveToHDT(paths[i], ProgressListener.ignore());
 				}
 
@@ -169,7 +169,7 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static CloseMappedByteBuffer mapChannel(Path filename, FileChannel ch, FileChannel.MapMode mode,
-	                                               long position, long size) throws IOException {
+			long position, long size) throws IOException {
 		return mapChannel(filename.toAbsolutePath().toString(), ch, mode, position, size);
 	}
 
@@ -186,7 +186,7 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static CloseMappedByteBuffer mapChannel(String filename, FileChannel ch, FileChannel.MapMode mode,
-	                                               long position, long size) throws IOException {
+			long position, long size) throws IOException {
 		return new CloseMappedByteBuffer(filename, ch.map(mode, position, size), false);
 	}
 
@@ -406,13 +406,13 @@ public class IOUtil {
 	}
 
 	public static void writeSizedBuffer(OutputStream output, byte[] buffer, int offset, int length,
-	                                    ProgressListener listener) throws IOException {
+			ProgressListener listener) throws IOException {
 		VByte.encode(output, length);
 		writeBuffer(output, buffer, offset, length, listener);
 	}
 
 	public static void writeBuffer(OutputStream output, byte[] buffer, int offset, int length,
-	                               ProgressListener listener) throws IOException {
+			ProgressListener listener) throws IOException {
 		listener = ProgressListener.ofNullable(listener);
 		if (length < CloseSuppressPath.BUFFER_SIZE) {
 			output.write(buffer, offset, length);
@@ -655,14 +655,14 @@ public class IOUtil {
 
 	public static InputStream asUncompressed(InputStream inputStream, CompressionType type) throws IOException {
 		switch (type) {
-			case GZIP:
-				return new GZIPInputStream(inputStream);
-			case BZIP:
-				return new BZip2CompressorInputStream(inputStream, true);
-			case XZ:
-				return new XZCompressorInputStream(inputStream, true);
-			case NONE:
-				return inputStream;
+		case GZIP:
+			return new GZIPInputStream(inputStream);
+		case BZIP:
+			return new BZip2CompressorInputStream(inputStream, true);
+		case XZ:
+			return new XZCompressorInputStream(inputStream, true);
+		case NONE:
+			return inputStream;
 		}
 		throw new IllegalArgumentException("CompressionType not yet implemented: " + type);
 	}

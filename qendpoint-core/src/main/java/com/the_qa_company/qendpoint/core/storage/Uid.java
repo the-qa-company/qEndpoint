@@ -3,7 +3,8 @@ package com.the_qa_company.qendpoint.core.storage;
 import java.util.Objects;
 
 /**
- * UID used for linking {@link QEPDataset} with {@link QEPMap} in {@link QEPCore}
+ * UID used for linking {@link QEPDataset} with {@link QEPMap} in
+ * {@link QEPCore}
  *
  * @author Antoine Willerval
  */
@@ -48,8 +49,10 @@ public class Uid {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 		Uid uid = (Uid) o;
 		return uid1 == uid.uid1 && uid2 == uid.uid2;
 	}
@@ -61,9 +64,6 @@ public class Uid {
 
 	@Override
 	public String toString() {
-		return "Uid{" +
-				"uid1=" + uid1 +
-				", uid2=" + uid2 +
-				'}';
+		return "Uid{" + "uid1=" + uid1 + ", uid2=" + uid2 + '}';
 	}
 }

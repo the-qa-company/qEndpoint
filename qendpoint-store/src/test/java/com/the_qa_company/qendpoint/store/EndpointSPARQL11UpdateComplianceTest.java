@@ -41,7 +41,7 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Override
 	protected Repository newRepository() throws Exception {

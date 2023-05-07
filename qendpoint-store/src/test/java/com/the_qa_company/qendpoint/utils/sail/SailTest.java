@@ -101,7 +101,7 @@ public abstract class SailTest {
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected SailRepository repository;
 	protected HDTOptions spec;

@@ -187,7 +187,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 				IOUtil.decompressGzip(old, f);
 				log.warn("Gzipped HDT successfully decompressed. You might want to delete {} to save disk space.", old);
 			} else {
-				log.error( "We cannot map a gzipped HDT, using {} instead.", hdtFileName);
+				log.error("We cannot map a gzipped HDT, using {} instead.", hdtFileName);
 			}
 		}
 

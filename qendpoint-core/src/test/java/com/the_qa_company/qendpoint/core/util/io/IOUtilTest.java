@@ -19,7 +19,7 @@ import org.junit.rules.TemporaryFolder;
 public class IOUtilTest {
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Before
 	public void setUp() throws Exception {

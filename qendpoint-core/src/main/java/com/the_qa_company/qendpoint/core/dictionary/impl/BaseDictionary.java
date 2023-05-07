@@ -58,49 +58,49 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 
 	protected long getGlobalId(long id, DictionarySectionRole position) {
 		return switch (position) {
-			case SUBJECT, OBJECT -> shared.getNumberOfElements() + id;
-			case PREDICATE, SHARED -> id;
-			default -> throw new IllegalArgumentException();
+		case SUBJECT, OBJECT -> shared.getNumberOfElements() + id;
+		case PREDICATE, SHARED -> id;
+		default -> throw new IllegalArgumentException();
 		};
 	}
 
 	protected long getLocalId(long id, TripleComponentRole position) {
 		switch (position) {
-			case SUBJECT, OBJECT -> {
-				if (id <= shared.getNumberOfElements()) {
-					return id;
-				} else {
-					return id - shared.getNumberOfElements();
-				}
-			}
-			case PREDICATE -> {
+		case SUBJECT, OBJECT -> {
+			if (id <= shared.getNumberOfElements()) {
 				return id;
+			} else {
+				return id - shared.getNumberOfElements();
 			}
-			default -> throw new IllegalArgumentException();
+		}
+		case PREDICATE -> {
+			return id;
+		}
+		default -> throw new IllegalArgumentException();
 		}
 	}
 
 	@Override
 	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
 		switch (role) {
-			case SUBJECT -> {
-				if (!includeShared) {
-					return getSubjects().getSortedEntries();
-				}
+		case SUBJECT -> {
+			if (!includeShared) {
+				return getSubjects().getSortedEntries();
+			}
 
-				return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+			return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+		}
+		case PREDICATE -> {
+			return getPredicates().getSortedEntries();
+		}
+		case OBJECT -> {
+			if (!includeShared) {
+				return getObjects().getSortedEntries();
 			}
-			case PREDICATE -> {
-				return getPredicates().getSortedEntries();
-			}
-			case OBJECT -> {
-				if (!includeShared) {
-					return getObjects().getSortedEntries();
-				}
 
-				return CatIterator.of(getShared().getSortedEntries(), getObjects().getSortedEntries());
-			}
-			default -> throw new IllegalArgumentException("Unknown role: " + role);
+			return CatIterator.of(getShared().getSortedEntries(), getObjects().getSortedEntries());
+		}
+		default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
 

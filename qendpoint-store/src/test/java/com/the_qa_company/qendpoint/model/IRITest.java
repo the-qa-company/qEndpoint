@@ -19,7 +19,7 @@ import java.io.IOException;
 public class IRITest {
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	HDTOptions spec;
 
@@ -33,7 +33,6 @@ public class IRITest {
 	@Test
 	public void equality() throws IOException {
 		ValueFactory factory = SimpleValueFactory.getInstance();
-		System.out.println(tempDir.getRoot().getAbsolutePath());
 		HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
 		SimpleIRIHDT s1 = new SimpleIRIHDT(hdt, "http://s1");
 		IRI s2 = factory.createIRI("http://s1");

@@ -39,7 +39,8 @@ public enum TripleComponentRole {
 	private final String abbreviation;
 	private final String title;
 
-	TripleComponentRole(Supplier<DictionarySectionRole> dictionarySectionRoleSupplier, String abbreviation, String title) {
+	TripleComponentRole(Supplier<DictionarySectionRole> dictionarySectionRoleSupplier, String abbreviation,
+			String title) {
 		this.dictionarySectionRoleSupplier = dictionarySectionRoleSupplier;
 		this.abbreviation = abbreviation;
 		this.title = title;

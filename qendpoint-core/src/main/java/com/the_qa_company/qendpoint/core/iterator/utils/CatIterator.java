@@ -22,6 +22,7 @@ public class CatIterator<E> extends FetcherIterator<E> {
 	public static <E> Iterator<? extends E> of(Iterator<? extends E>... its) {
 		return of(List.of(its));
 	}
+
 	/**
 	 * create iterator
 	 *

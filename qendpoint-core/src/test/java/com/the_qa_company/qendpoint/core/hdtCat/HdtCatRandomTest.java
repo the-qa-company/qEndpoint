@@ -39,7 +39,7 @@ public class HdtCatRandomTest extends AbstractMapMemoryTest {
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	private final HDTSpecification spec;
 	private final boolean unicode;
 

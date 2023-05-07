@@ -169,16 +169,12 @@ public class QEPCore implements AutoCloseable {
 				// gen temp dataset
 				LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("gen-wip.hdt"),
 
-				LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, location.resolve("cat-wip.hdt"),
-				LOADER_CATTREE_LOADERTYPE_KEY, LOADER_TYPE_VALUE_DISK,
-				LOADER_CATTREE_LOCATION_KEY, location.resolve("cattree"),
-				LOADER_CATTREE_MEMORY_FAULT_FACTOR, 1,
-				LOADER_CATTREE_KCAT, 20,
+				LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, location.resolve("cat-wip.hdt"), LOADER_CATTREE_LOADERTYPE_KEY,
+				LOADER_TYPE_VALUE_DISK, LOADER_CATTREE_LOCATION_KEY, location.resolve("cattree"),
+				LOADER_CATTREE_MEMORY_FAULT_FACTOR, 1, LOADER_CATTREE_KCAT, 20,
 
-				HDTCAT_DELETE_LOCATION, true,
-				HDTCAT_LOCATION, location.resolve("hdtcat"),
-				HDTCAT_FUTURE_LOCATION, location.resolve("catgen.hdt")
-		);
+				HDTCAT_DELETE_LOCATION, true, HDTCAT_LOCATION, location.resolve("hdtcat"), HDTCAT_FUTURE_LOCATION,
+				location.resolve("catgen.hdt"));
 
 		if (!optExists || overwriteOptions) {
 			try {
@@ -211,9 +207,7 @@ public class QEPCore implements AutoCloseable {
 	 * @return the number of triples
 	 */
 	public long triplesCount() {
-		return dataset.values().stream()
-				.mapToLong(d -> d.dataset().getTriples().getNumberOfElements())
-				.sum();
+		return dataset.values().stream().mapToLong(d -> d.dataset().getTriples().getNumberOfElements()).sum();
 	}
 
 	@SuppressWarnings("resource")
@@ -278,16 +272,20 @@ public class QEPCore implements AutoCloseable {
 					String filename = path.getFileName().toString();
 
 					if (!filename.startsWith(FILE_DATASET_PREFIX) || !filename.endsWith(FILE_DATASET_SUFFIX)) {
-						// we ignore this file because it's most likely not what we're searching for
+						// we ignore this file because it's most likely not what
+						// we're searching for
 						return;
 					}
 
-					String indexId = filename.substring(FILE_DATASET_PREFIX.length(), filename.length() - FILE_DATASET_SUFFIX.length()).toLowerCase();
-
+					String indexId = filename
+							.substring(FILE_DATASET_PREFIX.length(), filename.length() - FILE_DATASET_SUFFIX.length())
+							.toLowerCase();
 
 					Matcher matcher = ID_REGEX.matcher(indexId);
 					if (!matcher.matches()) {
-						logger.warn("file {} seems to be a dataset, but isn't matching the id format, it will be ignored.", path);
+						logger.warn(
+								"file {} seems to be a dataset, but isn't matching the id format, it will be ignored.",
+								path);
 						return;
 					}
 					// load the dataset
@@ -295,12 +293,13 @@ public class QEPCore implements AutoCloseable {
 						QEPDataset ds = openDataset(indexId, path);
 						QEPDataset other = dataset.put(ds.id(), ds);
 
-						// Windows compatibility, it would also be a bad practice to use datasets
+						// Windows compatibility, it would also be a bad
+						// practice to use datasets
 						// with case-sensitive names
 						if (other != null) {
 							ContainerException e = new ContainerException(
-									new QEPCoreException("Dataset collision with name " + other.id() + " at path " + other.path() + " vs " + ds.path())
-							);
+									new QEPCoreException("Dataset collision with name " + other.id() + " at path "
+											+ other.path() + " vs " + ds.path()));
 							try {
 								// close the other dataset
 								other.close();
@@ -369,7 +368,8 @@ public class QEPCore implements AutoCloseable {
 	 * @return converter
 	 * @throws QEPCoreException can't find the map in the core
 	 */
-	public NodeConverter getConverter(int originUID, int destinationUID, TripleComponentRole role) throws QEPCoreException {
+	public NodeConverter getConverter(int originUID, int destinationUID, TripleComponentRole role)
+			throws QEPCoreException {
 		Uid uid = Uid.of(originUID, destinationUID);
 
 		QEPMap qepMap = map.get(uid);
@@ -448,12 +448,10 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search(CharSequence subject, CharSequence predicate, CharSequence object) throws QEPCoreException {
-		return search(
-				createComponentByString(subject),
-				createComponentByString(predicate),
-				createComponentByString(object)
-		);
+	public Iterator<? extends QEPComponentTriple> search(CharSequence subject, CharSequence predicate,
+			CharSequence object) throws QEPCoreException {
+		return search(createComponentByString(subject), createComponentByString(predicate),
+				createComponentByString(object));
 	}
 
 	/**
@@ -465,7 +463,8 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate, QEPComponent object) throws QEPCoreException {
+	public Iterator<? extends QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate,
+			QEPComponent object) throws QEPCoreException {
 		return search(QEPComponentTriple.of(subject, predicate, object));
 	}
 
@@ -477,11 +476,9 @@ public class QEPCore implements AutoCloseable {
 	 * @throws QEPCoreException search exception
 	 */
 	public Iterator<? extends QEPComponentTriple> search(TripleString triple) throws QEPCoreException {
-		return search(
-				triple.getSubject().isEmpty() ? null : triple.getSubject(),
+		return search(triple.getSubject().isEmpty() ? null : triple.getSubject(),
 				triple.getPredicate().isEmpty() ? null : triple.getPredicate(),
-				triple.getObject().isEmpty() ? null : triple.getObject()
-		);
+				triple.getObject().isEmpty() ? null : triple.getObject());
 	}
 
 	/**

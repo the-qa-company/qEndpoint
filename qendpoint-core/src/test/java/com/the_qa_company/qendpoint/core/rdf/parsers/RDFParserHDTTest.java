@@ -21,7 +21,7 @@ import java.nio.file.Path;
 public class RDFParserHDTTest {
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void hdtTest() throws IOException, ParserException, NotFoundException {

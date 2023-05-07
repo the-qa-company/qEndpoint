@@ -16,7 +16,8 @@ public enum DictionarySectionRole {
 	private final Function<Dictionary, DictionarySection> dictionarySectionFunction;
 	private TripleComponentRole role;
 
-	DictionarySectionRole(Supplier<TripleComponentRole> roleSupplier, Function<Dictionary, DictionarySection> dictionarySectionFunction) {
+	DictionarySectionRole(Supplier<TripleComponentRole> roleSupplier,
+			Function<Dictionary, DictionarySection> dictionarySectionFunction) {
 		this.roleSupplier = roleSupplier;
 		this.dictionarySectionFunction = dictionarySectionFunction;
 	}
@@ -34,6 +35,7 @@ public enum DictionarySectionRole {
 
 	/**
 	 * get this section from a dictionary
+	 *
 	 * @param dict dictionary
 	 * @return section
 	 */

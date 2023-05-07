@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class BenchMarkTest {
 	private static final Logger logger = LoggerFactory.getLogger(BenchMarkTest.class);
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void benchmarkDelete() throws IOException {

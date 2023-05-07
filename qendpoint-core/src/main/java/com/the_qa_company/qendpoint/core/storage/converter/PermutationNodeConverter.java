@@ -18,7 +18,7 @@ public class PermutationNodeConverter implements NodeConverter {
 
 	@Override
 	public long mapValue(long id) {
-		long permutationId = idSequence.binarySearch(id);
+		long permutationId = idSequence.binarySearch(id, 1, idSequence.length());
 		if (permutationId == -1) {
 			return 0;
 		}

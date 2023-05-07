@@ -61,7 +61,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	EndpointStore endpoint;
 	File nativeStore;

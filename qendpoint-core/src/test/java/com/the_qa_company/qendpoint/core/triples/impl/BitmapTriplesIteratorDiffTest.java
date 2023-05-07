@@ -110,7 +110,7 @@ public class BitmapTriplesIteratorDiffTest {
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	final HDTSpecification spec;
 
 	public BitmapTriplesIteratorDiffTest(String dictionaryType) {

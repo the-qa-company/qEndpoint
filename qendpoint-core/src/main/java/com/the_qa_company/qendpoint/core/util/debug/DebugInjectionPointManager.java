@@ -83,7 +83,8 @@ public class DebugInjectionPointManager {
 		}
 
 		/**
-		 * register an action, the {@link DebugPolicy#RUN_THROW} policy will be used
+		 * register an action, the {@link DebugPolicy#RUN_THROW} policy will be
+		 * used
 		 *
 		 * @param action new action
 		 */
@@ -106,11 +107,12 @@ public class DebugInjectionPointManager {
 
 		/**
 		 * Run the action
+		 *
 		 * @param obj this
 		 */
 		@SuppressWarnings("unchecked")
 		public void runAction(E obj) {
-			ActionInfo<E> act = (ActionInfo<E>) actions.get(id);
+			ActionInfo<?> act = actions.get(id);
 			if (act == null) {
 				return;
 			}
@@ -118,7 +120,7 @@ public class DebugInjectionPointManager {
 				actions.set(id, null);
 			}
 			try {
-				act.handle(obj);
+				((ActionInfo<E>) act).handle(obj);
 			} catch (Throwable t) {
 				if (act.policy.deleteAfterThrow()) {
 					actions.set(id, null);
@@ -129,8 +131,9 @@ public class DebugInjectionPointManager {
 
 		/**
 		 * throw any exception result
+		 *
 		 * @throws Exception exception
-		 * @throws Error error
+		 * @throws Error     error
 		 */
 		public void throwExceptionResult() throws Exception, Error {
 			ActionInfo<?> act = actions.get(id);
@@ -149,7 +152,7 @@ public class DebugInjectionPointManager {
 		}
 	}
 
-	private record ActionInfo<E>(DebugInjectionAction<E> action, DebugPolicy policy) {
+	private record ActionInfo<E> (DebugInjectionAction<E> action, DebugPolicy policy) {
 		/**
 		 * handle a class
 		 *
@@ -177,7 +180,8 @@ public class DebugInjectionPointManager {
 	/**
 	 * register an injection point
 	 *
-	 * @param name object to name the point, a {@link #toString()} will be applied
+	 * @param name object to name the point, a {@link #toString()} will be
+	 *             applied
 	 * @param <E>  debug point type
 	 * @return debug point
 	 */

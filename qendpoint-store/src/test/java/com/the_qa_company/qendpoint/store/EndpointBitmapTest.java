@@ -77,11 +77,11 @@ public class EndpointBitmapTest {
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void reinitSimpleTest() throws IOException, ParserException, NotFoundException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 		Path tempHDT = root.resolve("hdttemp.hdt");
 
 		EndpointFiles files = new EndpointFiles(root);

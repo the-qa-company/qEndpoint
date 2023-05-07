@@ -61,7 +61,9 @@ public class LongArrayDisk implements Closeable, LongArray {
 	public LongArrayDisk(Path location, long size, boolean overwrite, long start) {
 		this(location, null, true, size, overwrite, start);
 	}
-	public LongArrayDisk(Path location, FileChannel channel, boolean closeChannel, long size, boolean overwrite, long start) {
+
+	public LongArrayDisk(Path location, FileChannel channel, boolean closeChannel, long size, boolean overwrite,
+			long start) {
 		this.location = location;
 		this.startByte = start;
 		try {
@@ -158,7 +160,8 @@ public class LongArrayDisk implements Closeable, LongArray {
 	}
 
 	/**
-	 * @return the byte after end of this array in the file, equals to {@link #getStartByte()} + {@link #getSizeBytes()}
+	 * @return the byte after end of this array in the file, equals to
+	 *         {@link #getStartByte()} + {@link #getSizeBytes()}
 	 */
 	public long getEndByte() {
 		return getStartByte() + getSizeBytes();

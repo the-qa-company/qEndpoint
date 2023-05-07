@@ -12,12 +12,14 @@ public class QEPConnection extends SailSourceConnection {
 	}
 
 	@Override
-	protected void addStatementInternal(Resource resource, IRI iri, Value value, Resource... resources) throws SailException {
+	protected void addStatementInternal(Resource resource, IRI iri, Value value, Resource... resources)
+			throws SailException {
 
 	}
 
 	@Override
-	protected void removeStatementsInternal(Resource resource, IRI iri, Value value, Resource... resources) throws SailException {
+	protected void removeStatementsInternal(Resource resource, IRI iri, Value value, Resource... resources)
+			throws SailException {
 
 	}
 }
