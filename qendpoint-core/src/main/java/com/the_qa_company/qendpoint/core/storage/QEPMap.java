@@ -33,10 +33,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.OBJECT;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.PREDICATE;
 import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.SUBJECT;
+import static java.lang.String.format;
 
 /**
  * Linker to fetch data from a dataset to another one
@@ -76,30 +78,31 @@ public class QEPMap implements Closeable {
 	                  LongArray mapSequence2, long nshared1, long nshared2) {
 		LongArray idByNumber(int number) {
 			return switch (number) {
-			case 0 -> idSequence1;
-			case 1 -> idSequence2;
-			default -> throw new AssertionError();
+				case 0 -> idSequence1;
+				case 1 -> idSequence2;
+				default -> throw new AssertionError();
 			};
 		}
 
 		long nsByNumber(int number) {
 			return switch (number) {
-			case 0 -> nshared1;
-			case 1 -> nshared2;
-			default -> throw new AssertionError();
+				case 0 -> nshared1;
+				case 1 -> nshared2;
+				default -> throw new AssertionError();
 			};
 		}
 
 		LongArray mapByNumber(int number) {
 			return switch (number) {
-			case 0 -> mapSequence1;
-			case 1 -> mapSequence2;
-			default -> throw new AssertionError();
+				case 0 -> mapSequence1;
+				case 1 -> mapSequence2;
+				default -> throw new AssertionError();
 			};
 		}
 	}
 
-	record DatasetNodeConverter(NodeConverter dataset1to2, NodeConverter dataset2to1) {}
+	record DatasetNodeConverter(NodeConverter dataset1to2, NodeConverter dataset2to1) {
+	}
 
 	/**
 	 * get the role of a mapped id
@@ -130,11 +133,13 @@ public class QEPMap implements Closeable {
 
 	final Path path;
 	final Uid uid;
+	final QEPCore core;
 	final SectionMap[] maps = new SectionMap[TripleComponentRole.values().length];
 	final boolean useDataset1;
 	final DatasetNodeConverter[] nodeConverters = new DatasetNodeConverter[maps.length];
 
-	QEPMap(Path parent, QEPDataset dataset1, QEPDataset dataset2) {
+	QEPMap(Path parent, QEPCore core, QEPDataset dataset1, QEPDataset dataset2) {
+		this.core = Objects.requireNonNull(core);
 		String id1 = dataset1.id();
 		String id2 = dataset2.id();
 
@@ -183,11 +188,11 @@ public class QEPMap implements Closeable {
 			// we open the header file to see if it's actually the right map
 			try (FileChannel channel = FileChannel.open(mapHeaderPath, StandardOpenOption.READ,
 					StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-					CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
-							FileChannel.MapMode.READ_WRITE, 0, HEADER_SIZE);
+			     CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
+					     FileChannel.MapMode.READ_WRITE, 0, HEADER_SIZE);
 
-					CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
-							FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
+			     CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
+					     FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
 				// store the id and the location to write it after creation
 				long[] index1Size = new long[TripleComponentRole.values().length];
 				int[] index1Location = new int[index1Size.length];
@@ -450,8 +455,8 @@ public class QEPMap implements Closeable {
 
 							try (QEPMapIdSorter subjectSorter = new QEPMapIdSorter(path.resolve("subjectIdSorter"),
 									Math.max(subjectNSection1, objectNSection1), maxNSection);
-									QEPMapIdSorter objectSorter = new QEPMapIdSorter(path.resolve("objectIdSorter"),
-											Math.max(subjectNSection1, objectNSection1), maxNSection)) {
+							     QEPMapIdSorter objectSorter = new QEPMapIdSorter(path.resolve("objectIdSorter"),
+									     Math.max(subjectNSection1, objectNSection1), maxNSection)) {
 								Dictionary d2d = dataset2.dataset().getDictionary();
 								long d2nshared = d2d.getNshared();
 
@@ -472,7 +477,7 @@ public class QEPMap implements Closeable {
 										if (mappedId <= d2nshared) {
 											assert mappedId <= 0 : "found a mapped id";
 											continue; // can't find the id in
-														// both sections, ignore
+											// both sections, ignore
 										}
 										// the id was find in the object
 										// section, it can't be a shared element
@@ -522,7 +527,7 @@ public class QEPMap implements Closeable {
 										if (mappedId <= d2nshared) {
 											assert mappedId <= 0 : "found a shared mapped id";
 											continue; // can't find the id in
-														// both sections, ignore
+											// both sections, ignore
 										}
 										// the id was find in the subject object
 
@@ -596,6 +601,7 @@ public class QEPMap implements Closeable {
 						}
 						long nshared1 = dataset1.dataset().getDictionary().getNshared();
 						long nshared2 = dataset2.dataset().getDictionary().getNshared();
+
 						maps[SUBJECT.ordinal()] = new SectionMap(subjectIdSequence1, subjectMapSequence1,
 								subjectIdSequence2, subjectMapSequence2, nshared1, nshared2);
 						maps[OBJECT.ordinal()] = new SectionMap(objectIdSequence1, objectMapSequence1,
@@ -623,6 +629,7 @@ public class QEPMap implements Closeable {
 								new PermutationNodeConverter(maps[roleId].idSequence1, maps[roleId].mapSequence1),
 								new PermutationNodeConverter(maps[roleId].idSequence2, maps[roleId].mapSequence2));
 					} else {
+						// reverse the order because dataset1 isn't the same as this.dataset1
 						nodeConverters[roleId] = new DatasetNodeConverter(
 								new PermutationNodeConverter(maps[roleId].idSequence2, maps[roleId].mapSequence2),
 								new PermutationNodeConverter(maps[roleId].idSequence1, maps[roleId].mapSequence1));
@@ -639,9 +646,9 @@ public class QEPMap implements Closeable {
 				// add shared wrapper to switch to the subject converter with
 				// shared elements
 				nodeConverters[objectId] = new DatasetNodeConverter(
-						new SharedWrapperNodeConverter(dataset1.dataset().getDictionary().getNshared(),
+						new SharedWrapperNodeConverter(this.dataset1.dataset().getDictionary().getNshared(),
 								subjectConverters.dataset1to2, objectConverters.dataset1to2),
-						new SharedWrapperNodeConverter(dataset2.dataset().getDictionary().getNshared(),
+						new SharedWrapperNodeConverter(this.dataset2.dataset().getDictionary().getNshared(),
 								subjectConverters.dataset2to1, objectConverters.dataset2to1)
 				);
 
@@ -753,6 +760,15 @@ public class QEPMap implements Closeable {
 		}
 	}
 
+	/**
+	 * get a converter from a dataset to another
+	 *
+	 * @param dataset1 d1
+	 * @param dataset2 d2
+	 * @param role     role
+	 * @return NodeConverter
+	 * @throws AssertionError if dataset1 and dataset2 aren't represented by this QEPMap
+	 */
 	public NodeConverter getConverter(int dataset1, int dataset2, TripleComponentRole role) {
 		if (this.dataset1.uid() == dataset1 && this.dataset2.uid() == dataset2) {
 			return nodeConverters[role.ordinal()].dataset1to2;
@@ -762,6 +778,16 @@ public class QEPMap implements Closeable {
 			throw new AssertionError(
 					"using bad ids to fetch converter " + dataset1 + "/" + dataset2 + " with map " + this);
 		}
+	}
+
+	QEPDataset getDataset(int uid) {
+		if (this.dataset1.uid() == uid) {
+			return this.dataset1;
+		}
+		if (this.dataset2.uid() == uid) {
+			return this.dataset2;
+		}
+		throw new IllegalArgumentException(format("bad uid: %d in %s context", uid, getUid()));
 	}
 
 	/**

@@ -20,15 +20,18 @@ public class Uid {
 	public static Uid of(int uid1, int uid2) {
 		if (uid1 < uid2) {
 			return new Uid(uid1, uid2);
-		} else {
-			return new Uid(uid2, uid1);
 		}
+
+		return new Uid(uid2, uid1);
 	}
 
 	private final int uid1;
 	private final int uid2;
 
 	private Uid(int uid1, int uid2) {
+		if (uid1 == uid2) {
+			throw new IllegalArgumentException("Can't create UID with the same ids");
+		}
 		this.uid1 = uid1;
 		this.uid2 = uid2;
 	}
@@ -44,7 +47,7 @@ public class Uid {
 	 * @return big uid
 	 */
 	public int uid2() {
-		return uid1;
+		return uid2;
 	}
 
 	@Override

@@ -114,6 +114,48 @@ public interface LongArray extends Iterable<Long> {
 		return -1;
 	}
 
+
+	/**
+	 * run a binary search over this array, the array should be sorted!
+	 *
+	 * @param value the value to search
+	 * @return index of the value, or the index it would be if it was in this array
+	 * @see #linearSearch(long)
+	 */
+	default long binarySearchLocation(long value) {
+		return binarySearchLocation(value, 0, length());
+	}
+
+	/**
+	 * run a binary search over this array, the array should be sorted!
+	 *
+	 * @param value      the value to search
+	 * @param startIndex start index (inclusive)
+	 * @param endIndex   end index (exclusive)
+	 * @return index of the value, or the index it would be if it was in this array
+	 * @see #linearSearch(long)
+	 */
+	default long binarySearchLocation(long value, long startIndex, long endIndex) {
+		long min = startIndex;
+		long max = endIndex;
+
+		while (min < max) {
+			long mid = (min + max) / 2;
+
+			long mappedValue = get(mid);
+			if (mappedValue == value) {
+				return mid;
+			} else if (mappedValue < value) {
+				min = mid + 1;
+			} else { // mappedValue > value
+				max = mid;
+			}
+		}
+		return min;
+	}
+
+
+
 	/**
 	 * run a linear search over this array
 	 *

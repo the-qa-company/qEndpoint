@@ -6,11 +6,8 @@ package com.the_qa_company.qendpoint.core.storage.converter;
  *
  * @author Antoine Willerval
  */
-public class SharedWrapperNodeConverter implements NodeConverter {
-	private final long sharedCount;
-	private final NodeConverter subjectConverter;
-	private final NodeConverter objectConverter;
-
+public record SharedWrapperNodeConverter(long sharedCount, NodeConverter subjectConverter,
+                                         NodeConverter objectConverter) implements NodeConverter {
 	/**
 	 * converter
 	 *
@@ -18,10 +15,7 @@ public class SharedWrapperNodeConverter implements NodeConverter {
 	 * @param subjectConverter subject converter
 	 * @param objectConverter  object converter
 	 */
-	public SharedWrapperNodeConverter(long sharedCount, NodeConverter subjectConverter, NodeConverter objectConverter) {
-		this.sharedCount = sharedCount;
-		this.subjectConverter = subjectConverter;
-		this.objectConverter = objectConverter;
+	public SharedWrapperNodeConverter {
 	}
 
 	@Override
@@ -37,5 +31,11 @@ public class SharedWrapperNodeConverter implements NodeConverter {
 		}
 		// using the subject converter to fetch the id
 		return subjectConverter.mapValue(id);
+	}
+
+
+	@Override
+	public String toString() {
+		return String.format("SharedWrapperNodeConverter[shared=%X]", sharedCount);
 	}
 }

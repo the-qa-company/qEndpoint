@@ -69,9 +69,19 @@ public class QEPCoreTest {
 	}
 
 	@Parameterized.AfterParam
+	@SuppressWarnings("unused")
 	public static void after(Path root, Path rootHDT, Path[] splitHDT) throws IOException {
 		PathUtils.deleteDirectory(root);
 	}
+
+	public static void dumpCore(QEPCore core, String errorMessage) {
+		for (QEPMap mapper : core.getMappers()) {
+			QEPMapTest.dumpMap("map" + mapper.uid.uid1() + "-" + mapper.uid.uid2(), mapper);
+		}
+		throw new AssertionError(errorMessage + " (core dumped)");
+	}
+
+	public static final QEPCore EMPTY_CORE = new QEPCore();
 
 	@Parameterized.Parameter
 	public Path root;
@@ -223,28 +233,25 @@ public class QEPCoreTest {
 
 			for (QEPDataset dataset : datasets) {
 				n++;
-				long guessedId = dataset.dataset().getDictionary().stringToId(component, role);
-
-				if (guessedId < 0) {
-					guessedId = 0;
-				}
+				long expectedId = Math.max(0, dataset.dataset().getDictionary().stringToId(component, role));
 
 				QEPComponent mappedComponent = core.createComponentByString(component);
 				long mappedId = mappedComponent.getId(dataset.uid(), role);
-				if (guessedId != mappedId) {
-					throw new AssertionError("""
-							%d != %d for role %s
+				if (expectedId != mappedId) {
+					dumpCore(core, """
+							%X != %X for role %s
 							%s
-							""".formatted(guessedId, mappedId, role, mappedComponent.dumpBinding())
+							""".formatted(expectedId, mappedId, role, mappedComponent.dumpBinding())
 					);
 				}
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
-				if (guessedId != actualId) {
-					throw new AssertionError("""
+				if (expectedId != actualId) {
+					dumpCore(core, """
+							expectedId=%X != actualId=%X
 							ids aren't the same for component %s
-							(%d / %s / %s)
-							""".formatted(qepComponent.dumpBinding(), n, drole, dataset)
+							(n=%X / d-role=%s / dataset=%s)
+							""".formatted(expectedId, actualId, qepComponent.dumpBinding(), n, drole, dataset)
 					);
 				}
 			}
@@ -262,8 +269,8 @@ public class QEPCoreTest {
 				QEPComponent mappedComponent = core.createComponentByString(component);
 				long mappedId = mappedComponent.getId(dataset.uid(), role);
 				if (guessedId != mappedId) {
-					throw new AssertionError("""
-							%d != %d for role %s
+					dumpCore(core, """
+							guessedId=%X != mappedId=%X for role=%s
 							%s
 							""".formatted(guessedId, mappedId, role, mappedComponent.dumpBinding())
 					);
@@ -271,9 +278,9 @@ public class QEPCoreTest {
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
 				if (guessedId != actualId) {
-					throw new AssertionError("""
-							%d != %d
-							(%d / %s / %s)
+					dumpCore(core, """
+							guessedId=%X != actualId=%X
+							(n=%X / d-role=%s / dataset=%s)
 							find: %s
 							component: %s
 							ids aren't the same for component
@@ -303,10 +310,10 @@ public class QEPCoreTest {
 	@Test
 	public void coreDictionaryObjectTest() throws QEPCoreException, IOException {
 		try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
+			checkSection(DictionarySectionRole.OBJECT, core, hdt.getDictionary().getShared());
 			for (DictionarySection section : hdt.getDictionary().getAllObjects().values()) {
 				checkSection(DictionarySectionRole.OBJECT, core, section);
 			}
-			checkSection(DictionarySectionRole.OBJECT, core, hdt.getDictionary().getShared());
 		}
 	}
 

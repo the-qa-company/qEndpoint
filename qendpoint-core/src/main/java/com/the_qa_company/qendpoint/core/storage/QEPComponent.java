@@ -250,30 +250,30 @@ public class QEPComponent implements Cloneable {
 
 				long id = d2.dataset().getDictionary().stringToId(seq, role);
 
-				if (id <= nshared) {
-					if (id <= 0) {
-						// not in the same section, we search on the other side to know if we should put 0 or an ID
-						TripleComponentRole otherRole = switch (role) {
-							case OBJECT -> TripleComponentRole.SUBJECT;
-							case SUBJECT -> TripleComponentRole.OBJECT;
-							default -> throw new AssertionError();
-						};
-						id = d2.dataset().getDictionary().stringToId(seq, otherRole);
-						if (id <= nshared) {
-							assert id <= 0 : "found shared id";
-							sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2));
-						} else {
-							sharedIds.put(dataset, new SharedElement(id, otherRole.asDictionarySectionRole(), d2));
-							return 0; // not the same role
-						}
+				if (id <= 0) {
+					// not in the same section, we search on the other side to know if we should put 0 or an ID
+					TripleComponentRole otherRole = switch (role) {
+						case OBJECT -> TripleComponentRole.SUBJECT;
+						case SUBJECT -> TripleComponentRole.OBJECT;
+						default -> throw new AssertionError();
+					};
+					id = d2.dataset().getDictionary().stringToId(seq, otherRole);
+					if (id <= nshared) {
+						assert id <= 0 : "found shared id";
+						sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2));
 					} else {
-						sharedIds.put(dataset, new SharedElement(id, DictionarySectionRole.SHARED, d2));
+						sharedIds.put(dataset, new SharedElement(id, otherRole.asDictionarySectionRole(), d2));
 					}
+					return 0; // not the same role
+				}
+
+				if (id <= nshared) {
+					sharedIds.put(dataset, new SharedElement(id, DictionarySectionRole.SHARED, d2));
 				} else {
 					sharedIds.put(dataset, new SharedElement(id, role.asDictionarySectionRole(), d2));
 				}
 
-				return id < 0 ? 0 : id;
+				return id;
 			}
 			default -> throw new AssertionError("unknown triple role: " + role);
 		}
@@ -292,7 +292,8 @@ public class QEPComponent implements Cloneable {
 		}
 
 		predicateIds
-				.forEach((id, map) -> bld.append("\n- D[").append(map.dataset.id()).append("] => ").append(map.id()));
+				.forEach((id, map) -> bld.append(String.format("\n- D[%s(%d)] => %X",
+						map.dataset.id(), map.dataset.uid(), map.id())));
 
 		bld.append("\nsharedIds: ");
 
@@ -300,8 +301,9 @@ public class QEPComponent implements Cloneable {
 			bld.append("NONE");
 		}
 
-		sharedIds.forEach((id, map) -> bld.append("\n- D[").append(map.dataset.uid()).append("/").append(map.role)
-				.append("] => ").append(map.id()));
+		sharedIds.forEach((id, map) ->
+				bld.append(String.format("\n- D[%s(%d)/%s] => %X",
+						map.dataset.id(), map.dataset.uid(), map.role, map.id())));
 
 		bld.append("\n");
 

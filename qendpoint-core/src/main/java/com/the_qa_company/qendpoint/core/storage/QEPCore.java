@@ -109,6 +109,13 @@ public class QEPCore implements AutoCloseable {
 	private final boolean noCoIndex;
 	private final Path location;
 
+	QEPCore() {
+		options = HDTOptions.of();
+		memoryDataset = false;
+		noCoIndex = false;
+		location = Path.of("tests");
+	}
+
 	/**
 	 * QEP core
 	 *
@@ -391,6 +398,13 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
+	 * @return unmodifiable collection of the mappers in the core
+	 */
+	public Collection<QEPMap> getMappers() {
+		return Collections.unmodifiableCollection(map.values());
+	}
+
+	/**
 	 * @return all the dataset UIDs
 	 */
 	public Set<Integer> getDatasetUids() {
@@ -428,7 +442,7 @@ public class QEPCore implements AutoCloseable {
 		}
 
 		// create a map for our 2 datasets
-		QEPMap qepMap = new QEPMap(getMapsPath(), dataset1, dataset2);
+		QEPMap qepMap = new QEPMap(getMapsPath(), this, dataset1, dataset2);
 
 		// try to add this map to our maps
 		QEPMap old = map.putIfAbsent(qepMap.getUid(), qepMap);
@@ -449,7 +463,7 @@ public class QEPCore implements AutoCloseable {
 	 * @throws QEPCoreException search exception
 	 */
 	public Iterator<? extends QEPComponentTriple> search(CharSequence subject, CharSequence predicate,
-			CharSequence object) throws QEPCoreException {
+	                                                     CharSequence object) throws QEPCoreException {
 		return search(createComponentByString(subject), createComponentByString(predicate),
 				createComponentByString(object));
 	}
@@ -464,7 +478,7 @@ public class QEPCore implements AutoCloseable {
 	 * @throws QEPCoreException search exception
 	 */
 	public Iterator<? extends QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate,
-			QEPComponent object) throws QEPCoreException {
+	                                                     QEPComponent object) throws QEPCoreException {
 		return search(QEPComponentTriple.of(subject, predicate, object));
 	}
 

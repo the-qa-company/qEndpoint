@@ -7,14 +7,7 @@ import com.the_qa_company.qendpoint.core.util.disk.LongArray;
  *
  * @author Antoine Willerval
  */
-public class PermutationNodeConverter implements NodeConverter {
-	private final LongArray idSequence;
-	private final LongArray mapSequence;
-
-	public PermutationNodeConverter(LongArray idSequence, LongArray mapSequence) {
-		this.idSequence = idSequence;
-		this.mapSequence = mapSequence;
-	}
+public record PermutationNodeConverter(LongArray idSequence, LongArray mapSequence) implements NodeConverter {
 
 	@Override
 	public long mapValue(long id) {

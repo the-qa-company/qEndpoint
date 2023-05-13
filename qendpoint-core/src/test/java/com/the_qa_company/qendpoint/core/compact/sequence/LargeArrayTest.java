@@ -73,6 +73,16 @@ public class LargeArrayTest {
 	}
 
 	@Test
+	public void binarySearchLocationTest() {
+		LongArray arr = SimpleLongArray.wrapper(new long[]{0, 2, 4, 8, 16, 32, 64, 128, 256});
+
+		assertEquals(1, arr.binarySearchLocation(1));
+		assertEquals(3, arr.binarySearchLocation(5));
+		assertEquals(5, arr.binarySearchLocation(17));
+		assertEquals(4, arr.binarySearchLocation(15));
+	}
+
+	@Test
 	public void binarySearchTest() {
 		LongArray arr = SimpleLongArray.wrapper(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8});
 
