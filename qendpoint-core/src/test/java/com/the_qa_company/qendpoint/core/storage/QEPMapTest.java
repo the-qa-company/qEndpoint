@@ -68,6 +68,7 @@ public class QEPMapTest {
 	public static void dumpMap(String outputDir, QEPMap qepMap) {
 		dumpMap(outputDir, qepMap, null);
 	}
+
 	/**
 	 * dump the map in the tests directory
 	 *
@@ -78,12 +79,14 @@ public class QEPMapTest {
 		try {
 			Path output = Path.of("tests").resolve(outputDir);
 			{
-				String prefix = TripleComponentRole.PREDICATE.getAbbreviation() + qepMap.uid.uid1() + "-" + qepMap.uid.uid2() + "-";
+				String prefix = TripleComponentRole.PREDICATE.getAbbreviation() + qepMap.uid.uid1() + "-"
+						+ qepMap.uid.uid2() + "-";
 				QEPMap.SectionMap map = qepMap.maps[TripleComponentRole.PREDICATE.ordinal()];
 				Path routput = output.resolve(TripleComponentRole.PREDICATE.getTitle());
 				Files.createDirectories(routput);
 				try (BufferedWriter w = Files.newBufferedWriter(routput.resolve(prefix + "d1.bin"))) {
-					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " (" + TripleComponentRole.PREDICATE.getTitle() + ")\n");
+					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " ("
+							+ TripleComponentRole.PREDICATE.getTitle() + ")\n");
 					long len = map.mapSequence1().length();
 					for (long i = 0; i < len; i++) {
 						w.write(format("%16X -> %16X\n", map.idSequence1().get(i), map.mapSequence1().get(i)));
@@ -93,7 +96,8 @@ public class QEPMapTest {
 					}
 				}
 				try (BufferedWriter w = Files.newBufferedWriter(routput.resolve(prefix + "d2.bin"))) {
-					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " (" + TripleComponentRole.PREDICATE.getTitle() + ")\n");
+					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " ("
+							+ TripleComponentRole.PREDICATE.getTitle() + ")\n");
 					long len = map.mapSequence2().length();
 					for (long i = 0; i < len; i++) {
 						w.write(format("%16X -> %16X\n", map.idSequence2().get(i), map.mapSequence2().get(i)));
@@ -104,36 +108,35 @@ public class QEPMapTest {
 				}
 			}
 
-			for (TripleComponentRole role : new TripleComponentRole[]{
-					TripleComponentRole.SUBJECT, TripleComponentRole.OBJECT
-			}) {
+			for (TripleComponentRole role : new TripleComponentRole[] { TripleComponentRole.SUBJECT,
+					TripleComponentRole.OBJECT }) {
 				String prefix = role.getAbbreviation() + qepMap.uid.uid1() + "-" + qepMap.uid.uid2() + "-";
 				QEPMap.SectionMap map = qepMap.maps[role.ordinal()];
 				Path routput = output.resolve(role.getTitle());
 				Files.createDirectories(routput);
 				try (BufferedWriter w = Files.newBufferedWriter(routput.resolve(prefix + "d1.bin"))) {
-					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " (" + role.getTitle() + ")\n");
+					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " (" + role.getTitle()
+							+ ")\n");
 					long len = map.mapSequence1().length();
 					for (long i = 0; i < len; i++) {
 						long mappedId = map.mapSequence1().get(i);
-						w.write(format("%16X -> %16X %s\n", map.idSequence1().get(i),
-								mappedId >>> 1,
-								((mappedId & 1) == 0 ? TripleComponentRole.SUBJECT : TripleComponentRole.OBJECT).getAbbreviation()
-						));
+						w.write(format("%16X -> %16X %s\n", map.idSequence1().get(i), mappedId >>> 1,
+								((mappedId & 1) == 0 ? TripleComponentRole.SUBJECT : TripleComponentRole.OBJECT)
+										.getAbbreviation()));
 						if (i % 100 == 0) {
 							w.flush();
 						}
 					}
 				}
 				try (BufferedWriter w = Files.newBufferedWriter(routput.resolve(prefix + "d2.bin"))) {
-					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " (" + role.getTitle() + ")\n");
+					w.write("map (uid) " + qepMap.uid.uid1() + " -> " + qepMap.uid.uid2() + " (" + role.getTitle()
+							+ ")\n");
 					long len = map.mapSequence2().length();
 					for (long i = 0; i < len; i++) {
 						long mappedId = map.mapSequence2().get(i);
-						w.write(format("%16X -> %16X %s\n", map.idSequence2().get(i),
-								mappedId >>> 1,
-								((mappedId & 1) == 0 ? TripleComponentRole.SUBJECT : TripleComponentRole.OBJECT).getAbbreviation()
-						));
+						w.write(format("%16X -> %16X %s\n", map.idSequence2().get(i), mappedId >>> 1,
+								((mappedId & 1) == 0 ? TripleComponentRole.SUBJECT : TripleComponentRole.OBJECT)
+										.getAbbreviation()));
 						if (i % 100 == 0) {
 							w.flush();
 						}
@@ -158,11 +161,11 @@ public class QEPMapTest {
 		QEPDataset d2 = qepMap.getDataset(uid.uid2());
 		Dictionary dict2 = d2.dataset().getDictionary();
 
-
 		// using the same map for both plinks
 		assertSame(pmap.idSequence1(), pmap.mapSequence2());
 		assertSame(pmap.mapSequence1(), pmap.idSequence2());
-		// assert that the ids are sorted on both even if we only read seq the id1
+		// assert that the ids are sorted on both even if we only read seq the
+		// id1
 		// test mapping pid->pid
 		LargeArrayTest.assertSorted(pmap.idSequence1(), false);
 		LargeArrayTest.assertSorted(pmap.mapSequence1(), false);
@@ -183,10 +186,10 @@ public class QEPMapTest {
 		}
 
 		// test mapping so->so
-		for (TripleComponentRole role : new TripleComponentRole[]{
-				TripleComponentRole.SUBJECT,
-				TripleComponentRole.OBJECT
-		}) {
+		for (TripleComponentRole role : new TripleComponentRole[] { TripleComponentRole.SUBJECT,
+				TripleComponentRole.OBJECT }) {
+			TripleComponentRole otherRole = role == TripleComponentRole.SUBJECT ? TripleComponentRole.OBJECT
+					: TripleComponentRole.SUBJECT;
 			int roleId = role.ordinal();
 			QEPMap.SectionMap map = qepMap.maps[roleId];
 
@@ -202,7 +205,6 @@ public class QEPMapTest {
 
 				// converter using the 2 maps
 				PermutationNodeConverter converter = new PermutationNodeConverter(idSequence, mapSequence);
-
 
 				long lastId = 0;
 				for (int i = 1; i < idSequence.length(); i++) {
@@ -251,22 +253,19 @@ public class QEPMapTest {
 					assertEquals("remapped role isn't the same", role, QEPMap.getRoleOfMapped(mappedMapped));
 					long idOfMapped = QEPMap.getIdOfMapped(mappedMapped, nshared);
 					if (id != idOfMapped - (role == TripleComponentRole.OBJECT ? nshared : 0)) {
-						StringBuilder s = new StringBuilder(
-								"""
-										[%s->%s]
-										f^-1(f(x)) isn't x *[mappedMapped=%d]= idOfMapped=%d != id=%d
-										for mbsid=%d/searchedId=%d
-										shared=%d/sharedOther=%d
-										""".formatted(role, roleOther, mappedMapped, idOfMapped, id,
-										mbsid, searchedId,
-										nshared, nsharedOther));
+						StringBuilder s = new StringBuilder("""
+								[%s->%s]
+								f^-1(f(x)) isn't x *[mappedMapped=%d]= idOfMapped=%d != id=%d
+								for mbsid=%d/searchedId=%d
+								shared=%d/sharedOther=%d
+								""".formatted(role, roleOther, mappedMapped, idOfMapped, id, mbsid, searchedId, nshared,
+								nsharedOther));
 
 						for (long j = Math.max(1, mbsid - 10); j < Math.min(mapSequenceOther.length(),
 								mbsid + 10); j++) {
 							long aid = mapSequenceOther.get(j);
 							long aimap = idSequenceOther.get(j);
-							s.append(format("%d/%d/%s:%d ", j, aimap,
-									QEPMap.getRoleOfMapped(aid).getAbbreviation(),
+							s.append(format("%d/%d/%s:%d ", j, aimap, QEPMap.getRoleOfMapped(aid).getAbbreviation(),
 									QEPMap.getIdOfMapped(aid, nshared)));
 							if (j % 5 == 0) {
 								s.append("\n");
@@ -292,15 +291,14 @@ public class QEPMapTest {
 				QEPMapIdSorter.QEPMapIds ids = it12.next();
 				long mappedValue = c12.mapValue(ids.origin());
 				if (ids.destination() != mappedValue) {
-					dumpMap("maptest", qepMap, format("destination=%X != mappedValue=%X\n[%X] %X/%X %X %s %s",
-							ids.destination(), mappedValue, i, ids.origin(), shared12, ids.origin() - shared12, role, c12));
+					dumpMap("maptest", qepMap,
+							format("destination=%X != mappedValue=%X\n[%X] %X/%X %X %s %s", ids.destination(),
+									mappedValue, i, ids.origin(), shared12, ids.origin() - shared12, role, c12));
 				}
 
 				CharSequence str1 = dict1.idToString(ids.origin(), role);
-				CharSequence str2 = dict2.idToString(
-						QEPMap.getIdOfMapped(mappedValue, dict2.getNshared()),
-						QEPMap.getRoleOfMapped(mappedValue)
-				);
+				CharSequence str2 = dict2.idToString(QEPMap.getIdOfMapped(mappedValue, dict2.getNshared()),
+						QEPMap.getRoleOfMapped(mappedValue));
 
 				assertEquals("bad mapped id for " + role, str1, str2);
 				i++;
@@ -314,20 +312,80 @@ public class QEPMapTest {
 				QEPMapIdSorter.QEPMapIds ids = it21.next();
 				long mappedValue = c21.mapValue(ids.origin());
 				if (ids.destination() != mappedValue) {
-					dumpMap("maptest", qepMap, format("destination=%X != mappedValue=%x\n[%x] %X/%X %X %s %s",
-							ids.destination(), mappedValue, i, ids.origin(), shared21, ids.origin() - shared21, role, c12));
+					dumpMap("maptest", qepMap,
+							format("destination=%X != mappedValue=%x\n[%x] %X/%X %X %s %s", ids.destination(),
+									mappedValue, i, ids.origin(), shared21, ids.origin() - shared21, role, c12));
 				}
 
-				CharSequence str1 = dict1.idToString(
-						QEPMap.getIdOfMapped(mappedValue, dict1.getNshared()),
-						QEPMap.getRoleOfMapped(mappedValue)
-				);
-				CharSequence str2 = dict2.idToString(
-						ids.origin(), role
-				);
+				CharSequence str1 = dict1.idToString(QEPMap.getIdOfMapped(mappedValue, dict1.getNshared()),
+						QEPMap.getRoleOfMapped(mappedValue));
+				CharSequence str2 = dict2.idToString(ids.origin(), role);
 
 				assertEquals("bad mapped id for " + role, str1, str2);
 				i++;
+			}
+
+			boolean includeShared = role == TripleComponentRole.SUBJECT;
+			Iterator<? extends CharSequence> it1 = dict1.stringIterator(role, includeShared);
+			long componentId = includeShared ? 1 : (dict1.getNshared() + 1);
+
+			while (it1.hasNext()) {
+				CharSequence bs = it1.next();
+				long cid = componentId++;
+
+				TripleComponentRole findRole;
+				long mappedExcepted = dict2.stringToId(bs, role);
+				if (mappedExcepted > 0) {
+					findRole = role;
+				} else {
+					mappedExcepted = dict2.stringToId(bs, otherRole);
+					findRole = otherRole;
+					if (mappedExcepted <= 0) {
+						continue; // ignore
+					}
+				}
+				assertEquals(role.name(), cid, dict1.stringToId(bs, role));
+
+				long mappedValue = c12.mapValue(cid);
+
+				long idOfMapped = QEPMap.getIdOfMapped(mappedValue, dict2.getNshared());
+				assertEquals(format("can't find mapped role=%s, findRole=%s", role, findRole), mappedExcepted,
+						idOfMapped);
+				if (idOfMapped > dict2.getNshared()) {
+					assertEquals(format("mappedExcepted=%d idOfMapped=%d shared=%d", mappedExcepted, idOfMapped,
+							dict2.getNshared()), findRole, QEPMap.getRoleOfMapped(mappedValue));
+				}
+			}
+
+			Iterator<? extends CharSequence> it2 = dict2.stringIterator(role, includeShared);
+			componentId = includeShared ? 1 : (dict2.getNshared() + 1);
+
+			while (it2.hasNext()) {
+				CharSequence bs = it2.next();
+				long cid = componentId++;
+
+				TripleComponentRole findRole;
+				long mappedExcepted = dict1.stringToId(bs, role);
+				if (mappedExcepted > 0) {
+					findRole = role;
+				} else {
+					mappedExcepted = dict1.stringToId(bs, otherRole);
+					findRole = otherRole;
+					if (mappedExcepted <= 0) {
+						continue; // ignore
+					}
+				}
+				assertEquals(cid, dict2.stringToId(bs, role));
+
+				long mappedValue = c21.mapValue(cid);
+
+				long idOfMapped = QEPMap.getIdOfMapped(mappedValue, dict1.getNshared());
+				assertEquals(format("can't find mapped role=%s, findRole=%s", role, findRole), mappedExcepted,
+						idOfMapped);
+				if (idOfMapped > dict1.getNshared()) {
+					assertEquals(format("mappedExcepted=%d idOfMapped=%d shared=%d", mappedExcepted, idOfMapped,
+							dict1.getNshared()), findRole, QEPMap.getRoleOfMapped(mappedValue));
+				}
 			}
 
 		}
@@ -339,19 +397,16 @@ public class QEPMapTest {
 		}
 		return 0;
 	}
+
 	private static Iterator<QEPMapIdSorter.QEPMapIds> getIdsIterator(NodeConverter converter) {
 		if (converter instanceof PermutationNodeConverter perm) {
 			LongArray ids = perm.idSequence();
 			LongArray maps = perm.mapSequence();
-			return LongStream
-					.range(1, ids.length())
-					.mapToObj(id -> new QEPMapIdSorter.QEPMapIds(ids.get(id), maps.get(id)))
-					.iterator();
+			return LongStream.range(1, ids.length())
+					.mapToObj(id -> new QEPMapIdSorter.QEPMapIds(ids.get(id), maps.get(id))).iterator();
 		} else if (converter instanceof SharedWrapperNodeConverter shared) {
-			if (!(
-					shared.subjectConverter() instanceof PermutationNodeConverter subjectConverter
-							&& shared.objectConverter() instanceof PermutationNodeConverter objectConverter
-			)) {
+			if (!(shared.subjectConverter() instanceof PermutationNodeConverter subjectConverter
+					&& shared.objectConverter() instanceof PermutationNodeConverter objectConverter)) {
 				throw new AssertionError("bad permutation type");
 			}
 			LongArray sids = subjectConverter.idSequence();
@@ -362,16 +417,14 @@ public class QEPMapTest {
 			long sharedCount = shared.sharedCount();
 			long sharedSwapLocation = sids.binarySearchLocation(sharedCount);
 
-			return LongStream
-					.range(1, sharedSwapLocation + oids.length() - 1)
-					.mapToObj(id -> {
-						if (id > sharedSwapLocation) {
-							return new QEPMapIdSorter.QEPMapIds(oids.get(id - sharedSwapLocation) + sharedCount, omaps.get(id - sharedSwapLocation));
-						}
+			return LongStream.range(1, sharedSwapLocation + oids.length() - 1).mapToObj(id -> {
+				if (id > sharedSwapLocation) {
+					return new QEPMapIdSorter.QEPMapIds(oids.get(id - sharedSwapLocation) + sharedCount,
+							omaps.get(id - sharedSwapLocation));
+				}
 
-						return new QEPMapIdSorter.QEPMapIds(sids.get(id), smaps.get(id));
-					})
-					.iterator();
+				return new QEPMapIdSorter.QEPMapIds(sids.get(id), smaps.get(id));
+			}).iterator();
 		} else {
 			throw new AssertionError("bad node converter type: " + converter.getClass());
 		}
@@ -395,19 +448,19 @@ public class QEPMapTest {
 		supplier.createAndSaveFakeHDT(spec, d1);
 		supplier.createAndSaveFakeHDT(spec, d2);
 
-		try (QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0),
-				EMPTY_DELTA);
-		     QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0),
-				     EMPTY_DELTA);
-		     QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
+		try (QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d1),
+				EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d2),
+						EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
 			map.sync();
 		}
 
-		try (QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0),
-				EMPTY_DELTA);
-		     QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0),
-				     EMPTY_DELTA);
-		     QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
+		try (QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d1),
+				EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d2),
+						EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
 			map.sync();
 		}
 	}
@@ -434,20 +487,20 @@ public class QEPMapTest {
 		supplier.createAndSaveFakeHDT(spec, d3);
 		supplier.createAndSaveFakeHDT(spec, d4);
 
-		try (QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d1), EmptyBitmap.of(0),
-				EMPTY_DELTA);
-		     QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d2), EmptyBitmap.of(0),
-				     EMPTY_DELTA);
-		     QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
+		try (QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d1),
+				EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d2),
+						EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
 			map.sync();
 		}
 
 		try (
 				// use same id with different HDT to create an error
-				QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d3), EmptyBitmap.of(0),
-						EMPTY_DELTA);
-				QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d4), EmptyBitmap.of(0),
-						EMPTY_DELTA);
+				QEPDataset dataset1 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d1", d1, HDTManager.mapHDT(d3),
+						EmptyBitmap.of(0), EMPTY_DELTA);
+				QEPDataset dataset2 = new QEPDataset(QEPCoreTest.EMPTY_CORE, "d2", d2, HDTManager.mapHDT(d4),
+						EmptyBitmap.of(0), EMPTY_DELTA);
 				QEPMap map = new QEPMap(root.resolve("maps"), QEPCoreTest.EMPTY_CORE, dataset1, dataset2)) {
 			map.sync();
 		}

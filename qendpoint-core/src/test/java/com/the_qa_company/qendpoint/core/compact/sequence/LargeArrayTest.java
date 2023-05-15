@@ -74,7 +74,7 @@ public class LargeArrayTest {
 
 	@Test
 	public void binarySearchLocationTest() {
-		LongArray arr = SimpleLongArray.wrapper(new long[]{0, 2, 4, 8, 16, 32, 64, 128, 256});
+		LongArray arr = SimpleLongArray.wrapper(new long[] { 0, 2, 4, 8, 16, 32, 64, 128, 256 });
 
 		assertEquals(1, arr.binarySearchLocation(1));
 		assertEquals(3, arr.binarySearchLocation(5));
@@ -84,7 +84,7 @@ public class LargeArrayTest {
 
 	@Test
 	public void binarySearchTest() {
-		LongArray arr = SimpleLongArray.wrapper(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8});
+		LongArray arr = SimpleLongArray.wrapper(new long[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 });
 
 		for (int i = 0; i < arr.length(); i++) {
 			assertEquals(i, arr.binarySearch(i));
@@ -94,7 +94,7 @@ public class LargeArrayTest {
 		assertEquals(-1, arr.binarySearch(-9));
 		assertEquals(-1, arr.binarySearch(9));
 
-		LongArray arr2 = SimpleLongArray.wrapper(new long[]{4, 8, 12, 16, 20});
+		LongArray arr2 = SimpleLongArray.wrapper(new long[] { 4, 8, 12, 16, 20 });
 
 		for (int i = 0; i < arr2.length(); i++) {
 			assertEquals(i, arr2.binarySearch(arr2.get(i)));
@@ -123,18 +123,15 @@ public class LargeArrayTest {
 		Path root = tempDir.newFolder().toPath();
 		final long seed = 34;
 		final long size = 10_000;
-		LongArray[] map1Id = {LongArray.of(size), LongArray.of(size)};
-		LongArray[] map1Perm = {LongArray.of(size), LongArray.of(size)};
-		LongArray[] map2Id = {LongArray.of(size), LongArray.of(size)};
-		LongArray[] map2Perm = {LongArray.of(size), LongArray.of(size)};
+		LongArray[] map1Id = { LongArray.of(size), LongArray.of(size) };
+		LongArray[] map1Perm = { LongArray.of(size), LongArray.of(size) };
+		LongArray[] map2Id = { LongArray.of(size), LongArray.of(size) };
+		LongArray[] map2Perm = { LongArray.of(size), LongArray.of(size) };
 
-
-		try (
-				QEPMapIdSorter sorterS1 = new QEPMapIdSorter(root.resolve("sorterS1"), size, Integer.MAX_VALUE);
+		try (QEPMapIdSorter sorterS1 = new QEPMapIdSorter(root.resolve("sorterS1"), size, Integer.MAX_VALUE);
 				QEPMapIdSorter sorterS2 = new QEPMapIdSorter(root.resolve("sorterS2"), size, Integer.MAX_VALUE);
 				QEPMapIdSorter sorterO1 = new QEPMapIdSorter(root.resolve("sorterO1"), size, Integer.MAX_VALUE);
-				QEPMapIdSorter sorterO2 = new QEPMapIdSorter(root.resolve("sorterO2"), size, Integer.MAX_VALUE)
-		) {
+				QEPMapIdSorter sorterO2 = new QEPMapIdSorter(root.resolve("sorterO2"), size, Integer.MAX_VALUE)) {
 			Random rnd = new Random(seed);
 
 			for (int i = 0; i < size; i++) {
@@ -188,7 +185,6 @@ public class LargeArrayTest {
 				assertSorted(map1Id[i], true);
 				assertSorted(map2Id[i], true);
 			}
-
 
 			Random rnd2 = new Random(seed);
 

@@ -463,7 +463,7 @@ public class QEPCore implements AutoCloseable {
 	 * @throws QEPCoreException search exception
 	 */
 	public Iterator<? extends QEPComponentTriple> search(CharSequence subject, CharSequence predicate,
-	                                                     CharSequence object) throws QEPCoreException {
+			CharSequence object) throws QEPCoreException {
 		return search(createComponentByString(subject), createComponentByString(predicate),
 				createComponentByString(object));
 	}
@@ -478,7 +478,7 @@ public class QEPCore implements AutoCloseable {
 	 * @throws QEPCoreException search exception
 	 */
 	public Iterator<? extends QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate,
-	                                                     QEPComponent object) throws QEPCoreException {
+			QEPComponent object) throws QEPCoreException {
 		return search(QEPComponentTriple.of(subject, predicate, object));
 	}
 

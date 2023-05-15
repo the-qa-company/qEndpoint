@@ -65,7 +65,7 @@ public class QEPCoreTest {
 			PathUtils.deleteDirectory(root);
 			throw t;
 		}
-		return List.of(new Object[][]{{root, rootHDT, splitHDT}});
+		return List.of(new Object[][] { { root, rootHDT, splitHDT } });
 	}
 
 	@Parameterized.AfterParam
@@ -129,8 +129,8 @@ public class QEPCoreTest {
 	@Test
 	public void coreSearchTest() throws QEPCoreException, IOException, NotFoundException {
 		try (HDT hdt = HDTManager.mapHDT(rootHDT);
-		     QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
-		     Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
+				QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
+				Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 			assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
 			Iterator<? extends QEPComponentTriple> search = core.search("", "", "");
 
@@ -241,8 +241,7 @@ public class QEPCoreTest {
 					dumpCore(core, """
 							%X != %X for role %s
 							%s
-							""".formatted(expectedId, mappedId, role, mappedComponent.dumpBinding())
-					);
+							""".formatted(expectedId, mappedId, role, mappedComponent.dumpBinding()));
 				}
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
@@ -251,8 +250,7 @@ public class QEPCoreTest {
 							expectedId=%X != actualId=%X
 							ids aren't the same for component %s
 							(n=%X / d-role=%s / dataset=%s)
-							""".formatted(expectedId, actualId, qepComponent.dumpBinding(), n, drole, dataset)
-					);
+							""".formatted(expectedId, actualId, qepComponent.dumpBinding(), n, drole, dataset));
 				}
 			}
 			// reverse the search order
@@ -272,8 +270,7 @@ public class QEPCoreTest {
 					dumpCore(core, """
 							guessedId=%X != mappedId=%X for role=%s
 							%s
-							""".formatted(guessedId, mappedId, role, mappedComponent.dumpBinding())
-					);
+							""".formatted(guessedId, mappedId, role, mappedComponent.dumpBinding()));
 				}
 
 				long actualId = qepComponent.getId(dataset.uid(), role);
@@ -285,12 +282,11 @@ public class QEPCoreTest {
 							component: %s
 							ids aren't the same for component
 							%s
-							""".formatted(guessedId, actualId, n, drole, dataset,
-							dataset.find(component), component,
-							qepComponent.dumpBinding())
-					);
+							""".formatted(guessedId, actualId, n, drole, dataset, dataset.find(component), component,
+							qepComponent.dumpBinding()));
 				}
 			}
+			QEPComponentTest.assertMapping(qepComponent);
 		}
 	}
 

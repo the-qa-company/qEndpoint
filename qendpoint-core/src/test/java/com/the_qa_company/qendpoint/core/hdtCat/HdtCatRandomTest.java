@@ -8,6 +8,7 @@ import com.the_qa_company.qendpoint.core.hdtDiff.HdtDiffTest;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
+import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -53,46 +54,50 @@ public class HdtCatRandomTest extends AbstractMapMemoryTest {
 	@Test
 	public void fakeTest() throws ParserException, IOException, NotFoundException {
 		File root = tempDir.newFolder();
-		String location = new File(root, "catHdt").getAbsolutePath();
-		String hdt1F = new File(root, "hdt1").getAbsolutePath();
-		String hdt2F = new File(root, "hdt2").getAbsolutePath();
-		String hdtCatExcepted = new File(root, "hdtCatExcepted").getAbsolutePath();
-		String catOutput = new File(root, "catResult").getAbsolutePath();
+		try {
+			String location = new File(root, "catHdt").getAbsolutePath();
+			String hdt1F = new File(root, "hdt1").getAbsolutePath();
+			String hdt2F = new File(root, "hdt2").getAbsolutePath();
+			String hdtCatExcepted = new File(root, "hdtCatExcepted").getAbsolutePath();
+			String catOutput = new File(root, "catResult").getAbsolutePath();
 
-		long size = 10_000;
-		long seed = 482;
+			long size = 10_000;
+			long seed = 482;
 
-		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-				.createSupplierWithMaxTriples(size, seed).withMaxFakeType(4).withMaxElementSplit(1000)
-				.withUnicode(unicode);
-		supplier.createAndSaveFakeHDT(spec, hdt1F);
-		supplier.createAndSaveFakeHDT(spec, hdt2F);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(size, seed).withMaxFakeType(4).withMaxElementSplit(1000)
+					.withUnicode(unicode);
+			supplier.createAndSaveFakeHDT(spec, hdt1F);
+			supplier.createAndSaveFakeHDT(spec, hdt2F);
 
-		supplier.reset();
+			supplier.reset();
 
-		try (HDT hdtMerge = HDTManager.generateHDT(
-				CombinedIterator
-						.combine(List.of(supplier.createTripleStringStream(), supplier.createTripleStringStream())),
-				"http://w", spec, null)) {
-			hdtMerge.saveToHDT(hdtCatExcepted, null);
-		}
+			try (HDT hdtMerge = HDTManager.generateHDT(
+					CombinedIterator
+							.combine(List.of(supplier.createTripleStringStream(), supplier.createTripleStringStream())),
+					"http://w", spec, null)) {
+				hdtMerge.saveToHDT(hdtCatExcepted, null);
+			}
 
-		try (HDT cat = HDTManager.catHDT(location, hdt1F, hdt2F, spec, null)) {
-			cat.saveToHDT(catOutput, null);
-		}
+			try (HDT cat = HDTManager.catHDT(location, hdt1F, hdt2F, spec, null)) {
+				cat.saveToHDT(catOutput, null);
+			}
 
-		try (HDT excepted = HDTManager.loadHDT(hdtCatExcepted, null, spec);
-				HDT actual = HDTManager.loadHDT(catOutput, null, spec)) {
-			HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(excepted);
-			HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(actual);
-			HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(excepted, actual);
-		}
-
-		try (HDT excepted = HDTManager.mapHDT(hdtCatExcepted, null, spec)) {
-			try (HDT actual = HDTManager.mapHDT(catOutput, null, spec)) {
+			try (HDT excepted = HDTManager.loadHDT(hdtCatExcepted, null, spec);
+					HDT actual = HDTManager.loadHDT(catOutput, null, spec)) {
+				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(excepted);
 				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(actual);
 				HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(excepted, actual);
 			}
+
+			try (HDT excepted = HDTManager.mapHDT(hdtCatExcepted, null, spec)) {
+				try (HDT actual = HDTManager.mapHDT(catOutput, null, spec)) {
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(actual);
+					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(excepted, actual);
+				}
+			}
+		} finally {
+			FileUtils.deleteDirectory(root);
 		}
 	}
 }

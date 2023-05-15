@@ -61,10 +61,10 @@ public class QEPDataset implements Closeable {
 	 * @param path         path of the dataset
 	 * @param dataset      loaded dataset
 	 * @param deleteBitmap delete bitmap
-	 * @param deltaBitmaps
+	 * @param deltaBitmaps delta bitmaps for the dataset
 	 */
 	public QEPDataset(QEPCore core, String id, Path path, HDT dataset, ModifiableBitmap deleteBitmap,
-	                  ModifiableBitmap[] deltaBitmaps) {
+			ModifiableBitmap[] deltaBitmaps) {
 		this.core = core;
 		this.id = id;
 		this.path = path;

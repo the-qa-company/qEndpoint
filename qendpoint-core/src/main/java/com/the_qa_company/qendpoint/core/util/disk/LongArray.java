@@ -68,7 +68,7 @@ public interface LongArray extends Iterable<Long> {
 
 	/**
 	 * @return sync version of this long array, might return this if this
-	 * LongArray is already a sync array
+	 *         LongArray is already a sync array
 	 */
 	default LongArray asSync() {
 		return SyncLongArray.of(this);
@@ -114,12 +114,12 @@ public interface LongArray extends Iterable<Long> {
 		return -1;
 	}
 
-
 	/**
 	 * run a binary search over this array, the array should be sorted!
 	 *
 	 * @param value the value to search
-	 * @return index of the value, or the index it would be if it was in this array
+	 * @return index of the value, or the index it would be if it was in this
+	 *         array
 	 * @see #linearSearch(long)
 	 */
 	default long binarySearchLocation(long value) {
@@ -132,7 +132,8 @@ public interface LongArray extends Iterable<Long> {
 	 * @param value      the value to search
 	 * @param startIndex start index (inclusive)
 	 * @param endIndex   end index (exclusive)
-	 * @return index of the value, or the index it would be if it was in this array
+	 * @return index of the value, or the index it would be if it was in this
+	 *         array
 	 * @see #linearSearch(long)
 	 */
 	default long binarySearchLocation(long value, long startIndex, long endIndex) {
@@ -153,8 +154,6 @@ public interface LongArray extends Iterable<Long> {
 		}
 		return min;
 	}
-
-
 
 	/**
 	 * run a linear search over this array
@@ -197,6 +196,7 @@ public interface LongArray extends Iterable<Long> {
 	default Iterator<Long> iterator() {
 		return new Iterator<>() {
 			long index;
+
 			@Override
 			public boolean hasNext() {
 				return index < length();
