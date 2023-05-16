@@ -5,7 +5,7 @@ package com.the_qa_company.qendpoint.core.storage;
  *
  * @author Antoine Willerval
  */
-public class QEPCoreException extends Exception {
+public class QEPCoreException extends RuntimeException {
 	public QEPCoreException() {
 	}
 

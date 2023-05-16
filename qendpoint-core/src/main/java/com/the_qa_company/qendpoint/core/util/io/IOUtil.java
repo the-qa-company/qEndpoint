@@ -27,12 +27,10 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
-import com.the_qa_company.qendpoint.core.util.crc.CRC;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.io.file.PathUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -109,7 +107,7 @@ public class IOUtil {
 		}
 		long split = triples / count;
 		for (int i = 0; i < count; i++) {
-			paths[i] = base.resolveSibling(base.getFileName() + "-" + i + ".hdt");
+			paths[i] = base.resolve(origin.getFileName() + "-" + i + ".hdt");
 			Path work = base.resolve("workHDT" + new Random().nextInt(100000));
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.HDTCAT_LOCATION, work);
 			try (Bitmap64Big deleteBM = Bitmap64Big.memory(triples)) {
@@ -654,17 +652,12 @@ public class IOUtil {
 	}
 
 	public static InputStream asUncompressed(InputStream inputStream, CompressionType type) throws IOException {
-		switch (type) {
-		case GZIP:
-			return new GZIPInputStream(inputStream);
-		case BZIP:
-			return new BZip2CompressorInputStream(inputStream, true);
-		case XZ:
-			return new XZCompressorInputStream(inputStream, true);
-		case NONE:
-			return inputStream;
-		}
-		throw new IllegalArgumentException("CompressionType not yet implemented: " + type);
+		return switch (type) {
+		case GZIP -> new GZIPInputStream(inputStream);
+		case BZIP -> new BZip2CompressorInputStream(inputStream, true);
+		case XZ -> new XZCompressorInputStream(inputStream, true);
+		case NONE -> inputStream;
+		};
 	}
 
 	/**

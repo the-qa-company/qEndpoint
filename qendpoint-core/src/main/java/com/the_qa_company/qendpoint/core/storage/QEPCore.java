@@ -4,9 +4,11 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.iterator.utils.CatIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.MapFilterIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
@@ -108,12 +110,25 @@ public class QEPCore implements AutoCloseable {
 	private final boolean memoryDataset;
 	private final boolean noCoIndex;
 	private final Path location;
+	private ProgressListener listener = ProgressListener.ignore();
+
+	private long maxId;
 
 	QEPCore() {
 		options = HDTOptions.of();
 		memoryDataset = false;
 		noCoIndex = false;
 		location = Path.of("tests");
+	}
+
+	/**
+	 * QEP core
+	 *
+	 * @param location location of the core
+	 * @throws QEPCoreException can't init the core
+	 */
+	public QEPCore(Path location) throws QEPCoreException {
+		this(location, HDTOptions.empty(), true);
 	}
 
 	/**
@@ -274,6 +289,7 @@ public class QEPCore implements AutoCloseable {
 			Closer.closeAll(dataset);
 			dataset.clear();
 			datasetByUid.clear();
+			Files.createDirectories(getDatasetPath());
 			try (Stream<Path> files = Files.list(getDatasetPath())) {
 				files.forEach(path -> {
 					String filename = path.getFileName().toString();
@@ -297,6 +313,12 @@ public class QEPCore implements AutoCloseable {
 					}
 					// load the dataset
 					try {
+						if (indexId.length() < 15) {
+							try {
+								maxId = Math.max(Long.parseLong(indexId), maxId);
+							} catch (NumberFormatException ignore) {
+							}
+						}
 						QEPDataset ds = openDataset(indexId, path);
 						QEPDataset other = dataset.put(ds.id(), ds);
 
@@ -454,6 +476,16 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
+	 * search all the triples into the core
+	 *
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public Iterator<? extends QEPComponentTriple> search() throws QEPCoreException {
+		return search("", "", "");
+	}
+
+	/**
 	 * search a triple into the core
 	 *
 	 * @param subject   subject
@@ -496,6 +528,25 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
+	 * set the progression listener for this core
+	 *
+	 * @param listener listener
+	 * @see #removeListener()
+	 */
+	public void setListener(ProgressListener listener) {
+		this.listener = Objects.requireNonNull(listener);
+	}
+
+	/**
+	 * remove the progression listener for this core
+	 *
+	 * @see #setListener(ProgressListener)
+	 */
+	public void removeListener() {
+		setListener(ProgressListener.ignore());
+	}
+
+	/**
 	 * search a triple into the core
 	 *
 	 * @param triple triple to search
@@ -512,6 +563,123 @@ public class QEPCore implements AutoCloseable {
 
 		// cat all the iterators
 		return CatIterator.of(iterators);
+	}
+
+	/**
+	 * create a return a new dataset id
+	 *
+	 * @return unique dataset id
+	 */
+	public String createNewDatasetId() {
+		for (long id = maxId + 1; id < Long.MAX_VALUE; id++) {
+			String sid = Long.toString(id);
+			if (getDatasetById(sid) != null) {
+				continue; // a dataset with this ID already exist, overflow?
+			}
+			maxId = id;
+			return sid;
+		}
+		// force the name to avoid using an overflow
+		for (long id = 0; id < maxId; id++) {
+			String sid = Long.toString(id);
+			if (getDatasetById(sid) != null) {
+				continue;
+			}
+			return sid;
+		}
+		throw new AssertionError("too many nodes");
+	}
+
+	/**
+	 * load triples into a new dataset
+	 *
+	 * @param triples           triples to load
+	 * @param baseURI           base URI of the new dataset
+	 * @param checkAlreadyExist check if the elements were already in the core
+	 * @throws IOException     exception while loading triples
+	 * @throws ParserException parsing exception while loading the triples
+	 */
+	public void loadData(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist)
+			throws IOException, ParserException {
+		loadData(triples, baseURI, checkAlreadyExist, null);
+	}
+
+	/**
+	 * load triples into a new dataset
+	 *
+	 * @param triples           triples to load
+	 * @param baseURI           base URI of the new dataset
+	 * @param checkAlreadyExist check if the elements were already in the core
+	 * @param listener          listener when loading the dataset
+	 * @throws IOException     exception while loading triples
+	 * @throws ParserException parsing exception while loading the triples
+	 */
+	public void loadData(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist,
+			ProgressListener listener) throws IOException, ParserException {
+		if (checkAlreadyExist) {
+			triples = MapFilterIterator.of(triples, triple -> {
+				if (search(triple).hasNext()) {
+					return null;
+				}
+				return triple;
+			});
+		}
+		String id;
+		Path datasetPath;
+		while (true) {
+			id = createNewDatasetId();
+			datasetPath = getDatasetPath().resolve(FILE_DATASET_PREFIX + id + FILE_DATASET_SUFFIX);
+
+			// we wait until we don't overwrite a dataset, bad config or update
+			// of the core while running?
+			if (!Files.exists(datasetPath)) {
+				break;
+			}
+			logger.warn("a dataset with the id '{}' was found in te file '{}', but it wasn't registered in the core",
+					id, datasetPath);
+		}
+		// push our custom config to set the future dataset (for disk generation
+		// methods)
+		HDTOptions genOpt = options.pushTop();
+		genOpt.set(HDTCAT_FUTURE_LOCATION, datasetPath.toAbsolutePath());
+		genOpt.set(LOADER_DISK_FUTURE_HDT_LOCATION_KEY, datasetPath.toAbsolutePath());
+		genOpt.set(LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, datasetPath.toAbsolutePath());
+
+		ProgressListener combinedListener = this.listener.combine(listener);
+		try (HDT dataset = HDTManager.generateHDT(triples, baseURI, genOpt, combinedListener)) {
+			dataset.saveToHDT(datasetPath, combinedListener);
+		} catch (Throwable t) {
+			try {
+				// delete the dataset file if it was already used
+				Files.deleteIfExists(datasetPath);
+			} catch (IOException e) {
+				t.addSuppressed(e);
+			}
+			throw t;
+		}
+
+		// we open the dataset because the memory generation is using more
+		// memory before being reloaded
+		QEPDataset ds = openDataset(id, datasetPath);
+
+		QEPDataset other = dataset.put(ds.id(), ds);
+		datasetByUid.put(ds.uid(), ds);
+
+		// bind the new dataset with all the previous datasets
+		for (QEPDataset d2 : dataset.values()) {
+			bindDataset(ds, d2);
+		}
+
+		if (other != null) {
+			QEPCoreException otherLoadedException = new QEPCoreException(
+					"dataset with id '" + other.id() + "' was already loaded");
+			try {
+				other.close();
+			} catch (Exception e) {
+				otherLoadedException.addSuppressed(e);
+			}
+			throw otherLoadedException;
+		}
 	}
 
 	/**
@@ -545,9 +713,13 @@ public class QEPCore implements AutoCloseable {
 	@Override
 	public void close() throws QEPCoreException {
 		try {
-			Closer.closeAll(dataset);
+			Closer.closeAll(dataset, map);
 		} catch (IOException e) {
 			throw new QEPCoreException(e);
+		} finally {
+			dataset.clear();
+			datasetByUid.clear();
+			map.clear();
 		}
 	}
 

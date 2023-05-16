@@ -5,20 +5,42 @@ package com.the_qa_company.qendpoint.core.listener;
  */
 @FunctionalInterface
 public interface MultiThreadListener extends ProgressListener {
+	static MultiThreadListener ofSingle(ProgressListener listener) {
+		if (listener instanceof MultiThreadListener mtl) {
+			return mtl;
+		}
+		if (listener == null) {
+			return null;
+		}
+		return (thread, level, message) -> listener.notifyProgress(level, message);
+	}
+
 	/**
 	 * empty progress listener
 	 *
 	 * @return progress listener
 	 */
 	static MultiThreadListener ignore() {
-		return ((thread, level, message) -> {});
+		return new MultiThreadListener() {
+			@Override
+			public void notifyProgress(String thread, float level, String message) {
+			}
+
+			@Override
+			public MultiThreadListener combine(MultiThreadListener listener) {
+				if (listener == null) {
+					return this;
+				}
+				return listener;
+			}
+		};
 	}
 
 	/**
 	 * @return progress listener returning to sdtout
 	 */
 	static MultiThreadListener sout() {
-		return ((thread, level, message) -> System.out.println(level + " - " + message));
+		return ((thread, level, message) -> System.out.println("[" + thread + "] " + level + " - " + message));
 	}
 
 	/**
@@ -74,5 +96,26 @@ public interface MultiThreadListener extends ProgressListener {
 	 */
 	default void unregisterThread(String threadName) {
 		// should be filled by implementation if required
+	}
+
+	/**
+	 * combine a listener with another one into a new listener
+	 *
+	 * @param listener the listener
+	 * @return new listener
+	 */
+	default MultiThreadListener combine(MultiThreadListener listener) {
+		if (listener == null) {
+			return this;
+		}
+		return ((thread, level, message) -> {
+			MultiThreadListener.this.notifyProgress(thread, level, message);
+			listener.notifyProgress(thread, level, message);
+		});
+	}
+
+	@Override
+	default ProgressListener combine(ProgressListener listener) {
+		return combine(ofSingle(listener));
 	}
 }

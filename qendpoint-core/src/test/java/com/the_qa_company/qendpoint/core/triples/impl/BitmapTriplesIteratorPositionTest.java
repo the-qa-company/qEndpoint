@@ -14,6 +14,7 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
+import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +30,7 @@ import java.nio.file.Files;
 import java.util.*;
 
 @RunWith(Parameterized.class)
-public class BitmapTriplesIteratorPositionTest {
+public class BitmapTriplesIteratorPositionTest extends AbstractMapMemoryTest {
 
 	public static final List<String> DICTIONARIES = List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 			HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
@@ -95,81 +96,62 @@ public class BitmapTriplesIteratorPositionTest {
 		this.shared = shared;
 	}
 
-	/**
-	 * Print an iterator and (if found) sub iterators
-	 *
-	 * @param it Iterator
-	 */
-	private void printIterator(Object it) {
-		for (int depth = 0;; depth++) {
-			System.out.println("[" + depth + "] Used iterator: " + it.getClass());
-			try {
-				if (it instanceof DictionaryTranslateIterator) {
-					it = ITERATOR_SUB.get(it);
-				} else if (it instanceof DictionaryTranslateIteratorBuffer) {
-					it = ITERATOR_SUB_BUFFER.get(it);
-				} else if (it instanceof SequentialSearchIteratorTripleID) {
-					it = ITERATOR_SUB_SEQ.get(it);
-				} else
-					break;
-			} catch (IllegalAccessException e) {
-				break;
+	@Test
+	public void searchAllTest() throws IOException, NotFoundException {
+		try (HDTTestUtils data = new HDTTestUtils(tempDir.newFile(), subjects, predicates, objects, shared, spec,
+				false)) {
+
+			IteratorTripleString it = data.searchForSPO(0, 0, 0);
+
+			// printIterator(it);
+
+			long index = 0L;
+			while (it.hasNext()) {
+				TripleString triple = it.next();
+				long tripleIndex = it.getLastTriplePosition();
+
+				// test if the search is returning index from 0, 1, ...count
+				Assert.assertEquals("nextTriplePosition order", index++, tripleIndex);
+
+				// test if the triple is at the right index
+				HDTTestUtils.SpoId spoId = data.tripleToSpo(triple);
+				long testIndex = spoId.getIndex();
+				Assert.assertEquals("getIndex hdt value", testIndex, tripleIndex);
+
+				TripleID findTriple = data.hdt.getTriples().findTriple(tripleIndex);
+				long testIndex2 = data.tripleToSpo(findTriple).getIndex();
+				Assert.assertEquals("getIndex findTriple hdt value", testIndex2, tripleIndex);
 			}
 		}
 	}
 
 	@Test
-	public void searchAllTest() throws IOException, NotFoundException {
-		HDTTestUtils data = new HDTTestUtils(tempDir.newFile(), subjects, predicates, objects, shared, spec, false);
-
-		IteratorTripleString it = data.searchForSPO(0, 0, 0);
-
-		// printIterator(it);
-
-		long index = 0L;
-		while (it.hasNext()) {
-			TripleString triple = it.next();
-			long tripleIndex = it.getLastTriplePosition();
-
-			// test if the search is returning index from 0, 1, ...count
-			Assert.assertEquals("nextTriplePosition order", index++, tripleIndex);
-
-			// test if the triple is at the right index
-			HDTTestUtils.SpoId spoId = data.tripleToSpo(triple);
-			long testIndex = spoId.getIndex();
-			Assert.assertEquals("getIndex hdt value", testIndex, tripleIndex);
-
-			TripleID findTriple = data.hdt.getTriples().findTriple(tripleIndex);
-			long testIndex2 = data.tripleToSpo(findTriple).getIndex();
-			Assert.assertEquals("getIndex findTriple hdt value", testIndex2, tripleIndex);
-		}
-	}
-
-	@Test
 	public void searchAllTestBuffer() throws IOException, NotFoundException {
-		HDTTestUtils data = new HDTTestUtils(tempDir.newFile(), subjects, predicates, objects, shared, spec, true);
+		try (HDTTestUtils data = new HDTTestUtils(tempDir.newFile(), subjects, predicates, objects, shared, spec,
+				true)) {
 
-		IteratorTripleString it = data.searchForSPO(0, 0, 0);
+			IteratorTripleString it = data.searchForSPO(0, 0, 0);
 
-		// printIterator(it);
+			// printIterator(it);
 
-		long index = 0L;
-		while (it.hasNext()) {
-			TripleString triple = it.next();
-			long tripleIndex = it.getLastTriplePosition();
+			long index = 0L;
+			while (it.hasNext()) {
+				TripleString triple = it.next();
+				long tripleIndex = it.getLastTriplePosition();
 
-			// test if the search is returning index from 0, 1, ...count
-			Assert.assertEquals("nextTriplePosition order", index++, tripleIndex);
+				// test if the search is returning index from 0, 1, ...count
+				Assert.assertEquals("nextTriplePosition order", index++, tripleIndex);
 
-			// test if the triple is at the right index
-			HDTTestUtils.SpoId spoId = data.tripleToSpo(triple);
-			long testIndex = spoId.getIndex();
-			Assert.assertEquals("getIndex hdt value", testIndex, tripleIndex);
+				// test if the triple is at the right index
+				HDTTestUtils.SpoId spoId = data.tripleToSpo(triple);
+				long testIndex = spoId.getIndex();
+				Assert.assertEquals("getIndex hdt value", testIndex, tripleIndex);
 
-			// test if we can find it back again
-			TripleID findTriple = data.hdt.getTriples().findTriple(tripleIndex);
-			long testIndex2 = data.tripleToSpo(findTriple).getIndex();
-			Assert.assertEquals("getIndex findTriple hdt value", testIndex2, tripleIndex);
+				// test if we can find it back again
+				TripleID findTriple = data.hdt.getTriples().findTriple(tripleIndex);
+				long testIndex2 = data.tripleToSpo(findTriple).getIndex();
+				Assert.assertEquals("getIndex findTriple hdt value", testIndex2, tripleIndex);
+			}
 		}
 	}
 
@@ -183,19 +165,21 @@ public class BitmapTriplesIteratorPositionTest {
 	 * @throws NotFoundException search
 	 */
 	private void searchTest(int s, int p, int o) throws IOException, NotFoundException {
-		HDTTestUtils data = new HDTTestUtils(tempDir.newFile(), subjects, predicates, objects, shared, spec, true);
+		try (HDTTestUtils data = new HDTTestUtils(tempDir.newFile(), subjects, predicates, objects, shared, spec,
+				true)) {
 
-		IteratorTripleString it = data.searchForSPO(s, p, o);
+			IteratorTripleString it = data.searchForSPO(s, p, o);
 
-		// printIterator(it);
+			// printIterator(it);
 
-		while (it.hasNext()) {
-			TripleString triple = it.next();
-			long tripleIndex = it.getLastTriplePosition();
-			// test if the triple is at the right index
-			HDTTestUtils.SpoId spoId = data.tripleToSpo(triple);
-			long testIndex = spoId.getIndex();
-			Assert.assertEquals("getIndex hdt value", testIndex, tripleIndex);
+			while (it.hasNext()) {
+				TripleString triple = it.next();
+				long tripleIndex = it.getLastTriplePosition();
+				// test if the triple is at the right index
+				HDTTestUtils.SpoId spoId = data.tripleToSpo(triple);
+				long testIndex = spoId.getIndex();
+				Assert.assertEquals("getIndex hdt value", testIndex, tripleIndex);
+			}
 		}
 	}
 

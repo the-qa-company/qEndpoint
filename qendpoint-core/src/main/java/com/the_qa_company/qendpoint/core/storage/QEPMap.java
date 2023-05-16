@@ -75,7 +75,7 @@ public class QEPMap implements Closeable {
 	}
 
 	record SectionMap(LongArray idSequence1, LongArray mapSequence1, LongArray idSequence2, LongArray mapSequence2,
-			long nshared1, long nshared2) {
+			long nshared1, long nshared2) implements Closeable {
 		LongArray idByNumber(int number) {
 			return switch (number) {
 			case 0 -> idSequence1;
@@ -98,6 +98,11 @@ public class QEPMap implements Closeable {
 			case 1 -> mapSequence2;
 			default -> throw new AssertionError();
 			};
+		}
+
+		@Override
+		public void close() throws IOException {
+			Closer.closeAll(idSequence1, mapSequence1, idSequence2, mapSequence2);
 		}
 	}
 

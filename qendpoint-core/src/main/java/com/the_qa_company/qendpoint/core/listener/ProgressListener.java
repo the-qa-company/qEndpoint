@@ -31,7 +31,19 @@ public interface ProgressListener {
 	 * @return progress listener
 	 */
 	static ProgressListener ignore() {
-		return ((level, message) -> {});
+		return new ProgressListener() {
+			@Override
+			public void notifyProgress(float level, String message) {
+			}
+
+			@Override
+			public ProgressListener combine(ProgressListener listener) {
+				if (listener == null) {
+					return this;
+				}
+				return listener;
+			}
+		};
 	}
 
 	/**
@@ -58,4 +70,20 @@ public interface ProgressListener {
 	 * @param message Description of the operation
 	 */
 	void notifyProgress(float level, String message);
+
+	/**
+	 * combine a listener with another one into a new listener
+	 *
+	 * @param listener the listener
+	 * @return new listener
+	 */
+	default ProgressListener combine(ProgressListener listener) {
+		if (listener == null) {
+			return this;
+		}
+		return ((level, message) -> {
+			ProgressListener.this.notifyProgress(level, message);
+			listener.notifyProgress(level, message);
+		});
+	}
 }

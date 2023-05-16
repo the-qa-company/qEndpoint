@@ -1,25 +1,24 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.writer.TripleWriterHDT;
+import com.the_qa_company.qendpoint.core.hdtDiff.utils.TripleStringUtility;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.hdtDiff.utils.TripleStringUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @RunWith(Parameterized.class)
-public class BitmapTriplesIteratorDiffTest {
+public class BitmapTriplesIteratorDiffTest extends AbstractMapMemoryTest {
 	/**
 	 * Return type for
 	 * {@link #createTestHDT(File, File, int, int, int, int, int)}
@@ -37,8 +36,6 @@ public class BitmapTriplesIteratorDiffTest {
 		public int tupleCountB;
 		public int shared;
 	}
-
-	private static final Logger logger = LoggerFactory.getLogger(BitmapTriplesIteratorDiffTest.class);
 
 	/**
 	 * create a 2 test hdts and return the tuple count
@@ -125,24 +122,25 @@ public class BitmapTriplesIteratorDiffTest {
 
 		HDTDiffData data = createTestHDT(hdt1, hdt2, 40, 50, 60, 5, 4);
 
-		HDT origin = HDTManager.mapHDT(hdt2.getAbsolutePath());
-		HDT diff = HDTManager.mapHDT(hdt1.getAbsolutePath());
+		try (HDT origin = HDTManager.mapHDT(hdt2.getAbsolutePath());
+				HDT diff = HDTManager.mapHDT(hdt1.getAbsolutePath())) {
 
-		Assert.assertEquals("Count in orig hdt", data.tupleCountB, origin.getTriples().getNumberOfElements());
-		Assert.assertEquals("Count in diff hdt", data.tupleCountA, diff.getTriples().getNumberOfElements());
+			Assert.assertEquals("Count in orig hdt", data.tupleCountB, origin.getTriples().getNumberOfElements());
+			Assert.assertEquals("Count in diff hdt", data.tupleCountA, diff.getTriples().getNumberOfElements());
 
-		IteratorTripleID it1 = origin.getTriples().searchAll();
+			IteratorTripleID it1 = origin.getTriples().searchAll();
 
-		TripleStringUtility triple = new TripleStringUtility(origin);
-		long shared = 0;
-		while (it1.hasNext()) {
-			triple.loadTriple(it1.next());
-			TripleID other = triple.searchInto(diff);
-			if (other != null) {
-				shared++;
+			TripleStringUtility triple = new TripleStringUtility(origin);
+			long shared = 0;
+			while (it1.hasNext()) {
+				triple.loadTriple(it1.next());
+				TripleID other = triple.searchInto(diff);
+				if (other != null) {
+					shared++;
+				}
 			}
+			Assert.assertEquals("Shared triples", data.shared, shared);
 		}
-		Assert.assertEquals("Shared triples", data.shared, shared);
 	}
 
 	@Test
@@ -152,31 +150,32 @@ public class BitmapTriplesIteratorDiffTest {
 
 		HDTDiffData data = createTestHDT(hdt1, hdt2, 100, 50, 60, 5, 4);
 
-		HDT origin = HDTManager.mapHDT(hdt1.getAbsolutePath(), null, spec);
-		HDT diff = HDTManager.mapHDT(hdt2.getAbsolutePath(), null, spec);
+		try (HDT origin = HDTManager.mapHDT(hdt1.getAbsolutePath(), null, spec);
+				HDT diff = HDTManager.mapHDT(hdt2.getAbsolutePath(), null, spec)) {
 
-		ModifiableBitmap bitmap = BitmapFactory.createRWBitmap(data.tupleCountA);
+			ModifiableBitmap bitmap = BitmapFactory.createRWBitmap(data.tupleCountA);
 
-		BitmapTriplesIteratorDiff d = new BitmapTriplesIteratorDiff(origin, diff, bitmap);
+			BitmapTriplesIteratorDiff d = new BitmapTriplesIteratorDiff(origin, diff, bitmap);
 
-		d.fillBitmap();
+			d.fillBitmap();
 
-		System.out.println("Bitmap bits: " + bitmap.countOnes());
-		System.out.println("tupleCountA: " + data.tupleCountA);
-		System.out.println("tupleCountB: " + data.tupleCountB);
-		System.out.println("shared:      " + data.shared);
-		Assert.assertEquals("Shared element", data.shared, bitmap.countOnes());
+			System.out.println("Bitmap bits: " + bitmap.countOnes());
+			System.out.println("tupleCountA: " + data.tupleCountA);
+			System.out.println("tupleCountB: " + data.tupleCountB);
+			System.out.println("shared:      " + data.shared);
+			Assert.assertEquals("Shared element", data.shared, bitmap.countOnes());
 
-		IteratorTripleID it = origin.getTriples().searchAll();
+			IteratorTripleID it = origin.getTriples().searchAll();
 
-		TripleStringUtility triple = new TripleStringUtility(origin);
-		while (it.hasNext()) {
-			triple.loadTriple(it.next());
-			long index = it.getLastTriplePosition();
-			if (triple.searchInto(diff) == null) {
-				Assert.assertFalse("triple bitmap", bitmap.access(index));
-			} else {
-				Assert.assertTrue("triple bitmap", bitmap.access(index));
+			TripleStringUtility triple = new TripleStringUtility(origin);
+			while (it.hasNext()) {
+				triple.loadTriple(it.next());
+				long index = it.getLastTriplePosition();
+				if (triple.searchInto(diff) == null) {
+					Assert.assertFalse("triple bitmap", bitmap.access(index));
+				} else {
+					Assert.assertTrue("triple bitmap", bitmap.access(index));
+				}
 			}
 		}
 	}
