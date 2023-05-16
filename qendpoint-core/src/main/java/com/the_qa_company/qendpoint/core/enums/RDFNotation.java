@@ -102,33 +102,36 @@ public enum RDFNotation {
 		}
 		str = str.toLowerCase();
 		switch (str) {
-		case "ntriples":
-		case "nt":
+		case "ntriples", "nt" -> {
 			return NTRIPLES;
-		case "n3":
+		}
+		case "n3" -> {
 			return N3;
-		case "nq":
-		case "nquad":
+		}
+		case "nq", "nquad" -> {
 			return NQUAD;
-		case "rdfxml":
-		case "rdf-xml":
-		case "owl":
+		}
+		case "rdfxml", "rdf-xml", "owl" -> {
 			return RDFXML;
-		case "turtle":
+		}
+		case "turtle" -> {
 			return TURTLE;
-		case "rar":
+		}
+		case "rar" -> {
 			return RAR;
-		case "tar":
-		case "tgz":
-		case "tbz":
-		case "tbz2":
+		}
+		case "tar", "tgz", "tbz", "tbz2" -> {
 			return TAR;
-		case "zip":
+		}
+		case "zip" -> {
 			return ZIP;
-		case "list":
+		}
+		case "list" -> {
 			return LIST;
-		case "hdt":
+		}
+		case "hdt" -> {
 			return HDT;
+		}
 		}
 		throw new IllegalArgumentException();
 	}

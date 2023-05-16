@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.rdf.parsers;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
+import com.the_qa_company.qendpoint.core.quads.QuadString;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
@@ -39,20 +40,17 @@ import org.slf4j.LoggerFactory;
 /**
  * @author mario.arias
  */
-public class RDFParserRIOT implements RDFParserCallback, StreamRDF {
+public class RDFParserRIOT implements RDFParserCallback {
 	private static final Logger log = LoggerFactory.getLogger(RDFParserRIOT.class);
 
-	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode) {
+	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer) {
 		if (keepBNode) {
 			RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
-					.parse(this);
+					.parse(buffer);
 		} else {
-			RDFParser.source(stream).base(baseUri).lang(lang).parse(this);
+			RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
 		}
 	}
-
-	private RDFCallback callback;
-	private final TripleString triple = new TripleString();
 
 	/*
 	 * (non-Javadoc)
@@ -76,24 +74,14 @@ public class RDFParserRIOT implements RDFParserCallback, StreamRDF {
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
 			RDFCallback callback) throws ParserException {
-		this.callback = callback;
 		try {
+			ElemStringBuffer buffer = new ElemStringBuffer(notation == RDFNotation.NQUAD, callback);
 			switch (notation) {
-			case NTRIPLES:
-				parse(input, baseUri, Lang.NTRIPLES, keepBNode);
-				break;
-			case NQUAD:
-				parse(input, baseUri, Lang.NQUADS, keepBNode);
-				break;
-			case RDFXML:
-				parse(input, baseUri, Lang.RDFXML, keepBNode);
-				break;
-			case N3:
-			case TURTLE:
-				parse(input, baseUri, Lang.TURTLE, keepBNode);
-				break;
-			default:
-				throw new NotImplementedException("Parser not found for format " + notation);
+			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, buffer);
+			case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, buffer);
+			case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, buffer);
+			case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, buffer);
+			default -> throw new NotImplementedException("Parser not found for format " + notation);
 			}
 		} catch (Exception e) {
 			log.error("Unexpected exception.", e);
@@ -101,41 +89,45 @@ public class RDFParserRIOT implements RDFParserCallback, StreamRDF {
 		}
 	}
 
-	@Override
-	public void start() {
-		// TODO Auto-generated method stub
+	private static class ElemStringBuffer implements StreamRDF {
+		private final TripleString triple;
+		private final RDFCallback callback;
 
+		private ElemStringBuffer(boolean quad, RDFCallback callback) {
+			this.triple = quad ? new QuadString() : new TripleString();
+			this.callback = callback;
+		}
+
+		@Override
+		public void triple(Triple parsedTriple) {
+			triple.setAll(JenaNodeFormatter.format(parsedTriple.getSubject()),
+					JenaNodeFormatter.format(parsedTriple.getPredicate()),
+					JenaNodeFormatter.format(parsedTriple.getObject()));
+			callback.processTriple(triple, 0);
+		}
+
+		@Override
+		public void quad(Quad quad) {
+			triple.setAll(JenaNodeFormatter.format(quad.getSubject()), JenaNodeFormatter.format(quad.getPredicate()),
+					JenaNodeFormatter.format(quad.getObject()));
+			triple.setGraph(JenaNodeFormatter.format(quad.getGraph()));
+			callback.processTriple(triple, 0);
+		}
+
+		@Override
+		public void start() {
+		}
+
+		@Override
+		public void base(String base) {
+		}
+
+		@Override
+		public void prefix(String prefix, String iri) {
+		}
+
+		@Override
+		public void finish() {
+		}
 	}
-
-	@Override
-	public void triple(Triple parsedTriple) {
-		triple.setAll(JenaNodeFormatter.format(parsedTriple.getSubject()),
-				JenaNodeFormatter.format(parsedTriple.getPredicate()),
-				JenaNodeFormatter.format(parsedTriple.getObject()));
-		callback.processTriple(triple, 0);
-	}
-
-	@Override
-	public void quad(Quad quad) {
-		triple.setAll(JenaNodeFormatter.format(quad.getSubject()), JenaNodeFormatter.format(quad.getPredicate()),
-				JenaNodeFormatter.format(quad.getObject()));
-		callback.processTriple(triple, 0);
-	}
-
-	@Override
-	public void base(String base) {
-//           System.out.println("Base: "+base);
-	}
-
-	@Override
-	public void prefix(String prefix, String iri) {
-//           System.out.println("Prefix: "+prefix+" iri "+iri);
-	}
-
-	@Override
-	public void finish() {
-		// TODO Auto-generated method stub
-
-	}
-
 }
