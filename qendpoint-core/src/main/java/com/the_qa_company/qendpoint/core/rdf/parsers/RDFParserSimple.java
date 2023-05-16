@@ -18,18 +18,19 @@
 
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.quads.QuadString;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 /**
  * @author mario.arias
@@ -63,23 +64,25 @@ public class RDFParserSimple implements RDFParserCallback {
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
 			RDFCallback callback) throws ParserException {
-		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-		try {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
 			doParse(reader, baseUri, notation, keepBNode, callback);
-		} finally {
-			try {
-				reader.close();
-			} catch (IOException e) {
-			}
+		} catch (IOException e) {
+			throw new ParserException(e);
 		}
 	}
 
 	private void doParse(BufferedReader reader, String baseUri, RDFNotation notation, boolean keepBNode,
 			RDFCallback callback) throws ParserException {
-		try {
+		boolean readQuad = notation == RDFNotation.NQUAD;
+		try (reader) {
 			String line;
 			long numLine = 1;
-			TripleString triple = new TripleString();
+			TripleString triple;
+			if (readQuad) {
+				triple = new QuadString();
+			} else {
+				triple = new TripleString();
+			}
 			while ((line = reader.readLine()) != null) {
 				// trim, find start
 				int start = 0;
@@ -102,18 +105,16 @@ public class RDFParserSimple implements RDFParserCallback {
 				// check that we have at least one element and this line isn't a
 				// comment
 				if (start + 1 < end && line.charAt(start) != '#') {
-					triple.read(line, start, end);
+					triple.read(line, start, end, readQuad);
 					if (!triple.hasEmpty()) {
 						// System.out.println(triple);
 						callback.processTriple(triple, 0);
 					} else {
-						System.err.println("Warning: Could not parse triple at line " + numLine
-								+ ", ignored and not processed.\n" + line);
+						log.warn("Could not parse triple at line " + numLine + ", ignored and not processed.\n" + line);
 					}
 				}
 				numLine++;
 			}
-			reader.close();
 		} catch (Exception e) {
 			log.error("Unexpected exception.", e);
 			throw new ParserException(e);

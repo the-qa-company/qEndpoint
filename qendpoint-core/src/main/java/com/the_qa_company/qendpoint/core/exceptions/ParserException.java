@@ -26,12 +26,22 @@ public class ParserException extends Exception {
 
 	private static final long serialVersionUID = -5159336711525269027L;
 
+	private static String createMessage(String message, String line, int location) {
+		int start = Math.max(0, location - 10);
+		int end = Math.min(line.length(), location + 10);
+		return message + " near " + line.substring(start, end);
+	}
+
 	public ParserException() {
 		super();
 	}
 
 	public ParserException(String message) {
 		super(message);
+	}
+
+	public ParserException(String message, String line, int location) {
+		this(createMessage(message, line, location));
 	}
 
 	public ParserException(Throwable e) {

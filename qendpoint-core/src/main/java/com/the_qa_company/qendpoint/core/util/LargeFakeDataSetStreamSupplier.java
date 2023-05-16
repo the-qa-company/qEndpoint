@@ -1,12 +1,12 @@
 package com.the_qa_company.qendpoint.core.util;
 
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.quads.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
@@ -125,11 +125,13 @@ public class LargeFakeDataSetStreamSupplier {
 	private long maxTriples;
 	public int maxFakeType = 10;
 	public int maxLiteralSize = 2;
+	public int maxGraph = 10;
 	public int maxElementSplit = Integer.MAX_VALUE;
 	private long slowStream;
 	private boolean unicode;
 	private TripleString buffer;
 	private TripleString next;
+	private boolean nquad;
 
 	private LargeFakeDataSetStreamSupplier(long maxSize, long maxTriples, long seed) {
 		this.maxSize = maxSize;
@@ -204,22 +206,12 @@ public class LargeFakeDataSetStreamSupplier {
 		OutputStream out;
 
 		if (compressionType != null) {
-			switch (compressionType) {
-			case NONE:
-				out = pout;
-				break;
-			case XZ:
-				out = new XZCompressorOutputStream(pout);
-				break;
-			case BZIP:
-				out = new BZip2CompressorOutputStream(pout);
-				break;
-			case GZIP:
-				out = new GZIPOutputStream(pout);
-				break;
-			default:
-				throw new NotImplementedException(compressionType.name());
-			}
+			out = switch (compressionType) {
+			case NONE -> pout;
+			case XZ -> new XZCompressorOutputStream(pout);
+			case BZIP -> new BZip2CompressorOutputStream(pout);
+			case GZIP -> new GZIPOutputStream(pout);
+			};
 		} else {
 			out = pout;
 		}
@@ -274,6 +266,20 @@ public class LargeFakeDataSetStreamSupplier {
 		try (HDT hdt = createFakeHDT(spec)) {
 			hdt.saveToHDT(location, null);
 		}
+	}
+
+	private CharSequence createGraph() {
+		if (maxGraph == 0) {
+			return "";
+		}
+		int rnd = random.nextInt(10);
+		if (rnd < 4) {
+			return ""; // no graph
+		}
+		if (rnd == 4) {
+			return "_:bnode" + random.nextInt(maxGraph / 2);
+		}
+		return "http://test.org/#graph" + random.nextInt(maxGraph / 2);
 	}
 
 	private CharSequence createResource() {
@@ -359,9 +365,16 @@ public class LargeFakeDataSetStreamSupplier {
 
 			if (buffer != null) {
 				buffer.setAll(resource, iri, value);
+				if (nquad) {
+					buffer.setGraph(createGraph());
+				}
 				next = buffer;
 			} else {
-				next = new TripleString(resource, iri, value);
+				if (nquad) {
+					next = new QuadString(resource, iri, value, createGraph());
+				} else {
+					next = new TripleString(resource, iri, value);
+				}
 			}
 
 			if (slowStream > 0) {
@@ -477,10 +490,48 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public LargeFakeDataSetStreamSupplier withSameTripleString(boolean sameTripleString) {
 		if (sameTripleString) {
-			buffer = new TripleString();
+			if (nquad) {
+				buffer = new QuadString();
+			} else {
+				buffer = new TripleString();
+			}
 		} else {
 			buffer = null;
 		}
+		return this;
+	}
+
+	/**
+	 * generate quad with the triple strings
+	 *
+	 * @param quad quads
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withQuads(boolean quad) {
+		if (this.nquad == quad) {
+			return this;
+		}
+		this.nquad = quad;
+		if (buffer != null) {
+			// we need to reset the buffer
+			TripleString old = buffer;
+			if (quad) {
+				buffer = new QuadString(old);
+			} else {
+				buffer = new TripleString(old);
+			}
+		}
+		return this;
+	}
+
+	/**
+	 * set the maximum number of graph with quad generation
+	 *
+	 * @param maxGraph max number of graph (excluding the default graph)
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withMaxGraph(int maxGraph) {
+		this.maxGraph = maxGraph;
 		return this;
 	}
 

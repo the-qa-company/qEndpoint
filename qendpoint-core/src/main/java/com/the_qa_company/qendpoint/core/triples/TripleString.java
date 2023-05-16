@@ -19,19 +19,19 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.io.IOException;
-
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
+
+import java.io.IOException;
 
 /**
  * TripleString holds a triple as Strings
  */
 public class TripleString {
 
-	private CharSequence subject;
-	private CharSequence predicate;
-	private CharSequence object;
+	protected CharSequence subject;
+	protected CharSequence predicate;
+	protected CharSequence object;
 
 	public TripleString() {
 		this.subject = this.predicate = this.object = null;
@@ -117,7 +117,7 @@ public class TripleString {
 		this.object = object;
 	}
 
-	private boolean equalsCharSequence(CharSequence cs1, CharSequence cs2) {
+	protected boolean equalsCharSequence(CharSequence cs1, CharSequence cs2) {
 		if (cs1 instanceof String && cs2 instanceof String)
 			return cs1.equals(cs2); // use string method if we can
 
@@ -132,12 +132,8 @@ public class TripleString {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof TripleString) {
-			TripleString ts = (TripleString) other;
-			return equalsCharSequence(subject, ts.subject) && equalsCharSequence(predicate, ts.predicate)
-					&& equalsCharSequence(object, ts.object);
-		}
-		return false;
+		return other instanceof TripleString ts && equalsCharSequence(subject, ts.subject)
+				&& equalsCharSequence(predicate, ts.predicate) && equalsCharSequence(object, ts.object);
 	}
 
 	@Override
@@ -198,7 +194,18 @@ public class TripleString {
 	 * @throws ParserException if the line is not RDF complient
 	 */
 	public void read(String line) throws ParserException {
-		read(line, 0, line.length());
+		read(line, false);
+	}
+
+	/**
+	 * Read from a line, where each component is separated by space.
+	 *
+	 * @param line        line to read
+	 * @param processQuad process quad
+	 * @throws ParserException if the line is not RDF complient
+	 */
+	public void read(String line, boolean processQuad) throws ParserException {
+		read(line, 0, line.length(), processQuad);
 	}
 
 	private int searchNextTabOrSpace(String line, int start, int end) {
@@ -218,14 +225,71 @@ public class TripleString {
 		return -1;
 	}
 
+	private int searchBNodeBackward(String line, int start, int end) {
+		// bn grammar
+		// BLANK_NODE_LABEL ::= '_:' (PN_CHARS_U | [0-9]) ((PN_CHARS | '.')*
+		// PN_CHARS)?
+		// PN_CHARS_BASE ::= [A-Z] | [a-z] | [#x00C0-#x00D6] | [#x00D8-#x00F6] |
+		// [#x00F8-#x02FF]
+		// | [#x0370-#x037D] | [#x037F-#x1FFF] | [#x200C-#x200D] |
+		// [#x2070-#x218F]
+		// | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] |
+		// [#xFDF0-#xFFFD]
+		// | [#x10000-#xEFFFF]
+		// PN_CHARS_U ::= PN_CHARS_BASE | '_' | ':'
+		// PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | #x00B7 | [#x0300-#x036F] |
+		// [#x203F-#x2040]
+
+		int loc = end;
+
+		while (start > loc) {
+
+			switch (line.charAt(loc)) {
+			case ' ', '\t' -> {
+				if (loc + 2 > end) {
+					return -1;
+				}
+				if (line.charAt(loc + 1) == '_' && line.charAt(loc + 2) == ':') {
+					return loc + 1;
+				}
+			}
+			case '^', '@', '>', '<', '"' -> {
+				// it wasn't a bnode
+				return -1;
+			}
+			default -> {
+				// ignore, we don't check the format
+			}
+			}
+			loc--;
+		}
+		return -1;
+	}
+
 	/**
 	 * Read from a line, where each component is separated by space.
 	 *
-	 * @param line line to read
+	 * @param line  line to read
+	 * @param start start in the string
+	 * @param end   in the string
 	 * @throws ParserException if the line is not RDF complient
 	 */
 	public void read(String line, int start, int end) throws ParserException {
+		read(line, start, end, false);
+	}
+
+	/**
+	 * Read from a line, where each component is separated by space.
+	 *
+	 * @param line        line to read
+	 * @param start       start in the string
+	 * @param end         in the string
+	 * @param processQuad process quad
+	 * @throws ParserException if the line is not RDF complient
+	 */
+	public void read(String line, int start, int end, boolean processQuad) throws ParserException {
 		int split, posa, posb;
+		// for quad implementation, don't forget to clear the graph
 		this.clear();
 
 		// SET SUBJECT
@@ -261,17 +325,70 @@ public class TripleString {
 
 		this.setPredicate(UnicodeEscape.unescapeString(line, posa, posb));
 
-		// SET OBJECT
-		posa = split + 1;
-		posb = end;
+		if (processQuad) {
+			// SET OBJECT
+			posa = split + 1;
+			posb = end;
 
-		// Remove trailing <space> <dot> from NTRIPLES.
-		if (line.charAt(posb - 1) == '.') {
-			posb--;
-		}
-		char prev = line.charAt(posb - 1);
-		if (prev == ' ' || prev == '\t') {
-			posb--;
+			// Remove trailing <space> <dot> from NTRIPLES.
+			if (line.charAt(posb - 1) == '.') {
+				posb--;
+			}
+			char prev = line.charAt(posb - 1);
+			if (prev == ' ' || prev == '\t') {
+				posb--;
+			}
+
+			char lastElem = line.charAt(posb - 1);
+			if (lastElem != '"') {
+				if (lastElem == '>') {
+					// can describe an IRI, can be:
+					// datatype of a literal
+					// object IRI
+					// graph IRI
+
+					int iriStart = line.lastIndexOf('<', posb);
+
+					if (iriStart < posa) {
+						throw new ParserException("end of a '>' without a start '<'", line, posb);
+					}
+					if (posa != iriStart && line.charAt(iriStart - 1) != '^') {
+						this.setGraph(UnicodeEscape.unescapeString(line, iriStart + 1, posb - 1));
+						posb = iriStart - 1;
+					}
+					// not the current element, literal or object iri
+				} else {
+					// end of a lang tag for a literal
+					// end of an object BNode
+					// end of a graph BNode
+
+					// '_:' (PN_CHARS_U | [0-9]) ((PN_CHARS | '.')* PN_CHARS)?
+					// PN_CHARS_U ::= PN_CHARS_BASE | '_' | ':'
+					// PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | #x00B7 |
+					// [#x0300-#x036F] | [#x203F-#x2040]
+
+					int bnodeStart = searchBNodeBackward(line, posa, posb);
+					if (bnodeStart > posa) {
+						this.setGraph(UnicodeEscape.unescapeString(line, bnodeStart + 1, posb - 1));
+						posb = bnodeStart;
+					}
+					// not the current element, literal language or object bnode
+				}
+			}
+			// a literal can't describe a graph
+		} else {
+			// SET OBJECT
+			posa = split + 1;
+			posb = end;
+
+			// Remove trailing <space> <dot> from NTRIPLES.
+			if (line.charAt(posb - 1) == '.') {
+				posb--;
+			}
+			char prev = line.charAt(posb - 1);
+			if (prev == ' ' || prev == '\t') {
+				posb--;
+			}
 		}
 
 		if (line.charAt(posa) == '<') {
@@ -326,12 +443,23 @@ public class TripleString {
 		char o0 = object.charAt(0);
 		if (o0 == '"') {
 			UnicodeEscape.escapeString(object.toString(), out);
-			out.append(" .\n");
 		} else if (o0 == '_' || o0 == '<') {
-			out.append(object).append(" .\n");
+			out.append(object);
 		} else {
-			out.append('<').append(object).append("> .\n");
+			out.append('<').append(object).append(">");
 		}
+
+		CharSequence graph = getGraph();
+		if (!graph.isEmpty()) {
+			char g0 = graph.charAt(0);
+			if (g0 == '<') {
+				out.append(' ').append(graph);
+			} else {
+				out.append(" <").append(graph).append(">");
+			}
+		}
+
+		out.append(" .\n");
 	}
 
 	/**
@@ -342,5 +470,21 @@ public class TripleString {
 	 */
 	public TripleString tripleToString() {
 		return new TripleString(subject.toString(), predicate.toString(), object.toString());
+	}
+
+	/**
+	 * implementation for the graph context
+	 *
+	 * @param context context
+	 */
+	public void setGraph(CharSequence context) {
+		// nothing
+	}
+
+	/**
+	 * @return graph
+	 */
+	public CharSequence getGraph() {
+		return "";
 	}
 }

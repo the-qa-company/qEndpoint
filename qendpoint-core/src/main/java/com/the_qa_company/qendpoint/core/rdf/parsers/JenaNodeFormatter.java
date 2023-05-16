@@ -37,6 +37,9 @@ public class JenaNodeFormatter {
 	}
 
 	public static String format(Node node) {
+		if (node == null) {
+			return "";
+		}
 		if (node.isURI()) {
 			return node.getURI();
 
