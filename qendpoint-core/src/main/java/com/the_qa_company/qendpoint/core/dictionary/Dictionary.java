@@ -22,6 +22,7 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.header.Header;
 
 import java.io.Closeable;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -48,6 +49,26 @@ public interface Dictionary extends Closeable {
 	 * @return int
 	 */
 	long stringToId(CharSequence str, TripleComponentRole position);
+
+	/**
+	 * get a string iterator of a triple component role including the shared
+	 * elements
+	 *
+	 * @param role role
+	 * @return iterator
+	 */
+	default Iterator<? extends CharSequence> stringIterator(TripleComponentRole role) {
+		return stringIterator(role, true);
+	}
+
+	/**
+	 * get a string iterator of a triple component role
+	 *
+	 * @param role          role
+	 * @param includeShared include the shared elements
+	 * @return iterator
+	 */
+	Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared);
 
 	/**
 	 * Returns the data type of a given literal string
@@ -88,6 +109,46 @@ public interface Dictionary extends Closeable {
 	long getNAllObjects();
 
 	long getNshared();
+
+	/**
+	 * get the number of elements for a role (include shared)
+	 *
+	 * @param role the role
+	 * @return number of elements
+	 */
+	default long getNSection(TripleComponentRole role) {
+		return getNSection(role, true);
+	}
+
+	/**
+	 * get the number of elements for a role
+	 *
+	 * @param role          the role
+	 * @param includeShared include the shared elements
+	 * @return number of elements
+	 */
+	default long getNSection(TripleComponentRole role, boolean includeShared) {
+		switch (role) {
+		case PREDICATE -> {
+			return getNpredicates();
+		}
+		case SUBJECT -> {
+			if (includeShared) {
+				return getNsubjects();
+			} else {
+				return getNsubjects() - getNshared();
+			}
+		}
+		case OBJECT -> {
+			if (includeShared) {
+				return getNobjects();
+			} else {
+				return getNobjects() - getNshared();
+			}
+		}
+		default -> throw new AssertionError();
+		}
+	}
 
 	DictionarySection getSubjects();
 

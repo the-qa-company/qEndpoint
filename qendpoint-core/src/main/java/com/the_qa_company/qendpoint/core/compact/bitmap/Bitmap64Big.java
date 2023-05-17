@@ -56,7 +56,18 @@ public class Bitmap64Big implements Closeable, ModifiableBitmap {
 	 * @return bitmap
 	 */
 	public static Bitmap64Big disk(Path location, long nbits) {
-		return new Bitmap64Big(new LongArrayDisk(location, numWords(nbits)));
+		return new Bitmap64Big(new LongArrayDisk(location, numWords(nbits), true));
+	}
+
+	/**
+	 * create mapped disk version bitmap
+	 *
+	 * @param location location
+	 * @param nbits    number of bits
+	 * @return bitmap
+	 */
+	public static Bitmap64Big map(Path location, long nbits) {
+		return new Bitmap64Big(new LongArrayDisk(location, numWords(nbits), false));
 	}
 
 	/**

@@ -35,7 +35,7 @@ public class BitSequence375Test {
 
 	static final long num = 10000;
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Parameterized.Parameter
 	public String disk;
@@ -55,13 +55,13 @@ public class BitSequence375Test {
 			break;
 		}
 		case DISK: {
-			Path file = tempDir.getRoot().toPath().resolve("test.bin");
+			Path file = tempDir.newFolder().toPath().resolve("test.bin");
 			bitseq = Bitmap375Big.disk(file, num, false);
 			add.with(CloseSuppressPath.of(file));
 			break;
 		}
 		case FULL_DISK: {
-			Path file = tempDir.getRoot().toPath().resolve("test.bin");
+			Path file = tempDir.newFolder().toPath().resolve("test.bin");
 			bitseq = Bitmap375Big.disk(file, num, true);
 			add.with(CloseSuppressPath.of(file));
 			break;

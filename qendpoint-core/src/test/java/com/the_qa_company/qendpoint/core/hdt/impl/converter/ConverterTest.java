@@ -21,7 +21,7 @@ import java.nio.file.Path;
 
 public class ConverterTest extends AbstractMapMemoryTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	private LargeFakeDataSetStreamSupplier stream() {
 		return LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 75).withMaxElementSplit(50)

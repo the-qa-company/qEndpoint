@@ -11,6 +11,7 @@ import java.util.Map;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("resource")
 public class CloserTest {
 
 	@Test(expected = AssertionError.class)
@@ -132,7 +133,7 @@ public class CloserTest {
 		}
 
 		public void check() {
-			assertTrue(closed);
+			assertTrue(isClosed());
 		}
 	}
 }

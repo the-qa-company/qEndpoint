@@ -64,6 +64,18 @@ public class Bitmap375Big extends Bitmap64Big {
 	}
 
 	/**
+	 * create mapped disk version bitmap
+	 *
+	 * @param location          location
+	 * @param nbits             number of bits
+	 * @param useDiskSuperIndex use disk super index
+	 * @return bitmap
+	 */
+	public static Bitmap375Big map(Path location, long nbits, boolean useDiskSuperIndex) {
+		return new Bitmap375Big(new LongArrayDisk(location, numWords(nbits), false), location, useDiskSuperIndex);
+	}
+
+	/**
 	 * create memory version bitmap
 	 *
 	 * @param nbits number of bits
@@ -238,8 +250,6 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public long select0(long x) {
-		// System.out.println("\t**Select0 for: "+ x);
-
 		if (x < 0) {
 			return -1;
 		}
@@ -301,8 +311,6 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public long select1(long x) {
-		// System.out.println("\t**Select1 for: "+ x);
-
 		if (x < 0) {
 			return -1;
 		}

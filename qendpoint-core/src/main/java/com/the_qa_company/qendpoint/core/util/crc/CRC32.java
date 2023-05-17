@@ -1,10 +1,11 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * Implementation of CRC32-C Algorithm. Width = 32 Poly = 0x1edc6f41 XorIn =
@@ -64,6 +65,19 @@ public class CRC32 implements CRC {
 	}
 
 	@Override
+	public void update(CloseMappedByteBuffer buffer, int offset, int length) {
+		int tbl_idx;
+
+		int len = length;
+		int i = offset;
+		while (len-- != 0) {
+			tbl_idx = (crc32 ^ buffer.get(i)) & 0xff;
+			crc32 = crc32_table[tbl_idx] ^ (crc32 >>> 8);
+			i++;
+		}
+	}
+
+	@Override
 	public void update(byte data) {
 		int tbl_idx = (crc32 ^ data) & 0xff;
 		crc32 = crc32_table[tbl_idx] ^ (crc32 >>> 8);
@@ -75,8 +89,20 @@ public class CRC32 implements CRC {
 	}
 
 	@Override
+	public int writeCRC(CloseMappedByteBuffer channel, int offset) throws IOException {
+		IOUtil.writeInt(channel, offset, crc32 ^ 0xFFFFFFFF);
+		return 4;
+	}
+
+	@Override
 	public boolean readAndCheck(InputStream in) throws IOException {
 		int readCRC = IOUtil.readInt(in);
+		return readCRC == (crc32 ^ 0xFFFFFFFF);
+	}
+
+	@Override
+	public boolean readAndCheck(CloseMappedByteBuffer channel, int offset) {
+		int readCRC = IOUtil.readInt(channel, offset);
 		return readCRC == (crc32 ^ 0xFFFFFFFF);
 	}
 
@@ -101,5 +127,10 @@ public class CRC32 implements CRC {
 	@Override
 	public String toString() {
 		return Long.toHexString(getValue() & 0xFFFFFFFFL);
+	}
+
+	@Override
+	public int sizeof() {
+		return 4;
 	}
 }

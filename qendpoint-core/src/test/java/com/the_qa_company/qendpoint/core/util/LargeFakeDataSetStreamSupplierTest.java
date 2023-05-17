@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 public class LargeFakeDataSetStreamSupplierTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void streamTest() throws IOException {
@@ -161,7 +161,7 @@ public class LargeFakeDataSetStreamSupplierTest {
 
 	@Test
 	public void mergeTest() throws IOException, ParserException, NotFoundException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 		long size = 42;
 		long seed = 54;
 		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxSize(size, seed);

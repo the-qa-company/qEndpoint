@@ -11,7 +11,7 @@ param(
     [Switch]
     $version,
     [ArgumentCompleter({
-        return @("guess", "delta", "hdt", "qendpoint") | ForEach-Object { $_ }
+        return @("guess", "delta", "hdt", "qendpoint", "reader", "profiler") | ForEach-Object { $_ }
     })]
     $rdftype,
     [Parameter()]

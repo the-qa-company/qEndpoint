@@ -181,7 +181,7 @@ public class HdtDiffTest extends AbstractMapMemoryTest {
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	final HDTSpecification spec;
 	final int shared;
 	final int subjects;

@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -57,6 +59,16 @@ public class CRC8 implements CRC {
 		}
 	}
 
+	@Override
+	public void update(CloseMappedByteBuffer buffer, int offset, int length) {
+		int i = offset;
+		int len = length;
+		while (len-- != 0) {
+			crc8 = crc8_table[(crc8 ^ buffer.get(i)) & 0xFF];
+			i++;
+		}
+	}
+
 	/**
 	 * Update the CRC value with a byte data.
 	 *
@@ -73,8 +85,26 @@ public class CRC8 implements CRC {
 	}
 
 	@Override
+	public int writeCRC(CloseMappedByteBuffer buffer, int offset) throws IOException {
+		buffer.put(offset, crc8);
+		return 1;
+	}
+
+	@Override
 	public boolean readAndCheck(InputStream in) throws IOException {
 		int val = in.read();
+
+		if (val == -1) {
+			throw new IOException("Could not read from input.");
+		}
+		byte othercrc = (byte) (val & 0xFF);
+
+		return othercrc == crc8;
+	}
+
+	@Override
+	public boolean readAndCheck(CloseMappedByteBuffer in, int offset) throws IOException {
+		byte val = in.get(offset);
 
 		if (val == -1) {
 			throw new IOException("Could not read from input.");
@@ -105,5 +135,10 @@ public class CRC8 implements CRC {
 	@Override
 	public String toString() {
 		return Long.toHexString(getValue() & 0xFFL);
+	}
+
+	@Override
+	public int sizeof() {
+		return 1;
 	}
 }

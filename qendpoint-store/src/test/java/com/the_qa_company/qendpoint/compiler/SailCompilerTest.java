@@ -37,7 +37,7 @@ import java.util.Set;
 
 public class SailCompilerTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	private LoadData loadFile(String fileName) throws IOException, SailCompiler.SailCompilerException {
 		String locationNative = tempDir.newFolder().getAbsolutePath();

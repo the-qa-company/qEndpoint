@@ -87,7 +87,7 @@ public class HDTManagerTest {
 		}
 
 		@Rule
-		public TemporaryFolder tempDir = new TemporaryFolder();
+		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 		protected HDTSpecification spec;
 		protected Path rootFolder;
 
@@ -757,7 +757,7 @@ public class HDTManagerTest {
 	public static class StaticTest extends HDTManagerTestBase {
 		@Test
 		public void multiSectionTest() throws ParserException, IOException, NotFoundException {
-			Path root = tempDir.getRoot().toPath();
+			Path root = tempDir.newFolder().toPath();
 			Path hdtFile = root.resolve("testhdt.hdt");
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxTriples(10_000, 32).withMaxLiteralSize(30).withUnicode(true);
@@ -816,7 +816,7 @@ public class HDTManagerTest {
 
 		@Test
 		public void diffMultiSectTest() throws ParserException, IOException, NotFoundException {
-			Path root = tempDir.getRoot().toPath();
+			Path root = tempDir.newFolder().toPath();
 			Path hdtFile = root.resolve("testhdt.hdt");
 			Path diffLocation = root.resolve("diff");
 			Files.createDirectories(diffLocation);

@@ -1,10 +1,11 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 /**
  * CRC16-ANSI Width = 16 Poly = 0x8005 XorIn = 0x0000 ReflectIn = True XorOut =
@@ -72,6 +73,18 @@ public class CRC16 implements CRC {
 	}
 
 	@Override
+	public void update(CloseMappedByteBuffer buffer, int offset, int length) {
+		int len = length;
+		int i = offset;
+
+		while (len-- > 0) {
+			int tbl_idx = (crc16 ^ buffer.get(i)) & 0xff;
+			crc16 = (crc16_table[tbl_idx] ^ crc16 >>> 8) & 0xFFFF;
+			i++;
+		}
+	}
+
+	@Override
 	public void update(byte data) {
 		int tbl_idx = (crc16 ^ data) & 0xff;
 
@@ -84,8 +97,20 @@ public class CRC16 implements CRC {
 	}
 
 	@Override
+	public int writeCRC(CloseMappedByteBuffer buffer, int offset) throws IOException {
+		IOUtil.writeShort(buffer, offset, (short) crc16);
+		return 2;
+	}
+
+	@Override
 	public boolean readAndCheck(InputStream in) throws IOException {
 		int readCRC = IOUtil.readShort(in) & 0xFFFF;
+		return readCRC == crc16;
+	}
+
+	@Override
+	public boolean readAndCheck(CloseMappedByteBuffer buffer, int offset) throws IOException {
+		int readCRC = IOUtil.readShort(buffer, offset) & 0xFFFF;
 		return readCRC == crc16;
 	}
 
@@ -110,5 +135,10 @@ public class CRC16 implements CRC {
 	@Override
 	public String toString() {
 		return Long.toHexString(getValue() & 0xFFFFL);
+	}
+
+	@Override
+	public int sizeof() {
+		return 2;
 	}
 }

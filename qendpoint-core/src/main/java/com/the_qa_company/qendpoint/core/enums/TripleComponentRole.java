@@ -19,6 +19,8 @@
 
 package com.the_qa_company.qendpoint.core.enums;
 
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+
 import java.util.function.Supplier;
 
 /**
@@ -26,17 +28,22 @@ import java.util.function.Supplier;
  */
 public enum TripleComponentRole {
 	/** The triple is a subject */
-	SUBJECT(() -> DictionarySectionRole.SUBJECT),
+	SUBJECT(() -> DictionarySectionRole.SUBJECT, "s", "subject"),
 	/** The triple is a predicate */
-	PREDICATE(() -> DictionarySectionRole.PREDICATE),
+	PREDICATE(() -> DictionarySectionRole.PREDICATE, "p", "predicate"),
 	/** The triple is an object */
-	OBJECT(() -> DictionarySectionRole.OBJECT);
+	OBJECT(() -> DictionarySectionRole.OBJECT, "o", "object");
 
 	private DictionarySectionRole dictionarySectionRole;
 	private final Supplier<DictionarySectionRole> dictionarySectionRoleSupplier;
+	private final String abbreviation;
+	private final String title;
 
-	TripleComponentRole(Supplier<DictionarySectionRole> dictionarySectionRoleSupplier) {
+	TripleComponentRole(Supplier<DictionarySectionRole> dictionarySectionRoleSupplier, String abbreviation,
+			String title) {
 		this.dictionarySectionRoleSupplier = dictionarySectionRoleSupplier;
+		this.abbreviation = abbreviation;
+		this.title = title;
 	}
 
 	public DictionarySectionRole asDictionarySectionRole() {
@@ -45,5 +52,13 @@ public enum TripleComponentRole {
 			dictionarySectionRole = dictionarySectionRoleSupplier.get();
 		}
 		return dictionarySectionRole;
+	}
+
+	public String getAbbreviation() {
+		return abbreviation;
+	}
+
+	public String getTitle() {
+		return title;
 	}
 }

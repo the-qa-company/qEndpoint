@@ -47,7 +47,7 @@ public class MergeRestartTest {
 	private static final Logger logger = LoggerFactory.getLogger(MergeRestartTest.class);
 	private static final File HALT_TEST_DIR = new File("tests", "halt_test_dir");
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	HDTOptions spec;
 
 	@Before
@@ -556,7 +556,7 @@ public class MergeRestartTest {
 			// start the second phase
 			mergeRestartTest2(stopPoint, root2, closer);
 		} finally {
-			FileUtils.deleteDirectory(tempDir.getRoot());
+			FileUtils.deleteDirectory(testRoot);
 		}
 	}
 

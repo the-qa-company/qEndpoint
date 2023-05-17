@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 public class BitArrayDiskTest {
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void testInit() throws IOException {

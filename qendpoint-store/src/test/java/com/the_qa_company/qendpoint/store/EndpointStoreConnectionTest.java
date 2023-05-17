@@ -26,7 +26,7 @@ import java.util.Objects;
 
 public class EndpointStoreConnectionTest {
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test(expected = EndpointTimeoutException.class)
 	public void timeoutTest() throws IOException, ParserException {

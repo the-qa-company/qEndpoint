@@ -28,7 +28,7 @@ public class EndpointStorePhaseTest {
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStorePhaseTest.class);
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	EndpointStore store;
 
 	@Before

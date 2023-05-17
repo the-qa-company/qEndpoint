@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 public class IndexTest {
 
 	@Rule
-	public TemporaryFolder temp = new TemporaryFolder();
+	public TemporaryFolder temp = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void reloadTest() throws IOException {
@@ -83,7 +83,7 @@ public class IndexTest {
 
 	@Test
 	public void copyTest() throws IOException {
-		Path root = temp.getRoot().toPath();
+		Path root = temp.newFolder().toPath();
 		Path epfiles = root.resolve("epfiles");
 		EndpointFiles files = new EndpointFiles(epfiles.resolve("native"), epfiles.resolve("hdt"), "index.hdt");
 		EndpointStore ep = new EndpointStore(files, HDTOptions.of(), false, true);

@@ -1,0 +1,157 @@
+
+enum ControlInfoType : byte {
+    UNKNOWN = 0,
+    GLOBAL = 1,
+    HEADER = 2,
+    DICTIONARY = 3,
+    TRIPLES = 4,
+    INDEX = 5
+}
+
+enum SequenceType : byte {
+	SEQLOG = 1,
+	SEQ32 = 2,
+	SEQ64 = 3
+}
+
+enum BitmapType : byte {
+    PLAIN = 1
+}
+
+enum DictionarySectionType : byte {
+    TYPE_INDEX = 2
+}
+
+// variable byte codes
+// http://nlp.stanford.edu/IR-book/html/htmledition/variable-byte-codes-1.html
+vlong {
+    byte[] bytes;
+}
+
+ControlInfo {
+    string cookie = "$HDT";
+    ControlInfoType type;
+    string format;
+    byte formatEnd = '\0';
+    string keys; // (key=value;)*
+    byte keysEnd = '\0';
+    crc16 crc;
+}
+
+Sequence {
+    struct {
+        SequenceType type;
+    } header;
+}
+
+SequenceLog : Sequence {header.type = SEQLOG} {
+    struct {
+        byte numbits;
+        vlong numentries;
+    } header;
+    crc8 headerCrc;
+    int<header.numbits>[header.numentries] data;
+    crc32 dataCrc;
+}
+
+Bitmap {
+    struct {
+        BitmapType type;
+    } header;
+}
+BitmapPlain : Bitmap {header.type = PLAIN} {
+    struct {
+        vlong numbits;
+    } header;
+    crc8 headerCrc;
+    int64[] blocks;
+    crc32 blocksCrc;
+}
+
+DictionarySection {
+    struct {
+        DictionarySectionType type;
+    } header;
+}
+
+PFCSection : DictionarySection{header.type = TYPE_INDEX} {
+    struct {
+        vlong numstrings;
+        vlong bytes;
+        bytes blocksize;
+    } header;
+    crc8 headerCrc;
+    Sequence blocks;
+    PFCSectionDataChunk<header.blocksize>[] chunks;
+    crc32 chunksCrc;
+}
+
+PFCSectionDataChunk<blocksize> {
+    string firstStr;
+    byte firstStrEnd = '\0';
+    struct {
+        vlong delta;
+        string str;
+        byte strEnd = '\0';
+    }[blocksize - 1] delta;
+}
+
+Dictionary {
+    ControlInfo ci{type = DICTIONARY};
+}
+
+FourSectionDictionary : Dictionary{ci.format = "<http://purl.org/HDT/hdt#dictionaryFour>"} {
+    DictionarySection shared;
+    DictionarySection subject;
+    DictionarySection predicate;
+    DictionarySection objects;
+}
+
+MultiSectionDictionary : Dictionary{ci.format = "<http://purl.org/HDT/hdt#dictionaryMult>"} {
+    DictionarySection shared;
+    DictionarySection subject;
+    DictionarySection predicate;
+    vlong typeCount;
+    struct {
+        vlong strSize;
+        byte[] str;
+    }[] types;
+    DictionarySection[] objects;
+}
+
+Header {
+    ControlInfo ci{type = HEADER};
+}
+
+PlainHeader<fileFormat> : Header{ci.format = fileFormat} {
+    byte[] rdfHeader;
+}
+
+PredicateIndex {
+    Bitmap bitmap;
+    Sequence array;
+}
+
+Triples {
+    ControlInfo ci{type = TRIPLES};
+    Bitmap bitmapY;
+    Bitmap bitmapZ;
+    Sequence seqY;
+    Sequence seqZ;
+}
+
+Triples : BitmapTriples : Triples{ci.format = "<http://purl.org/HDT/hdt#triplesBitmap>"} {
+    Bitmap bitmapY;
+    Bitmap bitmapZ;
+    Sequence seqY;
+    Sequence seqZ;
+}
+
+HDT {
+    ControlInfo ci{type = GLOBAL};
+    Header header;
+    Dictionary dictionary;
+    Triples triples;
+}
+
+file(HDT, "header.qepm");

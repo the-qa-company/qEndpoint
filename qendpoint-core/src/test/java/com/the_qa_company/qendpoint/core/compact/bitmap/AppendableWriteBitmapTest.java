@@ -23,7 +23,7 @@ public class AppendableWriteBitmapTest {
 	}
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Test
 	public void bitmapTest() throws IOException {

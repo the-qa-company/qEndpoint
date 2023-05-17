@@ -26,7 +26,7 @@
     <properties>
         <common_codec.version>1.15</common_codec.version>
         <json_simple.version>1.1.1</json_simple.version>
-        <junit.version>4.13</junit.version>
+        <junit.version>4.13.2</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
         <rdf4j.version>4.2.3</rdf4j.version>
         <logback.version>1.4.5</logback.version>

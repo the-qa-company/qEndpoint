@@ -69,7 +69,6 @@ public class FourSectionDictionaryCat implements DictionaryCat {
 		allMappings.put(SectionUtil.SH2,
 				new CatMapping(location, SectionUtil.SH2, dictionary2.getShared().getNumberOfElements()));
 
-//        System.out.println("PREDICATES-------------------");
 		ProgressListener iListener;
 
 		iListener = PrefixListener.of("Generate predicates: ", listener);
@@ -96,7 +95,6 @@ public class FourSectionDictionaryCat implements DictionaryCat {
 		CatUnion itAddPredicates = new CatUnion(addPredicatesList);
 		SectionUtil.createSection(location, numPredicates, 4, itAddPredicates, new CatUnion(new ArrayList<>()),
 				allMappings, 0, iListener);
-//        System.out.println("SUBJECTS-------------------");
 		iListener = PrefixListener.of("Generate subjects: ", listener);
 		if (iListener != null) {
 			iListener.notifyProgress(0, "start");
@@ -155,7 +153,6 @@ public class FourSectionDictionaryCat implements DictionaryCat {
 
 		SectionUtil.createSection(location, numSubjects, 2, itAddSubjects, skipSubject, allMappings, 0, iListener);
 
-//        System.out.println("OBJECTS-------------------");
 		iListener = PrefixListener.of("Generate objects: ", listener);
 		if (iListener != null) {
 			iListener.notifyProgress(0, "start");
@@ -215,7 +212,6 @@ public class FourSectionDictionaryCat implements DictionaryCat {
 
 		SectionUtil.createSection(location, numObject, 3, itAddObjects, skipObject, allMappings, 0, iListener);
 
-//        System.out.println("SHARED-------------------");
 		iListener = PrefixListener.of("Generate shared: ", listener);
 		if (iListener != null) {
 			iListener.notifyProgress(0, "start");

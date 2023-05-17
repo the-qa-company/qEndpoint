@@ -17,9 +17,14 @@
  */
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -51,6 +56,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -58,6 +65,68 @@ import java.util.zip.GZIPInputStream;
  */
 public class IOUtil {
 	private IOUtil() {
+	}
+
+	/**
+	 * print a path in the standard output
+	 *
+	 * @param path root
+	 */
+	public static void printPath(Path path) {
+		String title = "--- " + path + " ---";
+		System.out.println(title);
+		try (Stream<Path> w = Files.walk(path)) {
+			w.forEach(s -> System.out.println(File.separator + path.relativize(s)));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		System.out.println("-".repeat(title.length()));
+	}
+
+	/**
+	 * split an HDT into multiple HDTs using slow, memory intensive algorithm
+	 * (for tests only)
+	 *
+	 * @param origin origin HDT
+	 * @param base   base path, end path will be base-ID.hdt
+	 * @param count  count of split
+	 * @return paths
+	 * @throws IOException io exception
+	 */
+	public static Path[] splitHDT(Path origin, Path base, int count) throws IOException {
+		long triples;
+		try (HDT hdt = HDTManager.mapHDT(origin)) {
+			triples = hdt.getTriples().getNumberOfElements();
+		}
+		if (triples < count) {
+			count = (int) triples;
+		}
+		Path[] paths = new Path[count];
+		if (count == 0) {
+			return paths;
+		}
+		long split = triples / count;
+		for (int i = 0; i < count; i++) {
+			paths[i] = base.resolve(origin.getFileName() + "-" + i + ".hdt");
+			Path work = base.resolve("workHDT" + new Random().nextInt(100000));
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.HDTCAT_LOCATION, work);
+			try (Bitmap64Big deleteBM = Bitmap64Big.memory(triples)) {
+				for (long j = 0; j < split * i; j++) {
+					deleteBM.set(j, true);
+				}
+				if (i != count - 1) {
+					for (long j = split * (i + 1); j < triples; j++) {
+						deleteBM.set(j, true);
+					}
+				}
+				try (HDT diff = HDTManager.diffBitCatHDTPath(List.of(origin), List.of(deleteBM), spec,
+						ProgressListener.ignore())) {
+					diff.saveToHDT(paths[i], ProgressListener.ignore());
+				}
+
+			}
+		}
+		return paths;
 	}
 
 	/**
@@ -83,6 +152,23 @@ public class IOUtil {
 		if (object instanceof Closeable) {
 			((Closeable) object).close();
 		}
+	}
+
+	/**
+	 * map a FileChannel, same as
+	 * {@link FileChannel#map(FileChannel.MapMode, long, long)}, but used to fix
+	 * unclean map.
+	 *
+	 * @param ch       channel to map
+	 * @param mode     mode of the map
+	 * @param position position to map
+	 * @param size     size to map
+	 * @return map buffer
+	 * @throws IOException io exception
+	 */
+	public static CloseMappedByteBuffer mapChannel(Path filename, FileChannel ch, FileChannel.MapMode mode,
+			long position, long size) throws IOException {
+		return mapChannel(filename.toAbsolutePath().toString(), ch, mode, position, size);
 	}
 
 	/**
@@ -283,6 +369,26 @@ public class IOUtil {
 		return out.toString();
 	}
 
+	public static void writeCString(CloseMappedByteBuffer map, String string, int index) {
+		byte[] encoded = string.getBytes(ByteStringUtil.STRING_ENCODING);
+
+		int i = 0;
+		for (; i < encoded.length; i++) {
+			map.put(index + i, encoded[i]);
+		}
+		map.put(index + i, (byte) 0);
+	}
+
+	public static String readCString(CloseMappedByteBuffer map, int start, int maxSize) {
+		byte[] buffer = new byte[maxSize];
+		byte c;
+		int i = 0;
+		while ((c = map.get(start++)) != 0) {
+			buffer[i++] = c;
+		}
+		return new String(buffer, 0, i, ByteStringUtil.STRING_ENCODING);
+	}
+
 	public static void writeString(OutputStream out, String str) throws IOException {
 		out.write(str.getBytes(ByteStringUtil.STRING_ENCODING));
 	}
@@ -400,6 +506,15 @@ public class IOUtil {
 		output.write(writeBuffer, 0, 4);
 	}
 
+	public static void writeInt(CloseMappedByteBuffer out, int offset, int value) {
+		byte[] writeBuffer = new byte[4];
+		writeBuffer[0] = (byte) (value & 0xFF);
+		writeBuffer[1] = (byte) ((value >> 8) & 0xFF);
+		writeBuffer[2] = (byte) ((value >> 16) & 0xFF);
+		writeBuffer[3] = (byte) ((value >> 24) & 0xFF);
+		out.put(offset, writeBuffer);
+	}
+
 	/**
 	 * Read int, little endian
 	 *
@@ -414,6 +529,20 @@ public class IOUtil {
 		int ch4 = in.read();
 		if ((ch1 | ch2 | ch3 | ch4) < 0)
 			throw new EOFException();
+		return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1);
+	}
+
+	/**
+	 * Read int, little endian
+	 *
+	 * @param in input
+	 * @return integer
+	 */
+	public static int readInt(CloseMappedByteBuffer in, int offset) {
+		int ch1 = in.get(offset) & 0xFF;
+		int ch2 = in.get(offset + 1) & 0xFF;
+		int ch3 = in.get(offset + 2) & 0xFF;
+		int ch4 = in.get(offset + 3) & 0xFF;
 		return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1);
 	}
 
@@ -474,6 +603,17 @@ public class IOUtil {
 		out.write((value >> 8) & 0xFF);
 	}
 
+	public static short readShort(CloseMappedByteBuffer out, int offset) {
+		int ch1 = out.get(offset) & 0xFF;
+		int ch2 = out.get(offset + 1) & 0xFF;
+		return (short) ((ch2 << 8) + (ch1));
+	}
+
+	public static void writeShort(CloseMappedByteBuffer out, int offset, short value) {
+		out.put(offset, (byte) (value & 0xFF));
+		out.put(offset + 1, (byte) ((value >> 8) & 0xFF));
+	}
+
 	public static byte readByte(InputStream in) throws IOException {
 		int b = in.read();
 		if (b < 0) {
@@ -512,17 +652,12 @@ public class IOUtil {
 	}
 
 	public static InputStream asUncompressed(InputStream inputStream, CompressionType type) throws IOException {
-		switch (type) {
-		case GZIP:
-			return new GZIPInputStream(inputStream);
-		case BZIP:
-			return new BZip2CompressorInputStream(inputStream, true);
-		case XZ:
-			return new XZCompressorInputStream(inputStream, true);
-		case NONE:
-			return inputStream;
-		}
-		throw new IllegalArgumentException("CompressionType not yet implemented: " + type);
+		return switch (type) {
+		case GZIP -> new GZIPInputStream(inputStream);
+		case BZIP -> new BZip2CompressorInputStream(inputStream, true);
+		case XZ -> new XZCompressorInputStream(inputStream, true);
+		case NONE -> inputStream;
+		};
 	}
 
 	/**

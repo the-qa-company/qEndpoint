@@ -1,16 +1,17 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.sail.SailConnection;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.io.IOException;
 public class MergeMethodTest {
 	private EndpointStore store;
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	@Before
 	public void setup() throws IOException, NotFoundException {
@@ -46,7 +47,12 @@ public class MergeMethodTest {
 		// start an endpoint store
 		store = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
 				nativeStore.getAbsolutePath() + "/", false);
+		store.init();
+	}
 
+	@After
+	public void clearStore() {
+		store.shutDown();
 	}
 
 	private void addMockElements(int number, String determinant) {
@@ -168,6 +174,6 @@ public class MergeMethodTest {
 		assertSizeEquals(elements); // test_merge * elements
 		addMockElements(elements, "test_after_merge");
 		assertSizeEquals(elements * 2); // test_merge * elements +
-										// test_after_merge * elements
+		// test_after_merge * elements
 	}
 }

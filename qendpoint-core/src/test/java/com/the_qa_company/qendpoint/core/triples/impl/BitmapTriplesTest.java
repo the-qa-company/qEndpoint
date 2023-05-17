@@ -175,7 +175,7 @@ public class BitmapTriplesTest {
 
 	public static abstract class AbstractTest extends AbstractMapMemoryTest {
 		@Rule
-		public TemporaryFolder tempDir = new TemporaryFolder();
+		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	}
 
 	@RunWith(Parameterized.class)
@@ -300,7 +300,7 @@ public class BitmapTriplesTest {
 			// Path hdtFile =
 			// Path.of("C:\\Users\\wilat\\workspace\\qEndpoint\\qendpoint\\hdt-store\\index_dev.hdt");
 			// //NAMAW
-			// Path workDir = tempDir.getRoot().toPath();
+			// Path workDir = tempDir.newFolder().toPath();
 
 			Files.createDirectories(workdir);
 

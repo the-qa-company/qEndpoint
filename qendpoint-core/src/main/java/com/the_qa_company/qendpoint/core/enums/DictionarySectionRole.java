@@ -1,16 +1,25 @@
 package com.the_qa_company.qendpoint.core.enums;
 
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public enum DictionarySectionRole {
-	SUBJECT(() -> TripleComponentRole.SUBJECT), PREDICATE(() -> TripleComponentRole.PREDICATE),
-	OBJECT(() -> TripleComponentRole.OBJECT), SHARED(() -> TripleComponentRole.SUBJECT);
+	SUBJECT(() -> TripleComponentRole.SUBJECT, Dictionary::getSubjects),
+	PREDICATE(() -> TripleComponentRole.PREDICATE, Dictionary::getPredicates),
+	OBJECT(() -> TripleComponentRole.OBJECT, Dictionary::getObjects),
+	SHARED(() -> TripleComponentRole.SUBJECT, Dictionary::getShared);
 
 	private final Supplier<TripleComponentRole> roleSupplier;
+	private final Function<Dictionary, DictionarySection> dictionarySectionFunction;
 	private TripleComponentRole role;
 
-	DictionarySectionRole(Supplier<TripleComponentRole> roleSupplier) {
+	DictionarySectionRole(Supplier<TripleComponentRole> roleSupplier,
+			Function<Dictionary, DictionarySection> dictionarySectionFunction) {
 		this.roleSupplier = roleSupplier;
+		this.dictionarySectionFunction = dictionarySectionFunction;
 	}
 
 	/**
@@ -22,5 +31,15 @@ public enum DictionarySectionRole {
 			role = roleSupplier.get();
 		}
 		return role;
+	}
+
+	/**
+	 * get this section from a dictionary
+	 *
+	 * @param dict dictionary
+	 * @return section
+	 */
+	public DictionarySection getSection(Dictionary dict) {
+		return dictionarySectionFunction.apply(dict);
 	}
 }

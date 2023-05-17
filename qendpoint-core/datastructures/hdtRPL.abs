@@ -1,0 +1,52 @@
+// idea to implement an HDT without a shared component to use merge-join with HDT files
+
+#include "hdt.abs"
+
+enum DictionarySectionType : byte {
+    TYPE_INDEX_RPL = 3,
+}
+
+RPLDictionary : Dictionary{ci.format = "<http://purl.org/HDT/hdt#dictionaryRpl>"} {
+    ControlInfo ci;
+    DictionarySection R;
+    DictionarySection P;
+    LiteralSections L;
+}
+
+IntSection : DictionarySection{header.type = TYPE_INDEX_RPL} {
+    struct {
+        vlong numstrings;
+        vlong bytes;
+        bytes blocksize;
+    } header;
+    crc8 headerCrc;
+    Sequence blocks;
+    PFCSectionDataChunk<header.blocksize>[] chunks;
+    crc32 chunksCrc;
+}
+
+IntSectionDataChunk<blocksize> {
+    string firstStr;
+    byte firstStrEnd = '\0';
+    delta[blocksize] {
+        vlong delta;
+        string str;
+        byte strEnd = '\0';
+    }
+}
+
+LiteralSections {
+    int numTypes;
+    int numLang;
+    struct {
+        vlong strLength;
+        string str;
+    }[] types;
+    struct {
+        vlong strLength;
+        string str;
+    }[] langs;
+
+    DictionarySection[] langSections;
+    DictionarySection noDatatypeSection;
+}

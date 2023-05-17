@@ -72,7 +72,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 	public int kcat;
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	private void writeSection(DictionarySection sec, OutputStream stream) throws IOException {
 		((DictionarySectionPrivate) sec).save(stream, null);
@@ -97,7 +97,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void mergerTest() throws ParserException, IOException, InterruptedException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 		try {
 			HDTOptions spec = HDTOptions.of();
 
@@ -274,7 +274,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void catTest() throws ParserException, IOException, NotFoundException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 		try {
 			// number of HDTs
 			int countPerHDT = 1000;
@@ -326,7 +326,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void catDiffTest() throws ParserException, IOException, NotFoundException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 		try {
 			// number of HDTs
 			int countPerHDT = 1000;
@@ -396,7 +396,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void diffMergerTest() throws ParserException, IOException, InterruptedException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 		try {
 			// number of HDTs
 			int countPerHDT = 1000;

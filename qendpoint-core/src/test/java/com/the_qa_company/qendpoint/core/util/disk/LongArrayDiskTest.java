@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 public class LongArrayDiskTest extends AbstractMapMemoryTest {
 
 	@Rule
-	public TemporaryFolder tempDir = new TemporaryFolder();
+	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
 	public static String printByteBuff(ByteBuffer buffer) {
 		return IntStream.range(0, buffer.capacity()).mapToObj(buffer::get).map(b -> String.format("%02x", b))
@@ -81,7 +81,7 @@ public class LongArrayDiskTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void resizeTest() throws IOException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 
 		try (LongArrayDisk array = new LongArrayDisk(root.resolve("file"), 4)) {
 
@@ -108,7 +108,7 @@ public class LongArrayDiskTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void clearTest() throws IOException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 
 		long size = 12543;
 		try (LongArrayDisk array = new LongArrayDisk(root.resolve("file"), size)) {
@@ -134,7 +134,7 @@ public class LongArrayDiskTest extends AbstractMapMemoryTest {
 
 	@Test
 	public void largeResizeTest() throws IOException {
-		Path root = tempDir.getRoot().toPath();
+		Path root = tempDir.newFolder().toPath();
 
 		long[] tests = { 7, 5, 9, 2 };
 
