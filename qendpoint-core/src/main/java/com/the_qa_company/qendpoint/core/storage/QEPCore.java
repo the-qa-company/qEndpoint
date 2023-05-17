@@ -624,6 +624,10 @@ public class QEPCore implements AutoCloseable {
 				return triple;
 			});
 		}
+		if (!triples.hasNext()) {
+			return; // it's stupid, but maybe all the new elements are already
+					// in the core
+		}
 		String id;
 		Path datasetPath;
 		while (true) {
