@@ -110,6 +110,7 @@ public class HDTVocabulary {
 
 	// Bitmaps
 	public static final String BITMAP_TYPE_PLAIN = HDT_BITMAP_BASE + "Plain>";
+	public static final String BITMAP_TYPE_ROAR = HDT_BITMAP_BASE + "Roar>";
 
 	// Misc
 	public static final String ORIGINAL_SIZE = HDT_BASE + "originalSize>";

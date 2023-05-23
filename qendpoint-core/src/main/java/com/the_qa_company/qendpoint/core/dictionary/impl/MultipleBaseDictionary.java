@@ -304,7 +304,7 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 			return getPredicates().getSortedEntries();
 		}
 		case OBJECT -> {
-			Stream<? extends Iterator<? extends CharSequence>> os = getAllObjects().entrySet().stream().map(e -> {
+			Stream<Iterator<? extends CharSequence>> os = getAllObjects().entrySet().stream().map(e -> {
 				if (LiteralsUtils.NO_DATATYPE.equals(e.getKey())) {
 					return e.getValue().getSortedEntries();
 				}

@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.compact.bitmap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
@@ -33,11 +34,11 @@ public class BitmapFactoryImpl extends BitmapFactory {
 
 	@Override
 	protected ModifiableBitmap doCreateModifiableBitmap(String type) {
-		if (type == null || type.equals(HDTVocabulary.BITMAP_TYPE_PLAIN)) {
-			return Bitmap375Big.memory(0);
-		} else {
-			throw new IllegalArgumentException("Implementation not found for Bitmap with type " + type);
-		}
+		return switch (Objects.requireNonNullElse(type, HDTVocabulary.BITMAP_TYPE_PLAIN)) {
+		case HDTVocabulary.BITMAP_TYPE_PLAIN -> Bitmap375Big.memory(0);
+		case HDTVocabulary.BITMAP_TYPE_ROAR -> new RoaringBitmap();
+		default -> throw new IllegalArgumentException("Implementation not found for Bitmap with type " + type);
+		};
 	}
 
 	@Override

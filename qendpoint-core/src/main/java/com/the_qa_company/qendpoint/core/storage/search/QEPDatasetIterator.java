@@ -1,20 +1,23 @@
 package com.the_qa_company.qendpoint.core.storage.search;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import com.the_qa_company.qendpoint.core.storage.QEPDataset;
+import com.the_qa_company.qendpoint.core.storage.QEPDatasetContext;
+import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 
-import java.util.Iterator;
-
-public class QEPDatasetIterator implements Iterator<QEPComponentTriple> {
-	private final QEPDataset dataset;
+public class QEPDatasetIterator implements CloseableIterator<QEPComponentTriple, QEPCoreException> {
+	private final QEPDatasetContext ctx;
 	private final IteratorTripleID iterator;
 	private final QEPComponentTriple triple;
 	private boolean next;
 
-	public QEPDatasetIterator(QEPDataset dataset, IteratorTripleID iterator, QEPComponentTriple triple) {
-		this.dataset = dataset;
+	private long lastId = -1;
+
+	public QEPDatasetIterator(QEPDatasetContext ctx, IteratorTripleID iterator, QEPComponentTriple triple) {
+		this.ctx = ctx;
 		this.iterator = iterator;
 		this.triple = triple;
 	}
@@ -28,15 +31,16 @@ public class QEPDatasetIterator implements Iterator<QEPComponentTriple> {
 			TripleID tid = iterator.next();
 			long position = iterator.getLastTriplePosition();
 
-			if (dataset.isTripleDeleted(position)) {
+			if (ctx.isTripleDeleted(position)) {
 				// the triple is deleted, we can ignore it
 				continue;
 			}
 
 			// small overhead with the frozen components, but negligible (?)
-			triple.setAll(dataset.component(tid.getSubject(), TripleComponentRole.SUBJECT),
-					dataset.component(tid.getPredicate(), TripleComponentRole.PREDICATE),
-					dataset.component(tid.getObject(), TripleComponentRole.OBJECT), position, dataset.uid());
+			QEPDataset ds = ctx.dataset();
+			triple.setAll(ds.component(tid.getSubject(), TripleComponentRole.SUBJECT),
+					ds.component(tid.getPredicate(), TripleComponentRole.PREDICATE),
+					ds.component(tid.getObject(), TripleComponentRole.OBJECT), position, ds.uid());
 			next = true;
 
 			return true;
@@ -46,14 +50,28 @@ public class QEPDatasetIterator implements Iterator<QEPComponentTriple> {
 	}
 
 	@Override
+	public void remove() {
+		if (lastId == -1) {
+			throw new IllegalArgumentException("Called remove without calling next first!");
+		}
+		ctx.dataset().deleteTriple(lastId);
+	}
+
+	@Override
 	public QEPComponentTriple next() {
 		if (!hasNext()) {
 			return null;
 		}
 		try {
+			lastId = triple.getId();
 			return triple;
 		} finally {
 			next = false;
 		}
+	}
+
+	@Override
+	public void close() throws QEPCoreException {
+
 	}
 }

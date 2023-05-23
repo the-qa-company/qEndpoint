@@ -7,11 +7,12 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.iterator.utils.CatIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapFilterIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
+import com.the_qa_company.qendpoint.core.storage.iterator.CatCloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
@@ -32,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -102,8 +106,11 @@ public class QEPCore implements AutoCloseable {
 	public static final String FILE_CORE_CONFIG_OPT = "config.opt";
 
 	private final Map<String, QEPDataset> dataset = new HashMap<>();
-	private final Map<Integer, QEPDataset> datasetByUid = new HashMap<>();
-	private final Map<Uid, QEPMap> map = new HashMap<>();
+	private final Object datasetLock = new Object() {};
+	private final ReentrantLock insertLock = new ReentrantLock();
+	private final Object bindLock = new Object() {};
+	private final ConcurrentMap<Integer, QEPDataset> datasetByUid = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Uid, QEPMap> map = new ConcurrentHashMap<>();
 
 	// config
 	private final HDTOptions options;
@@ -111,7 +118,6 @@ public class QEPCore implements AutoCloseable {
 	private final boolean noCoIndex;
 	private final Path location;
 	private ProgressListener listener = ProgressListener.ignore();
-
 	private long maxId;
 
 	QEPCore() {
@@ -229,7 +235,7 @@ public class QEPCore implements AutoCloseable {
 	 * @return the number of triples
 	 */
 	public long triplesCount() {
-		return dataset.values().stream().mapToLong(d -> d.dataset().getTriples().getNumberOfElements()).sum();
+		return createDatasetSnapshot().stream().mapToLong(d -> d.dataset().getTriples().getNumberOfElements()).sum();
 	}
 
 	@SuppressWarnings("resource")
@@ -284,84 +290,86 @@ public class QEPCore implements AutoCloseable {
 	 * @throws QEPCoreException reload issue
 	 */
 	public void reloadDataset() throws QEPCoreException {
-		try {
-			// clear the pool
-			Closer.closeAll(dataset);
-			dataset.clear();
-			datasetByUid.clear();
-			Files.createDirectories(getDatasetPath());
-			try (Stream<Path> files = Files.list(getDatasetPath())) {
-				files.forEach(path -> {
-					String filename = path.getFileName().toString();
+		synchronized (datasetLock) {
+			try {
+				// clear the pool
+				Closer.closeAll(dataset);
+				dataset.clear();
+				datasetByUid.clear();
+				Files.createDirectories(getDatasetPath());
+				try (Stream<Path> files = Files.list(getDatasetPath())) {
+					files.forEach(path -> {
+						String filename = path.getFileName().toString();
 
-					if (!filename.startsWith(FILE_DATASET_PREFIX) || !filename.endsWith(FILE_DATASET_SUFFIX)) {
-						// we ignore this file because it's most likely not what
-						// we're searching for
-						return;
-					}
+						if (!filename.startsWith(FILE_DATASET_PREFIX) || !filename.endsWith(FILE_DATASET_SUFFIX)) {
+							// we ignore this file because it's most likely not
+							// what
+							// we're searching for
+							return;
+						}
 
-					String indexId = filename
-							.substring(FILE_DATASET_PREFIX.length(), filename.length() - FILE_DATASET_SUFFIX.length())
-							.toLowerCase();
+						String indexId = filename.substring(FILE_DATASET_PREFIX.length(),
+								filename.length() - FILE_DATASET_SUFFIX.length()).toLowerCase();
 
-					Matcher matcher = ID_REGEX.matcher(indexId);
-					if (!matcher.matches()) {
-						logger.warn(
-								"file {} seems to be a dataset, but isn't matching the id format, it will be ignored.",
-								path);
-						return;
-					}
-					// load the dataset
+						Matcher matcher = ID_REGEX.matcher(indexId);
+						if (!matcher.matches()) {
+							logger.warn(
+									"file {} seems to be a dataset, but isn't matching the id format, it will be ignored.",
+									path);
+							return;
+						}
+						// load the dataset
+						try {
+							if (indexId.length() < 15) {
+								try {
+									maxId = Math.max(Long.parseLong(indexId), maxId);
+								} catch (NumberFormatException ignore) {
+								}
+							}
+							QEPDataset ds = openDataset(indexId, path);
+							QEPDataset other = dataset.put(ds.id(), ds);
+
+							// Windows compatibility, it would also be a bad
+							// practice to use datasets
+							// with case-sensitive names
+							if (other != null) {
+								ContainerException e = new ContainerException(
+										new QEPCoreException("Dataset collision with name " + other.id() + " at path "
+												+ other.path() + " vs " + ds.path()));
+								try {
+									// close the other dataset
+									other.close();
+								} catch (Exception t) {
+									// issue while closing
+									e.addSuppressed(t);
+								} catch (Error t) {
+									t.addSuppressed(e);
+									throw t;
+								}
+								throw e;
+							}
+							datasetByUid.put(ds.uid(), ds);
+						} catch (IOException e) {
+							throw new ContainerException(new QEPCoreException(e));
+						}
+					});
+				} catch (Throwable t) {
+					// close all the previously loaded dateset
 					try {
-						if (indexId.length() < 15) {
-							try {
-								maxId = Math.max(Long.parseLong(indexId), maxId);
-							} catch (NumberFormatException ignore) {
-							}
-						}
-						QEPDataset ds = openDataset(indexId, path);
-						QEPDataset other = dataset.put(ds.id(), ds);
-
-						// Windows compatibility, it would also be a bad
-						// practice to use datasets
-						// with case-sensitive names
-						if (other != null) {
-							ContainerException e = new ContainerException(
-									new QEPCoreException("Dataset collision with name " + other.id() + " at path "
-											+ other.path() + " vs " + ds.path()));
-							try {
-								// close the other dataset
-								other.close();
-							} catch (Exception t) {
-								// issue while closing
-								e.addSuppressed(t);
-							} catch (Error t) {
-								t.addSuppressed(e);
-								throw t;
-							}
-							throw e;
-						}
-						datasetByUid.put(ds.uid(), ds);
-					} catch (IOException e) {
-						throw new ContainerException(new QEPCoreException(e));
+						Closer.closeAll(dataset);
+					} catch (Throwable t2) {
+						t.addSuppressed(t2);
 					}
-				});
-			} catch (Throwable t) {
-				// close all the previously loaded dateset
-				try {
-					Closer.closeAll(dataset);
-				} catch (Throwable t2) {
-					t.addSuppressed(t2);
+					throw t;
 				}
-				throw t;
+			} catch (IOException e) {
+				throw new QEPCoreException(e);
+			} catch (ContainerException e) {
+				if (e.getCause() instanceof QEPCoreException ee) {
+					throw ee;
+				}
+				throw new QEPCoreException(e.getCause());
 			}
-		} catch (IOException e) {
-			throw new QEPCoreException(e);
-		} catch (ContainerException e) {
-			if (e.getCause() instanceof QEPCoreException ee) {
-				throw ee;
-			}
-			throw new QEPCoreException(e.getCause());
 		}
 	}
 
@@ -372,19 +380,22 @@ public class QEPCore implements AutoCloseable {
 	 */
 	public void syncDatasetMaps() throws QEPCoreException {
 		Path mapsDir = getMapsPath();
-		try {
-			// close the previous maps
-			Closer.closeAll(map.values());
-			map.clear();
-			Files.createDirectories(mapsDir);
+		synchronized (bindLock) {
+			List<QEPDataset> snapshot = createDatasetSnapshot();
+			try {
+				// close the previous maps
+				Closer.closeAll(map.values());
+				map.clear();
+				Files.createDirectories(mapsDir);
 
-			for (QEPDataset d1 : dataset.values()) {
-				for (QEPDataset d2 : dataset.values()) {
-					bindDataset(d1, d2);
+				for (QEPDataset d1 : snapshot) {
+					for (QEPDataset d2 : snapshot) {
+						bindDataset(d1, d2);
+					}
 				}
+			} catch (IOException e) {
+				throw new QEPCoreException("Can't sync map data!", e);
 			}
-		} catch (IOException e) {
-			throw new QEPCoreException("Can't sync map data!", e);
 		}
 	}
 
@@ -434,17 +445,10 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
-	 * @return all the dataset IDs
-	 */
-	public Set<String> getDatasetIds() {
-		return Collections.unmodifiableSet(dataset.keySet());
-	}
-
-	/**
 	 * @return the datasets
 	 */
-	public Collection<QEPDataset> getDatasets() {
-		return Collections.unmodifiableCollection(dataset.values());
+	public List<QEPDataset> getDatasets() {
+		return createDatasetSnapshot();
 	}
 
 	/**
@@ -475,14 +479,20 @@ public class QEPCore implements AutoCloseable {
 		}
 	}
 
+	private List<QEPDataset> createDatasetSnapshot() {
+		synchronized (datasetLock) {
+			return dataset.values().stream().toList();
+		}
+	}
+
 	/**
 	 * search all the triples into the core
 	 *
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search() throws QEPCoreException {
-		return search("", "", "");
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search() throws QEPCoreException {
+		return search(createContext());
 	}
 
 	/**
@@ -494,75 +504,186 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search(CharSequence subject, CharSequence predicate,
-			CharSequence object) throws QEPCoreException {
-		return search(createComponentByString(subject), createComponentByString(predicate),
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(CharSequence subject,
+			CharSequence predicate, CharSequence object) throws QEPCoreException {
+		return search(createContext(), subject, predicate, object);
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPComponent subject,
+			QEPComponent predicate, QEPComponent object) throws QEPCoreException {
+		return search(createContext(), subject, predicate, object);
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param triple triple to search
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(TripleString triple)
+			throws QEPCoreException {
+		return search(createContext(), triple);
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param triple triple to search
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPComponentTriple triple)
+			throws QEPCoreException {
+		return search(createContext(), triple);
+	}
+
+	/**
+	 * search all the triples into the core
+	 *
+	 * @param context search context
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context)
+			throws QEPCoreException {
+		return search(context, "", "", "");
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param context   search context
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return iterator of components
+	 * @throws QEPCoreException search exception
+	 */
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+			CharSequence subject, CharSequence predicate, CharSequence object) throws QEPCoreException {
+		return search(context, createComponentByString(subject), createComponentByString(predicate),
 				createComponentByString(object));
 	}
 
 	/**
 	 * search a triple into the core
 	 *
+	 * @param context   search context
 	 * @param subject   subject
 	 * @param predicate predicate
 	 * @param object    object
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate,
-			QEPComponent object) throws QEPCoreException {
-		return search(QEPComponentTriple.of(subject, predicate, object));
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+			QEPComponent subject, QEPComponent predicate, QEPComponent object) throws QEPCoreException {
+		return search(context, QEPComponentTriple.of(subject, predicate, object));
 	}
 
 	/**
 	 * search a triple into the core
 	 *
-	 * @param triple triple to search
+	 * @param context search context
+	 * @param triple  triple to search
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search(TripleString triple) throws QEPCoreException {
-		return search(triple.getSubject().isEmpty() ? null : triple.getSubject(),
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+			TripleString triple) throws QEPCoreException {
+		return search(context, triple.getSubject().isEmpty() ? null : triple.getSubject(),
 				triple.getPredicate().isEmpty() ? null : triple.getPredicate(),
 				triple.getObject().isEmpty() ? null : triple.getObject());
 	}
 
 	/**
-	 * set the progression listener for this core
-	 *
-	 * @param listener listener
-	 * @see #removeListener()
-	 */
-	public void setListener(ProgressListener listener) {
-		this.listener = Objects.requireNonNull(listener);
-	}
-
-	/**
-	 * remove the progression listener for this core
-	 *
-	 * @see #setListener(ProgressListener)
-	 */
-	public void removeListener() {
-		setListener(ProgressListener.ignore());
-	}
-
-	/**
 	 * search a triple into the core
 	 *
-	 * @param triple triple to search
+	 * @param context search context
+	 * @param triple  triple to search
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public Iterator<? extends QEPComponentTriple> search(QEPComponentTriple triple) throws QEPCoreException {
-		List<Iterator<QEPComponentTriple>> iterators = new ArrayList<>();
+	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+			QEPComponentTriple triple) throws QEPCoreException {
+		List<CloseableIterator<? extends QEPComponentTriple, QEPCoreException>> iterators = new ArrayList<>();
 		QEPComponentTriple clone = triple.freeze();
-
-		for (QEPDataset value : dataset.values()) {
-			iterators.add(value.search(clone));
+		for (QEPDatasetContext dsctx : context.getContexts()) {
+			iterators.add(dsctx.dataset().search(dsctx, clone));
 		}
 
 		// cat all the iterators
-		return CatIterator.of(iterators);
+		return CatCloseableIterator.of(iterators);
+	}
+
+	/**
+	 * remove a triple pattern from the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @throws QEPCoreException remove exception
+	 */
+	public void removeTriple(CharSequence subject, CharSequence predicate, CharSequence object)
+			throws QEPCoreException {
+		removeTriple(createComponentByString(subject), createComponentByString(predicate),
+				createComponentByString(object));
+	}
+
+	/**
+	 * remove a triple pattern from the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @throws QEPCoreException remove exception
+	 */
+	public void removeTriple(QEPComponent subject, QEPComponent predicate, QEPComponent object)
+			throws QEPCoreException {
+		removeTriple(QEPComponentTriple.of(subject, predicate, object));
+	}
+
+	/**
+	 * remove a triple pattern from the core
+	 *
+	 * @param triple triple pattern to remove
+	 * @throws QEPCoreException remove exception
+	 */
+	public void removeTriple(TripleString triple) throws QEPCoreException {
+		removeTriple(triple.getSubject().isEmpty() ? null : triple.getSubject(),
+				triple.getPredicate().isEmpty() ? null : triple.getPredicate(),
+				triple.getObject().isEmpty() ? null : triple.getObject());
+	}
+
+	/**
+	 * remove a triple pattern from the core
+	 *
+	 * @param triple triple pattern to remove
+	 * @throws QEPCoreException remove exception
+	 */
+	public void removeTriple(QEPComponentTriple triple) throws QEPCoreException {
+		QEPComponentTriple clone = triple.freeze();
+
+		dataset.values().forEach(ds -> {
+			Iterator<QEPComponentTriple> it = ds.search(clone);
+			while (it.hasNext()) {
+				it.next();
+				it.remove();
+			}
+		});
+	}
+
+	public QEPCoreContext createContext() {
+		return new QEPCoreContext(this, createDatasetSnapshot());
 	}
 
 	/**
@@ -605,7 +726,11 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
-	 * load triples into a new dataset
+	 * load triples into a new dataset, is checkAlreadyExist is set to true,
+	 * this task will lock the thread if another insertion is running, if a new
+	 * loadData with checkAlreadyExist is started while a loadData without
+	 * checkAlreadyExist is running, no check will be done on the loaded data
+	 * from the non checkAlreadyExist run.
 	 *
 	 * @param triples           triples to load
 	 * @param baseURI           base URI of the new dataset
@@ -617,63 +742,81 @@ public class QEPCore implements AutoCloseable {
 	public void loadData(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist,
 			ProgressListener listener) throws IOException, ParserException {
 		if (checkAlreadyExist) {
+			QEPCoreContext ctx = createContext();
+			insertLock.lock();
 			triples = MapFilterIterator.of(triples, triple -> {
-				if (search(triple).hasNext()) {
-					return null;
+				try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> it = search(ctx, triple)) {
+					if (it.hasNext()) {
+						return null;
+					}
 				}
 				return triple;
 			});
 		}
-		if (!triples.hasNext()) {
-			return; // it's stupid, but maybe all the new elements are already
-					// in the core
-		}
-		String id;
-		Path datasetPath;
-		while (true) {
-			id = createNewDatasetId();
-			datasetPath = getDatasetPath().resolve(FILE_DATASET_PREFIX + id + FILE_DATASET_SUFFIX);
-
-			// we wait until we don't overwrite a dataset, bad config or update
-			// of the core while running?
-			if (!Files.exists(datasetPath)) {
-				break;
+		QEPDataset other;
+		try {
+			if (!triples.hasNext()) {
+				return; // it's stupid, but maybe all the new elements are
+						// already
+				// in the core
 			}
-			logger.warn("a dataset with the id '{}' was found in te file '{}', but it wasn't registered in the core",
-					id, datasetPath);
-		}
-		// push our custom config to set the future dataset (for disk generation
-		// methods)
-		HDTOptions genOpt = options.pushTop();
-		genOpt.set(HDTCAT_FUTURE_LOCATION, datasetPath.toAbsolutePath());
-		genOpt.set(LOADER_DISK_FUTURE_HDT_LOCATION_KEY, datasetPath.toAbsolutePath());
-		genOpt.set(LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, datasetPath.toAbsolutePath());
+			String id;
+			Path datasetPath;
+			while (true) {
+				id = createNewDatasetId();
+				datasetPath = getDatasetPath().resolve(FILE_DATASET_PREFIX + id + FILE_DATASET_SUFFIX);
 
-		ProgressListener combinedListener = this.listener.combine(listener);
-		try (HDT dataset = HDTManager.generateHDT(triples, baseURI, genOpt, combinedListener)) {
-			dataset.saveToHDT(datasetPath, combinedListener);
-		} catch (Throwable t) {
-			try {
-				// delete the dataset file if it was already used
-				Files.deleteIfExists(datasetPath);
-			} catch (IOException e) {
-				t.addSuppressed(e);
+				// we wait until we don't overwrite a dataset, bad config or
+				// update
+				// of the core while running?
+				if (!Files.exists(datasetPath)) {
+					break;
+				}
+				logger.warn(
+						"a dataset with the id '{}' was found in te file '{}', but it wasn't registered in the core",
+						id, datasetPath);
 			}
-			throw t;
+			// push our custom config to set the future dataset (for disk
+			// generation
+			// methods)
+			HDTOptions genOpt = options.pushTop();
+			genOpt.set(HDTCAT_FUTURE_LOCATION, datasetPath.toAbsolutePath());
+			genOpt.set(LOADER_DISK_FUTURE_HDT_LOCATION_KEY, datasetPath.toAbsolutePath());
+			genOpt.set(LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, datasetPath.toAbsolutePath());
+
+			ProgressListener combinedListener = this.listener.combine(listener);
+			try (HDT dataset = HDTManager.generateHDT(triples, baseURI, genOpt, combinedListener)) {
+				dataset.saveToHDT(datasetPath, combinedListener);
+			} catch (Throwable t) {
+				try {
+					// delete the dataset file if it was already used
+					Files.deleteIfExists(datasetPath);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+
+			// we open the dataset because the memory generation is using more
+			// memory before being reloaded
+			QEPDataset ds = openDataset(id, datasetPath);
+
+			// bind the new dataset with all the previous datasets
+			synchronized (bindLock) {
+				for (QEPDataset d2 : createDatasetSnapshot()) {
+					bindDataset(ds, d2);
+				}
+
+				synchronized (datasetLock) {
+					other = dataset.put(ds.id(), ds);
+					datasetByUid.put(ds.uid(), ds);
+				}
+			}
+		} finally {
+			if (checkAlreadyExist) {
+				insertLock.unlock();
+			}
 		}
-
-		// we open the dataset because the memory generation is using more
-		// memory before being reloaded
-		QEPDataset ds = openDataset(id, datasetPath);
-
-		QEPDataset other = dataset.put(ds.id(), ds);
-		datasetByUid.put(ds.uid(), ds);
-
-		// bind the new dataset with all the previous datasets
-		for (QEPDataset d2 : dataset.values()) {
-			bindDataset(ds, d2);
-		}
-
 		if (other != null) {
 			QEPCoreException otherLoadedException = new QEPCoreException(
 					"dataset with id '" + other.id() + "' was already loaded");
@@ -714,16 +857,39 @@ public class QEPCore implements AutoCloseable {
 		return options.readOnly();
 	}
 
+	/**
+	 * set the progression listener for this core
+	 *
+	 * @param listener listener
+	 * @see #removeListener()
+	 */
+	public void setListener(ProgressListener listener) {
+		this.listener = Objects.requireNonNull(listener);
+	}
+
+	/**
+	 * remove the progression listener for this core
+	 *
+	 * @see #setListener(ProgressListener)
+	 */
+	public void removeListener() {
+		setListener(ProgressListener.ignore());
+	}
+
 	@Override
 	public void close() throws QEPCoreException {
-		try {
-			Closer.closeAll(dataset, map);
-		} catch (IOException e) {
-			throw new QEPCoreException(e);
-		} finally {
-			dataset.clear();
-			datasetByUid.clear();
-			map.clear();
+		synchronized (datasetLock) {
+			synchronized (bindLock) {
+				try {
+					Closer.closeAll(dataset, map);
+				} catch (IOException e) {
+					throw new QEPCoreException(e);
+				} finally {
+					dataset.clear();
+					datasetByUid.clear();
+					map.clear();
+				}
+			}
 		}
 	}
 
@@ -734,7 +900,9 @@ public class QEPCore implements AutoCloseable {
 	 * @return dataset, or null if undefined in this core
 	 */
 	public QEPDataset getDatasetById(String id) {
-		return dataset.get(id);
+		synchronized (datasetLock) {
+			return dataset.get(id);
+		}
 	}
 
 	/**

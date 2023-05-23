@@ -11,6 +11,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -154,29 +155,32 @@ public class QEPCoreTest {
 					QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
 					Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
-				Iterator<? extends QEPComponentTriple> search = core.search("", "", "");
+				try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search = core.search("", "",
+						"")) {
 
-				long count = 0;
-				while (search.hasNext()) {
-					QEPComponentTriple next = search.next();
-					// convert to a triple string to search over the main HDT
-					TripleString ts = next.tripleString();
-					count++;
-					// search the ts
-					IteratorTripleString searchIt = hdt.search(ts.getSubject(), ts.getPredicate(), ts.getObject());
-					assertTrue("missing triple for " + ts + " in main HDT", searchIt.hasNext());
-					searchIt.next();
+					long count = 0;
+					while (search.hasNext()) {
+						QEPComponentTriple next = search.next();
+						// convert to a triple string to search over the main
+						// HDT
+						TripleString ts = next.tripleString();
+						count++;
+						// search the ts
+						IteratorTripleString searchIt = hdt.search(ts.getSubject(), ts.getPredicate(), ts.getObject());
+						assertTrue("missing triple for " + ts + " in main HDT", searchIt.hasNext());
+						searchIt.next();
 
-					long position = searchIt.getLastTriplePosition();
-					assertFalse("position " + position + " was already checked", findBM.access(position));
+						long position = searchIt.getLastTriplePosition();
+						assertFalse("position " + position + " was already checked", findBM.access(position));
 
-					findBM.set(position, true);
+						findBM.set(position, true);
 
-					assertFalse("multiple find, wtf?", searchIt.hasNext());
+						assertFalse("multiple find, wtf?", searchIt.hasNext());
+					}
+
+					assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
+							hdt.getTriples().getNumberOfElements(), count);
 				}
-
-				assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
-						hdt.getTriples().getNumberOfElements(), count);
 			}
 		}
 
@@ -218,21 +222,22 @@ public class QEPCoreTest {
 					// convert to a triple string to search over the main HDT
 					count++;
 					// search the ts
-					Iterator<? extends QEPComponentTriple> searchIt = core.search(ts);
-					assertTrue("missing triple for " + ts + " in core", searchIt.hasNext());
+					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> searchIt = core.search(ts)) {
+						assertTrue("missing triple for " + ts + " in core", searchIt.hasNext());
 
-					QEPComponentTriple qts = searchIt.next();
-					long position = qts.getId();
-					int datasetId = qts.getDatasetId();
-					Bitmap64Big bitmap = bitmaps.get(datasetId);
+						QEPComponentTriple qts = searchIt.next();
+						long position = qts.getId();
+						int datasetId = qts.getDatasetId();
+						Bitmap64Big bitmap = bitmaps.get(datasetId);
 
-					assertNotNull("empty bitmap for dataset: " + datasetId, bitmap);
-					assertFalse("position " + position + " was already checked for dataset " + datasetId,
-							bitmap.access(position));
+						assertNotNull("empty bitmap for dataset: " + datasetId, bitmap);
+						assertFalse("position " + position + " was already checked for dataset " + datasetId,
+								bitmap.access(position));
 
-					bitmap.set(position, true);
+						bitmap.set(position, true);
 
-					assertFalse("multiple find, wtf?", searchIt.hasNext());
+						assertFalse("multiple find, wtf?", searchIt.hasNext());
+					}
 				}
 
 				assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
@@ -397,21 +402,25 @@ public class QEPCoreTest {
 					assertEquals("size isn't matching", ts.size(), core.triplesCount());
 
 					for (TripleString t : ts) {
-						if (!core.search(t).hasNext()) {
-							throw new AssertionError(format("Can't find triple '%s' in the core", t));
+						try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> s = core.search(t)) {
+							if (!s.hasNext()) {
+								throw new AssertionError(format("Can't find triple '%s' in the core", t));
+							}
 						}
 					}
 
-					Iterator<? extends QEPComponentTriple> sit = core.search();
-					while (sit.hasNext()) {
-						QEPComponentTriple triple = sit.next();
-						// we need to convert it using tripleToString() because
-						// ts contains String char sequences
-						// where tripleString() contains byte strings
-						TripleString tt = triple.tripleString().tripleToString();
-						if (!ts.contains(tt)) {
-							throw new AssertionError(
-									format("the core contains the triple %s, but it isn't in the dataset!", triple));
+					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> sit = core.search()) {
+						while (sit.hasNext()) {
+							QEPComponentTriple triple = sit.next();
+							// we need to convert it using tripleToString()
+							// because
+							// ts contains String char sequences
+							// where tripleString() contains byte strings
+							TripleString tt = triple.tripleString().tripleToString();
+							if (!ts.contains(tt)) {
+								throw new AssertionError(format(
+										"the core contains the triple %s, but it isn't in the dataset!", triple));
+							}
 						}
 					}
 				}
