@@ -7,7 +7,10 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -16,10 +19,22 @@ import java.util.Set;
 import static java.lang.String.format;
 import static org.junit.Assert.fail;
 
+@RunWith(Parameterized.class)
 public class SortedDictionarySectionIndexTest {
+	@Parameterized.Parameters(name = "iri:{0} bnode:{1}")
+	public static Collection<Object[]> params() {
+		return List.of(new Object[][] { { true, true }, { false, true }, { true, false }, { false, false }, });
+	}
+
+	@Parameterized.Parameter
+	public boolean withIRI;
+	@Parameterized.Parameter(1)
+	public boolean withBNode;
+
 	@Test
 	public void indexTest() {
-		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(1000, 64);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(999, 64)
+				.withMaxElementSplit(20).withMaxLiteralSize(50).withIRI(withIRI).withBlankNode(withBNode);
 		Iterator<TripleString> its = supplier.createTripleStringStream();
 
 		Set<ByteString> elements = new HashSet<>();

@@ -1,14 +1,17 @@
 package com.the_qa_company.qendpoint.store.experimental;
 
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.storage.QEPCore;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.base.SailStore;
+import org.eclipse.rdf4j.sail.base.SnapshotSailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ public class ExperimentalQEndpointSail extends AbstractNotifyingSail {
 	private Path storeLocation;
 	private boolean isTempLocation;
 	private SailStore sailStore;
+	private QEPSailStore qepSailStore;
 	private FederatedServiceResolver serviceResolver;
 	private SPARQLServiceResolver dependentServiceResolver;
 	private final HDTOptions options;
@@ -70,7 +74,7 @@ public class ExperimentalQEndpointSail extends AbstractNotifyingSail {
 
 	private void checkInit() {
 		if (sailStore == null) {
-			throw new SailException("The sail isn't initialize!");
+			throw new SailException("The sail isn't initialized!");
 		}
 	}
 
@@ -97,22 +101,13 @@ public class ExperimentalQEndpointSail extends AbstractNotifyingSail {
 	@Override
 	protected synchronized void shutDownInternal() throws SailException {
 		try {
-			if (isTempLocation) {
-				try {
-					PathUtils.deleteDirectory(storeLocation);
-				} catch (IOException e) {
-					throw new SailException(e);
-				} finally {
-					isTempLocation = false;
-				}
-			}
-		} finally {
 			try {
 				if (sailStore != null) {
 					sailStore.close();
 				}
 			} finally {
 				sailStore = null;
+				qepSailStore = null;
 				try {
 					if (dependentServiceResolver != null) {
 						dependentServiceResolver.shutDown();
@@ -120,6 +115,25 @@ public class ExperimentalQEndpointSail extends AbstractNotifyingSail {
 				} finally {
 					dependentServiceResolver = null;
 				}
+			}
+		} catch (Throwable t) {
+			if (isTempLocation) {
+				try {
+					PathUtils.deleteDirectory(storeLocation);
+				} catch (IOException e) {
+					t.addSuppressed(new SailException(e));
+				} finally {
+					isTempLocation = false;
+				}
+			}
+		}
+		if (isTempLocation) {
+			try {
+				PathUtils.deleteDirectory(storeLocation);
+			} catch (IOException e) {
+				throw new SailException(e);
+			} finally {
+				isTempLocation = false;
 			}
 		}
 	}
@@ -134,9 +148,13 @@ public class ExperimentalQEndpointSail extends AbstractNotifyingSail {
 		return sailStore;
 	}
 
+	public QEPCore getQepCore() {
+		return qepSailStore.getCore();
+	}
+
 	@Override
 	public boolean isWritable() throws SailException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -161,7 +179,8 @@ public class ExperimentalQEndpointSail extends AbstractNotifyingSail {
 		}
 
 		try {
-			sailStore = new QEPSailStore(this, options);
+			qepSailStore = new QEPSailStore(this, options);
+			sailStore = new SnapshotSailStore(qepSailStore, TreeModel::new);
 		} catch (QEPCoreException e) {
 			throw new SailException(e);
 		}

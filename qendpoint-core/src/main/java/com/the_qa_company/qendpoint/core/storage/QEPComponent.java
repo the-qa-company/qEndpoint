@@ -1,15 +1,20 @@
 package com.the_qa_company.qendpoint.core.storage;
 
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
+import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.map.CopyOnWriteMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Multi dictionary component, isn't bound to one dictionary
@@ -26,6 +31,9 @@ public class QEPComponent implements Cloneable {
 	Map<Integer, PredicateElement> predicateIds;
 	Map<Integer, SharedElement> sharedIds;
 	CharSequence value;
+	RDFNodeType rdfNodeType;
+	Optional<CharSequence> language;
+	CharSequence datatype;
 	final QEPCore core;
 
 	private QEPComponent(QEPComponent other) {
@@ -33,6 +41,9 @@ public class QEPComponent implements Cloneable {
 		this.sharedIds = new HashMap<>(other.sharedIds);
 		this.core = other.core;
 		this.value = other.value;
+		this.rdfNodeType = other.rdfNodeType;
+		this.language = other.language;
+		this.datatype = other.datatype;
 	}
 
 	QEPComponent(QEPCore core, QEPDataset dataset, DictionarySectionRole role, long id, CharSequence value) {
@@ -139,6 +150,54 @@ public class QEPComponent implements Cloneable {
 		}
 		// we have to check using the strings because no ids are corresponding
 		return toString().equals(other.toString());
+	}
+
+	/**
+	 * test if a component exists in the dataset
+	 *
+	 * @param role role to search
+	 * @return true if the component is in a dataset, false otherwise
+	 */
+	public boolean exists(TripleComponentRole role) {
+		DictionarySectionRole dr = role.asDictionarySectionRole();
+		List<QEPDataset> datasets = core.getDatasets();
+		if (role == TripleComponentRole.PREDICATE) {
+			for (QEPDataset ds : datasets) {
+				PredicateElement pe = predicateIds.get(ds.uid());
+				if (pe != null && pe.id != 0) {
+					return true;
+				}
+			}
+			for (QEPDataset ds : datasets) {
+				PredicateElement pe = predicateIds.get(ds.uid());
+				if (pe != null) {
+					continue;
+				}
+				long id = getId(ds.uid(), role);
+				if (id != 0) {
+					return true;
+				}
+			}
+		} else {
+			for (QEPDataset ds : datasets) {
+				SharedElement se = sharedIds.get(ds.uid());
+				if (se != null && se.id != 0 && (se.role == DictionarySectionRole.SHARED || se.role == dr)) {
+					return true;
+				}
+			}
+
+			for (QEPDataset ds : datasets) {
+				SharedElement se = sharedIds.get(ds.uid());
+				if (se != null) {
+					continue;
+				}
+				long id = getId(ds.uid(), role);
+				if (id != 0) {
+					return true;
+				}
+			}
+		}
+		return false; // searched in all sections
 	}
 
 	/**
@@ -304,12 +363,92 @@ public class QEPComponent implements Cloneable {
 			bld.append("NONE");
 		}
 
-		sharedIds.forEach((id, map) -> bld.append(
-				String.format("\n- D[%s(%d)/%s] => %X", map.dataset.id(), map.dataset.uid(), map.role, map.id())));
+		sharedIds.forEach((id, map) -> bld.append(String.format("\n- D[%s(%d)/%s/NS=%x] => %X", map.dataset.id(),
+				map.dataset.uid(), map.role, map.dataset.dataset().getDictionary().getNshared(), map.id())));
 
 		bld.append("\n");
 
 		return bld.toString();
+	}
+
+	/**
+	 * @return the datatype of this component
+	 */
+	public CharSequence getDatatype() {
+		if (datatype != null) {
+			return datatype;
+		}
+		for (PredicateElement pe : predicateIds.values()) {
+			if (pe.id != 0) {
+				return datatype = LiteralsUtils.NO_DATATYPE; // IRI
+			}
+		}
+		for (SharedElement se : sharedIds.values()) {
+			if (se.id != 0) {
+				if (se.role == DictionarySectionRole.SHARED || se.role == DictionarySectionRole.SUBJECT) {
+					return datatype = LiteralsUtils.NO_DATATYPE; // IRI/BNODE
+				}
+				// LITERAL
+				Dictionary dict = se.dataset.dataset().getDictionary();
+				if (dict.supportsDataTypeOfId()) {
+					return datatype = dict.dataTypeOfId(se.id);
+				}
+			}
+		}
+		// search the datatype using the string value
+		return datatype = LiteralsUtils.getType(getString());
+	}
+
+	/**
+	 * @return the language of this component
+	 */
+	public Optional<CharSequence> getLanguage() {
+		if (language != null) {
+			return language;
+		}
+		for (PredicateElement pe : predicateIds.values()) {
+			if (pe.id != 0) {
+				return language = Optional.empty(); // IRI
+			}
+		}
+		for (SharedElement se : sharedIds.values()) {
+			if (se.id != 0) {
+				if (se.role == DictionarySectionRole.SHARED || se.role == DictionarySectionRole.SUBJECT) {
+					return language = Optional.empty(); // IRI/BNODE
+				}
+				// LITERAL
+				Dictionary dict = se.dataset.dataset().getDictionary();
+				if (dict.supportsLanguageOfId()) {
+					return language = Optional.ofNullable(dict.languageOfId(se.id));
+				}
+			}
+		}
+		// search the language using the string value
+		return language = LiteralsUtils.getLanguage(getString());
+	}
+
+	/**
+	 * @return the rdf type of this component
+	 */
+	public RDFNodeType getNodeType() {
+		if (rdfNodeType != null) {
+			return rdfNodeType;
+		}
+		for (PredicateElement pe : predicateIds.values()) {
+			if (pe.id != 0) {
+				return rdfNodeType = RDFNodeType.IRI;
+			}
+		}
+		for (SharedElement se : sharedIds.values()) {
+			if (se.id != 0) {
+				Dictionary ds = se.dataset.dataset().getDictionary();
+				if (ds.supportsNodeTypeOfId()) {
+					return rdfNodeType = ds.nodeTypeOfId(se.role.asTripleComponentRole(), se.id);
+				}
+			}
+		}
+		// search the type using the string value
+		return rdfNodeType = RDFNodeType.typeof(getString());
 	}
 
 	@Override

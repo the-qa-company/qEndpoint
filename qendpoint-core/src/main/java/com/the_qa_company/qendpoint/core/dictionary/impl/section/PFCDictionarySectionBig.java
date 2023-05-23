@@ -19,8 +19,19 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.util.Iterator;
+
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
@@ -41,16 +52,6 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.util.Iterator;
 
 /**
  * Implementation of Plain Front Coding that divides the data in different
@@ -115,96 +116,98 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		ByteString previousStr = null;
 
 		try {
-			try {
-				try (FileOutputStream out = new FileOutputStream(file)) {
-					while (it.hasNext()) {
-						ByteString str = ByteString.of(it.next());
+			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+				while (it.hasNext()) {
+					ByteString str = ByteString.of(it.next());
 
-						if (numstrings % blocksize == 0) {
-							// Add new block pointer
-							byteOut.flush();
-							byteoutsize = byteoutsize + byteOut.size();
+					if (numstrings % blocksize == 0) {
+						// Add new block pointer
+						byteOut.flush();
+						byteoutsize = byteoutsize + byteOut.size();
 
-							blocks.append(byteoutsize);
-							byteOut.writeTo(out);
-							byteOut.reset();
-							// Copy full string
-							ByteStringUtil.append(byteOut, str, 0);
+						blocks.append(byteoutsize);
+						byteOut.writeTo(out);
+						byteOut.reset();
+						// Copy full string
+						ByteStringUtil.append(byteOut, str, 0);
 
-						} else {
-							// Find common part.
-							int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
-							// Write Delta in VByte
-							VByte.encode(byteOut, delta);
-							// Write remaining
-							ByteStringUtil.append(byteOut, str, delta);
-
-						}
-						byteOut.write(0); // End of string
-
-						numstrings++;
-
-						previousStr = str;
-
-					}
-
-					// Ending block pointer.
-					byteOut.flush();
-					byteoutsize = byteoutsize + byteOut.size();
-
-					// blocks.append(byteOut.size());
-					blocks.append(byteoutsize);
-					// Trim text/blocks
-					blocks.aggressiveTrimToSize();
-
-					byteOut.flush();
-					byteOut.writeTo(out);
-				}
-
-				try (InputStream in = new FileInputStream(file)) {
-					// Read block by block
-					// Read packed data
-
-					int block = 0;
-					int buffer = 0;
-					long bytePos = 0;
-					long numBlocks = blocks.getNumberOfElements();
-					// System.out.println("numblocks:"+numBlocks);
-
-					long numBuffers;
-					if (numBlocks > 0) {
-						// non empty section
-						numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
 					} else {
-						// else empty section then it's zero
-						numBuffers = 0;
+						// Find common part.
+						int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+						// Write Delta in VByte
+						VByte.encode(byteOut, delta);
+						// Write remaining
+						ByteStringUtil.append(byteOut, str, delta);
+
 					}
-					data = new BigByteBuffer[(int) numBuffers];
-					posFirst = new long[(int) numBuffers];
+					byteOut.write(0); // End of string
 
-					while (block < numBlocks - 1) {
-						long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
-						long nextBytePos = blocks.get(nextBlock);
+					numstrings++;
 
-						// System.out.println("Loading block: "+i+" from
-						// "+previous+" to
-						// "+ current+" of size "+ (current-previous));
-						BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
-						bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
-						data[buffer] = bigByteBuffer;
+					previousStr = str;
 
-						posFirst[buffer] = bytePos;
-
-						bytePos = nextBytePos;
-						block += BLOCK_PER_BUFFER;
-						buffer++;
-					}
 				}
-			} finally {
-				Files.delete(file.toPath());
+
+				// Ending block pointer.
+				byteOut.flush();
+				byteoutsize = byteoutsize + byteOut.size();
+
+				// blocks.append(byteOut.size());
+				blocks.append(byteoutsize);
+				// Trim text/blocks
+				blocks.aggressiveTrimToSize();
+
+				byteOut.flush();
+				byteOut.writeTo(out);
+			}
+
+			try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+				// Read block by block
+				// Read packed data
+
+				int block = 0;
+				int buffer = 0;
+				long bytePos = 0;
+				long numBlocks = blocks.getNumberOfElements();
+				// System.out.println("numblocks:"+numBlocks);
+
+				long numBuffers;
+				if (numBlocks > 0) {
+					// non empty section
+					numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
+				} else {
+					// else empty section then it's zero
+					numBuffers = 0;
+				}
+				data = new BigByteBuffer[(int) numBuffers];
+				posFirst = new long[(int) numBuffers];
+
+				while (block < numBlocks - 1) {
+					long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
+					long nextBytePos = blocks.get(nextBlock);
+
+					// System.out.println("Loading block: "+i+" from
+					// "+previous+" to
+					// "+ current+" of size "+ (current-previous));
+					BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
+					bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
+					data[buffer] = bigByteBuffer;
+
+					posFirst[buffer] = bytePos;
+
+					bytePos = nextBytePos;
+					block += BLOCK_PER_BUFFER;
+					buffer++;
+				}
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Can't load dictionary.", e);
+		} finally {
+			try {
+				Files.delete(file.toPath());
+			} catch (IOException e) {
+				log.error("Unexpected exception.", e);
+			}
 		}
 	}
 

@@ -1,0 +1,29 @@
+// namespace binary storage file com.the_qa_company.qendpoint.core.util.nsd.NamespaceData
+#include "hdt.abs"
+
+enum NamespaceDataVersion : byte {
+    VERSION_10 = 0x10,
+}
+
+NamespaceData {
+    struct {
+        string cookie = "$QEPNSD";
+        NamespaceDataVersion version;
+    } header;
+}
+
+// reader implementation can be found at com.the_qa_company.qendpoint.core.util.nsd.NSDReader10
+NamespaceDataV10 : NamespaceData {header.version = VERSION_10} {
+    struct {
+        vlong namespacesCount;
+        struct {
+            vlong keySize;
+            string keyString;
+            vlong valueSize;
+            string valueSize;
+        }[] namespaces;
+    } body;
+    crc32 bodyCRC;
+}
+
+file(NamespaceData, ".*\\.nsd");

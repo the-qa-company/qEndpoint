@@ -1,6 +1,0 @@
-@prefix mdlc: <http://the-qa-company.com/modelcompiler/> .
-
-mdlc:main mdlc:storageMode mdlc:memoryStoreStorage ;
-          mdlc:rdfStoreSplit 1000 ;
-          mdlc:option mdlc:debugShowQueryResultCount .
-          

@@ -101,4 +101,12 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 	public int hashCode() {
 		return Objects.hash(getSubject(), getPredicate(), getObject());
 	}
+
+	@Override
+	public QEPComponentTriple deepClone() {
+		QEPComponent s = subject != null ? subject.clone() : null;
+		QEPComponent p = predicate != null ? predicate.clone() : null;
+		QEPComponent o = object != null ? object.clone() : null;
+		return new QEPComponentTripleSimple(s, p, o, id, datasetId);
+	}
 }

@@ -1,9 +1,12 @@
 package com.the_qa_company.qendpoint.core.storage;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.AddSnapshotBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.storage.search.QEPDatasetIterator;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
@@ -12,9 +15,10 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.lang.String.format;
 
 /**
  * Dataset information
@@ -23,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see QEPCore
  */
 public class QEPDataset implements Closeable {
+
 	public record ComponentFind(QEPDataset dataset, TripleComponentRole role, long id, long pid) {
 		public boolean isFind() {
 			return role != null || pid != 0;
@@ -32,15 +37,16 @@ public class QEPDataset implements Closeable {
 		public String toString() {
 			StringBuilder buffer = new StringBuilder("ComponentFind:").append(dataset.uid);
 			if (!isFind()) {
-				buffer.append("[unknown]");
+				buffer.append("[unknown");
 			} else {
 				if (pid != 0) {
-					buffer.append("[pid=").append(pid).append("]");
+					buffer.append("[pid=").append(Long.toHexString(pid)).append("]");
 				}
 				if (role != null) {
-					buffer.append("[id=").append(id).append("/").append(role).append("]");
+					buffer.append("[id=").append(Long.toHexString(id)).append("/").append(role).append("]");
 				}
 			}
+			buffer.append(format("[shared=%x]", dataset.dataset.getDictionary().getNshared()));
 
 			return buffer.toString();
 		}
@@ -51,7 +57,7 @@ public class QEPDataset implements Closeable {
 	private final String id;
 	private final Path path;
 	private final HDT dataset;
-	private final ModifiableBitmap deleteBitmap;
+	private final AddSnapshotBitmap deleteBitmap;
 	private final ModifiableBitmap[] deltaBitmaps;
 	private final int uid;
 
@@ -69,7 +75,7 @@ public class QEPDataset implements Closeable {
 		this.id = id;
 		this.path = path;
 		this.dataset = dataset;
-		this.deleteBitmap = deleteBitmap;
+		this.deleteBitmap = AddSnapshotBitmap.of(deleteBitmap);
 		this.deltaBitmaps = deltaBitmaps;
 		this.uid = DATASET_UID_FETCHER.incrementAndGet();
 	}
@@ -113,7 +119,10 @@ public class QEPDataset implements Closeable {
 		return new ComponentFind(this, null, 0, pid);
 	}
 
-	public ModifiableBitmap deleteBitmap() {
+	/**
+	 * @return the snapshot delete bitmap
+	 */
+	public AddSnapshotBitmap deleteBitmap() {
 		return deleteBitmap;
 	}
 
@@ -128,6 +137,37 @@ public class QEPDataset implements Closeable {
 			throw new IllegalArgumentException("bad triple id: " + tripleID);
 		}
 		deleteBitmap.set(tripleID, true);
+	}
+
+	/**
+	 * @return a new context where no elements from this dataset will be deleted
+	 */
+	public QEPDatasetContext createContext() {
+		final AddSnapshotBitmap.AddSnapshotDeltaBitmap bm = deleteBitmap.createSnapshot();
+		return new QEPDatasetContext() {
+			@Override
+			public boolean isTripleDeleted(long tripleID) {
+				if (tripleID < 0 || tripleID > dataset.getTriples().getNumberOfElements()) {
+					throw new IllegalArgumentException("bad triple id: " + tripleID);
+				}
+				return bm.access(tripleID);
+			}
+
+			@Override
+			public Bitmap deleteBitmap() {
+				return bm;
+			}
+
+			@Override
+			public QEPDataset dataset() {
+				return QEPDataset.this;
+			}
+
+			@Override
+			public void close() {
+				bm.close();
+			}
+		};
 	}
 
 	/**
@@ -208,21 +248,20 @@ public class QEPDataset implements Closeable {
 	}
 
 	/**
-	 * search a triple pattern over the dataset
+	 * search a triple pattern over the dataset with strings
 	 *
-	 * @param pattern pattern
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
 	 * @return iterator
 	 * @throws QEPCoreException search exception
-	 * @see #search(CharSequence, CharSequence, CharSequence)
+	 * @see #search(QEPComponentTriple)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public Iterator<QEPComponentTriple> search(QEPComponentTriple pattern) throws QEPCoreException {
-		// freeze the components to avoid recomputing already known values
-		QEPComponentTriple clone = pattern.freeze();
-		// search over the dataset
-		clone.setDatasetId(uid);
-		IteratorTripleID it = dataset.getTriples().search(clone.tripleID(this));
-		return new QEPDatasetIterator(this, it, clone);
+	public QueryCloseableIterator search(CharSequence subject, CharSequence predicate, CharSequence object)
+			throws QEPCoreException {
+		QEPDatasetContext ctx = createContext();
+		return search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -236,14 +275,30 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(CharSequence, CharSequence, CharSequence)
 	 */
-	public Iterator<QEPComponentTriple> search(QEPComponent subject, QEPComponent predicate, QEPComponent object)
+	public QueryCloseableIterator search(QEPComponent subject, QEPComponent predicate, QEPComponent object)
 			throws QEPCoreException {
-		return search(QEPComponentTriple.of(subject, predicate, object));
+		QEPDatasetContext ctx = createContext();
+		return search(ctx, subject, predicate, object).attach(ctx);
+	}
+
+	/**
+	 * search a triple pattern over the dataset
+	 *
+	 * @param pattern pattern
+	 * @return iterator
+	 * @throws QEPCoreException search exception
+	 * @see #search(CharSequence, CharSequence, CharSequence)
+	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
+	 */
+	public QueryCloseableIterator search(QEPComponentTriple pattern) throws QEPCoreException {
+		QEPDatasetContext ctx = createContext();
+		return search(ctx, pattern).attach(ctx);
 	}
 
 	/**
 	 * search a triple pattern over the dataset with strings
 	 *
+	 * @param context   dataset context
 	 * @param subject   subject
 	 * @param predicate predicate
 	 * @param object    object
@@ -252,10 +307,47 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public Iterator<QEPComponentTriple> search(CharSequence subject, CharSequence predicate, CharSequence object)
-			throws QEPCoreException {
-		return search(core.createComponentByString(subject), core.createComponentByString(predicate),
+	public QueryCloseableIterator search(QEPDatasetContext context, CharSequence subject, CharSequence predicate,
+			CharSequence object) throws QEPCoreException {
+		return search(context, core.createComponentByString(subject), core.createComponentByString(predicate),
 				core.createComponentByString(object));
+	}
+
+	/**
+	 * search a triple pattern over the dataset with component
+	 *
+	 * @param context   dataset context
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return iterator
+	 * @throws QEPCoreException search exception
+	 * @see #search(QEPComponentTriple)
+	 * @see #search(CharSequence, CharSequence, CharSequence)
+	 */
+	public QueryCloseableIterator search(QEPDatasetContext context, QEPComponent subject, QEPComponent predicate,
+			QEPComponent object) throws QEPCoreException {
+		return search(context, QEPComponentTriple.of(subject, predicate, object));
+	}
+
+	/**
+	 * search a triple pattern over the dataset
+	 *
+	 * @param context dataset context
+	 * @param pattern pattern
+	 * @return iterator
+	 * @throws QEPCoreException search exception
+	 * @see #search(CharSequence, CharSequence, CharSequence)
+	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
+	 */
+	public QueryCloseableIterator search(QEPDatasetContext context, QEPComponentTriple pattern)
+			throws QEPCoreException {
+		// freeze the components to avoid recomputing already known values
+		QEPComponentTriple clone = pattern.freeze();
+		// search over the dataset
+		clone.setDatasetId(uid);
+		IteratorTripleID it = dataset.getTriples().search(clone.tripleID(this));
+		return new QEPDatasetIterator(context, it, clone);
 	}
 
 	@Override

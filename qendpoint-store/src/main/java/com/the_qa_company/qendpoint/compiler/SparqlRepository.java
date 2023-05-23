@@ -393,6 +393,10 @@ public class SparqlRepository {
 	}
 
 	private void writeDeep(com.fasterxml.jackson.core.JsonGenerator jg, GenericPlanNode plan) throws IOException {
+		if (plan == null) {
+			jg.writeNull();
+			return;
+		}
 		jg.writeStartObject();
 		jg.writeStringField("id", plan.getType());
 		jg.writeArrayFieldStart("plans");

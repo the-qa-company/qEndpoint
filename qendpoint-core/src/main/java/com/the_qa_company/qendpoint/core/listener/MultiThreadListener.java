@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.listener;
 
+import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
+
 /**
  * version of {@link ProgressListener} for multi-thread logging
  */

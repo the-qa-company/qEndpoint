@@ -19,16 +19,19 @@
 
 package com.the_qa_company.qendpoint.core.options;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Enumeration;
-
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.util.crc.CRC16;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Enumeration;
 
 /**
  * @author mario.arias
@@ -86,6 +89,20 @@ public class ControlInformation extends HDTOptionsBase implements ControlInfo {
 
 		// CRC
 		out.writeCRC();
+	}
+
+	@Override
+	public void load(String filename) throws IOException {
+		try (InputStream is = IOUtil.getFileInputStream(filename)) {
+			load(is);
+		}
+	}
+
+	@Override
+	public void load(Path filename) throws IOException {
+		try (InputStream is = new BufferedInputStream(Files.newInputStream(filename))) {
+			load(is);
+		}
 	}
 
 	@Override

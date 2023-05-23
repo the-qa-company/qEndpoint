@@ -148,18 +148,7 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryPrivate createWriteDictionary(HDTOptions spec, Path location, int bufferSize) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
-		switch (name) {
-		case "":
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION:
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG:
-			return new WriteFourSectionDictionary(spec, location, bufferSize);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS:
-			return new WriteMultipleSectionDictionary(spec, location, bufferSize);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG:
-			return new WriteMultipleSectionDictionaryLang(spec, location, bufferSize);
-		default:
-			throw new IllegalFormatException("Implementation of write dictionary not found for " + name);
-		}
+		return createWriteDictionary(name, spec, location, bufferSize);
 	}
 
 	/**
@@ -174,11 +163,11 @@ public class DictionaryFactory {
 	public static DictionaryPrivate createWriteDictionary(String name, HDTOptions spec, Path location, int bufferSize) {
 		switch (name) {
 		case "":
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG:
 			return new WriteFourSectionDictionary(spec, location, bufferSize);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS:
 			return new WriteMultipleSectionDictionary(spec, location, bufferSize);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG:
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG:
 			return new WriteMultipleSectionDictionaryLang(spec, location, bufferSize);
 		default:
 			throw new IllegalFormatException("Implementation of write dictionary not found for " + name);
@@ -237,15 +226,12 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryDiff createDictionaryDiff(Dictionary dictionary, String location) {
 		String type = dictionary.getType();
-		switch (type) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION:
-			return new FourSectionDictionaryDiff(location);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
-			return new MultipleSectionDictionaryDiff(location);
-		default:
-			throw new IllegalFormatException("Implementation of DictionaryDiff not found for " + type);
-		}
+		return switch (type) {
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
+			new FourSectionDictionaryDiff(location);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionaryDiff(location);
+		default -> throw new IllegalFormatException("Implementation of DictionaryDiff not found for " + type);
+		};
 	}
 
 	/**

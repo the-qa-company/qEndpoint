@@ -126,7 +126,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			// create dictionary and write sections
 			Path dictFile = root.resolve("dict");
 			List<CharSequence> sub = new ArrayList<>();
-			try (KCatImpl impl = new KCatImpl(hdts, spec, null)) {
+			try (KCatImpl impl = KCatImpl.of(hdts, spec, null)) {
 				try (KCatMerger merger = impl.createMerger(null)) {
 					assertEquals(multi, merger.typedHDT);
 					merger.startMerger();
@@ -455,7 +455,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			// create dictionary and write sections
 			Path dictFile = root.resolve("dict");
 			List<CharSequence> sub = new ArrayList<>();
-			try (KCatImpl impl = new KCatImpl(hdts, deleteBitmaps, spec, null)) {
+			try (KCatImpl impl = KCatImpl.of(hdts, deleteBitmaps, spec, null)) {
 				try (KCatMerger merger = impl.createMerger(null)) {
 					assertEquals(multi, merger.typedHDT);
 					merger.startMerger();

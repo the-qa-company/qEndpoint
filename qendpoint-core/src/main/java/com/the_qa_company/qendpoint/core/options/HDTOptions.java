@@ -197,6 +197,42 @@ public interface HDTOptions {
 	String get(String key);
 
 	/**
+	 * Get a path value
+	 *
+	 * @param key key
+	 * @return path or null if not defined
+	 */
+	default Path getPath(String key) {
+		return getPath(key, (Path) null);
+	}
+
+	/**
+	 * Get a path value
+	 *
+	 * @param key          key
+	 * @param defaultValue default value
+	 * @return path or defaultValue if not defined
+	 */
+	default Path getPath(String key, Path defaultValue) {
+		return getPath(key, () -> defaultValue);
+	}
+
+	/**
+	 * Get a path value
+	 *
+	 * @param key          key
+	 * @param defaultValue default value
+	 * @return path or defaultValue if not defined
+	 */
+	default Path getPath(String key, Supplier<Path> defaultValue) {
+		String val = get(key);
+		if (val == null) {
+			return defaultValue.get();
+		}
+		return Path.of(val);
+	}
+
+	/**
 	 * @return the keys of the options
 	 * @throws NotImplementedException if the implemented class do not implement
 	 *                                 this method (backward compatibility)

@@ -21,6 +21,8 @@ package com.the_qa_company.qendpoint.core.triples;
 
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
 import java.io.IOException;
 
@@ -473,6 +475,26 @@ public class TripleString {
 	}
 
 	/**
+	 * copy all the elements using {@link ByteString#copy(CharSequence)} and
+	 * create a new TripleString
+	 *
+	 * @return tripleString
+	 */
+	public TripleString tripleToByteString() {
+		return new TripleString(ByteString.copy(subject), ByteString.copy(predicate), ByteString.copy(object));
+	}
+
+	/**
+	 * copy all the elements using {@link ByteString#of(CharSequence)} and
+	 * create a new TripleString
+	 *
+	 * @return tripleString
+	 */
+	public TripleString tripleToByteStringCast() {
+		return new TripleString(ByteString.of(subject), ByteString.of(predicate), ByteString.of(object));
+	}
+
+	/**
 	 * implementation for the graph context
 	 *
 	 * @param context context
@@ -486,5 +508,10 @@ public class TripleString {
 	 */
 	public CharSequence getGraph() {
 		return "";
+	}
+
+	public boolean isStatic() {
+		return !(subject == null || subject.isEmpty() || predicate == null || predicate.isEmpty() || object == null
+				|| object.isEmpty());
 	}
 }

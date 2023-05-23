@@ -409,6 +409,12 @@ public class IOUtil {
 		writeBuffer(output, buffer, offset, length, listener);
 	}
 
+	public static void writeSizedString(OutputStream output, String string, ProgressListener listener)
+			throws IOException {
+		byte[] str = string.getBytes(ByteStringUtil.STRING_ENCODING);
+		writeSizedBuffer(output, str, listener);
+	}
+
 	public static void writeBuffer(OutputStream output, byte[] buffer, int offset, int length,
 			ProgressListener listener) throws IOException {
 		listener = ProgressListener.ofNullable(listener);
@@ -544,6 +550,11 @@ public class IOUtil {
 		int ch3 = in.get(offset + 2) & 0xFF;
 		int ch4 = in.get(offset + 3) & 0xFF;
 		return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1);
+	}
+
+	public static String readSizedString(InputStream input, ProgressListener listener) throws IOException {
+		byte[] str = readSizedBuffer(input, listener);
+		return new String(str, ByteStringUtil.STRING_ENCODING);
 	}
 
 	public static byte[] readSizedBuffer(InputStream input, ProgressListener listener) throws IOException {

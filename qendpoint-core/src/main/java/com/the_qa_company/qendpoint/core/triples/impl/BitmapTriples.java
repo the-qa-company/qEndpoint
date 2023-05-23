@@ -651,6 +651,7 @@ public class BitmapTriples implements TriplesPrivate {
 			predCount.trimToSize();
 			listener.notifyProgress(100, "predCount completed " + seqY.getNumberOfElements());
 			log.info("Predicate count completed in {}", global.stopAndShow());
+			IOUtil.closeObject(this.bitmapIndexZ);
 		} catch (Throwable t) {
 			try {
 				throw t;
@@ -1209,53 +1210,15 @@ public class BitmapTriples implements TriplesPrivate {
 	public void close() throws IOException {
 		isClosed = true;
 		try {
-			if (diskSequenceLocation != null) {
-				try {
-					diskSequenceLocation.close();
-				} finally {
-					diskSequenceLocation = null;
-				}
-			}
+			Closer.closeAll(seqY, seqZ, indexZ, predicateCount, predicateIndex, bitmapIndexZ, diskSequenceLocation);
 		} finally {
-			try {
-				if (seqY != null) {
-					seqY.close();
-					seqY = null;
-				}
-			} finally {
-				try {
-					if (seqZ != null) {
-						seqZ.close();
-						seqZ = null;
-					}
-				} finally {
-					try {
-						if (indexZ != null) {
-							indexZ.close();
-							indexZ = null;
-						}
-					} finally {
-						try {
-							if (predicateCount != null) {
-								predicateCount.close();
-								predicateCount = null;
-							}
-						} finally {
-							try {
-								if (predicateIndex != null) {
-									predicateIndex.close();
-									predicateIndex = null;
-								}
-							} finally {
-								if (bitmapIndexZ instanceof Closeable) {
-									((Closeable) bitmapIndexZ).close();
-									bitmapIndexZ = null;
-								}
-							}
-						}
-					}
-				}
-			}
+			diskSequenceLocation = null;
+			seqY = null;
+			seqZ = null;
+			indexZ = null;
+			predicateCount = null;
+			predicateIndex = null;
+			bitmapIndexZ = null;
 		}
 	}
 
