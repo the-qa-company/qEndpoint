@@ -13,7 +13,9 @@ param(
     [ArgumentCompleter({
         return @("guess", "delta", "hdt", "qendpoint", "reader", "profiler") | ForEach-Object { $_ }
     })]
-    $rdftype,
+    $type,
+    [switch]
+    $rdf4jfixdump,
     [Parameter()]
     [Switch]
     $memory,

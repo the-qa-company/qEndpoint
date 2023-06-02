@@ -41,7 +41,9 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 		}
 		// we mark this bit as set
 		synchronized (mutex) {
-			latest.snapshot.set(position, true);
+			if (latest != null) {
+				latest.snapshot.set(position, true);
+			}
 		}
 		super.set(position, true);
 	}
@@ -57,9 +59,16 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 	public interface AddSnapshotDeltaBitmap extends Bitmap, AutoCloseable {
 		@Override
 		void close();
+
+		/**
+		 * @return the roaring bitmap associated with this snapshot, can be null
+		 *         for empty value
+		 */
+		RoaringBitmap roaringBitmap();
 	}
 
 	private class DeltaBitmap implements SimpleBitmap, AddSnapshotDeltaBitmap {
+		private boolean closed;
 		/**
 		 * compressed memory bitmap storing the delta
 		 */
@@ -85,6 +94,11 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 		}
 
 		@Override
+		public RoaringBitmap roaringBitmap() {
+			return snapshot;
+		}
+
+		@Override
 		public boolean access(long position) {
 			if (// we check if the main bm contains the bit
 			!wrapper.access(position)) {
@@ -96,14 +110,17 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 			}
 		}
 
-		public boolean access0(long position) {
+		private boolean access0(long position) {
+			assert !closed;
 			return !snapshot.access(position)
 					// if not, we check if a future snapshot contains this bit
-					&& (next == null || next.access(position));
+					&& (next == null || next.access0(position));
 		}
 
 		@Override
 		public void close() {
+			assert !closed;
+			closed = true;
 			synchronized (mutex) {
 				if (prev != null) {
 					// merge the bitmap with the previous one

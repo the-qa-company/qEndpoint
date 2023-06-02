@@ -1,5 +1,14 @@
 package com.the_qa_company.qendpoint.core.storage.iterator;
 
+/**
+ * Version of
+ * {@link com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator} in
+ * {@link CloseableIterator} context
+ *
+ * @author Antoine Willerval
+ * @param <T> iterator type
+ * @param <E> close type
+ */
 public abstract class FetcherCloseableIterator<T, E extends Exception> implements CloseableIterator<T, E> {
 	private T next;
 

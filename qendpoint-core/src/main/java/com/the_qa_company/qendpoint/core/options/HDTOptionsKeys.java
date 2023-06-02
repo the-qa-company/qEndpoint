@@ -3,9 +3,10 @@ package com.the_qa_company.qendpoint.core.options;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
+import com.the_qa_company.qendpoint.core.storage.QEPCoreOptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -479,6 +480,7 @@ public class HDTOptionsKeys {
 	static {
 		try {
 			registerOptionsClass(HDTOptionsKeys.class);
+			registerOptionsClass(QEPCoreOptions.class);
 		} catch (Exception e) {
 			throw new Error("Can't load option keys", e);
 		}

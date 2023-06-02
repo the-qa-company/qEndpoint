@@ -167,7 +167,7 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static CloseMappedByteBuffer mapChannel(Path filename, FileChannel ch, FileChannel.MapMode mode,
-			long position, long size) throws IOException {
+	                                               long position, long size) throws IOException {
 		return mapChannel(filename.toAbsolutePath().toString(), ch, mode, position, size);
 	}
 
@@ -184,7 +184,7 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static CloseMappedByteBuffer mapChannel(String filename, FileChannel ch, FileChannel.MapMode mode,
-			long position, long size) throws IOException {
+	                                               long position, long size) throws IOException {
 		return new CloseMappedByteBuffer(filename, ch.map(mode, position, size), false);
 	}
 
@@ -404,13 +404,18 @@ public class IOUtil {
 	}
 
 	public static void writeSizedBuffer(OutputStream output, byte[] buffer, int offset, int length,
-			ProgressListener listener) throws IOException {
+	                                    ProgressListener listener) throws IOException {
 		VByte.encode(output, length);
 		writeBuffer(output, buffer, offset, length, listener);
 	}
 
+	public static void writeSizedString(OutputStream output, String string, ProgressListener listener) throws IOException {
+		byte[] str = string.getBytes(ByteStringUtil.STRING_ENCODING);
+		writeSizedBuffer(output, str, listener);
+	}
+
 	public static void writeBuffer(OutputStream output, byte[] buffer, int offset, int length,
-			ProgressListener listener) throws IOException {
+	                               ProgressListener listener) throws IOException {
 		listener = ProgressListener.ofNullable(listener);
 		if (length < CloseSuppressPath.BUFFER_SIZE) {
 			output.write(buffer, offset, length);
@@ -546,6 +551,11 @@ public class IOUtil {
 		return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1);
 	}
 
+	public static String readSizedString(InputStream input, ProgressListener listener) throws IOException {
+		byte[] str = readSizedBuffer(input, listener);
+		return new String(str, ByteStringUtil.STRING_ENCODING);
+	}
+
 	public static byte[] readSizedBuffer(InputStream input, ProgressListener listener) throws IOException {
 		long size = VByte.decode(input);
 		if (size > Integer.MAX_VALUE - 5 || size < 0) {
@@ -653,10 +663,10 @@ public class IOUtil {
 
 	public static InputStream asUncompressed(InputStream inputStream, CompressionType type) throws IOException {
 		return switch (type) {
-		case GZIP -> new GZIPInputStream(inputStream);
-		case BZIP -> new BZip2CompressorInputStream(inputStream, true);
-		case XZ -> new XZCompressorInputStream(inputStream, true);
-		case NONE -> inputStream;
+			case GZIP -> new GZIPInputStream(inputStream);
+			case BZIP -> new BZip2CompressorInputStream(inputStream, true);
+			case XZ -> new XZCompressorInputStream(inputStream, true);
+			case NONE -> inputStream;
 		};
 	}
 

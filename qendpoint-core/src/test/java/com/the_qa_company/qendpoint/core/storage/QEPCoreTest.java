@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,6 +58,10 @@ public class QEPCoreTest {
 	}
 
 	public static final QEPCore EMPTY_CORE = new QEPCore();
+
+	public static TripleString ts(CharSequence s, CharSequence p, CharSequence o) {
+		return new TripleString(s, p, o);
+	}
 
 	/**
 	 * All the tests linked with the mapping of the multiple dataset in the core
@@ -396,7 +401,7 @@ public class QEPCoreTest {
 					assertEquals("http://the-qa-company.com/plant2", plant2.toString());
 
 					for (List<TripleString> tsNode : tsNodes) {
-						core.loadData(tsNode.iterator(), "http://example.org/#", false, ProgressListener.ignore());
+						core.insertTriples(tsNode.iterator(), "http://example.org/#", false, ProgressListener.ignore());
 					}
 
 					assertEquals("size isn't matching", ts.size(), core.triplesCount());
@@ -423,6 +428,214 @@ public class QEPCoreTest {
 							}
 						}
 					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+	}
+
+	/**
+	 * Add Delete Select test
+	 */
+	public static class ADSTest extends AbstractMapMemoryTest {
+		public record CoreState(QEPCore core, List<TripleString> tripleStrings, boolean[] shouldContains) {
+			CoreState(QEPCore core, TripleString... strings) {
+				this(core, List.of(strings), new boolean[strings.length]);
+			}
+
+			CoreState copy() {
+				return new CoreState(core, tripleStrings, Arrays.copyOf(shouldContains, shouldContains.length));
+			}
+
+			void assertContains(int count) {
+				int c = 0;
+				for (int i = 0; i < shouldContains.length; i++) {
+					if (shouldContains[i]) {
+						c++;
+					}
+					assertEquals(tripleStrings.get(i) + " error", shouldContains[i],
+							core.containsAny(tripleStrings.get(i)));
+				}
+				assertEquals("bad count for the assert", count, c);
+			}
+
+			void assertContains(QEPCoreContext ctx, int count) {
+				int c = 0;
+				for (int i = 0; i < shouldContains.length; i++) {
+					if (shouldContains[i]) {
+						c++;
+					}
+					assertEquals(tripleStrings.get(i) + " error", shouldContains[i],
+							core.containsAny(ctx, tripleStrings.get(i)));
+				}
+				assertEquals("bad count for the assert", count, c);
+			}
+
+			void addTriple(int... ids) throws ParserException, IOException {
+				List<TripleString> ts = new ArrayList<>(ids.length);
+				for (int i : ids) {
+					assertFalse(shouldContains[i]);
+					ts.add(tripleStrings.get(i));
+					shouldContains[i] = true;
+				}
+
+				core.insertTriples(ts.iterator(), "http://e.org/#", false);
+			}
+
+			void removeTriple(int... ids) {
+				for (int i : ids) {
+					assertTrue(shouldContains[i]);
+					core.removeTriple(tripleStrings.get(i));
+					shouldContains[i] = false;
+				}
+			}
+		}
+
+		@Rule
+		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+
+		@Test
+		public void addSelectTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder("generation").toPath();
+
+			try {
+				try (QEPCore core = new QEPCore(root)) {
+					CoreState s = new CoreState(core, ts("http://e.org/#a", "http://e.org/#p", "\"aaa\""), // 0
+							ts("http://e.org/#a", "http://e.org/#p", "\"bbb\""), // 1
+							ts("http://e.org/#a", "http://e.org/#p", "\"ccc\""), // 2
+							ts("http://e.org/#a", "http://e.org/#p", "\"ddd\""), // 3
+							ts("http://e.org/#a", "http://e.org/#p", "\"eee\"") // 4
+					);
+					// we add a new triple after each assert, and we do a search
+					// after and before add (with context)
+					// to see if it affects the contexts
+
+					s.assertContains(0);
+					CoreState clone0 = s.copy();
+					QEPCoreContext ctx0 = s.core.createSearchContext();
+
+					s.addTriple(0);
+					CoreState clone1 = s.copy();
+					QEPCoreContext ctx1 = s.core.createSearchContext();
+					s.assertContains(1);
+
+					s.addTriple(1, 2);
+					CoreState clone2 = s.copy();
+					QEPCoreContext ctx2 = s.core.createSearchContext();
+					s.assertContains(3);
+
+					s.addTriple(3, 4);
+					CoreState clone3 = s.copy();
+					QEPCoreContext ctx3 = s.core.createSearchContext();
+					s.assertContains(5);
+
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 1);
+					clone2.assertContains(ctx2, 3);
+					clone3.assertContains(ctx3, 5);
+
+					ctx2.close();
+
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 1);
+					clone3.assertContains(ctx3, 5);
+
+					ctx0.close();
+
+					clone1.assertContains(ctx1, 1);
+					clone3.assertContains(ctx3, 5);
+
+					ctx3.close();
+
+					clone1.assertContains(ctx1, 1);
+
+					ctx1.close();
+				}
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+
+		@Test
+		public void delSelectTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder("generation").toPath();
+
+			try {
+				try (QEPCore core = new QEPCore(root)) {
+					CoreState s = new CoreState(core, ts("http://e.org/#a", "http://e.org/#p", "\"aaa\""), // 0
+							ts("http://e.org/#a", "http://e.org/#p", "\"bbb\""), // 1
+							ts("http://e.org/#a", "http://e.org/#p", "\"ccc\""), // 2
+							ts("http://e.org/#a", "http://e.org/#p", "\"ddd\""), // 3
+							ts("http://e.org/#a", "http://e.org/#p", "\"eee\"") // 4
+					);
+
+					s.assertContains(0);
+					CoreState clone0 = s.copy();
+					QEPCoreContext ctx0 = s.core.createSearchContext();
+					s.addTriple(1, 2, 3, 4);
+					CoreState clone1 = s.copy();
+					QEPCoreContext ctx1 = s.core.createSearchContext();
+					s.assertContains(4);
+
+					s.removeTriple(1, 2);
+					CoreState clone2 = s.copy();
+					QEPCoreContext ctx2 = s.core.createSearchContext();
+					s.assertContains(2);
+
+					s.addTriple(0);
+					s.assertContains(3);
+
+					s.removeTriple(3, 4);
+					CoreState clone3 = s.copy();
+					QEPCoreContext ctx3 = s.core.createSearchContext();
+					s.assertContains(1);
+
+					s.removeTriple(0);
+					CoreState clone4 = s.copy();
+					QEPCoreContext ctx4 = s.core.createSearchContext();
+					s.assertContains(0);
+
+					s.addTriple(1, 2, 3, 4);
+					CoreState clone5 = s.copy();
+					QEPCoreContext ctx5 = s.core.createSearchContext();
+					s.assertContains(4);
+					s.addTriple(0);
+					s.assertContains(5);
+
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone3.assertContains(ctx3, 1);
+					clone4.assertContains(ctx4, 0);
+					clone5.assertContains(ctx5, 4);
+
+					ctx5.close();
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone3.assertContains(ctx3, 1);
+					clone4.assertContains(ctx4, 0);
+
+					ctx0.close();
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone3.assertContains(ctx3, 1);
+					clone4.assertContains(ctx4, 0);
+
+					ctx3.close();
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone4.assertContains(ctx4, 0);
+
+					ctx1.close();
+					clone2.assertContains(ctx2, 2);
+					clone4.assertContains(ctx4, 0);
+
+					ctx4.close();
+					clone2.assertContains(ctx2, 2);
+
+					ctx2.close();
 				}
 			} finally {
 				PathUtils.deleteDirectory(root);

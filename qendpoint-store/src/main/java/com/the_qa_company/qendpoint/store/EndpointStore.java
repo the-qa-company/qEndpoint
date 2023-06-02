@@ -64,7 +64,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class EndpointStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
+public class EndpointStore extends AbstractNotifyingSail {
 	/**
 	 * disable the optimizer
 	 */
@@ -528,12 +528,6 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	protected void connectionClosed(SailConnection connection) {
 		super.connectionClosed(connection);
 		connection.close();
-	}
-
-	@Override
-	public void setFederatedServiceResolver(FederatedServiceResolver federatedServiceResolver) {
-		// nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
-		// nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
 	}
 
 	public RepositoryConnection getConnectionToChangingStore() {

@@ -1,11 +1,13 @@
 package com.the_qa_company.qendpoint.core.storage;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.AddSnapshotBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.storage.search.QEPDatasetIterator;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
@@ -14,7 +16,6 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -151,6 +152,11 @@ public class QEPDataset implements Closeable {
 			}
 
 			@Override
+			public Bitmap deleteBitmap() {
+				return bm;
+			}
+
+			@Override
 			public QEPDataset dataset() {
 				return QEPDataset.this;
 			}
@@ -250,9 +256,10 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public CloseableIterator<QEPComponentTriple, QEPCoreException> search(CharSequence subject, CharSequence predicate,
+	public QueryCloseableIterator search(CharSequence subject, CharSequence predicate,
 			CharSequence object) throws QEPCoreException {
-		return search(createContext(), subject, predicate, object);
+		QEPDatasetContext ctx = createContext();
+		return search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -266,9 +273,10 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(CharSequence, CharSequence, CharSequence)
 	 */
-	public CloseableIterator<QEPComponentTriple, QEPCoreException> search(QEPComponent subject, QEPComponent predicate,
+	public QueryCloseableIterator search(QEPComponent subject, QEPComponent predicate,
 			QEPComponent object) throws QEPCoreException {
-		return search(createContext(), subject, predicate, object);
+		QEPDatasetContext ctx = createContext();
+		return search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -280,9 +288,10 @@ public class QEPDataset implements Closeable {
 	 * @see #search(CharSequence, CharSequence, CharSequence)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public CloseableIterator<QEPComponentTriple, QEPCoreException> search(QEPComponentTriple pattern)
+	public QueryCloseableIterator search(QEPComponentTriple pattern)
 			throws QEPCoreException {
-		return search(createContext(), pattern);
+		QEPDatasetContext ctx = createContext();
+		return search(ctx, pattern).attach(ctx);
 	}
 
 	/**
@@ -297,7 +306,7 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public CloseableIterator<QEPComponentTriple, QEPCoreException> search(QEPDatasetContext context,
+	public QueryCloseableIterator search(QEPDatasetContext context,
 			CharSequence subject, CharSequence predicate, CharSequence object) throws QEPCoreException {
 		return search(context, core.createComponentByString(subject), core.createComponentByString(predicate),
 				core.createComponentByString(object));
@@ -315,7 +324,7 @@ public class QEPDataset implements Closeable {
 	 * @see #search(QEPComponentTriple)
 	 * @see #search(CharSequence, CharSequence, CharSequence)
 	 */
-	public CloseableIterator<QEPComponentTriple, QEPCoreException> search(QEPDatasetContext context,
+	public QueryCloseableIterator search(QEPDatasetContext context,
 			QEPComponent subject, QEPComponent predicate, QEPComponent object) throws QEPCoreException {
 		return search(context, QEPComponentTriple.of(subject, predicate, object));
 	}
@@ -330,8 +339,8 @@ public class QEPDataset implements Closeable {
 	 * @see #search(CharSequence, CharSequence, CharSequence)
 	 * @see #search(QEPComponent, QEPComponent, QEPComponent)
 	 */
-	public CloseableIterator<QEPComponentTriple, QEPCoreException> search(QEPDatasetContext context,
-			QEPComponentTriple pattern) throws QEPCoreException {
+	public QueryCloseableIterator search(QEPDatasetContext context,
+	                                     QEPComponentTriple pattern) throws QEPCoreException {
 		// freeze the components to avoid recomputing already known values
 		QEPComponentTriple clone = pattern.freeze();
 		// search over the dataset

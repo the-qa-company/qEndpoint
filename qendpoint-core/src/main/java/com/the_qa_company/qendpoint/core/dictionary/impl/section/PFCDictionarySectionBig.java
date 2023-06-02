@@ -19,6 +19,8 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -102,11 +104,9 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 
 		filecounter++;
 		File file;
-		FileOutputStream out;
 
 		try {
 			file = File.createTempFile("test", ".tmp");
-			out = new FileOutputStream(file);
 		} catch (IOException e) {
 			throw new RuntimeException("Error creating temporary file.", e);
 		}
@@ -116,93 +116,94 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		ByteString previousStr = null;
 
 		try {
-			while (it.hasNext()) {
-				ByteString str = ByteString.of(it.next());
+			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+				while (it.hasNext()) {
+					ByteString str = ByteString.of(it.next());
 
-				if (numstrings % blocksize == 0) {
-					// Add new block pointer
-					byteOut.flush();
-					byteoutsize = byteoutsize + byteOut.size();
+					if (numstrings % blocksize == 0) {
+						// Add new block pointer
+						byteOut.flush();
+						byteoutsize = byteoutsize + byteOut.size();
 
-					blocks.append(byteoutsize);
-					byteOut.writeTo(out);
-					byteOut.reset();
-					// Copy full string
-					ByteStringUtil.append(byteOut, str, 0);
+						blocks.append(byteoutsize);
+						byteOut.writeTo(out);
+						byteOut.reset();
+						// Copy full string
+						ByteStringUtil.append(byteOut, str, 0);
 
-				} else {
-					// Find common part.
-					int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
-					// Write Delta in VByte
-					VByte.encode(byteOut, delta);
-					// Write remaining
-					ByteStringUtil.append(byteOut, str, delta);
+					} else {
+						// Find common part.
+						int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+						// Write Delta in VByte
+						VByte.encode(byteOut, delta);
+						// Write remaining
+						ByteStringUtil.append(byteOut, str, delta);
+
+					}
+					byteOut.write(0); // End of string
+
+					numstrings++;
+
+					previousStr = str;
 
 				}
-				byteOut.write(0); // End of string
 
-				numstrings++;
+				// Ending block pointer.
+				byteOut.flush();
+				byteoutsize = byteoutsize + byteOut.size();
 
-				previousStr = str;
+				// blocks.append(byteOut.size());
+				blocks.append(byteoutsize);
+				// Trim text/blocks
+				blocks.aggressiveTrimToSize();
 
+				byteOut.flush();
+				byteOut.writeTo(out);
 			}
 
-			// Ending block pointer.
-			byteOut.flush();
-			byteoutsize = byteoutsize + byteOut.size();
+			try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+				// Read block by block
+				// Read packed data
 
-			// blocks.append(byteOut.size());
-			blocks.append(byteoutsize);
-			// Trim text/blocks
-			blocks.aggressiveTrimToSize();
+				int block = 0;
+				int buffer = 0;
+				long bytePos = 0;
+				long numBlocks = blocks.getNumberOfElements();
+				// System.out.println("numblocks:"+numBlocks);
 
-			byteOut.flush();
-			byteOut.writeTo(out);
-			out.close();
+				long numBuffers;
+				if (numBlocks > 0) {
+					// non empty section
+					numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
+				} else {
+					// else empty section then it's zero
+					numBuffers = 0;
+				}
+				data = new BigByteBuffer[(int) numBuffers];
+				posFirst = new long[(int) numBuffers];
 
-			InputStream in = new FileInputStream(file);
-			// Read block by block
-			// Read packed data
+				while (block < numBlocks - 1) {
+					long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
+					long nextBytePos = blocks.get(nextBlock);
 
-			int block = 0;
-			int buffer = 0;
-			long bytePos = 0;
-			long numBlocks = blocks.getNumberOfElements();
-			// System.out.println("numblocks:"+numBlocks);
+					// System.out.println("Loading block: "+i+" from
+					// "+previous+" to
+					// "+ current+" of size "+ (current-previous));
+					BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
+					bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
+					data[buffer] = bigByteBuffer;
 
-			long numBuffers;
-			if (numBlocks > 0) {
-				// non empty section
-				numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
-			} else {
-				// else empty section then it's zero
-				numBuffers = 0;
+					posFirst[buffer] = bytePos;
+
+					bytePos = nextBytePos;
+					block += BLOCK_PER_BUFFER;
+					buffer++;
+				}
 			}
-			data = new BigByteBuffer[(int) numBuffers];
-			posFirst = new long[(int) numBuffers];
-
-			while (block < numBlocks - 1) {
-				long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
-				long nextBytePos = blocks.get(nextBlock);
-
-				// System.out.println("Loading block: "+i+" from "+previous+" to
-				// "+ current+" of size "+ (current-previous));
-				BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
-				bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
-				data[buffer] = bigByteBuffer;
-
-				posFirst[buffer] = bytePos;
-
-				bytePos = nextBytePos;
-				block += BLOCK_PER_BUFFER;
-				buffer++;
-			}
-
 		} catch (IOException e) {
 			log.error("Unexpected exception.", e);
 		} finally {
 			try {
-				out.close();
 				Files.delete(file.toPath());
 			} catch (IOException e) {
 				log.error("Unexpected exception.", e);

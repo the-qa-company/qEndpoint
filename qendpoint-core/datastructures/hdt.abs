@@ -154,4 +154,4 @@ HDT {
     Triples triples;
 }
 
-file(HDT, "header.qepm");
+file(HDT, ".*\\.hdt");

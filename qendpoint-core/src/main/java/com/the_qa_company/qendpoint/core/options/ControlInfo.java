@@ -19,16 +19,19 @@
 
 package com.the_qa_company.qendpoint.core.options;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * @author mario.arias
  */
 public interface ControlInfo extends HDTOptions {
 	enum Type {
-		UNKNOWN, GLOBAL, HEADER, DICTIONARY, TRIPLES, INDEX
+		UNKNOWN, GLOBAL, HEADER, DICTIONARY, TRIPLES, INDEX, QEPCORE_MERGE
 	}
 
 	Type getType();
@@ -38,6 +41,16 @@ public interface ControlInfo extends HDTOptions {
 	String getFormat();
 
 	void setFormat(String format);
+
+	default void save(Path filename) throws IOException {
+		try (BufferedOutputStream os = new BufferedOutputStream(Files.newOutputStream(filename))) {
+			save(os);
+		}
+	}
+
+	default void save(String filename) throws IOException {
+		save(Path.of(filename));
+	}
 
 	void save(OutputStream output) throws IOException;
 

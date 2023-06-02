@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -81,6 +82,12 @@ public class QEPSearch {
 
 	@Parameter(names = "-type", description = "partition type, 'delta', 'hdt', 'qendpoint', 'sequence', 'reader' or 'guess' (default)")
 	public String type;
+
+	@Parameter(names = "-rdf4jfixdump", description = "fix RDF4J NativeStore triple issues")
+	public boolean rdf4jfixdump;
+
+	@Parameter(names = "-rdf4jindex", description = "RDF4J indexes, default spoc,posc,cosp")
+	public String rdf4jindex;
 
 	@Parameter(names = "-version", description = "Prints the HDT version number")
 	public static boolean showVersion;
@@ -370,9 +377,17 @@ public class QEPSearch {
 		}
 	}
 
-	public void executeDelta() throws IOException {
+	private void dumpRDF4JNativeStore(File store) {
 
-		NativeStore store = new NativeStore(new File(input), "spoc,posc,cosp");
+	}
+
+	public void executeDelta() throws IOException {
+		if (rdf4jfixdump) {
+			dumpRDF4JNativeStore(new File(input));
+			return;
+		}
+
+		NativeStore store = new NativeStore(new File(input), Objects.requireNonNullElse(rdf4jindex, "spoc,posc,cosp"));
 
 		try {
 			executeSail(store, Function.identity(), Type.DELTA);
@@ -408,7 +423,7 @@ public class QEPSearch {
 		}
 
 		if (line.startsWith("config")) {
-			if (line.length() <= "config".length()) {
+			if (line.length() == "config".length()) {
 				System.out.println(colorTool.red() + "config <opt>=<value>" + colorTool.colorReset());
 				help(type);
 			} else {

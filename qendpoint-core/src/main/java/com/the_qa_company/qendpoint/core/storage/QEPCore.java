@@ -11,11 +11,13 @@ import com.the_qa_company.qendpoint.core.iterator.utils.MapFilterIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
-import com.the_qa_company.qendpoint.core.storage.iterator.CatCloseableIterator;
-import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.iterator.CatQueryCloseable;
+import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.merge.QEPCoreMergeThread;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
+import com.the_qa_company.qendpoint.core.util.nsd.NamespaceData;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import org.slf4j.Logger;
@@ -109,6 +111,7 @@ public class QEPCore implements AutoCloseable {
 	private final Object datasetLock = new Object() {};
 	private final ReentrantLock insertLock = new ReentrantLock();
 	private final Object bindLock = new Object() {};
+	private final Object idBuilderLock = new Object() {};
 	private final ConcurrentMap<Integer, QEPDataset> datasetByUid = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Uid, QEPMap> map = new ConcurrentHashMap<>();
 
@@ -119,12 +122,16 @@ public class QEPCore implements AutoCloseable {
 	private final Path location;
 	private ProgressListener listener = ProgressListener.ignore();
 	private long maxId;
+	private final QEPCoreMergeThread mergeThread;
+	private final NamespaceData namespaceData;
 
 	QEPCore() {
 		options = HDTOptions.of();
 		memoryDataset = false;
 		noCoIndex = false;
 		location = Path.of("tests");
+		mergeThread = new QEPCoreMergeThread(this, options);
+		namespaceData = new NamespaceData(getNamespaceDataLocation());
 	}
 
 	/**
@@ -217,10 +224,15 @@ public class QEPCore implements AutoCloseable {
 		memoryDataset = this.options.getBoolean(OPTION_IN_MEMORY_DATASET, false);
 		noCoIndex = this.options.getBoolean(OPTION_NO_CO_INDEX, false);
 
+		mergeThread = new QEPCoreMergeThread(this, options);
+
+		namespaceData = new NamespaceData(getNamespaceDataLocation());
+
 		try {
-			// load the dataset and sync the maps
+			// load the dataset, sync the maps and load the namespaces
 			reloadDataset();
 			syncDatasetMaps();
+			namespaceData.load();
 		} catch (Throwable t) {
 			try {
 				close();
@@ -229,6 +241,8 @@ public class QEPCore implements AutoCloseable {
 			}
 			throw t;
 		}
+
+		mergeThread.start();
 	}
 
 	/**
@@ -421,6 +435,13 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
+	 * @return namespace data linked with this core
+	 */
+	public NamespaceData getNamespaceData() {
+		return namespaceData;
+	}
+
+	/**
 	 * get a mapping between 2 datasets
 	 *
 	 * @param uid uid of the 2 datasets
@@ -491,8 +512,9 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search() throws QEPCoreException {
-		return search(createContext());
+	public QueryCloseableIterator search() throws QEPCoreException {
+		QEPCoreContext ctx = createSearchContext();
+		return search(ctx).attach(ctx);
 	}
 
 	/**
@@ -504,9 +526,10 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(CharSequence subject,
+	public QueryCloseableIterator search(CharSequence subject,
 			CharSequence predicate, CharSequence object) throws QEPCoreException {
-		return search(createContext(), subject, predicate, object);
+		QEPCoreContext ctx = createSearchContext();
+		return search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -518,9 +541,10 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPComponent subject,
+	public QueryCloseableIterator search(QEPComponent subject,
 			QEPComponent predicate, QEPComponent object) throws QEPCoreException {
-		return search(createContext(), subject, predicate, object);
+		QEPCoreContext ctx = createSearchContext();
+		return search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -530,9 +554,10 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(TripleString triple)
+	public QueryCloseableIterator search(TripleString triple)
 			throws QEPCoreException {
-		return search(createContext(), triple);
+		QEPCoreContext ctx = createSearchContext();
+		return search(ctx, triple).attach(ctx);
 	}
 
 	/**
@@ -542,9 +567,10 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPComponentTriple triple)
+	public QueryCloseableIterator search(QEPComponentTriple triple)
 			throws QEPCoreException {
-		return search(createContext(), triple);
+		QEPCoreContext ctx = createSearchContext();
+		return search(ctx, triple).attach(ctx);
 	}
 
 	/**
@@ -554,7 +580,7 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context)
+	public QueryCloseableIterator search(QEPCoreContext context)
 			throws QEPCoreException {
 		return search(context, "", "", "");
 	}
@@ -569,7 +595,7 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+	public QueryCloseableIterator search(QEPCoreContext context,
 			CharSequence subject, CharSequence predicate, CharSequence object) throws QEPCoreException {
 		return search(context, createComponentByString(subject), createComponentByString(predicate),
 				createComponentByString(object));
@@ -585,7 +611,7 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+	public QueryCloseableIterator search(QEPCoreContext context,
 			QEPComponent subject, QEPComponent predicate, QEPComponent object) throws QEPCoreException {
 		return search(context, QEPComponentTriple.of(subject, predicate, object));
 	}
@@ -598,7 +624,7 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+	public QueryCloseableIterator search(QEPCoreContext context,
 			TripleString triple) throws QEPCoreException {
 		return search(context, triple.getSubject().isEmpty() ? null : triple.getSubject(),
 				triple.getPredicate().isEmpty() ? null : triple.getPredicate(),
@@ -613,16 +639,165 @@ public class QEPCore implements AutoCloseable {
 	 * @return iterator of components
 	 * @throws QEPCoreException search exception
 	 */
-	public CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search(QEPCoreContext context,
+	public QueryCloseableIterator search(QEPCoreContext context,
 			QEPComponentTriple triple) throws QEPCoreException {
-		List<CloseableIterator<? extends QEPComponentTriple, QEPCoreException>> iterators = new ArrayList<>();
+		List<QueryCloseableIterator> iterators = new ArrayList<>();
 		QEPComponentTriple clone = triple.freeze();
 		for (QEPDatasetContext dsctx : context.getContexts()) {
 			iterators.add(dsctx.dataset().search(dsctx, clone));
 		}
 
 		// cat all the iterators
-		return CatCloseableIterator.of(iterators);
+		return CatQueryCloseable.of(iterators);
+	}
+
+	/**
+	 * search any triple into the core
+	 *
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny() throws QEPCoreException {
+		try (QueryCloseableIterator it = search()) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(CharSequence subject, CharSequence predicate, CharSequence object)
+			throws QEPCoreException {
+		try (QueryCloseableIterator it = search(subject, predicate,
+				object)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPComponent subject, QEPComponent predicate, QEPComponent object)
+			throws QEPCoreException {
+		try (QueryCloseableIterator it = search(subject, predicate,
+				object)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param triple triple to search
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(TripleString triple) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(triple)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param triple triple to search
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPComponentTriple triple) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(triple)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search any triple into the core
+	 *
+	 * @param context search context
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPCoreContext context) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(context)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param context   search context
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPCoreContext context, CharSequence subject, CharSequence predicate,
+			CharSequence object) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(context, subject, predicate,
+				object)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param context   search context
+	 * @param subject   subject
+	 * @param predicate predicate
+	 * @param object    object
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPCoreContext context, QEPComponent subject, QEPComponent predicate,
+			QEPComponent object) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(context, subject, predicate,
+				object)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param context search context
+	 * @param triple  triple to search
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPCoreContext context, TripleString triple) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(context, triple)) {
+			return it.hasNext();
+		}
+	}
+
+	/**
+	 * search a triple into the core
+	 *
+	 * @param context search context
+	 * @param triple  triple to search
+	 * @return find something
+	 * @throws QEPCoreException search exception
+	 */
+	public boolean containsAny(QEPCoreContext context, QEPComponentTriple triple) throws QEPCoreException {
+		try (QueryCloseableIterator it = search(context, triple)) {
+			return it.hasNext();
+		}
 	}
 
 	/**
@@ -682,7 +857,17 @@ public class QEPCore implements AutoCloseable {
 		});
 	}
 
-	public QEPCoreContext createContext() {
+	public long cardinality(QEPComponent s, QEPComponent p, QEPComponent o) {
+		try (QueryCloseableIterator se = search(s, p, o)){
+			return se.estimateCardinality();
+		}
+	}
+
+	/**
+	 * @return a search context, all the search operations created using this
+	 *         context will be done using a non-mutable version of the core.
+	 */
+	public QEPCoreContext createSearchContext() {
 		return new QEPCoreContext(this, createDatasetSnapshot());
 	}
 
@@ -692,23 +877,25 @@ public class QEPCore implements AutoCloseable {
 	 * @return unique dataset id
 	 */
 	public String createNewDatasetId() {
-		for (long id = maxId + 1; id < Long.MAX_VALUE; id++) {
-			String sid = Long.toString(id);
-			if (getDatasetById(sid) != null) {
-				continue; // a dataset with this ID already exist, overflow?
+		synchronized (idBuilderLock) {
+			for (long id = maxId + 1; id < Long.MAX_VALUE; id++) {
+				String sid = Long.toString(id);
+				if (getDatasetById(sid) != null) {
+					continue; // a dataset with this ID already exist, overflow?
+				}
+				maxId = id;
+				return sid;
 			}
-			maxId = id;
-			return sid;
-		}
-		// force the name to avoid using an overflow
-		for (long id = 0; id < maxId; id++) {
-			String sid = Long.toString(id);
-			if (getDatasetById(sid) != null) {
-				continue;
+			// force the name to avoid using an overflow
+			for (long id = 0; id < maxId; id++) {
+				String sid = Long.toString(id);
+				if (getDatasetById(sid) != null) {
+					continue;
+				}
+				return sid;
 			}
-			return sid;
+			throw new AssertionError("too many nodes");
 		}
-		throw new AssertionError("too many nodes");
 	}
 
 	/**
@@ -720,9 +907,9 @@ public class QEPCore implements AutoCloseable {
 	 * @throws IOException     exception while loading triples
 	 * @throws ParserException parsing exception while loading the triples
 	 */
-	public void loadData(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist)
+	public void insertTriples(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist)
 			throws IOException, ParserException {
-		loadData(triples, baseURI, checkAlreadyExist, null);
+		insertTriples(triples, baseURI, checkAlreadyExist, null);
 	}
 
 	/**
@@ -739,13 +926,13 @@ public class QEPCore implements AutoCloseable {
 	 * @throws IOException     exception while loading triples
 	 * @throws ParserException parsing exception while loading the triples
 	 */
-	public void loadData(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist,
+	public void insertTriples(Iterator<TripleString> triples, String baseURI, boolean checkAlreadyExist,
 			ProgressListener listener) throws IOException, ParserException {
 		if (checkAlreadyExist) {
-			QEPCoreContext ctx = createContext();
+			QEPCoreContext ctx = createSearchContext();
 			insertLock.lock();
 			triples = MapFilterIterator.of(triples, triple -> {
-				try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> it = search(ctx, triple)) {
+				try (QueryCloseableIterator it = search(ctx, triple)) {
 					if (it.hasNext()) {
 						return null;
 					}
@@ -757,7 +944,7 @@ public class QEPCore implements AutoCloseable {
 		try {
 			if (!triples.hasNext()) {
 				return; // it's stupid, but maybe all the new elements are
-						// already
+				// already
 				// in the core
 			}
 			String id;
@@ -851,6 +1038,17 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	/**
+	 * @return the core location
+	 */
+	public Path getLocation() {
+		return location;
+	}
+
+	public Path getNamespaceDataLocation() {
+		return location.resolve("namespaces.nsd");
+	}
+
+	/**
 	 * @return an unmodifiable {@link HDTOptions} of the core's options
 	 */
 	public HDTOptions getOptions() {
@@ -876,10 +1074,18 @@ public class QEPCore implements AutoCloseable {
 		setListener(ProgressListener.ignore());
 	}
 
+	/**
+	 * @return listener of the core
+	 */
+	public ProgressListener getListener() {
+		return listener;
+	}
+
 	@Override
 	public void close() throws QEPCoreException {
 		synchronized (datasetLock) {
 			synchronized (bindLock) {
+				mergeThread.interrupt();
 				try {
 					Closer.closeAll(dataset, map);
 				} catch (IOException e) {

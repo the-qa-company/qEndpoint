@@ -101,17 +101,13 @@ public class DictionaryFactory {
 		String name = spec.get(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, "");
 
 		// Implementations available in the Core
-		switch (name) {
-		case "":
-		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH:
-			return new HashDictionary(spec, false);
-		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_PSFC:
-			return new PSFCTempDictionary(new HashDictionary(spec, false));
-		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH:
-			return new HashDictionary(spec, true);
-		default:
-			throw new IllegalFormatException("Implementation of triples not found for " + name);
-		}
+		return switch (name) {
+		case "", HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH -> new HashDictionary(spec, false);
+		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_PSFC ->
+			new PSFCTempDictionary(new HashDictionary(spec, false));
+		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH -> new HashDictionary(spec, true);
+		default -> throw new IllegalFormatException("Implementation of triples not found for " + name);
+		};
 	}
 
 	/**
@@ -122,19 +118,13 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryPrivate createDictionary(HDTOptions spec) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
-		switch (name) {
-		case "":
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION:
-			return new FourSectionDictionary(spec);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_PSFC_SECTION:
-			return new PSFCFourSectionDictionary(spec);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG:
-			return new FourSectionDictionaryBig(spec);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS:
-			return new MultipleSectionDictionary(spec);
-		default:
-			throw new IllegalFormatException("Implementation of dictionary not found for " + name);
-		}
+		return switch (name) {
+		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION -> new FourSectionDictionary(spec);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_PSFC_SECTION -> new PSFCFourSectionDictionary(spec);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG -> new FourSectionDictionaryBig(spec);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultipleSectionDictionary(spec);
+		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
+		};
 	}
 
 	/**
@@ -147,16 +137,7 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryPrivate createWriteDictionary(HDTOptions spec, Path location, int bufferSize) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
-		switch (name) {
-		case "":
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION:
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG:
-			return new WriteFourSectionDictionary(spec, location, bufferSize);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS:
-			return new WriteMultipleSectionDictionary(spec, location, bufferSize);
-		default:
-			throw new IllegalFormatException("Implementation of write dictionary not found for " + name);
-		}
+		return createWriteDictionary(name, spec, location, bufferSize);
 	}
 
 	/**
@@ -169,15 +150,13 @@ public class DictionaryFactory {
 	 * @return WriteDictionary
 	 */
 	public static DictionaryPrivate createWriteDictionary(String name, HDTOptions spec, Path location, int bufferSize) {
-		switch (name) {
-		case "":
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
-			return new WriteFourSectionDictionary(spec, location, bufferSize);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
-			return new WriteMultipleSectionDictionary(spec, location, bufferSize);
-		default:
-			throw new IllegalFormatException("Implementation of write dictionary not found for " + name);
-		}
+		return switch (name) {
+		case "", HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG ->
+			new WriteFourSectionDictionary(spec, location, bufferSize);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS ->
+			new WriteMultipleSectionDictionary(spec, location, bufferSize);
+		default -> throw new IllegalFormatException("Implementation of write dictionary not found for " + name);
+		};
 	}
 
 	public static SectionCompressor createSectionCompressor(HDTOptions spec, CloseSuppressPath baseFileName,
@@ -185,17 +164,14 @@ public class DictionaryFactory {
 			int k, boolean debugSleepKwayDict) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
 
-		switch (name) {
-		case "":
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION:
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG:
-			return new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS:
-			return new MultiSectionSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
-					debugSleepKwayDict);
-		default:
-			throw new IllegalFormatException("Implementation of section compressor not found for " + name);
-		}
+		return switch (name) {
+		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG ->
+			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
+				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
+		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
+		};
 	}
 
 	/**
@@ -206,16 +182,12 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryPrivate createDictionary(ControlInfo ci) {
 		String name = ci.getFormat();
-		switch (name) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
-			return new FourSectionDictionary(new HDTSpecification());
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION:
-			return new PSFCFourSectionDictionary(new HDTSpecification());
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
-			return new MultipleSectionDictionary(new HDTSpecification());
-		default:
-			throw new IllegalFormatException("Implementation of dictionary not found for " + name);
-		}
+		return switch (name) {
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> new FourSectionDictionary(new HDTSpecification());
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION -> new PSFCFourSectionDictionary(new HDTSpecification());
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionary(new HDTSpecification());
+		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
+		};
 	}
 
 	/**
@@ -227,15 +199,12 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryDiff createDictionaryDiff(Dictionary dictionary, String location) {
 		String type = dictionary.getType();
-		switch (type) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION:
-			return new FourSectionDictionaryDiff(location);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
-			return new MultipleSectionDictionaryDiff(location);
-		default:
-			throw new IllegalFormatException("Implementation of DictionaryDiff not found for " + type);
-		}
+		return switch (type) {
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
+			new FourSectionDictionaryDiff(location);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionaryDiff(location);
+		default -> throw new IllegalFormatException("Implementation of DictionaryDiff not found for " + type);
+		};
 	}
 
 	/**
@@ -246,27 +215,22 @@ public class DictionaryFactory {
 	 */
 	public static DictionaryKCat createDictionaryKCat(Dictionary dictionary) {
 		String type = dictionary.getType();
-		switch (type) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
-			return new FourSectionDictionaryKCat(dictionary);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
-			return new MultipleSectionDictionaryKCat(dictionary);
-		default:
-			throw new IllegalArgumentException("Implementation of DictionaryKCat not found for " + type);
-		}
+		return switch (type) {
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> new FourSectionDictionaryKCat(dictionary);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionaryKCat(dictionary);
+		default -> throw new IllegalArgumentException("Implementation of DictionaryKCat not found for " + type);
+		};
 	}
 
 	public static DictionaryPrivate createWriteDictionary(String type, HDTOptions spec,
 			DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
 			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub) {
-		switch (type) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION:
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION:
-			return new WriteFourSectionDictionary(spec, subject, predicate, object, shared);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION:
-			return new WriteMultipleSectionDictionary(spec, subject, predicate, shared, sub);
-		default:
-			throw new IllegalArgumentException("Unknown dictionary type " + type);
-		}
+		return switch (type) {
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
+			new WriteFourSectionDictionary(spec, subject, predicate, object, shared);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION ->
+			new WriteMultipleSectionDictionary(spec, subject, predicate, shared, sub);
+		default -> throw new IllegalArgumentException("Unknown dictionary type " + type);
+		};
 	}
 }

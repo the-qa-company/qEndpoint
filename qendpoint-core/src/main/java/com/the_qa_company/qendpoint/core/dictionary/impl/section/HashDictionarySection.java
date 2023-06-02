@@ -32,26 +32,23 @@ import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceCustomComparator;
-import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
 /**
  * @author mario.arias
  */
 public class HashDictionarySection implements TempDictionarySection {
-	public static final int TYPE_INDEX = 1;
-
 	private Map<ByteString, Long> map;
 	private List<ByteString> list;
-	private int size;
+	private long size;
 	public boolean sorted;
-	final boolean isCustom;
+	final boolean storeLiterals;
 	private final Map<ByteString, Long> literalsCounts = new HashMap<>();
 
 	/**
 	 *
 	 */
-	public HashDictionarySection(boolean isCustom) {
-		this.isCustom = isCustom;
+	public HashDictionarySection(boolean storeLiterals) {
+		this.storeLiterals = storeLiterals;
 		map = new HashMap<>();
 		list = new ArrayList<>();
 		size = 0;
@@ -92,7 +89,7 @@ public class HashDictionarySection implements TempDictionarySection {
 	 */
 	@Override
 	public long size() {
-		return size;
+		return size + (long) map.size() * Long.BYTES;
 	}
 
 	/*
@@ -123,7 +120,7 @@ public class HashDictionarySection implements TempDictionarySection {
 
 	@Override
 	public long add(CharSequence entry) {
-		ByteString compact = new CompactString(entry);
+		ByteString compact = ByteString.copy(entry);
 		return map.computeIfAbsent(compact, key -> {
 			// Not found, insert new
 			list.add(compact);
@@ -131,7 +128,7 @@ public class HashDictionarySection implements TempDictionarySection {
 			sorted = false;
 
 			// custom for subsection literals ..
-			if (isCustom) {
+			if (storeLiterals) {
 				ByteString type = ByteString.of(LiteralsUtils.getType(compact));
 				// check if the entry doesn't already exist
 				literalsCounts.compute(type, (key2, count) -> count == null ? 1L : count + 1L);
@@ -142,8 +139,11 @@ public class HashDictionarySection implements TempDictionarySection {
 
 	@Override
 	public void remove(CharSequence seq) {
-		map.remove(ByteString.of(seq));
-		sorted = false;
+		ByteString bs = ByteString.of(seq);
+		if (map.remove(bs) != null) {
+			size -= bs.length();
+			sorted = false;
+		}
 	}
 
 	@Override
@@ -153,7 +153,7 @@ public class HashDictionarySection implements TempDictionarySection {
 		list.addAll(map.keySet());
 
 		// Sort list
-		if (isCustom) {
+		if (storeLiterals) {
 			list.sort(new CharSequenceCustomComparator());
 		} else {
 			list.sort(new CharSequenceComparator());

@@ -4,11 +4,16 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import com.the_qa_company.qendpoint.core.storage.QEPDataset;
 import com.the_qa_company.qendpoint.core.storage.QEPDatasetContext;
-import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 
-public class QEPDatasetIterator implements CloseableIterator<QEPComponentTriple, QEPCoreException> {
+/**
+ * Iterator over a dataset, will handle the triple deletion
+ *
+ * @author Antoine Willerval
+ */
+public class QEPDatasetIterator implements QueryCloseableIterator {
 	private final QEPDatasetContext ctx;
 	private final IteratorTripleID iterator;
 	private final QEPComponentTriple triple;
@@ -72,6 +77,12 @@ public class QEPDatasetIterator implements CloseableIterator<QEPComponentTriple,
 
 	@Override
 	public void close() throws QEPCoreException {
+		// no context to close because it was built using the
+		// CatCloseableIterator
+	}
 
+	@Override
+	public long estimateCardinality() {
+		return iterator.estimatedNumResults();
 	}
 }

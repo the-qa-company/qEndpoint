@@ -19,6 +19,8 @@
 
 package com.the_qa_company.qendpoint.core.listener;
 
+import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
+
 /**
  * Interface for notifying the progress of an operation.
  *
@@ -85,5 +87,13 @@ public interface ProgressListener {
 			ProgressListener.this.notifyProgress(level, message);
 			listener.notifyProgress(level, message);
 		});
+	}
+
+	default ProgressListener sub(float min, float max) {
+		return new IntermediateListener(this, min, max);
+	}
+
+	default ProgressListener sub(float min, float max, String prefix) {
+		return new IntermediateListener(this, min, max, prefix);
 	}
 }

@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManagerImpl;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.HDTBase;
 import com.the_qa_company.qendpoint.core.hdt.impl.WriteHDTImpl;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
 import com.the_qa_company.qendpoint.core.header.HeaderFactory;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
@@ -20,12 +21,10 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.Triples;
-import com.the_qa_company.qendpoint.core.util.Profiler;
-import com.the_qa_company.qendpoint.core.compact.bitmap.*;
-import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.OneReadTempTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
+import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
@@ -33,6 +32,7 @@ import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,14 +47,69 @@ import java.util.ListIterator;
  * @author Antoine Willerval
  */
 public class KCatImpl implements Closeable {
+
+	/**
+	 * Create implementation
+	 *
+	 * @param hdtFileNames the hdt files to cat
+	 * @param hdtFormat    the format to config the cat
+	 * @param listener     listener to get information from the cat
+	 * @throws IOException io exception during loading
+	 */
+	public static KCatImpl of(List<String> hdtFileNames, HDTOptions hdtFormat, ProgressListener listener)
+			throws IOException {
+		return of(hdtFileNames, null, hdtFormat, listener);
+	}
+
+	/**
+	 * Create implementation
+	 *
+	 * @param hdtFileNames  the hdt files to cat
+	 * @param deleteBitmaps delete bitmaps, null for basic cat
+	 * @param hdtFormat     the format to config the cat
+	 * @param listener      listener to get information from the cat
+	 * @throws IOException io exception during loading
+	 */
+	public static KCatImpl of(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
+			ProgressListener listener) throws IOException {
+		return new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener, true);
+	}
+
+	/**
+	 * Create implementation
+	 *
+	 * @param hdtFileNames  the hdt files to cat
+	 * @param deleteBitmaps delete bitmaps, null for basic cat
+	 * @param hdtFormat     the format to config the cat
+	 * @param listener      listener to get information from the cat
+	 * @throws IOException io exception during loading
+	 */
+	public static KCatImpl of(List<HDT> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
+			ProgressListener listener, boolean closeHDT) throws IOException {
+		return new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener, closeHDT);
+	}
+
+	private static HDT loadOrMapHDT(Object obj, ProgressListener listener, HDTOptions spec) throws IOException {
+		if (obj instanceof HDT hdt) {
+			return hdt;
+		}
+		if (obj instanceof Path hdtFileName) {
+			return HDTManagerImpl.loadOrMapHDT(hdtFileName.toAbsolutePath().toString(), listener, spec);
+		}
+		if (obj instanceof File hdtFileName) {
+			return HDTManagerImpl.loadOrMapHDT(hdtFileName.getAbsolutePath(), listener, spec);
+		}
+		if (obj instanceof String s) {
+			return HDTManagerImpl.loadOrMapHDT(s, listener, spec);
+		}
+		throw new IllegalArgumentException("bad type: " + obj.getClass());
+	}
+
 	private static TripleComponentOrder getOrder(HDT hdt) {
 		Triples triples = hdt.getTriples();
-		if (!(triples instanceof BitmapTriples)) {
+		if (!(triples instanceof BitmapTriples bt)) {
 			throw new IllegalArgumentException("HDT Triples can't be BitmapTriples");
 		}
-
-		BitmapTriples bt = (BitmapTriples) triples;
-
 		return bt.getOrder();
 	}
 
@@ -74,18 +129,7 @@ public class KCatImpl implements Closeable {
 	private final TripleComponentOrder order;
 	private final long rawSize;
 	private final Profiler profiler;
-
-	/**
-	 * Create implementation
-	 *
-	 * @param hdtFileNames the hdt files to cat
-	 * @param hdtFormat    the format to config the cat
-	 * @param listener     listener to get information from the cat
-	 * @throws IOException io exception during loading
-	 */
-	public KCatImpl(List<String> hdtFileNames, HDTOptions hdtFormat, ProgressListener listener) throws IOException {
-		this(hdtFileNames, null, hdtFormat, listener);
-	}
+	private final boolean closeHDTs;
 
 	/**
 	 * Create implementation
@@ -96,10 +140,10 @@ public class KCatImpl implements Closeable {
 	 * @param listener      listener to get information from the cat
 	 * @throws IOException io exception during loading
 	 */
-	public KCatImpl(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-			ProgressListener listener) throws IOException {
+	private KCatImpl(List<?> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
+			ProgressListener listener, boolean closeHDTs) throws IOException {
 		this.listener = ListenerUtil.multiThreadListener(listener);
-
+		this.closeHDTs = closeHDTs;
 		hdts = new HDT[hdtFileNames.size()];
 		this.hdtFormat = hdtFormat;
 		this.deleteBitmaps = deleteBitmaps;
@@ -120,12 +164,12 @@ public class KCatImpl implements Closeable {
 		profiler = Profiler.createOrLoadSubSection("doHDTCatk", hdtFormat, true);
 
 		try {
-			ListIterator<String> it = hdtFileNames.listIterator();
+			ListIterator<?> it = hdtFileNames.listIterator();
 
 			int firstIndex = it.nextIndex();
-			String firstHDTFile = it.next();
+			Object firstHDTFile = it.next();
 
-			HDT firstHDT = HDTManagerImpl.loadOrMapHDT(firstHDTFile, listener, hdtFormat);
+			HDT firstHDT = loadOrMapHDT(firstHDTFile, listener, hdtFormat);
 			hdts[firstIndex] = firstHDT;
 
 			dictionaryType = firstHDT.getDictionary().getType();
@@ -139,13 +183,13 @@ public class KCatImpl implements Closeable {
 			// map all the HDTs
 			while (it.hasNext()) {
 				int index = it.nextIndex();
-				String hdtFile = it.next();
+				Object hdtFile = it.next();
 				boolean hasBitmap = deleteBitmaps != null && deleteBitmaps.get(index) != null;
 
 				iListener.notifyProgress(index * 100f / hdtFileNames.size(),
 						"map hdt (" + (index + 1) + "/" + hdtFileNames.size() + ")");
 
-				HDT hdt = HDTManagerImpl.loadOrMapHDT(hdtFile, listener, hdtFormat);
+				HDT hdt = loadOrMapHDT(hdtFile, listener, hdtFormat);
 
 				// it doesn't make sense to add the raw sizes because we're
 				// removing triples
@@ -246,8 +290,10 @@ public class KCatImpl implements Closeable {
 				try {
 					Closer.closeAll((Object[]) deleteBitmapTriples);
 				} finally {
-					for (HDT hdt : hdts) {
-						IOUtil.closeQuietly(hdt);
+					if (closeHDTs) {
+						for (HDT hdt : hdts) {
+							IOUtil.closeQuietly(hdt);
+						}
 					}
 					profiler.close();
 				}
@@ -342,7 +388,11 @@ public class KCatImpl implements Closeable {
 					profiler.close();
 				}
 			} finally {
-				Closer.closeAll(hdts, deleteBitmapTriples, diffLocation);
+				if (closeHDTs) {
+					Closer.closeAll(hdts, deleteBitmapTriples, diffLocation);
+				} else {
+					Closer.closeAll(deleteBitmapTriples, diffLocation);
+				}
 			}
 		} finally {
 			if (clearLocation) {
