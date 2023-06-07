@@ -4,14 +4,18 @@ import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.hdt.HDTPrivate;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +27,8 @@ import java.nio.file.StandardCopyOption;
  *
  * @author Antoine Willerval
  */
-public class MapOnCallHDT implements HDT {
+@SuppressWarnings("resource")
+public class MapOnCallHDT implements HDTPrivate {
 	private final Path hdtFile;
 	private HDT hdt;
 
@@ -94,5 +99,30 @@ public class MapOnCallHDT implements HDT {
 	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws NotFoundException {
 		return mapOrGetHDT().search(subject, predicate, object);
+	}
+
+	@Override
+	public void loadFromHDT(InputStream input, ProgressListener listener) throws IOException {
+		((HDTPrivate) mapOrGetHDT()).loadFromHDT(input, listener);
+	}
+
+	@Override
+	public void loadFromHDT(String fileName, ProgressListener listener) throws IOException {
+		((HDTPrivate) mapOrGetHDT()).loadFromHDT(fileName, listener);
+	}
+
+	@Override
+	public void mapFromHDT(File f, long offset, ProgressListener listener) throws IOException {
+		((HDTPrivate) mapOrGetHDT()).mapFromHDT(f, offset, listener);
+	}
+
+	@Override
+	public void loadOrCreateIndex(ProgressListener listener, HDTOptions disk) throws IOException {
+		hdt = HDTManager.indexedHDT(hdt, listener, disk);
+	}
+
+	@Override
+	public void populateHeaderStructure(String baseUri) {
+		((HDTPrivate) mapOrGetHDT()).populateHeaderStructure(baseUri);
 	}
 }
