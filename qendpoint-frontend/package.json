@@ -15,7 +15,7 @@
     "validate": "tsc --noEmit && eslint src/**/*.ts{,x} --max-warnings=0"
   },
   "dependencies": {
-    "@emotion/react": "^11.6.0",
+    "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.6.0",
     "@fontsource/roboto": "^4.5.1",
     "@mui/icons-material": "^5.1.0",
