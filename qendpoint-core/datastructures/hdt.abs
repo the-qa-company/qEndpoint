@@ -119,6 +119,25 @@ MultiSectionDictionary : Dictionary{ci.format = "<http://purl.org/HDT/hdt#dictio
     DictionarySection[] objects;
 }
 
+enum MultiSectionDictionaryLangSectionType : byte {
+	SECTION_TYPE_DT = 0x10,
+	SECTION_TYPE_LANG = 0x11,
+}
+
+MultiSectionDictionaryLang : Dictionary{ci.format = "<http://purl.org/HDT/hdt#dictionaryMultLang>"} {
+    DictionarySection shared;
+    DictionarySection subject;
+    DictionarySection predicate;
+    DictionarySection objectNoDT;
+    vlong typeCount;
+    struct {
+        MultiSectionDictionaryLangSectionType type;
+        vlong strSize;
+        byte[] str;
+        DictionarySection section;
+    }[] objects;
+}
+
 Header {
     ControlInfo ci{type = HEADER};
 }

@@ -9,7 +9,7 @@ import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapFilterIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PeekIteratorImpl;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,13 +23,13 @@ import java.util.stream.IntStream;
  * @author Antoine Willerval
  */
 public class GroupBySubjectMapIterator implements Iterator<TripleID> {
-	private final PeekIterator<TripleID> mergeIterator;
+	private final PeekIteratorImpl<TripleID> mergeIterator;
 	private final List<TripleID> groupList = new ArrayList<>();
 	private Iterator<TripleID> groupListIterator;
 	private TripleID next;
 
 	private GroupBySubjectMapIterator(Iterator<TripleID> mergeIterator) {
-		this.mergeIterator = new PeekIterator<>(mergeIterator);
+		this.mergeIterator = new PeekIteratorImpl<>(mergeIterator);
 	}
 
 	@Override
@@ -245,10 +245,10 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 
 	private static class NoDupeTripleIDIterator implements Iterator<TripleID> {
 		private TripleID next;
-		private final PeekIterator<TripleID> it;
+		private final PeekIteratorImpl<TripleID> it;
 
 		public NoDupeTripleIDIterator(Iterator<TripleID> it) {
-			this.it = new PeekIterator<>(it);
+			this.it = new PeekIteratorImpl<>(it);
 		}
 
 		@Override

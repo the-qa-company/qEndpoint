@@ -14,6 +14,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.tools.HDTVerify;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -87,6 +88,8 @@ public class QEPSearch {
 
 	@Parameter(names = "-searchCfg", description = "HDT Conversion options (override those of config file)")
 	public String searchCfg;
+	@Parameter(names = "-binindex", description = "Prints bin index if implemented")
+	public boolean showBinIndex;
 
 	public String input;
 
@@ -323,6 +326,9 @@ public class QEPSearch {
 		}
 		if (options != null) {
 			spec.setOptions(options);
+		}
+		if (showBinIndex) {
+			spec.set(HDTOptionsKeys.DUMP_BINARY_OFFSETS, true);
 		}
 
 		HDT hdt;

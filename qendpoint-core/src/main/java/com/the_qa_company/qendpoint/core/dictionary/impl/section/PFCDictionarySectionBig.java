@@ -19,6 +19,29 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.exceptions.CRCException;
+import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
+import com.the_qa_company.qendpoint.core.util.Mutable;
+import com.the_qa_company.qendpoint.core.util.crc.CRC32;
+import com.the_qa_company.qendpoint.core.util.crc.CRC8;
+import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
+import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
+import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,28 +51,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Iterator;
-
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
-import com.the_qa_company.qendpoint.core.exceptions.CRCException;
-import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.util.Mutable;
-import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
-import com.the_qa_company.qendpoint.core.util.crc.CRC32;
-import com.the_qa_company.qendpoint.core.util.crc.CRC8;
-import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
-import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
-import com.the_qa_company.qendpoint.core.util.string.ByteString;
-import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import com.the_qa_company.qendpoint.core.util.string.CompactString;
-import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of Plain Front Coding that divides the data in different
@@ -66,9 +67,9 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 	public static final int DEFAULT_BLOCK_SIZE = 16;
 	public static final int BLOCK_PER_BUFFER = 1000000;
 
-	BigByteBuffer[] data;
-	long[] posFirst;
-	protected SequenceLog64Big blocks;
+	BigByteBuffer[] data = new BigByteBuffer[0];
+	long[] posFirst = new long[0];
+	protected SequenceLog64Big blocks = new SequenceLog64Big();
 	protected int blocksize;
 	protected long numstrings;
 	protected long size;
@@ -89,12 +90,12 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 	@Override
 	public void load(TempDictionarySection other, ProgressListener listener) {
 		this.blocks = new SequenceLog64Big(BitUtil.log2(other.size()), other.getNumberOfElements() / blocksize);
-		log.info("numbits:{}", BitUtil.log2(other.size()));
 		Iterator<? extends CharSequence> it = other.getSortedEntries();
 		this.load(it, other.getNumberOfElements(), listener);
 
 	}
 
+	@Override
 	public void load(Iterator<? extends CharSequence> it, long numentries, ProgressListener listener) {
 
 		this.blocks = new SequenceLog64Big(64, numentries / blocksize);
@@ -102,11 +103,9 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 
 		filecounter++;
 		File file;
-		FileOutputStream out;
 
 		try {
 			file = File.createTempFile("test", ".tmp");
-			out = new FileOutputStream(file);
 		} catch (IOException e) {
 			throw new RuntimeException("Error creating temporary file.", e);
 		}
@@ -116,97 +115,96 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		ByteString previousStr = null;
 
 		try {
-			while (it.hasNext()) {
-				ByteString str = ByteString.of(it.next());
+			try {
+				try (FileOutputStream out = new FileOutputStream(file)) {
+					while (it.hasNext()) {
+						ByteString str = ByteString.of(it.next());
 
-				if (numstrings % blocksize == 0) {
-					// Add new block pointer
+						if (numstrings % blocksize == 0) {
+							// Add new block pointer
+							byteOut.flush();
+							byteoutsize = byteoutsize + byteOut.size();
+
+							blocks.append(byteoutsize);
+							byteOut.writeTo(out);
+							byteOut.reset();
+							// Copy full string
+							ByteStringUtil.append(byteOut, str, 0);
+
+						} else {
+							// Find common part.
+							int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+							// Write Delta in VByte
+							VByte.encode(byteOut, delta);
+							// Write remaining
+							ByteStringUtil.append(byteOut, str, delta);
+
+						}
+						byteOut.write(0); // End of string
+
+						numstrings++;
+
+						previousStr = str;
+
+					}
+
+					// Ending block pointer.
 					byteOut.flush();
 					byteoutsize = byteoutsize + byteOut.size();
 
+					// blocks.append(byteOut.size());
 					blocks.append(byteoutsize);
+					// Trim text/blocks
+					blocks.aggressiveTrimToSize();
+
+					byteOut.flush();
 					byteOut.writeTo(out);
-					byteOut.reset();
-					// Copy full string
-					ByteStringUtil.append(byteOut, str, 0);
-
-				} else {
-					// Find common part.
-					int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
-					// Write Delta in VByte
-					VByte.encode(byteOut, delta);
-					// Write remaining
-					ByteStringUtil.append(byteOut, str, delta);
-
 				}
-				byteOut.write(0); // End of string
 
-				numstrings++;
+				try (InputStream in = new FileInputStream(file)) {
+					// Read block by block
+					// Read packed data
 
-				previousStr = str;
+					int block = 0;
+					int buffer = 0;
+					long bytePos = 0;
+					long numBlocks = blocks.getNumberOfElements();
+					// System.out.println("numblocks:"+numBlocks);
 
-			}
+					long numBuffers;
+					if (numBlocks > 0) {
+						// non empty section
+						numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
+					} else {
+						// else empty section then it's zero
+						numBuffers = 0;
+					}
+					data = new BigByteBuffer[(int) numBuffers];
+					posFirst = new long[(int) numBuffers];
 
-			// Ending block pointer.
-			byteOut.flush();
-			byteoutsize = byteoutsize + byteOut.size();
+					while (block < numBlocks - 1) {
+						long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
+						long nextBytePos = blocks.get(nextBlock);
 
-			// blocks.append(byteOut.size());
-			blocks.append(byteoutsize);
-			// Trim text/blocks
-			blocks.aggressiveTrimToSize();
+						// System.out.println("Loading block: "+i+" from
+						// "+previous+" to
+						// "+ current+" of size "+ (current-previous));
+						BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
+						bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
+						data[buffer] = bigByteBuffer;
 
-			byteOut.flush();
-			byteOut.writeTo(out);
-			out.close();
+						posFirst[buffer] = bytePos;
 
-			InputStream in = new FileInputStream(file);
-			// Read block by block
-			// Read packed data
-
-			int block = 0;
-			int buffer = 0;
-			long bytePos = 0;
-			long numBlocks = blocks.getNumberOfElements();
-			// System.out.println("numblocks:"+numBlocks);
-
-			long numBuffers;
-			if (numBlocks > 0) {
-				// non empty section
-				numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
-			} else {
-				// else empty section then it's zero
-				numBuffers = 0;
-			}
-			data = new BigByteBuffer[(int) numBuffers];
-			posFirst = new long[(int) numBuffers];
-
-			while (block < numBlocks - 1) {
-				long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
-				long nextBytePos = blocks.get(nextBlock);
-
-				// System.out.println("Loading block: "+i+" from "+previous+" to
-				// "+ current+" of size "+ (current-previous));
-				BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
-				bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
-				data[buffer] = bigByteBuffer;
-
-				posFirst[buffer] = bytePos;
-
-				bytePos = nextBytePos;
-				block += BLOCK_PER_BUFFER;
-				buffer++;
-			}
-
-		} catch (IOException e) {
-			log.error("Unexpected exception.", e);
-		} finally {
-			try {
-				out.close();
+						bytePos = nextBytePos;
+						block += BLOCK_PER_BUFFER;
+						buffer++;
+					}
+				}
+			} finally {
 				Files.delete(file.toPath());
-			} catch (IOException e) {
-				log.error("Unexpected exception.", e);
 			}
+		} catch (IOException e) {
+			throw new RuntimeException("Can't load dictionary.", e);
 		}
 	}
 
@@ -423,12 +421,11 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		for (BigByteBuffer bigByteBuffer : data) {
 			datasize += bigByteBuffer.size();
 		}
-		log.info("datasize:{}", datasize);
 		VByte.encode(out, datasize);
 		VByte.encode(out, blocksize);
 		out.writeCRC();
 		blocks.save(output, listener); // Write blocks directly to output, they
-										// have their own CRC check.
+		// have their own CRC check.
 		out.setCRC(new CRC32());
 		for (BigByteBuffer datum : data) {
 			datum.writeStream(out, 0, datum.size(), listener);

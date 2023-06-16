@@ -15,7 +15,15 @@ public class LiteralsUtils {
 	/**
 	 * The constant DATATYPE_BYTE.
 	 */
-	public static final byte DATATYPE_BYTE = '!';
+	public static final byte DATATYPE_BYTE = 0x20;
+	/**
+	 * The constant DATATYPE_BYTE.
+	 */
+	public static final byte DATATYPE_HIGH_BYTE = 0x7F;
+	/**
+	 * The constant DATATYPE_BYTE as a ByteString.
+	 */
+	public static final ByteString DATATYPE_HIGH_BYTE_BS = new CompactString(new byte[] { DATATYPE_HIGH_BYTE });
 	/**
 	 * The constant NO_DATATYPE_STR.
 	 */
@@ -24,6 +32,10 @@ public class LiteralsUtils {
 	 * The constant TYPE_OPERATOR.
 	 */
 	public static final ByteString TYPE_OPERATOR = ByteString.of("^^");
+	/**
+	 * The constant LANG_OPERATOR.
+	 */
+	public static final ByteString LANG_OPERATOR = ByteString.of("@");
 	/**
 	 * The Literal lang type str.
 	 */
@@ -116,7 +128,7 @@ public class LiteralsUtils {
 	 *                                                   while reading
 	 */
 	public static int getLangIndex(CharSequence str) {
-		if (str.length() == 0 || str.charAt(0) != '"' || str.charAt(str.length() - 1) == '"'
+		if (str.isEmpty() || str.charAt(0) != '"' || str.charAt(str.length() - 1) == '"'
 				|| str.charAt(str.length() - 1) == '>') {
 			return -1; // not a lang literal
 		}
@@ -178,7 +190,7 @@ public class LiteralsUtils {
 		int index = getLangIndex(str);
 
 		if (index != -1 && index < str.length()) {
-			return Optional.of(str.subSequence(index + 1, str.length()));
+			return Optional.of(str.subSequence(index, str.length()));
 		} else {
 			return Optional.empty();
 		}
@@ -201,6 +213,31 @@ public class LiteralsUtils {
 		} else {
 			return str;
 		}
+	}
+
+	/**
+	 * remove the node type/lang if the node is a typed/lang literal, this
+	 * method return the char sequence or a subSequence of this char sequence
+	 *
+	 * @param str the node
+	 * @return node or the typed literal
+	 * @throws java.util.ConcurrentModificationException if the node is updated
+	 *                                                   while reading
+	 */
+	public static CharSequence removeTypeAndLang(CharSequence str) {
+		int index = getTypeIndex(str);
+
+		if (index != -1 && index < str.length()) {
+			return str.subSequence(0, index - 2);
+		}
+
+		int lindex = getLangIndex(str);
+
+		if (lindex != -1 && lindex < str.length()) {
+			return str.subSequence(0, lindex - 1);
+		}
+
+		return str;
 	}
 
 	/**
@@ -244,17 +281,6 @@ public class LiteralsUtils {
 
 	/**
 	 * place the type before the literal
-	 * <p>
-	 * example: {@literal "aa"^^<http://type>} {@literal ->}
-	 * {@literal ^^<http://type>"aa"}
-	 * </p>
-	 * <p>
-	 * example: "aa" {@literal ->} $"aa"
-	 * </p>
-	 * <p>
-	 * example: "aa"@fr {@literal ->}
-	 * {@literal ^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>"aa"@fr}
-	 * </p>
 	 *
 	 * @param str the literal
 	 * @return prefixed literal
@@ -283,6 +309,39 @@ public class LiteralsUtils {
 		}
 
 		return str;
+	}
+
+	/*
+	 * place the type/lang before the literal
+	 * @param str the literal
+	 * @return prefixed literal
+	 */
+	public static ByteString litToPrefLang(CharSequence str) {
+		int lindex = getLangIndex(str);
+
+		// language literal
+		if (lindex != -1 && lindex < str.length()) {
+			ReplazableString prefixedValue = new ReplazableString(str.length() + 1);
+			prefixedValue.appendNoCompact(DATATYPE_HIGH_BYTE_BS);
+			prefixedValue.appendNoCompact(str, lindex - 1, str.length() - lindex + 1);
+			prefixedValue.appendNoCompact(str, 0, lindex - 1);
+			return prefixedValue;
+		}
+
+		int index = getTypeIndex(str);
+
+		// typed literal
+		if (index != -1 && index < str.length()) {
+			// add the literal value
+			// -2 because len("^^")
+			ReplazableString prefixedValue = new ReplazableString(str.length() - 1);
+			prefixedValue.appendNoCompact(DATATYPE_HIGH_BYTE_BS);
+			prefixedValue.appendNoCompact(str, index, str.length() - index);
+			prefixedValue.appendNoCompact(str, 0, index - 2);
+			return prefixedValue;
+		}
+
+		return new CompactString(str);
 	}
 
 	/**
@@ -316,18 +375,6 @@ public class LiteralsUtils {
 
 	/**
 	 * replace the literal before the type
-	 * <p>
-	 * example: {@literal ^^<http://type>"aa"} {@literal ->}
-	 * {@literal "aa"^^<http://type>}
-	 * </p>
-	 * <p>
-	 * example: "aa" {@literal ->} "aa"
-	 * </p>
-	 * <p>
-	 * example:
-	 * {@literal ^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>"aa"@fr}
-	 * {@literal ->} "aa"@fr
-	 * </p>
 	 *
 	 * @param str the prefixed literal
 	 * @return literal char sequence
@@ -351,13 +398,62 @@ public class LiteralsUtils {
 			}
 			index++;
 		}
-		assert index < str.length() - 1 && str.charAt(index + 1) == '"' : "badly typed literal prefix";
+		assert index < str.length() - 1 && str.charAt(index + 1) == '"' : "badly typed literal prefix" + str;
 
 		ReplazableString bld = new ReplazableString(str.length() + 1);
 		bld.appendNoCompact(str, index + 1, str.length() - index - 1);
 		bld.appendNoCompact(TYPE_OPERATOR);
 		bld.appendNoCompact(str, 1, index);
 		return bld;
+	}
+
+	/**
+	 * replace the literal before the type/lang
+	 *
+	 * @param str the prefixed literal
+	 * @return literal char sequence
+	 */
+	public static ByteString prefToLitLang(CharSequence str) {
+		if (str.charAt(0) != DATATYPE_HIGH_BYTE) {
+			return ByteString.of(str);
+		}
+
+		if (str.charAt(1) == '<') {
+			// datatype
+			int index = 2;
+
+			while (index < str.length()) {
+				char c = str.charAt(index);
+				if (c == '>') {
+					break;
+				}
+				index++;
+			}
+			assert index < str.length() - 1 && str.charAt(index + 1) == '"' : "badly typed literal prefix";
+
+			ReplazableString bld = new ReplazableString(str.length() + 1);
+			bld.appendNoCompact(str, index + 1, str.length() - index - 1);
+			bld.appendNoCompact(TYPE_OPERATOR);
+			bld.appendNoCompact(str, 1, index);
+			return bld;
+		} else {
+			assert str.charAt(1) == '@' : String.valueOf(str);
+			// language
+			int index = 2;
+
+			while (index < str.length()) {
+				char c = str.charAt(index);
+				if (c == '"') {
+					break;
+				}
+				index++;
+			}
+
+			ReplazableString bld = new ReplazableString(str.length() - 1);
+			bld.appendNoCompact(str, index, str.length() - index);
+			bld.appendNoCompact(str, 1, index - 1);
+			return bld;
+		}
 	}
 
 	/**
@@ -476,6 +572,9 @@ public class LiteralsUtils {
 	 * @return true if seq == "NO_DATATYPE"
 	 */
 	public static boolean isNoDatatype(CharSequence seq) {
+		if (seq == NO_DATATYPE) {
+			return true;
+		}
 		if (seq.length() != NO_DATATYPE.length()) {
 			return false;
 		}

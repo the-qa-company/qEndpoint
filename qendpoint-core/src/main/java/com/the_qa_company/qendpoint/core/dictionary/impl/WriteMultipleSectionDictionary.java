@@ -12,7 +12,7 @@ import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PeekIteratorImpl;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
@@ -118,7 +118,7 @@ public class WriteMultipleSectionDictionary extends MultipleBaseDictionary {
 			}
 		}, "MultiSecSAsyncObjectReader").attach(new ExceptionThread(() -> {
 			// datatype writer
-			PeekIterator<TypedByteString> dataTypePeekIt = new PeekIterator<>(datatypeIterator);
+			PeekIteratorImpl<TypedByteString> dataTypePeekIt = new PeekIteratorImpl<>(datatypeIterator);
 			// section id to not having to write an URI on disk
 			Map<ByteString, Long> sectionIds = new HashMap<>();
 

@@ -4,6 +4,9 @@ import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
+import java.util.function.Supplier;
+
+import static com.the_qa_company.qendpoint.core.util.LiteralsUtils.DATATYPE_HIGH_BYTE_BS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -98,6 +101,29 @@ public class LiteralsUtilsTest {
 	}
 
 	@Test
+	public void litToPrefLangTest() {
+		assertEqualsCompact("\"aaa\"", LiteralsUtils.litToPrefLang("\"aaa\""));
+		assertEqualsCompact(DATATYPE_HIGH_BYTE_BS + "<http://p>\"aaa\"",
+				LiteralsUtils.litToPrefLang("\"aaa\"^^<http://p>"));
+		assertEqualsCompact(DATATYPE_HIGH_BYTE_BS + "@fr-fr\"aaa\"", LiteralsUtils.litToPrefLang("\"aaa\"@fr-fr"));
+
+		assertEqualsCompact("\"aaa\"", LiteralsUtils.litToPrefLang(LiteralsUtils.prefToLitLang("\"aaa\"")));
+		assertEqualsCompact("\"aaa\"^^<http://p>",
+				LiteralsUtils.prefToLitLang(DATATYPE_HIGH_BYTE_BS + "<http://p>\"aaa\""));
+		assertEqualsCompact(DATATYPE_HIGH_BYTE_BS + "<http://p>\"aaa\"",
+				LiteralsUtils.litToPrefLang(LiteralsUtils.prefToLitLang(DATATYPE_HIGH_BYTE_BS + "<http://p>\"aaa\"")));
+		assertEqualsCompact("\"aaa\"@fr-fr", LiteralsUtils.prefToLitLang(DATATYPE_HIGH_BYTE_BS + "@fr-fr\"aaa\""));
+		assertEqualsCompact(DATATYPE_HIGH_BYTE_BS + "@fr-fr\"aaa\"",
+				LiteralsUtils.litToPrefLang(LiteralsUtils.prefToLitLang(DATATYPE_HIGH_BYTE_BS + "@fr-fr\"aaa\"")));
+
+		assertEqualsCompact("<http://test@example.org>", LiteralsUtils.litToPrefLang("<http://test@example.org>"));
+		assertEqualsCompact("_:qzdzd", LiteralsUtils.litToPrefLang("_:qzdzd"));
+
+		assertEqualsCompact("<http://test@example.org>", LiteralsUtils.prefToLitLang("<http://test@example.org>"));
+		assertEqualsCompact("_:qzdzd", LiteralsUtils.prefToLitLang("_:qzdzd"));
+	}
+
+	@Test
 	public void prefToLitTest() {
 		assertEqualsCompact("\"aaa\"", LiteralsUtils.litToPref("\"aaa\""));
 		assertEqualsCompact("\"aaa\"^^<http://p>", LiteralsUtils.prefToLit(LIT_TYPE_DEL + "<http://p>\"aaa\""));
@@ -120,5 +146,13 @@ public class LiteralsUtilsTest {
 		assertEqualsCompact("\"hello\"", LiteralsUtils.removePrefType("^^<http://test@example.org>\"hello\""));
 		assertEqualsCompact("\"hello\"", LiteralsUtils.removePrefType("\"hello\""));
 		assertEqualsCompact("<http://test@example.org>", LiteralsUtils.removePrefType("<http://test@example.org>"));
+	}
+
+	@Test
+	public void getLanguageTest() {
+		Supplier<AssertionError> cantFind = () -> new AssertionError("Can't find language");
+
+		assertEqualsCompact("fr-fr", LiteralsUtils.getLanguage("\"test\"@fr-fr").orElseThrow(cantFind));
+		assertEqualsCompact("en", LiteralsUtils.getLanguage("\"test\"@en").orElseThrow(cantFind));
 	}
 }

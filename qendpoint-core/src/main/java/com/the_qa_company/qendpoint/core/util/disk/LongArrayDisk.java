@@ -249,7 +249,7 @@ public class LongArrayDisk implements Closeable, LongArray {
 		int blocks = (int) Math.ceil((double) sizeBytes / MAPPING_SIZE);
 		CloseMappedByteBuffer[] mappings = new CloseMappedByteBuffer[blocks];
 		try {
-			for (CloseMappedByteBuffer mapping : mappings) {
+			for (CloseMappedByteBuffer mapping : this.mappings) {
 				if (mapping != null) {
 					mapping.force();
 				}

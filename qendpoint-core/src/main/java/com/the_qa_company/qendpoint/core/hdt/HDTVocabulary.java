@@ -75,6 +75,7 @@ public class HDTVocabulary {
 	public static final String DICTIONARY_TYPE_PLAIN = HDT_DICTIONARY_BASE + "Plain>";
 	public static final String DICTIONARY_TYPE_FOUR_SECTION = HDT_DICTIONARY_BASE + "Four>";
 	public static final String DICTIONARY_TYPE_MULT_SECTION = HDT_DICTIONARY_BASE + "Mult>";
+	public static final String DICTIONARY_TYPE_MULT_SECTION_LANG = HDT_DICTIONARY_BASE + "MultLang>";
 
 	public static final String DICTIONARY_TYPE_FOUR_PSFC_SECTION = HDT_DICTIONARY_BASE + "FourPsfc>";
 

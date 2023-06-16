@@ -27,13 +27,10 @@ public class HDTConverter {
 	private final EndpointStore endpoint;
 	private final HDT hdt;
 	private final ValueFactory valueFactory = new MemValueFactory();
-	private final boolean optimizeDatatype;
 
 	public HDTConverter(EndpointStore endpoint) {
 		this.endpoint = endpoint;
 		this.hdt = endpoint.getHdt();
-		this.optimizeDatatype = false; // hdt.getDictionary() instanceof
-										// MultipleSectionDictionary;
 	}
 
 	// method to get the ID of a resource
@@ -229,7 +226,7 @@ public class HDTConverter {
 	public Value IdToObjectHDTResource(long objectID) {
 		if (objectID >= endpoint.getHdtProps().getStartLiteral()
 				&& objectID <= endpoint.getHdtProps().getEndLiteral()) {
-			return new SimpleLiteralHDT(endpoint.getHdt(), objectID, valueFactory, optimizeDatatype);
+			return new SimpleLiteralHDT(endpoint.getHdt(), objectID, valueFactory);
 		} else if ((objectID >= endpoint.getHdtProps().getStartBlankObjects()
 				&& objectID <= endpoint.getHdtProps().getEndBlankObjects())
 				|| (objectID >= endpoint.getHdtProps().getStartBlankShared()

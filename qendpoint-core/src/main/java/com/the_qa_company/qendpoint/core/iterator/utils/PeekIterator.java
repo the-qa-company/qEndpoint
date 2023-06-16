@@ -3,49 +3,26 @@ package com.the_qa_company.qendpoint.core.iterator.utils;
 import java.util.Iterator;
 import java.util.function.Function;
 
-/**
- * Iterator with peek-able element
- *
- * @param <T> iterator type
- */
-public class PeekIterator<T> implements Iterator<T> {
-	private final Iterator<T> it;
-	private T next;
+public interface PeekIterator<T> extends Iterator<T> {
 
-	public PeekIterator(Iterator<T> it) {
-		this.it = it;
-	}
-
-	@Override
-	public boolean hasNext() {
-		if (next != null) {
-			return true;
+	/**
+	 * create if required a peek iterator from this element
+	 *
+	 * @param it iterator
+	 * @return element
+	 * @param <T> iterator type
+	 */
+	static <T extends CharSequence> PeekIterator<T> of(Iterator<T> it) {
+		if (it instanceof PeekIterator<T> it2) {
+			return it2;
 		}
-		if (!it.hasNext()) {
-			return false;
-		}
-		next = it.next();
-		return true;
-	}
-
-	@Override
-	public T next() {
-		try {
-			return peek();
-		} finally {
-			next = null;
-		}
+		return new PeekIteratorImpl<>(it);
 	}
 
 	/**
 	 * @return peek the element without passing to the next element
 	 */
-	public T peek() {
-		if (hasNext()) {
-			return next;
-		}
-		return null;
-	}
+	T peek();
 
 	/**
 	 * map this iterator
@@ -54,11 +31,7 @@ public class PeekIterator<T> implements Iterator<T> {
 	 * @param <M>             new type
 	 * @return iterator
 	 */
-	public <M> Iterator<M> map(Function<T, M> mappingFunction) {
+	default <M> Iterator<M> map(Function<T, M> mappingFunction) {
 		return new MapIterator<>(this, mappingFunction);
-	}
-
-	public Iterator<T> getWrappedIterator() {
-		return it;
 	}
 }

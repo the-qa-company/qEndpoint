@@ -133,9 +133,13 @@ public class FourSectionDictionaryBig extends BaseDictionary {
 		}
 
 		IntermediateListener iListener = new IntermediateListener(listener);
+		in.printIndex("shared");
 		shared = DictionarySectionFactory.loadFrom(in, f, iListener);
+		in.printIndex("subjects");
 		subjects = DictionarySectionFactory.loadFrom(in, f, iListener);
+		in.printIndex("predicates");
 		predicates = DictionarySectionFactory.loadFrom(in, f, iListener);
+		in.printIndex("objects");
 		objects = DictionarySectionFactory.loadFrom(in, f, iListener);
 
 		// Use cache only for predicates. Preload only up to 100K predicates.

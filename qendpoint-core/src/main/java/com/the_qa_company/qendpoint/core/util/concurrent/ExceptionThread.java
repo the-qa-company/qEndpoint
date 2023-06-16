@@ -127,7 +127,7 @@ public class ExceptionThread extends Thread {
 			if (exception != null) {
 				exception.addSuppressed(t);
 				return; // another attached thread crashed, probably
-						// interruption exception
+				// interruption exception
 			}
 			exception = t;
 			if (this.next != null) {
@@ -176,31 +176,74 @@ public class ExceptionThread extends Thread {
 	public void joinAndCrashIfRequired() throws InterruptedException {
 		try {
 			join();
-			ExceptionThread next = this.next;
-			while (next != null) {
-				next.join();
-				next = next.next;
-			}
-			ExceptionThread prev = this.prev;
-			while (prev != null) {
-				prev.join();
-				prev = prev.prev;
-			}
 		} catch (InterruptedException ie) {
 			// we got an exception in the thread while this thread was
 			// interrupted
 			if (exception != null) {
-				ie.addSuppressed(exception);
+				exception.addSuppressed(ie);
+			} else {
+				exception = ie;
 			}
+		}
+		ExceptionThread next = this.next;
+		while (next != null) {
+			try {
+				next.join();
+			} catch (InterruptedException ie) {
+				if (next.exception != null) {
+					next.exception.addSuppressed(ie);
+				} else {
+					next.exception = ie;
+				}
+			}
+			next = next.next;
+		}
+		ExceptionThread prev = this.prev;
+		while (prev != null) {
+			try {
+				prev.join();
+			} catch (InterruptedException ie) {
+				if (prev.exception != null) {
+					prev.exception.addSuppressed(ie);
+				} else {
+					prev.exception = ie;
+				}
+			}
+			prev = prev.prev;
+		}
+		syncAllExceptions();
+	}
+
+	private void syncAllExceptions() throws InterruptedException {
+		ExceptionThread thread = this;
+		while (thread.prev != null) {
+			thread = thread.prev;
+		}
+
+		Throwable t = null;
+		while (thread != null) {
+			if (thread.exception != null) {
+				if (t == null) {
+					t = thread.exception;
+				} else if (t != thread.exception) {
+					t.addSuppressed(thread.exception);
+				}
+			}
+
+			thread = thread.next;
+		}
+
+		if (t == null) {
+			return; // no exception
+		}
+
+		if (t instanceof ExceptionThreadException ete) {
+			throw ete;
+		}
+		if (t instanceof InterruptedException ie) {
 			throw ie;
 		}
-		if (exception == null) {
-			return;
-		}
-		if (exception instanceof ExceptionThreadException) {
-			throw (ExceptionThreadException) exception;
-		}
-		throw new ExceptionThreadException(exception);
+		throw new ExceptionThreadException(t);
 	}
 
 	/**

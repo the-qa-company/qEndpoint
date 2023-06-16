@@ -242,11 +242,6 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	}
 
 	@Override
-	public CharSequence dataTypeOfId(long id) {
-		throw new IllegalArgumentException("Method is not applicable on this dictionary");
-	}
-
-	@Override
 	public TreeMap<? extends CharSequence, DictionarySection> getAllObjects() {
 		return new TreeMap<>(Map.of(LiteralsUtils.NO_DATATYPE, objects));
 	}

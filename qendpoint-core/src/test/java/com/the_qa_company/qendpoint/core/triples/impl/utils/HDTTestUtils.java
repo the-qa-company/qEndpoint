@@ -16,9 +16,14 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +43,14 @@ public class HDTTestUtils implements Closeable {
 	 * base URI
 	 */
 	public static final String BASE_URI = "http://ex.org/";
+
+	public static void dumpHDT(Path ntFile, HDT hdt) throws IOException {
+		try (BufferedWriter w = Files.newBufferedWriter(ntFile)) {
+			for (TripleString triple : hdt) {
+				triple.dumpNtriple(w);
+			}
+		}
+	}
 
 	public static class Tuple<T1, T2> {
 		public final T1 t1;
