@@ -74,6 +74,7 @@ The QA Company over the social networks
 - [Contributing](#contributing)
 - [Authors \& contributors](#authors--contributors)
 - [Security](#security)
+- [Publications](#publications)
 - [License](#license)
 
 </details>
@@ -99,7 +100,7 @@ The qEndpoint is for example used in [Kohesio](https://kohesio.ec.europa.eu/) wh
 
 For the backend/benchmark
 
-- Java 11 or 17
+- Java 17
 - Maven
 
 For the frontend (not mandatory to run the backend)
@@ -400,6 +401,13 @@ qEndpoint follows good practices of security, but 100% security cannot be assure
 qEndpoint is provided **"as is"** without any **warranty**. Use at your own risk.
 
 _For more information and to report security issues, please refer to our [security documentation](docs/SECURITY.md)._
+
+---
+
+## Publications
+
+- Willerval Antoine, Dennis Diefenbach, and Pierre Maret. "Easily setting up a local Wikidata SPARQL endpoint using the qEndpoint." Workshop ISWC (2022). [PDF](https://www.researchgate.net/publication/364321138_Easily_setting_up_a_local_Wikidata_SPARQL_endpoint_using_the_qEndpoint)
+- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Wikidata SPARQL endpoint on commodity hardware" Demo at The Web Conference (2023)  [PDF](https://www.researchgate.net/publication/369693531_qEndpoint_A_Wikidata_SPARQL_endpoint_on_commodity_hardware)
 
 ---
 
