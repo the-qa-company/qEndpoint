@@ -1,3 +1,7 @@
+## Version 1.12.0 
+    
+- split hdt-qs-backend into qendpoint-store and qendpoint-backend, introducing the new artifact id qendpoint-backend to use the Spring endpoint
+
 ## Version 1.11.3 
     
 - fix unix start endpoint and qepSearch scripts
