@@ -23,6 +23,7 @@ import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceRes
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
@@ -88,6 +89,7 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	// stores to store the delta
 	public AbstractNotifyingSail nativeStoreA;
 	public AbstractNotifyingSail nativeStoreB;
+	private FederatedServiceResolver serviceResolver = new SPARQLServiceResolver();
 
 	// location of the native store
 
@@ -532,8 +534,14 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 
 	@Override
 	public void setFederatedServiceResolver(FederatedServiceResolver federatedServiceResolver) {
+		this.serviceResolver = federatedServiceResolver;
 		// nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
 		// nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
+	}
+
+	@Override
+	public FederatedServiceResolver getFederatedServiceResolver() {
+		return serviceResolver;
 	}
 
 	public RepositoryConnection getConnectionToChangingStore() {
