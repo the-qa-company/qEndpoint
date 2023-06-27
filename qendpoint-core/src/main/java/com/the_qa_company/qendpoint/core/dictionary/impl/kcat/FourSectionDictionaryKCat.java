@@ -60,7 +60,12 @@ public class FourSectionDictionaryKCat implements DictionaryKCat {
 	}
 
 	@Override
-	public long objectShift() {
+	public long nonTypedShift() {
 		return countShared();
+	}
+
+	@Override
+	public long typedShift() {
+		return 0;
 	}
 }

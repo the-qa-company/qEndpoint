@@ -26,39 +26,34 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
-import com.the_qa_company.qendpoint.core.util.string.CharSequenceCustomComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
 /**
  * @author mario.arias
  */
 public class HashDictionarySection implements TempDictionarySection {
-	public static final int TYPE_INDEX = 1;
-
-	private Map<ByteString, Long> map;
-	private List<ByteString> list;
+	private Map<ByteString, Long> map = new HashMap<>();
+	private List<ByteString> list = new ArrayList<>();
 	private int size;
 	public boolean sorted;
-	final boolean isCustom;
+	final DictionaryType genType;
 	private final Map<ByteString, Long> literalsCounts = new HashMap<>();
 
 	/**
 	 *
 	 */
-	public HashDictionarySection(boolean isCustom) {
-		this.isCustom = isCustom;
-		map = new HashMap<>();
-		list = new ArrayList<>();
-		size = 0;
+	public HashDictionarySection(DictionaryType genType) {
+		this.genType = genType;
 	}
 
 	public HashDictionarySection() {
-		this(false);
+		this(DictionaryType.FSD);
 	}
 
 	/*
@@ -124,18 +119,25 @@ public class HashDictionarySection implements TempDictionarySection {
 	@Override
 	public long add(CharSequence entry) {
 		ByteString compact = new CompactString(entry);
+		// custom for subsection literals ..
 		return map.computeIfAbsent(compact, key -> {
 			// Not found, insert new
 			list.add(compact);
 			size += compact.length();
-			sorted = false;
 
-			// custom for subsection literals ..
-			if (isCustom) {
-				ByteString type = ByteString.of(LiteralsUtils.getType(compact));
+			if (genType.countTypes()) {
+				ByteString type = (ByteString) LiteralsUtils.getType(compact);
+
+				if (genType.countLangs() && type == LiteralsUtils.LITERAL_LANG_TYPE) {
+					type = LiteralsUtils.LANG_OPERATOR
+							.copyAppend((ByteString) LiteralsUtils.getLanguage(compact).orElseThrow());
+				}
+
 				// check if the entry doesn't already exist
 				literalsCounts.compute(type, (key2, count) -> count == null ? 1L : count + 1L);
 			}
+
+			sorted = false;
 			return (long) list.size();
 		});
 	}
@@ -153,11 +155,7 @@ public class HashDictionarySection implements TempDictionarySection {
 		list.addAll(map.keySet());
 
 		// Sort list
-		if (isCustom) {
-			list.sort(new CharSequenceCustomComparator());
-		} else {
-			list.sort(new CharSequenceComparator());
-		}
+		list.sort(genType.comparator());
 
 		// Update map indexes
 		for (long i = 1; i <= getNumberOfElements(); i++) {
@@ -188,6 +186,9 @@ public class HashDictionarySection implements TempDictionarySection {
 
 	@Override
 	public Map<ByteString, Long> getLiteralsCounts() {
+		if (!genType.countTypes()) {
+			throw new NotImplementedException("Literals count isn't implemented for non MSD generation!");
+		}
 		return literalsCounts;
 	}
 }

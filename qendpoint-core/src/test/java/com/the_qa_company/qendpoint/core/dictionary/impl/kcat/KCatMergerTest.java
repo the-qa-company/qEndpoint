@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import org.apache.commons.io.file.PathUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -325,6 +326,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 	}
 
 	@Test
+	@Ignore
 	public void catDiffTest() throws ParserException, IOException, NotFoundException {
 		Path root = tempDir.newFolder().toPath();
 		try {

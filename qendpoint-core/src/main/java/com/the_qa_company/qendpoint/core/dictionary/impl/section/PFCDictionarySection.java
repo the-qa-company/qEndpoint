@@ -90,6 +90,7 @@ public class PFCDictionarySection implements DictionarySectionPrivate {
 		this.blocksize = builder.getBlocksize();
 	}
 
+	@Override
 	public void load(Iterator<? extends CharSequence> it, long numentries, ProgressListener listener) {
 		this.blocks = new SequenceLog64(32, numentries / blocksize);
 		this.numstrings = 0;

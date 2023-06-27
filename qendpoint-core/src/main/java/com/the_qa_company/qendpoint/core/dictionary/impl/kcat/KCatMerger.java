@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionaryKCat;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryType;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.OneReadDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
@@ -57,6 +58,7 @@ public class KCatMerger implements AutoCloseable {
 	final SyncSeq[] objectsMaps;
 	private final ExceptionThread catMergerThread;
 	final boolean typedHDT;
+	final boolean langHDT;
 	private final int shift;
 	private final String dictionaryType;
 
@@ -71,6 +73,7 @@ public class KCatMerger implements AutoCloseable {
 	private final long estimatedSizeP;
 	private final AtomicLong countTyped = new AtomicLong();
 	private final AtomicLong countShared = new AtomicLong();
+	private final AtomicLong countNonTyped = new AtomicLong();
 	final AtomicLong[] countSubject;
 	final AtomicLong[] countObject;
 
@@ -114,6 +117,18 @@ public class KCatMerger implements AutoCloseable {
 		long sizeONoTyped = 0;
 		long sizeShared = 0;
 
+		// if this HDT is typed, we don't have to allocate 1 bit / node to note
+		// a typed node
+		DictionaryType dictTypeE = DictionaryType.fromDictionaryType(dictionaryType);
+		this.langHDT = dictTypeE.countLangs();
+		this.typedHDT = dictTypeE.countTypes();
+
+		if (typedHDT) {
+			shift = 2;
+		} else {
+			shift = 1;
+		}
+
 		Map<ByteString, PreIndexSection[]> subSections = new TreeMap<>();
 
 		for (int i = 0; i < cats.length; i++) {
@@ -127,7 +142,8 @@ public class KCatMerger implements AutoCloseable {
 			sizeONoTyped += objectSection == null ? 0 : objectSection.getNumberOfElements();
 			sizeShared += cat.countShared();
 
-			long start = 1L + cat.countShared();
+			long start = 1L + cat.typedShift();
+
 			// compute allocated sizes for HDT with sub sections
 			for (Map.Entry<CharSequence, DictionarySection> e : cat.getSubSections().entrySet()) {
 				CharSequence key = e.getKey();
@@ -139,14 +155,6 @@ public class KCatMerger implements AutoCloseable {
 				start += section.getNumberOfElements();
 			}
 			cats[i] = cat;
-		}
-		// if this HDT is typed, we don't have to allocate 1 bit / node to note
-		// a typed node
-		this.typedHDT = !subSections.isEmpty();
-		if (typedHDT) {
-			shift = 2;
-		} else {
-			shift = 1;
 		}
 
 		this.estimatedSizeP = sizeP;
@@ -188,7 +196,7 @@ public class KCatMerger implements AutoCloseable {
 						return null;
 					}
 				} : section.getSortedEntries(), c.getSharedSection().getSortedEntries(),
-						deletedTriple == null ? null : deletedTriple[hdtIndex].getObjects(), c.objectShift());
+						deletedTriple == null ? null : deletedTriple[hdtIndex].getObjects(), c.nonTypedShift());
 			}).notif(sizeONoTyped, 20, "Merge objects", listener);
 
 			// merge the other sections
@@ -247,6 +255,7 @@ public class KCatMerger implements AutoCloseable {
 
 			Iterator<ByteString> object = objectPipe.mapWithId((db, id) -> {
 				long header = withEmptyHeader(id + 1);
+				countNonTyped.incrementAndGet();
 				db.stream().forEach(node -> {
 					SyncSeq map = objectsMaps[node.getHdt()];
 					assert map.get(node.getIndex()) == 0 : "overwriting previous object value";
@@ -606,6 +615,13 @@ public class KCatMerger implements AutoCloseable {
 			return headerID >>> shift;
 		}
 		if (isTyped(headerID)) {
+			if (langHDT) {
+				// in a MSDL the NDT section is before the DT/LG sections
+				return (headerID >>> shift) + countShared.get() + countNonTyped.get();
+			}
+			return (headerID >>> shift) + countShared.get();
+		}
+		if (langHDT) {
 			return (headerID >>> shift) + countShared.get();
 		}
 		return (headerID >>> shift) + countShared.get() + countTyped.get();

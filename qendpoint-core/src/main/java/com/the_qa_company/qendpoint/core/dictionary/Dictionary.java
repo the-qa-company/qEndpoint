@@ -18,6 +18,7 @@ package com.the_qa_company.qendpoint.core.dictionary;
  * Martinez-Prieto: migumar2@infor.uva.es Alejandro Andres: fuzzy.alej@gmail.com
  */
 
+import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.header.Header;
 
@@ -71,12 +72,65 @@ public interface Dictionary extends Closeable {
 	Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared);
 
 	/**
-	 * Returns the data type of a given literal string
+	 * Returns the datatype of a given literal string, returns
+	 * {@link com.the_qa_company.qendpoint.core.util.LiteralsUtils#NO_DATATYPE}
+	 * or
+	 * {@link com.the_qa_company.qendpoint.core.util.LiteralsUtils#LITERAL_LANG_TYPE}
+	 * constants for standard types, otherwise the {@link CharSequence} should
+	 * be checked with {@link Object#equals(Object)}
 	 *
 	 * @param id The id to get the data type for
 	 * @return String
 	 */
-	CharSequence dataTypeOfId(long id);
+	default CharSequence dataTypeOfId(long id) {
+		throw new IllegalArgumentException("Method is not applicable on this dictionary");
+	}
+
+	/**
+	 * Returns the lang of a given literal string, returns null if no language
+	 * is associated with the component
+	 *
+	 * @param id The id to get the data type for
+	 * @return String
+	 */
+	default CharSequence languageOfId(long id) {
+		throw new IllegalArgumentException("Method is not applicable on this dictionary");
+	}
+
+	/**
+	 * Returns the lang of a given literal string, returns null if no language
+	 * is associated with the component
+	 *
+	 * @param id The id to get the data type for
+	 * @return String
+	 */
+	default RDFNodeType nodeTypeOfId(TripleComponentRole role, long id) {
+		throw new IllegalArgumentException("Method is not applicable on this dictionary");
+	}
+
+	/**
+	 * @return if this dictionary supports the
+	 *         {@link #nodeTypeOfId(TripleComponentRole, long)} function
+	 */
+	default boolean supportsNodeTypeOfId() {
+		return false;
+	}
+
+	/**
+	 * @return if this dictionary supports the {@link #dataTypeOfId(long)}
+	 *         function
+	 */
+	default boolean supportsDataTypeOfId() {
+		return false;
+	}
+
+	/**
+	 * @return if this dictionary supports the {@link #languageOfId(long)}
+	 *         function
+	 */
+	default boolean supportsLanguageOfId() {
+		return false;
+	}
 
 	/**
 	 * Returns the number of elements in the dictionary

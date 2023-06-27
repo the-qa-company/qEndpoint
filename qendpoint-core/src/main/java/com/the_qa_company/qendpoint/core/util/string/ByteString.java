@@ -51,6 +51,10 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	@Override
 	ByteString subSequence(int start, int end);
 
+	default ByteString subSequence(int start) {
+		return subSequence(start, length());
+	}
+
 	/**
 	 * copy this string and append another string
 	 *
@@ -68,6 +72,12 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 * @return new byte string
 	 */
 	default ByteString copyAppend(ByteString other) {
+		if (other.isEmpty()) {
+			return this;
+		}
+		if (isEmpty()) {
+			return other;
+		}
 		byte[] buffer = new byte[length() + other.length()];
 		// prefix
 		System.arraycopy(getBuffer(), 0, buffer, 0, length());
@@ -101,5 +111,38 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 */
 	default ByteString copy() {
 		return new CompactString(this);
+	}
+
+	@Override
+	boolean equals(Object other);
+
+	/**
+	 * test if this ByteString starts with another one
+	 *
+	 * @param prefix prefix
+	 * @return true if this string starts with prefix
+	 */
+	default boolean startsWith(ByteString prefix) {
+		return startsWith(prefix, 0);
+	}
+
+	/**
+	 * test if this ByteString starts with another one
+	 *
+	 * @param prefix prefix
+	 * @param start  start location in this string
+	 * @return true if this string starts with prefix
+	 */
+	default boolean startsWith(ByteString prefix, int start) {
+		if (start + length() < prefix.length()) {
+			return false; // too long
+		}
+
+		for (int i = 0; i < prefix.length(); i++) {
+			if (charAt(i + start) != prefix.charAt(i)) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

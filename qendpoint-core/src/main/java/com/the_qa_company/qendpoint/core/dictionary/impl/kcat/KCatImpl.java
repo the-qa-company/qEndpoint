@@ -49,11 +49,9 @@ import java.util.ListIterator;
 public class KCatImpl implements Closeable {
 	private static TripleComponentOrder getOrder(HDT hdt) {
 		Triples triples = hdt.getTriples();
-		if (!(triples instanceof BitmapTriples)) {
+		if (!(triples instanceof BitmapTriples bt)) {
 			throw new IllegalArgumentException("HDT Triples can't be BitmapTriples");
 		}
-
-		BitmapTriples bt = (BitmapTriples) triples;
 
 		return bt.getOrder();
 	}

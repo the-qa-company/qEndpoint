@@ -9,18 +9,19 @@
  */
 package com.the_qa_company.qendpoint.model;
 
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
-import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 import javax.xml.datatype.XMLGregorianCalendar;
+import java.io.Serial;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
@@ -39,6 +40,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	 * Constants *
 	 *-----------*/
 
+	@Serial
 	private static final long serialVersionUID = -1649571784782592271L;
 
 	/*-----------*
@@ -74,8 +76,6 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 
 	private CoreDatatype coreDatatype;
 
-	private final boolean optimizeDatatype;
-
 	/*--------------*
 	 * Constructors *
 	 *--------------*/
@@ -86,11 +86,10 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	 * @param hdt The hdt file in which the literal is contained, must not be
 	 *            <tt>null</tt>.
 	 */
-	public SimpleLiteralHDT(HDT hdt, long id, ValueFactory factory, boolean optimizeDatatype) {
+	public SimpleLiteralHDT(HDT hdt, long id, ValueFactory factory) {
 		setHdt(hdt);
 		setHdtID(id);
 		valueFactory = factory;
-		this.optimizeDatatype = optimizeDatatype;
 	}
 
 	/*---------*
@@ -107,17 +106,29 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	}
 
 	protected void parseDatatype() {
-		if (!optimizeDatatype) {
+		if (!hdt.getDictionary().supportsDataTypeOfId()) {
 			parseLiteral();
 			return;
 		}
 		if (datatype == null) {
-			String datatype = hdt.getDictionary().dataTypeOfId(hdtID).toString();
-			if (datatype.isEmpty()) {
-				parseLiteral(); // we need to check if it is a LANGSTRING or not
+			CharSequence datatype = hdt.getDictionary().dataTypeOfId(hdtID);
+			if (datatype.isEmpty() || datatype.equals(LiteralsUtils.NO_DATATYPE)) {
+				this.datatype = (coreDatatype = CoreDatatype.XSD.STRING).getIri();
+			} else if (datatype == LiteralsUtils.LITERAL_LANG_TYPE) {
+				this.datatype = (coreDatatype = CoreDatatype.XSD.LANGUAGE).getIri();
 			} else {
-				this.datatype = NTriplesUtil.parseURI(datatype, valueFactory);
+				this.datatype = NTriplesUtil.parseURI(datatype.toString(), valueFactory);
 			}
+		}
+	}
+
+	protected void parseLanguage() {
+		if (!hdt.getDictionary().supportsLanguageOfId()) {
+			parseLiteral();
+			return;
+		}
+		if (language == null) {
+			language = Optional.ofNullable(hdt.getDictionary().languageOfId(hdtID)).map(CharSequence::toString);
 		}
 	}
 
@@ -203,7 +214,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 
 	@Override
 	public Optional<String> getLanguage() {
-		parseLiteral();
+		parseLanguage();
 		return language;
 	}
 
@@ -223,9 +234,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 
 		if (o instanceof SimpleLiteralHDT) {
 			return ((SimpleLiteralHDT) o).getHdtID() == getHdtID();
-		} else if (o instanceof Literal) {
-			Literal other = (Literal) o;
-
+		} else if (o instanceof Literal other) {
 			// Compare datatypes
 			if (!getDatatype().equals(other.getDatatype())) {
 				return false;

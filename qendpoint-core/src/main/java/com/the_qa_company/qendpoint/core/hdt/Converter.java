@@ -1,7 +1,11 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.FSDToMSDConverter;
+import com.the_qa_company.qendpoint.core.hdt.impl.converter.FSDToMSDLConverter;
+import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToFSDConverter;
+import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToMSDConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDToFSDConverter;
+import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDToMSDLConverter;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -30,14 +34,35 @@ public interface Converter {
 
 		switch (oldType) {
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> {
-			if (newType.equals(HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION)) {
+			switch (newType) {
+			case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> {
 				return new MSDToFSDConverter();
+			}
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> {
+				return new MSDToMSDLConverter();
+			}
 			}
 		}
 		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> {
 			switch (newType) {
 			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> {
 				return new FSDToMSDConverter();
+			}
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> {
+				return new FSDToMSDLConverter();
+			}
+			}
+		}
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> {
+			switch (newType) {
+			case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> {
+				return new MSDLToFSDConverter();
+			}
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> {
+				return new MSDLToMSDConverter();
 			}
 			}
 		}

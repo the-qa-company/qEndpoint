@@ -16,6 +16,9 @@ param(
     $rdftype,
     [Parameter()]
     [Switch]
+    $binindex,
+    [Parameter()]
+    [Switch]
     $memory,
     [Parameter(ValueFromRemainingArguments, Position = 0)]
     [string[]]

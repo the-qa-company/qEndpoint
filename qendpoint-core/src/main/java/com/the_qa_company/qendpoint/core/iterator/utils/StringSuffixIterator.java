@@ -10,10 +10,17 @@ import java.util.Iterator;
  * @author Antoine Willerval
  */
 public class StringSuffixIterator extends FetcherIterator<ByteString> {
+	public static Iterator<? extends CharSequence> of(Iterator<? extends CharSequence> it, ByteString suffix) {
+		if (suffix.isEmpty()) {
+			return it;
+		}
+		return new StringSuffixIterator(suffix, it);
+	}
+
 	private final ByteString suffix;
 	private final Iterator<? extends CharSequence> it;
 
-	public StringSuffixIterator(ByteString suffix, Iterator<? extends CharSequence> it) {
+	private StringSuffixIterator(ByteString suffix, Iterator<? extends CharSequence> it) {
 		this.suffix = suffix;
 		this.it = it;
 	}

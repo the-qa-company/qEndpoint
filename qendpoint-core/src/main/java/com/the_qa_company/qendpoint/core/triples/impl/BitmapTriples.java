@@ -440,13 +440,17 @@ public class BitmapTriples implements TriplesPrivate {
 
 		IntermediateListener iListener = new IntermediateListener(listener);
 
+		input.printIndex("bitmapY");
 		bitmapY = BitmapFactory.createBitmap(input);
 		bitmapY.load(input, iListener);
 
+		input.printIndex("bitmapZ");
 		bitmapZ = BitmapFactory.createBitmap(input);
 		bitmapZ.load(input, iListener);
 
+		input.printIndex("seqY");
 		seqY = SequenceFactory.createStream(input, f);
+		input.printIndex("seqZ");
 		seqZ = SequenceFactory.createStream(input, f);
 
 		adjY = new AdjacencyList(seqY, bitmapY);

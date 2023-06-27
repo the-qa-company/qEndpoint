@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
 
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 
@@ -14,6 +15,15 @@ public interface DictionarySectionPrivate extends DictionarySection {
 	 * @param listener
 	 */
 	void load(TempDictionarySection other, ProgressListener listener);
+
+	/**
+	 * Load entries from another dictionary section.
+	 *
+	 * @param it       iterator
+	 * @param count    count
+	 * @param listener listener
+	 */
+	void load(Iterator<? extends CharSequence> it, long count, ProgressListener listener);
 
 	/**
 	 * Serialize dictionary section to a stream.

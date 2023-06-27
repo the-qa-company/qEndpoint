@@ -75,11 +75,16 @@ public class MultipleSectionDictionaryKCat implements DictionaryKCat {
 	}
 
 	@Override
-	public long objectShift() {
+	public long nonTypedShift() {
 		DictionarySection section = getObjectSection();
 		if (section == null) {
 			return countObjects();
 		}
 		return countObjects() - section.getNumberOfElements();
+	}
+
+	@Override
+	public long typedShift() {
+		return countShared();
 	}
 }

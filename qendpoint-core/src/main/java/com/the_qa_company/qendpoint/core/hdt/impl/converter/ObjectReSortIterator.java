@@ -3,7 +3,7 @@ package com.the_qa_company.qendpoint.core.hdt.impl.converter;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.iterator.utils.EmptyIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PeekIteratorImpl;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 import java.util.ArrayList;
@@ -18,11 +18,11 @@ import java.util.List;
  */
 public class ObjectReSortIterator extends FetcherIterator<TripleID> {
 	private final Comparator<TripleID> tripleIDComparator;
-	private final PeekIterator<TripleID> ids;
+	private final PeekIteratorImpl<TripleID> ids;
 	private Iterator<TripleID> next = EmptyIterator.of();
 
 	public ObjectReSortIterator(Iterator<TripleID> ids, TripleComponentOrder order) {
-		this.ids = new PeekIterator<>(ids);
+		this.ids = new PeekIteratorImpl<>(ids);
 		switch (order) {
 		case SPO, PSO -> tripleIDComparator = Comparator.comparingLong(TripleID::getObject);
 		case SOP, POS -> tripleIDComparator = Comparator.comparingLong(TripleID::getPredicate)

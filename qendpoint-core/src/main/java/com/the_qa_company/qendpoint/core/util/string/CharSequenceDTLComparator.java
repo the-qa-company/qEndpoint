@@ -26,9 +26,22 @@ import java.util.Comparator;
 /**
  * @author mario.arias
  */
-public final class CharSequenceCustomComparator implements Comparator<CharSequence> {
+public final class CharSequenceDTLComparator implements Comparator<CharSequence> {
 
-	private static final Comparator<CharSequence> instance = new CharSequenceCustomComparator();
+	private static final Comparator<CharSequence> instance = new CharSequenceDTLComparator();
+
+	private static final ByteString DTL_DTN = ByteString.of("!NDT");
+
+	public static CharSequence getDTLType(CharSequence s) {
+		CharSequence type = LiteralsUtils.getType(s);
+		if (LiteralsUtils.LITERAL_LANG_TYPE == type) {
+			return LiteralsUtils.LANG_OPERATOR.copyAppend(LiteralsUtils.getLanguage(s).orElseThrow());
+		}
+		if (LiteralsUtils.NO_DATATYPE == type) {
+			return DTL_DTN;
+		}
+		return type;
+	}
 
 	public static Comparator<CharSequence> getInstance() {
 		return instance;
@@ -45,16 +58,16 @@ public final class CharSequenceCustomComparator implements Comparator<CharSequen
 		if (s1 == s2) {
 			return 0;
 		}
-		CharSequence type1 = LiteralsUtils.getType(s1);
-		CharSequence type2 = LiteralsUtils.getType(s2);
+		CharSequence type1 = getDTLType(s1);
+		CharSequence type2 = getDTLType(s2);
 
 		int x = base.compare(type1, type2);
 
 		if (x != 0) {
 			return x;
-		} else { // data types are equal
-			return base.compare(s1, s2);
 		}
+
+		return base.compare(s1, s2);
 	}
 
 }

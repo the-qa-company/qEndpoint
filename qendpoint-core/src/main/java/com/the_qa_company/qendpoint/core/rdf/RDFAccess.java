@@ -20,12 +20,16 @@
 package com.the_qa_company.qendpoint.core.rdf;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.iterator.utils.EmptyIterator;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+
+import java.util.Iterator;
 
 /**
  * @author mario.arias
  */
-public interface RDFAccess {
+public interface RDFAccess extends Iterable<TripleString> {
 
 	/**
 	 * Iterate over the triples of an RDF Set that match the specified pattern.
@@ -40,4 +44,20 @@ public interface RDFAccess {
 	 */
 	IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws NotFoundException;
+
+	default IteratorTripleString search(TripleString triple) throws NotFoundException {
+		return search(triple.getSubject(), triple.getPredicate(), triple.getObject());
+	}
+
+	default IteratorTripleString searchAll() throws NotFoundException {
+		return search("", "", "");
+	}
+
+	default Iterator<TripleString> iterator() {
+		try {
+			return search("", "", "");
+		} catch (NotFoundException e) {
+			return EmptyIterator.of();
+		}
+	}
 }
