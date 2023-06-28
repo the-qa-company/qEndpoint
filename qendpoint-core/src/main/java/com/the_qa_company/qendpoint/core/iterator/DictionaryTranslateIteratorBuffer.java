@@ -26,12 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryPFCOptimizedExtractor;
-import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultDictionaryPFCOptimizedExtractor;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.OptimizedExtractor;
-import com.the_qa_company.qendpoint.core.dictionary.impl.*;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
@@ -68,32 +64,16 @@ public class DictionaryTranslateIteratorBuffer implements IteratorTripleString {
 	long lastSid, lastPid, lastOid;
 	CharSequence lastSstr, lastPstr, lastOstr;
 
-	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID,
-			FourSectionDictionary dictionary, CharSequence s, CharSequence p, CharSequence o) {
+	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID, DictionaryPrivate dictionary,
+			CharSequence s, CharSequence p, CharSequence o) {
 		this(iteratorTripleID, dictionary, s, p, o, DEFAULT_BLOCK_SIZE);
 	}
 
-	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID,
-			MultipleSectionDictionary dictionary, CharSequence s, CharSequence p, CharSequence o) {
-		this(iteratorTripleID, dictionary, s, p, o, DEFAULT_BLOCK_SIZE);
-	}
-
-	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID,
-			FourSectionDictionary dictionary, CharSequence s, CharSequence p, CharSequence o, int blockSize) {
+	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID, DictionaryPrivate dictionary,
+			CharSequence s, CharSequence p, CharSequence o, int blockSize) {
 		this.blockSize = blockSize;
 		this.iterator = iteratorTripleID;
-		this.dictionary = new DictionaryPFCOptimizedExtractor(dictionary);
-
-		this.s = s == null ? "" : s;
-		this.p = p == null ? "" : p;
-		this.o = o == null ? "" : o;
-	}
-
-	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID,
-			MultipleSectionDictionary dictionary, CharSequence s, CharSequence p, CharSequence o, int blockSize) {
-		this.blockSize = blockSize;
-		this.iterator = iteratorTripleID;
-		this.dictionary = new MultDictionaryPFCOptimizedExtractor(dictionary);
+		this.dictionary = dictionary.createOptimizedMapExtractor();
 
 		this.s = s == null ? "" : s;
 		this.p = p == null ? "" : p;

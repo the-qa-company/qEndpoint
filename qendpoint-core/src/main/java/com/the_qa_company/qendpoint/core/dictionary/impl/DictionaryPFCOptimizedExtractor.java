@@ -8,8 +8,8 @@ public class DictionaryPFCOptimizedExtractor implements OptimizedExtractor {
 	private final PFCOptimizedExtractor shared, subjects, predicates, objects;
 	private final long numshared;
 
-	public DictionaryPFCOptimizedExtractor(FourSectionDictionary origDict) {
-		numshared = (int) origDict.getNshared();
+	public DictionaryPFCOptimizedExtractor(BaseDictionary origDict) {
+		numshared = origDict.getNshared();
 		shared = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.shared);
 		subjects = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.subjects);
 		predicates = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.predicates);

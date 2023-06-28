@@ -32,7 +32,7 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		SHARED, NON_TYPED, TYPE, LANGUAGE
 	}
 
-	protected record ObjectIdLocationData(ByteString name, ByteString suffix, DictionarySectionPrivate section,
+	public record ObjectIdLocationData(int uid, ByteString name, ByteString suffix, DictionarySectionPrivate section,
 			ObjectIdLocationType type, long location) {}
 
 	/**
@@ -171,12 +171,12 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 
 		long count = 0;
 		int id = 0;
-		objectIdLocationsSec[id] = new ObjectIdLocationData(ByteString.empty(), ByteString.empty(), shared,
+		objectIdLocationsSec[id] = new ObjectIdLocationData(id, ByteString.empty(), ByteString.empty(), shared,
 				ObjectIdLocationType.SHARED, count);
 		count += shared.getNumberOfElements();
 		objectIdLocations.set(id++, count);
 
-		ObjectIdLocationData iodlocdObj = new ObjectIdLocationData(LiteralsUtils.NO_DATATYPE, ByteString.empty(),
+		ObjectIdLocationData iodlocdObj = new ObjectIdLocationData(id, LiteralsUtils.NO_DATATYPE, ByteString.empty(),
 				nonTyped, ObjectIdLocationType.NON_TYPED, count);
 		objectsLocations.put(LiteralsUtils.NO_DATATYPE, iodlocdObj);
 		objectIdLocationsSec[id] = iodlocdObj;
@@ -189,8 +189,8 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			ByteString dt = e.getKey();
 			DictionarySectionPrivate sec = e.getValue();
 
-			ObjectIdLocationData oidlocd = new ObjectIdLocationData(dt, LiteralsUtils.TYPE_OPERATOR.copyAppend(dt), sec,
-					ObjectIdLocationType.TYPE, count);
+			ObjectIdLocationData oidlocd = new ObjectIdLocationData(id, dt, LiteralsUtils.TYPE_OPERATOR.copyAppend(dt),
+					sec, ObjectIdLocationType.TYPE, count);
 
 			count += sec.getNumberOfElements();
 			objectsLocations.put(dt, oidlocd);
@@ -202,8 +202,8 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			ByteString dt = e.getKey();
 			DictionarySectionPrivate sec = e.getValue();
 
-			ObjectIdLocationData iodlocd = new ObjectIdLocationData(dt, LiteralsUtils.LANG_OPERATOR.copyAppend(dt), sec,
-					ObjectIdLocationType.LANGUAGE, count);
+			ObjectIdLocationData iodlocd = new ObjectIdLocationData(id, dt, LiteralsUtils.LANG_OPERATOR.copyAppend(dt),
+					sec, ObjectIdLocationType.LANGUAGE, count);
 
 			count += sec.getNumberOfElements();
 			objectIdLocationsSec[id] = iodlocd;
@@ -220,6 +220,16 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		}
 	}
 
+	public ObjectIdLocationData idToObjectSection(long id) {
+		int location = (int) objectIdLocations.binarySearchLocation(id);
+
+		if (location < 0 || location >= objectIdLocationsSec.length) {
+			return null;
+		}
+
+		return objectIdLocationsSec[location];
+	}
+
 	@Override
 	public CharSequence idToString(long id, TripleComponentRole position) {
 		switch (position) {
@@ -234,13 +244,8 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			}
 		}
 		case OBJECT -> {
-			int location = (int) objectIdLocations.binarySearchLocation(id);
+			ObjectIdLocationData data = idToObjectSection(id);
 
-			if (location < 0 || location >= objectIdLocationsSec.length) {
-				return null;
-			}
-
-			ObjectIdLocationData data = objectIdLocationsSec[location];
 			DictionarySectionPrivate sec = data.section;
 			CharSequence out = sec.extract(id - data.location);
 			if (out != null) {
@@ -449,5 +454,18 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		public void reset() {
 			this.type = null;
 		}
+	}
+
+	@Override
+	public OptimizedExtractor createOptimizedMapExtractor() {
+		return new MultipleSectionDictionaryLangPFCOptimizedExtractor(this);
+	}
+
+	public int getObjectsSectionCount() {
+		return objectIdLocationsSec.length;
+	}
+
+	public ObjectIdLocationData getObjectsSectionFromId(int id) {
+		return objectIdLocationsSec[id];
 	}
 }

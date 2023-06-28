@@ -792,7 +792,7 @@ public class EndpointStoreTest {
 		SailRepository repo = new SailRepository(store);
 		try {
 			HDTConverter converter = store.getHdtConverter();
-			Resource bnode = converter.IdToSubjectHDTResource(1L);
+			Resource bnode = converter.idToSubjectHDTResource(1L);
 			Assert.assertTrue(bnode instanceof BNode);
 			Assert.assertTrue(bnode instanceof SimpleBNodeHDT);
 			Assert.assertEquals(1L, ((SimpleBNodeHDT) bnode).getHdtId());

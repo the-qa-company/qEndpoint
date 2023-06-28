@@ -30,7 +30,6 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryCat;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryCat;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
@@ -312,14 +311,8 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 
 		if (isMapped) {
 			try {
-				if (dictionary instanceof MultipleSectionDictionary) {
-					return new DictionaryTranslateIteratorBuffer(triples.search(triple),
-							(MultipleSectionDictionary) dictionary, subject, predicate, object);
-				} else {
-					return new DictionaryTranslateIteratorBuffer(triples.search(triple),
-							(FourSectionDictionary) dictionary, subject, predicate, object);
-
-				}
+				return new DictionaryTranslateIteratorBuffer(triples.search(triple), dictionary, subject, predicate,
+						object);
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				// FIXME: find why this can happen
