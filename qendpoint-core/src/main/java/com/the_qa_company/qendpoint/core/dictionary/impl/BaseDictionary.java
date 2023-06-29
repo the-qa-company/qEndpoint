@@ -255,4 +255,9 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
 		throw new NotImplementedException();
 	}
+
+	@Override
+	public OptimizedExtractor createOptimizedMapExtractor() {
+		return new DictionaryPFCOptimizedExtractor(this);
+	}
 }

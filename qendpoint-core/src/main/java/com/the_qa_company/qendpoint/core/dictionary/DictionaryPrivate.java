@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.the_qa_company.qendpoint.core.dictionary.impl.OptimizedExtractor;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
@@ -36,4 +37,8 @@ public interface DictionaryPrivate extends Dictionary {
 	 */
 	void save(OutputStream output, ControlInfo ci, ProgressListener listener) throws IOException;
 
+	/**
+	 * @return an optimized map extractor from this dictionary
+	 */
+	OptimizedExtractor createOptimizedMapExtractor();
 }

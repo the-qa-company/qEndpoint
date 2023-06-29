@@ -374,4 +374,9 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 			this.type = null;
 		}
 	}
+
+	@Override
+	public OptimizedExtractor createOptimizedMapExtractor() {
+		return new MultDictionaryPFCOptimizedExtractor(this);
+	}
 }
