@@ -1,18 +1,31 @@
 package com.the_qa_company.qendpoint.model;
 
+import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 
+import java.io.Serial;
+
 public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 
+	@Serial
 	private static final long serialVersionUID = -3220264926968931192L;
 	public static final byte SUBJECT_POS = 1;
 	public static final byte PREDICATE_POS = 2;
 	public static final byte OBJECT_POS = 3;
 	public static final byte SHARED_POS = 4;
+
+	public static byte getPos(DictionarySectionRole role) {
+		return switch (role) {
+		case SHARED -> SHARED_POS;
+		case SUBJECT -> SUBJECT_POS;
+		case PREDICATE -> PREDICATE_POS;
+		case OBJECT -> OBJECT_POS;
+		};
+	}
 
 	private final HDT hdt;
 	private int postion;

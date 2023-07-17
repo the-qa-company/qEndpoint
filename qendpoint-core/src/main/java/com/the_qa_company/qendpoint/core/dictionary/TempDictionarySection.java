@@ -68,7 +68,7 @@ public interface TempDictionarySection extends DictionarySection {
 	/**
 	 * @return the literal counts for MultipleSectionDictionary
 	 */
-	default Map<? extends ByteString, Long> getLiteralsCounts() {
+	default Map<ByteString, Long> getLiteralsCounts() {
 		throw new NotImplementedException("getLiteralsCounts()");
 	}
 

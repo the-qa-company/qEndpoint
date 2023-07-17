@@ -18,6 +18,7 @@ import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public abstract class MultipleBaseDictionary implements DictionaryPrivate {
@@ -230,17 +231,17 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 		switch (role) {
 		case SUBJECT -> {
 			if (id <= shared.getNumberOfElements()) {
-				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, shared);
+				return new AbstractMap.SimpleEntry<>(LiteralsUtils.NO_DATATYPE, shared);
 			} else {
-				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, subjects);
+				return new AbstractMap.SimpleEntry<>(LiteralsUtils.NO_DATATYPE, subjects);
 			}
 		}
 		case PREDICATE -> {
-			return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, predicates);
+			return new AbstractMap.SimpleEntry<>(LiteralsUtils.NO_DATATYPE, predicates);
 		}
 		case OBJECT -> {
 			if (id <= shared.getNumberOfElements()) {
-				return new AbstractMap.SimpleEntry<>(SectionUtil.SECTION, shared);
+				return new AbstractMap.SimpleEntry<>(LiteralsUtils.NO_DATATYPE, shared);
 			} else {
 
 				Iterator<Map.Entry<ByteString, DictionarySectionPrivate>> hmIterator = objects.entrySet().iterator();
@@ -308,8 +309,8 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 				if (LiteralsUtils.NO_DATATYPE.equals(e.getKey())) {
 					return e.getValue().getSortedEntries();
 				}
-				ByteString suffix = ByteString.of("^^").copyAppend(e.getKey());
-				return new StringSuffixIterator(suffix, e.getValue().getSortedEntries());
+				ByteString suffix = LiteralsUtils.TYPE_OPERATOR.copyAppend(e.getKey());
+				return StringSuffixIterator.of(e.getValue().getSortedEntries(), suffix);
 			});
 			if (!includeShared) {
 				return CatIterator.of(os.toList());
@@ -328,6 +329,11 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	@Override
 	public CharSequence dataTypeOfId(long id) {
 		return getSection(id, TripleComponentRole.OBJECT).getKey();
+	}
+
+	@Override
+	public boolean supportsDataTypeOfId() {
+		return true;
 	}
 
 	public AbstractMap.SimpleEntry<Long, Long> getDataTypeRange(CharSequence dataType) {
@@ -349,5 +355,28 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 			return new AbstractMap.SimpleEntry<>(offset + 1, size);
 		}
 		return new AbstractMap.SimpleEntry<>(0L, 0L);
+	}
+
+	protected static class StopPredicate<T extends CharSequence> implements Predicate<T> {
+		private CharSequence type;
+
+		@Override
+		public boolean test(T charSequence) {
+			CharSequence type = LiteralsUtils.getType(charSequence);
+			if (this.type == null) {
+				this.type = type;
+				return true;
+			}
+			return this.type.equals(type);
+		}
+
+		public void reset() {
+			this.type = null;
+		}
+	}
+
+	@Override
+	public OptimizedExtractor createOptimizedMapExtractor() {
+		return new MultDictionaryPFCOptimizedExtractor(this);
 	}
 }

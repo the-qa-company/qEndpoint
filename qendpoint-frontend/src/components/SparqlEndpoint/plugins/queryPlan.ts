@@ -7,17 +7,19 @@ export interface PluginConfig {
 const buildPlan = (plan: any) => {
   const container = document.createElement('li')
   const id = document.createElement('p')
-  id.innerText = plan.id
-  const ul = document.createElement('ul')
-  ul.style.listStyleType = 'circle'
 
-  if (plan.plans) {
+  if (plan.error) {
+    id.innerText = plan.error
+  } else if (plan.plans) {
+    id.innerText = plan.id
+    const ul = document.createElement('ul')
+    ul.style.listStyleType = 'circle'
     plan.plans.forEach((pln: any) => {
       ul.appendChild(buildPlan(pln))
     })
+    container.appendChild(ul)
   }
   container.appendChild(id)
-  container.appendChild(ul)
   return container
 }
 

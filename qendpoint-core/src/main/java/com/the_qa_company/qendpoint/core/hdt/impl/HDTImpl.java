@@ -30,7 +30,6 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryCat;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryCat;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
@@ -176,7 +175,6 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		this.hdtFileName = f.toString();
 		this.isMapped = true;
 
-		CountInputStream input;
 		if (hdtFileName.endsWith(".gz")) {
 			File old = f;
 			hdtFileName = hdtFileName.substring(0, hdtFileName.length() - 3);
@@ -191,53 +189,60 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			}
 		}
 
-		input = new CountInputStream(new BufferedInputStream(new FileInputStream(hdtFileName)));
+		boolean dumpBinInfo = spec.getBoolean(HDTOptionsKeys.DUMP_BINARY_OFFSETS, false);
+		try (CountInputStream input = new CountInputStream(new BufferedInputStream(new FileInputStream(hdtFileName)),
+				dumpBinInfo)) {
 
-		ControlInfo ci = new ControlInformation();
-		IntermediateListener iListener = new IntermediateListener(listener);
+			input.printIndex("HDT CI");
 
-		// Load Global ControlInformation
-		ci.clear();
-		ci.load(input);
-		String hdtFormat = ci.getFormat();
-		if (!hdtFormat.equals(HDTVocabulary.HDT_CONTAINER) && !hdtFormat.equals(HDTVocabulary.HDT_CONTAINER_2)) {
-			throw new IllegalFormatException("This software (v" + HDTVersion.HDT_VERSION + ".x.x | v"
-					+ HDTVersion.HDT_VERSION_2 + ".x.x) cannot open this version of HDT File (" + hdtFormat + ")");
+			ControlInfo ci = new ControlInformation();
+			IntermediateListener iListener = new IntermediateListener(listener);
+
+			// Load Global ControlInformation
+			ci.clear();
+			ci.load(input);
+			String hdtFormat = ci.getFormat();
+			if (!hdtFormat.equals(HDTVocabulary.HDT_CONTAINER) && !hdtFormat.equals(HDTVocabulary.HDT_CONTAINER_2)) {
+				throw new IllegalFormatException("This software (v" + HDTVersion.HDT_VERSION + ".x.x | v"
+						+ HDTVersion.HDT_VERSION_2 + ".x.x) cannot open this version of HDT File (" + hdtFormat + ")");
+			}
+
+			input.printIndex("HDT Header");
+
+			// Load header
+			ci.clear();
+			ci.load(input);
+			iListener.setRange(0, 5);
+			header = HeaderFactory.createHeader(ci);
+			header.load(input, ci, iListener);
+
+			// Set base URI.
+			this.baseUri = header.getBaseURI().toString();
+			if (baseUri.isEmpty()) {
+				log.error("Empty base uri!");
+			}
+
+			input.printIndex("HDT Dictionary");
+
+			// Load dictionary
+			ci.clear();
+			input.mark(1024);
+			ci.load(input);
+			input.reset();
+			iListener.setRange(5, 60);
+			dictionary = DictionaryFactory.createDictionary(ci);
+			dictionary.mapFromFile(input, f, iListener);
+
+			// Load Triples
+			ci.clear();
+			input.mark(1024);
+			ci.load(input);
+			input.reset();
+			iListener.setRange(60, 100);
+			input.printIndex("HDT Triples");
+			triples = TriplesFactory.createTriples(ci);
+			triples.mapFromFile(input, f, iListener);
 		}
-
-		// Load header
-		ci.clear();
-		ci.load(input);
-		iListener.setRange(0, 5);
-		header = HeaderFactory.createHeader(ci);
-		header.load(input, ci, iListener);
-
-		// Set base URI.
-		this.baseUri = header.getBaseURI().toString();
-		if (baseUri.isEmpty()) {
-			log.error("Empty base uri!");
-		}
-
-		// Load dictionary
-		ci.clear();
-		input.mark(1024);
-		ci.load(input);
-		input.reset();
-		iListener.setRange(5, 60);
-		dictionary = DictionaryFactory.createDictionary(ci);
-		dictionary.mapFromFile(input, f, iListener);
-
-		// Load Triples
-		ci.clear();
-		input.mark(1024);
-		ci.load(input);
-		input.reset();
-		iListener.setRange(60, 100);
-		triples = TriplesFactory.createTriples(ci);
-		triples.mapFromFile(input, f, iListener);
-
-		// Close the file used to keep track of positions.
-		input.close();
 
 		isClosed = false;
 	}
@@ -306,14 +311,8 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 
 		if (isMapped) {
 			try {
-				if (dictionary instanceof MultipleSectionDictionary) {
-					return new DictionaryTranslateIteratorBuffer(triples.search(triple),
-							(MultipleSectionDictionary) dictionary, subject, predicate, object);
-				} else {
-					return new DictionaryTranslateIteratorBuffer(triples.search(triple),
-							(FourSectionDictionary) dictionary, subject, predicate, object);
-
-				}
+				return new DictionaryTranslateIteratorBuffer(triples.search(triple), dictionary, subject, predicate,
+						object);
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				// FIXME: find why this can happen
@@ -531,15 +530,16 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		Files.delete(Paths.get(location + "O2" + "Types"));
 
 		// map the triples
-		CountInputStream fis2 = new CountInputStream(
-				new BufferedInputStream(new FileInputStream(location + "triples")));
-		ControlInfo ci2 = new ControlInformation();
-		ci2.clear();
-		fis2.mark(1024);
-		ci2.load(fis2);
-		fis2.reset();
-		triples = TriplesFactory.createTriples(ci2);
-		triples.mapFromFile(fis2, new File(location + "triples"), null);
+		try (CountInputStream fis2 = new CountInputStream(
+				new BufferedInputStream(new FileInputStream(location + "triples")))) {
+			ControlInfo ci2 = new ControlInformation();
+			ci2.clear();
+			fis2.mark(1024);
+			ci2.load(fis2);
+			fis2.reset();
+			triples = TriplesFactory.createTriples(ci2);
+			triples.mapFromFile(fis2, new File(location + "triples"), null);
+		}
 		Files.delete(Paths.get(location + "mapping_back_1"));
 		Files.delete(Paths.get(location + "mapping_back_2"));
 		Files.delete(Paths.get(location + "mapping_back_type_1"));

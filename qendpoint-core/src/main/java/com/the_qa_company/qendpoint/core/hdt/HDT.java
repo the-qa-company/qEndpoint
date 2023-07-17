@@ -91,6 +91,36 @@ public interface HDT extends RDFAccess, Closeable {
 	}
 
 	/**
+	 * Saves to OutputStream in HDT format
+	 *
+	 * @param output The OutputStream to save to
+	 * @throws IOException when the file cannot be found
+	 */
+	default void saveToHDT(OutputStream output) throws IOException {
+		saveToHDT(output, ProgressListener.ignore());
+	}
+
+	/**
+	 * Saves to a file in HDT format
+	 *
+	 * @param fileName The OutputStream to save to
+	 * @throws IOException when the file cannot be found
+	 */
+	default void saveToHDT(String fileName) throws IOException {
+		saveToHDT(fileName, ProgressListener.ignore());
+	}
+
+	/**
+	 * Saves to a file in HDT format
+	 *
+	 * @param fileName The OutputStream to save to
+	 * @throws IOException when the file cannot be found
+	 */
+	default void saveToHDT(Path fileName) throws IOException {
+		saveToHDT(fileName.toAbsolutePath().toString());
+	}
+
+	/**
 	 * Returns the size of the Data Structure in bytes.
 	 *
 	 * @return long

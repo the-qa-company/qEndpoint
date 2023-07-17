@@ -159,6 +159,11 @@ public class DictionarySectionCacheAll implements DictionarySectionPrivate {
 	}
 
 	@Override
+	public void load(Iterator<? extends CharSequence> it, long count, ProgressListener listener) {
+		child.load(it, count, listener);
+	}
+
+	@Override
 	public void close() throws IOException {
 		cacheString = null;
 		cacheID = null;

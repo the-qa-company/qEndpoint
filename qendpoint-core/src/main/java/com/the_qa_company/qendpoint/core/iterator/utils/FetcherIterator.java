@@ -1,14 +1,11 @@
 package com.the_qa_company.qendpoint.core.iterator.utils;
 
-import java.util.Iterator;
-import java.util.function.Function;
-
 /**
  * Iterator implementation without the next element fetching method
  *
  * @param <T> iterator type
  */
-public abstract class FetcherIterator<T> implements Iterator<T> {
+public abstract class FetcherIterator<T> implements PeekIterator<T> {
 	private T next;
 
 	protected FetcherIterator() {
@@ -40,21 +37,11 @@ public abstract class FetcherIterator<T> implements Iterator<T> {
 	/**
 	 * @return peek the element without passing to the next element
 	 */
+	@Override
 	public T peek() {
 		if (hasNext()) {
 			return next;
 		}
 		return null;
-	}
-
-	/**
-	 * map this iterator
-	 *
-	 * @param mappingFunction func
-	 * @param <M>             new type
-	 * @return iterator
-	 */
-	public <M> Iterator<M> map(Function<T, M> mappingFunction) {
-		return new MapIterator<>(this, mappingFunction);
 	}
 }

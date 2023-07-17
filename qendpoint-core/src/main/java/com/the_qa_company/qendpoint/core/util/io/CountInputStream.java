@@ -32,14 +32,24 @@ public class CountInputStream extends InputStream {
 
 	long markTotal;
 	long markPartial;
+	final boolean allowDump;
 
 	/**
-	 * @param input
+	 * @param input input
 	 */
 	public CountInputStream(InputStream input) {
+		this(input, false);
+	}
+
+	/**
+	 * @param input     input
+	 * @param allowDump allow dump of the id
+	 */
+	public CountInputStream(InputStream input, boolean allowDump) {
 		this.in = input;
 		total = 0;
 		partial = 0;
+		this.allowDump = allowDump;
 	}
 
 	public long getTotalBytes() {
@@ -115,5 +125,11 @@ public class CountInputStream extends InputStream {
 		total = markTotal;
 		partial = markPartial;
 		in.reset();
+	}
+
+	public void printIndex(String title) {
+		if (allowDump) {
+			System.out.printf("%s: %x\n", title, total);
+		}
 	}
 }

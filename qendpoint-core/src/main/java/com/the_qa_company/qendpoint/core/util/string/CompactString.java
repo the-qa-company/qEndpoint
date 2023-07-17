@@ -19,6 +19,7 @@
 
 package com.the_qa_company.qendpoint.core.util.string;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -32,6 +33,7 @@ import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
  */
 public class CompactString implements CharSequence, Serializable, ByteString {
 
+	@Serial
 	private static final long serialVersionUID = 6789858615261959413L;
 
 	// String buffer as bytes.
@@ -121,7 +123,7 @@ public class CompactString implements CharSequence, Serializable, ByteString {
 
 	@Override
 	public String toString() {
-		return new String(data, 0, data.length, ByteStringUtil.STRING_ENCODING);
+		return new String(data, ByteStringUtil.STRING_ENCODING);
 	}
 
 	@Override
@@ -146,8 +148,7 @@ public class CompactString implements CharSequence, Serializable, ByteString {
 		if (this == o) {
 			return true;
 		}
-		if (o instanceof CompactString) {
-			CompactString cmp = (CompactString) o;
+		if (o instanceof CompactString cmp) {
 			if (data.length != cmp.data.length) {
 				return false;
 			}
@@ -160,8 +161,7 @@ public class CompactString implements CharSequence, Serializable, ByteString {
 				}
 			}
 			return true;
-		} else if (o instanceof CharSequence) {
-			CharSequence other = (CharSequence) o;
+		} else if (o instanceof CharSequence other) {
 			return length() == other.length() && CharSequenceComparator.getInstance().compare(this, other) == 0;
 		}
 		throw new NotImplementedException();

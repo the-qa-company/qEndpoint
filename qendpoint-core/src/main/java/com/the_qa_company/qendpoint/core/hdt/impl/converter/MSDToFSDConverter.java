@@ -178,7 +178,7 @@ public class MSDToFSDConverter implements Converter {
 					// no datatype, we don't need to add anything
 					iterators.add(it.map((s, index) -> new IndexedNode(ByteString.of(s), index + currentShift)));
 				} else {
-					final ByteString operType = type.copyPreAppend("^^");
+					final ByteString operType = type.copyPreAppend(LiteralsUtils.TYPE_OPERATOR);
 					iterators.add(
 							it.map((s, index) -> new IndexedNode(operType.copyPreAppend(s), index + currentShift)));
 				}

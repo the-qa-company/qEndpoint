@@ -28,22 +28,31 @@ import java.util.function.Supplier;
  */
 public enum TripleComponentRole {
 	/** The triple is a subject */
-	SUBJECT(() -> DictionarySectionRole.SUBJECT, "s", "subject"),
+	SUBJECT(() -> DictionarySectionRole.SUBJECT, "s", "subject", true),
 	/** The triple is a predicate */
-	PREDICATE(() -> DictionarySectionRole.PREDICATE, "p", "predicate"),
+	PREDICATE(() -> DictionarySectionRole.PREDICATE, "p", "predicate", false),
 	/** The triple is an object */
-	OBJECT(() -> DictionarySectionRole.OBJECT, "o", "object");
+	OBJECT(() -> DictionarySectionRole.OBJECT, "o", "object", true);
 
 	private DictionarySectionRole dictionarySectionRole;
 	private final Supplier<DictionarySectionRole> dictionarySectionRoleSupplier;
 	private final String abbreviation;
 	private final String title;
+	private final boolean supportsShared;
 
 	TripleComponentRole(Supplier<DictionarySectionRole> dictionarySectionRoleSupplier, String abbreviation,
-			String title) {
+			String title, boolean supportsShared) {
 		this.dictionarySectionRoleSupplier = dictionarySectionRoleSupplier;
 		this.abbreviation = abbreviation;
 		this.title = title;
+		this.supportsShared = supportsShared;
+	}
+
+	public DictionarySectionRole asDictionarySectionRole(boolean shared) {
+		if (shared && supportsShared) {
+			return DictionarySectionRole.SHARED;
+		}
+		return asDictionarySectionRole();
 	}
 
 	public DictionarySectionRole asDictionarySectionRole() {

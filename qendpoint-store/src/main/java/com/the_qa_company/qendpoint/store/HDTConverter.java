@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
@@ -27,13 +29,10 @@ public class HDTConverter {
 	private final EndpointStore endpoint;
 	private final HDT hdt;
 	private final ValueFactory valueFactory = new MemValueFactory();
-	private final boolean optimizeDatatype;
 
 	public HDTConverter(EndpointStore endpoint) {
 		this.endpoint = endpoint;
 		this.hdt = endpoint.getHdt();
-		this.optimizeDatatype = false; // hdt.getDictionary() instanceof
-										// MultipleSectionDictionary;
 	}
 
 	// method to get the ID of a resource
@@ -148,7 +147,7 @@ public class HDTConverter {
 	public Resource rdf4jToHdtIDsubject(Resource subj) {
 		long id = rdf4jSubjectToHdtID(subj);
 		if (id != -1) {
-			return IdToSubjectHDTResource(id);
+			return idToSubjectHDTResource(id);
 		}
 		return subj;
 	}
@@ -156,7 +155,7 @@ public class HDTConverter {
 	public IRI rdf4jToHdtIDpredicate(IRI pred) {
 		long id = rdf4jPredicateToHdtID(pred);
 		if (id != -1) {
-			return IdToPredicateHDTResource(id);
+			return idToPredicateHDTResource(id);
 		}
 		return pred;
 	}
@@ -164,7 +163,7 @@ public class HDTConverter {
 	public Value rdf4jToHdtIDobject(Value object) {
 		long id = rdf4jObjectToHdtID(object);
 		if (id != -1) {
-			return IdToObjectHDTResource(id);
+			return idToObjectHDTResource(id);
 		}
 		return object;
 	}
@@ -203,7 +202,30 @@ public class HDTConverter {
 		return -1;
 	}
 
-	public Resource IdToSubjectHDTResource(long subjectID) {
+	public Value idToValue(TripleComponentRole role, long id) {
+		Dictionary dict = hdt.getDictionary();
+		if (dict.supportsNodeTypeOfId()) {
+			RDFNodeType nodeType = dict.nodeTypeOfId(role, id);
+			boolean shared = id <= dict.getNshared();
+			return switch (nodeType) {
+			case IRI ->
+				new SimpleIRIHDT(endpoint.getHdt(), SimpleIRIHDT.getPos(role.asDictionarySectionRole(shared)), id);
+			case BLANK_NODE -> new SimpleBNodeHDT(hdt, SimpleIRIHDT.getPos(role.asDictionarySectionRole(shared)), id);
+			case LITERAL -> new SimpleLiteralHDT(endpoint.getHdt(), id, valueFactory);
+			};
+		}
+		return switch (role) {
+		case SUBJECT -> idToSubjectHDTResource0(id);
+		case PREDICATE -> idToPredicateHDTResource(id);
+		case OBJECT -> idToObjectHDTResource0(id);
+		};
+	}
+
+	public Resource idToSubjectHDTResource(long subjectID) {
+		return (Resource) idToValue(TripleComponentRole.SUBJECT, subjectID);
+	}
+
+	private Resource idToSubjectHDTResource0(long subjectID) {
 		if ((subjectID >= endpoint.getHdtProps().getStartBlankShared()
 				&& subjectID <= endpoint.getHdtProps().getEndBlankShared())
 				|| (subjectID >= endpoint.getHdtProps().getStartBlankSubjects()
@@ -222,14 +244,18 @@ public class HDTConverter {
 		}
 	}
 
-	public IRI IdToPredicateHDTResource(long predicateId) {
+	public IRI idToPredicateHDTResource(long predicateId) {
 		return new SimpleIRIHDT(endpoint.getHdt(), SimpleIRIHDT.PREDICATE_POS, predicateId);
 	}
 
-	public Value IdToObjectHDTResource(long objectID) {
+	public Value idToObjectHDTResource(long objectID) {
+		return idToValue(TripleComponentRole.OBJECT, objectID);
+	}
+
+	private Value idToObjectHDTResource0(long objectID) {
 		if (objectID >= endpoint.getHdtProps().getStartLiteral()
 				&& objectID <= endpoint.getHdtProps().getEndLiteral()) {
-			return new SimpleLiteralHDT(endpoint.getHdt(), objectID, valueFactory, optimizeDatatype);
+			return new SimpleLiteralHDT(endpoint.getHdt(), objectID, valueFactory);
 		} else if ((objectID >= endpoint.getHdtProps().getStartBlankObjects()
 				&& objectID <= endpoint.getHdtProps().getEndBlankObjects())
 				|| (objectID >= endpoint.getHdtProps().getStartBlankShared()
@@ -285,9 +311,9 @@ public class HDTConverter {
 
 	public Value idToHDTValue(long id, int position) {
 		return switch (position) {
-		case SimpleIRIHDT.SUBJECT_POS, SimpleIRIHDT.SHARED_POS -> IdToSubjectHDTResource(id);
-		case SimpleIRIHDT.PREDICATE_POS -> IdToPredicateHDTResource(id);
-		case SimpleIRIHDT.OBJECT_POS -> IdToObjectHDTResource(id);
+		case SimpleIRIHDT.SUBJECT_POS, SimpleIRIHDT.SHARED_POS -> idToSubjectHDTResource(id);
+		case SimpleIRIHDT.PREDICATE_POS -> idToPredicateHDTResource(id);
+		case SimpleIRIHDT.OBJECT_POS -> idToObjectHDTResource(id);
 		default -> throw new IllegalArgumentException("bad position: " + position);
 		};
 	}

@@ -10,7 +10,7 @@ import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.PeekIteratorImpl;
 import com.the_qa_company.qendpoint.core.iterator.utils.StopIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
@@ -70,39 +70,19 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 		predicates.load(other.getPredicates(), iListener);
 		Iterator<? extends CharSequence> iter = other.getObjects().getEntries();
 
-		// TODO: allow the usage of OneReadDictionarySection
 		Map<ByteString, Long> literalsCounts = new HashMap<>(other.getObjects().getLiteralsCounts());
 		literalsCounts.computeIfPresent(LiteralsUtils.NO_DATATYPE,
 				(key, value) -> (value - other.getShared().getNumberOfElements()));
-		CustomIterator customIterator = new CustomIterator(iter, literalsCounts);
+		CustomIterator customIterator = new CustomIterator(iter, literalsCounts, false);
 		while (customIterator.hasNext()) {
 			PFCDictionarySection section = new PFCDictionarySection(spec);
 			ByteString type = ByteString.of(LiteralsUtils.getType(customIterator.prev));
 			long numEntries = literalsCounts.get(type);
 
 			section.load(customIterator, numEntries, listener);
-			section.locate(new CompactString("\"\uD83C\uDDEB\uD83C\uDDF7\"@ro"));
 			objects.put(type, section);
 		}
 		shared.load(other.getShared(), iListener);
-	}
-
-	private static class StopPredicate<T extends CharSequence> implements Predicate<T> {
-		private CharSequence type;
-
-		@Override
-		public boolean test(T charSequence) {
-			CharSequence type = LiteralsUtils.getType(charSequence);
-			if (this.type == null) {
-				this.type = type;
-				return true;
-			}
-			return this.type.equals(type);
-		}
-
-		public void reset() {
-			this.type = null;
-		}
 	}
 
 	@Override
@@ -113,7 +93,7 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 				new ExceptionThread(() -> shared.load(other.getShared(), iListener), "MultiSecSAsyncReaderSh"),
 				new ExceptionThread(() -> {
 					StopPredicate<CharSequence> pred = new StopPredicate<>();
-					PeekIterator<? extends CharSequence> it = new PeekIterator<>(
+					PeekIteratorImpl<? extends CharSequence> it = new PeekIteratorImpl<>(
 							new StopIterator<>(new MapIterator<>(other.getObjects().getSortedEntries(),
 									b -> LiteralsUtils.prefToLit(ByteString.of(b))), pred));
 
@@ -190,6 +170,7 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 	}
 
 	private void mapLiteralsMap(CountInputStream input, File f, ProgressListener listener) throws IOException {
+		input.printIndex("objects");
 		int numberOfTypes = (int) VByte.decode(input);
 		List<ByteString> types = new ArrayList<>();
 		for (int i = 0; i < numberOfTypes; i++) {
@@ -197,7 +178,9 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 			byte[] type = IOUtil.readBuffer(input, length, listener);
 			types.add(new CompactString(type));
 		}
+		input.printIndex("sections");
 		for (ByteString type : types) {
+			input.printIndex("sections/" + type);
 			this.objects.put(type, DictionarySectionFactory.loadFrom(input, f, listener));
 		}
 

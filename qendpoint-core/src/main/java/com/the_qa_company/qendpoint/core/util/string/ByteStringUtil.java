@@ -74,12 +74,12 @@ public class ByteStringUtil {
 			return null;
 		}
 
-		if (sec.length() == 0) {
-			return CompactString.EMPTY;
+		if (sec.isEmpty()) {
+			return ByteString.empty();
 		}
 
-		if (sec instanceof ByteString) {
-			return (ByteString) sec;
+		if (sec instanceof ByteString bs) {
+			return bs;
 		}
 		// clone into sec
 		return new CompactString(sec);

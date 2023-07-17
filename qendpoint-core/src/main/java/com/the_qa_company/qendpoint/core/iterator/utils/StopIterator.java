@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class StopIterator<T> implements Iterator<T> {
+public class StopIterator<T> implements PeekIterator<T> {
 	private final Iterator<? extends T> it;
 	private T next;
 	private final Predicate<T> stop;
@@ -12,6 +12,14 @@ public class StopIterator<T> implements Iterator<T> {
 	public StopIterator(Iterator<? extends T> it, Predicate<T> stop) {
 		this.it = Objects.requireNonNull(it, "it can't be null!");
 		this.stop = Objects.requireNonNull(stop, "stop can't be null!");
+	}
+
+	@Override
+	public T peek() {
+		if (!hasNext()) {
+			return null;
+		}
+		return next;
 	}
 
 	@Override
@@ -27,11 +35,8 @@ public class StopIterator<T> implements Iterator<T> {
 
 	@Override
 	public T next() {
-		if (!hasNext()) {
-			return null;
-		}
 		try {
-			return next;
+			return peek();
 		} finally {
 			next = null;
 		}

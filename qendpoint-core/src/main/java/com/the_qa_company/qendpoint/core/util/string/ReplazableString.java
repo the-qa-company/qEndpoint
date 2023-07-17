@@ -304,8 +304,7 @@ public final class ReplazableString implements CharSequence, ByteString {
 				}
 			}
 			return true;
-		} else if (o instanceof ReplazableString) {
-			ReplazableString cmp = (ReplazableString) o;
+		} else if (o instanceof ReplazableString cmp) {
 			if (this.used != cmp.used) {
 				return false;
 			}
@@ -318,8 +317,7 @@ public final class ReplazableString implements CharSequence, ByteString {
 				}
 			}
 			return true;
-		} else if (o instanceof CharSequence) {
-			CharSequence other = (CharSequence) o;
+		} else if (o instanceof CharSequence other) {
 			return length() == other.length() && CharSequenceComparator.getInstance().compare(this, other) == 0;
 		}
 		throw new NotImplementedException();

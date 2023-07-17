@@ -19,29 +19,27 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
-import java.io.IOException;
-import java.util.Iterator;
-
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryType;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.HashDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 
+import java.io.IOException;
+import java.util.Iterator;
+
 /**
  * @author mario.arias, Eugen
  */
 public class HashDictionary extends BaseTempDictionary {
 
-	boolean isCustom;
-
-	public HashDictionary(HDTOptions spec, boolean isCustom) {
+	public HashDictionary(HDTOptions spec) {
 		super(spec);
-		this.isCustom = isCustom;
 		// FIXME: Read types from spec
 		subjects = new HashDictionarySection();
 		predicates = new HashDictionarySection();
-		objects = new HashDictionarySection(isCustom);
+		objects = new HashDictionarySection(DictionaryType.fromDictionaryType(spec));
 		shared = new HashDictionarySection();
 	}
 
@@ -99,37 +97,25 @@ public class HashDictionary extends BaseTempDictionary {
 		st.reset();
 		subjects.sort();
 		predicates.sort();
-		long startTime = System.currentTimeMillis();
 		objects.sort();
-		long endTime = System.currentTimeMillis();
-		// System.out.println("Time to sort temp objects:"+(endTime -
-		// startTime)+" ms");
 		shared.sort();
-		// System.out.println("Sections sorted in "+ st.stopAndShow());
 
 		// Update mappings with new IDs
 		st.reset();
 		for (long j = 0; j < mapSubj.size(); j++) {
 			mapSubj.setNewID(j, this.stringToId(mapSubj.getString(j), TripleComponentRole.SUBJECT));
-//			System.out.print("Subj Old id: "+(j+1) + " New id: "+ mapSubj.getNewID(j)+ " STR: "+mapSubj.getString(j));
 		}
 
 		for (long j = 0; j < mapPred.size(); j++) {
 			mapPred.setNewID(j, this.stringToId(mapPred.getString(j), TripleComponentRole.PREDICATE));
-//			System.out.print("Pred Old id: "+(j+1) + " New id: "+ mapPred.getNewID(j)+ " STR: "+mapPred.getString(j));
 		}
 
 		for (long j = 0; j < mapObj.size(); j++) {
 			mapObj.setNewID(j, this.stringToId(mapObj.getString(j), TripleComponentRole.OBJECT));
-			// System.out.print("Obj Old id: "+(j+1) + " New id: "+
-			// mapObj.getNewID(j)+ " STR: "+mapObj.getString(j));
 		}
-		// System.out.println("Update mappings in "+st.stopAndShow());
 
 		// Replace old IDs with news
 		triples.replaceAllIds(mapSubj, mapPred, mapObj);
-
-		// System.out.println("Replace IDs in "+st.stopAndShow());
 
 		isOrganized = true;
 	}

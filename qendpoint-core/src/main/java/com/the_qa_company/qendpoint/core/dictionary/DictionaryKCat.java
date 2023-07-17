@@ -52,5 +52,10 @@ public interface DictionaryKCat {
 	/**
 	 * @return the object shift in the dictionary IDs
 	 */
-	long objectShift();
+	long nonTypedShift();
+
+	/**
+	 * @return the object shift in the dictionary IDs
+	 */
+	long typedShift();
 }

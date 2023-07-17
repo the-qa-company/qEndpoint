@@ -53,9 +53,9 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			TripleID tripleID = iterator.next();
 			long index = iterator.getLastTriplePosition();
 			if (!endpoint.getDeleteBitMap().access(index)) {
-				Resource subject = endpoint.getHdtConverter().IdToSubjectHDTResource(tripleID.getSubject());
-				IRI predicate = endpoint.getHdtConverter().IdToPredicateHDTResource(tripleID.getPredicate());
-				Value object = endpoint.getHdtConverter().IdToObjectHDTResource(tripleID.getObject());
+				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
+				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
+				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());
 				if (logger.isTraceEnabled()) {
 					logger.trace("From HDT   {} {} {} ", subject, predicate, object);
 				}

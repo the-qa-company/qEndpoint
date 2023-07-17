@@ -338,12 +338,29 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS = "dictionaryMultiObj";
+	/**
+	 * multi section dictionary
+	 */
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language")
+	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG = "dictionaryMultiObjLang";
+
+	/**
+	 * Ignore MSDL RDFTYPE INDEX
+	 */
+	@Key(type = Key.Type.ENUM, desc = "Ignore MSDL RDFTYPE INDEX")
+	public static final String DICTIONARY_MSDL_NO_RDFTYPE_INDEX = "dictionary.msdl.nordftypeindex";
 
 	/**
 	 * Location of the HDTCat temp files
 	 */
 	@Key(type = Key.Type.PATH, desc = "Location of the HDTCat temp files")
 	public static final String HDTCAT_LOCATION = "hdtcat.location";
+
+	/**
+	 * Use legacy HDTCat/HDTDiff
+	 */
+	@Key(type = Key.Type.PATH, desc = "Use legacy HDTCat")
+	public static final String HDTCAT_LEGACY = "hdtcat.legacy";
 	/**
 	 * Location of the HDTCat hdt after the loading
 	 */
@@ -472,6 +489,9 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.NUMBER, desc = "log of the number of way the system can merge in "
 			+ BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK + " index method")
 	public static final String BITMAPTRIPLES_DISK_KWAY_KEY = "bitmaptriples.indexmethod.disk.kway";
+
+	@Key(type = Key.Type.BOOLEAN, desc = "Dump binary offsets, default false")
+	public static final String DUMP_BINARY_OFFSETS = "bump.binary.offsets";
 
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();

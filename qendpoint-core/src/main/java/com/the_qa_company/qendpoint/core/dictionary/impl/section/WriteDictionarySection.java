@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
@@ -41,6 +42,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 	private final int bufferSize;
 	private long numberElements = 0;
 	private long byteoutSize;
+	private boolean created;
 
 	public WriteDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
 		this.bufferSize = bufferSize;
@@ -51,6 +53,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		if (blockSize < 0) {
 			throw new IllegalArgumentException("negative pfc.blocksize");
 		}
+		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, 1);
 	}
 
 	@Override
@@ -59,14 +62,23 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 	}
 
 	public WriteDictionarySectionAppender createAppender(long count, ProgressListener listener) throws IOException {
+		blocks.close();
+		Files.deleteIfExists(blockTempFilename);
 		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, count / blockSize);
 		return new WriteDictionarySectionAppender(count, listener);
 	}
 
+	@Override
 	public void load(Iterator<? extends CharSequence> it, long count, ProgressListener plistener) {
 		MultiThreadListener listener = ListenerUtil.multiThreadListener(plistener);
 		long block = count < 10 ? 1 : count / 10;
 		long currentCount = 0;
+		try {
+			blocks.close();
+			Files.deleteIfExists(blockTempFilename);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, count / blockSize);
 
 		listener.notifyProgress(0, "Filling section");
@@ -108,6 +120,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		if (numberElements % 100_000 == 0) {
 			listener.notifyProgress(100, "Completed section filling");
 		}
+		created = true;
 	}
 
 	@Override
@@ -120,10 +133,21 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		VByte.encode(out, blockSize);
 		out.writeCRC();
 		// Write blocks directly to output, they have their own CRC check.
-		blocks.save(output, listener);
-		// Write blocks data directly to output, the load was writing using a
-		// CRC check.
-		Files.copy(tempFilename, output);
+		if (created) {
+			blocks.save(output, listener);
+			// Write blocks data directly to output, the load was writing using
+			// a
+			// CRC check.
+			Files.copy(tempFilename, output);
+		} else {
+			try (SequenceLog64Big longs = new SequenceLog64Big(1, 0, true)) {
+				// save an empty one because we didn't ingest this section
+				longs.save(output, listener);
+			}
+			out.setCRC(new CRC32());
+			// write empty an empty data section because we don't have anything
+			out.writeCRC();
+		}
 	}
 
 	@Override
@@ -218,6 +242,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 				if (numberElements % 100_000 == 0) {
 					listener.notifyProgress(100, "Completed section filling");
 				}
+				created = true;
 
 			} finally {
 				IOUtil.closeObject(out);

@@ -19,7 +19,6 @@ public class HdtCatLiteralsTest implements ProgressListener {
 
     public void help(String file1, String file2, String concat){
         if (SystemUtils.IS_OS_UNIX) {
-            try {
                 ClassLoader classLoader = getClass().getClassLoader();
                 HDT hdt1 = null;
                 HDT hdt2 = null;
@@ -75,11 +74,6 @@ public class HdtCatLiteralsTest implements ProgressListener {
                     e.printStackTrace();
                 }
                 theDir.delete();
-            } catch (ParserException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 //    @Test

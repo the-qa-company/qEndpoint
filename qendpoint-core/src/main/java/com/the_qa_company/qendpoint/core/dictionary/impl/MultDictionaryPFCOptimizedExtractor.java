@@ -19,7 +19,7 @@ public class MultDictionaryPFCOptimizedExtractor implements OptimizedExtractor {
 	private final TreeMap<ByteString, PFCOptimizedExtractor> objects;
 	private final long numshared;
 
-	public MultDictionaryPFCOptimizedExtractor(MultipleSectionDictionary origDict) {
+	public MultDictionaryPFCOptimizedExtractor(MultipleBaseDictionary origDict) {
 		numshared = (int) origDict.getNshared();
 		shared = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.shared);
 		subjects = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.subjects);

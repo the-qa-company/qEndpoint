@@ -369,6 +369,11 @@ public class PFCDictionarySectionMap implements DictionarySectionPrivate, Closea
 	}
 
 	@Override
+	public void load(Iterator<? extends CharSequence> it, long count, ProgressListener listener) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public void save(OutputStream output, ProgressListener listener) throws IOException {
 		InputStream in = new BufferedInputStream(new FileInputStream(f));
 		IOUtil.skip(in, startOffset);

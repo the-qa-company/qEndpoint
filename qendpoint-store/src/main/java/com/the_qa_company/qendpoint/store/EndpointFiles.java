@@ -185,6 +185,20 @@ public class EndpointFiles {
 	}
 
 	/**
+	 * @return the HDT file
+	 */
+	public Path getHDTIndexPath() {
+		return Path.of(getHDTIndex());
+	}
+
+	/**
+	 * @return the HDT file with HDT version
+	 */
+	public Path getHDTIndexV11Path() {
+		return Path.of(getHDTIndexV11());
+	}
+
+	/**
 	 * @return the new HDT file
 	 */
 	@ParsedStringValue("hdt.new.location")

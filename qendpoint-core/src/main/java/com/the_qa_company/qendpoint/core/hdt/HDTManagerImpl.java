@@ -337,6 +337,11 @@ public class HDTManagerImpl extends HDTManager {
 	@Override
 	public HDT doHDTCat(String location, String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException {
+		if (!hdtFormat.getBoolean(HDTOptionsKeys.HDTCAT_LEGACY, false)) {
+			HDTOptions hdtOptions = hdtFormat.pushTop();
+			hdtOptions.set(HDTOptionsKeys.HDTCAT_LOCATION, location);
+			return doHDTCat(List.of(hdtFileName1, hdtFileName2), hdtOptions, listener);
+		}
 		try (HDT hdt1 = loadOrMapHDT(hdtFileName1, listener, hdtFormat);
 				HDT hdt2 = loadOrMapHDT(hdtFileName2, listener, hdtFormat)) {
 			HDTImpl hdt = new HDTImpl(hdtFormat);
@@ -373,6 +378,11 @@ public class HDTManagerImpl extends HDTManager {
 	@Override
 	protected HDT doHDTDiffBit(String location, String hdtFileName, Bitmap deleteBitmap, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException {
+		if (!hdtFormat.getBoolean(HDTOptionsKeys.HDTCAT_LEGACY, false)) {
+			HDTOptions hdtOptions = hdtFormat.pushTop();
+			hdtOptions.set(HDTOptionsKeys.HDTCAT_LOCATION, location);
+			return doHDTDiffBitCat(List.of(hdtFileName), List.of(deleteBitmap), hdtOptions, listener);
+		}
 		try (HDT hdtOriginal = loadOrMapHDT(hdtFileName, listener, hdtFormat)) {
 			HDTImpl hdt = new HDTImpl(hdtFormat);
 			try (Profiler profiler = Profiler.createOrLoadSubSection("hdtDiffBit", hdtFormat, true)) {

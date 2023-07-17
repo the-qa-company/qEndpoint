@@ -1,11 +1,21 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
+import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -13,15 +23,22 @@ import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -30,15 +47,8 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
-import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
-import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
-import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
-import com.the_qa_company.qendpoint.core.util.string.ByteString;
-import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
-import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,23 +66,26 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
-		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class })
+		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
+		HDTManagerTest.DictionaryLangTypeTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
-		protected static String[][] diskDict() {
-			return new String[][] {
-					{ HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
-							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH },
-					{ HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH } };
+		protected final Logger logger;
+
+		protected static String[] diskDict() {
+			return new String[] { HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG };
 		}
 
 		/**
@@ -80,10 +93,11 @@ public class HDTManagerTest {
 		 * <a href="https://github.com/rdfhdt/hdt-java/issues/177">GH#177</a>
 		 */
 		protected static final boolean ALLOW_STRING_CONSISTENCY_TEST = false;
-		protected static final long SIZE_VALUE = 1L << 16;
+		protected static final long SIZE_VALUE = 1L << 15;
 		protected static final int SEED = 67;
 
 		private HDTManagerTestBase() {
+			logger = LoggerFactory.getLogger(getClass());
 		}
 
 		@Rule
@@ -113,6 +127,15 @@ public class HDTManagerTest {
 			// System.out.println("[" + level + "] " + message);
 		}
 
+		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
+				Iterator<? extends CharSequence> it2) {
+			while (it1.hasNext()) {
+				Assert.assertTrue(it2.hasNext());
+				Assert.assertEquals(it1.next().toString(), it2.next().toString());
+			}
+			Assert.assertFalse(it2.hasNext());
+		}
+
 		public static void assertEqualsHDT(HDT expected, HDT actual) throws NotFoundException {
 			assertEquals("non matching sizes", expected.getTriples().getNumberOfElements(),
 					actual.getTriples().getNumberOfElements());
@@ -121,13 +144,21 @@ public class HDTManagerTest {
 			Dictionary ad = actual.getDictionary();
 			assertEqualsHDT("Subjects", ed.getSubjects(), ad.getSubjects());
 			assertEqualsHDT("Predicates", ed.getPredicates(), ad.getPredicates());
-			if (ed instanceof MultipleBaseDictionary) {
-				assertTrue("ad not a MSD" + ad.getClass(), ad instanceof MultipleBaseDictionary);
-				MultipleBaseDictionary edm = (MultipleBaseDictionary) ed;
-				MultipleBaseDictionary adm = (MultipleBaseDictionary) ad;
-				Map<? extends CharSequence, DictionarySection> keysE = edm.getAllObjects();
-				Map<? extends CharSequence, DictionarySection> keysA = adm.getAllObjects();
+			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang) {
+				if (ed instanceof MultipleBaseDictionary) {
+					assertTrue("ad not a MSD" + ad.getClass(), ad instanceof MultipleBaseDictionary);
+				} else {
+					assertTrue("ad not a MSDL" + ad.getClass(), ad instanceof MultipleSectionDictionaryLang);
+				}
+				Map<? extends CharSequence, DictionarySection> keysE = ed.getAllObjects();
+				Map<? extends CharSequence, DictionarySection> keysA = ad.getAllObjects();
 				assertEquals(keysE.keySet(), keysA.keySet());
+				Iterator<? extends CharSequence> itkE = keysE.keySet().iterator();
+				Iterator<? extends CharSequence> itkA = keysA.keySet().iterator();
+
+				// test nodes order
+				assertIteratorEquals(itkE, itkA);
+
 				keysE.forEach((key, dictE) -> {
 					DictionarySection dictA = keysA.get(key);
 
@@ -175,7 +206,7 @@ public class HDTManagerTest {
 			Dictionary dict = hdt.getDictionary();
 			Map<CharSequence, DictionarySection> map;
 			map = new HashMap<>();
-			if (dict instanceof MultipleBaseDictionary) {
+			if (dict instanceof MultipleBaseDictionary || dict instanceof MultipleLangBaseDictionary) {
 				map.putAll(dict.getAllObjects());
 			} else {
 				map.put("Objects", dict.getObjects());
@@ -233,6 +264,13 @@ public class HDTManagerTest {
 			});
 		}
 
+		public static void assertComponentsNotNull(String message, TripleString ts) {
+			if (ts.getSubject() == null || ts.getSubject().isEmpty() || ts.getPredicate() == null
+					|| ts.getPredicate().isEmpty() || ts.getObject() == null || ts.getObject().isEmpty()) {
+				fail(message + " (" + ts + ")");
+			}
+		}
+
 		public static void assertEqualsHDT(String section, DictionarySection excepted, DictionarySection actual) {
 			assertEquals("sizes of section " + section + " aren't the same!", excepted.getNumberOfElements(),
 					actual.getNumberOfElements());
@@ -275,22 +313,22 @@ public class HDTManagerTest {
 		@Parameterized.Parameters(name = "{7} - {0}")
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
-			for (String[] dict : diskDict()) {
+			for (String dict : diskDict()) {
 				params.addAll(List.of(
 						new Object[] { "slow-str1", 10, 2, 4, 2,
-								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict[0], dict[1], 2,
+								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
 								"debug.disk.slow.stream=true" },
 						new Object[] { "slow-str2", 10, 2, 4, 2,
-								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict[0], dict[1], 2,
+								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
 								"debug.disk.slow.stream2=true" },
 						new Object[] { "slow-cfsd", 10, 2, 4, 2,
-								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict[0], dict[1], 2,
+								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
 								"debug.disk.slow.pfsd=true" },
 						new Object[] { "slow-kw-d", 10, 2, 4, 2,
-								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict[0], dict[1], 2,
+								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
 								"debug.disk.slow.kway.dict=true" },
 						new Object[] { "slow-kw-t", 10, 2, 4, 2,
-								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict[0], dict[1], 2,
+								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
 								"debug.disk.slow.kway.triple=true" }));
 				for (int threads : new int[] {
 						// sync
@@ -304,19 +342,19 @@ public class HDTManagerTest {
 						// async, no need for partial
 						modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					} else {
-						modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
+						modes = List.of(// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					}
 					for (String mode : modes) {
 						params.addAll(List.of(
 								new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
-										false, dict[0], dict[1], SIZE_VALUE, "" },
+										false, dict, SIZE_VALUE, "" },
 								new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
-										mode, false, dict[0], dict[1], SIZE_VALUE, "" },
+										mode, false, dict, SIZE_VALUE, "" },
 								new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
-										threads, mode, false, dict[0], dict[1], SIZE_VALUE, "" },
+										threads, mode, false, dict, SIZE_VALUE, "" },
 								new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
-										false, dict[0], dict[1], SIZE_VALUE, "" }));
+										false, dict, SIZE_VALUE, "" }));
 					}
 				}
 			}
@@ -341,10 +379,8 @@ public class HDTManagerTest {
 		@Parameterized.Parameter(7)
 		public String dictionaryType;
 		@Parameterized.Parameter(8)
-		public String tempDictionaryType;
-		@Parameterized.Parameter(9)
 		public long size;
-		@Parameterized.Parameter(10)
+		@Parameterized.Parameter(9)
 		public String addedSpecs;
 
 		@Before
@@ -353,7 +389,6 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY, String.valueOf(threads));
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_KEY, compressMode);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
-			spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, tempDictionaryType);
 			spec.set(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY, true);
 		}
 
@@ -480,7 +515,7 @@ public class HDTManagerTest {
 			assertNotNull(actual);
 			try {
 				assertEqualsHDT(expected, actual); // -1 for the original size
-													// ignored by hdtcat
+				// ignored by hdtcat
 			} finally {
 				IOUtil.closeAll(expected, actual);
 			}
@@ -519,7 +554,7 @@ public class HDTManagerTest {
 			assertNotNull(actual);
 			try {
 				assertEqualsHDT(expected, actual); // -1 for the original size
-													// ignored by hdtcat
+				// ignored by hdtcat
 			} finally {
 				IOUtil.closeAll(expected, actual);
 			}
@@ -532,17 +567,17 @@ public class HDTManagerTest {
 		@Parameterized.Parameters(name = "{5} - {0} kcat: {8}(async:{9})")
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
-			for (String[] dict : diskDict()) {
+			for (String dict : diskDict()) {
 				for (boolean async : new boolean[] { false, true }) {
 					for (long kcat : new long[] { 2, 10, 0 }) {
-						params.add(new Object[] { "base", SIZE_VALUE * 16, 20, 50, false, dict[0], dict[1], SIZE_VALUE,
+						params.add(
+								new Object[] { "base", SIZE_VALUE * 16, 20, 50, false, dict, SIZE_VALUE, kcat, async });
+						params.add(new Object[] { "duplicates", SIZE_VALUE * 16, 10, 50, false, dict, SIZE_VALUE, kcat,
+								async });
+						params.add(new Object[] { "large-literals", SIZE_VALUE * 4, 20, 250, false, dict, SIZE_VALUE,
 								kcat, async });
-						params.add(new Object[] { "duplicates", SIZE_VALUE * 16, 10, 50, false, dict[0], dict[1],
-								SIZE_VALUE, kcat, async });
-						params.add(new Object[] { "large-literals", SIZE_VALUE * 4, 20, 250, false, dict[0], dict[1],
-								SIZE_VALUE, kcat, async });
-						params.add(new Object[] { "quiet", SIZE_VALUE * 16, 10, 50, false, dict[0], dict[1], SIZE_VALUE,
-								kcat, async });
+						params.add(new Object[] { "quiet", SIZE_VALUE * 16, 10, 50, false, dict, SIZE_VALUE, kcat,
+								async });
 					}
 				}
 			}
@@ -562,18 +597,15 @@ public class HDTManagerTest {
 		@Parameterized.Parameter(5)
 		public String dictionaryType;
 		@Parameterized.Parameter(6)
-		public String tempDictionaryType;
-		@Parameterized.Parameter(7)
 		public long size;
-		@Parameterized.Parameter(8)
+		@Parameterized.Parameter(7)
 		public long kCat;
-		@Parameterized.Parameter(9)
+		@Parameterized.Parameter(8)
 		public boolean async;
 
 		@Before
 		public void setupSpecs() {
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
-			spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, tempDictionaryType);
 
 			if (kCat != 0) {
 				spec.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, kCat);
@@ -616,7 +648,7 @@ public class HDTManagerTest {
 				assertNotNull(expected);
 				assertNotNull(actual);
 				assertEqualsHDT(expected, actual); // -1 for the original size
-													// ignored by hdtcat
+				// ignored by hdtcat
 			} finally {
 				IOUtil.closeAll(expected, actual);
 			}
@@ -655,7 +687,7 @@ public class HDTManagerTest {
 				checkHDTConsistency(expected);
 				checkHDTConsistency(actual);
 				assertEqualsHDT(expected, actual); // -1 for the original size
-													// ignored by hdtcat
+				// ignored by hdtcat
 			} finally {
 				IOUtil.closeAll(expected, actual);
 			}
@@ -859,7 +891,9 @@ public class HDTManagerTest {
 				try {
 					Files.deleteIfExists(hdtFile);
 				} finally {
-					PathUtils.deleteDirectory(diffLocation);
+					if (Files.exists(diffLocation)) {
+						PathUtils.deleteDirectory(diffLocation);
+					}
 				}
 			}
 		}
@@ -917,7 +951,7 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-																						// free
+					// free
 					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
 					), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
 					spec, (level, message) -> System.out.println("[" + level + "] " + message))) {
@@ -940,7 +974,7 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-																						// free
+					// free
 					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
 					), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
 					(level, message) -> System.out.println("[" + level + "] " + message))) {
@@ -950,4 +984,419 @@ public class HDTManagerTest {
 		}
 	}
 
+	public static class MSDLangTest extends HDTManagerTestBase {
+		@Test
+		public void msdLangTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path ntFile = tempDir.newFile().toPath();
+			try {
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+
+				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION);
+
+				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdl = hdt.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, msdl.getType());
+					assertTrue("not a msdl", msdl instanceof MultipleLangBaseDictionary);
+					checkHDTConsistency(hdt);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtFSD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specFSD, ProgressListener.ignore())) {
+						Dictionary fsd = hdtFSD.getDictionary();
+
+						assertTrue("not a fsd", fsd instanceof BaseDictionary);
+						assertEquals("not the same number of triples", hdtFSD.getTriples().getNumberOfElements(),
+								hdt.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", fsd.getNshared(), msdl.getNshared());
+						assertEquals("Not the same number of SUBJECTS", fsd.getNsubjects(), msdl.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", fsd.getNpredicates(), msdl.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", fsd.getNobjects(), msdl.getNobjects());
+
+						IteratorTripleString itMSDAT = hdt.search("", "", "");
+
+						while (itMSDAT.hasNext()) {
+							TripleString actual = itMSDAT.next();
+							if (!hdt.search(actual).hasNext()) {
+								fail(format("Can't find back triple %s in", actual));
+							}
+						}
+
+						IteratorTripleString itMSDA = hdt.search("", "", "");
+
+						while (itMSDA.hasNext()) {
+							TripleString actual = itMSDA.next();
+
+							IteratorTripleString itE = hdtFSD.search(actual);
+							if (!itE.hasNext()) {
+								long sid = fsd.stringToId(actual.getSubject(), TripleComponentRole.SUBJECT);
+								assertNotEquals("can't find SUB in FSD: " + actual.getSubject(), -1, sid);
+								long pid = fsd.stringToId(actual.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in FSD: " + actual.getPredicate(), -1, pid);
+								long oid = fsd.stringToId(actual.getObject(), TripleComponentRole.OBJECT);
+								assertNotEquals("can't find OBJ in FSD: " + actual.getObject(), -1, oid);
+
+								assertEquals(actual.getSubject().toString(),
+										fsd.idToString(sid, TripleComponentRole.SUBJECT).toString());
+								assertEquals(actual.getPredicate().toString(),
+										fsd.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(actual.getObject().toString(),
+										fsd.idToString(oid, TripleComponentRole.OBJECT).toString());
+
+								fail(format("Can't find triple %s in FSD", actual));
+							}
+							assertEquals(actual.tripleToString(), itE.next().tripleToString());
+						}
+
+						IteratorTripleString itE = hdtFSD.search("", "", "");
+
+						while (itE.hasNext()) {
+							TripleString excepted = itE.next();
+							IteratorTripleString itA = hdt.search(excepted.getSubject(), excepted.getPredicate(),
+									excepted.getObject());
+							if (!itA.hasNext()) {
+								long sid = msdl.stringToId(excepted.getSubject(), TripleComponentRole.SUBJECT);
+								assertNotEquals("can't find SUB in MSDL: " + excepted.getSubject(), -1, sid);
+								long pid = msdl.stringToId(excepted.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in MSDL: " + excepted.getPredicate(), -1, pid);
+								long oid = msdl.stringToId(excepted.getObject(), TripleComponentRole.OBJECT);
+								assertNotEquals("can't find OBJ in MSDL: " + excepted.getObject(), -1, oid);
+
+								assertEquals(excepted.getSubject().toString(),
+										msdl.idToString(sid, TripleComponentRole.SUBJECT).toString());
+								assertEquals(excepted.getPredicate().toString(),
+										msdl.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(excepted.getObject().toString(),
+										msdl.idToString(oid, TripleComponentRole.OBJECT).toString());
+
+								TripleID tid = new TripleID(sid, pid, oid);
+								IteratorTripleID itA2 = hdt.getTriples().search(tid);
+								if (itA2.hasNext()) {
+									fail(format("can't find triple %s by string in MSDL HDT", excepted));
+								} else {
+									fail(format("can't find triple %s by string or id in MSDL HDT (%s)", excepted,
+											tid));
+								}
+
+							}
+							TripleString actual = itA.next();
+							assertComponentsNotNull("an element is null", actual);
+							assertEquals(excepted, actual);
+						}
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = tempDir.newFile().toPath();
+					try {
+						hdt.saveToHDT(tempHDT, ProgressListener.ignore());
+						try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+									hdtMap.getDictionary().getType());
+							assertEqualsHDT(hdt, hdtMap);
+							try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+								assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+										hdtLoad.getDictionary().getType());
+								assertEqualsHDT(hdt, hdtLoad);
+								assertEqualsHDT(hdtLoad, hdtMap);
+							}
+						}
+					} finally {
+						Files.deleteIfExists(tempHDT);
+					}
+				}
+			} finally {
+				Files.deleteIfExists(ntFile);
+			}
+		}
+
+		@Test
+		public void diskMsdLangMemTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path ntFile = rootDir.resolve("ds.nt");
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"));
+
+				HDTOptions specMem = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+
+				try (HDT hdtGD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdlGD = hdtGD.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, msdlGD.getType());
+					assertTrue("not a msdl", msdlGD instanceof MultipleLangBaseDictionary);
+					checkHDTConsistency(hdtGD);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtMem = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specMem, ProgressListener.ignore())) {
+						Dictionary msdlMem = hdtMem.getDictionary();
+
+						assertTrue("not a msdl", msdlMem instanceof MultipleLangBaseDictionary);
+						assertEquals("not the same number of triples", hdtMem.getTriples().getNumberOfElements(),
+								hdtGD.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", msdlMem.getNshared(), msdlGD.getNshared());
+						assertEquals("Not the same number of SUBJECTS", msdlMem.getNsubjects(), msdlGD.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", msdlMem.getNpredicates(),
+								msdlGD.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", msdlMem.getNobjects(), msdlGD.getNobjects());
+
+						assertEqualsHDT(hdtMem, hdtGD);
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = rootDir.resolve("testmsdl.hdt");
+
+					hdtGD.saveToHDT(tempHDT, ProgressListener.ignore());
+					try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+						assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, hdtMap.getDictionary().getType());
+						assertEqualsHDT(hdtGD, hdtMap);
+						try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+									hdtLoad.getDictionary().getType());
+							assertEqualsHDT(hdtGD, hdtLoad);
+							assertEqualsHDT(hdtLoad, hdtMap);
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+
+		@Test
+		public void diskMsdLangMapTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path ntFile = rootDir.resolve("ds.nt");
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"),
+
+						HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, rootDir.resolve("future.hdt"));
+
+				HDTOptions specMem = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+
+				try (HDT hdtGD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdlGD = hdtGD.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, msdlGD.getType());
+					assertTrue("not a msdl", msdlGD instanceof MultipleLangBaseDictionary);
+					checkHDTConsistency(hdtGD);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtMem = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specMem, ProgressListener.ignore())) {
+						Dictionary msdlMem = hdtMem.getDictionary();
+
+						assertTrue("not a msdl", msdlMem instanceof MultipleLangBaseDictionary);
+						assertEquals("not the same number of triples", hdtMem.getTriples().getNumberOfElements(),
+								hdtGD.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", msdlMem.getNshared(), msdlGD.getNshared());
+						assertEquals("Not the same number of SUBJECTS", msdlMem.getNsubjects(), msdlGD.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", msdlMem.getNpredicates(),
+								msdlGD.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", msdlMem.getNobjects(), msdlGD.getNobjects());
+
+						assertEqualsHDT(hdtMem, hdtGD);
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = rootDir.resolve("testmsdl.hdt");
+
+					hdtGD.saveToHDT(tempHDT, ProgressListener.ignore());
+					try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+						assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, hdtMap.getDictionary().getType());
+						assertEqualsHDT(hdtGD, hdtMap);
+						try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG,
+									hdtLoad.getDictionary().getType());
+							assertEqualsHDT(hdtGD, hdtLoad);
+							assertEqualsHDT(hdtLoad, hdtMap);
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+
+		@Test
+		public void msdLangCatTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+			try {
+				final int sub = 3;
+				final long count = 2500;
+
+				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(count, 34);
+				LargeFakeDataSetStreamSupplier supplier2 = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(count * sub, 34);
+				String base = "sub";
+
+				Path ng = root.resolve("ng.nt");
+				Path hdtg = root.resolve("hg.hdt");
+
+				List<Path> ngs = new ArrayList<>();
+
+				supplier2.createNTFile(ng);
+
+				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+
+				for (int i = 0; i < sub + 1; i++) {
+					Path in;
+					Path out;
+					long size;
+					if (i == 0) {
+						in = ng;
+						out = hdtg;
+					} else {
+						in = root.resolve(base + i + ".nt");
+						out = root.resolve(base + i + ".hdt");
+						ngs.add(out);
+						supplier.createNTFile(in);
+					}
+					try (HDT h = HDTManager.generateHDT(in, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+							ProgressListener.ignore())) {
+						h.saveToHDT(out);
+					}
+				}
+
+				// ngs contains the list of the HDT to cat
+
+				HDTOptions specCat = spec.pushTop();
+
+				specCat.setOptions(HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("khc"),
+
+						HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("khc.hdt"));
+
+				try (HDT catOut = HDTManager.catHDTPath(ngs, specCat, ProgressListener.ignore())) {
+					try (HDT excepted = HDTManager.mapHDT(hdtg)) {
+						assertEqualsHDT(excepted, catOut);
+					}
+				}
+
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+	}
+
+	@RunWith(Parameterized.class)
+	public static class DictionaryLangTypeTest extends HDTManagerTestBase {
+
+		@Parameterized.Parameters(name = "dict:{0}")
+		public static Collection<Object> params() {
+			return List.of(diskDict());
+		}
+
+		@Parameterized.Parameter
+		public String dictType;
+
+		@Test
+		public void msdLangTypeFetchTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+			try {
+				final long count = 2500;
+
+				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(count, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+						.withUnicode(false);
+
+				Path hdtg = root.resolve("hg.hdt");
+
+				try (HDT hdt = supplier.createFakeHDT(HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType))) {
+					if (!hdt.getDictionary().supportsDataTypeOfId() && !hdt.getDictionary().supportsLanguageOfId()
+							&& !hdt.getDictionary().supportsNodeTypeOfId()) {
+						logger.debug("This dictionary doesn't support datatype/language/rdf-type retrieve");
+						return;
+					}
+					hdt.saveToHDT(hdtg);
+				}
+
+				try (HDT msdl = HDTManager.mapHDT(hdtg)) {
+					Iterator<TripleID> it = msdl.getTriples().searchAll();
+					while (it.hasNext()) {
+						TripleID ts = it.next();
+
+						long oid = ts.getObject();
+						CharSequence obj = msdl.getDictionary().idToString(oid, TripleComponentRole.OBJECT);
+
+						assertNotNull("obj is null", obj);
+
+						CharSequence type = LiteralsUtils.getType(obj);
+
+						if (msdl.getDictionary().supportsDataTypeOfId()) {
+							assertEquals(type.toString(), msdl.getDictionary().dataTypeOfId(oid).toString());
+						}
+
+						if (msdl.getDictionary().supportsLanguageOfId() && type == LiteralsUtils.LITERAL_LANG_TYPE) {
+							CharSequence lang = LiteralsUtils.getLanguage(obj)
+									.orElseThrow(() -> new AssertionError("No lang"));
+
+							String langActual = msdl.getDictionary().languageOfId(oid).toString();
+
+							assertEquals(lang.toString(), langActual);
+						}
+
+						if (msdl.getDictionary().supportsNodeTypeOfId()) {
+							CharSequence subj = msdl.getDictionary().idToString(ts.getSubject(),
+									TripleComponentRole.SUBJECT);
+							CharSequence pred = msdl.getDictionary().idToString(ts.getPredicate(),
+									TripleComponentRole.PREDICATE);
+
+							RDFNodeType stype = msdl.getDictionary().nodeTypeOfId(TripleComponentRole.SUBJECT,
+									ts.getSubject());
+							RDFNodeType ptype = msdl.getDictionary().nodeTypeOfId(TripleComponentRole.PREDICATE,
+									ts.getPredicate());
+							RDFNodeType otype = msdl.getDictionary().nodeTypeOfId(TripleComponentRole.OBJECT,
+									ts.getObject());
+
+							assertEquals(String.valueOf(ts.getSubject()), RDFNodeType.typeof(subj), stype);
+							assertEquals(String.valueOf(ts.getPredicate()), RDFNodeType.typeof(pred), ptype);
+							assertEquals(String.valueOf(ts.getObject()), RDFNodeType.typeof(obj), otype);
+
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+	}
 }
