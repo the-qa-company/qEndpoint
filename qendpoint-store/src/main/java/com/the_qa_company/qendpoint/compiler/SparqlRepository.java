@@ -385,6 +385,13 @@ public class SparqlRepository {
 		writeDeep(jg, plan);
 	}
 
+	private void writeExplanationError(com.fasterxml.jackson.core.JsonGenerator jg, String message) throws IOException {
+		jg.writeFieldName("plan");
+		jg.writeStartObject();
+		jg.writeStringField("error", message);
+		jg.writeEndObject();
+	}
+
 	private void writeDeep(com.fasterxml.jackson.core.JsonGenerator jg, GenericPlanNode plan) throws IOException {
 		jg.writeStartObject();
 		jg.writeStringField("id", plan.getType());
@@ -546,8 +553,13 @@ public class SparqlRepository {
 
 						if (writer instanceof QEPSPARQLResultsJSONWriter json
 								&& epConn.hasConfig(EndpointStore.QUERY_CONFIG_FETCH_QUERY_PLAN)) {
-							Explanation explain = query.explain(Explanation.Level.Optimized);
-							json.setHeaderWriter(jg -> writeExplanation(jg, explain));
+							if (hasLuceneSail()) {
+								json.setHeaderWriter(jg -> writeExplanationError(jg,
+										"Can't fetch query plan with full text index."));
+							} else {
+								Explanation explain = query.explain(Explanation.Level.Optimized);
+								json.setHeaderWriter(jg -> writeExplanation(jg, explain));
+							}
 						}
 
 						if (compiledSail.getOptions().isDebugShowCount()) {
@@ -556,6 +568,7 @@ public class SparqlRepository {
 
 						query.evaluate(writer);
 						if (compiledSail.getOptions().isDebugShowCount()) {
+							assert writer instanceof QueryResultCounter;
 							logger.info("Complete query with {} triples", ((QueryResultCounter) writer).getCount());
 						}
 						if (customConnection == null) {
@@ -598,8 +611,13 @@ public class SparqlRepository {
 
 						if (writer instanceof QEPSPARQLResultsJSONWriter json
 								&& epConn.hasConfig(EndpointStore.QUERY_CONFIG_FETCH_QUERY_PLAN)) {
-							Explanation explain = query.explain(Explanation.Level.Optimized);
-							json.setHeaderWriter(jg -> writeExplanation(jg, explain));
+							if (hasLuceneSail()) {
+								json.setHeaderWriter(jg -> writeExplanationError(jg,
+										"Can't fetch query plan with full text index."));
+							} else {
+								Explanation explain = query.explain(Explanation.Level.Optimized);
+								json.setHeaderWriter(jg -> writeExplanation(jg, explain));
+							}
 						}
 
 						writer.handleBoolean(query.evaluate());
