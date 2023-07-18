@@ -132,6 +132,9 @@ public class LargeFakeDataSetStreamSupplier {
 	private TripleString buffer;
 	private TripleString next;
 	private boolean nquad;
+	private boolean useBlankNode = true;
+	private boolean useIRI = true;
+	private boolean useLiteral = true;
 
 	private LargeFakeDataSetStreamSupplier(long maxSize, long maxTriples, long seed) {
 		this.maxSize = maxSize;
@@ -283,7 +286,7 @@ public class LargeFakeDataSetStreamSupplier {
 	}
 
 	private CharSequence createResource() {
-		if (random.nextInt(10) == 0) {
+		if (useBlankNode && (!useIRI || random.nextInt(10) == 0)) {
 			return "_:bnode" + random.nextInt(maxElementSplit / 10);
 		}
 		return createIRI();
@@ -298,7 +301,7 @@ public class LargeFakeDataSetStreamSupplier {
 	}
 
 	private CharSequence createValue() {
-		if (random.nextBoolean()) {
+		if (!useLiteral || random.nextBoolean()) {
 			return createResource();
 		}
 		int size = random.nextInt(maxLiteralSize);
@@ -340,6 +343,10 @@ public class LargeFakeDataSetStreamSupplier {
 		FakeStatementIterator() {
 			this.maxSize = LargeFakeDataSetStreamSupplier.this.maxSize;
 			this.maxTriples = LargeFakeDataSetStreamSupplier.this.maxTriples;
+
+			if (!(useIRI || useLiteral || useBlankNode)) {
+				throw new IllegalArgumentException("You need to use at least Literal, blank nodes or literal");
+			}
 		}
 
 		@Override
@@ -467,6 +474,39 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public LargeFakeDataSetStreamSupplier withUnicode(boolean unicode) {
 		this.unicode = unicode;
+		return this;
+	}
+
+	/**
+	 * allow using iri
+	 *
+	 * @param iri iri
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withIRI(boolean iri) {
+		this.useIRI = iri;
+		return this;
+	}
+
+	/**
+	 * allow using blank node
+	 *
+	 * @param useBlankNode use Blank Node
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withBlankNode(boolean useBlankNode) {
+		this.useBlankNode = useBlankNode;
+		return this;
+	}
+
+	/**
+	 * allow using Literal
+	 *
+	 * @param useLiteral use Literal
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier wihtLiteral(boolean useLiteral) {
+		this.useLiteral = useLiteral;
 		return this;
 	}
 

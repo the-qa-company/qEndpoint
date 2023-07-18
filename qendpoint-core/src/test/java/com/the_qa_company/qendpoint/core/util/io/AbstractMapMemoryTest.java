@@ -25,12 +25,12 @@ import org.junit.Before;
  */
 public class AbstractMapMemoryTest {
 	@Before
-	public void setup() {
+	public void setupMapMemoryTest() {
 		CloseMappedByteBufferUtil.markMapTest();
 	}
 
 	@After
-	public void complete() {
+	public void completeMapMemoryTest() {
 		CloseMappedByteBufferUtil.crashMapTest();
 	}
 }

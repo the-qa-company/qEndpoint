@@ -1,14 +1,14 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -47,8 +47,7 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 	protected Repository newRepository() throws Exception {
 		File nativeStore = tempDir.newFolder();
 		File hdtStore = tempDir.newFolder();
-		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
 			assert hdt != null;

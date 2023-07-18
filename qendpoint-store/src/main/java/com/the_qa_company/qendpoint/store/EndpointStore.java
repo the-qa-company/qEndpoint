@@ -65,7 +65,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class EndpointStore extends AbstractNotifyingSail implements FederatedServiceResolverClient {
+public class EndpointStore extends AbstractNotifyingSail {
 	/**
 	 * disable the optimizer
 	 */
@@ -89,7 +89,6 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	// stores to store the delta
 	public AbstractNotifyingSail nativeStoreA;
 	public AbstractNotifyingSail nativeStoreB;
-	private FederatedServiceResolver serviceResolver = new SPARQLServiceResolver();
 
 	// location of the native store
 
@@ -530,18 +529,6 @@ public class EndpointStore extends AbstractNotifyingSail implements FederatedSer
 	protected void connectionClosed(SailConnection connection) {
 		super.connectionClosed(connection);
 		connection.close();
-	}
-
-	@Override
-	public void setFederatedServiceResolver(FederatedServiceResolver federatedServiceResolver) {
-		this.serviceResolver = federatedServiceResolver;
-		// nativeStoreA.setFederatedServiceResolver(federatedServiceResolver);
-		// nativeStoreB.setFederatedServiceResolver(federatedServiceResolver);
-	}
-
-	@Override
-	public FederatedServiceResolver getFederatedServiceResolver() {
-		return serviceResolver;
 	}
 
 	public RepositoryConnection getConnectionToChangingStore() {

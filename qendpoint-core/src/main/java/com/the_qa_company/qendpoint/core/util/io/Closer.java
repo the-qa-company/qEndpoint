@@ -28,8 +28,13 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 	@SuppressWarnings("resource")
 	private Closer(Object... other) {
-		list = new ArrayList<>(other.length);
-		with(other);
+		if (other == null) {
+			list = new ArrayList<>();
+		} else {
+			list = new ArrayList<>(other.length);
+			with(other);
+
+		}
 	}
 
 	/**

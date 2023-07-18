@@ -24,6 +24,19 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	}
 
 	/**
+	 * copy a CharSequence into a new byte string
+	 *
+	 * @param csq char sequence
+	 * @return byte string
+	 */
+	static ByteString copy(CharSequence csq) {
+		if (csq instanceof ByteString bs) {
+			return bs.copy();
+		}
+		return new CompactString(csq);
+	}
+
+	/**
 	 * @return the buffer associated with this byte string, the maximum size
 	 *         should be read with {@link #length()}
 	 */

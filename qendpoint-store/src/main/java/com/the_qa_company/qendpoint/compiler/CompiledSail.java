@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.compiler.sail.LuceneSailCompiler;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
+import com.the_qa_company.qendpoint.store.experimental.ExperimentalQEndpointSail;
 import com.the_qa_company.qendpoint.utils.sail.OptimizingSail;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -165,6 +166,13 @@ public class CompiledSail extends SailWrapper {
 				}
 			} else if (options.getStorageMode().equals(SailCompilerSchema.LMDB_STORAGE)) {
 				LmdbStore store = new LmdbStore(new File(files.getLocationNative(), "lmdb"));
+				if (options.isOptimization()) {
+					source = new OptimizingSail(store, store::getFederatedServiceResolver);
+				} else {
+					source = store;
+				}
+			} else if (options.getStorageMode().equals(SailCompilerSchema.QEPC_STORAGE)) {
+				ExperimentalQEndpointSail store = new ExperimentalQEndpointSail(files.getLocationHdtPath());
 				if (options.isOptimization()) {
 					source = new OptimizingSail(store, store::getFederatedServiceResolver);
 				} else {

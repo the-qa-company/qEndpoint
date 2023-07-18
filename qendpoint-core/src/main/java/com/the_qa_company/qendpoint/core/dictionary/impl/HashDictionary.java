@@ -134,4 +134,5 @@ public class HashDictionary extends BaseTempDictionary {
 	public void close() throws IOException {
 		// Do nothing.
 	}
+
 }

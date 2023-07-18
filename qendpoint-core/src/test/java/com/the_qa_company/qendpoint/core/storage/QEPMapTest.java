@@ -14,19 +14,25 @@ import com.the_qa_company.qendpoint.core.storage.converter.PermutationNodeConver
 import com.the_qa_company.qendpoint.core.storage.converter.SharedWrapperNodeConverter;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.disk.LongArray;
+import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.LongStream;
 
 import static java.lang.String.format;
@@ -34,7 +40,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 
-public class QEPMapTest {
+@RunWith(Parameterized.class)
+public class QEPMapTest extends AbstractMapMemoryTest {
+	@Parameterized.Parameters(name = "{0}")
+	public static Collection<Object> params() {
+		return List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+	}
+
 	private static final ModifiableBitmap[] EMPTY_DELTA;
 
 	static {
@@ -44,6 +58,9 @@ public class QEPMapTest {
 
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+
+	@Parameterized.Parameter
+	public String dictType;
 
 	Path root;
 
@@ -182,7 +199,7 @@ public class QEPMapTest {
 
 			assertEquals(v2, pconv.dataset2to1().mapValue(v1));
 			assertEquals(v1, pconv.dataset1to2().mapValue(v2));
-			assertEquals("bad mapped strings", str1, str2);
+			assertEquals("bad mapped strings", str1.toString(), str2.toString());
 		}
 
 		// test mapping so->so
@@ -250,8 +267,15 @@ public class QEPMapTest {
 					assertEquals("bad binary search", idSequenceOther.get(mbsid), searchedId);
 
 					long mappedMapped = mapSequenceOther.get(mbsid);
-					assertEquals("remapped role isn't the same", role, QEPMap.getRoleOfMapped(mappedMapped));
+					TripleComponentRole roleOfMapped = QEPMap.getRoleOfMapped(mappedMapped);
 					long idOfMapped = QEPMap.getIdOfMapped(mappedMapped, nshared);
+					if (!Objects.equals(role, roleOfMapped)) {
+						dumpMap("maptest", qepMap, format("""
+								remapped role isn't the same: %s != %s
+								%x -> %x
+								%s
+								""", role, roleOfMapped, id, mappedId, qepMap.getUid()));
+					}
 					if (id != idOfMapped - (role == TripleComponentRole.OBJECT ? nshared : 0)) {
 						StringBuilder s = new StringBuilder("""
 								[%s->%s]
@@ -300,7 +324,7 @@ public class QEPMapTest {
 				CharSequence str2 = dict2.idToString(QEPMap.getIdOfMapped(mappedValue, dict2.getNshared()),
 						QEPMap.getRoleOfMapped(mappedValue));
 
-				assertEquals("bad mapped id for " + role, str1, str2);
+				assertEquals("bad mapped id for " + role, str1.toString(), str2.toString());
 				i++;
 			}
 
@@ -321,7 +345,7 @@ public class QEPMapTest {
 						QEPMap.getRoleOfMapped(mappedValue));
 				CharSequence str2 = dict2.idToString(ids.origin(), role);
 
-				assertEquals("bad mapped id for " + role, str1, str2);
+				assertEquals("bad mapped id for " + role, str1.toString(), str2.toString());
 				i++;
 			}
 
@@ -436,8 +460,7 @@ public class QEPMapTest {
 				.createSupplierWithMaxTriples(10_000, 34).withMaxElementSplit(50).withMaxLiteralSize(100)
 				.withUnicode(true);
 
-		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.LOADER_TYPE_KEY,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.LOADER_TYPE_KEY,
 				HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gen"));
 		Path store = root.resolveSibling("store");
 
@@ -471,8 +494,7 @@ public class QEPMapTest {
 				.createSupplierWithMaxTriples(10_000, 34).withMaxElementSplit(50).withMaxLiteralSize(100)
 				.withUnicode(true);
 
-		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.LOADER_TYPE_KEY,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.LOADER_TYPE_KEY,
 				HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gen"));
 		Path store = root.resolve("store");
 

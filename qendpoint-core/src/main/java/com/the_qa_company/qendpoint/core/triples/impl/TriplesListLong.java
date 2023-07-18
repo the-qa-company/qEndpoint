@@ -284,7 +284,7 @@ public class TriplesListLong implements TempTriples {
 	 */
 	@Override
 	public void removeDuplicates(ProgressListener listener) {
-		if (arrayOfTriples.size() <= 1 || !sorted) {
+		if (arrayOfTriples.size() <= 1) {
 			return;
 		}
 

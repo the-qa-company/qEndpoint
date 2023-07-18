@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.storage;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
+import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -11,6 +12,8 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -31,12 +34,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -44,6 +49,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ QEPCoreTest.MappingTest.class, QEPCoreTest.GenerationTest.class })
@@ -57,11 +63,15 @@ public class QEPCoreTest {
 
 	public static final QEPCore EMPTY_CORE = new QEPCore();
 
+	public static TripleString ts(CharSequence s, CharSequence p, CharSequence o) {
+		return new TripleString(s, p, o);
+	}
+
 	/**
 	 * All the tests linked with the mapping of the multiple dataset in the core
 	 */
 	@RunWith(Parameterized.class)
-	public static class MappingTest {
+	public static class MappingTest extends AbstractMapMemoryTest {
 		@Parameterized.Parameters(name = "test")
 		public static Collection<Object[]> params() throws IOException, ParserException {
 			Path root = Path.of("tests").resolve("mapping");
@@ -78,7 +88,7 @@ public class QEPCoreTest {
 						.createSupplierWithMaxTriples(10_000, 34).withMaxElementSplit(20).withMaxLiteralSize(100);
 
 				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.LOADER_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG, HDTOptionsKeys.LOADER_TYPE_KEY,
 						HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY,
 						root.resolve("gen"));
 
@@ -154,29 +164,32 @@ public class QEPCoreTest {
 					QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
 					Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
-				Iterator<? extends QEPComponentTriple> search = core.search("", "", "");
+				try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search = core.search("", "",
+						"")) {
 
-				long count = 0;
-				while (search.hasNext()) {
-					QEPComponentTriple next = search.next();
-					// convert to a triple string to search over the main HDT
-					TripleString ts = next.tripleString();
-					count++;
-					// search the ts
-					IteratorTripleString searchIt = hdt.search(ts.getSubject(), ts.getPredicate(), ts.getObject());
-					assertTrue("missing triple for " + ts + " in main HDT", searchIt.hasNext());
-					searchIt.next();
+					long count = 0;
+					while (search.hasNext()) {
+						QEPComponentTriple next = search.next();
+						// convert to a triple string to search over the main
+						// HDT
+						TripleString ts = next.tripleString();
+						count++;
+						// search the ts
+						IteratorTripleString searchIt = hdt.search(ts.getSubject(), ts.getPredicate(), ts.getObject());
+						assertTrue("missing triple for " + ts + " in main HDT", searchIt.hasNext());
+						searchIt.next();
 
-					long position = searchIt.getLastTriplePosition();
-					assertFalse("position " + position + " was already checked", findBM.access(position));
+						long position = searchIt.getLastTriplePosition();
+						assertFalse("position " + position + " was already checked", findBM.access(position));
 
-					findBM.set(position, true);
+						findBM.set(position, true);
 
-					assertFalse("multiple find, wtf?", searchIt.hasNext());
+						assertFalse("multiple find, wtf?", searchIt.hasNext());
+					}
+
+					assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
+							hdt.getTriples().getNumberOfElements(), count);
 				}
-
-				assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
-						hdt.getTriples().getNumberOfElements(), count);
 			}
 		}
 
@@ -218,21 +231,22 @@ public class QEPCoreTest {
 					// convert to a triple string to search over the main HDT
 					count++;
 					// search the ts
-					Iterator<? extends QEPComponentTriple> searchIt = core.search(ts);
-					assertTrue("missing triple for " + ts + " in core", searchIt.hasNext());
+					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> searchIt = core.search(ts)) {
+						assertTrue("missing triple for " + ts + " in core", searchIt.hasNext());
 
-					QEPComponentTriple qts = searchIt.next();
-					long position = qts.getId();
-					int datasetId = qts.getDatasetId();
-					Bitmap64Big bitmap = bitmaps.get(datasetId);
+						QEPComponentTriple qts = searchIt.next();
+						long position = qts.getId();
+						int datasetId = qts.getDatasetId();
+						Bitmap64Big bitmap = bitmaps.get(datasetId);
 
-					assertNotNull("empty bitmap for dataset: " + datasetId, bitmap);
-					assertFalse("position " + position + " was already checked for dataset " + datasetId,
-							bitmap.access(position));
+						assertNotNull("empty bitmap for dataset: " + datasetId, bitmap);
+						assertFalse("position " + position + " was already checked for dataset " + datasetId,
+								bitmap.access(position));
 
-					bitmap.set(position, true);
+						bitmap.set(position, true);
 
-					assertFalse("multiple find, wtf?", searchIt.hasNext());
+						assertFalse("multiple find, wtf?", searchIt.hasNext());
+					}
 				}
 
 				assertEquals("the searched number of values isn't the same as the number of elements in the HDT",
@@ -297,8 +311,8 @@ public class QEPCoreTest {
 					long actualId = qepComponent.getId(dataset.uid(), role);
 					if (guessedId != actualId) {
 						dumpCore(core, """
-								guessedId=%X != actualId=%X
-								(n=%X / d-role=%s / dataset=%s)
+								guessedId=%x != actualId=%x
+								(n=%x / d-role=%s / dataset=%s)
 								find: %s
 								component: %s
 								ids aren't the same for component
@@ -348,6 +362,45 @@ public class QEPCoreTest {
 				checkSection(DictionarySectionRole.SHARED, core, hdt.getDictionary().getShared());
 			}
 		}
+
+		private void assertEqualsDump(String text, QEPComponent c, Object ex, Object ac) {
+			if (!Objects.equals(ac, ex)) {
+				fail("%s: %s != %s\n%s".formatted(text, ex, ac, c.dumpBinding()));
+			}
+		}
+
+		@Test
+		public void rdfNodeTypeMapTest() throws QEPCoreException, IOException {
+			try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
+				try (QueryCloseableIterator it = core.search()) {
+					while (it.hasNext()) {
+						QEPComponentTriple triple = it.next();
+						QEPComponentTriple testTriple = triple.deepClone();
+
+						QEPComponent subject = triple.getSubject();
+						QEPComponent predicate = triple.getPredicate();
+						QEPComponent object = triple.getObject();
+
+						CharSequence sstr = testTriple.getSubject().getString();
+						CharSequence pstr = testTriple.getPredicate().getString();
+						CharSequence ostr = testTriple.getObject().getString();
+
+						RDFNodeType exceptedSubject = RDFNodeType.typeof(sstr);
+						RDFNodeType exceptedPredicate = RDFNodeType.typeof(pstr);
+						RDFNodeType exceptedObject = RDFNodeType.typeof(ostr);
+
+						assertFalse(QEPCoreUtils.isComponentStringGenerated(subject));
+						assertFalse(QEPCoreUtils.isComponentStringGenerated(predicate));
+						assertFalse(QEPCoreUtils.isComponentStringGenerated(object));
+
+						assertEqualsDump("bad Subject RDF type", subject, exceptedSubject, subject.getNodeType());
+						assertEqualsDump("bad Predicate RDF type", predicate, exceptedPredicate,
+								predicate.getNodeType());
+						assertEqualsDump("bad Object RDF type", object, exceptedObject, object.getNodeType());
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -391,29 +444,241 @@ public class QEPCoreTest {
 					assertEquals("http://the-qa-company.com/plant2", plant2.toString());
 
 					for (List<TripleString> tsNode : tsNodes) {
-						core.loadData(tsNode.iterator(), "http://example.org/#", false, ProgressListener.ignore());
+						core.insertTriples(tsNode.iterator(), "http://example.org/#", false, ProgressListener.ignore());
 					}
 
 					assertEquals("size isn't matching", ts.size(), core.triplesCount());
 
 					for (TripleString t : ts) {
-						if (!core.search(t).hasNext()) {
-							throw new AssertionError(format("Can't find triple '%s' in the core", t));
+						try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> s = core.search(t)) {
+							if (!s.hasNext()) {
+								throw new AssertionError(format("Can't find triple '%s' in the core", t));
+							}
 						}
 					}
 
-					Iterator<? extends QEPComponentTriple> sit = core.search();
-					while (sit.hasNext()) {
-						QEPComponentTriple triple = sit.next();
-						// we need to convert it using tripleToString() because
-						// ts contains String char sequences
-						// where tripleString() contains byte strings
-						TripleString tt = triple.tripleString().tripleToString();
-						if (!ts.contains(tt)) {
-							throw new AssertionError(
-									format("the core contains the triple %s, but it isn't in the dataset!", triple));
+					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> sit = core.search()) {
+						while (sit.hasNext()) {
+							QEPComponentTriple triple = sit.next();
+							// we need to convert it using tripleToString()
+							// because
+							// ts contains String char sequences
+							// where tripleString() contains byte strings
+							TripleString tt = triple.tripleString().tripleToString();
+							if (!ts.contains(tt)) {
+								throw new AssertionError(format(
+										"the core contains the triple %s, but it isn't in the dataset!", triple));
+							}
 						}
 					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+	}
+
+	/**
+	 * Add Delete Select test
+	 */
+	public static class ADSTest extends AbstractMapMemoryTest {
+		public record CoreState(QEPCore core, List<TripleString> tripleStrings, boolean[] shouldContains) {
+			CoreState(QEPCore core, TripleString... strings) {
+				this(core, List.of(strings), new boolean[strings.length]);
+			}
+
+			CoreState copy() {
+				return new CoreState(core, tripleStrings, Arrays.copyOf(shouldContains, shouldContains.length));
+			}
+
+			void assertContains(int count) {
+				int c = 0;
+				for (int i = 0; i < shouldContains.length; i++) {
+					if (shouldContains[i]) {
+						c++;
+					}
+					assertEquals(tripleStrings.get(i) + " error", shouldContains[i],
+							core.containsAny(tripleStrings.get(i)));
+				}
+				assertEquals("bad count for the assert", count, c);
+			}
+
+			void assertContains(QEPCoreContext ctx, int count) {
+				int c = 0;
+				for (int i = 0; i < shouldContains.length; i++) {
+					if (shouldContains[i]) {
+						c++;
+					}
+					assertEquals(tripleStrings.get(i) + " error", shouldContains[i],
+							core.containsAny(ctx, tripleStrings.get(i)));
+				}
+				assertEquals("bad count for the assert", count, c);
+			}
+
+			void addTriple(int... ids) throws ParserException, IOException {
+				List<TripleString> ts = new ArrayList<>(ids.length);
+				for (int i : ids) {
+					assertFalse(shouldContains[i]);
+					ts.add(tripleStrings.get(i));
+					shouldContains[i] = true;
+				}
+
+				core.insertTriples(ts.iterator(), "http://e.org/#", false);
+			}
+
+			void removeTriple(int... ids) {
+				for (int i : ids) {
+					assertTrue(shouldContains[i]);
+					core.removeTriple(tripleStrings.get(i));
+					shouldContains[i] = false;
+				}
+			}
+		}
+
+		@Rule
+		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+
+		@Test
+		public void addSelectTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder("generation").toPath();
+
+			try {
+				try (QEPCore core = new QEPCore(root)) {
+					CoreState s = new CoreState(core, ts("http://e.org/#a", "http://e.org/#p", "\"aaa\""), // 0
+							ts("http://e.org/#a", "http://e.org/#p", "\"bbb\""), // 1
+							ts("http://e.org/#a", "http://e.org/#p", "\"ccc\""), // 2
+							ts("http://e.org/#a", "http://e.org/#p", "\"ddd\""), // 3
+							ts("http://e.org/#a", "http://e.org/#p", "\"eee\"") // 4
+					);
+					// we add a new triple after each assert, and we do a search
+					// after and before add (with context)
+					// to see if it affects the contexts
+
+					s.assertContains(0);
+					CoreState clone0 = s.copy();
+					QEPCoreContext ctx0 = s.core.createSearchContext();
+
+					s.addTriple(0);
+					CoreState clone1 = s.copy();
+					QEPCoreContext ctx1 = s.core.createSearchContext();
+					s.assertContains(1);
+
+					s.addTriple(1, 2);
+					CoreState clone2 = s.copy();
+					QEPCoreContext ctx2 = s.core.createSearchContext();
+					s.assertContains(3);
+
+					s.addTriple(3, 4);
+					CoreState clone3 = s.copy();
+					QEPCoreContext ctx3 = s.core.createSearchContext();
+					s.assertContains(5);
+
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 1);
+					clone2.assertContains(ctx2, 3);
+					clone3.assertContains(ctx3, 5);
+
+					ctx2.close();
+
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 1);
+					clone3.assertContains(ctx3, 5);
+
+					ctx0.close();
+
+					clone1.assertContains(ctx1, 1);
+					clone3.assertContains(ctx3, 5);
+
+					ctx3.close();
+
+					clone1.assertContains(ctx1, 1);
+
+					ctx1.close();
+				}
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+
+		@Test
+		public void delSelectTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder("generation").toPath();
+
+			try {
+				try (QEPCore core = new QEPCore(root)) {
+					CoreState s = new CoreState(core, ts("http://e.org/#a", "http://e.org/#p", "\"aaa\""), // 0
+							ts("http://e.org/#a", "http://e.org/#p", "\"bbb\""), // 1
+							ts("http://e.org/#a", "http://e.org/#p", "\"ccc\""), // 2
+							ts("http://e.org/#a", "http://e.org/#p", "\"ddd\""), // 3
+							ts("http://e.org/#a", "http://e.org/#p", "\"eee\"") // 4
+					);
+
+					s.assertContains(0);
+					CoreState clone0 = s.copy();
+					QEPCoreContext ctx0 = s.core.createSearchContext();
+					s.addTriple(1, 2, 3, 4);
+					CoreState clone1 = s.copy();
+					QEPCoreContext ctx1 = s.core.createSearchContext();
+					s.assertContains(4);
+
+					s.removeTriple(1, 2);
+					CoreState clone2 = s.copy();
+					QEPCoreContext ctx2 = s.core.createSearchContext();
+					s.assertContains(2);
+
+					s.addTriple(0);
+					s.assertContains(3);
+
+					s.removeTriple(3, 4);
+					CoreState clone3 = s.copy();
+					QEPCoreContext ctx3 = s.core.createSearchContext();
+					s.assertContains(1);
+
+					s.removeTriple(0);
+					CoreState clone4 = s.copy();
+					QEPCoreContext ctx4 = s.core.createSearchContext();
+					s.assertContains(0);
+
+					s.addTriple(1, 2, 3, 4);
+					CoreState clone5 = s.copy();
+					QEPCoreContext ctx5 = s.core.createSearchContext();
+					s.assertContains(4);
+					s.addTriple(0);
+					s.assertContains(5);
+
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone3.assertContains(ctx3, 1);
+					clone4.assertContains(ctx4, 0);
+					clone5.assertContains(ctx5, 4);
+
+					ctx5.close();
+					clone0.assertContains(ctx0, 0);
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone3.assertContains(ctx3, 1);
+					clone4.assertContains(ctx4, 0);
+
+					ctx0.close();
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone3.assertContains(ctx3, 1);
+					clone4.assertContains(ctx4, 0);
+
+					ctx3.close();
+					clone1.assertContains(ctx1, 4);
+					clone2.assertContains(ctx2, 2);
+					clone4.assertContains(ctx4, 0);
+
+					ctx1.close();
+					clone2.assertContains(ctx2, 2);
+					clone4.assertContains(ctx4, 0);
+
+					ctx4.close();
+					clone2.assertContains(ctx2, 2);
+
+					ctx2.close();
 				}
 			} finally {
 				PathUtils.deleteDirectory(root);

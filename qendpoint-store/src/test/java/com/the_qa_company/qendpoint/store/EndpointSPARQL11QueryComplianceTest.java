@@ -72,8 +72,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		nativeStore = tempDir.newFolder();
 		hdtStore = tempDir.newFolder();
 
-		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		if (this.hdt == null) {
 			hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);

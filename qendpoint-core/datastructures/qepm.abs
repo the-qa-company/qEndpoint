@@ -11,6 +11,7 @@ QEPMapHeaderSections {
 QEPMapHeader {
     struct {
         string magic = "$QML";
+        byte coreVersion;
         byte[101] id1;
         byte[101] id2;
         QEPMapHeaderSections dataset1;

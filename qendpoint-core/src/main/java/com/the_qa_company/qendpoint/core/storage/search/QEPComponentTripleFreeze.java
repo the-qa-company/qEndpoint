@@ -14,11 +14,16 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 	private final QEPComponent predicate;
 	private final QEPComponent object;
 
-	public QEPComponentTripleFreeze(QEPComponent subject, QEPComponent predicate, QEPComponent object) {
-		this.wrapper = QEPComponentTriple.of();
+	private QEPComponentTripleFreeze(QEPComponentTriple wrapper, QEPComponent subject, QEPComponent predicate,
+			QEPComponent object) {
+		this.wrapper = wrapper;
 		this.subject = subject;
 		this.predicate = predicate;
 		this.object = object;
+	}
+
+	public QEPComponentTripleFreeze(QEPComponent subject, QEPComponent predicate, QEPComponent object) {
+		this(QEPComponentTriple.of(), subject, predicate, object);
 	}
 
 	@Override
@@ -95,5 +100,13 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 	@Override
 	public int hashCode() {
 		return Objects.hash(getSubject(), getPredicate(), getObject());
+	}
+
+	@Override
+	public QEPComponentTriple deepClone() {
+		QEPComponent s = subject != null ? subject.clone() : null;
+		QEPComponent p = predicate != null ? predicate.clone() : null;
+		QEPComponent o = object != null ? object.clone() : null;
+		return new QEPComponentTripleFreeze(wrapper.deepClone(), s, p, o);
 	}
 }

@@ -194,6 +194,11 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI LMDB_STORAGE = STORAGE_MODE_PROPERTY.getHandler().createValue("lmdbStoreStorage",
 			"The storage mode lmdb");
+	/**
+	 * mdlc:qepcStoreStorage
+	 */
+	public static final IRI QEPC_STORAGE = STORAGE_MODE_PROPERTY.getHandler().createValue("qepcStoreStorage",
+			"The storage mode QEPCore");
 
 	/**
 	 * mdlc:hdtSpec

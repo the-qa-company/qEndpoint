@@ -238,19 +238,27 @@ public class HDTManagerImpl extends HDTManager {
 		try (TempHDT modHdt = loader.loadFromTriples(spec, triples, baseURI, listener)) {
 			// Convert to HDT
 			HDTImpl hdt = new HDTImpl(spec);
-			hdt.loadFromModifiableHDT(modHdt, listener);
-			hdt.populateHeaderStructure(modHdt.getBaseURI());
-
-			// Add file size to Header
 			try {
-				long originalSize = HeaderUtil.getPropertyLong(modHdt.getHeader(), "_:statistics",
-						HDTVocabulary.ORIGINAL_SIZE);
-				hdt.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
-			} catch (NotFoundException e) {
-				// ignore
-			}
+				hdt.loadFromModifiableHDT(modHdt, listener);
+				hdt.populateHeaderStructure(modHdt.getBaseURI());
 
-			return hdt;
+				// Add file size to Header
+				try {
+					long originalSize = HeaderUtil.getPropertyLong(modHdt.getHeader(), "_:statistics",
+							HDTVocabulary.ORIGINAL_SIZE);
+					hdt.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
+				} catch (NotFoundException e) {
+					// ignore
+				}
+				return hdt;
+			} catch (Throwable t) {
+				try {
+					hdt.close();
+				} catch (Throwable t2) {
+					t.addSuppressed(t2);
+				}
+				throw t;
+			}
 		}
 	}
 
@@ -436,7 +444,7 @@ public class HDTManagerImpl extends HDTManager {
 			return loadOrMapHDT(hdtFileNames.get(0), listener, hdtFormat);
 		}
 
-		try (KCatImpl kCat = new KCatImpl(hdtFileNames, hdtFormat, listener)) {
+		try (KCatImpl kCat = KCatImpl.of(hdtFileNames, hdtFormat, listener)) {
 			return kCat.cat();
 		}
 	}
@@ -452,7 +460,23 @@ public class HDTManagerImpl extends HDTManager {
 			throw new IllegalArgumentException("hdtFileNames.size() != deleteBitmaps.size()");
 		}
 
-		try (KCatImpl kCat = new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener)) {
+		try (KCatImpl kCat = KCatImpl.of(hdtFileNames, deleteBitmaps, hdtFormat, listener)) {
+			return kCat.cat();
+		}
+	}
+
+	@Override
+	protected HDT doHDTDiffBitCatObject(List<HDT> hdtFileNames, List<? extends Bitmap> deleteBitmaps,
+			HDTOptions hdtFormat, ProgressListener listener, boolean closeHDTs) throws IOException {
+		if (hdtFileNames.isEmpty()) {
+			return HDTFactory.createHDT(hdtFormat);
+		}
+
+		if (hdtFileNames.size() != deleteBitmaps.size()) {
+			throw new IllegalArgumentException("hdtFileNames.size() != deleteBitmaps.size()");
+		}
+
+		try (KCatImpl kCat = KCatImpl.of(hdtFileNames, deleteBitmaps, hdtFormat, listener, closeHDTs)) {
 			return kCat.cat();
 		}
 	}

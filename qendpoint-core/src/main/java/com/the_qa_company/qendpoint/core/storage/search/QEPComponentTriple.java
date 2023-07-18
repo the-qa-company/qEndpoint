@@ -170,7 +170,7 @@ public interface QEPComponentTriple {
 			}
 		}
 
-		if (s == null) {
+		if (p == null) {
 			pid = 0;
 		} else {
 			long id = p.getId(dataset.uid(), TripleComponentRole.PREDICATE);
@@ -181,7 +181,7 @@ public interface QEPComponentTriple {
 			}
 		}
 
-		if (s == null) {
+		if (o == null) {
 			oid = 0;
 		} else {
 			long id = o.getId(dataset.uid(), TripleComponentRole.OBJECT);
@@ -214,4 +214,9 @@ public interface QEPComponentTriple {
 
 	@Override
 	int hashCode();
+
+	/**
+	 * @return a deep clone of this triple, the component will be cloned
+	 */
+	QEPComponentTriple deepClone();
 }

@@ -40,7 +40,7 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 public class HashDictionarySection implements TempDictionarySection {
 	private Map<ByteString, Long> map = new HashMap<>();
 	private List<ByteString> list = new ArrayList<>();
-	private int size;
+	private long size;
 	public boolean sorted;
 	final DictionaryType genType;
 	private final Map<ByteString, Long> literalsCounts = new HashMap<>();
@@ -87,7 +87,7 @@ public class HashDictionarySection implements TempDictionarySection {
 	 */
 	@Override
 	public long size() {
-		return size;
+		return size + (long) map.size() * Long.BYTES;
 	}
 
 	/*
@@ -118,7 +118,7 @@ public class HashDictionarySection implements TempDictionarySection {
 
 	@Override
 	public long add(CharSequence entry) {
-		ByteString compact = new CompactString(entry);
+		ByteString compact = ByteString.copy(entry);
 		// custom for subsection literals ..
 		return map.computeIfAbsent(compact, key -> {
 			// Not found, insert new
@@ -144,8 +144,11 @@ public class HashDictionarySection implements TempDictionarySection {
 
 	@Override
 	public void remove(CharSequence seq) {
-		map.remove(ByteString.of(seq));
-		sorted = false;
+		ByteString bs = ByteString.of(seq);
+		if (map.remove(bs) != null) {
+			size -= bs.length();
+			sorted = false;
+		}
 	}
 
 	@Override

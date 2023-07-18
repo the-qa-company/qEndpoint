@@ -59,13 +59,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.OBJECT;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentRole.SUBJECT;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1038,19 +1042,17 @@ public class HDTManagerTest {
 
 							IteratorTripleString itE = hdtFSD.search(actual);
 							if (!itE.hasNext()) {
-								long sid = fsd.stringToId(actual.getSubject(), TripleComponentRole.SUBJECT);
+								long sid = fsd.stringToId(actual.getSubject(), SUBJECT);
 								assertNotEquals("can't find SUB in FSD: " + actual.getSubject(), -1, sid);
 								long pid = fsd.stringToId(actual.getPredicate(), TripleComponentRole.PREDICATE);
 								assertNotEquals("can't find PRE in FSD: " + actual.getPredicate(), -1, pid);
-								long oid = fsd.stringToId(actual.getObject(), TripleComponentRole.OBJECT);
+								long oid = fsd.stringToId(actual.getObject(), OBJECT);
 								assertNotEquals("can't find OBJ in FSD: " + actual.getObject(), -1, oid);
 
-								assertEquals(actual.getSubject().toString(),
-										fsd.idToString(sid, TripleComponentRole.SUBJECT).toString());
+								assertEquals(actual.getSubject().toString(), fsd.idToString(sid, SUBJECT).toString());
 								assertEquals(actual.getPredicate().toString(),
 										fsd.idToString(pid, TripleComponentRole.PREDICATE).toString());
-								assertEquals(actual.getObject().toString(),
-										fsd.idToString(oid, TripleComponentRole.OBJECT).toString());
+								assertEquals(actual.getObject().toString(), fsd.idToString(oid, OBJECT).toString());
 
 								fail(format("Can't find triple %s in FSD", actual));
 							}
@@ -1064,19 +1066,18 @@ public class HDTManagerTest {
 							IteratorTripleString itA = hdt.search(excepted.getSubject(), excepted.getPredicate(),
 									excepted.getObject());
 							if (!itA.hasNext()) {
-								long sid = msdl.stringToId(excepted.getSubject(), TripleComponentRole.SUBJECT);
+								long sid = msdl.stringToId(excepted.getSubject(), SUBJECT);
 								assertNotEquals("can't find SUB in MSDL: " + excepted.getSubject(), -1, sid);
 								long pid = msdl.stringToId(excepted.getPredicate(), TripleComponentRole.PREDICATE);
 								assertNotEquals("can't find PRE in MSDL: " + excepted.getPredicate(), -1, pid);
-								long oid = msdl.stringToId(excepted.getObject(), TripleComponentRole.OBJECT);
+								long oid = msdl.stringToId(excepted.getObject(), OBJECT);
 								assertNotEquals("can't find OBJ in MSDL: " + excepted.getObject(), -1, oid);
 
 								assertEquals(excepted.getSubject().toString(),
-										msdl.idToString(sid, TripleComponentRole.SUBJECT).toString());
+										msdl.idToString(sid, SUBJECT).toString());
 								assertEquals(excepted.getPredicate().toString(),
 										msdl.idToString(pid, TripleComponentRole.PREDICATE).toString());
-								assertEquals(excepted.getObject().toString(),
-										msdl.idToString(oid, TripleComponentRole.OBJECT).toString());
+								assertEquals(excepted.getObject().toString(), msdl.idToString(oid, OBJECT).toString());
 
 								TripleID tid = new TripleID(sid, pid, oid);
 								IteratorTripleID itA2 = hdt.getTriples().search(tid);
@@ -1315,6 +1316,110 @@ public class HDTManagerTest {
 				PathUtils.deleteDirectory(root);
 			}
 		}
+
+		@Test
+		public void idFromIteratorTest() throws IOException, ParserException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withMaxLiteralSize(50).withMaxElementSplit(20);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path hdtPath = rootDir.resolve("ds.nt");
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"),
+
+						HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, rootDir.resolve("future.hdt"));
+
+				supplier.createAndSaveFakeHDT(spec, hdtPath);
+
+				try (HDT hdt = HDTManager.mapHDT(hdtPath)) {
+					Dictionary dictUkn = hdt.getDictionary();
+
+					if (!(dictUkn instanceof MultipleLangBaseDictionary dict)) {
+						fail("bad dict type: %s".formatted(dictUkn.getClass()));
+						return;
+					}
+
+					assertTrue(dict.supportsDataTypeOfId());
+					assertTrue(dict.supportsLanguageOfId());
+					assertTrue(dict.supportsNodeTypeOfId());
+
+					for (TripleComponentRole role : TripleComponentRole.values()) {
+						long idc = 1;
+						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
+
+						while (it.hasNext()) {
+							CharSequence component = it.next();
+							long id = idc++;
+
+							CharSequence componentActual = dict.idToString(id, role);
+
+							if (!component.toString().equals(componentActual.toString())) {
+								fail("%s != %s for id %d/%s".formatted(component, componentActual, id, role));
+							}
+						}
+					}
+					Set<ByteString> loaded = new HashSet<>();
+					for (TripleComponentRole role : new TripleComponentRole[] { SUBJECT, OBJECT }) {
+						long nshared = dict.getNshared();
+						long idc = 1;
+						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
+
+						while (it.hasNext()) {
+							CharSequence component = it.next();
+							long id = idc++;
+
+							if (!loaded.add(ByteString.of(component))) {
+								if (id > nshared) { // normal for shared
+									fail(format("the component %s(%s/%d) was loaded twice! ", component, role, id));
+								}
+							}
+
+							assertEquals("bad id mapping", id, dict.stringToId(component, role));
+
+							CharSequence componentActual = dict.idToString(id, role);
+							assertEquals("bad string mapping", component.toString(), componentActual.toString());
+
+							TripleComponentRole role2 = role == SUBJECT ? OBJECT : SUBJECT;
+
+							if (id <= nshared) {
+								assertEquals("bad role logic", id, dict.stringToId(component, role2));
+							} else {
+								assertTrue("bad role logic", dict.stringToId(component, role2) <= 0);
+							}
+
+							RDFNodeType nodeType = RDFNodeType.typeof(component);
+
+							RDFNodeType actualNodeType = dict.nodeTypeOfId(role, id);
+							if (nodeType != actualNodeType) {
+								StringBuilder bld = new StringBuilder("Sections: ");
+								for (int i = 0; i < dict.getObjectsSectionCount(); i++) {
+									MultipleLangBaseDictionary.ObjectIdLocationData sec = dict
+											.getObjectsSectionFromId(i);
+									bld.append("%d=%s(%s)\n".formatted(sec.location(), sec.name(), sec.type()));
+								}
+								fail("bad node type %s != %s for %s (%s/%d@%d)\n%s".formatted(nodeType, actualNodeType,
+										component, role, id, nshared, bld));
+							}
+							if (role == OBJECT) {
+								CharSequence lang = LiteralsUtils.getLanguage(component).orElse(null);
+								assertEquals("bad lang", lang, dict.languageOfId(id));
+
+								CharSequence type = LiteralsUtils.getType(component);
+								assertEquals("bad type", type, dict.dataTypeOfId(id));
+							}
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(rootDir);
+			}
+		}
 	}
 
 	@RunWith(Parameterized.class)
@@ -1355,7 +1460,7 @@ public class HDTManagerTest {
 						TripleID ts = it.next();
 
 						long oid = ts.getObject();
-						CharSequence obj = msdl.getDictionary().idToString(oid, TripleComponentRole.OBJECT);
+						CharSequence obj = msdl.getDictionary().idToString(oid, OBJECT);
 
 						assertNotNull("obj is null", obj);
 
@@ -1375,17 +1480,14 @@ public class HDTManagerTest {
 						}
 
 						if (msdl.getDictionary().supportsNodeTypeOfId()) {
-							CharSequence subj = msdl.getDictionary().idToString(ts.getSubject(),
-									TripleComponentRole.SUBJECT);
+							CharSequence subj = msdl.getDictionary().idToString(ts.getSubject(), SUBJECT);
 							CharSequence pred = msdl.getDictionary().idToString(ts.getPredicate(),
 									TripleComponentRole.PREDICATE);
 
-							RDFNodeType stype = msdl.getDictionary().nodeTypeOfId(TripleComponentRole.SUBJECT,
-									ts.getSubject());
+							RDFNodeType stype = msdl.getDictionary().nodeTypeOfId(SUBJECT, ts.getSubject());
 							RDFNodeType ptype = msdl.getDictionary().nodeTypeOfId(TripleComponentRole.PREDICATE,
 									ts.getPredicate());
-							RDFNodeType otype = msdl.getDictionary().nodeTypeOfId(TripleComponentRole.OBJECT,
-									ts.getObject());
+							RDFNodeType otype = msdl.getDictionary().nodeTypeOfId(OBJECT, ts.getObject());
 
 							assertEquals(String.valueOf(ts.getSubject()), RDFNodeType.typeof(subj), stype);
 							assertEquals(String.valueOf(ts.getPredicate()), RDFNodeType.typeof(pred), ptype);

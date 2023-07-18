@@ -56,11 +56,17 @@ public class QEPMap implements Closeable {
 	private static final int HEADER_SIZE;
 	private static final byte[] MAGIC = "$QML".getBytes(ByteStringUtil.STRING_ENCODING);
 
+	private static final byte CORE_VERSION = 0x10;
+
 	static {
 		int headerSize = 0;
 
 		// magic: byte[MAGIC.length]
 		headerSize += MAGIC.length * Byte.BYTES;
+
+		// Core map version
+		headerSize += Byte.BYTES;
+
 		// id sizes: (ID size + 1) * 2 (+1 for '\0')
 		headerSize += (QEPCore.MAX_ID_SIZE + 1) * Byte.BYTES * 2;
 		// 4 sections * 2 datasets
@@ -192,9 +198,10 @@ public class QEPMap implements Closeable {
 			// we open the header file to see if it's actually the right map
 			try (FileChannel channel = FileChannel.open(mapHeaderPath, StandardOpenOption.READ,
 					StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+					// FIXME: read the magic+version and then read the correct
+					// header size
 					CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
 							FileChannel.MapMode.READ_WRITE, 0, HEADER_SIZE);
-
 					CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
 							FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
 				// store the id and the location to write it after creation
@@ -212,6 +219,7 @@ public class QEPMap implements Closeable {
 						for (; shift < MAGIC.length; shift++) {
 							header.put(shift, MAGIC[shift]);
 						}
+						header.put(shift++, CORE_VERSION);
 						IOUtil.writeCString(header, dataset1.id(), shift);
 						shift += QEPCore.MAX_ID_SIZE + 1;
 						IOUtil.writeCString(header, dataset2.id(), shift);
@@ -248,6 +256,13 @@ public class QEPMap implements Closeable {
 								throw new IOException("Can't read magic number of dataset linker " + getMapId() + "!");
 							}
 						}
+						byte coreVersion = header.get(shift++);
+
+						if (coreVersion != CORE_VERSION) {
+							syncOld(coreVersion);
+							return;
+						}
+
 						String aid1 = IOUtil.readCString(header, shift, QEPCore.MAX_ID_SIZE + 1);
 						shift += QEPCore.MAX_ID_SIZE + 1;
 						if (!aid1.equals(dataset1.id())) {
@@ -678,6 +693,22 @@ public class QEPMap implements Closeable {
 			}
 			throw t;
 		}
+	}
+
+	/**
+	 * sync old core version (it needs to be implemented after each core map
+	 * change)
+	 *
+	 * @param version read core version
+	 * @throws IOException sync exception
+	 */
+	public void syncOld(byte version) throws IOException {
+		if (version > CORE_VERSION) {
+			throw new IOException(
+					format("read core map version %x, but the core is older (%x)", version, CORE_VERSION));
+		}
+		// handle old version convertion
+		throw new IOException(format("read unknown core map version %x (current %x)", version, CORE_VERSION));
 	}
 
 	/**

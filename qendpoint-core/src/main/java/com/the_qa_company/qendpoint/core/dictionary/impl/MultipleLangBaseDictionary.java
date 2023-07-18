@@ -339,7 +339,7 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			return getPredicates().getSortedEntries();
 		}
 		case OBJECT -> {
-			return CatIterator.of(Arrays.stream(objectIdLocationsSec).skip(includeShared ? 1 : 0).map(data -> {
+			return CatIterator.of(Arrays.stream(objectIdLocationsSec).skip(includeShared ? 0 : 1).map(data -> {
 				ByteString suffix = data.suffix;
 				DictionarySectionPrivate sec = data.section;
 				return StringSuffixIterator.of(sec.getSortedEntries(), suffix);

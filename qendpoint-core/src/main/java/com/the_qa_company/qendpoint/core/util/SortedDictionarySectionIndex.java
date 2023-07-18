@@ -43,7 +43,7 @@ public class SortedDictionarySectionIndex {
 
 	long binarySearch(ByteString startSymbol, long startIndex) {
 		long start = startIndex;
-		long end = section.getNumberOfElements();
+		long end = section.getNumberOfElements() + 1;
 
 		while (start < end) {
 			long middle = (start + end) / 2;

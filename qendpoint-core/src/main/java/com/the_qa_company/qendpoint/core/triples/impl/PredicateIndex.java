@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +11,7 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 
-public interface PredicateIndex {
+public interface PredicateIndex extends Closeable {
 	long getNumOcurrences(long pred);
 
 	long getBase(long pred);
@@ -24,6 +25,4 @@ public interface PredicateIndex {
 	void mapIndex(CountInputStream input, File f, ProgressListener listener) throws IOException;
 
 	void generate(ProgressListener listener, HDTOptions spec, Dictionary dictionary);
-
-	void close() throws IOException;
 }

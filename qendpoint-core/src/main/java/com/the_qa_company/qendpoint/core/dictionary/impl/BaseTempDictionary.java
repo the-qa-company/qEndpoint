@@ -57,17 +57,19 @@ public abstract class BaseTempDictionary implements TempDictionary {
 	@Override
 	public long insert(CharSequence str, TripleComponentRole position) {
 		switch (position) {
-		case SUBJECT:
+		case SUBJECT -> {
 			isOrganized = false;
 			return subjects.add(str);
-		case PREDICATE:
+		}
+		case PREDICATE -> {
 			isOrganized = false;
 			return predicates.add(str);
-		case OBJECT:
+		}
+		case OBJECT -> {
 			isOrganized = false;
 			return objects.add(str);
-		default:
-			throw new IllegalArgumentException();
+		}
+		default -> throw new IllegalArgumentException();
 		}
 	}
 
