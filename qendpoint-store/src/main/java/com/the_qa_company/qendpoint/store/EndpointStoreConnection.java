@@ -119,12 +119,22 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	@Override
 	protected void notifyStatementAdded(Statement st) {
+		try {
+			endpoint.getLocksNotify().waitForActiveLocks();
+		} catch (InterruptedException e) {
+			throw new SailException(e);
+		}
 		HDTConverter converter = endpoint.getHdtConverter();
 		super.notifyStatementAdded(converter.delegate(converter.rdf4ToHdt(st)));
 	}
 
 	@Override
 	protected void notifyStatementRemoved(Statement st) {
+		try {
+			endpoint.getLocksNotify().waitForActiveLocks();
+		} catch (InterruptedException e) {
+			throw new SailException(e);
+		}
 		HDTConverter converter = endpoint.getHdtConverter();
 		super.notifyStatementRemoved(converter.delegate(converter.rdf4ToHdt(st)));
 	}

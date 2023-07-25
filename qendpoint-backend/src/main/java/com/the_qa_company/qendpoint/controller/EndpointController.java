@@ -178,6 +178,11 @@ public class EndpointController {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.askForAMerge());
 	}
 
+	@GetMapping("/dump")
+	public ResponseEntity<Sparql.MergeRequestResult> dumpStore() {
+		return ResponseEntity.status(HttpStatus.OK).body(sparql.askForADump());
+	}
+
 	@GetMapping("/reindex")
 	public ResponseEntity<Sparql.LuceneIndexRequestResult> reindex() throws Exception {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.reindexLucene());

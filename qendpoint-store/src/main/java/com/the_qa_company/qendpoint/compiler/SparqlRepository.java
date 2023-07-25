@@ -147,6 +147,17 @@ public class SparqlRepository {
 	}
 
 	/**
+	 * Dump the store, this method will call
+	 * {@link CompiledSail#dumpStore(Path)}
+	 *
+	 * @param location location
+	 * @return if the dump was started
+	 */
+	public boolean askDump(Path location) {
+		return compiledSail.dumpStore(location);
+	}
+
+	/**
 	 * execute a sparql query
 	 *
 	 * @param sparqlQuery  the query

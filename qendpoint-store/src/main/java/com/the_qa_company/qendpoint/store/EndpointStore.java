@@ -1,5 +1,17 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
@@ -18,12 +30,9 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
-import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolverClient;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
@@ -37,18 +46,6 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +61,7 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class EndpointStore extends AbstractNotifyingSail {
 	/**
@@ -133,6 +131,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	// lock manager for the updates in the merge thread
 	public final LockManager lockToPreventNewUpdate;
 	public final LockManager locksHoldByUpdates;
+	public final LockManager locksNotify;
 
 	// variable counting the current number of triples in the delta
 	public long triplesCount;
@@ -140,6 +139,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	private final MergeRunnable mergeRunnable;
 	private final EndpointFiles endpointFiles;
 	private MergeRunnable.MergeThread<?> mergerThread;
+	private final AtomicReference<EndpointStoreDump> dump = new AtomicReference<>();
 
 	public void deleteNativeLocks() throws IOException {
 		// remove lock files of a hard shutdown (SAIL is already locked by
@@ -218,6 +218,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		this.lockToPreventNewUpdate = new LockManager();
 		this.locksHoldByConnections = new LockManager();
 		this.locksHoldByUpdates = new LockManager();
+		this.locksNotify = new LockManager();
 
 		initDeleteArray();
 
@@ -657,7 +658,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		// deleted in the new HDT file
 		for (long i = 0; i < tempdeleteBitMap.getNumBits(); i++) {
 			if (tempdeleteBitMap.access(i)) { // means that a triple has been
-												// deleted during merge
+				// deleted during merge
 				// find the deleted triple in the old HDT index
 				TripleID tripleID = this.hdt.getTriples().findTriple(i);
 				if (tripleID.isValid()) {
@@ -860,7 +861,27 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * Ask for a merge of the store.
 	 */
 	public void mergeStore() throws MergeStartException {
-		mergeStore(true);
+		mergeStore(false);
+	}
+
+	/**
+	 * Ask for a merge of the store.
+	 */
+	public void mergeStore(boolean ignoreEmpty) throws MergeStartException {
+		mergeStore(ignoreEmpty, true);
+	}
+
+	/**
+	 * ask for a dump of the store with a merge
+	 *
+	 * @param dump dump tool
+	 */
+	public boolean dump(EndpointStoreDump dump) {
+		if (this.dump.getAndUpdate(old -> old == null ? dump : old) != null) {
+			return false;
+		}
+		mergeStore(true, false);
+		return true;
 	}
 
 	private void failOrWarn(boolean fail, String msg) throws MergeStartException {
@@ -871,7 +892,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		}
 	}
 
-	private synchronized void mergeStore(boolean fail) throws MergeStartException {
+	private synchronized void mergeStore(boolean ignoreEmpty, boolean fail) throws MergeStartException {
 		// check that no merge is already triggered
 		if (isMergeTriggered) {
 			failOrWarn(fail, "A merge was triggered, but the store is already merging!");
@@ -879,7 +900,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		}
 
 		// check that the native store isn't empty
-		if (!isNativeStoreContainsAtLeast(1)) {
+		if (!ignoreEmpty && !isNativeStoreContainsAtLeast(1)) {
 			return;
 		}
 
@@ -915,7 +936,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		// hdt
 		if (getThreshold() >= 0 && triplesCount >= getThreshold()) {
 			try {
-				mergeStore(false);
+				mergeStore(false, false);
 			} catch (MergeStartException e) {
 				e.printStackTrace();
 				// ignore exception
@@ -1039,6 +1060,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public boolean isNotificationsFreeze() {
 		return freezeNotifications;
+	}
+
+	public LockManager getLocksNotify() {
+		return locksNotify;
+	}
+
+	public AtomicReference<EndpointStoreDump> getDumpRef() {
+		return dump;
 	}
 
 	long getDebugId() {

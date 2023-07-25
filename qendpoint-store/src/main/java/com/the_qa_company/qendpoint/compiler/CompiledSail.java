@@ -1,6 +1,11 @@
 package com.the_qa_company.qendpoint.compiler;
 
 import com.the_qa_company.qendpoint.compiler.sail.LuceneSailCompiler;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
@@ -13,7 +18,6 @@ import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
-import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.SailWrapper;
@@ -21,11 +25,6 @@ import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
-import com.the_qa_company.qendpoint.core.hdt.HDTManager;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -233,6 +232,13 @@ public class CompiledSail extends SailWrapper {
 		return !luceneSails.isEmpty();
 	}
 
+	/**
+	 * @return the lucene sails linked with this compiled sail
+	 */
+	public Set<LuceneSail> getLuceneSails() {
+		return luceneSails;
+	}
+
 	@Override
 	public SailConnection getConnection() throws SailException {
 		bellow.beginConnectionBuilding();
@@ -243,6 +249,22 @@ public class CompiledSail extends SailWrapper {
 		} finally {
 			bellow.endConnectionBuilding();
 		}
+	}
+
+	/**
+	 * ask to dump the store, this method won't be working if the source sail
+	 * isn't a qEndpoint sail.
+	 *
+	 * @param output output
+	 * @return if the dump was started
+	 * @throws SailException Can't start the dump or the sail isn't a qEndpoint
+	 *                       sail
+	 */
+	public boolean dumpStore(Path output) throws SailException {
+		if (!(source instanceof EndpointStore store)) {
+			throw new SailException("Can't dump sail of type " + source.getClass());
+		}
+		return store.dump(new CompiledSailEndpointStoreDump(output, this));
 	}
 
 	/**

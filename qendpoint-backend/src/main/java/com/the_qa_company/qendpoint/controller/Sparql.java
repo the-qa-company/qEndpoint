@@ -49,6 +49,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.Map;
@@ -467,6 +469,22 @@ public class Sparql {
 		}
 		this.endpoint.mergeStore();
 		return new MergeRequestResult(true);
+	}
+
+	/**
+	 * ask for a merge of the endpoint store
+	 *
+	 * @return see
+	 *         {@link com.the_qa_company.qendpoint.store.EndpointStore#mergeStore()}
+	 *         return value
+	 */
+	public MergeRequestResult askForADump() {
+		if (endpoint == null) {
+			throw new ServerWebInputException("No endpoint store, bad config?");
+		}
+		Path outLocation = Path.of("dump")
+				.resolve(DateTimeFormatter.ofPattern("yyy-MM-dd HHmmss").format(LocalDateTime.now()));
+		return new MergeRequestResult(this.sparqlRepository.askDump(outLocation));
 	}
 
 	/**
