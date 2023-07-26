@@ -430,7 +430,8 @@ public class MergeRunnable {
 		logger.debug("Restart step: {}", step);
 		return switch (step) {
 		case 0 -> Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
-		case 2 -> Optional.of(new MergeThread<>(this::step2, this::reloadDataFromStep2));
+		case 2 -> Optional.of(
+				new MergeThread<>(((restarting, data) -> step2(restarting, data, null)), this::reloadDataFromStep2));
 		case 3 -> Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
 		default -> Optional.empty();
 		};
@@ -561,6 +562,13 @@ public class MergeRunnable {
 		}
 		Files.copy(Path.of(endpointFiles.getTripleDeleteArr()), Path.of(endpointFiles.getTripleDeleteCopyArr()),
 				StandardCopyOption.REPLACE_EXISTING);
+		EndpointStoreDump dumpInfo = endpoint.getDumpRef().getAndSet(null);
+
+		// #391: stop the lucene updates
+		if (dumpInfo != null) {
+			dumpInfo.beforeMerge(endpoint);
+		}
+
 		// release the lock so that the connections can continue
 		switchLock.release();
 		debugStepPoint(MergeRunnableStopPoint.STEP1_END);
@@ -572,7 +580,7 @@ public class MergeRunnable {
 		// recover
 		this.endpoint.writeWhichStore();
 		markRestartStepCompleted(2);
-		step2(false, null);
+		step2(false, null, dumpInfo);
 	}
 
 	/**
@@ -593,10 +601,12 @@ public class MergeRunnable {
 	 *
 	 * @param restarting if we are restarting from step 2 or not
 	 * @param lock       the return value or {@link #reloadDataFromStep2()}
+	 * @param dumpInfo   dump info (if any from step 1)
 	 * @throws InterruptedException for wait exception
 	 * @throws IOException          for file exception
 	 */
-	private synchronized void step2(boolean restarting, Lock lock) throws InterruptedException, IOException {
+	private synchronized void step2(boolean restarting, Lock lock, EndpointStoreDump dumpInfo)
+			throws InterruptedException, IOException {
 		debugStepPoint(MergeRunnableStopPoint.STEP2_START);
 		// diff hdt indexes...
 		logger.debug("Dump all triples from the native store to file");
@@ -604,6 +614,7 @@ public class MergeRunnable {
 			writeTempFile(nativeStoreConnection, endpointFiles.getRDFTempOutput());
 			nativeStoreConnection.commit();
 		}
+
 		logger.debug("Create HDT index from dumped file");
 		createHDTDump(endpointFiles.getRDFTempOutput(), endpointFiles.getHDTTempOutput());
 		// cat the original index and the temp index
@@ -611,6 +622,11 @@ public class MergeRunnable {
 		catDiffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr(),
 				endpointFiles.getHDTTempOutput(), endpointFiles.getHDTNewIndex());
 		logger.debug("CAT completed!!!!! " + endpointFiles.getLocationHdt());
+
+		// #391: save DUMP HDT
+		if (dumpInfo != null) {
+			dumpInfo.afterMerge(endpoint, Path.of(endpointFiles.getHDTNewIndex()));
+		}
 
 		debugStepPoint(MergeRunnableStopPoint.STEP2_END);
 		markRestartStepCompleted(3);
@@ -776,8 +792,12 @@ public class MergeRunnable {
 		this.endpoint.setFreezeNotifications(false);
 		logger.debug("Releasing lock for ID conversion ....");
 
-		this.endpoint.setMerging(false);
-		this.endpoint.isMergeTriggered = false;
+		boolean restartAnother = endpoint.getDumpRef().get() != null;
+
+		if (!restartAnother) {
+			this.endpoint.setMerging(false);
+			this.endpoint.isMergeTriggered = false;
+		}
 
 		debugStepPoint(MergeRunnableStopPoint.STEP3_END);
 		completedMerge();
@@ -795,6 +815,10 @@ public class MergeRunnable {
 		debugStepPoint(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
 
 		logger.info("Merge finished");
+		if (restartAnother) {
+			// recurse to the step1 to dump
+			step1(false, null);
+		}
 	}
 
 	private void catDiffIndexes(String hdtInput1, String bitArray, String hdtInput2, String hdtOutput)
