@@ -2,7 +2,9 @@
 param(
     $Version,
     [switch]
-    $Edit
+    $Edit,
+    [switch]
+    $NoReleaseUpdate
 )
 
 $prevPwd = $PWD
@@ -47,45 +49,47 @@ try {
 
     Write-Host "new version: $NewVersion"
 
-    New-Item -Type File release/RELEASE.md_old -ErrorAction Ignore > $null
-    Remove-Item release/RELEASE.md_old_backupsv -ErrorAction Ignore > $null
-    Move-Item release/RELEASE.md_old release/RELEASE.md_old_backupsv
+    if (!$NoReleaseUpdate) {
+        New-Item -Type File release/RELEASE.md_old -ErrorAction Ignore > $null
+        Remove-Item release/RELEASE.md_old_backupsv -ErrorAction Ignore > $null
+        Move-Item release/RELEASE.md_old release/RELEASE.md_old_backupsv
 
-    # Write new lines
+        # Write new lines
 
-    "## Version $OldVersion 
-    " > release/RELEASE.md_old
+        "## Version $OldVersion
+        " > release/RELEASE.md_old
 
-    gc release/RELEASE.md >> release/RELEASE.md_old
+        gc release/RELEASE.md >> release/RELEASE.md_old
 
-    # Write old lines
+        # Write old lines
 
-    gc release/RELEASE.md_old_backupsv >> release/RELEASE.md_old
+        gc release/RELEASE.md_old_backupsv >> release/RELEASE.md_old
 
-    Remove-Item release/RELEASE.md_backupsv -ErrorAction Ignore > $null
-    Move-Item release/RELEASE.md release/RELEASE.md_backupsv
+        Remove-Item release/RELEASE.md_backupsv -ErrorAction Ignore > $null
+        Move-Item release/RELEASE.md release/RELEASE.md_backupsv
 
-    Remove-Item -Force release/RELEASE.md -ErrorAction Ignore > $null
+        Remove-Item -Force release/RELEASE.md -ErrorAction Ignore > $null
 
-    Write-Host "Open release file"
+        Write-Host "Open release file"
 
-    vim release/RELEASE.md
+        vim release/RELEASE.md
 
-    if (!(Test-Path "release/RELEASE.md")) {
-        Write-Error "no release file created, abort"
-        Remove-Item release/RELEASE.md -ErrorAction Ignore > $null
-        Remove-Item release/RELEASE.md_old -ErrorAction Ignore > $null
-        Move-Item release/RELEASE.md_backupsv release/RELEASE.md 
-        Move-Item release/RELEASE.md_old_backupsv release/RELEASE.md_old 
-        mvn versions:set versions:commit -DnewVersion="$OldVersion" -q
-        exit -1
+        if (!(Test-Path "release/RELEASE.md")) {
+            Write-Error "no release file created, abort"
+            Remove-Item release/RELEASE.md -ErrorAction Ignore > $null
+            Remove-Item release/RELEASE.md_old -ErrorAction Ignore > $null
+            Move-Item release/RELEASE.md_backupsv release/RELEASE.md
+            Move-Item release/RELEASE.md_old_backupsv release/RELEASE.md_old
+            mvn versions:set versions:commit -DnewVersion="$OldVersion" -q
+            exit -1
+        }
+
+        Write-Host "Remove backup files"
+
+        Remove-Item -Force release/RELEASE.md_backupsv -ErrorAction Ignore > $null
+        Remove-Item -Force release/RELEASE.md_old_backupsv -ErrorAction Ignore > $null
     }
-
-    Write-Host "Remove backup files"
-
     Remove-Item -Force pom.xml_backupsv -ErrorAction Ignore > $null
-    Remove-Item -Force release/RELEASE.md_backupsv -ErrorAction Ignore > $null
-    Remove-Item -Force release/RELEASE.md_old_backupsv -ErrorAction Ignore > $null
 } finally {
   $prevPwd | Set-Location
 }
