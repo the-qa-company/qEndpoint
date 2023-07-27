@@ -1,2 +1,2 @@
-- Multi Section Dictionary Lang (#378)
-- fix FTS index (#387)
+- Dump dataset while running the endpoint (#391)
+- Fix new architecture to handle SPARQL (#336)

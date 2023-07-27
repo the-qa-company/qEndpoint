@@ -1,3 +1,8 @@
+## Version 1.13.1
+        
+- Multi Section Dictionary Lang (#378)
+- fix FTS index (#387)
+
 ## Version 1.13.0 
     
 - update RDF4J to 4.3.2 (#379)
