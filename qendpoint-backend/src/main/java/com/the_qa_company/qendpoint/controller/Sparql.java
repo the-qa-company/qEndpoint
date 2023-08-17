@@ -167,6 +167,18 @@ public class Sparql {
 		}
 	}
 
+	public static class IsDumpingResult {
+		private final boolean dumping;
+
+		public IsDumpingResult(boolean dumping) {
+			this.dumping = dumping;
+		}
+
+		public boolean isDumping() {
+			return dumping;
+		}
+	}
+
 	public static class LoadFileResult {
 		private boolean loaded;
 
@@ -482,9 +494,20 @@ public class Sparql {
 		if (endpoint == null) {
 			throw new ServerWebInputException("No endpoint store, bad config?");
 		}
-		Path outLocation = Path.of("dump")
+
+		Path outLocation = compiledSail.getOptions().getDumpLocation()
 				.resolve(DateTimeFormatter.ofPattern("yyy-MM-dd HHmmss").format(LocalDateTime.now()));
 		return new MergeRequestResult(this.sparqlRepository.askDump(outLocation));
+	}
+
+	/**
+	 * @return if the store is dumping
+	 */
+	public IsDumpingResult isDumping() {
+		if (endpoint == null) {
+			throw new ServerWebInputException("No endpoint store, bad config?");
+		}
+		return new IsDumpingResult(endpoint.isDumping());
 	}
 
 	/**
@@ -492,7 +515,7 @@ public class Sparql {
 	 */
 	public IsMergingResult isMerging() {
 		if (endpoint == null) {
-			throw new ServerWebInputException("No enpoint store, bad config?");
+			throw new ServerWebInputException("No endpoint store, bad config?");
 		}
 		return new IsMergingResult(endpoint.isMergeTriggered);
 	}

@@ -307,6 +307,12 @@ public class SailCompilerSchema {
 	public static final IRI NO_OPTIMIZATION = OPTION_PROPERTY.getHandler().createValue("noOptimization",
 			"Disable optimization for native stores");
 
+	/**
+	 * mdlc:dumpLocation
+	 */
+	public static final Property<String, StringTypeValueHandler> DUMP_LOCATION = propertyStr("dumpLocation",
+			"Dump location", "dump");
+
 	private static IRI iri(String name, String desc) {
 		return propertyVoid(name, desc).getIri();
 	}
@@ -410,12 +416,11 @@ public class SailCompilerSchema {
 					}
 					w.println();
 				}
-			} else if (property.getHandler() instanceof NumberTypeValueHandler) {
+			} else if (property.getHandler() instanceof NumberTypeValueHandler h) {
 				w.println("### Value");
 				w.println();
 				w.println("Number value");
 				w.println();
-				NumberTypeValueHandler h = (NumberTypeValueHandler) property.getHandler();
 
 				w.println("- default value: " + h.defaultValue());
 
@@ -488,14 +493,15 @@ public class SailCompilerSchema {
 		}
 
 		/**
-		 * throw if an value isn't in the valid values
+		 * throw if a value isn't in the valid values
 		 *
-		 * @param value the value to test
+		 * @param value    the value to test
+		 * @param compiler the current compiler
 		 * @return the value
 		 * @throws SailCompiler.SailCompilerException if the value isn't valid
 		 */
-		public V throwIfNotValidValue(Value value) throws SailCompiler.SailCompilerException {
-			return handler.validate(value);
+		public V throwIfNotValidValue(Value value, SailCompiler compiler) throws SailCompiler.SailCompilerException {
+			return handler.validate(value, compiler);
 		}
 	}
 
@@ -506,17 +512,18 @@ public class SailCompilerSchema {
 	 */
 	public interface ValueHandler<T> {
 		static ValueHandler<Value> id() {
-			return v -> v;
+			return (v, c) -> v;
 		}
 
 		/**
 		 * validate and return the converted value
 		 *
-		 * @param v the value to check
+		 * @param v        the value to check
+		 * @param compiler the current compiler
 		 * @return the converted value
 		 * @throws SailCompiler.SailCompilerException if the value isn't valid
 		 */
-		T validate(Value v) throws SailCompiler.SailCompilerException;
+		T validate(Value v, SailCompiler compiler) throws SailCompiler.SailCompilerException;
 
 		default T defaultValue() {
 			throw new SailCompiler.SailCompilerException("No default value for this property");
@@ -556,12 +563,13 @@ public class SailCompilerSchema {
 		}
 
 		@Override
-		public String validate(Value v) throws SailCompiler.SailCompilerException {
-			if (!(v instanceof Literal)) {
+		public String validate(Value v, SailCompiler compiler) throws SailCompiler.SailCompilerException {
+			if (!v.isLiteral()) {
 				throw new SailCompiler.SailCompilerException(
 						v + " is not a valid literal value for the property " + parent);
 			}
-			String val = v.stringValue();
+			String val = compiler.asLitString(v);
+
 			if (regex != null) {
 				if (!regex.matcher(val).matches()) {
 					throw new SailCompiler.SailCompilerException(
@@ -623,7 +631,7 @@ public class SailCompilerSchema {
 		}
 
 		@Override
-		public IRI validate(Value v) throws SailCompiler.SailCompilerException {
+		public IRI validate(Value v, SailCompiler compiler) throws SailCompiler.SailCompilerException {
 			if (!(v instanceof IRI)) {
 				throw new SailCompiler.SailCompilerException(
 						v + " is not a valid iri value for the property " + parent);
@@ -677,18 +685,27 @@ public class SailCompilerSchema {
 		}
 
 		@Override
-		public Integer validate(Value v) throws SailCompiler.SailCompilerException {
-			if (!(v instanceof Literal)) {
+		public Integer validate(Value v, SailCompiler compiler) throws SailCompiler.SailCompilerException {
+			if (!v.isLiteral()) {
 				throw new SailCompiler.SailCompilerException(
 						v + " is not a valid literal value for the property " + parent);
 			}
 			Literal l = (Literal) v;
-			if (!l.getCoreDatatype().asXSDDatatype().orElseThrow(() -> new SailCompiler.SailCompilerException(
+			int value;
+			if (PARSED_STRING_DATATYPE.equals(l.getDatatype())) {
+				try {
+					value = Integer.parseInt(compiler.asLitString(l));
+				} catch (NumberFormatException e) {
+					throw new SailCompiler.SailCompilerException(
+							"Can't parse int for property " + parent + ": " + e.getMessage());
+				}
+			} else if (l.getCoreDatatype().asXSDDatatype().orElseThrow(() -> new SailCompiler.SailCompilerException(
 					l + " is not a valid number xsd literal for the property " + parent)).isIntegerDatatype()) {
+				value = l.intValue();
+			} else {
 				throw new SailCompiler.SailCompilerException(
 						l + " is not a valid number literal for the property " + parent);
 			}
-			int value = ((Literal) v).intValue();
 
 			if (value > max || value < min) {
 				throw new SailCompiler.SailCompilerException(

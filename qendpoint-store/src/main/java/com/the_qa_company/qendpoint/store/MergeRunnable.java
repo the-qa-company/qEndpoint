@@ -566,6 +566,8 @@ public class MergeRunnable {
 
 		// #391: stop the lucene updates
 		if (dumpInfo != null) {
+			// "fix" to the race condition during step 2 mfl
+			endpoint.setDumping(true);
 			dumpInfo.beforeMerge(endpoint);
 		}
 
@@ -626,6 +628,7 @@ public class MergeRunnable {
 		// #391: save DUMP HDT
 		if (dumpInfo != null) {
 			dumpInfo.afterMerge(endpoint, Path.of(endpointFiles.getHDTNewIndex()));
+			endpoint.setDumping(endpoint.getDumpRef().get() != null);
 		}
 
 		debugStepPoint(MergeRunnableStopPoint.STEP2_END);
