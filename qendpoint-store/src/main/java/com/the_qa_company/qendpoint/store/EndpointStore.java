@@ -60,6 +60,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -140,6 +141,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	private final EndpointFiles endpointFiles;
 	private MergeRunnable.MergeThread<?> mergerThread;
 	private final AtomicReference<EndpointStoreDump> dump = new AtomicReference<>();
+	private final AtomicBoolean dumping = new AtomicBoolean();
 
 	public void deleteNativeLocks() throws IOException {
 		// remove lock files of a hard shutdown (SAIL is already locked by
@@ -880,6 +882,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		if (this.dump.getAndUpdate(old -> old == null ? dump : old) != null) {
 			return false;
 		}
+		dumping.set(true);
 		mergeStore(true, false);
 		return true;
 	}
@@ -1068,6 +1071,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public AtomicReference<EndpointStoreDump> getDumpRef() {
 		return dump;
+	}
+
+	public boolean isDumping() {
+		return dumping.get();
+	}
+
+	public void setDumping(boolean val) {
+		dumping.set(val);
 	}
 
 	long getDebugId() {

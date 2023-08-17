@@ -28,6 +28,9 @@
 # Enable to show the plan of the executed queries
 # mdlc:main mdlc:option mdlc:debugShowPlan .
 
+# Set the dump location for the askDump functions, by default "dump" inside the root directory is used
+mdlc:main mdlc:dumpLocation "${locationHDT}dump"^^mdlc:parsedString .
+
 # Describe custom strings for the mdlc:parsedString format, will be available with ${key}
 mdlc:main mdlc:parsedStringParam [ mdlc:paramKey "luceneEvalMode" ; mdlc:paramValue "NATIVE" ] .
 mdlc:main mdlc:parsedStringParam [ mdlc:paramKey "luceneWktFields" ; mdlc:paramValue "http://nuts.de/geometry https://linkedopendata.eu/prop/direct/P127" ] .

@@ -183,6 +183,11 @@ public class EndpointController {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.askForADump());
 	}
 
+	@GetMapping("/is_dumping")
+	public ResponseEntity<Sparql.IsDumpingResult> isDumping() {
+		return ResponseEntity.status(HttpStatus.OK).body(sparql.isDumping());
+	}
+
 	@GetMapping("/reindex")
 	public ResponseEntity<Sparql.LuceneIndexRequestResult> reindex() throws Exception {
 		return ResponseEntity.status(HttpStatus.OK).body(sparql.reindexLucene());

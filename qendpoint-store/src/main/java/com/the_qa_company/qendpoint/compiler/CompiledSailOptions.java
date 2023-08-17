@@ -29,6 +29,7 @@ public class CompiledSailOptions {
 	private boolean debugShowPlans;
 	private boolean debugShowCount;
 	private boolean optimization;
+	private Path dumpLocation;
 	private IRI storageMode;
 	private IRI hdtReadMode;
 	private IRI passMode;
@@ -58,6 +59,7 @@ public class CompiledSailOptions {
 			timeoutUpdate = debugOptions.timeoutUpdate;
 			timeoutQuery = debugOptions.timeoutQuery;
 			hdtOptions = debugOptions.hdtOptions;
+			dumpLocation = debugOptions.dumpLocation;
 			return;
 		}
 		// set default values
@@ -76,6 +78,7 @@ public class CompiledSailOptions {
 		timeoutUpdate = SailCompilerSchema.TIMEOUT_UPDATE.getHandler().defaultValue();
 		timeoutQuery = SailCompilerSchema.TIMEOUT_QUERY.getHandler().defaultValue();
 		hdtOptions = Map.of();
+		dumpLocation = Path.of("dump");
 	}
 
 	/**
@@ -84,7 +87,8 @@ public class CompiledSailOptions {
 	 * @param reader the reader
 	 */
 	void readOptions(SailCompiler.SailCompilerReader reader) {
-		reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.OPTION).forEach(this::add);
+		reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.OPTION)
+				.forEach(v -> add(v, reader.getSailCompiler()));
 		storageMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.STORAGE_MODE_PROPERTY);
 		passMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_PASS_MODE_PROPERTY);
 		rdf4jSplitUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN,
@@ -106,11 +110,12 @@ public class CompiledSailOptions {
 										.map(reader.getSailCompiler()::asLitString)
 										.orElseThrow(() -> new SailCompiler.SailCompilerException(
 												"Found HDT param without value!"))));
-
+		dumpLocation = Path.of(reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.DUMP_LOCATION));
 	}
 
-	private void add(Value value) {
-		IRI iri = SailCompilerSchema.OPTION_PROPERTY.throwIfNotValidValue(value);
+	private void add(Value value, SailCompiler compiler) {
+		// an iri parsing
+		IRI iri = SailCompilerSchema.OPTION_PROPERTY.throwIfNotValidValue(value, compiler);
 
 		if (SailCompilerSchema.DEBUG_SHOW_TIME.equals(iri)) {
 			debugShowTime = true;
@@ -179,6 +184,10 @@ public class CompiledSailOptions {
 		return hdtReadMode;
 	}
 
+	public Path getDumpLocation() {
+		return dumpLocation;
+	}
+
 	public void setHdtReadMode(IRI hdtReadMode) {
 		this.hdtReadMode = hdtReadMode;
 	}
@@ -217,6 +226,10 @@ public class CompiledSailOptions {
 
 	public String getHdtSpec() {
 		return hdtSpec;
+	}
+
+	public void setDumpLocation(Path dumpLocation) {
+		this.dumpLocation = dumpLocation;
 	}
 
 	/**

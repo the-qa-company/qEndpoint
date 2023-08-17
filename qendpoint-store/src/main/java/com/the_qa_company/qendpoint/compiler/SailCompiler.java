@@ -445,14 +445,15 @@ public class SailCompiler {
 		 *
 		 * @param subject  the subject to read
 		 * @param property the property to read and check values
-		 * @return the value
+		 * @return the value or the default property value if no value was found
 		 * @throws SailCompilerException if the value isn't a valid value for
 		 *                               this property
 		 */
 		public <T> T searchPropertyValue(Resource subject,
 				SailCompilerSchema.Property<T, ? extends SailCompilerSchema.ValueHandler<T>> property)
 				throws SailCompilerException {
-			return searchOneOpt(subject, property.getIri()).map(property::throwIfNotValidValue)
+			return searchOneOpt(subject, property.getIri())
+					.map(v -> property.throwIfNotValidValue(v, getSailCompiler()))
 					.orElseGet(property.getHandler()::defaultValue);
 		}
 
