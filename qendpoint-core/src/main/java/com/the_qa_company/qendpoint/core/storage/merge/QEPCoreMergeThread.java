@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.storage.merge;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.KCatMapping;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
@@ -14,8 +15,6 @@ import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreOptions;
 import com.the_qa_company.qendpoint.core.storage.QEPDataset;
 import com.the_qa_company.qendpoint.core.storage.QEPDatasetContext;
-import com.the_qa_company.qendpoint.core.storage.QEPMap;
-import org.apache.commons.io.file.PathUtils;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -219,7 +218,9 @@ public class QEPCoreMergeThread extends Thread {
 					dsDelete.add(ctx.deleteBitmap());
 				}
 
-				Path workDir = getMergeLocation().resolve("diffcat");
+				Path mergeLocation = getMergeLocation();
+				Path mergeMapsDir = mergeLocation.resolve("kcmaps");
+				Path workDir = mergeLocation.resolve("diffcat");
 				Path output = workDir.resolve("output.hdt");
 				Files.createDirectories(workDir);
 
@@ -227,6 +228,8 @@ public class QEPCoreMergeThread extends Thread {
 
 				HDTOptions options = core.getOptions().pushTop();
 				options.setOptions(
+						// store maps
+						HDTOptionsKeys.HDTCAT_STORE_MAPS, mergeMapsDir,
 						// set the right future location
 						HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, output,
 						// set the work dir
@@ -241,17 +244,22 @@ public class QEPCoreMergeThread extends Thread {
 					String newDatasetId = core.createNewDatasetId();
 					QEPDataset nds = new QEPDataset(core, newDatasetId, null, diffCat, null, null);
 
+					;
+
 					// pause updates
 
 					// write merge location file
 
 				}
-				// copy merge file to dataset
-				// remove pointer to the cluster dataset
+				try (KCatMapping kcmapping = new KCatMapping(mergeMapsDir)) {
+					// copy merge file to dataset
+					// remove pointer to the cluster dataset
 
-				// remove merge file location
+					// remove merge file location
 
-				// allow updates
+					// allow updates
+
+				}
 
 				// delete temp merge file
 				Files.deleteIfExists(getMergeFile());

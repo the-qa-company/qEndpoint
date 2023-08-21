@@ -372,6 +372,11 @@ public class HDTOptionsKeys {
 	 */
 	@Key(type = Key.Type.BOOLEAN, desc = "Delete the HDTCat temp files directory after HDTCat, default to true")
 	public static final String HDTCAT_DELETE_LOCATION = "hdtcat.deleteLocation";
+	/**
+	 * Internal, store cat maps
+	 */
+	@Key(type = Key.Type.PATH, desc = "Internal, store cat maps")
+	public static final String HDTCAT_STORE_MAPS = "hdtcat.location.maps";
 
 	/**
 	 * Use disk implementation to generate the hdt sub-index, default false

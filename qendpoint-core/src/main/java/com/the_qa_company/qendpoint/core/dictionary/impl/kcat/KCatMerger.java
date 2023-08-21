@@ -11,12 +11,12 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionary
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapFilterIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
@@ -29,6 +29,7 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,16 +47,13 @@ import java.util.stream.Stream;
  * @author Antoine Willerval
  */
 public class KCatMerger implements AutoCloseable {
-	private static final long SHARED_MASK = 0b01;
-	private static final long TYPED_MASK = 0b10;
+	static final long SHARED_MASK = 0b01;
+	static final long TYPED_MASK = 0b10;
 
 	final HDT[] hdts;
 
 	private final ProgressListener listener;
-	private final CloseSuppressPath[] locations;
-	final SyncSeq[] subjectsMaps;
-	final SyncSeq[] predicatesMaps;
-	final SyncSeq[] objectsMaps;
+	final KCatMapping kCatMapping;
 	private final ExceptionThread catMergerThread;
 	final boolean typedHDT;
 	final boolean langHDT;
@@ -102,11 +100,9 @@ public class KCatMerger implements AutoCloseable {
 		this.listener = listener;
 		this.dictionaryType = dictionaryType;
 
+		Path futureMappingMapsDir = spec.getPath(HDTOptionsKeys.HDTCAT_STORE_MAPS);
+
 		DictionaryKCat[] cats = new DictionaryKCat[hdts.length];
-		subjectsMaps = new SyncSeq[hdts.length];
-		predicatesMaps = new SyncSeq[hdts.length];
-		objectsMaps = new SyncSeq[hdts.length];
-		locations = new CloseSuppressPath[hdts.length * 3];
 
 		countSubject = IntStream.range(0, hdts.length).mapToObj(i -> new AtomicLong()).toArray(AtomicLong[]::new);
 		countObject = IntStream.range(0, hdts.length).mapToObj(i -> new AtomicLong()).toArray(AtomicLong[]::new);
@@ -163,18 +159,24 @@ public class KCatMerger implements AutoCloseable {
 			int numbitsS = BitUtil.log2(sizeS + 1 + sizeShared) + 1 + shift;
 			int numbitsP = BitUtil.log2(sizeP + 1);
 			int numbitsO = BitUtil.log2(sizeO + 1 + sizeShared) + 1 + shift;
+			Path dkcMaps = Objects.requireNonNullElseGet(futureMappingMapsDir, () -> {
+				CloseSuppressPath kcm = location.resolve("kcm");
+				kcm.closeWithDeleteRecurse();
+				return kcm;
+			});
+			long[] countSubjects = new long[hdts.length];
+			long[] countPredicates = new long[hdts.length];
+			long[] countObjects = new long[hdts.length];
+
 			for (int i = 0; i < cats.length; i++) {
 				DictionaryKCat cat = cats[i];
-				subjectsMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
-						(locations[i * 3] = location.resolve("subjectsMap_" + i)).toAbsolutePath().toString(), numbitsS,
-						cat.countSubjects() + 1));
-				predicatesMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
-						(locations[i * 3 + 1] = location.resolve("predicatesMap_" + i)).toAbsolutePath().toString(),
-						numbitsP, cat.countPredicates() + 1));
-				objectsMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
-						(locations[i * 3 + 2] = location.resolve("objectsMap_" + i)).toAbsolutePath().toString(),
-						numbitsO, cat.countObjects() + 1));
+				countSubjects[i] = cat.countSubjects();
+				countPredicates[i] = cat.countPredicates();
+				countObjects[i] = cat.countObjects();
 			}
+
+			kCatMapping = new KCatMapping(dkcMaps, hdts.length, countSubjects, countPredicates, countObjects, numbitsS,
+					numbitsP, numbitsO, langHDT, typedHDT);
 
 			// merge the subjects/objects/shared from all the HDTs
 			sortedSubject = mergeSection(cats,
@@ -245,7 +247,7 @@ public class KCatMerger implements AutoCloseable {
 			Iterator<ByteString> subject = subjectPipe.mapWithId((db, id) -> {
 				long header = withEmptyHeader(id + 1);
 				db.stream().forEach(node -> {
-					SyncSeq map = subjectsMaps[node.getHdt()];
+					SyncSeq map = kCatMapping.getSubjectsMap(node.getHdt());
 					assert map.get(node.getIndex()) == 0 : "overwriting previous subject value";
 					map.set(node.getIndex(), header);
 					countSubject[node.getHdt()].incrementAndGet();
@@ -257,7 +259,7 @@ public class KCatMerger implements AutoCloseable {
 				long header = withEmptyHeader(id + 1);
 				countNonTyped.incrementAndGet();
 				db.stream().forEach(node -> {
-					SyncSeq map = objectsMaps[node.getHdt()];
+					SyncSeq map = kCatMapping.getObjectsMap(node.getHdt());
 					assert map.get(node.getIndex()) == 0 : "overwriting previous object value";
 					assert node.getIndex() >= 1 && node.getIndex() <= hdts[node.getHdt()].getDictionary().getNobjects();
 					map.set(node.getIndex(), header);
@@ -273,14 +275,14 @@ public class KCatMerger implements AutoCloseable {
 				countShared.incrementAndGet();
 				// left = subjects
 				bdb.getLeft().stream().forEach(node -> {
-					SyncSeq map = subjectsMaps[node.getHdt()];
+					SyncSeq map = kCatMapping.getSubjectsMap(node.getHdt());
 					assert map.get(node.getIndex()) == 0 : "overwriting previous subject value";
 					map.set(node.getIndex(), header);
 					countSubject[node.getHdt()].incrementAndGet();
 				});
 				// right = objects
 				bdb.getRight().stream().forEach(node -> {
-					SyncSeq map = objectsMaps[node.getHdt()];
+					SyncSeq map = kCatMapping.getObjectsMap(node.getHdt());
 					assert map.get(node.getIndex()) == 0 : "overwriting previous object value";
 					assert node.getIndex() >= 1 && node.getIndex() <= hdts[node.getHdt()].getDictionary().getNobjects();
 					map.set(node.getIndex(), header);
@@ -416,37 +418,23 @@ public class KCatMerger implements AutoCloseable {
 	}
 
 	/**
-	 * test if a header value is shared
-	 *
-	 * @param headerValue header value
-	 * @return true if the header is shared, false otherwise
-	 */
-	public boolean isShared(long headerValue) {
-		return (headerValue & SHARED_MASK) != 0;
-	}
-
-	/**
-	 * test if a header value is typed
-	 *
-	 * @param headerValue header value
-	 * @return true if the header is typed, false otherwise
-	 */
-	public boolean isTyped(long headerValue) {
-		return typedHDT && (headerValue & TYPED_MASK) != 0;
-	}
-
-	/**
 	 * wait for the merger to complete
 	 *
 	 * @throws InterruptedException thread interruption
 	 */
-	public DictionaryPrivate buildDictionary() throws InterruptedException {
+	public DictionaryPrivate buildDictionary() throws InterruptedException, IOException {
 		synchronized (this) {
 			if (!running) {
 				startMerger();
 			}
 		}
 		catMergerThread.joinAndCrashIfRequired();
+
+		kCatMapping.setCountShared(countShared.get());
+		kCatMapping.setCountTyped(countTyped.get());
+		kCatMapping.setCountNonTyped(countNonTyped.get());
+
+		kCatMapping.writeHeader();
 
 		return DictionaryFactory.createWriteDictionary(dictionaryType, null, getSectionSubject(), getSectionPredicate(),
 				getSectionObject(), getSectionShared(), getSectionSub());
@@ -514,7 +502,7 @@ public class KCatMerger implements AutoCloseable {
 		// load predicates
 		sectionPredicate.load(new OneReadDictionarySection(sortedPredicates.map((db, id) -> {
 			db.stream().forEach(node -> {
-				SyncSeq map = predicatesMaps[node.getHdt()];
+				SyncSeq map = kCatMapping.getPredicatesMap(node.getHdt());
 				assert map.get(node.getIndex()) == 0 : "overwriting previous predicate value";
 				map.set(node.getIndex(), id + 1);
 			});
@@ -534,7 +522,7 @@ public class KCatMerger implements AutoCloseable {
 				long headerID = withTypedHeader(id + currentShift);
 				countTyped.incrementAndGet();
 				db.stream().forEach(node -> {
-					SyncSeq map = objectsMaps[node.getHdt()];
+					SyncSeq map = kCatMapping.getObjectsMap(node.getHdt());
 					assert map.get(node.getIndex()) == 0 : "overwriting previous object value";
 					assert node.getIndex() >= 1 && node.getIndex() <= hdts[node.getHdt()].getDictionary().getNobjects();
 					map.set(node.getIndex(), headerID);
@@ -561,8 +549,7 @@ public class KCatMerger implements AutoCloseable {
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		} finally {
-			Closer.closeAll(sectionSubject, sectionPredicate, sectionObject, sectionShared, sectionSub, subjectsMaps,
-					predicatesMaps, objectsMaps, locations);
+			Closer.closeAll(sectionSubject, sectionPredicate, sectionObject, sectionShared, sectionSub, kCatMapping);
 		}
 	}
 
@@ -577,57 +564,6 @@ public class KCatMerger implements AutoCloseable {
 	}
 
 	/**
-	 * extract the subject from an HDT
-	 *
-	 * @param hdtIndex the HDT index
-	 * @param oldID    the ID in the HDT triples
-	 * @return ID in the new HDT
-	 */
-	public long extractSubject(int hdtIndex, long oldID) {
-		long headerID = subjectsMaps[hdtIndex].get(oldID);
-		if (isShared(headerID)) {
-			return headerID >>> shift;
-		}
-		return (headerID >>> shift) + countShared.get();
-	}
-
-	/**
-	 * extract the predicate from an HDT
-	 *
-	 * @param hdtIndex the HDT index
-	 * @param oldID    the ID in the HDT triples
-	 * @return ID in the new HDT
-	 */
-	public long extractPredicate(int hdtIndex, long oldID) {
-		return predicatesMaps[hdtIndex].get(oldID);
-	}
-
-	/**
-	 * extract the object from an HDT
-	 *
-	 * @param hdtIndex the HDT index
-	 * @param oldID    the ID in the HDT triples
-	 * @return ID in the new HDT
-	 */
-	public long extractObject(int hdtIndex, long oldID) {
-		long headerID = objectsMaps[hdtIndex].get(oldID);
-		if (isShared(headerID)) {
-			return headerID >>> shift;
-		}
-		if (isTyped(headerID)) {
-			if (langHDT) {
-				// in a MSDL the NDT section is before the DT/LG sections
-				return (headerID >>> shift) + countShared.get() + countNonTyped.get();
-			}
-			return (headerID >>> shift) + countShared.get();
-		}
-		if (langHDT) {
-			return (headerID >>> shift) + countShared.get();
-		}
-		return (headerID >>> shift) + countShared.get() + countTyped.get();
-	}
-
-	/**
 	 * copy into a new TripleID the mapped version of a tripleID
 	 *
 	 * @param hdtIndex the origin HDT of this tripleID
@@ -635,8 +571,9 @@ public class KCatMerger implements AutoCloseable {
 	 * @return mapped tripleID
 	 */
 	public TripleID extractMapped(int hdtIndex, TripleID id) {
-		TripleID mapped = new TripleID(extractSubject(hdtIndex, id.getSubject()),
-				extractPredicate(hdtIndex, id.getPredicate()), extractObject(hdtIndex, id.getObject()));
+		TripleID mapped = new TripleID(kCatMapping.extractSubject(hdtIndex, id.getSubject()),
+				kCatMapping.extractPredicate(hdtIndex, id.getPredicate()),
+				kCatMapping.extractObject(hdtIndex, id.getObject()));
 		assert mapped.isValid() : "mapped to empty triples! " + id + " => " + mapped;
 		return mapped;
 	}

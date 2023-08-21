@@ -151,9 +151,9 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 					// check if all the dynamic sequences are filled
 
-					SyncSeq[] sms = merger.subjectsMaps;
-					SyncSeq[] pms = merger.predicatesMaps;
-					SyncSeq[] oms = merger.objectsMaps;
+					SyncSeq[] sms = merger.kCatMapping.subjectsMaps;
+					SyncSeq[] pms = merger.kCatMapping.predicatesMaps;
+					SyncSeq[] oms = merger.kCatMapping.objectsMaps;
 
 					AtomicLong[] objectCounts = merger.countObject;
 					AtomicLong[] subjectCounts = merger.countSubject;
@@ -193,7 +193,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 							}
 
 							assertEquals("shared element not mapped to the same object", ov, sv);
-							assertTrue("shared mapped element isn't shared", merger.isShared(ov));
+							assertTrue("shared mapped element isn't shared", merger.kCatMapping.isShared(ov));
 						}
 
 						for (long i = 1; i <= subjects; i++) {
