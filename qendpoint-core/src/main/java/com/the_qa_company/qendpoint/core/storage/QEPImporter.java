@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.hdt.impl.TempHDTImpl;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.IOException;
@@ -177,23 +178,49 @@ public class QEPImporter {
 		}
 	}
 
-	public void deleteTriple(TripleString ts) throws QEPCoreException {
+	public long deleteTriple(TripleString ts) throws QEPCoreException {
 		synchronized (lock) {
 			if (!isTransactionActive()) {
 				throw new QEPCoreException("The importer isn't started! Please use begin to start a transaction.");
+			}
+
+			long deleted = 0;
+			if (tempHDT.getTriples().getNumberOfElements() != 0) {
+				// at least one element added, we need to check if we're not removing something added
+
+				long sid = tempHDT.getDictionary().stringToId(ts.getSubject(), TripleComponentRole.SUBJECT);
+				long pid = tempHDT.getDictionary().stringToId(ts.getSubject(), TripleComponentRole.PREDICATE);
+				long oid = tempHDT.getDictionary().stringToId(ts.getSubject(), TripleComponentRole.OBJECT);
+
+				TripleID tid = new TripleID(sid, pid, oid);
+
+				if (!tid.isNoMatch()) {
+					if (tempHDT.getTriples().remove(tid)) {
+						// FIXME: fix consistency of the dict!!!!!!
+						deleted++;
+						if (tid.isValid()) { // no wildcard
+							return deleted;
+						}
+					}
+				}
 			}
 
 			try (QueryCloseableIterator search = core.search(ts)) {
 				if (ts.isStatic()) {
 					if (search.hasNext()) {
 						deleteData.add(ts.tripleToByteString());
+						deleted++;
 					}
 				} else {
 					while (search.hasNext()) {
 						deleteData.add(search.next().tripleString().tripleToByteString());
+						deleted++;
 					}
 				}
 			}
+
+			// tempHDT.
+			return deleted;
 		}
 	}
 

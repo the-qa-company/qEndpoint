@@ -22,6 +22,7 @@ import com.the_qa_company.qendpoint.core.storage.merge.QEPCoreMergeThread;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
+import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.nsd.NamespaceData;
@@ -1191,23 +1192,26 @@ public class QEPCore implements AutoCloseable {
 	 * @throws IOException exception while loading triples
 	 */
 	public void insertTriples(TempHDT modHdt, boolean checkAlreadyExist, ProgressListener listener) throws IOException {
-
-		HDTImpl hdt = new HDTImpl(options);
+		Profiler profiler = Profiler.createOrLoadSubSection("qec-insert", options, false);
+		HDTImpl dataset = new HDTImpl(options);
 		QEPDataset other;
 		try {
-			hdt.loadFromModifiableHDT(modHdt, listener);
-			hdt.populateHeaderStructure(modHdt.getBaseURI());
+			profiler.pushSection("load-dataset");
+			dataset.loadFromModifiableHDT(modHdt, listener);
+			dataset.populateHeaderStructure(modHdt.getBaseURI());
 
 			// Add file size to Header
 			try {
 				long originalSize = HeaderUtil.getPropertyLong(modHdt.getHeader(), "_:statistics",
 						HDTVocabulary.ORIGINAL_SIZE);
-				hdt.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
+				dataset.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
 			} catch (NotFoundException e) {
 				// ignore
 			}
+			profiler.popSection();
 			QEPCoreContext ctx;
 			if (checkAlreadyExist) {
+				profiler.pushSection("lock-inserts");
 				ctx = createSearchContext();
 				insertLock.lock();
 			} else {
@@ -1216,6 +1220,7 @@ public class QEPCore implements AutoCloseable {
 			try {
 				String id;
 				Path datasetPath;
+				profiler.pushSection("save-dataset");
 				while (true) {
 					id = createNewDatasetId();
 					datasetPath = getDatasetPath().resolve(FILE_DATASET_PREFIX + id + FILE_DATASET_SUFFIX);
@@ -1232,15 +1237,19 @@ public class QEPCore implements AutoCloseable {
 				}
 
 				ProgressListener combinedListener = this.listener.combine(listener);
-				hdt.saveToHDT(datasetPath, combinedListener);
-				hdt.close();
-				hdt = null;
+				dataset.saveToHDT(datasetPath, combinedListener);
+				dataset.close();
+				dataset = null;
+				profiler.popSection();
 
 				// we open the dataset because the memory generation is using
 				// more
 				// memory before being reloaded
+				profiler.pushSection("open-dataset");
 				QEPDataset ds = openDataset(id, datasetPath);
+				profiler.popSection();
 
+				profiler.pushSection("bind-dataset");
 				// bind the new dataset with all the previous datasets
 				synchronized (bindLock) {
 					for (QEPDataset d2 : createDatasetSnapshot()) {
@@ -1248,19 +1257,21 @@ public class QEPCore implements AutoCloseable {
 					}
 
 					synchronized (datasetLock) {
-						other = dataset.put(ds.id(), ds);
+						other = this.dataset.put(ds.id(), ds);
 						datasetByUid.put(ds.uid(), ds);
 					}
 				}
+				profiler.popSection();
 			} finally {
 				if (checkAlreadyExist) {
+					profiler.popSection();
 					insertLock.unlock();
 					ctx.close();
 				}
 			}
 		} catch (Throwable t) {
 			try {
-				IOUtil.closeObject(hdt);
+				IOUtil.closeObject(dataset);
 			} catch (Throwable t2) {
 				t.addSuppressed(t2);
 			}
@@ -1275,6 +1286,10 @@ public class QEPCore implements AutoCloseable {
 				otherLoadedException.addSuppressed(e);
 			}
 			throw otherLoadedException;
+		}
+		try (profiler) {
+			profiler.stop();
+			profiler.writeProfiling();
 		}
 	}
 

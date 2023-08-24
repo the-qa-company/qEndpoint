@@ -329,13 +329,13 @@ public class QEPMap implements Closeable {
 						// add one bit in the map section to store the
 						// subject/object type
 						if (!regen) {
-							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, index1Size[roleId], true,
+							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, index1Size[roleId] + 1, true,
 									false);
-							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, index1Size[roleId],
+							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, index1Size[roleId] + 1,
 									true, false);
 						} else {
-							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, nSection1, true, true);
-							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, nSection1, true,
+							idSequence1 = new SequenceLog64BigDisk(map1OriginPath, numbitsId1, nSection1 + 1, true, true);
+							mapSequence1 = new SequenceLog64BigDisk(map1DestinationPath, numbitsId2, nSection1 + 1, true,
 									true);
 
 							long componentIdCounter = 1;
@@ -431,40 +431,40 @@ public class QEPMap implements Closeable {
 						// subject/object type
 						if (!regen) {
 							subjectIdSequence1 = new SequenceLog64BigDisk(subjectMap1OriginPath, subjectNumbitsId1,
-									index1Size[SUBJECT.ordinal()], true, false);
+									index1Size[SUBJECT.ordinal()] + 1, true, false);
 							subjectMapSequence1 = new SequenceLog64BigDisk(subjectMap1DestinationPath,
-									sharedNumbits2 + SECTION_SHIFT, index1Size[SUBJECT.ordinal()], true, false);
+									sharedNumbits2 + SECTION_SHIFT, index1Size[SUBJECT.ordinal()] + 1, true, false);
 							subjectIdSequence2 = new SequenceLog64BigDisk(subjectMap2OriginPath, subjectNumbitsId2,
-									index2Size[SUBJECT.ordinal()], true, false);
+									index2Size[SUBJECT.ordinal()] + 1, true, false);
 							subjectMapSequence2 = new SequenceLog64BigDisk(subjectMap2DestinationPath,
-									sharedNumbits1 + SECTION_SHIFT, index2Size[SUBJECT.ordinal()], true, false);
+									sharedNumbits1 + SECTION_SHIFT, index2Size[SUBJECT.ordinal()] + 1, true, false);
 
 							objectIdSequence1 = new SequenceLog64BigDisk(objectMap1OriginPath, objectNumbitsId1,
-									index1Size[OBJECT.ordinal()], true, false);
+									index1Size[OBJECT.ordinal()] + 1, true, false);
 							objectMapSequence1 = new SequenceLog64BigDisk(objectMap1DestinationPath,
-									sharedNumbits2 + SECTION_SHIFT, index1Size[OBJECT.ordinal()], true, false);
+									sharedNumbits2 + SECTION_SHIFT, index1Size[OBJECT.ordinal()] + 1, true, false);
 							objectIdSequence2 = new SequenceLog64BigDisk(objectMap2OriginPath, objectNumbitsId2,
-									index2Size[OBJECT.ordinal()], true, false);
+									index2Size[OBJECT.ordinal()] + 1, true, false);
 							objectMapSequence2 = new SequenceLog64BigDisk(objectMap2DestinationPath,
-									sharedNumbits1 + SECTION_SHIFT, index2Size[OBJECT.ordinal()], true, false);
+									sharedNumbits1 + SECTION_SHIFT, index2Size[OBJECT.ordinal()] + 1, true, false);
 						} else {
 							subjectIdSequence1 = new SequenceLog64BigDisk(subjectMap1OriginPath, subjectNumbitsId1,
-									subjectNSection1, true, true);
+									subjectNSection1 + 1, true, true);
 							subjectMapSequence1 = new SequenceLog64BigDisk(subjectMap1DestinationPath,
-									sharedNumbits2 + SECTION_SHIFT, subjectNSection1, true, true);
+									sharedNumbits2 + SECTION_SHIFT, subjectNSection1 + 1, true, true);
 							subjectIdSequence2 = new SequenceLog64BigDisk(subjectMap2OriginPath, subjectNumbitsId2,
-									subjectNSection1, true, true);
+									subjectNSection1 + 1, true, true);
 							subjectMapSequence2 = new SequenceLog64BigDisk(subjectMap2DestinationPath,
-									sharedNumbits1 + SECTION_SHIFT, subjectNSection1, true, true);
+									sharedNumbits1 + SECTION_SHIFT, subjectNSection1 + 1, true, true);
 
 							objectIdSequence1 = new SequenceLog64BigDisk(objectMap1OriginPath, objectNumbitsId1,
-									objectNSection1, true, true);
+									objectNSection1 + 1, true, true);
 							objectMapSequence1 = new SequenceLog64BigDisk(objectMap1DestinationPath,
-									sharedNumbits2 + SECTION_SHIFT, objectNSection1, true, true);
+									sharedNumbits2 + SECTION_SHIFT, objectNSection1 + 1, true, true);
 							objectIdSequence2 = new SequenceLog64BigDisk(objectMap2OriginPath, objectNumbitsId2,
-									objectNSection1, true, true);
+									objectNSection1 + 1, true, true);
 							objectMapSequence2 = new SequenceLog64BigDisk(objectMap2DestinationPath,
-									sharedNumbits1 + SECTION_SHIFT, objectNSection1, true, true);
+									sharedNumbits1 + SECTION_SHIFT, objectNSection1 + 1, true, true);
 
 							Iterator<? extends CharSequence> itSubjectShared = dataset1.dataset().getDictionary()
 									.stringIterator(SUBJECT, true);

@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.core.storage.QEPCore;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import com.the_qa_company.qendpoint.core.storage.QEPImporter;
 import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
+import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.store.experimental.model.QEPCloseableIteration;
 import com.the_qa_company.qendpoint.store.experimental.model.QEPCoreValueFactory;
 import org.eclipse.rdf4j.common.transaction.IsolationLevel;
@@ -191,11 +192,9 @@ public class QEPSailStore implements SailStore {
 
 		@Override
 		public boolean deprecateByQuery(Resource subj, IRI pred, Value obj, Resource... contexts) {
-			QEPComponent s = vf.asQEPComponent(subj);
-			QEPComponent p = vf.asQEPComponent(pred);
-			QEPComponent o = vf.asQEPComponent(obj);
-
-			return core.removeTriple(s, p, o) > 0;
+			importer.startTransaction();
+			QEPComponentTriple coreTriple = vf.createStatement(subj, pred, obj).asCoreTriple();
+			return importer.deleteTriple(coreTriple.tripleString()) > 0;
 		}
 
 		@Override

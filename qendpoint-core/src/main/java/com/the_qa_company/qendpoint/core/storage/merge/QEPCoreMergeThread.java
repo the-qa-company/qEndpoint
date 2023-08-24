@@ -244,8 +244,6 @@ public class QEPCoreMergeThread extends Thread {
 					String newDatasetId = core.createNewDatasetId();
 					QEPDataset nds = new QEPDataset(core, newDatasetId, null, diffCat, null, null);
 
-					;
-
 					// pause updates
 
 					// write merge location file
