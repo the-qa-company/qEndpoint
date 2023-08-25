@@ -133,6 +133,75 @@ public class SparqlRepository {
 	/**
 	 * execute a sparql query
 	 *
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @param queryParam   query parameters
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
+			OutputStream out, String queryParam) {
+		execute(null, sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, queryParam);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
+			OutputStream out) {
+		execute(sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, "");
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection   the connection to use
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @param queryParam   query parameters
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
+			Consumer<String> mimeSetter, OutputStream out, String queryParam) {
+		Objects.requireNonNull(sparqlQuery, "sparqlQuery can't be null");
+		Objects.requireNonNull(acceptHeader, "acceptHeader can't be null");
+		mimeSetter = Objects.requireNonNullElseGet(mimeSetter, () -> s -> {});
+		Objects.requireNonNull(out, "output stream can't be null");
+
+		execute0(connection, sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, queryParam);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection   the connection to use
+	 * @param sparqlQuery  the query
+	 * @param timeout      query timeout
+	 * @param acceptHeader accept header
+	 * @param mimeSetter   mime setter, null for no set
+	 * @param out          output stream
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
+			Consumer<String> mimeSetter, OutputStream out) {
+		execute(connection, sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, "");
+	}
+
+	/**
+	 * execute a sparql query
+	 *
 	 * @param sparqlQuery          the query
 	 * @param timeout              query timeout
 	 * @param acceptHeader         accept header
