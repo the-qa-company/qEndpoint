@@ -7,50 +7,30 @@ import com.the_qa_company.qendpoint.store.EndpointStoreConnection;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreInputException;
 import com.the_qa_company.qendpoint.utils.FormatUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
-import com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult;
-import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
-import com.the_qa_company.qendpoint.utils.rdf.QEPSPARQLResultsJSONWriter;
-import com.the_qa_company.qendpoint.utils.rdf.QueryResultCounter;
-import com.the_qa_company.qendpoint.utils.rdf.RDFHandlerCounter;
+import com.the_qa_company.qendpoint.utils.rdf.*;
 import com.the_qa_company.qendpoint.utils.sail.SourceSailConnectionWrapper;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.GraphQueryResult;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.TupleQueryResultHandler;
-import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.*;
+import org.eclipse.rdf4j.query.algebra.Var;
+import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.explanation.GenericPlanNode;
-import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
-import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
-import org.eclipse.rdf4j.query.parser.ParsedQuery;
-import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
-import org.eclipse.rdf4j.query.parser.QueryParserUtil;
-import org.eclipse.rdf4j.query.parser.QueryPrologLexer;
+import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLQueries;
-import org.eclipse.rdf4j.query.resultio.BooleanQueryResultFormat;
-import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
-import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
-import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriter;
-import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
+import org.eclipse.rdf4j.query.resultio.*;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.rio.ParserConfig;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandler;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.RDFParser;
-import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.*;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.SailConnection;
@@ -63,14 +43,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -170,7 +143,7 @@ public class SparqlRepository {
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out, String queryParam) {
-		execute(null, sparqlQuery, timeout, acceptHeader, mimeSetter, out, queryParam);
+		execute(null, sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, queryParam);
 	}
 
 	/**
@@ -185,7 +158,7 @@ public class SparqlRepository {
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out) {
-		execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out, "");
+		execute(sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, "");
 	}
 
 	/**
@@ -207,7 +180,7 @@ public class SparqlRepository {
 		mimeSetter = Objects.requireNonNullElseGet(mimeSetter, () -> s -> {});
 		Objects.requireNonNull(out, "output stream can't be null");
 
-		execute0(connection, sparqlQuery, timeout, acceptHeader, mimeSetter, out, queryParam);
+		execute0(connection, sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, queryParam);
 	}
 
 	/**
@@ -223,7 +196,80 @@ public class SparqlRepository {
 	 */
 	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
 			Consumer<String> mimeSetter, OutputStream out) {
-		execute(connection, sparqlQuery, timeout, acceptHeader, mimeSetter, out, "");
+		execute(connection, sparqlQuery, timeout, acceptHeader, null, mimeSetter, out, "");
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery          the query
+	 * @param timeout              query timeout
+	 * @param acceptHeader         accept header
+	 * @param acceptLanguageHeader accept-language header
+	 * @param mimeSetter           mime setter, null for no set
+	 * @param out                  output stream
+	 * @param queryParam           query parameters
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, String acceptLanguageHeader,
+			Consumer<String> mimeSetter, OutputStream out, String queryParam) {
+		execute(null, sparqlQuery, timeout, acceptHeader, acceptLanguageHeader, mimeSetter, out, queryParam);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param sparqlQuery          the query
+	 * @param timeout              query timeout
+	 * @param acceptHeader         accept header
+	 * @param acceptLanguageHeader accept-language header
+	 * @param mimeSetter           mime setter, null for no set
+	 * @param out                  output stream
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, String acceptLanguageHeader,
+			Consumer<String> mimeSetter, OutputStream out) {
+		execute(sparqlQuery, timeout, acceptHeader, acceptLanguageHeader, mimeSetter, out, "");
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection           the connection to use
+	 * @param sparqlQuery          the query
+	 * @param timeout              query timeout
+	 * @param acceptHeader         accept header
+	 * @param acceptLanguageHeader accept-language header
+	 * @param mimeSetter           mime setter, null for no set
+	 * @param out                  output stream
+	 * @param queryParam           query parameters
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
+			String acceptLanguageHeader, Consumer<String> mimeSetter, OutputStream out, String queryParam) {
+		Objects.requireNonNull(sparqlQuery, "sparqlQuery can't be null");
+		Objects.requireNonNull(acceptHeader, "acceptHeader can't be null");
+		mimeSetter = Objects.requireNonNullElseGet(mimeSetter, () -> s -> {});
+		Objects.requireNonNull(out, "output stream can't be null");
+
+		execute0(connection, sparqlQuery, timeout, acceptHeader, acceptLanguageHeader, mimeSetter, out, queryParam);
+	}
+
+	/**
+	 * execute a sparql query
+	 *
+	 * @param connection           the connection to use
+	 * @param sparqlQuery          the query
+	 * @param timeout              query timeout
+	 * @param acceptHeader         accept header
+	 * @param acceptLanguageHeader accept-language header
+	 * @param mimeSetter           mime setter, null for no set
+	 * @param out                  output stream
+	 * @throws java.lang.NullPointerException if an argument is null
+	 */
+	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
+			String acceptLanguageHeader, Consumer<String> mimeSetter, OutputStream out) {
+		execute(connection, sparqlQuery, timeout, acceptHeader, acceptLanguageHeader, mimeSetter, out, "");
 	}
 
 	/**
@@ -244,7 +290,7 @@ public class SparqlRepository {
 	 * @param timeout     query timeout
 	 */
 	public ClosableResult<?> execute(RepositoryConnection connection, String sparqlQuery, int timeout) {
-		return execute0(connection, sparqlQuery, timeout, null, null, null, "");
+		return execute0(connection, sparqlQuery, timeout, null, null, null, null, "");
 	}
 
 	/**
@@ -271,7 +317,7 @@ public class SparqlRepository {
 	@SuppressWarnings("unchecked")
 	public ClosableResult<TupleQueryResult> executeTupleQuery(RepositoryConnection connection, String sparqlQuery,
 			int timeout) {
-		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, "");
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, null, "");
 		assert res != null;
 		if (!(res.getResult() instanceof TupleQueryResult)) {
 			try {
@@ -315,7 +361,7 @@ public class SparqlRepository {
 	 *                                                          be closed
 	 */
 	public boolean executeBooleanQuery(RepositoryConnection connection, String sparqlQuery, int timeout) {
-		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, "");
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, null, "");
 		assert res != null;
 		try {
 			if (!(res.getResult() instanceof BooleanQueryResult)) {
@@ -354,7 +400,7 @@ public class SparqlRepository {
 	@SuppressWarnings("unchecked")
 	public ClosableResult<GraphQueryResult> executeGraphQuery(RepositoryConnection connection, String sparqlQuery,
 			int timeout) {
-		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, "");
+		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, null, "");
 		assert res != null;
 		if (!(res.getResult() instanceof GraphQueryResult)) {
 			try {
@@ -436,7 +482,8 @@ public class SparqlRepository {
 	 *         for boolean queries
 	 */
 	private ClosableResult<?> execute0(RepositoryConnection customConnection, String sparqlQuery, int timeout,
-			String acceptHeader, Consumer<String> mimeSetter, OutputStream out, String queryParam) {
+			String acceptHeader, String acceptLanguageHeader, Consumer<String> mimeSetter, OutputStream out,
+			String queryParam) {
 
 		if (sparqlQuery.isEmpty()) {
 			throw new EndpointStoreInputException("Empty query");
@@ -466,17 +513,27 @@ public class SparqlRepository {
 			} else {
 				epCo = getTimeoutEndpointConnection(connection);
 			}
-			ConfigSailConnection epConn;
-			if (sparqlQuery.charAt(0) == '#' || !queryParam.isEmpty()) {
-				// at least one config or a comment, but let's say it's a config
-				if (connection instanceof SailRepositoryConnection sailRepoConn
-						&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
-						&& csConn.getSourceConnection() instanceof ConfigSailConnection epConnC) {
-					epConn = epConnC;
-				} else {
-					epConn = ConfigSailConnection.EMPTY;
-				}
 
+			// Substitute [AUTO_LANGUAGE] with the client's language
+
+			ConfigSailConnection epConn;
+
+			// at least one config or a comment, but let's say it's a config
+			if (connection instanceof SailRepositoryConnection sailRepoConn
+					&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
+					&& csConn.getSourceConnection() instanceof ConfigSailConnection epConnC) {
+				epConn = epConnC;
+			} else {
+				epConn = ConfigSailConnection.EMPTY;
+			}
+
+			if (acceptLanguageHeader != null && !acceptLanguageHeader.isEmpty()) {
+				// add language header as a config, put it before the query
+				// params to allow overwriting it
+				epConn.setConfig(EndpointStore.QUERY_CONFIG_USER_LOCALES, acceptLanguageHeader);
+			}
+
+			if (sparqlQuery.charAt(0) == '#' || !queryParam.isEmpty()) {
 				if (epConn.allowUpdate() && !queryParam.isEmpty()) {
 					int start = 0;
 					while (start < queryParam.length()) {
@@ -531,8 +588,6 @@ public class SparqlRepository {
 					// remove the config lines
 					sparqlQuery = sparqlQuery.substring(start);
 				}
-			} else {
-				epConn = ConfigSailConnection.EMPTY;
 			}
 			sparqlQuery = applyPrefixes(sparqlQuery);
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
