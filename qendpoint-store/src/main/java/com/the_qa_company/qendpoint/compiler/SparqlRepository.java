@@ -550,9 +550,9 @@ public class SparqlRepository {
 				}
 			}
 
-		if (compiledSail.getOptions().isDebugShowPlans()) {
-			System.out.println(parsedQuery);
-		}
+			if (compiledSail.getOptions().isDebugShowPlans()) {
+				System.out.println(parsedQuery);
+			}
 
 			if (parsedQuery instanceof ParsedTupleQuery) {
 				TupleQuery query = connection.prepareTupleQuery(sparqlQuery);
