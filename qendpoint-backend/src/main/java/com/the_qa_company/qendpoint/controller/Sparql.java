@@ -533,11 +533,12 @@ public class Sparql {
 		return new HasLuceneIndexResult(sparqlRepository.hasLuceneSail());
 	}
 
-	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
-			OutputStream out, String queryParam) {
+	public void execute(String sparqlQuery, int timeout, String acceptHeader, String acceptLanguageHeader,
+			Consumer<String> mimeSetter, OutputStream out, String queryParam) {
 		waitLoading(1);
 		try {
-			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, mimeSetter, out, queryParam);
+			sparqlRepository.execute(sparqlQuery, timeout, acceptHeader, acceptLanguageHeader, mimeSetter, out,
+					queryParam);
 		} finally {
 			completeQuery();
 		}
