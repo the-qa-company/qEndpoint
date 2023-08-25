@@ -444,17 +444,27 @@ public class SparqlRepository {
 			} else {
 				epCo = getTimeoutEndpointConnection(connection);
 			}
-			ConfigSailConnection epConn;
-			if (sparqlQuery.charAt(0) == '#' || !queryParam.isEmpty()) {
-				// at least one config or a comment, but let's say it's a config
-				if (connection instanceof SailRepositoryConnection sailRepoConn
-						&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
-						&& csConn.getSourceConnection() instanceof ConfigSailConnection epConnC) {
-					epConn = epConnC;
-				} else {
-					epConn = ConfigSailConnection.EMPTY;
-				}
 
+			// Substitute [AUTO_LANGUAGE] with the client's language
+
+			ConfigSailConnection epConn;
+
+			// at least one config or a comment, but let's say it's a config
+			if (connection instanceof SailRepositoryConnection sailRepoConn
+					&& sailRepoConn.getSailConnection() instanceof CompiledSail.CompiledSailConnection csConn
+					&& csConn.getSourceConnection() instanceof ConfigSailConnection epConnC) {
+				epConn = epConnC;
+			} else {
+				epConn = ConfigSailConnection.EMPTY;
+			}
+
+			if (acceptLanguageHeader != null && !acceptLanguageHeader.isEmpty()) {
+				// add language header as a config, put it before the query
+				// params to allow overwriting it
+				epConn.setConfig(EndpointStore.QUERY_CONFIG_USER_LOCALES, acceptLanguageHeader);
+			}
+
+			if (sparqlQuery.charAt(0) == '#' || !queryParam.isEmpty()) {
 				if (epConn.allowUpdate() && !queryParam.isEmpty()) {
 					int start = 0;
 					while (start < queryParam.length()) {
@@ -509,8 +519,6 @@ public class SparqlRepository {
 					// remove the config lines
 					sparqlQuery = sparqlQuery.substring(start);
 				}
-			} else {
-				epConn = ConfigSailConnection.EMPTY;
 			}
 			sparqlQuery = applyPrefixes(sparqlQuery);
 			sparqlQuery = sparqlQuery.replaceAll("MINUS \\{(.*\\n)+.+}\\n\\s+}", "");
@@ -518,37 +526,6 @@ public class SparqlRepository {
 			logger.info("Running given sparql query: {}", sparqlQuery);
 
 			ParsedQuery parsedQuery = QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
-
-			// Substitute [AUTO_LANGUAGE] with the client's language
-			if (acceptLanguageHeader != null) {
-				List<Locale.LanguageRange> languageRanges = Locale.LanguageRange.parse(acceptLanguageHeader);
-				Locale locale = Locale.lookup(languageRanges, Arrays.asList(Locale.getAvailableLocales()));
-				try {
-					parsedQuery.getTupleExpr().visit(new AbstractQueryModelVisitor<Exception>() {
-						@Override
-						public void meet(Var node) throws Exception {
-							if (node.getValue() instanceof Literal literal) {
-								boolean isStringDatatype = literal.getDatatype() == null
-										|| literal.getDatatype().equals(CoreDatatype.XSD.STRING.getIri());
-								if (isStringDatatype) {
-									String value = literal.getLabel();
-									if (value.equals("[AUTO_LANGUAGE]")) {
-										ValueFactory vf = SimpleValueFactory.getInstance();
-										Literal newLiteral = vf.createLiteral(locale.getLanguage());
-										Var newVar = new Var(node.getName(), newLiteral);
-										node.replaceWith(newVar);
-									}
-								}
-							}
-							super.meet(node);
-						}
-					});
-				} catch (Exception e) {
-					logger.error("This exception was caught [" + e + "]");
-					e.printStackTrace();
-					throw new RuntimeException(e);
-				}
-			}
 
 			if (compiledSail.getOptions().isDebugShowPlans()) {
 				System.out.println(parsedQuery);
