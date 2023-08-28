@@ -48,6 +48,7 @@ The QA Company over the social networks
 
 <details open="open">
 <summary>Table of Contents</summary>
+
 - [About](#about)
   - [Built With](#built-with)
 - [Getting Started](#getting-started)
