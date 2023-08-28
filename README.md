@@ -64,7 +64,7 @@ The QA Company over the social networks
   - [Docker Image](#docker-image)
     - [`qacompany/qendpoint`](#qacompanyqendpoint)
     - [`qacompany/qendpoint-wikidata`](#qacompanyqendpoint-wikidata)
-    - [Useful tools](#useful-tools-1)
+    - [Useful tools](#useful-tools)
   - [Standalone](#standalone)
   - [As a dependency](#as-a-dependency)
 - [Connecting with your Wikibase](#connecting-with-your-wikibase)
