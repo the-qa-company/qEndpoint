@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-INDEX_HDT=/app/qendpoint/hdt-store/index_dev.hdt
-INDEX_HDT_COINDEX=$INDEX_HDT.index.v1-1
+QEP_LOCATION=/app/qendpoint
+INDEX_HDT="$QEP_LOCATION/hdt-store/index_dev.hdt"
+INDEX_HDT_COINDEX="$INDEX_HDT.index.v1-1"
+PREFIXES_FILE="$QEP_LOCATION/prefixes.sparql"
 CDN=https://qanswer-svc4.univ-st-etienne.fr
 
 # Read args
@@ -8,6 +10,14 @@ if (( $# == 0 )); then
     HDT_BASE=index_big
 else
     HDT_BASE=$1
+fi
+
+
+if [ -f "$PREFIXES_FILE" ]; then
+    echo "$PREFIXES_FILE exists."
+else
+    mkdir -p qendpoint
+    cp wikidata-prefixes.sparql prefixes.sparql
 fi
 
 HDT="$CDN/$HDT_BASE.hdt"
