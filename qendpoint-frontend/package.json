@@ -56,7 +56,7 @@
     "eslint-plugin-react-hooks": "^4.5.0",
     "install": "^0.13.0",
     "node-sass": "^7.0.1",
-    "sparql-formatter": "^0.6.3"
+    "sparql-formatter": "^0.7.6"
   },
   "eslintConfig": {
     "extends": [
