@@ -46,6 +46,7 @@ public class EndpointController {
 			@RequestParam(value = "update", required = false) final String updateQuery,
 			@RequestParam(value = "format", defaultValue = "json") final String format,
 			@RequestHeader(value = "Accept", defaultValue = "application/sparql-results+json") String acceptHeader,
+			@RequestHeader(value = "Accept-Language", defaultValue = "en") String acceptLanguageHeader,
 			@RequestHeader(value = "QueryConfig", defaultValue = "") String queryConfig,
 			@RequestHeader(value = "timeout", defaultValue = "-1") int timeout,
 			@RequestHeader(value = "Content-Type", defaultValue = "text/plain") String content,
@@ -53,11 +54,11 @@ public class EndpointController {
 			@RequestBody(required = false) String body, HttpServletResponse response) throws IOException {
 		try {
 			if (query != null) {
-				sparql.execute(query, timeout, acceptHeader, response::setContentType, response.getOutputStream(),
-						queryConfig);
+				sparql.execute(query, timeout, acceptHeader, acceptLanguageHeader, response::setContentType,
+						response.getOutputStream(), queryConfig);
 			} else if (body != null && content.equals("application/sparql-query")) {
-				sparql.execute(body, timeout, acceptHeader, response::setContentType, response.getOutputStream(),
-						queryConfig);
+				sparql.execute(body, timeout, acceptHeader, acceptLanguageHeader, response::setContentType,
+						response.getOutputStream(), queryConfig);
 			} else if (updateQuery != null) {
 				sparql.executeUpdate(updateQuery, timeout, response.getOutputStream());
 			} else if (body != null) {

@@ -73,6 +73,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * get the query plan
 	 */
 	public static final String QUERY_CONFIG_FETCH_QUERY_PLAN = "get_plan";
+	/**
+	 * set the user locales
+	 */
+	public static final String QUERY_CONFIG_USER_LOCALES = "user_locales";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;

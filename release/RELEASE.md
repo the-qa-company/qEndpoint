@@ -1,2 +1,3 @@
-- Dump dataset while running the endpoint (#391)
-- Fix new architecture to handle SPARQL (#336)
+- fix things
+- add dump info (#395)
+- add dump location (#395)

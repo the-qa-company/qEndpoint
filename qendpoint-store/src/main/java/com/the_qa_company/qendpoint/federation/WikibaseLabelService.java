@@ -7,10 +7,10 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.Service;
@@ -19,9 +19,10 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedService;
 import org.eclipse.rdf4j.query.impl.ListBindingSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -33,12 +34,16 @@ import java.util.Set;
  * of the specification
  */
 public class WikibaseLabelService implements FederatedService {
+	private static final Logger logger = LoggerFactory.getLogger(WikibaseLabelService.class);
 
 	static final ValueFactory vf = SimpleValueFactory.getInstance();
-	TripleSource tripleSource;
+	private final TripleSource tripleSource;
+	private final String userLocales;
+	private List<String> userLocalesParsed;
 
-	WikibaseLabelService(TripleSource tripleSource) {
+	WikibaseLabelService(TripleSource tripleSource, String userLocales) {
 		this.tripleSource = tripleSource;
+		this.userLocales = userLocales;
 	}
 
 	@Override
@@ -54,6 +59,72 @@ public class WikibaseLabelService implements FederatedService {
 		return null;
 	}
 
+	private void parseUserLocal() {
+		if (userLocalesParsed != null) {
+			return; // already done
+		}
+		if (userLocales == null || userLocales.isEmpty()) {
+			userLocalesParsed = List.of();
+			return;
+		}
+		userLocalesParsed = new ArrayList<>();
+		int start = 0;
+		while (start < userLocales.length()) {
+			int idxUser = userLocales.indexOf(',', start);
+
+			if (idxUser == -1) {
+				idxUser = userLocales.length();
+			}
+
+			String langCfg = userLocales.substring(start, idxUser);
+			start = idxUser + 1;
+			if (langCfg.isEmpty()) {
+				continue; // ignore empty node
+			}
+
+			int idxWeight = langCfg.indexOf(';');
+
+			if (idxWeight == -1) {
+				// no weight
+				userLocalesParsed.add(langCfg);
+			} else {
+				userLocalesParsed.add(langCfg.substring(0, idxWeight));
+			}
+
+		}
+	}
+
+	private List<String> getAskedLanguage(String languageConfig) {
+		List<String> lg = new ArrayList<>();
+		int start = 0;
+		if (languageConfig == null || languageConfig.isEmpty()) {
+			return lg;
+		}
+		while (start < languageConfig.length()) {
+			int idx = languageConfig.indexOf(',', start);
+			if (idx == -1) {
+				idx = languageConfig.length();
+			}
+			String lang = languageConfig.substring(start, idx);
+			start = idx + 1;
+			if (lang.isEmpty()) {
+				continue; // ignore empty node
+			}
+
+			if (lang.equals("[AUTO_LANGUAGE]")) {
+				parseUserLocal();
+				if (!userLocalesParsed.isEmpty()) {
+					lg.addAll(userLocalesParsed);
+				}
+			} else {
+				lg.add(lang);
+			}
+		}
+
+		logger.debug("using the Wikibase label service with languages {}", lg);
+		return lg;
+	}
+
 	@Override
 	public CloseableIteration<BindingSet, QueryEvaluationException> evaluate(Service service,
 			CloseableIteration<BindingSet, QueryEvaluationException> closeableIteration, String s)
@@ -63,16 +134,22 @@ public class WikibaseLabelService implements FederatedService {
 		// https://en.wikibooks.org/wiki/SPARQL/SERVICE_-_Label
 		// the SERVICE clause contains only one triple pattern that specifies
 		// the language
-		if (tupleExpr instanceof StatementPattern) {
-			StatementPattern statement = (StatementPattern) tupleExpr;
+		if (tupleExpr instanceof StatementPattern statement) {
+			if (statement.getPredicateVar().getValue() == null) {
+				throw new QueryEvaluationException("Predicate variable should have a value");
+			}
+			if (statement.getObjectVar().getValue() == null) {
+				throw new QueryEvaluationException("Object variable should have a value");
+			}
 			// the predicate must be <http://wikiba.se/ontology#language>
 			if (statement.getPredicateVar().getValue().stringValue().equals("http://wikiba.se/ontology#language")) {
 				// the object must be a literal without language tag and without
 				// datatype
 				if (statement.getObjectVar().getValue().isLiteral()) {
 					Literal literal = (Literal) statement.getObjectVar().getValue();
-					if (literal.getLanguage().isEmpty() && literal.getDatatype() == XSD.STRING) {
-						List<String> languages = Arrays.asList(literal.getLabel().split(","));
+					if (literal.getCoreDatatype() == CoreDatatype.XSD.STRING) {
+						List<String> languages = getAskedLanguage(literal.getLabel());
+
 						if (languages.size() > 0) {
 							return new CloseableIteration<>() {
 								@Override
