@@ -2,7 +2,7 @@ FROM qacompany/qendpoint
 
 WORKDIR /app
 
-COPY wikidata/wikidata-prefixes.sparql .
+COPY wikidata-prefixes.sparql .
 COPY loadData.sh .
 RUN chmod +x loadData.sh
 
