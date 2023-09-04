@@ -1,3 +1,9 @@
+## Version 1.13.4
+        
+- fix formatter (#401)
+- add Wikidata prefixes to WD image (#404)
+- fix `[AUTO_LANGUAGE]` in Wiki service (#399)
+
 ## Version 1.13.3
         
 - fix things
