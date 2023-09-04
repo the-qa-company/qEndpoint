@@ -303,19 +303,19 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 						return sec.location + s;
 					}
 				}
-				return 0;
+				return -1;
 			}
 
 			ObjectIdLocationData sec = objectsLocations.get((ByteString) t);
 
 			if (sec == null) {
-				return 0;
+				return -1;
 			}
 
 			long s = sec.section.locate(LiteralsUtils.removeType(str));
 
 			if (s == 0) {
-				return 0;
+				return -1;
 			}
 			return sec.location + s;
 

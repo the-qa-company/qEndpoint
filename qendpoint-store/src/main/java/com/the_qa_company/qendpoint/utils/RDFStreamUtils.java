@@ -163,7 +163,7 @@ public class RDFStreamUtils {
 			return vf.createLiteral(lit, vf.createIRI(type));
 		}
 		case '<' -> {
-			// literal
+			// iri
 			if (seq.length() < 2 || seq.charAt(seq.length() - 1) != '>') {
 				throw new IllegalArgumentException("Bad iri: " + seq);
 			}
