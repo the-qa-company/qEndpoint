@@ -4,8 +4,11 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.util.Repositories;
@@ -20,6 +23,7 @@ import java.nio.file.Path;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class EndpointNodeMSDLTest {
@@ -68,8 +72,37 @@ public class EndpointNodeMSDLTest {
 						}
 					}
 					assertEquals(store.getHdt().getTriples().getNumberOfElements(), count);
-				} catch (NotFoundException e) {
-					throw new AssertionError(e);
+					for (TripleString ts : store.getHdt()) {
+						assertTrue(ts.isStatic());
+						if ((ts.getObject().charAt(0) == '_' && ts.getObject().charAt(1) == ':')
+								|| ts.getSubject().charAt(0) == '_' && ts.getSubject().charAt(1) == ':') {
+							continue; // can't search for bnode in a query
+						}
+						String query = "SELECT * {\n%s}\n".formatted(ts.asNtriple().toString());
+						try {
+							TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+
+							try (TupleQueryResult res = tupleQuery.evaluate()) {
+								if (!res.hasNext()) {
+									fail("Can't find triple " + ts);
+								}
+								res.next();
+
+								if (res.hasNext()) {
+									do {
+										System.out.println(res.next());
+									} while (res.hasNext());
+									fail("multiple output");
+								}
+							}
+
+						} catch (Throwable t) {
+							System.err.println(query);
+							throw t;
+						}
+					}
+				} catch (NotFoundException | IOException e) {
+					throw new RuntimeException(e);
 				}
 			});
 		} finally {
