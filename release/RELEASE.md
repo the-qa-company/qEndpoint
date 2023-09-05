@@ -1,1 +1,1 @@
-- fix msdl extraction (#409)
+- fix msdl predicate retrieve (#409)
