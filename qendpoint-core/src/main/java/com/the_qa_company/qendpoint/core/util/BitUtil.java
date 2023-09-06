@@ -30,10 +30,28 @@ public class BitUtil {
 	/**
 	 * Number of bits needed to store up to n
 	 *
-	 * @param n
+	 * @param n n
 	 */
 	public static int log2(long n) {
 		return (n != 0) ? (64 - Long.numberOfLeadingZeros(n)) : 0;
+	}
+
+	/**
+	 * ceil(log2(n))
+	 *
+	 * @param n n
+	 */
+	public static int log2Ceil(long n) {
+		return (n != 0) ? (64 - Long.numberOfLeadingZeros(n - 1)) : 0;
+	}
+
+	/**
+	 * floor(log2(n))
+	 *
+	 * @param n n
+	 */
+	public static int log2Floor(long n) {
+		return (n != 0) ? (63 - Long.numberOfLeadingZeros(n)) : 0;
 	}
 
 	public static long maxVal(int numbits) {

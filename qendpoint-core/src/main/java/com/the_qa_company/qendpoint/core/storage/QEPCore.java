@@ -21,6 +21,7 @@ import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator
 import com.the_qa_company.qendpoint.core.storage.merge.QEPCoreMergeThread;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
 import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
@@ -38,6 +39,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -49,6 +51,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.the_qa_company.qendpoint.core.options.HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY;
@@ -423,22 +426,61 @@ public class QEPCore implements AutoCloseable {
 	public void syncDatasetMaps() throws QEPCoreException {
 		Path mapsDir = getMapsPath();
 		synchronized (bindLock) {
-			List<QEPDataset> snapshot = createDatasetSnapshot();
+			List<QEPDataset> snapshot = createDatasetSnapshot(true);
 			try {
 				// close the previous maps
 				Closer.closeAll(map.values());
 				map.clear();
 				Files.createDirectories(mapsDir);
 
-				for (QEPDataset d1 : snapshot) {
-					for (QEPDataset d2 : snapshot) {
-						bindDataset(d1, d2);
-					}
+				//for (QEPDataset d1 : snapshot) {
+				//	for (QEPDataset d2 : snapshot) {
+				//		bindDataset(d1, d2);
+				//	}
+				//}
+
+				// sort the datasets by size
+				snapshot.sort(Comparator.comparingLong(e -> e.dataset().getDictionary().getNumberOfElements()));
+
+				for (int i = 0; i < snapshot.size() - 1; i++) {
+					QEPDataset ds = snapshot.get(i);
+					// find the point where the merge method is probably too expensive
+					int largePoint = findLargePoint(i, snapshot);
+
+					// merge before large point
+
+
+					// merge after large point
+
+
 				}
 			} catch (IOException e) {
 				throw new QEPCoreException("Can't sync map data!", e);
 			}
 		}
+	}
+
+	private static int findLargePoint(int origin, List<QEPDataset> dss) {
+		QEPDataset ds = dss.get(origin);
+
+
+		long size = ds.dataset().getDictionary().getNumberOfElements();
+
+		int pt;
+		for (pt = origin + 1; pt < dss.size(); pt++) {
+			QEPDataset ods = dss.get(pt);
+
+			long otherSize = ods.dataset().getDictionary().getNumberOfElements();
+
+			if (size * BitUtil.log2Floor(otherSize) < otherSize) {
+				// it costs less to directly search for the components
+				// inside the other dataset than by using a merge join.
+				// because we sorted the array, we know that the next
+				// datasets are going to follow the same property.
+				break;
+			}
+		}
+		return pt;
 	}
 
 	/**
@@ -529,6 +571,15 @@ public class QEPCore implements AutoCloseable {
 	}
 
 	private List<QEPDataset> createDatasetSnapshot() {
+		return createDatasetSnapshot(false);
+	}
+
+	private List<QEPDataset> createDatasetSnapshot(boolean mutable) {
+		if (mutable) {
+			synchronized (datasetLock) {
+				return new ArrayList<>(dataset.values());
+			}
+		}
 		synchronized (datasetLock) {
 			return dataset.values().stream().toList();
 		}
