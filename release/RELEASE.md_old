@@ -1,3 +1,6 @@
+## Version 1.13.6
+        
+- fix msdl predicate retrieve (#409)
 ## Version 1.13.5
         
 - fix msdl extraction (#409)

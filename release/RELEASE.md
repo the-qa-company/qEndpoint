@@ -1,1 +1,1 @@
-- fix msdl predicate retrieve (#409)
+- fix language literal 

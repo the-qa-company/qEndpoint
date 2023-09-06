@@ -9,7 +9,7 @@
 
     <groupId>com.the-qa-company</groupId>
     <artifactId>qendpoint-parent</artifactId>
-    <version>1.13.6</version>
+    <version>1.13.7</version>
 
     <packaging>pom</packaging>
 
