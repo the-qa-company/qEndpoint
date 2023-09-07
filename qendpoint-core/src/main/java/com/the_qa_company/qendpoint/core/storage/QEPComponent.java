@@ -22,9 +22,11 @@ import java.util.Optional;
  * @author Antoine Willerval
  */
 public class QEPComponent implements Cloneable {
-	record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset, String debugMapped) {}
+	record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset, String debugMapped) {
+	}
 
-	record PredicateElement(long id, QEPDataset dataset) {}
+	record PredicateElement(long id, QEPDataset dataset) {
+	}
 
 	private static final Logger logger = LoggerFactory.getLogger(QEPComponent.class);
 
@@ -50,16 +52,16 @@ public class QEPComponent implements Cloneable {
 		this.core = core;
 		if (id > 0) {
 			switch (role) {
-			case PREDICATE -> {
-				this.predicateIds = new CopyOnWriteMap<>(Map.of(dataset.uid(), new PredicateElement(id, dataset)));
-				this.sharedIds = new CopyOnWriteMap<>(Map.of());
-			}
-			case SUBJECT, OBJECT, SHARED -> {
-				this.predicateIds = new CopyOnWriteMap<>(Map.of());
-				this.sharedIds = new CopyOnWriteMap<>(
-						Map.of(dataset.uid(), new SharedElement(id, role, dataset, "build")));
-			}
-			default -> throw new AssertionError("unknown triple role: " + role);
+				case PREDICATE -> {
+					this.predicateIds = new CopyOnWriteMap<>(Map.of(dataset.uid(), new PredicateElement(id, dataset)));
+					this.sharedIds = new CopyOnWriteMap<>(Map.of());
+				}
+				case SUBJECT, OBJECT, SHARED -> {
+					this.predicateIds = new CopyOnWriteMap<>(Map.of());
+					this.sharedIds = new CopyOnWriteMap<>(
+							Map.of(dataset.uid(), new SharedElement(id, role, dataset, "build")));
+				}
+				default -> throw new AssertionError("unknown triple role: " + role);
 			}
 		} else if (value != null) {
 			this.predicateIds = new CopyOnWriteMap<>(Map.of());
@@ -203,6 +205,144 @@ public class QEPComponent implements Cloneable {
 	/**
 	 * get the id in a particular dataset for a role
 	 *
+	 * @param d2   dataset
+	 * @param role role
+	 * @return id in the dataset, or 0 if it doesn't exist in the dataset
+	 * @throws QEPCoreException         converter issue
+	 * @throws IllegalArgumentException if the dataset doesn't exist
+	 */
+	public long getId(QEPDataset d2, TripleComponentRole role) throws QEPCoreException {
+		int dataset = d2.uid();
+		switch (role) {
+			case PREDICATE -> {
+				PredicateElement id = predicateIds.get(dataset);
+				if (id != null) {
+					return id.id();
+				}
+
+				for (Map.Entry<Integer, PredicateElement> e : predicateIds.entrySet()) {
+					if (e.getValue().id() == 0) {
+						continue; // undefined
+					}
+
+					int originDataset = e.getKey();
+					long originId = e.getValue().id();
+
+					NodeConverter converter = core.getConverter(originDataset, dataset, TripleComponentRole.PREDICATE);
+					if (converter == null) {
+						continue; // Can't be used to search the id
+					}
+					long mapValue = converter.mapValue(originId);
+					predicateIds.put(dataset, new PredicateElement(mapValue, d2));
+					return mapValue;
+				}
+				// we can reach this part if no other dataset are describing this
+				// component
+
+				// search by string
+
+				long pid = d2.dataset().getDictionary().stringToId(getString(), TripleComponentRole.PREDICATE);
+
+				// put our find in the map
+				if (pid <= 0) {
+					predicateIds.put(dataset, new PredicateElement(0, d2));
+					return 0;
+				} else {
+					predicateIds.put(dataset, new PredicateElement(pid, d2));
+				}
+
+				return pid;
+			}
+			case SUBJECT, OBJECT -> {
+				SharedElement se = sharedIds.get(dataset);
+
+				if (se != null) {
+					if (se.role == DictionarySectionRole.SHARED || se.role == role.asDictionarySectionRole()) {
+						// same section
+						return se.id;
+					}
+					// not the same section, so not shared, we can put 0
+					return 0;
+				}
+				// we need to find it
+
+				long nshared = d2.dataset().getDictionary().getNshared();
+				for (Map.Entry<Integer, SharedElement> e : sharedIds.entrySet()) {
+					if (e.getValue().id() == 0) {
+						continue; // undefined
+					}
+
+					int originDataset = e.getKey();
+					long originId = e.getValue().id();
+
+					NodeConverter converter = core.getConverter(originDataset, dataset,
+							e.getValue().role.asTripleComponentRole());
+					if (converter == null) {
+						continue; // Can't be used to search the id
+					}
+					long mapValue = converter.mapValue(originId);
+					long idOfMapped = QEPMap.getIdOfMapped(mapValue, nshared);
+
+					if (idOfMapped <= nshared) {
+						// shared or empty element
+						if (idOfMapped <= 0) {
+							sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2, "mapped shared"));
+						} else {
+							sharedIds.put(dataset,
+									new SharedElement(idOfMapped, DictionarySectionRole.SHARED, d2, "mapped shared"));
+						}
+					} else {
+						TripleComponentRole roleOfMapped = QEPMap.getRoleOfMapped(mapValue);
+						sharedIds.put(dataset,
+								new SharedElement(idOfMapped, roleOfMapped.asDictionarySectionRole(), d2, "mapped role"));
+						if (role != roleOfMapped) {
+							// not in the same section
+							return 0;
+						}
+					}
+
+					return idOfMapped;
+				}
+
+				// can't find it, we need to use the string
+				CharSequence seq = getString();
+
+				long id = d2.dataset().getDictionary().stringToId(seq, role);
+
+				if (id <= 0) {
+					// not in the same section, we search on the other side to know
+					// if we should put 0 or an ID
+					TripleComponentRole otherRole = switch (role) {
+						case OBJECT -> TripleComponentRole.SUBJECT;
+						case SUBJECT -> TripleComponentRole.OBJECT;
+						default -> throw new AssertionError();
+					};
+					id = d2.dataset().getDictionary().stringToId(seq, otherRole);
+					if (id <= nshared) {
+						assert id <= 0 : "found shared id";
+						sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2, "direct 2 shared"));
+					} else {
+						sharedIds.put(dataset,
+								new SharedElement(id, otherRole.asDictionarySectionRole(), d2, "direct 2 role"));
+					}
+					return 0; // not the same role
+				}
+
+				if (id <= nshared) {
+					sharedIds.put(dataset, new SharedElement(id, DictionarySectionRole.SHARED, d2, "direct 1 shared"));
+				} else {
+					sharedIds.put(dataset, new SharedElement(id, role.asDictionarySectionRole(), d2, "direct 1 role"));
+				}
+
+				return id;
+			}
+			default -> throw new AssertionError("unknown triple role: " + role);
+		}
+	}
+
+	/**
+	 * get the id in a particular dataset for a role
+	 *
 	 * @param dataset dataset uid
 	 * @param role    role
 	 * @return id in the dataset, or 0 if it doesn't exist in the dataset
@@ -211,139 +351,146 @@ public class QEPComponent implements Cloneable {
 	 */
 	public long getId(int dataset, TripleComponentRole role) throws QEPCoreException {
 		switch (role) {
-		case PREDICATE -> {
-			PredicateElement id = predicateIds.get(dataset);
-			if (id != null) {
-				return id.id();
-			}
-			QEPDataset d2 = core.getDatasetByUid(dataset);
+			case PREDICATE -> {
+				PredicateElement id = predicateIds.get(dataset);
+				if (id != null) {
+					return id.id();
+				}
+				QEPDataset d2 = core.getDatasetByUid(dataset);
 
-			if (d2 == null) {
-				throw new IllegalArgumentException("searching over an unknown dataset: uid:" + dataset);
-			}
-
-			for (Map.Entry<Integer, PredicateElement> e : predicateIds.entrySet()) {
-				if (e.getValue().id() == 0) {
-					continue; // undefined
+				if (d2 == null) {
+					throw new IllegalArgumentException("searching over an unknown dataset: uid:" + dataset);
 				}
 
-				int originDataset = e.getKey();
-				long originId = e.getValue().id();
+				for (Map.Entry<Integer, PredicateElement> e : predicateIds.entrySet()) {
+					if (e.getValue().id() == 0) {
+						continue; // undefined
+					}
 
-				NodeConverter converter = core.getConverter(originDataset, dataset, TripleComponentRole.PREDICATE);
-				long mapValue = converter.mapValue(originId);
-				predicateIds.put(dataset, new PredicateElement(mapValue, d2));
-				return mapValue;
-			}
-			// we can reach this part if no other dataset are describing this
-			// component
+					int originDataset = e.getKey();
+					long originId = e.getValue().id();
 
-			// search by string
-
-			long pid = d2.dataset().getDictionary().stringToId(getString(), TripleComponentRole.PREDICATE);
-
-			// put our find in the map
-			if (pid <= 0) {
-				predicateIds.put(dataset, new PredicateElement(0, d2));
-				return 0;
-			} else {
-				predicateIds.put(dataset, new PredicateElement(pid, d2));
-			}
-
-			return pid;
-		}
-		case SUBJECT, OBJECT -> {
-			SharedElement se = sharedIds.get(dataset);
-
-			if (se != null) {
-				if (se.role == DictionarySectionRole.SHARED || se.role == role.asDictionarySectionRole()) {
-					// same section
-					return se.id;
+					NodeConverter converter = core.getConverter(originDataset, dataset, TripleComponentRole.PREDICATE);
+					if (converter == null) {
+						continue; // Can't be used to search the id
+					}
+					long mapValue = converter.mapValue(originId);
+					predicateIds.put(dataset, new PredicateElement(mapValue, d2));
+					return mapValue;
 				}
-				// not the same section, so not shared, we can put 0
-				return 0;
-			}
-			QEPDataset d2 = core.getDatasetByUid(dataset);
+				// we can reach this part if no other dataset are describing this
+				// component
 
-			if (d2 == null) {
-				throw new IllegalArgumentException("searching over an unknown dataset: uid:" + dataset);
-			}
-			// we need to find it
+				// search by string
 
-			long nshared = d2.dataset().getDictionary().getNshared();
-			for (Map.Entry<Integer, SharedElement> e : sharedIds.entrySet()) {
-				if (e.getValue().id() == 0) {
-					continue; // undefined
+				long pid = d2.dataset().getDictionary().stringToId(getString(), TripleComponentRole.PREDICATE);
+
+				// put our find in the map
+				if (pid <= 0) {
+					predicateIds.put(dataset, new PredicateElement(0, d2));
+					return 0;
+				} else {
+					predicateIds.put(dataset, new PredicateElement(pid, d2));
 				}
 
-				int originDataset = e.getKey();
-				long originId = e.getValue().id();
+				return pid;
+			}
+			case SUBJECT, OBJECT -> {
+				SharedElement se = sharedIds.get(dataset);
 
-				NodeConverter converter = core.getConverter(originDataset, dataset,
-						e.getValue().role.asTripleComponentRole());
-				long mapValue = converter.mapValue(originId);
-				long idOfMapped = QEPMap.getIdOfMapped(mapValue, nshared);
+				if (se != null) {
+					if (se.role == DictionarySectionRole.SHARED || se.role == role.asDictionarySectionRole()) {
+						// same section
+						return se.id;
+					}
+					// not the same section, so not shared, we can put 0
+					return 0;
+				}
+				QEPDataset d2 = core.getDatasetByUid(dataset);
 
-				if (idOfMapped <= nshared) {
-					// shared or empty element
-					if (idOfMapped <= 0) {
-						sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2, "mapped shared"));
+				if (d2 == null) {
+					throw new IllegalArgumentException("searching over an unknown dataset: uid:" + dataset);
+				}
+				// we need to find it
+
+				long nshared = d2.dataset().getDictionary().getNshared();
+				for (Map.Entry<Integer, SharedElement> e : sharedIds.entrySet()) {
+					if (e.getValue().id() == 0) {
+						continue; // undefined
+					}
+
+					int originDataset = e.getKey();
+					long originId = e.getValue().id();
+
+					NodeConverter converter = core.getConverter(originDataset, dataset,
+							e.getValue().role.asTripleComponentRole());
+					if (converter == null) {
+						continue; // Can't be used to search the id
+					}
+
+					long mapValue = converter.mapValue(originId);
+					long idOfMapped = QEPMap.getIdOfMapped(mapValue, nshared);
+
+					if (idOfMapped <= nshared) {
+						// shared or empty element
+						if (idOfMapped <= 0) {
+							sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2, "mapped shared"));
+						} else {
+							sharedIds.put(dataset,
+									new SharedElement(idOfMapped, DictionarySectionRole.SHARED, d2, "mapped shared"));
+						}
+					} else {
+						TripleComponentRole roleOfMapped = QEPMap.getRoleOfMapped(mapValue);
+						sharedIds.put(dataset,
+								new SharedElement(idOfMapped, roleOfMapped.asDictionarySectionRole(), d2, "mapped role"));
+						if (role != roleOfMapped) {
+							// not in the same section
+							return 0;
+						}
+					}
+
+					return idOfMapped;
+				}
+
+				// can't find it, we need to use the string
+				CharSequence seq = getString();
+
+				long id = d2.dataset().getDictionary().stringToId(seq, role);
+
+				if (id <= 0) {
+					// not in the same section, we search on the other side to know
+					// if we should put 0 or an ID
+					TripleComponentRole otherRole = switch (role) {
+						case OBJECT -> TripleComponentRole.SUBJECT;
+						case SUBJECT -> TripleComponentRole.OBJECT;
+						default -> throw new AssertionError();
+					};
+					id = d2.dataset().getDictionary().stringToId(seq, otherRole);
+					if (id <= nshared) {
+						assert id <= 0 : "found shared id";
+						sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2, "direct 2 shared"));
 					} else {
 						sharedIds.put(dataset,
-								new SharedElement(idOfMapped, DictionarySectionRole.SHARED, d2, "mapped shared"));
+								new SharedElement(id, otherRole.asDictionarySectionRole(), d2, "direct 2 role"));
 					}
-				} else {
-					TripleComponentRole roleOfMapped = QEPMap.getRoleOfMapped(mapValue);
-					sharedIds.put(dataset,
-							new SharedElement(idOfMapped, roleOfMapped.asDictionarySectionRole(), d2, "mapped role"));
-					if (role != roleOfMapped) {
-						// not in the same section
-						return 0;
-					}
+					return 0; // not the same role
 				}
 
-				return idOfMapped;
-			}
-
-			// can't find it, we need to use the string
-			CharSequence seq = getString();
-
-			long id = d2.dataset().getDictionary().stringToId(seq, role);
-
-			if (id <= 0) {
-				// not in the same section, we search on the other side to know
-				// if we should put 0 or an ID
-				TripleComponentRole otherRole = switch (role) {
-				case OBJECT -> TripleComponentRole.SUBJECT;
-				case SUBJECT -> TripleComponentRole.OBJECT;
-				default -> throw new AssertionError();
-				};
-				id = d2.dataset().getDictionary().stringToId(seq, otherRole);
 				if (id <= nshared) {
-					assert id <= 0 : "found shared id";
-					sharedIds.put(dataset, new SharedElement(0, DictionarySectionRole.SHARED, d2, "direct 2 shared"));
+					sharedIds.put(dataset, new SharedElement(id, DictionarySectionRole.SHARED, d2, "direct 1 shared"));
 				} else {
-					sharedIds.put(dataset,
-							new SharedElement(id, otherRole.asDictionarySectionRole(), d2, "direct 2 role"));
+					sharedIds.put(dataset, new SharedElement(id, role.asDictionarySectionRole(), d2, "direct 1 role"));
 				}
-				return 0; // not the same role
-			}
 
-			if (id <= nshared) {
-				sharedIds.put(dataset, new SharedElement(id, DictionarySectionRole.SHARED, d2, "direct 1 shared"));
-			} else {
-				sharedIds.put(dataset, new SharedElement(id, role.asDictionarySectionRole(), d2, "direct 1 role"));
+				return id;
 			}
-
-			return id;
-		}
-		default -> throw new AssertionError("unknown triple role: " + role);
+			default -> throw new AssertionError("unknown triple role: " + role);
 		}
 	}
 
 	/**
 	 * @return dump the component information, warning: will call
-	 *         {@link #getString()}
+	 * {@link #getString()}
 	 */
 	public String dumpBinding() {
 		StringBuilder bld = new StringBuilder(this.toString());
@@ -451,6 +598,60 @@ public class QEPComponent implements Cloneable {
 		return rdfNodeType = RDFNodeType.typeof(getString());
 	}
 
+	/**
+	 * Merge this component with another component, the 2 components will be bind together
+	 *
+	 * @param qepc the other component
+	 * @throws IllegalArgumentException if the other component's core isn't the same as this component's core
+	 */
+	public void merge(QEPComponent qepc) {
+		if (core != qepc.core) {
+			throw new IllegalArgumentException("Trying to merge with a component from a different core!");
+		}
+
+		// pick the larger ones to reduce the amount of put
+
+		if (sharedIds.size() > qepc.sharedIds.size()) {
+			sharedIds.putAll(qepc.sharedIds);
+			qepc.sharedIds = sharedIds;
+		} else {
+			qepc.sharedIds.putAll(sharedIds);
+			sharedIds = qepc.sharedIds;
+		}
+
+		if (predicateIds.size() > qepc.predicateIds.size()) {
+			predicateIds.putAll(qepc.predicateIds);
+			qepc.predicateIds = predicateIds;
+		} else {
+			qepc.predicateIds.putAll(predicateIds);
+			predicateIds = qepc.predicateIds;
+		}
+
+		if (value == null) {
+			value = qepc.value;
+		} else {
+			qepc.value = value;
+		}
+
+		if (rdfNodeType == null) {
+			rdfNodeType = qepc.rdfNodeType;
+		} else {
+			qepc.rdfNodeType = rdfNodeType;
+		}
+
+		if (datatype == null) {
+			datatype = qepc.datatype;
+		} else {
+			qepc.datatype = datatype;
+		}
+
+		if (language == null) {
+			language = qepc.language;
+		} else {
+			qepc.language = language;
+		}
+	}
+
 	@Override
 	public QEPComponent clone() {
 		try {
@@ -461,5 +662,37 @@ public class QEPComponent implements Cloneable {
 		} catch (CloneNotSupportedException e) {
 			return new QEPComponent(this);
 		}
+	}
+
+	/**
+	 * set the string value for this component if it wasn't set
+	 *
+	 * @param sequence value
+	 */
+	public void assertString(CharSequence sequence) {
+		if (value == null) {
+			value = sequence;
+		}
+	}
+
+	/**
+	 * set the id value for this component if it wasn't set
+	 *
+	 * @param role    role
+	 * @param id      id
+	 * @param dataset dataset
+	 */
+	public void assertBinding(DictionarySectionRole role, long id, QEPDataset dataset) {
+		Objects.requireNonNull(role, "role can't be null");
+		if (role == DictionarySectionRole.PREDICATE) {
+			predicateIds.computeIfAbsent(dataset.uid(),
+					uid -> new PredicateElement(id <= 0 ? 0 : id, dataset)
+			);
+		} else {
+			sharedIds.computeIfAbsent(dataset.uid(),
+					uid -> new SharedElement(id <= 0 ? 0 : id, role, dataset, "assert")
+			);
+		}
+
 	}
 }

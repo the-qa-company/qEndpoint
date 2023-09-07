@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.storage;
 import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -348,8 +349,13 @@ public class QEPMap implements Closeable {
 								// convert to bytestring to optimise search
 								CharSequence component = ByteString.of(it.next());
 								long componentId = componentIdCounter++;
+								QEPComponent qepc = core.createComponentByString(component);
+								qepc.assertBinding(DictionarySectionRole.PREDICATE, componentId, dataset1);
 
-								long mappedId = dataset2.dataset().getDictionary().stringToId(component, PREDICATE);
+								long mappedId = qepc.getId(dataset2, PREDICATE);
+
+								//TODO: remove
+								assert (mappedId <= 0 ? -1 : mappedId) == dataset2.dataset().getDictionary().stringToId(component, PREDICATE);
 
 								if (mappedId > 0) {
 
@@ -488,12 +494,20 @@ public class QEPMap implements Closeable {
 									ByteString next = ByteString.of(itSubjectShared.next());
 									long componentId = componentIdCounterSubject++;
 
-									long mappedId = d2d.stringToId(next, SUBJECT);
+									QEPComponent qepc = core.createComponentByString(next);
+									qepc.assertBinding(DictionarySectionRole.SUBJECT, componentId, dataset1);
+
+									long mappedId = qepc.getId(dataset2, SUBJECT);
+
+									//TODO: remove
+									assert (mappedId <= 0 ? -1 : mappedId) == d2d.stringToId(next, SUBJECT);
 
 									if (mappedId <= 0) {
 										// can't find the id in the subjects,
 										// searching in the objects
-										mappedId = d2d.stringToId(next, OBJECT);
+										mappedId = qepc.getId(dataset2, OBJECT);
+										//TODO: remove
+										assert (mappedId <= 0 ? -1 : mappedId) == d2d.stringToId(next, OBJECT);
 
 										if (mappedId <= d2nshared) {
 											assert mappedId <= 0 : "found a mapped id";
@@ -535,19 +549,25 @@ public class QEPMap implements Closeable {
 								while (itObject.hasNext()) {
 									ByteString next = ByteString.of(itObject.next());
 									long componentId = componentIdCounterObject++;
+									QEPComponent qepc = core.createComponentByString(next);
+									qepc.assertBinding(DictionarySectionRole.OBJECT, componentId, dataset1);
 
 									long mappedId;
 									if (next.charAt(0) == '"') {
 										// ignore literals
 										mappedId = 0;
 									} else {
-										mappedId = d2d.stringToId(next, SUBJECT);
+										mappedId = qepc.getId(dataset2, SUBJECT);
+										//TODO: remove
+										assert (mappedId <= 0 ? -1 : mappedId) == d2d.stringToId(next, SUBJECT);
 									}
 
 									if (mappedId <= 0) {
 										// can't find the id in the subjects,
 										// searching in the objects
-										mappedId = d2d.stringToId(next, OBJECT);
+										mappedId = qepc.getId(dataset2, OBJECT);
+										//TODO: remove
+										assert (mappedId <= 0 ? -1 : mappedId) == d2d.stringToId(next, OBJECT);
 
 										if (mappedId <= d2nshared) {
 											assert mappedId <= 0 : "found a shared mapped id";
@@ -693,6 +713,10 @@ public class QEPMap implements Closeable {
 			}
 			throw t;
 		}
+	}
+
+	public QEPMapAppender createAppender() {
+		return new QEPMapAppender();
 	}
 
 	/**
@@ -928,5 +952,9 @@ public class QEPMap implements Closeable {
 		} finally {
 			Arrays.fill(maps, null);
 		}
+	}
+
+	public final class QEPMapAppender {
+
 	}
 }

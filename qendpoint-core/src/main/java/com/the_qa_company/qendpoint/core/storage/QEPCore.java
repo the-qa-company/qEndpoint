@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -433,26 +434,10 @@ public class QEPCore implements AutoCloseable {
 				map.clear();
 				Files.createDirectories(mapsDir);
 
-				//for (QEPDataset d1 : snapshot) {
-				//	for (QEPDataset d2 : snapshot) {
-				//		bindDataset(d1, d2);
-				//	}
-				//}
-
-				// sort the datasets by size
-				snapshot.sort(Comparator.comparingLong(e -> e.dataset().getDictionary().getNumberOfElements()));
-
-				for (int i = 0; i < snapshot.size() - 1; i++) {
-					QEPDataset ds = snapshot.get(i);
-					// find the point where the merge method is probably too expensive
-					int largePoint = findLargePoint(i, snapshot);
-
-					// merge before large point
-
-
-					// merge after large point
-
-
+				for (QEPDataset d1 : snapshot) {
+					for (QEPDataset d2 : snapshot) {
+						bindDataset(d1, d2);
+					}
 				}
 			} catch (IOException e) {
 				throw new QEPCoreException("Can't sync map data!", e);
@@ -498,7 +483,7 @@ public class QEPCore implements AutoCloseable {
 
 		QEPMap qepMap = map.get(uid);
 		if (qepMap == null) {
-			throw new QEPCoreException("Can't find map with UID " + uid);
+			return null;
 		}
 
 		return qepMap.getConverter(originUID, destinationUID, role);
@@ -567,6 +552,47 @@ public class QEPCore implements AutoCloseable {
 		if (old == null) {
 			// it was added, meaning we need to sync it
 			qepMap.sync();
+		}
+	}
+	/**
+	 * bind a datasets to others in the core
+	 *
+	 * @param dataset1 dataset 1
+	 * @param others other datasets
+	 * @throws IOException bind exception
+	 */
+	private void bindDatasetAll(QEPDataset dataset1, List<QEPDataset> others) throws IOException {
+		// remove the dataset from others it was inside it
+		others.removeIf(dataset2 -> dataset2.uid() == dataset1.uid());
+
+		// sort by member to get the small first
+		others.sort(Comparator.comparing(e -> e.dataset().getDictionary().getNumberOfElements()));
+
+		for (QEPDataset other : others) {
+			// create a map for our 2 datasets
+			QEPMap qepMap = new QEPMap(getMapsPath(), this, dataset1, other);
+
+			// try to add this map to our maps
+			try {
+				map.computeIfAbsent(qepMap.getUid(), key -> {
+					try {
+						qepMap.sync();
+					} catch (IOException e) {
+						try {
+							qepMap.close();
+						} catch (IOException e2) {
+							e.addSuppressed(e2);
+						} catch (Throwable t) {
+							t.addSuppressed(e);
+							throw t;
+						}
+						throw new ContainerException(e);
+					}
+					return qepMap;
+				});
+			} catch (ContainerException e) {
+				throw (IOException) e.getCause();
+			}
 		}
 	}
 
@@ -1303,9 +1329,9 @@ public class QEPCore implements AutoCloseable {
 				profiler.pushSection("bind-dataset");
 				// bind the new dataset with all the previous datasets
 				synchronized (bindLock) {
-					for (QEPDataset d2 : createDatasetSnapshot()) {
-						bindDataset(ds, d2);
-					}
+					List<QEPDataset> snapshot = createDatasetSnapshot();
+
+					bindDatasetAll(ds, snapshot);
 
 					synchronized (datasetLock) {
 						other = this.dataset.put(ds.id(), ds);
