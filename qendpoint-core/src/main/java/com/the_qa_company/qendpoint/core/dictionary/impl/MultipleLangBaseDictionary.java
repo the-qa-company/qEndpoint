@@ -166,28 +166,45 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		// are too small to create a memory diff
 		objectsLocations = new TreeMap<>(CharSequenceComparator.getInstance());
 		languagesLocations = new TreeMap<>(CharSequenceComparator.getInstance());
-		objectIdLocationsSec = new ObjectIdLocationData[2 + languages.size() + typed.size()];
+
+		int sectionCount = 0;
+
+		if (getNshared() > 0) {
+			sectionCount++;
+		}
+
+		sectionCount += (int) getAllObjects().values().stream().filter(d -> d.getNumberOfElements() != 0).count();
+
+		objectIdLocationsSec = new ObjectIdLocationData[sectionCount];
 		objectIdLocations = LongArray.of(objectIdLocationsSec.length);
 
 		long count = 0;
 		int id = 0;
-		objectIdLocationsSec[id] = new ObjectIdLocationData(id, ByteString.empty(), ByteString.empty(), shared,
-				ObjectIdLocationType.SHARED, count);
-		count += shared.getNumberOfElements();
-		objectIdLocations.set(id++, count);
+		if (shared.getNumberOfElements() > 0) {
+			objectIdLocationsSec[id] = new ObjectIdLocationData(id, ByteString.empty(), ByteString.empty(), shared,
+					ObjectIdLocationType.SHARED, count);
+			count += shared.getNumberOfElements();
+			objectIdLocations.set(id++, count);
+		}
 
-		ObjectIdLocationData iodlocdObj = new ObjectIdLocationData(id, LiteralsUtils.NO_DATATYPE, ByteString.empty(),
-				nonTyped, ObjectIdLocationType.NON_TYPED, count);
-		objectsLocations.put(LiteralsUtils.NO_DATATYPE, iodlocdObj);
-		objectIdLocationsSec[id] = iodlocdObj;
-		count += nonTyped.getNumberOfElements();
-		objectIdLocations.set(id++, count);
+		if (nonTyped.getNumberOfElements() > 0) {
+			ObjectIdLocationData iodlocdObj = new ObjectIdLocationData(id, LiteralsUtils.NO_DATATYPE,
+					ByteString.empty(), nonTyped, ObjectIdLocationType.NON_TYPED, count);
+			objectsLocations.put(LiteralsUtils.NO_DATATYPE, iodlocdObj);
+			objectIdLocationsSec[id] = iodlocdObj;
+			count += nonTyped.getNumberOfElements();
+			objectIdLocations.set(id++, count);
+		}
 
 		typedLiteralsStart = count + 1;
 
 		for (var e : typed.entrySet()) {
 			ByteString dt = e.getKey();
 			DictionarySectionPrivate sec = e.getValue();
+
+			if (sec.getNumberOfElements() == 0) {
+				continue;
+			}
 
 			ObjectIdLocationData oidlocd = new ObjectIdLocationData(id, dt, LiteralsUtils.TYPE_OPERATOR.copyAppend(dt),
 					sec, ObjectIdLocationType.TYPE, count);
@@ -201,6 +218,10 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		for (var e : languages.entrySet()) {
 			ByteString dt = e.getKey();
 			DictionarySectionPrivate sec = e.getValue();
+
+			if (sec.getNumberOfElements() == 0) {
+				continue;
+			}
 
 			ObjectIdLocationData iodlocd = new ObjectIdLocationData(id, dt, LiteralsUtils.LANG_OPERATOR.copyAppend(dt),
 					sec, ObjectIdLocationType.LANGUAGE, count);
