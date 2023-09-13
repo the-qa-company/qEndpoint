@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +36,9 @@ public interface EndpointStoreDump {
 	default void afterMerge(EndpointStore store, Path mergedDataset) throws IOException {
 	}
 
+	default void afterIndexing(EndpointStore store, Path mergedDatasetIndex) throws IOException {
+	}
+
 	class EndpointStoreDumpDataset implements EndpointStoreDump {
 		protected final Path outputLocation;
 
@@ -46,6 +51,13 @@ public interface EndpointStoreDump {
 			Files.createDirectories(outputLocation.getParent());
 			// store the dataset
 			Files.copy(mergedDataset, outputLocation.resolve("store.hdt"));
+		}
+
+		@Override
+		public void afterIndexing(EndpointStore store, Path mergedDatasetIndex) throws IOException {
+			Files.createDirectories(outputLocation.getParent());
+			// store the dataset
+			Files.copy(mergedDatasetIndex, outputLocation.resolve("store.hdt" + HDTVersion.get_index_suffix("-")));
 		}
 	}
 }
