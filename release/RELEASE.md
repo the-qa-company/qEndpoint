@@ -1,1 +1,2 @@
-- fix language literal 
+- Include FOQ index in dump (#415)
+- Fix msdl index ids (#416)
