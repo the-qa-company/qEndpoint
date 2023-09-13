@@ -432,7 +432,8 @@ public class MergeRunnable {
 		case 0 -> Optional.of(new MergeThread<>(this::step1, this::reloadDataFromStep1));
 		case 2 -> Optional.of(
 				new MergeThread<>(((restarting, data) -> step2(restarting, data, null)), this::reloadDataFromStep2));
-		case 3 -> Optional.of(new MergeThread<>(this::preloadStep3, this::step3, this::reloadDataFromStep3));
+		case 3 -> Optional.of(new MergeThread<>(this::preloadStep3, (restarting, data) -> step3(restarting, data, null),
+				this::reloadDataFromStep3));
 		default -> Optional.empty();
 		};
 	}
@@ -628,7 +629,6 @@ public class MergeRunnable {
 		// #391: save DUMP HDT
 		if (dumpInfo != null) {
 			dumpInfo.afterMerge(endpoint, Path.of(endpointFiles.getHDTNewIndex()));
-			endpoint.setDumping(endpoint.getDumpRef().get() != null);
 		}
 
 		debugStepPoint(MergeRunnableStopPoint.STEP2_END);
@@ -643,7 +643,7 @@ public class MergeRunnable {
 
 		logger.info("End merge step 2");
 
-		step3(false, null);
+		step3(false, null, dumpInfo);
 	}
 
 	/**
@@ -657,7 +657,8 @@ public class MergeRunnable {
 	}
 
 	/**
-	 * @return the sub step of the {@link #step3(boolean, Lock)} method
+	 * @return the sub step of the
+	 *         {@link #step3(boolean, Lock, EndpointStoreDump)} method
 	 */
 	private Step3SubStep getStep3SubStep() {
 
@@ -735,7 +736,8 @@ public class MergeRunnable {
 	 * @throws InterruptedException for wait exception
 	 * @throws IOException          for file exception
 	 */
-	private synchronized void step3(boolean restarting, Lock lock) throws InterruptedException, IOException {
+	private synchronized void step3(boolean restarting, Lock lock, EndpointStoreDump dumpInfo)
+			throws InterruptedException, IOException {
 		logger.debug("Start Step 3");
 		debugStepPoint(MergeRunnableStopPoint.STEP3_START);
 		// index the new file
@@ -743,7 +745,10 @@ public class MergeRunnable {
 		Lock translateLock;
 
 		try (HDT newHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTNewIndex(), endpoint.getHDTSpec(), null)) {
-
+			if (dumpInfo != null) {
+				dumpInfo.afterIndexing(endpoint, Path.of(endpointFiles.getHDTNewIndexV11()));
+				endpoint.setDumping(endpoint.getDumpRef().get() != null);
+			}
 			// convert all triples added to the merge store to new IDs of the
 			// new
 			// generated HDT
