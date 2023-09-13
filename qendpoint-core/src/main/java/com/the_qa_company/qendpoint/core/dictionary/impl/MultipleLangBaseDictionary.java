@@ -288,7 +288,8 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 
 		switch (position) {
 		case PREDICATE -> {
-			return predicates.locate(str);
+			long id = predicates.locate(str);
+			return id > 0 ? id : -1;
 		}
 		case SUBJECT -> {
 			long sid = shared.locate(str);

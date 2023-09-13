@@ -37,8 +37,8 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 	private boolean delegate;
 
 	public SimpleIRIHDT(HDT hdt, int position, long id) {
-		if (id == -1) {
-			System.out.println("This should not happen");
+		if (!(id > 0 && position >= SUBJECT_POS && position <= SHARED_POS)) {
+			throw new IllegalArgumentException("Bad argument %d > 0 / pos = %d".formatted(id, position));
 		}
 		this.hdt = hdt;
 		this.postion = position;
@@ -47,6 +47,7 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 	}
 
 	public SimpleIRIHDT(HDT hdt, String iriString) {
+		assert iriString != null;
 		this.hdt = hdt;
 		this.iriString = iriString;
 		this.id = -1;

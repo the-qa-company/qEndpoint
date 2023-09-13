@@ -101,6 +101,25 @@ public class EndpointNodeMSDLTest {
 							throw t;
 						}
 					}
+
+					// we know that this triple can't be in the dataset
+					String query = "SELECT * {\n <http://\127a> <http://\127p> <http://\127c> . }\n";
+					try {
+						TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+
+						try (TupleQueryResult res = tupleQuery.evaluate()) {
+							if (res.hasNext()) {
+								do {
+									System.out.println(res.next());
+								} while (res.hasNext());
+								fail("found output");
+							}
+						}
+
+					} catch (Throwable t) {
+						System.err.println(query);
+						throw t;
+					}
 				} catch (NotFoundException | IOException e) {
 					throw new RuntimeException(e);
 				}

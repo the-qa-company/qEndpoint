@@ -115,7 +115,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 			if (datatype.isEmpty() || datatype.equals(LiteralsUtils.NO_DATATYPE)) {
 				this.datatype = (coreDatatype = CoreDatatype.XSD.STRING).getIri();
 			} else if (datatype == LiteralsUtils.LITERAL_LANG_TYPE) {
-				this.datatype = (coreDatatype = CoreDatatype.XSD.LANGUAGE).getIri();
+				this.datatype = (coreDatatype = CoreDatatype.RDF.LANGSTRING).getIri();
 			} else {
 				this.datatype = NTriplesUtil.parseURI(datatype.toString(), valueFactory);
 			}
