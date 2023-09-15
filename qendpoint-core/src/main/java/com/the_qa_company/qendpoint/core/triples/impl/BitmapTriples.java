@@ -25,6 +25,7 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.HDTDiskImporter;
@@ -73,7 +74,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author mario.arias
@@ -82,6 +85,8 @@ public class BitmapTriples implements TriplesPrivate {
 	private static final Logger log = LoggerFactory.getLogger(BitmapTriples.class);
 
 	protected TripleComponentOrder order;
+
+	protected final Map<TripleComponentRole, ? extends TriplesPrivate> subIndexes = new HashMap<>();
 
 	protected Sequence seqY, seqZ, indexZ, predicateCount;
 	protected Bitmap bitmapY, bitmapZ, bitmapIndexZ;

@@ -33,6 +33,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryCa
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryCat;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
@@ -83,8 +84,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -383,41 +387,102 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			indexName = indexName.replaceAll("\\.hdt\\.gz", "hdt");
 			ff = new File(indexName);
 		}
-		CountInputStream in = null;
-		try {
-			in = new CountInputStream(new BufferedInputStream(new FileInputStream(ff)));
-			ci.load(in);
-			if (isMapped) {
-				triples.mapIndex(in, new File(indexName), ci, listener);
-			} else {
-				triples.loadIndex(in, ci, listener);
-			}
-		} catch (Exception e) {
-			if (!(e instanceof FileNotFoundException)) {
-				log.warn("Error reading .hdt.index, generating a new one. ", e);
-			}
+		{
+			CountInputStream in = null;
+			try {
+				in = new CountInputStream(new BufferedInputStream(new FileInputStream(ff)));
+				ci.load(in);
+				if (isMapped) {
+					triples.mapIndex(in, new File(indexName), ci, listener);
+				} else {
+					triples.loadIndex(in, ci, listener);
+				}
+			} catch (Exception e) {
+				if (!(e instanceof FileNotFoundException)) {
+					log.warn("Error reading .hdt.index, generating a new one. ", e);
+				}
 
-			// GENERATE
-			StopWatch st = new StopWatch();
-			triples.generateIndex(listener, spec, dictionary);
+				// GENERATE
+				StopWatch st = new StopWatch();
+				triples.generateIndex(listener, spec, dictionary);
 
-			// SAVE
-			if (this.hdtFileName != null) {
-				BufferedOutputStream out = null;
+				// SAVE
+				if (this.hdtFileName != null) {
+					BufferedOutputStream out = null;
+					try {
+						out = new BufferedOutputStream(new FileOutputStream(versionName));
+						ci.clear();
+						triples.saveIndex(out, ci, listener);
+						log.info("Index generated and saved in {}", st.stopAndShow());
+					} catch (IOException e2) {
+						log.error("Error writing index file.", e2);
+					} finally {
+						IOUtil.closeQuietly(out);
+					}
+				}
+			} finally {
+				IOUtil.closeQuietly(in);
+			}
+		}
+
+		// load extended index
+		if (hdtFileName == null) {
+			return; // no hdt file name
+		}
+
+		String[] ordersCfg = spec.getList(HDTOptionsKeys.EXTENDINDEX_ORDER);
+		Path ixdWorkDir = spec.getPath(HDTOptionsKeys.EXTENDINDEX_WORKDIR);
+		Set<TripleComponentOrder> orders = new HashSet<>();
+
+		if (ordersCfg != null) {
+			for (String s : ordersCfg) {
 				try {
-					out = new BufferedOutputStream(new FileOutputStream(versionName));
-					ci.clear();
-					triples.saveIndex(out, ci, listener);
-					out.close();
-					log.info("Index generated and saved in {}", st.stopAndShow());
-				} catch (IOException e2) {
-					log.error("Error writing index file.", e2);
-				} finally {
-					IOUtil.closeQuietly(out);
+					orders.add(TripleComponentOrder.valueOf(s));
+				} catch (IllegalArgumentException ignore) {
+					// we don't mind about a bad config
 				}
 			}
-		} finally {
-			IOUtil.closeQuietly(in);
+		}
+
+		for (TripleComponentOrder order : TripleComponentOrder.values()) {
+			if (triples.getOrder() == order) {
+				continue; // useless
+			}
+
+			String extIndexName = hdtFileName + "." + order.name().toLowerCase() + ".idx";
+
+			HDTOptions idxOption = spec
+					.getSubOptions(HDTOptionsKeys.EXTENDINDEX_IDX_CFG_SUFFIX + order.name().toLowerCase())
+					.pushTop();
+
+			// force the triple order
+			idxOption.set(HDTOptionsKeys.TRIPLE_ORDER_KEY, order);
+
+
+			CountInputStream in = null;
+			BitmapTriples idx = null;
+			try {
+				idx = new BitmapTriples(idxOption);
+				in = new CountInputStream(new BufferedInputStream(new FileInputStream(extIndexName)));
+				if (isMapped) {
+					idx.mapFromFile(in, new File(indexName), listener);
+				} else {
+					ci.load(in);
+					idx.load(in, ci, listener);
+				}
+			} catch (Exception e) {
+				IOUtil.closeQuietly(idx);
+				if (!(e instanceof FileNotFoundException)) {
+					log.warn("Error reading {}, generating a new one. ", hdtFileName, e);
+				}
+
+				// Generate sub bitmap triples idx
+
+
+
+			} finally {
+				IOUtil.closeQuietly(in);
+			}
 		}
 	}
 

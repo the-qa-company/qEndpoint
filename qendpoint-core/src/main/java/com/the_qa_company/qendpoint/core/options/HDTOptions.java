@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.options;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.util.Profiler;
 
@@ -30,8 +31,10 @@ import java.io.InputStream;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -41,13 +44,14 @@ import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Options storage, see {@link HDTOptionsKeys} for more information.
  *
- * @author mario.arias
+ * @author mario.arias, Antoine Willerval
  */
-public interface HDTOptions {
+public interface HDTOptions extends Iterable<Map.Entry<String, String>> {
 	/**
 	 * empty option, can't be used to set values
 	 */
@@ -156,7 +160,7 @@ public interface HDTOptions {
 	 *
 	 * @param options options
 	 * @return options or {@link #EMPTY}, this result has no guaranty or
-	 *         mutability
+	 * mutability
 	 */
 	static HDTOptions ofNullable(HDTOptions options) {
 		return Objects.requireNonNullElse(options, EMPTY);
@@ -429,6 +433,42 @@ public interface HDTOptions {
 	}
 
 	/**
+	 * get an option value
+	 *
+	 * @param key key
+	 * @return value or null if not defined
+	 */
+	default String[] getList(String key) {
+		return getList(key, (String[]) null);
+	}
+
+	/**
+	 * get an option value
+	 *
+	 * @param key          key
+	 * @param defaultValue default value
+	 * @return long or defaultValue if the value isn't defined
+	 */
+	default String[] getList(String key, String... defaultValue) {
+		return getList(key, () -> defaultValue);
+	}
+
+	/**
+	 * get an option value
+	 *
+	 * @param key          key
+	 * @param defaultValue default value
+	 * @return long or defaultValue if the value isn't defined
+	 */
+	default String[] getList(String key, Supplier<String[]> defaultValue) {
+		String v = get(key);
+		if (v == null || v.isEmpty()) {
+			return defaultValue.get();
+		}
+		return v.split(",");
+	}
+
+	/**
 	 * load properties from a path, see {@link Properties#load(InputStream)} for
 	 * the format
 	 *
@@ -555,6 +595,56 @@ public interface HDTOptions {
 			String key = String.valueOf(options[(i << 1)]);
 			Object value = options[(i << 1) | 1];
 			set(key, value);
+		}
+	}
+
+	/**
+	 * get a sub options from this options object
+	 *
+	 * @param key key
+	 * @return options
+	 */
+	default HDTOptions getSubOptions(String key) {
+		String namespace = key + ".";
+		return new HDTOptions() {
+			@Override
+			public void clear() {
+				for (Object k : getKeys()) {
+					set(String.valueOf(k), (String) null);
+				}
+			}
+
+			@Override
+			public String get(String key) {
+				return HDTOptions.this.get(namespace + key);
+			}
+
+			@Override
+			public void set(String key, String value) {
+				HDTOptions.this.set(namespace + key, value);
+			}
+
+			@Override
+			public Set<?> getKeys() {
+				// get only the keys from this namespace
+				return HDTOptions.this.getKeys().stream()
+						.map(String::valueOf)
+						.filter(k -> k.startsWith(namespace))
+						.map(k -> k.substring(namespace.length()))
+						.collect(Collectors.toSet());
+			}
+		};
+	}
+
+	/**
+	 * set sub options
+	 *
+	 * @param key     key
+	 * @param options options
+	 */
+	default void setSubOptions(String key, HDTOptions options) {
+		for (Map.Entry<String, String> opt : options) {
+			set(key + "." + opt.getKey(), opt.getValue());
 		}
 	}
 
@@ -712,5 +802,13 @@ public interface HDTOptions {
 				return HDTOptions.this.getKeys();
 			}
 		};
+	}
+
+	@Override
+	default Iterator<Map.Entry<String, String>> iterator() {
+		return MapIterator.of(getKeys().iterator(), (k) -> {
+			String sk = String.valueOf(k);
+			return new AbstractMap.SimpleEntry<>(sk, get(sk));
+		});
 	}
 }

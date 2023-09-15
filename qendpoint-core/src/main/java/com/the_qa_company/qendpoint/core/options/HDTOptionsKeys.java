@@ -494,6 +494,15 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "Dump binary offsets, default false")
 	public static final String DUMP_BINARY_OFFSETS = "bump.binary.offsets";
 
+	@Key(type = Key.Type.STRING, desc = "Coma separated list of the extend index orders to compute, default none")
+	public static final String EXTENDINDEX_ORDER = "extendindex.list";
+
+	@Key(type = Key.Type.STRING, desc = "extend index work dir, default to filename.work or a temp dir if no name")
+	public static final String EXTENDINDEX_IDX_CFG_SUFFIX = "extendindex.idx.";
+
+	@Key(type = Key.Type.STRING, desc = "extend index work dir, default to filename.work or a temp dir if no name")
+	public static final String EXTENDINDEX_WORKDIR = "extendindex.workdir";
+
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();
 

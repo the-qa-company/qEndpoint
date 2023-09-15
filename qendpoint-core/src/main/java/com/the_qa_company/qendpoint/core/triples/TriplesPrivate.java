@@ -1,17 +1,17 @@
 package com.the_qa_company.qendpoint.core.triples;
 
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.ControlInfo;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
-import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.options.ControlInfo;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 
 public interface TriplesPrivate extends Triples {
 	/**
@@ -81,4 +81,13 @@ public interface TriplesPrivate extends Triples {
 	 * Gets the currently set order(TripleComponentOrder)
 	 */
 	TripleComponentOrder getOrder();
+
+	/**
+	 * attach another triples index
+	 *
+	 * @param order   order
+	 * @param triples index
+	 */
+	default void attachIndex(TripleComponentOrder order, Triples triples) {
+	}
 }

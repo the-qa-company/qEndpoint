@@ -101,6 +101,7 @@ public class HDTVocabulary {
 
 	// Index type
 	public static final String INDEX_TYPE_FOQ = HDT_BASE + "indexFoQ>";
+	public static final String INDEX_TYPE_EXTEND = HDT_BASE + "indexExtend>";
 
 	// Sequences
 	public static final String SEQ_TYPE_INT32 = HDT_SEQ_BASE + "Int32>";
