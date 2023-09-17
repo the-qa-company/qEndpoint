@@ -59,7 +59,7 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 		 * Components of the triple. Meaning will be given based on the order
 		 * variable, see below
 		 */
-		int x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0;
+		int x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0, g1 = 0, g2 = 0;
 
 		switch (this.order) {
 		case SPO:
@@ -72,6 +72,9 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			// Objects
 			z1 = o1.getObject();
 			z2 = o2.getObject();
+			// Graphs
+			g1 = o1.getGraph();
+			g2 = o2.getGraph();
 			break;
 		case SOP:
 			// Subjects
@@ -83,6 +86,9 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			// Predicates
 			z1 = o1.getPredicate();
 			z2 = o2.getPredicate();
+			// Graphs
+			g1 = o1.getGraph();
+			g2 = o2.getGraph();
 			break;
 		case PSO:
 			// Predicates
@@ -94,6 +100,9 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			// Objects
 			z1 = o1.getObject();
 			z2 = o2.getObject();
+			// Graphs
+			g1 = o1.getGraph();
+			g2 = o2.getGraph();
 			break;
 		case POS:
 			// Predicates
@@ -105,6 +114,9 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			// Subjects
 			z1 = o1.getSubject();
 			z2 = o2.getSubject();
+			// Graphs
+			g1 = o1.getGraph();
+			g2 = o2.getGraph();
 			break;
 		case OSP:
 			// Objects
@@ -116,6 +128,9 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			// Predicates
 			z1 = o1.getPredicate();
 			z2 = o2.getPredicate();
+			// Graphs
+			g1 = o1.getGraph();
+			g2 = o2.getGraph();
 			break;
 		case OPS:
 			// Objects
@@ -127,6 +142,9 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			// Subjects
 			z1 = o1.getSubject();
 			z2 = o2.getSubject();
+			// Graphs
+			g1 = o1.getGraph();
+			g2 = o2.getGraph();
 			break;
 		}
 
@@ -136,7 +154,14 @@ public class TripleIDComparatorInt implements Comparator<TripleIDInt> {
 			result = y1 - y2;
 			if (result == 0) {
 				// The third component is different?
-				return z1 - z2;
+				result = z1 - z2;
+				if (result == 0) {
+					// The fourth component is different?
+					return g1 - g2;
+				} else {
+					// the third component is different
+					return result;
+				}
 			} else {
 				// the second component is different
 				return result;

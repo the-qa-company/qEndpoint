@@ -30,21 +30,27 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
  */
 public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
-	private final BitmapTriples triples;
-	private final TripleID pattern, returnTriple;
-	private long lastPosition;
-	private long patX, patY, patZ;
+	protected final BitmapTriples triples;
+	protected final TripleID pattern, returnTriple;
+	protected long lastPosition;
+	protected long patX, patY, patZ;
 
-	private AdjacencyList adjY, adjZ;
-	long posY, posZ, minY, minZ, maxY, maxZ;
-	private long nextY, nextZ;
-	private long x, y, z;
+	protected AdjacencyList adjY, adjZ;
+	protected long posY, posZ, minY, minZ, maxY, maxZ;
+	protected long nextY, nextZ;
+	protected long x, y, z;
 
-	public BitmapTriplesIterator(BitmapTriples triples, TripleID pattern) {
+	protected BitmapTriplesIterator(BitmapTriples triples, TripleID pattern, boolean search) {
 		this.triples = triples;
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
-		newSearch(pattern);
+		if (search) {
+			newSearch(pattern);
+		}
+	}
+
+	public BitmapTriplesIterator(BitmapTriples triples, TripleID pattern) {
+		this(triples, pattern, true);
 	}
 
 	public BitmapTriplesIterator(BitmapTriples triples, long minZ, long maxZ) {
@@ -78,7 +84,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 		goToStart();
 	}
 
-	private void updateOutput() {
+	protected void updateOutput() {
 		lastPosition = posZ;
 		returnTriple.setAll(x, y, z);
 		TripleOrderConvert.swapComponentOrder(returnTriple, triples.order, TripleComponentOrder.SPO);

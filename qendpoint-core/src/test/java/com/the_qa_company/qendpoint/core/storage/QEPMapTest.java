@@ -52,7 +52,7 @@ public class QEPMapTest extends AbstractMapMemoryTest {
 	private static final ModifiableBitmap[] EMPTY_DELTA;
 
 	static {
-		EMPTY_DELTA = new ModifiableBitmap[TripleComponentRole.values().length];
+		EMPTY_DELTA = new ModifiableBitmap[TripleComponentRole.valuesNoGraph().length];
 		Arrays.fill(EMPTY_DELTA, EmptyBitmap.of(0));
 	}
 

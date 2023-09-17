@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
@@ -218,6 +219,7 @@ public class HDTConverter {
 		case SUBJECT -> idToSubjectHDTResource0(id);
 		case PREDICATE -> idToPredicateHDTResource(id);
 		case OBJECT -> idToObjectHDTResource0(id);
+		case GRAPH -> throw new NotImplementedException("TODO: GRAPH");
 		};
 	}
 

@@ -23,6 +23,12 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
+import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -48,27 +54,23 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
-import com.the_qa_company.qendpoint.core.util.io.compress.Pair;
-import org.apache.commons.io.file.PathUtils;
-import com.the_qa_company.qendpoint.core.compact.bitmap.*;
-import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
-import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
-import com.the_qa_company.qendpoint.core.options.*;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.Pair;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+import org.apache.commons.io.file.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -95,7 +97,7 @@ public class BitmapTriples implements TriplesPrivate {
 	boolean diskSubIndex;
 	CreateOnUsePath diskSequenceLocation;
 
-	private boolean isClosed;
+	protected boolean isClosed;
 
 	public BitmapTriples() throws IOException {
 		this(new HDTSpecification());
@@ -952,18 +954,13 @@ public class BitmapTriples implements TriplesPrivate {
 		String indexMethod = specIndex.get(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_RECOMMENDED);
 		switch (indexMethod) {
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_RECOMMENDED:
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED:
+		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_RECOMMENDED,
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED ->
 			createIndexObjectMemoryEfficient();
-			break;
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK:
+		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK ->
 			createIndexObjectDisk(specIndex, dictionary, listener);
-			break;
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_LEGACY:
-			createIndexObjects();
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown INDEXING METHOD: " + indexMethod);
+		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_LEGACY -> createIndexObjects();
+		default -> throw new IllegalArgumentException("Unknown INDEXING METHOD: " + indexMethod);
 		}
 
 		predicateIndex = new PredicateIndexArray(this);
@@ -1239,6 +1236,18 @@ public class BitmapTriples implements TriplesPrivate {
 		return seqZ;
 	}
 
+	public AdjacencyList getAdjacencyListY() {
+		return adjY;
+	}
+
+	public AdjacencyList getAdjacencyListZ() {
+		return adjZ;
+	}
+
+	public AdjacencyList getAdjacencyListIndex() {
+		return adjIndex;
+	}
+
 	public Bitmap getBitmapY() {
 		return bitmapY;
 	}
@@ -1278,5 +1287,9 @@ public class BitmapTriples implements TriplesPrivate {
 				PathUtils.deleteDirectory(path);
 			}
 		}
+	}
+
+	public List<? extends Bitmap> getQuadInfoAG() {
+		throw new UnsupportedOperationException("Cannot get quad info from a BitmapTriples");
 	}
 }

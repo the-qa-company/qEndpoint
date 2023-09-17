@@ -21,7 +21,9 @@ package com.the_qa_company.qendpoint.core.triples;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.triples.impl.BitmapQuadTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.TriplesList;
 
@@ -53,12 +55,20 @@ public class TriplesFactory {
 	static public TriplesPrivate createTriples(HDTOptions spec) throws IOException {
 		String type = spec.get("triples.format");
 
+		boolean isQuad = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "")
+				.equals(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+
 		if (type == null) {
+			if (isQuad) {
+				return new BitmapQuadTriples(spec);
+			}
 			return new BitmapTriples(spec);
 		} else if (HDTVocabulary.TRIPLES_TYPE_TRIPLESLIST.equals(type)) {
 			return new TriplesList(spec);
 		} else if (HDTVocabulary.TRIPLES_TYPE_BITMAP.equals(type)) {
 			return new BitmapTriples(spec);
+		} else if (HDTVocabulary.TRIPLES_TYPE_BITMAP_QUAD.equals(type)) {
+			return new BitmapQuadTriples(spec);
 		} else {
 			return new BitmapTriples(spec);
 		}
@@ -77,6 +87,8 @@ public class TriplesFactory {
 			return new TriplesList(new HDTSpecification());
 		} else if (HDTVocabulary.TRIPLES_TYPE_BITMAP.equals(format)) {
 			return new BitmapTriples();
+		} else if (HDTVocabulary.TRIPLES_TYPE_BITMAP_QUAD.equals(format)) {
+			return new BitmapQuadTriples();
 		} else {
 			throw new IllegalArgumentException("No implementation for Triples type: " + format);
 		}

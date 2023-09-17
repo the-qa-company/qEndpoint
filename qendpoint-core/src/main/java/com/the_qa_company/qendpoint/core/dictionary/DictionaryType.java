@@ -32,6 +32,7 @@ public enum DictionaryType {
 	public static DictionaryType fromDictionaryType(String dictType) {
 		return switch (Objects.requireNonNullElse(dictType, "")) {
 		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_PSFC_SECTION ->
 			FSD;

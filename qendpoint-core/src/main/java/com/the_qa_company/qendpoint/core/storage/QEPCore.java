@@ -278,7 +278,7 @@ public class QEPCore implements AutoCloseable {
 	private QEPDataset openDataset(String id, Path path) throws IOException {
 		HDT dataset = null;
 		ModifiableBitmap bitmap = null;
-		ModifiableBitmap[] deltaBitmaps = new ModifiableBitmap[TripleComponentRole.values().length];
+		ModifiableBitmap[] deltaBitmaps = new ModifiableBitmap[TripleComponentRole.valuesNoGraph().length];
 		try {
 			// avoid loading collisions
 			Path workDir = options.getPath(BITMAPTRIPLES_SEQUENCE_DISK_LOCATION, () -> location.resolve("work"))
@@ -307,7 +307,7 @@ public class QEPCore implements AutoCloseable {
 				bitmap = Bitmap64Big.disk(deleteBitmapPath, dataset.getTriples().getNumberOfElements());
 			}
 
-			for (TripleComponentRole role : TripleComponentRole.values()) {
+			for (TripleComponentRole role : TripleComponentRole.valuesNoGraph()) {
 				Path deltaBitmapPath = path.resolveSibling(path.getFileName() + ".delta-" + role.getTitle() + ".bm");
 				long size = dataset.getDictionary().getNSection(role, role == TripleComponentRole.SUBJECT);
 

@@ -5,7 +5,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCOptimizedExt
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 
 public class DictionaryPFCOptimizedExtractor implements OptimizedExtractor {
-	private final PFCOptimizedExtractor shared, subjects, predicates, objects;
+	private final PFCOptimizedExtractor shared, subjects, predicates, objects, graphs;
 	private final long numshared;
 
 	public DictionaryPFCOptimizedExtractor(BaseDictionary origDict) {
@@ -14,6 +14,11 @@ public class DictionaryPFCOptimizedExtractor implements OptimizedExtractor {
 		subjects = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.subjects);
 		predicates = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.predicates);
 		objects = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.objects);
+		if (origDict.graphs == null) {
+			graphs = null;
+		} else {
+			graphs = new PFCOptimizedExtractor((PFCDictionarySectionMap) origDict.graphs);
+		}
 	}
 
 	public CharSequence idToString(long id, TripleComponentRole role) {
@@ -38,6 +43,8 @@ public class DictionaryPFCOptimizedExtractor implements OptimizedExtractor {
 			} else {
 				return objects;
 			}
+		case GRAPH:
+			return graphs;
 		}
 		throw new IllegalArgumentException();
 	}
@@ -52,6 +59,8 @@ public class DictionaryPFCOptimizedExtractor implements OptimizedExtractor {
 				return id - numshared;
 			}
 		case PREDICATE:
+			return id;
+		case GRAPH:
 			return id;
 		}
 

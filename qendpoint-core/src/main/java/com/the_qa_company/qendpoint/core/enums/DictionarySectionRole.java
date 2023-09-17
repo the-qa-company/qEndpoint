@@ -10,7 +10,8 @@ public enum DictionarySectionRole {
 	SUBJECT(() -> TripleComponentRole.SUBJECT, Dictionary::getSubjects),
 	PREDICATE(() -> TripleComponentRole.PREDICATE, Dictionary::getPredicates),
 	OBJECT(() -> TripleComponentRole.OBJECT, Dictionary::getObjects),
-	SHARED(() -> TripleComponentRole.SUBJECT, Dictionary::getShared);
+	SHARED(() -> TripleComponentRole.SUBJECT, Dictionary::getShared),
+	GRAPH(() -> TripleComponentRole.GRAPH, Dictionary::getGraphs);
 
 	private final Supplier<TripleComponentRole> roleSupplier;
 	private final Function<Dictionary, DictionarySection> dictionarySectionFunction;

@@ -51,6 +51,7 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	protected DictionarySectionPrivate predicates;
 	protected DictionarySectionPrivate objects;
 	protected DictionarySectionPrivate shared;
+	protected DictionarySectionPrivate graphs;
 
 	public BaseDictionary(HDTOptions spec) {
 		this.spec = spec;
@@ -59,8 +60,7 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	protected long getGlobalId(long id, DictionarySectionRole position) {
 		return switch (position) {
 		case SUBJECT, OBJECT -> shared.getNumberOfElements() + id;
-		case PREDICATE, SHARED -> id;
-		default -> throw new IllegalArgumentException();
+		case PREDICATE, SHARED, GRAPH -> id;
 		};
 	}
 
@@ -73,7 +73,7 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 				return id - shared.getNumberOfElements();
 			}
 		}
-		case PREDICATE -> {
+		case PREDICATE, GRAPH -> {
 			return id;
 		}
 		default -> throw new IllegalArgumentException();
@@ -122,9 +122,9 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 			str = new CompactString(str);
 		}
 
-		long ret = 0;
+		long ret;
 		switch (position) {
-		case SUBJECT:
+		case SUBJECT -> {
 			ret = shared.locate(str);
 			if (ret != 0) {
 				return getGlobalId(ret, DictionarySectionRole.SHARED);
@@ -134,13 +134,22 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 				return getGlobalId(ret, DictionarySectionRole.SUBJECT);
 			}
 			return -1;
-		case PREDICATE:
+		}
+		case PREDICATE -> {
 			ret = predicates.locate(str);
 			if (ret != 0) {
 				return getGlobalId(ret, DictionarySectionRole.PREDICATE);
 			}
 			return -1;
-		case OBJECT:
+		}
+		case GRAPH -> {
+			ret = graphs.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.GRAPH);
+			}
+			return -1;
+		}
+		case OBJECT -> {
 			if (str.charAt(0) != '"') {
 				ret = shared.locate(str);
 				if (ret != 0) {
@@ -152,20 +161,33 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 				return getGlobalId(ret, DictionarySectionRole.OBJECT);
 			}
 			return -1;
-		default:
-			throw new IllegalArgumentException();
+		}
+		default -> throw new IllegalArgumentException();
 		}
 	}
 
 	@Override
 	public long getNumberOfElements() {
-		return subjects.getNumberOfElements() + predicates.getNumberOfElements() + objects.getNumberOfElements()
-				+ shared.getNumberOfElements();
+		long s = subjects.getNumberOfElements();
+		long p = predicates.getNumberOfElements();
+		long o = objects.getNumberOfElements();
+		if (!supportGraphs()) {
+			return s + p + o;
+		}
+		long g = graphs.getNumberOfElements();
+		return s + p + o + g;
 	}
 
 	@Override
 	public long size() {
-		return subjects.size() + predicates.size() + objects.size() + shared.size();
+		long s = subjects.size();
+		long p = predicates.size();
+		long o = objects.size();
+		if (!supportGraphs()) {
+			return s + p + o;
+		}
+		long g = graphs.size();
+		return s + p + o + g;
 	}
 
 	@Override
@@ -181,6 +203,14 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	@Override
 	public long getNobjects() {
 		return objects.getNumberOfElements() + shared.getNumberOfElements();
+	}
+
+	@Override
+	public long getNgraphs() {
+		if (graphs == null) {
+			return 0;
+		}
+		return graphs.getNumberOfElements();
 	}
 
 	@Override
@@ -204,28 +234,38 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 	}
 
 	@Override
+	public DictionarySection getGraphs() {
+		return graphs;
+	}
+
+	@Override
 	public DictionarySection getShared() {
 		return shared;
 	}
 
 	private DictionarySectionPrivate getSection(long id, TripleComponentRole role) {
 		switch (role) {
-		case SUBJECT:
+		case SUBJECT -> {
 			if (id <= shared.getNumberOfElements()) {
 				return shared;
 			} else {
 				return subjects;
 			}
-		case PREDICATE:
+		}
+		case PREDICATE -> {
 			return predicates;
-		case OBJECT:
+		}
+		case OBJECT -> {
 			if (id <= shared.getNumberOfElements()) {
 				return shared;
 			} else {
 				return objects;
 			}
-		default:
-			throw new IllegalArgumentException();
+		}
+		case GRAPH -> {
+			return graphs;
+		}
+		default -> throw new IllegalArgumentException();
 		}
 	}
 

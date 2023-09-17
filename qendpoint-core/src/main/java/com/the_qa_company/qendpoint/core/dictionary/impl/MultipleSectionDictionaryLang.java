@@ -1,12 +1,14 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.iterator.charsequence.StopIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
@@ -262,5 +264,15 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		}
 
 		syncLocations();
+	}
+
+	@Override
+	public long getNgraphs() {
+		return 0;
+	}
+
+	@Override
+	public DictionarySection getGraphs() {
+		throw new NotImplementedException();
 	}
 }

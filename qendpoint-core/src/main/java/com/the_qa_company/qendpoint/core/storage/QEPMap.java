@@ -73,9 +73,9 @@ public class QEPMap implements Closeable {
 		headerSize += Long.BYTES * 4 * 2;
 
 		// id size
-		headerSize += Long.BYTES * TripleComponentRole.values().length;
+		headerSize += Long.BYTES * TripleComponentRole.valuesNoGraph().length;
 		// map size
-		headerSize += Long.BYTES * TripleComponentRole.values().length;
+		headerSize += Long.BYTES * TripleComponentRole.valuesNoGraph().length;
 
 		HEADER_SIZE = headerSize;
 	}
@@ -144,7 +144,7 @@ public class QEPMap implements Closeable {
 	final Path path;
 	final Uid uid;
 	final QEPCore core;
-	final SectionMap[] maps = new SectionMap[TripleComponentRole.values().length];
+	final SectionMap[] maps = new SectionMap[TripleComponentRole.valuesNoGraph().length];
 	final boolean useDataset1;
 	final DatasetNodeConverter[] nodeConverters = new DatasetNodeConverter[maps.length];
 
@@ -173,9 +173,9 @@ public class QEPMap implements Closeable {
 		uid = Uid.of(this.dataset1.uid(), this.dataset2.uid());
 
 		// compute the useDataset1 var
-		long sizeDataset1 = Arrays.stream(TripleComponentRole.values())
+		long sizeDataset1 = Arrays.stream(TripleComponentRole.valuesNoGraph())
 				.mapToLong(r -> dataset1.dataset().getDictionary().getNSection(r, r == SUBJECT)).sum();
-		long sizeDataset2 = Arrays.stream(TripleComponentRole.values())
+		long sizeDataset2 = Arrays.stream(TripleComponentRole.valuesNoGraph())
 				.mapToLong(r -> dataset2.dataset().getDictionary().getNSection(r, r == SUBJECT)).sum();
 		useDataset1 = sizeDataset1 < sizeDataset2;
 	}
@@ -205,9 +205,9 @@ public class QEPMap implements Closeable {
 					CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
 							FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
 				// store the id and the location to write it after creation
-				long[] index1Size = new long[TripleComponentRole.values().length];
+				long[] index1Size = new long[TripleComponentRole.valuesNoGraph().length];
 				int[] index1Location = new int[index1Size.length];
-				long[] index2Size = new long[TripleComponentRole.values().length];
+				long[] index2Size = new long[TripleComponentRole.valuesNoGraph().length];
 				int[] index2Location = new int[index2Size.length];
 				// header creation
 				{
@@ -645,7 +645,7 @@ public class QEPMap implements Closeable {
 				}
 
 				// compute the converters for all the roles
-				for (TripleComponentRole role : TripleComponentRole.values()) {
+				for (TripleComponentRole role : TripleComponentRole.valuesNoGraph()) {
 					int roleId = role.ordinal();
 					if (dataset1Base) {
 						nodeConverters[roleId] = new DatasetNodeConverter(
@@ -899,7 +899,7 @@ public class QEPMap implements Closeable {
 
 		paths.add(CloseSuppressPath.of(getMapHeaderPath()));
 
-		for (TripleComponentRole role : TripleComponentRole.values()) {
+		for (TripleComponentRole role : TripleComponentRole.valuesNoGraph()) {
 			paths.add(CloseSuppressPath.of(getMap1DestinationPath(role)));
 			paths.add(CloseSuppressPath.of(getMap1OriginPath(role)));
 			paths.add(CloseSuppressPath.of(getMap2DestinationPath(role)));

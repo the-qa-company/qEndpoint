@@ -36,6 +36,29 @@ public class BitmapTriplesIteratorPositionTest extends AbstractMapMemoryTest {
 			HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 			HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_PSFC_SECTION);
 
+	/**
+	 * Print an iterator and (if found) sub iterators
+	 *
+	 * @param it Iterator
+	 */
+	public static void printIterator(Object it) {
+		for (int depth = 0;; depth++) {
+			System.out.println("[" + depth + "] Used iterator: " + it.getClass());
+			try {
+				if (it instanceof DictionaryTranslateIterator) {
+					it = ITERATOR_SUB.get(it);
+				} else if (it instanceof DictionaryTranslateIteratorBuffer) {
+					it = ITERATOR_SUB_BUFFER.get(it);
+				} else if (it instanceof SequentialSearchIteratorTripleID) {
+					it = ITERATOR_SUB_SEQ.get(it);
+				} else
+					break;
+			} catch (IllegalAccessException e) {
+				break;
+			}
+		}
+	}
+
 	private static final Field ITERATOR_SUB;
 	private static final Field ITERATOR_SUB_BUFFER;
 	private static final Field ITERATOR_SUB_SEQ;

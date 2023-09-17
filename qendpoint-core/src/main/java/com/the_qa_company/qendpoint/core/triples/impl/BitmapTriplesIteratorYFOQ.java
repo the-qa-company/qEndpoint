@@ -224,4 +224,12 @@ public class BitmapTriplesIteratorYFOQ implements SuppliableIteratorTripleID {
 	public long getLastTriplePosition() {
 		return lastPosition;
 	}
+
+	public long getPosY() {
+		return posY;
+	}
+
+	public long getPosZ() {
+		return posZ;
+	}
 }

@@ -21,7 +21,7 @@ package com.the_qa_company.qendpoint.core.rdf.parsers;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
-import com.the_qa_company.qendpoint.core.quads.QuadString;
+import com.the_qa_company.qendpoint.core.quad.QuadString;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;

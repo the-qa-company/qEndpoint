@@ -19,6 +19,7 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.datatypes.xsd.impl.RDFLangString;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.sparql.core.Quad;
 
 /**
  * Converts a Jena {@link Node} to a String format that will round trip back to
@@ -37,7 +38,7 @@ public class JenaNodeFormatter {
 	}
 
 	public static String format(Node node) {
-		if (node == null) {
+		if (node == null || Quad.isDefaultGraph(node)) {
 			return "";
 		}
 		if (node.isURI()) {

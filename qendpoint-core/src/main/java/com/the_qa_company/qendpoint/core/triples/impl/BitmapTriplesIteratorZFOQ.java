@@ -31,16 +31,16 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
  */
 public class BitmapTriplesIteratorZFOQ implements SuppliableIteratorTripleID {
 	private long lastPosIndex;
-	final BitmapTriples triples;
-	final TripleID pattern;
-	final TripleID returnTriple;
+	protected final BitmapTriples triples;
+	protected final TripleID pattern;
+	protected final TripleID returnTriple;
 
-	AdjacencyList adjY, adjIndex;
-	long posIndex, minIndex, maxIndex;
-	long x, y, z;
+	protected AdjacencyList adjY, adjIndex;
+	protected long posIndex, minIndex, maxIndex;
+	protected long x, y, z;
 
-	long patY;
-	final long patZ;
+	protected long patY;
+	protected long patZ;
 
 	public BitmapTriplesIteratorZFOQ(BitmapTriples triples, TripleID pattern) {
 		this.triples = triples;
@@ -62,11 +62,11 @@ public class BitmapTriplesIteratorZFOQ implements SuppliableIteratorTripleID {
 		goToStart();
 	}
 
-	private long getY(long index) {
+	protected long getY(long index) {
 		return adjY.get(adjIndex.get(index));
 	}
 
-	private void calculateRange() {
+	protected void calculateRange() {
 		if (patZ == 0) {
 			minIndex = 0;
 			maxIndex = adjIndex.getNumberOfElements();
@@ -125,7 +125,7 @@ public class BitmapTriplesIteratorZFOQ implements SuppliableIteratorTripleID {
 		}
 	}
 
-	private void updateOutput() {
+	protected void updateOutput() {
 		lastPosIndex = posIndex;
 		returnTriple.setAll(x, y, z);
 		TripleOrderConvert.swapComponentOrder(returnTriple, triples.order, TripleComponentOrder.SPO);

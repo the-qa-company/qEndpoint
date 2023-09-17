@@ -46,6 +46,11 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
+	public boolean insert(long subject, long predicate, long object, long graph) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public boolean insert(TripleID... triples) {
 		throw new NotImplementedException();
 	}
@@ -85,6 +90,12 @@ public class OneReadTempTriples implements TempTriples {
 	@Override
 	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj) {
 		throw new NotImplementedException();
+	}
+
+	@Override
+	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj,
+			DictionaryIDMapping mapGraph) {
+
 	}
 
 	@Override
@@ -129,8 +140,7 @@ public class OneReadTempTriples implements TempTriples {
 
 	@Override
 	public void load(TempTriples input, ProgressListener listener) {
-		if (input instanceof OneReadTempTriples) {
-			OneReadTempTriples input2 = (OneReadTempTriples) input;
+		if (input instanceof OneReadTempTriples input2) {
 			this.iterator = input2.iterator;
 			this.order = input2.order;
 		} else {

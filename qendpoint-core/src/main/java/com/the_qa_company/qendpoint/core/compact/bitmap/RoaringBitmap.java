@@ -2,7 +2,14 @@ package com.the_qa_company.qendpoint.core.compact.bitmap;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.roaringbitmap.longlong.Roaring64Bitmap;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * {@link ModifiableBitmap} wrapper of the {@link Roaring64Bitmap} class, it
@@ -35,12 +42,29 @@ public class RoaringBitmap implements SimpleModifiableBitmap {
 
 	@Override
 	public long getSizeBytes() {
-		return 0;
+		return rbm.serializedSizeInBytes();
+	}
+
+	@Override
+	public void save(OutputStream output, ProgressListener listener) throws IOException {
+		long size = getSizeBytes();
+		IOUtil.writeLong(output, size);
+		ByteBuffer b2 = ByteBuffer.allocate((int) size);
+		rbm.serialize(b2);
+		output.write(b2.array());
+	}
+
+	@Override
+	public void load(InputStream input, ProgressListener listener) throws IOException {
+		long size = IOUtil.readLong(input);
+		ByteBuffer b2 = ByteBuffer.allocate((int) size);
+		input.read(b2.array());
+		rbm.deserialize(b2);
 	}
 
 	@Override
 	public String getType() {
-		return HDTVocabulary.BITMAP_TYPE_ROAR;
+		return HDTVocabulary.BITMAP_TYPE_ROARING;
 	}
 
 	@Override
@@ -54,12 +78,21 @@ public class RoaringBitmap implements SimpleModifiableBitmap {
 
 	@Override
 	public long select1(long n) {
-		return rbm.select(n);
+		long position = n - 1;
+		if (position == -1)
+			return -1;
+		if (position < rbm.getLongCardinality()) {
+			return rbm.select(position);
+		} else {
+			return rbm.select(rbm.getLongCardinality() - 1) + 1;
+		}
 	}
 
 	@Override
 	public long rank1(long position) {
-		return rbm.rankLong(position);
+		if (position >= 0)
+			return rbm.rankLong(position);
+		return 0;
 	}
 
 	@Override
@@ -70,5 +103,18 @@ public class RoaringBitmap implements SimpleModifiableBitmap {
 	@Override
 	public void append(boolean value) {
 		set(rbm.last() + 1, value);
+	}
+
+	@Override
+	public long selectPrev1(long start) {
+		return select1(rank1(start));
+	}
+
+	@Override
+	public long selectNext1(long start) {
+		long pos = rank1(start - 1);
+		if (pos < rbm.getLongCardinality())
+			return select1(pos + 1);
+		return -1;
 	}
 }
