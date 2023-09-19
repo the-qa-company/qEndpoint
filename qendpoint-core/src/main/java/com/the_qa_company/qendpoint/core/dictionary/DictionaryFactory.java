@@ -180,8 +180,10 @@ public class DictionaryFactory {
 			new WriteFourSectionDictionary(spec, location, bufferSize);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS ->
 			new WriteMultipleSectionDictionary(spec, location, bufferSize);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG ->
-			new WriteMultipleSectionDictionaryLang(spec, location, bufferSize);
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG ->
+					new WriteMultipleSectionDictionaryLang(spec, location, bufferSize);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
+				new WriteMultipleSectionDictionaryLang(spec, location, bufferSize, true);
 		default -> throw new IllegalFormatException("Implementation of write dictionary not found for " + name);
 		};
 	}
