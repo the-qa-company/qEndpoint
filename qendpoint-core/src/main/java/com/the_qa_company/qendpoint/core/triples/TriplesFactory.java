@@ -18,6 +18,7 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -55,11 +56,8 @@ public class TriplesFactory {
 	static public TriplesPrivate createTriples(HDTOptions spec) throws IOException {
 		String type = spec.get("triples.format");
 
-		boolean isQuad = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "")
-				.equals(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
-
 		if (type == null) {
-			if (isQuad) {
+			if (DictionaryFactory.isQuadDictionary(spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, ""))) {
 				return new BitmapQuadTriples(spec);
 			}
 			return new BitmapTriples(spec);

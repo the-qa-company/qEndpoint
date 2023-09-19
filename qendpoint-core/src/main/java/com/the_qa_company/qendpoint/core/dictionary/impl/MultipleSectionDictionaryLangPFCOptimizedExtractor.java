@@ -5,7 +5,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCOptimizedExt
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 
 public class MultipleSectionDictionaryLangPFCOptimizedExtractor implements OptimizedExtractor {
-	private final PFCOptimizedExtractor shared, subjects, predicates;
+	private final PFCOptimizedExtractor shared, subjects, predicates, graph;
 	private final PFCOptimizedExtractor[] objects;
 	private final MultipleLangBaseDictionary dict;
 	private final long nshared;
@@ -19,6 +19,11 @@ public class MultipleSectionDictionaryLangPFCOptimizedExtractor implements Optim
 		objects = new PFCOptimizedExtractor[dict.getObjectsSectionCount()];
 		for (int i = 0; i < objects.length; i++) {
 			objects[i] = new PFCOptimizedExtractor((PFCDictionarySectionMap) dict.getObjectsSectionFromId(i).section());
+		}
+		if (dict.supportGraphs()) {
+			graph = new PFCOptimizedExtractor((PFCDictionarySectionMap) dict.graph);
+		} else {
+			graph = null;
 		}
 	}
 
@@ -42,6 +47,12 @@ public class MultipleSectionDictionaryLangPFCOptimizedExtractor implements Optim
 				return null;
 			}
 			return data.suffix().copyPreAppend(str);
+		}
+		case GRAPH -> {
+			if (!dict.supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			}
+			return graph.extract(id);
 		}
 		default -> throw new IllegalArgumentException("Bad role: " + role);
 		}

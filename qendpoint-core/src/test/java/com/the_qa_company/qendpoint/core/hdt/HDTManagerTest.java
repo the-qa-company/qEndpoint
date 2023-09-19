@@ -15,7 +15,6 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
-import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -85,7 +84,7 @@ import static org.junit.Assert.fail;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
-		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class })
+		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class, HDTManagerTest.MSDLangQuadTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -136,7 +135,7 @@ public class HDTManagerTest {
 		}
 
 		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
-				Iterator<? extends CharSequence> it2) {
+												Iterator<? extends CharSequence> it2) {
 			while (it1.hasNext()) {
 				Assert.assertTrue(it2.hasNext());
 				Assert.assertEquals(it1.next().toString(), it2.next().toString());
@@ -270,6 +269,13 @@ public class HDTManagerTest {
 					prev.replace(next);
 				}
 			});
+			IteratorTripleID tripleIt = hdt.getTriples().searchAll();
+			long count = 0;
+			while (tripleIt.hasNext()) {
+				tripleIt.next();
+				count++;
+			}
+			assertEquals(hdt.getTriples().getNumberOfElements(), count);
 		}
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
@@ -1002,9 +1008,9 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-					// free
-					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
-					), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							// free
+							.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
+							), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
 					spec, (level, message) -> System.out.println("[" + level + "] " + message))) {
 				System.out.println(watch.stopAndShow());
 				System.out.println(hdt.getTriples().getNumberOfElements());
@@ -1025,9 +1031,9 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-					// free
-					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
-					), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
+							// free
+							.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
+							), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
 					(level, message) -> System.out.println("[" + level + "] " + message))) {
 				System.out.println(watch.stopAndShow());
 				System.out.println(hdt.getTriples().getNumberOfElements());
@@ -1037,13 +1043,24 @@ public class HDTManagerTest {
 
 	@RunWith(Parameterized.class)
 	public static class HDTQTest extends HDTManagerTestBase {
-		@Parameterized.Parameters(name = "default graph:{0}")
-		public static Collection<Object> params() {
-			return List.of(true, false);
+		@Parameterized.Parameters(name = "default graph:{0} type:{1}")
+		public static Collection<Object[]> params() {
+			List<Object[]> params = new ArrayList<>();
+
+
+			for (String dict : List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD)) {
+				for (boolean defaultGraph : List.of(true, false)) {
+					params.add(new Object[]{defaultGraph, dict});
+				}
+			}
+
+			return params;
 		}
 
 		@Parameterized.Parameter
 		public boolean useDefaultGraph;
+		@Parameterized.Parameter(1)
+		public String dictType;
 
 		private LargeFakeDataSetStreamSupplier createSupplier() {
 			// fake data generation
@@ -1087,7 +1104,7 @@ public class HDTManagerTest {
 						IteratorTripleString it2 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), graph);
 						if (!it2.hasNext()) {
 							BitmapTriplesIteratorPositionTest.printIterator(it2);
-							fail();
+							fail("Can't find " + ts);
 						}
 						TripleString ts2 = it2.next();
 						assertEquals(ts, ts2);
@@ -1128,44 +1145,7 @@ public class HDTManagerTest {
 					Set<TripleString> dataset2 = new HashSet<>(dataset);
 					roleDesc.append(",").append(role);
 
-					Iterator<? extends CharSequence> roleIt;
-					switch (role) {
-					case OBJECT -> {
-						Iterator<? extends CharSequence> sh = h.getDictionary().getShared().getSortedEntries();
-						Iterator<? extends CharSequence> ob = h.getDictionary().getObjects().getSortedEntries();
-						roleIt = new FetcherIterator<>() {
-							@Override
-							protected CharSequence getNext() {
-								if (sh.hasNext()) {
-									return sh.next();
-								}
-								if (ob.hasNext()) {
-									return ob.next();
-								}
-								return null;
-							}
-						};
-					}
-					case SUBJECT -> {
-						Iterator<? extends CharSequence> sh = h.getDictionary().getShared().getSortedEntries();
-						Iterator<? extends CharSequence> su = h.getDictionary().getSubjects().getSortedEntries();
-						roleIt = new FetcherIterator<>() {
-							@Override
-							protected CharSequence getNext() {
-								if (sh.hasNext()) {
-									return sh.next();
-								}
-								if (su.hasNext()) {
-									return su.next();
-								}
-								return null;
-							}
-						};
-					}
-					case PREDICATE -> roleIt = h.getDictionary().getPredicates().getSortedEntries();
-					case GRAPH -> roleIt = h.getDictionary().getGraphs().getSortedEntries();
-					default -> throw new AssertionError();
-					}
+					Iterator<? extends CharSequence> roleIt = h.getDictionary().stringIterator(role, true);
 
 					long componentId = 0;
 					Set<String> components = new HashSet<>();
@@ -1176,10 +1156,10 @@ public class HDTManagerTest {
 						long cid = componentId++;
 
 						Iterator<TripleString> eid = switch (role) {
-						case OBJECT -> h.search("", "", component, "");
-						case SUBJECT -> h.search(component, "", "", "");
-						case PREDICATE -> h.search("", component, "", "");
-						case GRAPH -> h.search("", "", "", component);
+							case OBJECT -> h.search("", "", component, "");
+							case SUBJECT -> h.search(component, "", "", "");
+							case PREDICATE -> h.search("", component, "", "");
+							case GRAPH -> h.search("", "", "", component);
 						};
 
 						while (eid.hasNext()) {
@@ -1208,9 +1188,7 @@ public class HDTManagerTest {
 			LargeFakeDataSetStreamSupplier supplier = createSupplier();
 			Iterator<TripleString> it = supplier.createTripleStringStream();
 
-			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType);
 			Path root = tempDir.newFolder().toPath();
 			try {
 				Path d = root.resolve("d.hdt");
@@ -1228,9 +1206,7 @@ public class HDTManagerTest {
 			LargeFakeDataSetStreamSupplier supplier = createSupplier();
 			Iterator<TripleString> it = supplier.createTripleStringStream();
 
-			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType);
 			Path root = tempDir.newFolder().toPath();
 			try {
 				Path nq = root.resolve("d.nq");
@@ -1578,6 +1554,255 @@ public class HDTManagerTest {
 			} finally {
 				PathUtils.deleteDirectory(root);
 			}
+		}
+
+		@Test
+		public void idFromIteratorTest() throws IOException, ParserException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withMaxLiteralSize(50).withMaxElementSplit(20);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path hdtPath = rootDir.resolve("ds.nt");
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"),
+
+						HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, rootDir.resolve("future.hdt"));
+
+				supplier.createAndSaveFakeHDT(spec, hdtPath);
+
+				try (HDT hdt = HDTManager.mapHDT(hdtPath)) {
+					Dictionary dictUkn = hdt.getDictionary();
+
+					if (!(dictUkn instanceof MultipleLangBaseDictionary dict)) {
+						fail("bad dict type: %s".formatted(dictUkn.getClass()));
+						return;
+					}
+
+					assertTrue(dict.supportsDataTypeOfId());
+					assertTrue(dict.supportsLanguageOfId());
+					assertTrue(dict.supportsNodeTypeOfId());
+
+					for (TripleComponentRole role : TripleComponentRole.valuesNoGraph()) {
+						long idc = 1;
+						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
+
+						while (it.hasNext()) {
+							CharSequence component = it.next();
+							long id = idc++;
+
+							CharSequence componentActual = dict.idToString(id, role);
+
+							if (!component.toString().equals(componentActual.toString())) {
+								fail("%s != %s for id %d/%s".formatted(component, componentActual, id, role));
+							}
+						}
+					}
+					Set<ByteString> loaded = new HashSet<>();
+					for (TripleComponentRole role : new TripleComponentRole[] { SUBJECT, OBJECT }) {
+						long nshared = dict.getNshared();
+						long idc = 1;
+						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
+
+						while (it.hasNext()) {
+							CharSequence component = it.next();
+							long id = idc++;
+
+							if (!loaded.add(ByteString.of(component))) {
+								if (id > nshared) { // normal for shared
+									fail(format("the component %s(%s/%d) was loaded twice! ", component, role, id));
+								}
+							}
+
+							assertEquals("bad id mapping", id, dict.stringToId(component, role));
+
+							CharSequence componentActual = dict.idToString(id, role);
+							assertEquals("bad string mapping", component.toString(), componentActual.toString());
+
+							TripleComponentRole role2 = role == SUBJECT ? OBJECT : SUBJECT;
+
+							if (id <= nshared) {
+								assertEquals("bad role logic", id, dict.stringToId(component, role2));
+							} else {
+								assertTrue("bad role logic", dict.stringToId(component, role2) <= 0);
+							}
+
+							RDFNodeType nodeType = RDFNodeType.typeof(component);
+
+							RDFNodeType actualNodeType = dict.nodeTypeOfId(role, id);
+							if (nodeType != actualNodeType) {
+								StringBuilder bld = new StringBuilder("Sections: ");
+								for (int i = 0; i < dict.getObjectsSectionCount(); i++) {
+									MultipleLangBaseDictionary.ObjectIdLocationData sec = dict
+											.getObjectsSectionFromId(i);
+									bld.append("%d=%s(%s)\n".formatted(sec.location(), sec.name(), sec.type()));
+								}
+								fail("bad node type %s != %s for %s (%s/%d@%d)\n%s".formatted(nodeType, actualNodeType,
+										component, role, id, nshared, bld));
+							}
+							if (role == OBJECT) {
+								CharSequence lang = LiteralsUtils.getLanguage(component).orElse(null);
+								assertEquals("bad lang", lang, dict.languageOfId(id));
+
+								CharSequence type = LiteralsUtils.getType(component);
+								assertEquals("bad type", type, dict.dataTypeOfId(id));
+							}
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+	}
+
+	public static class MSDLangQuadTest extends HDTManagerTestBase {
+		@Test
+		public void msdLangTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path ntFile = tempDir.newFile().toPath();
+			try {
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
+
+				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION);
+
+				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdl = hdt.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD, msdl.getType());
+					assertTrue("not a msdlq", msdl instanceof MultipleLangBaseDictionary);
+					checkHDTConsistency(hdt);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtFSD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specFSD, ProgressListener.ignore())) {
+						Dictionary fsd = hdtFSD.getDictionary();
+
+						assertTrue("not a fsd", fsd instanceof BaseDictionary);
+						assertEquals("not the same number of triples", hdtFSD.getTriples().getNumberOfElements(),
+								hdt.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", fsd.getNshared(), msdl.getNshared());
+						assertEquals("Not the same number of SUBJECTS", fsd.getNsubjects(), msdl.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", fsd.getNpredicates(), msdl.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", fsd.getNobjects(), msdl.getNobjects());
+
+						IteratorTripleString itMSDAT = hdt.search("", "", "");
+
+						while (itMSDAT.hasNext()) {
+							TripleString actual = itMSDAT.next();
+							if (!hdt.search(actual).hasNext()) {
+								fail(format("Can't find back triple %s in", actual));
+							}
+						}
+
+						IteratorTripleString itMSDA = hdt.search("", "", "");
+
+						while (itMSDA.hasNext()) {
+							TripleString actual = itMSDA.next();
+
+							IteratorTripleString itE = hdtFSD.search(actual);
+							if (!itE.hasNext()) {
+								long sid = fsd.stringToId(actual.getSubject(), SUBJECT);
+								assertNotEquals("can't find SUB in FSD: " + actual.getSubject(), -1, sid);
+								long pid = fsd.stringToId(actual.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in FSD: " + actual.getPredicate(), -1, pid);
+								long oid = fsd.stringToId(actual.getObject(), OBJECT);
+								assertNotEquals("can't find OBJ in FSD: " + actual.getObject(), -1, oid);
+
+								assertEquals(actual.getSubject().toString(), fsd.idToString(sid, SUBJECT).toString());
+								assertEquals(actual.getPredicate().toString(),
+										fsd.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(actual.getObject().toString(), fsd.idToString(oid, OBJECT).toString());
+
+								fail(format("Can't find triple %s in FSD", actual));
+							}
+							assertEquals(actual.tripleToString(), itE.next().tripleToString());
+						}
+
+						IteratorTripleString itE = hdtFSD.search("", "", "");
+
+						while (itE.hasNext()) {
+							TripleString excepted = itE.next();
+							IteratorTripleString itA = hdt.search(excepted.getSubject(), excepted.getPredicate(),
+									excepted.getObject());
+							if (!itA.hasNext()) {
+								long sid = msdl.stringToId(excepted.getSubject(), SUBJECT);
+								assertNotEquals("can't find SUB in MSDL: " + excepted.getSubject(), -1, sid);
+								long pid = msdl.stringToId(excepted.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in MSDL: " + excepted.getPredicate(), -1, pid);
+								long oid = msdl.stringToId(excepted.getObject(), OBJECT);
+								assertNotEquals("can't find OBJ in MSDL: " + excepted.getObject(), -1, oid);
+
+								assertEquals(excepted.getSubject().toString(),
+										msdl.idToString(sid, SUBJECT).toString());
+								assertEquals(excepted.getPredicate().toString(),
+										msdl.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(excepted.getObject().toString(), msdl.idToString(oid, OBJECT).toString());
+
+								TripleID tid = new TripleID(sid, pid, oid);
+								IteratorTripleID itA2 = hdt.getTriples().search(tid);
+								if (itA2.hasNext()) {
+									fail(format("can't find triple %s by string in MSDL HDT", excepted));
+								} else {
+									fail(format("can't find triple %s by string or id in MSDL HDT (%s)", excepted,
+											tid));
+								}
+
+							}
+							TripleString actual = itA.next();
+							assertComponentsNotNull("an element is null", actual);
+							assertEquals(excepted, actual);
+						}
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = tempDir.newFile().toPath();
+					try {
+						hdt.saveToHDT(tempHDT, ProgressListener.ignore());
+						try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
+									hdtMap.getDictionary().getType());
+							assertEqualsHDT(hdt, hdtMap);
+							try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+								assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
+										hdtLoad.getDictionary().getType());
+								assertEqualsHDT(hdt, hdtLoad);
+								assertEqualsHDT(hdtLoad, hdtMap);
+							}
+						}
+					} catch (Throwable t) {
+						try {
+							Files.deleteIfExists(tempHDT);
+						} catch (IOException e) {
+							t.addSuppressed(e);
+						}
+						throw t;
+					}
+					Files.deleteIfExists(tempHDT);
+				}
+			} catch (Throwable t) {
+				try {
+					Files.deleteIfExists(ntFile);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+			Files.deleteIfExists(ntFile);
 		}
 
 		@Test

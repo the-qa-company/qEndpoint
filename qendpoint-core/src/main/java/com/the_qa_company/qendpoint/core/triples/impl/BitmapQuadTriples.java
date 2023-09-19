@@ -19,8 +19,8 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +30,7 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.RoaringBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
@@ -225,7 +226,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 	public long size() {
 		if (isClosed)
 			return 0;
-		long graphs = quadInfoAG.stream().map(b -> b.getSizeBytes()).reduce(0L, (a, b) -> a + b);
+		long graphs = quadInfoAG.stream().mapToLong(Bitmap::getSizeBytes).sum();
 		return seqY.size() + seqZ.size() + bitmapY.getSizeBytes() + bitmapZ.getSizeBytes() + graphs;
 	}
 
@@ -242,9 +243,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 		bitmapZ.save(output, iListener);
 		seqY.save(output, iListener);
 		seqZ.save(output, iListener);
-		ByteBuffer numGraphs = ByteBuffer.allocate(Integer.BYTES);
-		numGraphs.putInt(quadInfoAG.size());
-		output.write(numGraphs.array());
+		VByte.encode(output, quadInfoAG.size());
 		for (ModifiableBitmap b : quadInfoAG) {
 			b.save(output, iListener);
 		}
@@ -320,10 +319,54 @@ public class BitmapQuadTriples extends BitmapTriples {
 
 		quadInfoAG = new ArrayList<>();
 
-		ByteBuffer numGraphsB = ByteBuffer.allocate(Integer.BYTES);
-		input.read(numGraphsB.array());
-		int numGraphs = numGraphsB.getInt();
-		for (int i = 0; i < numGraphs; i++) {
+		long numGraphs = VByte.decode(input);
+
+		for (long i = 0; i < numGraphs; i++) {
+			ModifiableBitmap b = createQuadBitmap();
+			b.load(input, iListener);
+			quadInfoAG.add(b);
+		}
+
+		isClosed = false;
+	}
+
+	@Override
+	public void load(InputStream input, ControlInfo ci, ProgressListener listener) throws IOException {
+
+		if (ci.getType() != ControlInfo.Type.TRIPLES) {
+			throw new IllegalFormatException("Trying to read a triples section, but was not triples.");
+		}
+
+		if (!ci.getFormat().equals(getType())) {
+			throw new IllegalFormatException(
+					"Trying to read BitmapTriples, but the data does not seem to be BitmapTriples");
+		}
+
+		order = TripleComponentOrder.values()[(int) ci.getInt("order")];
+
+		IntermediateListener iListener = new IntermediateListener(listener);
+
+		bitmapY = BitmapFactory.createBitmap(input);
+		bitmapY.load(input, iListener);
+
+		bitmapZ = BitmapFactory.createBitmap(input);
+		bitmapZ.load(input, iListener);
+
+		seqY = SequenceFactory.createStream(input);
+		seqY.load(input, iListener);
+
+		seqZ = SequenceFactory.createStream(input);
+		seqZ.load(input, iListener);
+
+		adjY = new AdjacencyList(seqY, bitmapY);
+		adjZ = new AdjacencyList(seqZ, bitmapZ);
+
+
+		quadInfoAG = new ArrayList<>();
+
+		long numGraphs = VByte.decode(input);
+
+		for (long i = 0; i < numGraphs; i++) {
 			ModifiableBitmap b = createQuadBitmap();
 			b.load(input, iListener);
 			quadInfoAG.add(b);

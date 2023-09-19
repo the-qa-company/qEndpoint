@@ -46,7 +46,6 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -97,6 +96,14 @@ public class DictionaryFactory {
 	private DictionaryFactory() {
 	}
 
+	public static boolean isQuadDictionary(String name) {
+		return switch (name) {
+			case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD -> true;
+			default -> false;
+		};
+	}
+
 	/**
 	 * Creates a temp dictionary (allow insert)
 	 *
@@ -108,8 +115,17 @@ public class DictionaryFactory {
 
 		// Implementations available in the Core
 		return switch (name) {
-		case "", HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH ->
-			new HashDictionary(spec);
+		case "" -> {
+			String dicttype = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
+			if (dicttype.equals(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_PSFC_SECTION)) {
+				yield new PSFCTempDictionary(new HashDictionary(spec));
+			}
+			if (isQuadDictionary(dicttype)) {
+				yield new HashQuadDictionary(spec);
+			}
+			yield new HashDictionary(spec);
+		}
+		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH -> new HashDictionary(spec);
 		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD -> new HashQuadDictionary(spec);
 		case HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_PSFC -> new PSFCTempDictionary(new HashDictionary(spec));
 		default -> throw new IllegalFormatException("Implementation of triples not found for " + name);
@@ -131,6 +147,7 @@ public class DictionaryFactory {
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG -> new FourSectionDictionaryBig(spec);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultipleSectionDictionary(spec);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> new MultipleSectionDictionaryLang(spec);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD -> new MultipleSectionDictionaryLang(spec,true);
 		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
 		};
 	}
@@ -195,12 +212,14 @@ public class DictionaryFactory {
 	public static DictionaryPrivate createDictionary(ControlInfo ci) {
 		String name = ci.getFormat();
 		return switch (name) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> new FourSectionDictionary(new HDTSpecification());
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION -> new FourQuadSectionDictionary(new HDTSpecification());
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION -> new PSFCFourSectionDictionary(new HDTSpecification());
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionary(new HDTSpecification());
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> new FourSectionDictionary(HDTOptions.of());
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION -> new FourQuadSectionDictionary(HDTOptions.of());
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION -> new PSFCFourSectionDictionary(HDTOptions.of());
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionary(HDTOptions.of());
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG ->
-			new MultipleSectionDictionaryLang(new HDTSpecification());
+				new MultipleSectionDictionaryLang(HDTOptions.of());
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
+				new MultipleSectionDictionaryLang(HDTOptions.of(), true);
 		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
 		};
 	}
