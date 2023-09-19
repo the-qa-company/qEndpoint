@@ -85,30 +85,30 @@ public class CRC32 implements CRC {
 
 	@Override
 	public void writeCRC(OutputStream out) throws IOException {
-		IOUtil.writeInt(out, crc32 ^ 0xFFFFFFFF);
+		IOUtil.writeInt(out, ~crc32);
 	}
 
 	@Override
 	public int writeCRC(CloseMappedByteBuffer channel, int offset) throws IOException {
-		IOUtil.writeInt(channel, offset, crc32 ^ 0xFFFFFFFF);
+		IOUtil.writeInt(channel, offset, ~crc32);
 		return 4;
 	}
 
 	@Override
 	public boolean readAndCheck(InputStream in) throws IOException {
 		int readCRC = IOUtil.readInt(in);
-		return readCRC == (crc32 ^ 0xFFFFFFFF);
+		return readCRC == (~crc32);
 	}
 
 	@Override
 	public boolean readAndCheck(CloseMappedByteBuffer channel, int offset) {
 		int readCRC = IOUtil.readInt(channel, offset);
-		return readCRC == (crc32 ^ 0xFFFFFFFF);
+		return readCRC == (~crc32);
 	}
 
 	@Override
 	public long getValue() {
-		return (crc32 ^ 0xFFFFFFFF) & 0xFFFFFFFFL;
+		return (~crc32) & 0xFFFFFFFFL;
 	}
 
 	@Override

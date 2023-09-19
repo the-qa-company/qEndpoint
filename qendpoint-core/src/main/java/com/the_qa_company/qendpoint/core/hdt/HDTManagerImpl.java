@@ -150,6 +150,16 @@ public class HDTManagerImpl extends HDTManager {
 		// choose the importer
 		String loaderType = spec.get(HDTOptionsKeys.LOADER_TYPE_KEY);
 		TempHDTImporter loader;
+		boolean isQuad = rdfNotation == RDFNotation.NQUAD;
+		if (isQuad) {
+			if (!spec.contains(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY)) {
+				spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD);
+			}
+			if (!spec.contains(HDTOptionsKeys.DICTIONARY_TYPE_KEY)) {
+				spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			}
+		}
+
 		if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(loaderType)) {
 			return doGenerateHDTDisk(rdfFileName, baseURI, rdfNotation, CompressionType.guess(rdfFileName), spec,
 					listener);

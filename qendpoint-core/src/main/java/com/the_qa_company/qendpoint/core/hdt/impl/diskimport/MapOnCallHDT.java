@@ -102,6 +102,12 @@ public class MapOnCallHDT implements HDTPrivate {
 	}
 
 	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		return mapOrGetHDT().search(subject, predicate, object, graph);
+	}
+
+	@Override
 	public void loadFromHDT(InputStream input, ProgressListener listener) throws IOException {
 		((HDTPrivate) mapOrGetHDT()).loadFromHDT(input, listener);
 	}

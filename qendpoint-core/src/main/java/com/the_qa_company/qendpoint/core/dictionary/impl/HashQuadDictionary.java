@@ -19,6 +19,9 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
+import java.io.IOException;
+import java.util.Iterator;
+
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryType;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.HashDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
@@ -26,21 +29,16 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 
-import java.io.IOException;
-import java.util.Iterator;
+public class HashQuadDictionary extends QuadTempDictionary {
 
-/**
- * @author mario.arias, Eugen
- */
-public class HashDictionary extends BaseTempDictionary {
-
-	public HashDictionary(HDTOptions spec) {
+	public HashQuadDictionary(HDTOptions spec) {
 		super(spec);
 		// FIXME: Read types from spec
 		subjects = new HashDictionarySection();
 		predicates = new HashDictionarySection();
 		objects = new HashDictionarySection(DictionaryType.fromDictionaryType(spec));
 		shared = new HashDictionarySection();
+		graphs = new HashDictionarySection();
 	}
 
 	/*
@@ -52,6 +50,7 @@ public class HashDictionary extends BaseTempDictionary {
 		DictionaryIDMapping mapSubj = new DictionaryIDMapping(subjects.getNumberOfElements());
 		DictionaryIDMapping mapPred = new DictionaryIDMapping(predicates.getNumberOfElements());
 		DictionaryIDMapping mapObj = new DictionaryIDMapping(objects.getNumberOfElements());
+		DictionaryIDMapping mapGraph = new DictionaryIDMapping(graphs.getNumberOfElements());
 
 		StopWatch st = new StopWatch();
 
@@ -66,8 +65,6 @@ public class HashDictionary extends BaseTempDictionary {
 				shared.add(str);
 			}
 		}
-		// System.out.println("Num shared: "+shared.getNumberOfElements()+" in
-		// "+st.stopAndShow());
 
 		// Generate old predicate mapping
 		st.reset();
@@ -75,6 +72,13 @@ public class HashDictionary extends BaseTempDictionary {
 		while (itPred.hasNext()) {
 			CharSequence str = itPred.next();
 			mapPred.add(str);
+		}
+
+		// Generate old graph mapping
+		Iterator<? extends CharSequence> itGraph = graphs.getEntries();
+		while (itGraph.hasNext()) {
+			CharSequence str = itGraph.next();
+			mapGraph.add(str);
 		}
 
 		// Generate old object mapping
@@ -91,14 +95,15 @@ public class HashDictionary extends BaseTempDictionary {
 			subjects.remove(sharedStr);
 			objects.remove(sharedStr);
 		}
-		// System.out.println("Mapping generated in "+st.stopAndShow());
 
 		// Sort sections individually
 		st.reset();
 		subjects.sort();
 		predicates.sort();
+		graphs.sort();
 		objects.sort();
 		shared.sort();
+		// System.out.println("Sections sorted in "+ st.stopAndShow());
 
 		// Update mappings with new IDs
 		st.reset();
@@ -114,15 +119,22 @@ public class HashDictionary extends BaseTempDictionary {
 			mapObj.setNewID(j, this.stringToId(mapObj.getString(j), TripleComponentRole.OBJECT));
 		}
 
+		for (long j = 0; j < mapGraph.size(); j++) {
+			CharSequence str = mapGraph.getString(j);
+			// check that because stringToId returns 0 for empty strings and if
+			// a string is empty its id is
+			// 0 no matter what
+			if (str.length() == 0) {
+				mapGraph.setNewID(j, 1);
+			} else {
+				mapGraph.setNewID(j, this.stringToId(str, TripleComponentRole.GRAPH));
+			}
+		}
+
 		// Replace old IDs with news
-		triples.replaceAllIds(mapSubj, mapPred, mapObj);
+		triples.replaceAllIds(mapSubj, mapPred, mapObj, mapGraph);
 
 		isOrganized = true;
-	}
-
-	@Override
-	public boolean supportGraphs() {
-		return false;
 	}
 
 	@Override
@@ -140,4 +152,8 @@ public class HashDictionary extends BaseTempDictionary {
 		// Do nothing.
 	}
 
+	@Override
+	public boolean supportGraphs() {
+		return true;
+	}
 }

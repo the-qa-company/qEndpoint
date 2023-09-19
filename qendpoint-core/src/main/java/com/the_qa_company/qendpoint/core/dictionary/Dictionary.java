@@ -133,6 +133,15 @@ public interface Dictionary extends Closeable {
 	}
 
 	/**
+	 * Returns whether the dictionary supports graphs
+	 *
+	 * @return true if it supports graphs, false otherwise
+	 */
+	default boolean supportGraphs() {
+		return false;
+	}
+
+	/**
 	 * Returns the number of elements in the dictionary
 	 */
 	long getNumberOfElements();
@@ -156,6 +165,11 @@ public interface Dictionary extends Closeable {
 	 * Returns the number of objects in the dictionary. Note: Includes shared
 	 */
 	long getNobjects();
+
+	/**
+	 * Returns the number of objects in the dictionary. Note: Includes shared
+	 */
+	long getNgraphs();
 
 	/**
 	 * Returns the number of subjects/objects in the dictionary.
@@ -200,6 +214,9 @@ public interface Dictionary extends Closeable {
 				return getNobjects() - getNshared();
 			}
 		}
+		case GRAPH -> {
+			return getNgraphs();
+		}
 		default -> throw new AssertionError();
 		}
 	}
@@ -209,6 +226,8 @@ public interface Dictionary extends Closeable {
 	DictionarySection getPredicates();
 
 	DictionarySection getObjects();
+
+	DictionarySection getGraphs();
 
 	Map<? extends CharSequence, DictionarySection> getAllObjects();
 

@@ -54,14 +54,20 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 
 		@Override
 		public void processTriple(TripleString triple, long pos) {
-			triples.insert(dict.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
-					dict.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
-					dict.insert(triple.getObject(), TripleComponentRole.OBJECT));
-			num++;
-			size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4; // Spaces
-																														// and
-																														// final
-																														// dot
+			long s = dict.insert(triple.getSubject(), TripleComponentRole.SUBJECT);
+			long p = dict.insert(triple.getPredicate(), TripleComponentRole.PREDICATE);
+			long o = dict.insert(triple.getObject(), TripleComponentRole.OBJECT);
+			if (dict.supportGraphs()) {
+				long g = dict.insert(triple.getGraph(), TripleComponentRole.GRAPH);
+				triples.insert(s, p, o, g);
+				size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length()
+						+ triple.getGraph().length() + 5;
+			} else {
+				triples.insert(s, p, o);
+				// Spaces and final dot
+				size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length()
+						+ triple.getGraph().length() + 4;
+			}
 			ListenerUtil.notifyCond(listener, "Loaded " + num + " triples", num, 0, 100);
 		}
 	}
@@ -112,14 +118,21 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 		long size = 0;
 		while (iterator.hasNext()) {
 			TripleString triple = iterator.next();
-			triples.insert(dictionary.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
-					dictionary.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
-					dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT));
-			num++;
-			size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4; // Spaces
-																														// and
-																														// final
-																														// dot
+			if (dictionary.supportGraphs()) {
+				triples.insert(dictionary.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
+						dictionary.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
+						dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT),
+						dictionary.insert(triple.getGraph(), TripleComponentRole.GRAPH));
+				// Spaces and final dot
+				size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length()
+						+ triple.getGraph().length() + 5;
+			} else {
+				triples.insert(dictionary.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
+						dictionary.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
+						dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT));
+				// Spaces and final dot
+				size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4;
+			}
 			ListenerUtil.notifyCond(listener, "Loaded " + num + " triples", num, 0, 100);
 		}
 		dictionary.endProcessing();

@@ -37,7 +37,7 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 	/** The dictionary */
 	final Dictionary dictionary;
 
-	CharSequence s, p, o;
+	CharSequence s, p, o, g;
 
 	long lastSid, lastPid, lastOid;
 	CharSequence lastSstr, lastPstr, lastOstr;
@@ -51,7 +51,7 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 	public DictionaryTranslateIterator(IteratorTripleID iteratorTripleID, Dictionary dictionary) {
 		this.iterator = iteratorTripleID;
 		this.dictionary = dictionary;
-		this.s = this.p = this.o = "";
+		this.s = this.p = this.o = this.g = "";
 	}
 
 	/**
@@ -67,6 +67,23 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 		this.s = s == null ? "" : s;
 		this.p = p == null ? "" : p;
 		this.o = o == null ? "" : o;
+		this.g = "";
+	}
+
+	/**
+	 * Basic constructor
+	 *
+	 * @param iteratorTripleID Iterator of TripleID to be used
+	 * @param dictionary       The dictionary to be used
+	 */
+	public DictionaryTranslateIterator(IteratorTripleID iteratorTripleID, Dictionary dictionary, CharSequence s,
+			CharSequence p, CharSequence o, CharSequence g) {
+		this.iterator = iteratorTripleID;
+		this.dictionary = dictionary;
+		this.s = s == null ? "" : s;
+		this.p = p == null ? "" : p;
+		this.o = o == null ? "" : o;
+		this.g = g == null ? "" : g;
 	}
 
 	/*

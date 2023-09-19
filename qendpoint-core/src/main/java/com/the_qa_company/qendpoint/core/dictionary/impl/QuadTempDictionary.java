@@ -1,19 +1,19 @@
 /*
  * File: $HeadURL:
  * https://hdt-java.googlecode.com/svn/trunk/hdt-java/src/org/rdfhdt/hdt/
- * dictionary/impl/BaseTempDictionary.java $ Revision: $Rev: 191 $ Last
- * modified: $Date: 2013-03-03 11:41:43 +0000 (dom, 03 mar 2013) $ Last modified
- * by: $Author: mario.arias $ This library is free software; you can
- * redistribute it and/or modify it under the terms of the GNU Lesser General
- * Public License as published by the Free Software Foundation; version 3.0 of
- * the License. This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser
- * General Public License for more details. You should have received a copy of
- * the GNU Lesser General Public License along with this library; if not, write
- * to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
- * MA 02110-1301 USA Contacting the authors: Mario Arias: mario.arias@deri.org
- * Javier D. Fernandez: jfergar@infor.uva.es Miguel A. Martinez-Prieto:
+ * dictionary/impl/QuadTempDictionary.java $ Revision: $Rev: 191 $ Last
+ * modified: $Date: 2023-05-24 11:41:43 +0000 (dom, 03 mar 2013) $ Last modified
+ * by: $Author: dappermink $ This library is free software; you can redistribute
+ * it and/or modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; version 3.0 of the License.
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details. You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ * Contacting the authors: Mario Arias: mario.arias@deri.org Javier D.
+ * Fernandez: jfergar@infor.uva.es Miguel A. Martinez-Prieto:
  * migumar2@infor.uva.es Alejandro Andres: fuzzy.alej@gmail.com
  */
 
@@ -31,11 +31,9 @@ import com.the_qa_company.qendpoint.core.triples.TempTriples;
 
 /**
  * This abstract class implements all methods that have implementation common to
- * all modifiable dictionaries (or could apply to)
- *
- * @author Eugen
+ * all modifiable quad dictionaries (or could apply to)
  */
-public abstract class BaseTempDictionary implements TempDictionary {
+public abstract class QuadTempDictionary implements TempDictionary {
 
 	final HDTOptions spec;
 	protected boolean isOrganized;
@@ -44,8 +42,9 @@ public abstract class BaseTempDictionary implements TempDictionary {
 	protected TempDictionarySection predicates;
 	protected TempDictionarySection objects;
 	protected TempDictionarySection shared;
+	protected TempDictionarySection graphs;
 
-	public BaseTempDictionary(HDTOptions spec) {
+	public QuadTempDictionary(HDTOptions spec) {
 		this.spec = spec;
 	}
 
@@ -57,19 +56,20 @@ public abstract class BaseTempDictionary implements TempDictionary {
 	@Override
 	public long insert(CharSequence str, TripleComponentRole position) {
 		switch (position) {
-		case SUBJECT -> {
+		case SUBJECT:
 			isOrganized = false;
 			return subjects.add(str);
-		}
-		case PREDICATE -> {
+		case PREDICATE:
 			isOrganized = false;
 			return predicates.add(str);
-		}
-		case OBJECT -> {
+		case OBJECT:
 			isOrganized = false;
 			return objects.add(str);
-		}
-		default -> throw new IllegalArgumentException();
+		case GRAPH:
+			isOrganized = false;
+			return graphs.add(str);
+		default:
+			throw new IllegalArgumentException();
 		}
 	}
 
@@ -100,6 +100,7 @@ public abstract class BaseTempDictionary implements TempDictionary {
 		subjects.sort();
 		objects.sort();
 		predicates.sort();
+		graphs.sort();
 
 		isOrganized = true;
 
@@ -127,6 +128,7 @@ public abstract class BaseTempDictionary implements TempDictionary {
 		predicates.clear();
 		shared.clear();
 		objects.clear();
+		graphs.clear();
 	}
 
 	@Override
@@ -149,9 +151,8 @@ public abstract class BaseTempDictionary implements TempDictionary {
 		return shared;
 	}
 
-	@Override
 	public TempDictionarySection getGraphs() {
-		throw new NotImplementedException();
+		return graphs;
 	}
 
 	protected long getGlobalId(long id, DictionarySectionRole position) {
@@ -162,6 +163,7 @@ public abstract class BaseTempDictionary implements TempDictionary {
 
 		case PREDICATE:
 		case SHARED:
+		case GRAPH:
 			return id;
 		default:
 			throw new IllegalArgumentException();
@@ -208,8 +210,19 @@ public abstract class BaseTempDictionary implements TempDictionary {
 				return getGlobalId(ret, DictionarySectionRole.OBJECT);
 			}
 			return -1;
+		case GRAPH:
+			ret = graphs.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.GRAPH);
+			}
+			return -1;
 		default:
 			throw new IllegalArgumentException();
 		}
+	}
+
+	@Override
+	public boolean supportGraphs() {
+		return false;
 	}
 }

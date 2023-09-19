@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
@@ -36,7 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Predicate;
 
 public class MultipleSectionDictionary extends MultipleBaseDictionary {
 
@@ -223,6 +223,16 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 		// Use cache only for predicates. Preload only up to 100K predicates.
 		// FIXME: DISABLED
 //		predicates = new DictionarySectionCacheAll(predicates, predicates.getNumberOfElements()<100000);
+	}
+
+	@Override
+	public long getNgraphs() {
+		return 0;
+	}
+
+	@Override
+	public DictionarySection getGraphs() {
+		throw new NotImplementedException();
 	}
 
 	@Override

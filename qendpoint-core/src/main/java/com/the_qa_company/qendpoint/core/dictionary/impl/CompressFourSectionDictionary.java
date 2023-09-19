@@ -181,6 +181,16 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	}
 
 	@Override
+	public TempDictionarySection getGraphs() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public boolean supportGraphs() {
+		return false;
+	}
+
+	@Override
 	public void startProcessing() {
 	}
 

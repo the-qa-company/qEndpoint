@@ -75,6 +75,7 @@ public class HDTVocabulary {
 	public static final String DICTIONARY_TYPE_PLAIN = HDT_DICTIONARY_BASE + "Plain>";
 	public static final String DICTIONARY_TYPE_FOUR_SECTION = HDT_DICTIONARY_BASE + "Four>";
 	public static final String DICTIONARY_TYPE_MULT_SECTION = HDT_DICTIONARY_BASE + "Mult>";
+	public static final String DICTIONARY_TYPE_FOUR_QUAD_SECTION = HDT_DICTIONARY_BASE + "FourQuad>";
 	public static final String DICTIONARY_TYPE_MULT_SECTION_LANG = HDT_DICTIONARY_BASE + "MultLang>";
 
 	public static final String DICTIONARY_TYPE_FOUR_PSFC_SECTION = HDT_DICTIONARY_BASE + "FourPsfc>";
@@ -98,6 +99,7 @@ public class HDTVocabulary {
 	public static final String TRIPLES_TYPE_PLAIN = HDT_TRIPLES_BASE + "Plain>";
 	public static final String TRIPLES_TYPE_COMPACT = HDT_TRIPLES_BASE + "Compact>";
 	public static final String TRIPLES_TYPE_BITMAP = HDT_TRIPLES_BASE + "Bitmap>";
+	public static final String TRIPLES_TYPE_BITMAP_QUAD = HDT_TRIPLES_BASE + "BitmapQuad>";
 
 	// Index type
 	public static final String INDEX_TYPE_FOQ = HDT_BASE + "indexFoQ>";
@@ -111,7 +113,7 @@ public class HDTVocabulary {
 
 	// Bitmaps
 	public static final String BITMAP_TYPE_PLAIN = HDT_BITMAP_BASE + "Plain>";
-	public static final String BITMAP_TYPE_ROAR = HDT_BITMAP_BASE + "Roar>";
+	public static final String BITMAP_TYPE_ROARING = HDT_BITMAP_BASE + "Roaring>";
 
 	// Misc
 	public static final String ORIGINAL_SIZE = HDT_BASE + "originalSize>";

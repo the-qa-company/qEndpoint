@@ -323,6 +323,77 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		}
 	}
 
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		if (isClosed) {
+			throw new IllegalStateException("Cannot search an already closed HDT");
+		}
+
+		if (!dictionary.supportGraphs()) {
+			if (graph != null && !graph.isEmpty()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graph");
+			}
+			// fallback to the default implementation
+			return search(subject, predicate, object);
+		}
+
+		// Conversion from TripleString to TripleID
+		TripleID triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
+				dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
+				dictionary.stringToId(object, TripleComponentRole.OBJECT),
+				dictionary.stringToId(graph, TripleComponentRole.GRAPH));
+
+		if (triple.isNoMatch()) {
+			// throw new NotFoundException("String not found in dictionary");
+			return new IteratorTripleString() {
+				@Override
+				public TripleString next() {
+					return null;
+				}
+
+				@Override
+				public boolean hasNext() {
+					return false;
+				}
+
+				@Override
+				public ResultEstimationType numResultEstimation() {
+					return ResultEstimationType.EXACT;
+				}
+
+				@Override
+				public void goToStart() {
+				}
+
+				@Override
+				public long estimatedNumResults() {
+					return 0;
+				}
+
+				@Override
+				public long getLastTriplePosition() {
+					throw new NotImplementedException();
+				}
+			};
+		}
+
+		if (isMapped) {
+			try {
+				return new DictionaryTranslateIteratorBuffer(triples.search(triple), dictionary, subject, predicate,
+						object, graph);
+			} catch (NullPointerException e) {
+				e.printStackTrace();
+				// FIXME: find why this can happen
+				return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object,
+						graph);
+			}
+		} else {
+			return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object,
+					graph);
+		}
+	}
+
 	public void loadFromParts(HeaderPrivate h, DictionaryPrivate d, TriplesPrivate t) {
 		this.header = h;
 		this.dictionary = d;

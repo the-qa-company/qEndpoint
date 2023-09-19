@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
@@ -263,6 +264,16 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 
 	@Override
 	public void load(TempDictionary other, ProgressListener listener) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public long getNgraphs() {
+		return 0;
+	}
+
+	@Override
+	public DictionarySection getGraphs() {
 		throw new NotImplementedException();
 	}
 

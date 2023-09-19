@@ -45,17 +45,36 @@ public interface RDFAccess extends Iterable<TripleString> {
 	IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws NotFoundException;
 
+	/**
+	 * Iterate over the triples of an RDF Set that match the specified pattern.
+	 * null and empty strings act as a wildcard. Default implementation ignore
+	 * the graph (e.g. search(null, null, null, null) iterates over all
+	 * elements)
+	 *
+	 * @param subject   The subject to search
+	 * @param predicate The predicate to search
+	 * @param object    The object to search
+	 * @param graph     The graph to search
+	 * @return Iterator of TripleStrings
+	 * @throws NotFoundException when the triple cannot be found
+	 */
+	default IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		return search(subject, predicate, object);
+	}
+
 	default IteratorTripleString search(TripleString triple) throws NotFoundException {
-		return search(triple.getSubject(), triple.getPredicate(), triple.getObject());
+		return search(triple.getSubject(), triple.getPredicate(), triple.getObject(), triple.getGraph());
 	}
 
 	default IteratorTripleString searchAll() throws NotFoundException {
-		return search("", "", "");
+		return search("", "", "", "");
 	}
 
+	@Override
 	default Iterator<TripleString> iterator() {
 		try {
-			return search("", "", "");
+			return searchAll();
 		} catch (NotFoundException e) {
 			return EmptyIterator.of();
 		}

@@ -15,6 +15,7 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
+import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -26,6 +27,7 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIteratorPositionTest;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
@@ -50,12 +52,14 @@ import org.junit.runners.Suite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -81,7 +85,7 @@ import static org.junit.Assert.fail;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
-		HDTManagerTest.DictionaryLangTypeTest.class })
+		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -342,13 +346,8 @@ public class HDTManagerTest {
 						// async, large thread count
 						8 }) {
 					List<String> modes;
-					if (threads > 1) {
-						// async, no need for partial
-						modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
-					} else {
-						modes = List.of(// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
-								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
-					}
+					// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
+					modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					for (String mode : modes) {
 						params.addAll(List.of(
 								new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
@@ -988,6 +987,223 @@ public class HDTManagerTest {
 		}
 	}
 
+	@RunWith(Parameterized.class)
+	public static class HDTQTest extends HDTManagerTestBase {
+		@Parameterized.Parameters(name = "default graph:{0}")
+		public static Collection<Object> params() {
+			return List.of(true, false);
+		}
+
+		@Parameterized.Parameter
+		public boolean useDefaultGraph;
+
+		private LargeFakeDataSetStreamSupplier createSupplier() {
+			// fake data generation
+			return LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 42)
+					.withNoDefaultGraph(!useDefaultGraph).withQuads(true);
+		}
+
+		private void hdtqTesd(LargeFakeDataSetStreamSupplier supplier, Path d) throws NotFoundException, IOException {
+			// run test
+			Comparator<CharSequence> csc = CharSequenceComparator.getInstance();
+			try (HDT h = HDTManager.mapIndexedHDT(d)) {
+				Path indexFile = d.resolveSibling(d.getFileName() + HDTVersion.get_index_suffix("-"));
+				assertTrue("can't find " + indexFile, Files.exists(indexFile));
+				supplier.reset();
+				Iterator<TripleString> it = supplier.createTripleStringStream();
+				Set<TripleString> dataset = new HashSet<>();
+				while (it.hasNext()) {
+					dataset.add(it.next().tripleToString());
+				}
+
+				supplier.reset();
+				long count = 0;
+				for (TripleString ts : (Iterable<TripleString>) supplier::createTripleStringStream) {
+					count++;
+					TripleString tsstr = ts.tripleToString();
+					assertTrue("can't find " + tsstr, dataset.contains(tsstr));
+					CharSequence graph = ts.getGraph();
+					if (graph.length() == 0) {
+						IteratorTripleString it2 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject());
+
+						// search until we have no graph
+						while (true) {
+							assertTrue(it2.hasNext());
+							TripleString ts2 = it2.next();
+							if (ts2.getGraph().length() == 0) {
+								assertEquals(ts, ts2);
+								break;
+							}
+						}
+					} else {
+						IteratorTripleString it2 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), graph);
+						if (!it2.hasNext()) {
+							BitmapTriplesIteratorPositionTest.printIterator(it2);
+							fail();
+						}
+						TripleString ts2 = it2.next();
+						assertEquals(ts, ts2);
+						assertFalse(it2.hasNext());
+
+						// empty search to check wildcard
+						IteratorTripleString it3 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), "");
+						while (true) {
+							assertTrue(it3.hasNext());
+							TripleString ts3 = it3.next();
+							if (csc.compare(ts3.getGraph(), graph) == 0) {
+								assertEquals(ts, ts3);
+								break;
+							}
+						}
+					}
+				}
+
+				assertEquals(dataset.size(), count);
+
+				{
+					IteratorTripleString itSearch = h.search("", "", "", "");
+					long count2 = 0;
+					while (itSearch.hasNext()) {
+						count2++;
+						TripleString ts = itSearch.next();
+						TripleString tsstr = ts.tripleToString();
+						assertTrue("can't find " + tsstr, dataset.contains(tsstr));
+
+					}
+					assertEquals(dataset.size(), count2);
+				}
+
+				// FOQ INDEX TEST
+
+				StringBuilder roleDesc = new StringBuilder();
+				for (TripleComponentRole role : TripleComponentRole.values()) {
+					Set<TripleString> dataset2 = new HashSet<>(dataset);
+					roleDesc.append(",").append(role);
+
+					Iterator<? extends CharSequence> roleIt;
+					switch (role) {
+					case OBJECT -> {
+						Iterator<? extends CharSequence> sh = h.getDictionary().getShared().getSortedEntries();
+						Iterator<? extends CharSequence> ob = h.getDictionary().getObjects().getSortedEntries();
+						roleIt = new FetcherIterator<>() {
+							@Override
+							protected CharSequence getNext() {
+								if (sh.hasNext()) {
+									return sh.next();
+								}
+								if (ob.hasNext()) {
+									return ob.next();
+								}
+								return null;
+							}
+						};
+					}
+					case SUBJECT -> {
+						Iterator<? extends CharSequence> sh = h.getDictionary().getShared().getSortedEntries();
+						Iterator<? extends CharSequence> su = h.getDictionary().getSubjects().getSortedEntries();
+						roleIt = new FetcherIterator<>() {
+							@Override
+							protected CharSequence getNext() {
+								if (sh.hasNext()) {
+									return sh.next();
+								}
+								if (su.hasNext()) {
+									return su.next();
+								}
+								return null;
+							}
+						};
+					}
+					case PREDICATE -> roleIt = h.getDictionary().getPredicates().getSortedEntries();
+					case GRAPH -> roleIt = h.getDictionary().getGraphs().getSortedEntries();
+					default -> throw new AssertionError();
+					}
+
+					long componentId = 0;
+					Set<String> components = new HashSet<>();
+					while (roleIt.hasNext()) {
+						CharSequence component = roleIt.next();
+						String str = component.toString();
+						components.add(component.toString());
+						long cid = componentId++;
+
+						Iterator<TripleString> eid = switch (role) {
+						case OBJECT -> h.search("", "", component, "");
+						case SUBJECT -> h.search(component, "", "", "");
+						case PREDICATE -> h.search("", component, "", "");
+						case GRAPH -> h.search("", "", "", component);
+						};
+
+						while (eid.hasNext()) {
+							TripleString tsstr = eid.next().tripleToString();
+							if (role == TripleComponentRole.GRAPH && !tsstr.getGraph().equals(str)) {
+								// the default graph "" is searching all the
+								// graphs, so we need
+								// to check that we are using the right one.
+								continue;
+							}
+							if (!dataset2.remove(tsstr)) {
+								BitmapTriplesIteratorPositionTest.printIterator(eid);
+								fail("can't remove " + tsstr + "\nfor " + role + "=" + component + "(" + cid + ")"
+										+ "\ndone: " + roleDesc.substring(1) + "\n" + String.join(",", components));
+							}
+						}
+					}
+					assertTrue(dataset2.isEmpty());
+				}
+
+			}
+		}
+
+		@Test
+		public void iteratorStreamGenerationTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = createSupplier();
+			Iterator<TripleString> it = supplier.createTripleStringStream();
+
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			Path root = tempDir.newFolder().toPath();
+			try {
+				Path d = root.resolve("d.hdt");
+				try (HDT hdt = HDTManager.generateHDT(it, HDTTestUtils.BASE_URI, spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(d.toAbsolutePath().toString(), ProgressListener.ignore());
+				}
+				hdtqTesd(supplier, d);
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+
+		@Test
+		public void fileReadGenerationTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = createSupplier();
+			Iterator<TripleString> it = supplier.createTripleStringStream();
+
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			Path root = tempDir.newFolder().toPath();
+			try {
+				Path nq = root.resolve("d.nq");
+				try (BufferedWriter writer = Files.newBufferedWriter(nq)) {
+					while (it.hasNext()) {
+						it.next().dumpNtriple(writer);
+					}
+					writer.flush();
+				}
+				Path d = root.resolve("d.hdt");
+				try (HDT hdt = HDTManager.generateHDT(nq.toAbsolutePath().toString(), HDTTestUtils.BASE_URI,
+						RDFNotation.NQUAD, spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(d.toAbsolutePath().toString(), ProgressListener.ignore());
+				}
+				hdtqTesd(supplier, d);
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+	}
+
 	public static class MSDLangTest extends HDTManagerTestBase {
 		@Test
 		public void msdLangTest() throws IOException, ParserException, NotFoundException {
@@ -1282,7 +1498,6 @@ public class HDTManagerTest {
 				for (int i = 0; i < sub + 1; i++) {
 					Path in;
 					Path out;
-					long size;
 					if (i == 0) {
 						in = ng;
 						out = hdtg;
@@ -1349,7 +1564,7 @@ public class HDTManagerTest {
 					assertTrue(dict.supportsLanguageOfId());
 					assertTrue(dict.supportsNodeTypeOfId());
 
-					for (TripleComponentRole role : TripleComponentRole.values()) {
+					for (TripleComponentRole role : TripleComponentRole.valuesNoGraph()) {
 						long idc = 1;
 						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
 
@@ -1426,8 +1641,8 @@ public class HDTManagerTest {
 	public static class DictionaryLangTypeTest extends HDTManagerTestBase {
 
 		@Parameterized.Parameters(name = "dict:{0}")
-		public static Collection<Object> params() {
-			return List.of(diskDict());
+		public static Collection<String> params() {
+			return Arrays.asList(diskDict());
 		}
 
 		@Parameterized.Parameter

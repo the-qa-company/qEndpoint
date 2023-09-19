@@ -6,7 +6,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.quads.QuadString;
+import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
@@ -132,6 +132,7 @@ public class LargeFakeDataSetStreamSupplier {
 	private TripleString buffer;
 	private TripleString next;
 	private boolean nquad;
+	private boolean noDefaultGraph;
 	private boolean useBlankNode = true;
 	private boolean useIRI = true;
 	private boolean useLiteral = true;
@@ -276,7 +277,7 @@ public class LargeFakeDataSetStreamSupplier {
 			return "";
 		}
 		int rnd = random.nextInt(10);
-		if (rnd < 4) {
+		if (rnd < 4 && !noDefaultGraph) {
 			return ""; // no graph
 		}
 		if (rnd == 4) {
@@ -572,6 +573,17 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public LargeFakeDataSetStreamSupplier withMaxGraph(int maxGraph) {
 		this.maxGraph = maxGraph;
+		return this;
+	}
+
+	/**
+	 * do not use default graph with quad generation
+	 *
+	 * @param noDefaultGraph no default graph
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withNoDefaultGraph(boolean noDefaultGraph) {
+		this.noDefaultGraph = noDefaultGraph;
 		return this;
 	}
 

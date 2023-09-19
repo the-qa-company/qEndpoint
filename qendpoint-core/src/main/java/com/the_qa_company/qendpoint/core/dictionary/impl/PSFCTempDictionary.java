@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 
 import java.io.IOException;
@@ -42,6 +43,16 @@ public class PSFCTempDictionary implements TempDictionary {
 	@Override
 	public TempDictionarySection getShared() {
 		return delegate.getShared();
+	}
+
+	@Override
+	public TempDictionarySection getGraphs() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public boolean supportGraphs() {
+		return false;
 	}
 
 	@Override
