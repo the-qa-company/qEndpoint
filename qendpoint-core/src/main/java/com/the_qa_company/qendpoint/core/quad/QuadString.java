@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.quad;
 
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
 public class QuadString extends TripleString {
 	protected CharSequence context;
@@ -113,6 +114,16 @@ public class QuadString extends TripleString {
 	@Override
 	public QuadString tripleToString() {
 		return new QuadString(subject.toString(), predicate.toString(), object.toString(), context.toString());
+	}
+
+	@Override
+	public TripleString tripleToByteString() {
+		return new QuadString(ByteString.copy(subject), ByteString.copy(predicate), ByteString.copy(object), ByteString.copy(context));
+	}
+
+	@Override
+	public TripleString tripleToByteStringCast() {
+		return new QuadString(ByteString.of(subject), ByteString.of(predicate), ByteString.of(object), ByteString.copy(context));
 	}
 
 	@Override

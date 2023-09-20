@@ -10,8 +10,8 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
 public class MultiSectionLangSectionCompressor extends SectionCompressor {
 	public MultiSectionLangSectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
-			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict) {
-		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
+			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quad) {
+		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
 	}
 
 	@Override

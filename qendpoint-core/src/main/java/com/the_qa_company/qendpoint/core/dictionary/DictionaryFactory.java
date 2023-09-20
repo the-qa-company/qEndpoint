@@ -193,14 +193,19 @@ public class DictionaryFactory {
 			int k, boolean debugSleepKwayDict) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
 
+		// use the same compressor for quad/triple dict types
+		boolean quad = isQuadDictionary(name);
+
 		return switch (name) {
 		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG ->
-			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
+			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
 				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> new MultiSectionLangSectionCompressor(
-				baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD-> new MultiSectionLangSectionCompressor(
+				baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
 		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
 		};
 	}

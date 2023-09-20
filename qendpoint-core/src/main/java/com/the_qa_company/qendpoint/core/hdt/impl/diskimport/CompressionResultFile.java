@@ -18,21 +18,34 @@ public class CompressionResultFile implements CompressionResult {
 	private final CompressNodeReader subjects;
 	private final CompressNodeReader predicates;
 	private final CompressNodeReader objects;
+	private final CompressNodeReader graph;
 	private final SectionCompressor.TripleFile sections;
+	private final boolean supportsGraph;
 
-	public CompressionResultFile(long tripleCount, long ntRawSize, SectionCompressor.TripleFile sections)
+	public CompressionResultFile(long tripleCount, long ntRawSize, SectionCompressor.TripleFile sections, boolean supportsGraph)
 			throws IOException {
 		this.tripleCount = tripleCount;
 		this.ntRawSize = ntRawSize;
 		this.subjects = new CompressNodeReader(sections.openRSubject());
 		this.predicates = new CompressNodeReader(sections.openRPredicate());
 		this.objects = new CompressNodeReader(sections.openRObject());
+		this.supportsGraph = supportsGraph;
+		if (supportsGraph) {
+			this.graph = new CompressNodeReader(sections.openRGraph());
+		} else {
+			this.graph = null;
+		}
 		this.sections = sections;
 	}
 
 	@Override
 	public long getTripleCount() {
 		return tripleCount;
+	}
+
+	@Override
+	public boolean supportsGraph() {
+		return supportsGraph;
 	}
 
 	@Override
@@ -48,6 +61,11 @@ public class CompressionResultFile implements CompressionResult {
 	@Override
 	public ExceptionIterator<IndexedNode, IOException> getObjects() {
 		return objects;
+	}
+
+	@Override
+	public ExceptionIterator<IndexedNode, IOException> getGraph() {
+		return graph;
 	}
 
 	@Override
@@ -71,6 +89,11 @@ public class CompressionResultFile implements CompressionResult {
 	}
 
 	@Override
+	public long getGraphCount() {
+		return graph.getSize();
+	}
+
+	@Override
 	public long getSharedCount() {
 		return tripleCount;
 	}
@@ -82,6 +105,6 @@ public class CompressionResultFile implements CompressionResult {
 
 	@Override
 	public void close() throws IOException {
-		IOUtil.closeAll(objects, predicates, subjects);
+		IOUtil.closeAll(objects, predicates, subjects, graph);
 	}
 }

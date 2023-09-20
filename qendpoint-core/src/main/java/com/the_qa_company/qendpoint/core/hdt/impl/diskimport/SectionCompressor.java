@@ -50,9 +50,10 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final long chunkSize;
 	private final int k;
 	private final boolean debugSleepKwayDict;
+	private final boolean quads;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
-			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict) {
+			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quads) {
 		this.source = source;
 		this.listener = listener;
 		this.baseFileName = baseFileName;
@@ -60,6 +61,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		this.chunkSize = chunkSize;
 		this.k = k;
 		this.debugSleepKwayDict = debugSleepKwayDict;
+		this.quads = quads;
 	}
 
 	/*
@@ -85,6 +87,16 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	 * @return the predicate mapped
 	 */
 	protected ByteString convertPredicate(CharSequence seq) {
+		return new CompactString(seq);
+	}
+	/**
+	 * mapping method for the graph of the triple, this method should copy
+	 * the sequence!
+	 *
+	 * @param seq the graph (before)
+	 * @return the graph mapped
+	 */
+	protected ByteString convertGraph(CharSequence seq) {
 		return new CompactString(seq);
 	}
 
@@ -121,7 +133,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		if (sections.isEmpty()) {
 			return new CompressionResultEmpty();
 		}
-		return new CompressionResultFile(triples.get(), ntRawSize.get(), new TripleFile(sections.get(), false));
+		return new CompressionResultFile(triples.get(), ntRawSize.get(), new TripleFile(sections.get(), false), supportsGraph());
 	}
 
 	/**
@@ -155,7 +167,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				}
 			}
 		}
-		return new CompressionResultPartial(files, triples.get(), ntRawSize.get());
+		return new CompressionResultPartial(files, triples.get(), ntRawSize.get(), supportsGraph());
 	}
 
 	/**
@@ -179,15 +191,11 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		if (mode == null) {
 			mode = "";
 		}
-		switch (mode) {
-		case "":
-		case CompressionResult.COMPRESSION_MODE_COMPLETE:
-			return compressToFile(workers);
-		case CompressionResult.COMPRESSION_MODE_PARTIAL:
-			return compressPartial();
-		default:
-			throw new IllegalArgumentException("Unknown compression mode: " + mode);
-		}
+		return switch (mode) {
+			case "", CompressionResult.COMPRESSION_MODE_COMPLETE -> compressToFile(workers);
+			case CompressionResult.COMPRESSION_MODE_PARTIAL -> compressPartial();
+			default -> throw new IllegalArgumentException("Unknown compression mode: " + mode);
+		};
 	}
 
 	@Override
@@ -199,6 +207,12 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		ParallelSortableArrayList<IndexedNode> subjects = new ParallelSortableArrayList<>(IndexedNode[].class);
 		ParallelSortableArrayList<IndexedNode> predicates = new ParallelSortableArrayList<>(IndexedNode[].class);
 		ParallelSortableArrayList<IndexedNode> objects = new ParallelSortableArrayList<>(IndexedNode[].class);
+		ParallelSortableArrayList<IndexedNode> graph;
+		if (supportsGraph()) {
+			graph = new ParallelSortableArrayList<>(IndexedNode[].class);
+		} else {
+			graph = null;
+		}
 
 		listener.notifyProgress(10, "reading triples " + triples.get());
 		TripleString next;
@@ -227,6 +241,11 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			IndexedNode objectNode = new IndexedNode(convertObject(next.getObject()), tripleID);
 			objects.add(objectNode);
 
+			if (graph != null) {
+				IndexedNode graphNode = new IndexedNode(convertGraph(next.getGraph()), tripleID);
+				graph.add(graphNode);
+			}
+
 			if (tripleID % 100_000 == 0) {
 				listener.notifyProgress(10, "reading triples " + tripleID);
 			}
@@ -241,27 +260,41 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		try {
 			TripleFile sections = new TripleFile(output, true);
 			try {
+				float split = 40.0f / (3 + (graph != null ? 1 : 0));
+				float range = 70;
 				IntermediateListener il = new IntermediateListener(listener);
-				il.setRange(70, 80);
+				il.setRange(range, range + split);
+				range += split;
 				il.setPrefix("creating subjects section " + sections.root.getFileName() + ": ");
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWSubject()) {
 					subjects.parallelSort(IndexedNode::compareTo);
 					CompressUtil.writeCompressedSection(subjects, stream, il);
 				}
-				il.setRange(80, 90);
+				il.setRange(range, range + split);
+				range += split;
 				il.setPrefix("creating predicates section " + sections.root.getFileName() + ": ");
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWPredicate()) {
 					predicates.parallelSort(IndexedNode::compareTo);
 					CompressUtil.writeCompressedSection(predicates, stream, il);
 				}
-				il.setRange(90, 100);
+				il.setRange(range, range + split);
+				range += split;
 				il.setPrefix("creating objects section " + sections.root.getFileName() + ": ");
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWObject()) {
 					objects.parallelSort(IndexedNode::compareTo);
 					CompressUtil.writeCompressedSection(objects, stream, il);
+				}
+				if (graph != null) {
+					il.setRange(range, range + split);
+					il.setPrefix("creating graph section " + sections.root.getFileName() + ": ");
+					il.notifyProgress(0, "sorting");
+					try (OutputStream stream = sections.openWGraph()) {
+						graph.parallelSort(IndexedNode::compareTo);
+						CompressUtil.writeCompressedSection(graph, stream, il);
+					}
 				}
 			} finally {
 				subjects.clear();
@@ -299,6 +332,13 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	}
 
 	/**
+	 * @return if this compressor is compressing graphs
+	 */
+	protected boolean supportsGraph() {
+		return quads;
+	}
+
+	/**
 	 * A triple directory, contains 3 files, subject, predicate and object
 	 *
 	 * @author Antoine Willerval
@@ -308,12 +348,14 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		private final CloseSuppressPath s;
 		private final CloseSuppressPath p;
 		private final CloseSuppressPath o;
+		private final CloseSuppressPath g;
 
 		private TripleFile(CloseSuppressPath root, boolean mkdir) throws IOException {
 			this.root = root;
 			this.s = root.resolve("subject");
 			this.p = root.resolve("predicate");
 			this.o = root.resolve("object");
+			this.g = root.resolve("graph");
 
 			root.closeWithDeleteRecurse();
 			if (mkdir) {
@@ -355,6 +397,14 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		}
 
 		/**
+		 * @return open a write stream to the graph file
+		 * @throws IOException can't open the stream
+		 */
+		public OutputStream openWGraph() throws IOException {
+			return g.openOutputStream(bufferSize);
+		}
+
+		/**
 		 * @return open a read stream to the subject file
 		 * @throws IOException can't open the stream
 		 */
@@ -379,6 +429,14 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		}
 
 		/**
+		 * @return open a read stream to the graph file
+		 * @throws IOException can't open the stream
+		 */
+		public InputStream openRGraph() throws IOException {
+			return g.openInputStream(bufferSize);
+		}
+
+		/**
 		 * @return the path to the subject file
 		 */
 		public CloseSuppressPath getSubjectPath() {
@@ -400,6 +458,13 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		}
 
 		/**
+		 * @return the path to the graph file
+		 */
+		public CloseSuppressPath getGraphPath() {
+			return g;
+		}
+
+		/**
 		 * compute this triple file from multiple triples files
 		 *
 		 * @param triples triples files container
@@ -414,10 +479,19 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				computeSubject(triples, false);
 				computePredicate(triples, false);
 				computeObject(triples, false);
+				if (supportsGraph()) {
+					computeGraph(triples, false);
+				}
 			} else {
+
 				ExceptionThread
 						.async("SectionMerger" + root.getFileName(), () -> computeSubject(triples, true),
-								() -> computePredicate(triples, true), () -> computeObject(triples, true))
+								() -> computePredicate(triples, true), () -> computeObject(triples, true),
+								() -> {
+									if (supportsGraph()) {
+										computeGraph(triples, true);
+									}
+								})
 						.joinAndCrashIfRequired();
 			}
 		}
@@ -435,6 +509,11 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		private void computeObject(List<TripleFile> triples, boolean async) throws IOException {
 			computeSection(triples, "object", 66, 100, this::openWObject, TripleFile::openRObject,
 					TripleFile::getObjectPath, async);
+		}
+
+		private void computeGraph(List<TripleFile> triples, boolean async) throws IOException {
+			computeSection(triples, "graph", 66, 100, this::openWGraph, TripleFile::openRGraph,
+					TripleFile::getGraphPath, async);
 		}
 
 		private void computeSection(List<TripleFile> triples, String section, int start, int end,
