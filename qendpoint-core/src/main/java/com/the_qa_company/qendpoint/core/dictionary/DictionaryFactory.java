@@ -202,7 +202,7 @@ public class DictionaryFactory {
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
 			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
-				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict);
+				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD-> new MultiSectionLangSectionCompressor(
 				baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);

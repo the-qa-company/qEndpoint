@@ -12,6 +12,11 @@ public class CompressionResultEmpty implements CompressionResult {
 	}
 
 	@Override
+	public boolean supportsGraph() {
+		return false;
+	}
+
+	@Override
 	public ExceptionIterator<IndexedNode, IOException> getSubjects() {
 		return ExceptionIterator.empty();
 	}
@@ -27,6 +32,11 @@ public class CompressionResultEmpty implements CompressionResult {
 	}
 
 	@Override
+	public ExceptionIterator<IndexedNode, IOException> getGraph() {
+		return ExceptionIterator.empty();
+	}
+
+	@Override
 	public long getSubjectsCount() {
 		return 0;
 	}
@@ -38,6 +48,11 @@ public class CompressionResultEmpty implements CompressionResult {
 
 	@Override
 	public long getObjectsCount() {
+		return 0;
+	}
+
+	@Override
+	public long getGraphCount() {
 		return 0;
 	}
 

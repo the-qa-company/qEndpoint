@@ -73,27 +73,39 @@ public class CompressFourSectionDictionaryTest {
 		private final CharSequence[] subjects;
 		private final CharSequence[] predicates;
 		private final CharSequence[] objects;
+		private final CharSequence[] graph;
 		// used to create fake id to avoid duplicate assert error
-		private int sid, pid, oid;
+		private int sid, pid, oid, gid;
 
 		private final long size;
 
 		public TestCompressionResult(CharSequence[] subjects, CharSequence[] predicates, CharSequence[] objects) {
+			this(subjects, predicates, objects, null);
+		}
+		public TestCompressionResult(CharSequence[] subjects, CharSequence[] predicates, CharSequence[] objects, CharSequence[] graph) {
 			this.subjects = subjects;
 			this.predicates = predicates;
 			this.objects = objects;
+			this.graph = graph;
 
 			size = Arrays.stream(subjects).mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length)
 					.sum()
 					+ Arrays.stream(predicates)
 							.mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum()
-					+ Arrays.stream(objects)
-							.mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum();
+			       + Arrays.stream(objects)
+					       .mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum()
+			       + (graph == null ? 0 : Arrays.stream(graph)
+					       .mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum());
 		}
 
 		@Override
 		public long getTripleCount() {
 			return Math.max(subjects.length, Math.max(predicates.length, objects.length));
+		}
+
+		@Override
+		public boolean supportsGraph() {
+			return graph != null;
 		}
 
 		@Override
@@ -115,6 +127,12 @@ public class CompressFourSectionDictionaryTest {
 		}
 
 		@Override
+		public ExceptionIterator<IndexedNode, IOException> getGraph() {
+			return ExceptionIterator.of(new MapIterator<>(Arrays.asList(graph).iterator(),
+					g -> new IndexedNode(ByteString.of(g), gid++)));
+		}
+
+		@Override
 		public long getSubjectsCount() {
 			return subjects.length;
 		}
@@ -127,6 +145,11 @@ public class CompressFourSectionDictionaryTest {
 		@Override
 		public long getObjectsCount() {
 			return objects.length;
+		}
+
+		@Override
+		public long getGraphCount() {
+			return graph.length;
 		}
 
 		@Override
@@ -160,5 +183,6 @@ public class CompressFourSectionDictionaryTest {
 		@Override
 		public void onObject(long preMapId, long newMapId) {
 		}
+
 	}
 }
