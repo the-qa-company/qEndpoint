@@ -18,16 +18,19 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
-import com.the_qa_company.qendpoint.core.compact.bitmap.RoaringBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.RoaringBitmap64;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
@@ -54,6 +57,7 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
+import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
@@ -67,11 +71,7 @@ import java.io.File;
  */
 public class BitmapQuadTriples extends BitmapTriples {
 
-	protected List<ModifiableBitmap> quadInfoAG = new ArrayList<>();
-
-	private static ModifiableBitmap createQuadBitmap() {
-		return new RoaringBitmap();
-	}
+	protected final List<ModifiableBitmap> quadInfoAG = new ArrayList<>();
 
 	public BitmapQuadTriples() throws IOException {
 		super();
@@ -79,11 +79,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 
 	public BitmapQuadTriples(HDTOptions spec) throws IOException {
 		super(spec);
-	}
-
-	public BitmapQuadTriples(HDTOptions spec, Sequence seqY, Sequence seqZ, Bitmap bitY, Bitmap bitZ,
-			TripleComponentOrder order) throws IOException {
-		super(spec, seqY, seqZ, bitY, bitZ, order);
 	}
 
 	/*
@@ -112,8 +107,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 
 		long tripleIndex = -1;
 
-		List<Pair<Long, Long>> triplesInGraph = new ArrayList<>();
-
 		while (it.hasNext()) {
 			TripleID triple = it.next();
 			TripleOrderConvert.swapComponentOrder(triple, TripleComponentOrder.SPO, order);
@@ -125,13 +118,20 @@ public class BitmapQuadTriples extends BitmapTriples {
 			if (x == 0 || y == 0 || z == 0 || g == 0) {
 				throw new IllegalFormatException("None of the components of a quad can be null");
 			}
-			numGraphs = Math.max(numGraphs, g);
+			if (g > numGraphs) {
+				for (long i = numGraphs; i < g; i++) {
+					quadInfoAG.add(MultiRoaringBitmap.memory(number));
+				}
+				numGraphs = g;
+			}
 			long graphIndex = g - 1;
 			boolean sameAsLast = x == lastX && y == lastY && z == lastZ;
 			if (!sameAsLast) {
 				tripleIndex += 1;
 			}
-			triplesInGraph.add(new Pair<>(tripleIndex, graphIndex));
+
+			quadInfoAG.get((int) graphIndex).set(tripleIndex, true);
+
 			if (sameAsLast) {
 				continue;
 			}
@@ -179,15 +179,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 			numTriples++;
 		}
 
-		for (int i = 0; i < numGraphs; i++) {
-			quadInfoAG.add(createQuadBitmap());
-		}
-		for (Pair<Long, Long> tripleInGraph : triplesInGraph) {
-			long iTriple = tripleInGraph.component1();
-			long iGraph = tripleInGraph.component2();
-			quadInfoAG.get((int) iGraph).set(iTriple, true);
-		}
-
 		if (numTriples > 0) {
 			bitY.append(true);
 			bitZ.append(true);
@@ -211,11 +202,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 	@Override
 	public void load(TempTriples triples, ProgressListener listener) {
 		super.load(triples, listener);
-	}
-
-	@Override
-	public long getNumberOfElements() {
-		return super.getNumberOfElements();
 	}
 
 	/*
@@ -317,14 +303,18 @@ public class BitmapQuadTriples extends BitmapTriples {
 		adjY = new AdjacencyList(seqY, bitmapY);
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
 
-		quadInfoAG = new ArrayList<>();
+		Closer.closeSingle(quadInfoAG);
+		quadInfoAG.clear();
 
 		long numGraphs = VByte.decode(input);
 
+		Path fPath = f.toPath();
 		for (long i = 0; i < numGraphs; i++) {
-			ModifiableBitmap b = createQuadBitmap();
-			b.load(input, iListener);
-			quadInfoAG.add(b);
+			// map the multi roaring bitmap and skip the bytes
+			long base = input.getTotalBytes();
+			MultiRoaringBitmap mapped = MultiRoaringBitmap.mapped(fPath, base);
+			input.skipNBytes(mapped.getSizeBytes());
+			quadInfoAG.add(mapped);
 		}
 
 		isClosed = false;
@@ -362,14 +352,13 @@ public class BitmapQuadTriples extends BitmapTriples {
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
 
 
-		quadInfoAG = new ArrayList<>();
+		Closer.closeSingle(quadInfoAG);
+		quadInfoAG.clear();
 
 		long numGraphs = VByte.decode(input);
 
 		for (long i = 0; i < numGraphs; i++) {
-			ModifiableBitmap b = createQuadBitmap();
-			b.load(input, iListener);
-			quadInfoAG.add(b);
+			quadInfoAG.add(MultiRoaringBitmap.load(input));
 		}
 
 		isClosed = false;
@@ -381,12 +370,8 @@ public class BitmapQuadTriples extends BitmapTriples {
 		return quadInfoAG;
 	}
 
-	// Slower but safer
-	// @Override
-	// public List<Bitmap> getQuadInfoAG() {
-	// return quadInfoAG
-	// .stream()
-	// .map(b -> (Bitmap) b)
-	// .collect(java.util.stream.Collectors.toList());
-	// }
+	@Override
+	public void close() throws IOException {
+		Closer.closeAll((Closeable) super::close, quadInfoAG);
+	}
 }

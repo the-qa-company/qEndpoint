@@ -40,6 +40,7 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -58,7 +59,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -89,10 +89,18 @@ public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
 
-		protected static String[] diskDict() {
-			return new String[] { HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+		protected static List<String> diskDict() {
+			return List.of(
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG };
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+		}
+		protected static List<String> diskDictCat() {
+			return List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
 		}
 
 		/**
@@ -188,6 +196,7 @@ public class HDTManagerTest {
 
 				TripleID expectedTriple = expectedIt.next();
 				TripleID actualTriple = actualIt.next();
+
 				long location = expectedIt.getLastTriplePosition();
 				assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
 				assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
@@ -221,6 +230,10 @@ public class HDTManagerTest {
 			map.put("Subjects", dict.getSubjects());
 			map.put("Predicates", dict.getPredicates());
 			map.put("Shared", dict.getShared());
+
+			if (dict.supportGraphs()) {
+				map.put("Graph", dict.getGraphs());
+			}
 
 			ReplazableString prev = new ReplazableString();
 			Comparator<CharSequence> cmp = CharSequenceComparator.getInstance();
@@ -495,6 +508,7 @@ public class HDTManagerTest {
 
 		@Test
 		public void catTreeTest() throws IOException, ParserException, NotFoundException, InterruptedException {
+			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
 					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
@@ -532,6 +546,7 @@ public class HDTManagerTest {
 
 		@Test
 		public void catTreeDiskTest() throws IOException, ParserException, NotFoundException, InterruptedException {
+			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
 					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
@@ -614,6 +629,7 @@ public class HDTManagerTest {
 
 		@Before
 		public void setupSpecs() {
+			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 
 			if (kCat != 0) {
@@ -1072,6 +1088,7 @@ public class HDTManagerTest {
 			// run test
 			Comparator<CharSequence> csc = CharSequenceComparator.getInstance();
 			try (HDT h = HDTManager.mapIndexedHDT(d)) {
+				checkHDTConsistency(h);
 				Path indexFile = d.resolveSibling(d.getFileName() + HDTVersion.get_index_suffix("-"));
 				assertTrue("can't find " + indexFile, Files.exists(indexFile));
 				supplier.reset();
@@ -1108,7 +1125,16 @@ public class HDTManagerTest {
 						}
 						TripleString ts2 = it2.next();
 						assertEquals(ts, ts2);
-						assertFalse(it2.hasNext());
+						if (it2.hasNext()) {
+							BitmapTriplesIteratorPositionTest.printIterator(it2);
+							System.err.println("***********");
+
+							for (int i = 0; i < 5 && (i == 0 || it2.hasNext()); i++) {
+								System.err.println(it2.next());
+							}
+
+							fail("Too many nodes for " + ts + " " + graph);
+						}
 
 						// empty search to check wildcard
 						IteratorTripleString it3 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), "");
@@ -1915,7 +1941,7 @@ public class HDTManagerTest {
 
 		@Parameterized.Parameters(name = "dict:{0}")
 		public static Collection<String> params() {
-			return Arrays.asList(diskDict());
+			return diskDict();
 		}
 
 		@Parameterized.Parameter

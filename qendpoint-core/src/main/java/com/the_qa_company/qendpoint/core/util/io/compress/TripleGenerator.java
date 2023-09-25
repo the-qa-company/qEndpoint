@@ -7,22 +7,37 @@ import java.util.Iterator;
 /**
  * Utility class to generate triples
  */
-public class TripleGenerator implements Iterator<TripleID> {
-	private final long triples;
-	private long current = 1;
+public class TripleGenerator {
+	public static Iterator<TripleID> of(long triples, boolean quads) {
+		if (quads) {
+			return new Iterator<>() {
+				private long current = 1;
 
-	public TripleGenerator(long triples) {
-		this.triples = triples;
-	}
+				@Override
+				public boolean hasNext() {
+					return current <= triples;
+				}
 
-	@Override
-	public boolean hasNext() {
-		return current <= triples;
-	}
+				@Override
+				public TripleID next() {
+					long c = current++;
+					return new TripleID(c, c, c, c);
+				}
+			};
+		}
+		return new Iterator<>() {
+			private long current = 1;
 
-	@Override
-	public TripleID next() {
-		long c = current++;
-		return new TripleID(c, c, c);
+			@Override
+			public boolean hasNext() {
+				return current <= triples;
+			}
+
+			@Override
+			public TripleID next() {
+				long c = current++;
+				return new TripleID(c, c, c);
+			}
+		};
 	}
 }

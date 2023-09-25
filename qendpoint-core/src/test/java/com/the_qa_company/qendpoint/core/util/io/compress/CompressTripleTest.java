@@ -51,7 +51,7 @@ public class CompressTripleTest {
 					in.close();
 				}
 			}, "ReadTest").attach(new ExceptionThread(() -> {
-				CompressTripleWriter writer = new CompressTripleWriter(out);
+				CompressTripleWriter writer = new CompressTripleWriter(out, false);
 				try {
 					for (IndexedTriple triple : triples) {
 						writer.appendTriple(triple);
@@ -92,7 +92,7 @@ public class CompressTripleTest {
 					in.close();
 				}
 			}, "ReadTest").attach(new ExceptionThread(() -> {
-				CompressTripleWriter writer = new CompressTripleWriter(out);
+				CompressTripleWriter writer = new CompressTripleWriter(out, false);
 				try {
 					for (TripleID triple : triples) {
 						writer.appendTriple(triple);

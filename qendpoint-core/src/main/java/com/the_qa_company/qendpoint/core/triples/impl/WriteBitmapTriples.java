@@ -42,6 +42,9 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	private SequenceLog64BigDisk vectorY, vectorZ;
 
 	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize) throws IOException {
+		this(spec, triples, bufferSize, false);
+	}
+	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, boolean quads) throws IOException {
 		String orderStr = spec.get(HDTOptionsKeys.TRIPLE_ORDER_KEY);
 		if (orderStr == null) {
 			this.order = TripleComponentOrder.SPO;

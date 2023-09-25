@@ -147,7 +147,11 @@ public class TripleIDComparator implements Comparator<TripleID>, Serializable {
 			result = LongCompare.compare(y1, y2);
 			if (result == 0) {
 				// The third component is different?
-				return LongCompare.compare(z1, z2);
+				result = LongCompare.compare(z1, z2);
+				if (result == 0) {
+					return LongCompare.compare(o1.getGraph(), o2.getGraph());
+				}
+				return result;
 			} else {
 				// the second component is different
 				return result;

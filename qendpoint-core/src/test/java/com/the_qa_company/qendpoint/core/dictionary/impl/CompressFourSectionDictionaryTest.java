@@ -28,7 +28,7 @@ public class CompressFourSectionDictionaryTest {
 		List<CharSequence> exceptedObjects = Arrays.asList("1111", "3333", "6666", "8888");
 		List<CharSequence> exceptedShared = Arrays.asList("4444", "7777");
 		CompressFourSectionDictionary dictionary = new CompressFourSectionDictionary(result, new FakeNodeConsumer(),
-				(p, m) -> {}, true);
+				(p, m) -> {}, true, false);
 		Iterator<? extends CharSequence> su = dictionary.getSubjects().getSortedEntries();
 		Iterator<? extends CharSequence> pr = dictionary.getPredicates().getSortedEntries();
 		Iterator<? extends CharSequence> ob = dictionary.getObjects().getSortedEntries();
@@ -184,5 +184,8 @@ public class CompressFourSectionDictionaryTest {
 		public void onObject(long preMapId, long newMapId) {
 		}
 
+		@Override
+		public void onGraph(long preMapId, long newMapId) {
+		}
 	}
 }

@@ -185,7 +185,7 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 				new ExceptionThread(() -> shared.load(other.getShared(), iListener), "MultiSecSAsyncReaderSh"),
 				new ExceptionThread(() -> {
 					if (supportGraphs()) {
-						graph.load(other.getShared(), iListener);
+						graph.load(other.getGraphs(), iListener);
 					}
 				}, "MultiSecSAsyncReaderG"),
 				new ExceptionThread(() -> {

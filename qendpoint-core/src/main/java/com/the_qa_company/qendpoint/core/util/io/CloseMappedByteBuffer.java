@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CloseMappedByteBuffer implements Closeable {
+	public static CloseMappedByteBuffer wrap(ByteBuffer buffer) {
+		return new CloseMappedByteBuffer(buffer);
+	}
 	private static final AtomicLong ID_GEN = new AtomicLong();
 	private static final Map<Long, Throwable> MAP_TEST_MAP = new HashMap<>();
 	private static boolean mapTest = false;
@@ -32,6 +35,11 @@ public class CloseMappedByteBuffer implements Closeable {
 	private final long id = ID_GEN.incrementAndGet();
 	private final ByteBuffer buffer;
 	private final boolean duplicated;
+
+	CloseMappedByteBuffer(ByteBuffer buffer) {
+		this.buffer = buffer;
+		this.duplicated = true;
+	}
 
 	CloseMappedByteBuffer(String filename, ByteBuffer buffer, boolean duplicated) {
 		this.duplicated = duplicated;

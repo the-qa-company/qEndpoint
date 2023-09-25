@@ -162,12 +162,24 @@ public class Bitmap64Big implements Closeable, ModifiableBitmap {
 
 	@Override
 	public long rank1(long pos) {
-		throw new NotImplementedException();
+		long c = 0;
+		for (int i = 0; i < pos; i++) {
+			if (access(i)) {
+				c++;
+			}
+		}
+		return c;
 	}
 
 	@Override
 	public long rank0(long pos) {
-		throw new NotImplementedException();
+		long c = 0;
+		for (int i = 0; i < pos; i++) {
+			if (!access(i)) {
+				c++;
+			}
+		}
+		return c;
 	}
 
 	@Override
