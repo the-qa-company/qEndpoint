@@ -40,7 +40,8 @@ public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implem
 			}
 
 			if (graph != 0) {
-				// we are searching for a particular graph, we only need to check if this graph
+				// we are searching for a particular graph, we only need to
+				// check if this graph
 				// contains the current triple
 				if (quadInfoAG.get((int) graph - 1).access(posZ)) {
 					TripleID id = tid;

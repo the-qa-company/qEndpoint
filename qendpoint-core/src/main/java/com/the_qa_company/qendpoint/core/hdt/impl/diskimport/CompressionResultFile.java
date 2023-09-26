@@ -22,8 +22,8 @@ public class CompressionResultFile implements CompressionResult {
 	private final SectionCompressor.TripleFile sections;
 	private final boolean supportsGraph;
 
-	public CompressionResultFile(long tripleCount, long ntRawSize, SectionCompressor.TripleFile sections, boolean supportsGraph)
-			throws IOException {
+	public CompressionResultFile(long tripleCount, long ntRawSize, SectionCompressor.TripleFile sections,
+			boolean supportsGraph) throws IOException {
 		this.tripleCount = tripleCount;
 		this.ntRawSize = ntRawSize;
 		this.subjects = new CompressNodeReader(sections.openRSubject());

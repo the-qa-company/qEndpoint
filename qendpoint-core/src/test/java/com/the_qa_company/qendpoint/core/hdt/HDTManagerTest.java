@@ -84,19 +84,20 @@ import static org.junit.Assert.fail;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
-		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class, HDTManagerTest.MSDLangQuadTest.class })
+		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
+		HDTManagerTest.MSDLangQuadTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
 
 		protected static List<String> diskDict() {
-			return List.of(
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+			return List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
 		}
+
 		protected static List<String> diskDictCat() {
 			return List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
@@ -143,7 +144,7 @@ public class HDTManagerTest {
 		}
 
 		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
-												Iterator<? extends CharSequence> it2) {
+				Iterator<? extends CharSequence> it2) {
 			while (it1.hasNext()) {
 				Assert.assertTrue(it2.hasNext());
 				Assert.assertEquals(it1.next().toString(), it2.next().toString());
@@ -284,9 +285,14 @@ public class HDTManagerTest {
 			});
 			IteratorTripleID tripleIt = hdt.getTriples().searchAll();
 			long count = 0;
+			TripleID last = new TripleID(-1, -1, -1);
 			while (tripleIt.hasNext()) {
-				tripleIt.next();
+				TripleID tid = tripleIt.next();
+				if (tid.match(last)) { // same graph?
+					continue;
+				}
 				count++;
+				last.setAll(tid.getSubject(), tid.getPredicate(), tid.getObject());
 			}
 			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
 		}
@@ -1024,9 +1030,9 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-							// free
-							.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
-							), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+					// free
+					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
+					), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
 					spec, (level, message) -> System.out.println("[" + level + "] " + message))) {
 				System.out.println(watch.stopAndShow());
 				System.out.println(hdt.getTriples().getNumberOfElements());
@@ -1047,9 +1053,9 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-							// free
-							.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
-							), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
+					// free
+					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
+					), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
 					(level, message) -> System.out.println("[" + level + "] " + message))) {
 				System.out.println(watch.stopAndShow());
 				System.out.println(hdt.getTriples().getNumberOfElements());
@@ -1063,10 +1069,10 @@ public class HDTManagerTest {
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
 
-
-			for (String dict : List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD)) {
+			for (String dict : List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD)) {
 				for (boolean defaultGraph : List.of(true, false)) {
-					params.add(new Object[]{defaultGraph, dict});
+					params.add(new Object[] { defaultGraph, dict });
 				}
 			}
 
@@ -1121,7 +1127,7 @@ public class HDTManagerTest {
 						IteratorTripleString it2 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), graph);
 						if (!it2.hasNext()) {
 							BitmapTriplesIteratorPositionTest.printIterator(it2);
-							fail("Can't find #" + count + " " +  ts);
+							fail("Can't find #" + count + " " + ts);
 						}
 						TripleString ts2 = it2.next();
 						assertEquals(ts, ts2);
@@ -1182,10 +1188,10 @@ public class HDTManagerTest {
 						long cid = componentId++;
 
 						Iterator<TripleString> eid = switch (role) {
-							case OBJECT -> h.search("", "", component, "");
-							case SUBJECT -> h.search(component, "", "", "");
-							case PREDICATE -> h.search("", component, "", "");
-							case GRAPH -> h.search("", "", "", component);
+						case OBJECT -> h.search("", "", component, "");
+						case SUBJECT -> h.search(component, "", "", "");
+						case PREDICATE -> h.search("", component, "", "");
+						case GRAPH -> h.search("", "", "", component);
 						};
 
 						long countEid = 0;
@@ -1201,9 +1207,11 @@ public class HDTManagerTest {
 							if (!dataset2.remove(tsstr)) {
 								BitmapTriplesIteratorPositionTest.printIterator(eid);
 								fail("can't remove " + tsstr + "\nfor " + role + "=" + component + "(" + cid + ")"
-										+ "\ndone: " + roleDesc.substring(1) + "\n" + String.join(",", components
-										+ "\nexists: " + dataset.contains(tsstr) + ", id: " + countEid
-										+ "\npattern: " + h.getDictionary().toTripleId(tsstr)));
+										+ "\ndone: " + roleDesc.substring(1) + "\n"
+										+ String.join(",",
+												components + "\nexists: " + dataset.contains(tsstr) + ", id: "
+														+ countEid + "\npattern: "
+														+ h.getDictionary().toTripleId(tsstr)));
 							}
 						}
 					}
@@ -1693,7 +1701,7 @@ public class HDTManagerTest {
 
 	public static class MSDLangQuadTest extends HDTManagerTestBase {
 		@Test
-		public void msdLangTest() throws IOException, ParserException, NotFoundException {
+		public void msdLangTest() throws Exception {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
 					34);
 			Path ntFile = tempDir.newFile().toPath();
@@ -1703,7 +1711,8 @@ public class HDTManagerTest {
 
 				HDTOptions spec = HDTOptions.of(
 						// use msdl
-						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
 
 				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION);

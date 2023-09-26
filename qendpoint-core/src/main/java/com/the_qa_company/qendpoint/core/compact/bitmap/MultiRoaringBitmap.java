@@ -26,13 +26,14 @@ import java.util.stream.IntStream;
 import static java.lang.String.format;
 
 /**
- * {@link ModifiableBitmap} using multiple roaring bitmap to create a 64bits version, can't be loaded.
+ * {@link ModifiableBitmap} using multiple roaring bitmap to create a 64bits
+ * version, can't be loaded.
  *
  * @author Antoine Willerval
  */
 public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
-	// cookie + maps_nb + chunk_size
-	private static final int HEADER_SIZE = 8 + 4 + 4;
+	// cookie + maps_nb + chunk_size + numbits
+	private static final int HEADER_SIZE = 8 + 4 + 4 + 8;
 	public static final long COOKIE = 0x6347008534687531L;
 
 	/**
@@ -108,9 +109,9 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 		}
 	}
 
-
 	/**
-	 * create a multi roaring bitmap with a size with the default chunk size for stream writing.
+	 * create a multi roaring bitmap with a size with the default chunk size for
+	 * stream writing.
 	 *
 	 * @param size         size
 	 * @param streamOutput stream output
@@ -119,7 +120,6 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 	public static MultiRoaringBitmap memoryStream(long size, Path streamOutput) throws IOException {
 		return memoryStream(size, defaultChunkSize, streamOutput);
 	}
-
 
 	/**
 	 * create a multi roaring bitmap with a size for stream writing.
@@ -136,6 +136,7 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 	static int defaultChunkSize = 1 << 29;
 	final List<Bitmap> maps = new ArrayList<>();
 	final int chunkSize;
+	private final long numbits;
 	private final boolean writable;
 	private final FileChannel output;
 	private final Path outputPath;
@@ -152,6 +153,7 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 
 		int chunks = buffer.getInt(8);
 		chunkSize = buffer.getInt(12);
+		numbits = buffer.getLong(16);
 		writable = true;
 		output = null;
 		outputPath = null;
@@ -172,19 +174,23 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 			throw new IllegalArgumentException("Negative size: " + size);
 		}
 		this.chunkSize = chunkSize;
+		this.numbits = size;
 
 		int chunks = (int) ((size - 1) / chunkSize + 1);
 
 		try {
 			if (output != null) {
 				this.outputPath = output;
-				this.output = FileChannel.open(output, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+				this.output = FileChannel.open(output, StandardOpenOption.READ, StandardOpenOption.WRITE,
+						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
 
-				try (CloseMappedByteBuffer map = IOUtil.mapChannel(output, this.output, FileChannel.MapMode.READ_WRITE, 0, HEADER_SIZE)) {
+				try (CloseMappedByteBuffer map = IOUtil.mapChannel(output, this.output, FileChannel.MapMode.READ_WRITE,
+						0, HEADER_SIZE)) {
 					map.order(ByteOrder.LITTLE_ENDIAN);
 					map.putLong(0, COOKIE);
 					map.putInt(8, chunks);
 					map.putInt(12, chunkSize);
+					map.putLong(16, size);
 				}
 
 				outputMax = HEADER_SIZE;
@@ -213,9 +219,8 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 		writable = false;
 		output = null;
 		this.outputPath = null;
-		try (
-				CloseMappedByteBuffer header = IOUtil.mapChannel(fileName, channel, FileChannel.MapMode.READ_ONLY, start, HEADER_SIZE)
-		) {
+		try (CloseMappedByteBuffer header = IOUtil.mapChannel(fileName, channel, FileChannel.MapMode.READ_ONLY, start,
+				HEADER_SIZE)) {
 			header.order(ByteOrder.LITTLE_ENDIAN);
 
 			long cookie = header.getLong(0);
@@ -224,11 +229,13 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 			}
 			int bitmapCount = header.getInt(8);
 			chunkSize = header.getInt(12);
+			numbits = header.getLong(16);
 
 			long shift = HEADER_SIZE + start;
 			for (int i = 0; i < bitmapCount; i++) {
 				long sizeBytes = IOUtil.readLong(shift, channel, ByteOrder.LITTLE_ENDIAN);
-				maps.add(new MappedRoaringBitmap(IOUtil.mapChannel(fileName, channel, FileChannel.MapMode.READ_ONLY, shift += 8, sizeBytes)));
+				maps.add(new MappedRoaringBitmap(
+						IOUtil.mapChannel(fileName, channel, FileChannel.MapMode.READ_ONLY, shift += 8, sizeBytes)));
 				shift += sizeBytes;
 			}
 		} catch (Throwable t) {
@@ -260,7 +267,8 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 		int sizeInBytes = handle.serializedSizeInBytes();
 		outputMax += sizeInBytes + 8;
 
-		try (CloseMappedByteBuffer buffer = IOUtil.mapChannel(outputPath, output, FileChannel.MapMode.READ_WRITE, loc, sizeInBytes + 8)) {
+		try (CloseMappedByteBuffer buffer = IOUtil.mapChannel(outputPath, output, FileChannel.MapMode.READ_WRITE, loc,
+				sizeInBytes + 8)) {
 			ByteBuffer internalBuffer = buffer.getInternalBuffer().order(ByteOrder.LITTLE_ENDIAN);
 			internalBuffer.putLong(0, sizeInBytes);
 			handle.serialize(internalBuffer.slice(8, sizeInBytes));
@@ -290,6 +298,7 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 		buffer.putLong(0, COOKIE);
 		buffer.putInt(8, maps.size());
 		buffer.putInt(12, chunkSize);
+		buffer.putLong(16, numbits);
 
 		output.write(bytes);
 
@@ -298,9 +307,7 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 
 			int sizeInBytes = handle.serializedSizeInBytes();
 			byte[] array = new byte[8];
-			ByteBuffer.wrap(array)
-					.order(ByteOrder.LITTLE_ENDIAN)
-					.putLong(0, sizeInBytes);
+			ByteBuffer.wrap(array).order(ByteOrder.LITTLE_ENDIAN).putLong(0, sizeInBytes);
 			output.write(array);
 
 			handle.serialize(new DataOutputStream(output));
@@ -319,13 +326,12 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 
 	@Override
 	public long getNumBits() {
-		return maps.stream().mapToLong(Bitmap::getNumBits).sum();
+		return numbits;
 	}
 
 	@Override
 	public long getSizeBytes() {
-		return HEADER_SIZE
-		       + maps.stream().mapToLong(Bitmap::getSizeBytes).sum();
+		return HEADER_SIZE + maps.stream().mapToLong(Bitmap::getSizeBytes).sum();
 	}
 
 	@Override
@@ -395,15 +401,13 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 		return -1;
 	}
 
-
 	@Override
 	public void close() throws IOException {
 		try {
 			if (output != null) {
 				// write remaining
-				Closer.closeAll(IntStream.range(0, maps.size()).mapToObj(
-						index -> (Closeable) (() -> closeStreamBitmap(index))
-				));
+				Closer.closeAll(IntStream.range(0, maps.size())
+						.mapToObj(index -> (Closeable) (() -> closeStreamBitmap(index))));
 			}
 		} finally {
 			Closer.closeAll(maps, output);
@@ -418,8 +422,8 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 
 		int location = (int) (position / chunkSize);
 		if (location >= maps.size() || position < 0) {
-			throw new IllegalArgumentException(format("bit outside of range %d < 0 ||  map(%d)=%d >= %d",
-					position, position, location, maps.size()));
+			throw new IllegalArgumentException(format("bit outside of range %d < 0 ||  map(%d)=%d >= %d", position,
+					position, location, maps.size()));
 		}
 		int localLocation = (int) (position % chunkSize);
 
@@ -429,9 +433,8 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 			}
 			// clear previous
 			try {
-				Closer.closeAll(IntStream.range(0, location).mapToObj(
-						index -> (Closeable) (() -> closeStreamBitmap(index))
-				));
+				Closer.closeAll(
+						IntStream.range(0, location).mapToObj(index -> (Closeable) (() -> closeStreamBitmap(index))));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}

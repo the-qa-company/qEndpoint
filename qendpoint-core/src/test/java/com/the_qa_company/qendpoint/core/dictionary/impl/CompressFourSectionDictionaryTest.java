@@ -82,7 +82,9 @@ public class CompressFourSectionDictionaryTest {
 		public TestCompressionResult(CharSequence[] subjects, CharSequence[] predicates, CharSequence[] objects) {
 			this(subjects, predicates, objects, null);
 		}
-		public TestCompressionResult(CharSequence[] subjects, CharSequence[] predicates, CharSequence[] objects, CharSequence[] graph) {
+
+		public TestCompressionResult(CharSequence[] subjects, CharSequence[] predicates, CharSequence[] objects,
+				CharSequence[] graph) {
 			this.subjects = subjects;
 			this.predicates = predicates;
 			this.objects = objects;
@@ -92,10 +94,12 @@ public class CompressFourSectionDictionaryTest {
 					.sum()
 					+ Arrays.stream(predicates)
 							.mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum()
-			       + Arrays.stream(objects)
-					       .mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum()
-			       + (graph == null ? 0 : Arrays.stream(graph)
-					       .mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum());
+					+ Arrays.stream(objects)
+							.mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length).sum()
+					+ (graph == null ? 0
+							: Arrays.stream(graph)
+									.mapToLong(s -> s.toString().getBytes(ByteStringUtil.STRING_ENCODING).length)
+									.sum());
 		}
 
 		@Override
@@ -128,8 +132,8 @@ public class CompressFourSectionDictionaryTest {
 
 		@Override
 		public ExceptionIterator<IndexedNode, IOException> getGraph() {
-			return ExceptionIterator.of(new MapIterator<>(Arrays.asList(graph).iterator(),
-					g -> new IndexedNode(ByteString.of(g), gid++)));
+			return ExceptionIterator.of(
+					new MapIterator<>(Arrays.asList(graph).iterator(), g -> new IndexedNode(ByteString.of(g), gid++)));
 		}
 
 		@Override

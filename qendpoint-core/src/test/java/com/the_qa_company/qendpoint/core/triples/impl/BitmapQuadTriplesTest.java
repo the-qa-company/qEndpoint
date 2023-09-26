@@ -115,13 +115,8 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 			tripleIDList.add(id);
 		}
 
-		tripleIDList.sort(
-				Comparator.comparing(TripleID::getSubject)
-						.thenComparingLong(TripleID::getPredicate)
-						.thenComparingLong(TripleID::getObject)
-						.thenComparingLong(TripleID::getGraph)
-		);
-
+		tripleIDList.sort(Comparator.comparing(TripleID::getSubject).thenComparingLong(TripleID::getPredicate)
+				.thenComparingLong(TripleID::getObject).thenComparingLong(TripleID::getGraph));
 
 		// remove dupes
 		TripleID last = new TripleID();
@@ -136,7 +131,6 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 
 			last.setAll(id.getSubject(), id.getPredicate(), id.getObject(), id.getGraph());
 		}
-
 
 		Path root = tempDir.newFolder().toPath();
 		Path path = root.resolve("triples.bin");

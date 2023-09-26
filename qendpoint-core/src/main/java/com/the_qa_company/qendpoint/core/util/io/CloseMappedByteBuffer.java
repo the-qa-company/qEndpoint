@@ -11,6 +11,7 @@ public class CloseMappedByteBuffer implements Closeable {
 	public static CloseMappedByteBuffer wrap(ByteBuffer buffer) {
 		return new CloseMappedByteBuffer(buffer);
 	}
+
 	private static final AtomicLong ID_GEN = new AtomicLong();
 	private static final Map<Long, Throwable> MAP_TEST_MAP = new HashMap<>();
 	private static boolean mapTest = false;

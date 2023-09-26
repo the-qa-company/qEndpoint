@@ -88,7 +88,7 @@ public interface Triples extends Closeable {
 	 * Find a triple with his position
 	 *
 	 * @param position The triple position
-	 * @param buffer buffer to put the triple if an allocation is required
+	 * @param buffer   buffer to put the triple if an allocation is required
 	 * @return triple
 	 * @see IteratorTripleID#getLastTriplePosition()
 	 * @see IteratorTripleString#getLastTriplePosition()

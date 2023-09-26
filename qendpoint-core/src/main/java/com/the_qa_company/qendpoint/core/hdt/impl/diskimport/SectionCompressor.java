@@ -53,7 +53,8 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final boolean quads;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
-			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quads) {
+			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
+			boolean quads) {
 		this.source = source;
 		this.listener = listener;
 		this.baseFileName = baseFileName;
@@ -89,9 +90,10 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	protected ByteString convertPredicate(CharSequence seq) {
 		return new CompactString(seq);
 	}
+
 	/**
-	 * mapping method for the graph of the triple, this method should copy
-	 * the sequence!
+	 * mapping method for the graph of the triple, this method should copy the
+	 * sequence!
 	 *
 	 * @param seq the graph (before)
 	 * @return the graph mapped
@@ -133,7 +135,8 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		if (sections.isEmpty()) {
 			return new CompressionResultEmpty();
 		}
-		return new CompressionResultFile(triples.get(), ntRawSize.get(), new TripleFile(sections.get(), false), supportsGraph());
+		return new CompressionResultFile(triples.get(), ntRawSize.get(), new TripleFile(sections.get(), false),
+				supportsGraph());
 	}
 
 	/**
@@ -192,9 +195,9 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			mode = "";
 		}
 		return switch (mode) {
-			case "", CompressionResult.COMPRESSION_MODE_COMPLETE -> compressToFile(workers);
-			case CompressionResult.COMPRESSION_MODE_PARTIAL -> compressPartial();
-			default -> throw new IllegalArgumentException("Unknown compression mode: " + mode);
+		case "", CompressionResult.COMPRESSION_MODE_COMPLETE -> compressToFile(workers);
+		case CompressionResult.COMPRESSION_MODE_PARTIAL -> compressPartial();
+		default -> throw new IllegalArgumentException("Unknown compression mode: " + mode);
 		};
 	}
 
@@ -484,15 +487,12 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				}
 			} else {
 
-				ExceptionThread
-						.async("SectionMerger" + root.getFileName(), () -> computeSubject(triples, true),
-								() -> computePredicate(triples, true), () -> computeObject(triples, true),
-								() -> {
-									if (supportsGraph()) {
-										computeGraph(triples, true);
-									}
-								})
-						.joinAndCrashIfRequired();
+				ExceptionThread.async("SectionMerger" + root.getFileName(), () -> computeSubject(triples, true),
+						() -> computePredicate(triples, true), () -> computeObject(triples, true), () -> {
+							if (supportsGraph()) {
+								computeGraph(triples, true);
+							}
+						}).joinAndCrashIfRequired();
 			}
 		}
 

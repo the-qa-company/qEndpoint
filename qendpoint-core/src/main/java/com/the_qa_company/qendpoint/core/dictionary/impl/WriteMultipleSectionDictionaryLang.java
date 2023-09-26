@@ -49,6 +49,7 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 	public WriteMultipleSectionDictionaryLang(HDTOptions spec, Path filename, int bufferSize) {
 		this(spec, filename, bufferSize, false);
 	}
+
 	public WriteMultipleSectionDictionaryLang(HDTOptions spec, Path filename, int bufferSize, boolean quad) {
 		super(withoutRDFType(spec));
 		this.filename = filename;
@@ -64,9 +65,10 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 			graph = new WriteDictionarySection(spec, filename.resolveSibling(name + "GR"), bufferSize);
 		}
 	}
+
 	public WriteMultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
-											  DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-											  TreeMap<ByteString, DictionarySectionPrivate> objects) {
+			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
+			TreeMap<ByteString, DictionarySectionPrivate> objects) {
 		this(spec, subjects, predicates, shared, objects, null);
 	}
 
@@ -207,16 +209,13 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
 		MultiThreadListener ml = ListenerUtil.multiThreadListener(listener);
 		ml.unregisterAllThreads();
-		ExceptionThread
-				.async("MultiSecSAsyncReader",
-						() -> predicates.load(other.getPredicates(), new IntermediateListener(ml, "Predicate: ")),
-						() -> {
-							if (supportGraphs()) {
-								graph.load(other.getGraphs(), new IntermediateListener(ml, "Graph:      "));
-							}
-						},
-						() -> subjects.load(other.getSubjects(), new IntermediateListener(ml, "Subjects:  ")),
-						() -> shared.load(other.getShared(), new IntermediateListener(ml, "Shared:    ")))
+		ExceptionThread.async("MultiSecSAsyncReader",
+				() -> predicates.load(other.getPredicates(), new IntermediateListener(ml, "Predicate: ")), () -> {
+					if (supportGraphs()) {
+						graph.load(other.getGraphs(), new IntermediateListener(ml, "Graph:      "));
+					}
+				}, () -> subjects.load(other.getSubjects(), new IntermediateListener(ml, "Subjects:  ")),
+				() -> shared.load(other.getShared(), new IntermediateListener(ml, "Shared:    ")))
 				.attach(fillSection(other.getObjects().getEntries(), other.getObjects().getNumberOfElements(),
 						new IntermediateListener(ml, "Objects:   ")))
 				.startAll().joinAndCrashIfRequired();

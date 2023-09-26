@@ -118,12 +118,14 @@ public class QuadString extends TripleString {
 
 	@Override
 	public TripleString tripleToByteString() {
-		return new QuadString(ByteString.copy(subject), ByteString.copy(predicate), ByteString.copy(object), ByteString.copy(context));
+		return new QuadString(ByteString.copy(subject), ByteString.copy(predicate), ByteString.copy(object),
+				ByteString.copy(context));
 	}
 
 	@Override
 	public TripleString tripleToByteStringCast() {
-		return new QuadString(ByteString.of(subject), ByteString.of(predicate), ByteString.of(object), ByteString.copy(context));
+		return new QuadString(ByteString.of(subject), ByteString.of(predicate), ByteString.of(object),
+				ByteString.copy(context));
 	}
 
 	@Override

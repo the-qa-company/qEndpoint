@@ -190,7 +190,8 @@ public class IOUtil {
 	}
 
 	public static long readLong(long location, FileChannel channel, ByteOrder order) throws IOException {
-		try (CloseMappedByteBuffer buffer = new CloseMappedByteBuffer("readLong", channel.map(FileChannel.MapMode.READ_ONLY, location, 8), false)) {
+		try (CloseMappedByteBuffer buffer = new CloseMappedByteBuffer("readLong",
+				channel.map(FileChannel.MapMode.READ_ONLY, location, 8), false)) {
 			return buffer.order(order).getLong(0);
 		}
 	}

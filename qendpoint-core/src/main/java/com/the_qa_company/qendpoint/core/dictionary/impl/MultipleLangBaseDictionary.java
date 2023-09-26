@@ -33,7 +33,7 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	}
 
 	public record ObjectIdLocationData(int uid, ByteString name, ByteString suffix, DictionarySectionPrivate section,
-									   ObjectIdLocationType type, long location) {}
+			ObjectIdLocationType type, long location) {}
 
 	/**
 	 * byte to describe a datatype object
@@ -272,28 +272,28 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	@Override
 	public CharSequence idToString(long id, TripleComponentRole position) {
 		switch (position) {
-			case PREDICATE -> {
-				return predicates.extract(id);
+		case PREDICATE -> {
+			return predicates.extract(id);
+		}
+		case SUBJECT -> {
+			if (id <= shared.getNumberOfElements()) {
+				return shared.extract(id);
+			} else {
+				return subjects.extract(id - shared.getNumberOfElements());
 			}
-			case SUBJECT -> {
-				if (id <= shared.getNumberOfElements()) {
-					return shared.extract(id);
-				} else {
-					return subjects.extract(id - shared.getNumberOfElements());
-				}
-			}
-			case OBJECT -> {
-				ObjectIdLocationData data = idToObjectSection(id);
+		}
+		case OBJECT -> {
+			ObjectIdLocationData data = idToObjectSection(id);
 
-				DictionarySectionPrivate sec = data.section;
-				CharSequence out = sec.extract(id - data.location);
-				if (out != null) {
-					return data.suffix.copyPreAppend(out);
-				}
-
-				return null;
+			DictionarySectionPrivate sec = data.section;
+			CharSequence out = sec.extract(id - data.location);
+			if (out != null) {
+				return data.suffix.copyPreAppend(out);
 			}
-			default -> throw new NotImplementedException();
+
+			return null;
+		}
+		default -> throw new NotImplementedException();
 		}
 	}
 
@@ -305,69 +305,69 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		ByteString str = ByteString.of(sstr);
 
 		switch (position) {
-			case PREDICATE -> {
-				long id = predicates.locate(str);
-				return id > 0 ? id : -1;
+		case PREDICATE -> {
+			long id = predicates.locate(str);
+			return id > 0 ? id : -1;
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
 			}
-			case GRAPH -> {
-				if (!supportGraphs()) {
-					throw new IllegalArgumentException("This dictionary doesn't support graphs!");
-				}
-				long id = graph.locate(str);
-				return id > 0 ? id : -1;
+			long id = graph.locate(str);
+			return id > 0 ? id : -1;
+		}
+		case SUBJECT -> {
+			long sid = shared.locate(str);
+			if (sid != 0) {
+				return sid;
 			}
-			case SUBJECT -> {
+
+			long ssid = subjects.locate(str);
+			if (ssid != 0) {
+				return ssid + shared.getNumberOfElements();
+			}
+		}
+		case OBJECT -> {
+			CharSequence t = LiteralsUtils.getType(str);
+
+			if (LiteralsUtils.NO_DATATYPE == t) {
 				long sid = shared.locate(str);
 				if (sid != 0) {
 					return sid;
 				}
-
-				long ssid = subjects.locate(str);
-				if (ssid != 0) {
-					return ssid + shared.getNumberOfElements();
-				}
 			}
-			case OBJECT -> {
-				CharSequence t = LiteralsUtils.getType(str);
 
-				if (LiteralsUtils.NO_DATATYPE == t) {
-					long sid = shared.locate(str);
-					if (sid != 0) {
-						return sid;
+			if (LiteralsUtils.LITERAL_LANG_TYPE == t) {
+				// lang type
+				ByteString lang = ByteString.of(LiteralsUtils.getLanguage(str)
+						.orElseThrow(() -> new IllegalArgumentException("Malformed language literal " + str)));
+
+				ObjectIdLocationData sec = languagesLocations.get(lang);
+				if (sec != null) {
+					CharSequence nl = LiteralsUtils.removeLang(str);
+					long s = sec.section.locate(nl);
+					if (s != 0) {
+						return sec.location + s;
 					}
 				}
-
-				if (LiteralsUtils.LITERAL_LANG_TYPE == t) {
-					// lang type
-					ByteString lang = ByteString.of(LiteralsUtils.getLanguage(str)
-							.orElseThrow(() -> new IllegalArgumentException("Malformed language literal " + str)));
-
-					ObjectIdLocationData sec = languagesLocations.get(lang);
-					if (sec != null) {
-						CharSequence nl = LiteralsUtils.removeLang(str);
-						long s = sec.section.locate(nl);
-						if (s != 0) {
-							return sec.location + s;
-						}
-					}
-					return -1;
-				}
-
-				ObjectIdLocationData sec = objectsLocations.get((ByteString) t);
-
-				if (sec == null) {
-					return -1;
-				}
-
-				long s = sec.section.locate(LiteralsUtils.removeType(str));
-
-				if (s == 0) {
-					return -1;
-				}
-				return sec.location + s;
-
+				return -1;
 			}
-			default -> throw new NotImplementedException();
+
+			ObjectIdLocationData sec = objectsLocations.get((ByteString) t);
+
+			if (sec == null) {
+				return -1;
+			}
+
+			long s = sec.section.locate(LiteralsUtils.removeType(str));
+
+			if (s == 0) {
+				return -1;
+			}
+			return sec.location + s;
+
+		}
+		default -> throw new NotImplementedException();
 		}
 		return -1;
 	}
@@ -375,30 +375,30 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	@Override
 	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
 		switch (role) {
-			case SUBJECT -> {
-				if (!includeShared) {
-					return getSubjects().getSortedEntries();
-				}
+		case SUBJECT -> {
+			if (!includeShared) {
+				return getSubjects().getSortedEntries();
+			}
 
-				return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+			return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+		}
+		case PREDICATE -> {
+			return getPredicates().getSortedEntries();
+		}
+		case OBJECT -> {
+			return CatIterator.of(Arrays.stream(objectIdLocationsSec).skip(includeShared ? 0 : 1).map(data -> {
+				ByteString suffix = data.suffix;
+				DictionarySectionPrivate sec = data.section;
+				return StringSuffixIterator.of(sec.getSortedEntries(), suffix);
+			}).toList());
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
 			}
-			case PREDICATE -> {
-				return getPredicates().getSortedEntries();
-			}
-			case OBJECT -> {
-				return CatIterator.of(Arrays.stream(objectIdLocationsSec).skip(includeShared ? 0 : 1).map(data -> {
-					ByteString suffix = data.suffix;
-					DictionarySectionPrivate sec = data.section;
-					return StringSuffixIterator.of(sec.getSortedEntries(), suffix);
-				}).toList());
-			}
-			case GRAPH -> {
-				if (!supportGraphs()) {
-					throw new IllegalArgumentException("This dictionary doesn't support graphs!");
-				}
-				return getGraphs().getSortedEntries();
-			}
-			default -> throw new IllegalArgumentException("Unknown role: " + role);
+			return getGraphs().getSortedEntries();
+		}
+		default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
 
@@ -446,33 +446,33 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			return null;
 		}
 		switch (role) {
-			case PREDICATE -> {
-				return RDFNodeType.IRI;
+		case PREDICATE -> {
+			return RDFNodeType.IRI;
+		}
+		case SUBJECT -> {
+			long nshared = getNshared();
+			if (id <= nshared) {
+				return sharedIndex.getNodeType(id);
 			}
-			case SUBJECT -> {
-				long nshared = getNshared();
-				if (id <= nshared) {
-					return sharedIndex.getNodeType(id);
-				}
-				return subjectResIndex.getNodeType(id - nshared);
+			return subjectResIndex.getNodeType(id - nshared);
+		}
+		case OBJECT -> {
+			if (id >= typedLiteralsStart) {
+				// in typed or language
+				return RDFNodeType.LITERAL;
 			}
-			case OBJECT -> {
-				if (id >= typedLiteralsStart) {
-					// in typed or language
-					return RDFNodeType.LITERAL;
-				}
-				long nshared = getNshared();
-				if (id <= nshared) {
-					return sharedIndex.getNodeType(id);
-				}
-				return nonTypedIndex.getNodeType(id - nshared);
+			long nshared = getNshared();
+			if (id <= nshared) {
+				return sharedIndex.getNodeType(id);
 			}
-			case GRAPH -> {
-				if (!supportGraphs()) {
-					throw new IllegalArgumentException("This dictionary doesn't support graphs!");
-				}
-				return graphIndex.getNodeType(id);
+			return nonTypedIndex.getNodeType(id - nshared);
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
 			}
+			return graphIndex.getNodeType(id);
+		}
 		}
 		throw new IllegalArgumentException("Method is not applicable on z this dictionary");
 	}

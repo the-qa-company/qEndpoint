@@ -19,7 +19,6 @@ import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -135,9 +134,9 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 	public TripleCompressionResult merge(int workers, String mode)
 			throws KWayMerger.KWayMergerException, InterruptedException, IOException {
 		return switch (Objects.requireNonNullElse(mode, "")) {
-			case "", CompressionResult.COMPRESSION_MODE_COMPLETE -> mergeToFile(workers);
-			case CompressionResult.COMPRESSION_MODE_PARTIAL -> mergeToPartial();
-			default -> throw new IllegalArgumentException("Unknown compression mode: " + mode);
+		case "", CompressionResult.COMPRESSION_MODE_COMPLETE -> mergeToFile(workers);
+		case CompressionResult.COMPRESSION_MODE_PARTIAL -> mergeToPartial();
+		default -> throw new IllegalArgumentException("Unknown compression mode: " + mode);
 		};
 	}
 
@@ -179,7 +178,7 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 			il.setPrefix("writing triples " + output.getFileName() + " ");
 			try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize), quad)) {
 				il.notifyProgress(0, "creating file");
-				TripleID prev = quad ? new TripleID(-1, -1, -1, -1) :  new TripleID(-1, -1, -1);
+				TripleID prev = quad ? new TripleID(-1, -1, -1, -1) : new TripleID(-1, -1, -1);
 				for (TripleID triple : tripleIDS) {
 					count++;
 					if (count % block == 0) {
@@ -213,7 +212,8 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 					readers[i] = new CompressTripleReader(inputs.get(i).openInputStream(bufferSize));
 				}
 
-				try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize), mapper.supportsGraph())) {
+				try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize),
+						mapper.supportsGraph())) {
 					ExceptionIterator<TripleID, IOException> it = CompressTripleMergeIterator.buildOfTree(readers,
 							order);
 					while (it.hasNext()) {

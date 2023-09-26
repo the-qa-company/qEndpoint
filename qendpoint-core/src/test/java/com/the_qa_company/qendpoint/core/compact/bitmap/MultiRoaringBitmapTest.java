@@ -55,18 +55,18 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
-						case 0, 42, 80, 90 -> assertTrue(map.access(i));
-						default -> assertFalse(map.access(i));
+					case 0, 42, 80, 90 -> assertTrue(map.access(i));
+					default -> assertFalse(map.access(i));
 					}
 				}
 			}
 
 			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
-			     MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
+					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
-						case 0, 42, 80, 90 -> assertTrue(map.access(i));
-						default -> assertFalse(map.access(i));
+					case 0, 42, 80, 90 -> assertTrue(map.access(i));
+					default -> assertFalse(map.access(i));
 					}
 				}
 			}
@@ -86,7 +86,6 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 
 		try {
 			Path output = root.resolve("tmp.bin");
-
 
 			MultiRoaringBitmap.defaultChunkSize = size / 9;
 
@@ -115,7 +114,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 			rnd = new Random(seed);
 
 			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
-			     MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
+					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < size / 50; i++) {
 					assertTrue(map.access(rnd.nextInt(size)));
 				}
@@ -134,10 +133,8 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 		Random rnd = new Random(seed);
 		MultiRoaringBitmap.defaultChunkSize = size / 9;
 
-		try (
-				MultiRoaringBitmap map = MultiRoaringBitmap.memory(size);
-				Bitmap375Big memmap = Bitmap375Big.memory(size)
-		) {
+		try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size);
+				Bitmap375Big memmap = Bitmap375Big.memory(size)) {
 			assertEquals(MultiRoaringBitmap.defaultChunkSize, map.chunkSize);
 			assertEquals((size - 1) / map.chunkSize + 1, map.maps.size());
 

@@ -249,11 +249,9 @@ public interface Dictionary extends Closeable {
 	String getType();
 
 	default TripleID toTripleId(TripleString tsstr) {
-		TripleID tid = new TripleID(
-				stringToId(tsstr.getSubject(), TripleComponentRole.SUBJECT),
+		TripleID tid = new TripleID(stringToId(tsstr.getSubject(), TripleComponentRole.SUBJECT),
 				stringToId(tsstr.getPredicate(), TripleComponentRole.PREDICATE),
-				stringToId(tsstr.getObject(), TripleComponentRole.OBJECT)
-		);
+				stringToId(tsstr.getObject(), TripleComponentRole.OBJECT));
 		if (tsstr.getGraph() != null && !tsstr.getGraph().isEmpty()) {
 			tid.setGraph(stringToId(tsstr.getGraph(), TripleComponentRole.GRAPH));
 		}

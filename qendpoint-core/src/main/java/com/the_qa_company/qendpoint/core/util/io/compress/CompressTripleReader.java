@@ -49,7 +49,8 @@ public class CompressTripleReader implements ExceptionIterator<TripleID, IOExcep
 				o = VByte.decode(stream);
 				g = VByte.decode(stream);
 				// continue to read to avoid duplicated triples
-			} while (s == next.getSubject() && p == next.getPredicate() && o == next.getObject() && g == next.getGraph());
+			} while (s == next.getSubject() && p == next.getPredicate() && o == next.getObject()
+					&& g == next.getGraph());
 
 			return !setAllOrEnd(s, p, o, g);
 		} else {

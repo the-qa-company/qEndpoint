@@ -12,7 +12,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Mapped {@link Bitmap} wrapper for the {@link ImmutableRoaringBitmap}, not compatible with {@link RoaringBitmap64}
+ * Mapped {@link Bitmap} wrapper for the {@link ImmutableRoaringBitmap}, not
+ * compatible with {@link RoaringBitmap64}
  *
  * @author Antoine Willerval
  */

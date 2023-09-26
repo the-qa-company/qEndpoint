@@ -26,8 +26,8 @@ public class CompressionResultPartial implements CompressionResult {
 	private final ExceptionIterator<IndexedNode, IOException> object;
 	private final ExceptionIterator<IndexedNode, IOException> graph;
 
-	public CompressionResultPartial(List<SectionCompressor.TripleFile> files, long triplesCount, long ntSize, boolean graph)
-			throws IOException {
+	public CompressionResultPartial(List<SectionCompressor.TripleFile> files, long triplesCount, long ntSize,
+			boolean graph) throws IOException {
 		this.files = new ArrayList<>(files.size());
 		this.ntSize = ntSize;
 		for (SectionCompressor.TripleFile file : files) {

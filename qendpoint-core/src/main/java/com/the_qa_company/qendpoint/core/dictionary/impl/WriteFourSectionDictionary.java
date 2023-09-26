@@ -42,13 +42,13 @@ public class WriteFourSectionDictionary extends BaseDictionary {
 	}
 
 	public WriteFourSectionDictionary(HDTOptions spec, DictionarySectionPrivate subjects,
-	                                  DictionarySectionPrivate predicates, DictionarySectionPrivate objects, DictionarySectionPrivate shared) {
+			DictionarySectionPrivate predicates, DictionarySectionPrivate objects, DictionarySectionPrivate shared) {
 		this(spec, subjects, predicates, objects, shared, null);
 	}
 
 	public WriteFourSectionDictionary(HDTOptions spec, DictionarySectionPrivate subjects,
-	                                  DictionarySectionPrivate predicates, DictionarySectionPrivate objects, DictionarySectionPrivate shared
-			, DictionarySectionPrivate graph) {
+			DictionarySectionPrivate predicates, DictionarySectionPrivate objects, DictionarySectionPrivate shared,
+			DictionarySectionPrivate graph) {
 		super(spec);
 		this.subjects = subjects;
 		this.predicates = predicates;
@@ -61,18 +61,15 @@ public class WriteFourSectionDictionary extends BaseDictionary {
 	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
 		MultiThreadListener ml = ListenerUtil.multiThreadListener(listener);
 		ml.unregisterAllThreads();
-		ExceptionThread
-				.async("FourSecSAsyncReader",
-						() -> predicates.load(other.getPredicates(), new IntermediateListener(ml, "Predicate: ")),
-						() -> subjects.load(other.getSubjects(), new IntermediateListener(ml, "Subjects:  ")),
-						() -> {
-							if (supportGraphs()) {
-								graphs.load(other.getGraphs(), new IntermediateListener(ml, "Graph:      "));
-							}
-						},
-						() -> shared.load(other.getShared(), new IntermediateListener(ml, "Shared:    ")),
-						() -> objects.load(other.getObjects(), new IntermediateListener(ml, "Object:    ")))
-				.startAll().joinAndCrashIfRequired();
+		ExceptionThread.async("FourSecSAsyncReader",
+				() -> predicates.load(other.getPredicates(), new IntermediateListener(ml, "Predicate: ")),
+				() -> subjects.load(other.getSubjects(), new IntermediateListener(ml, "Subjects:  ")), () -> {
+					if (supportGraphs()) {
+						graphs.load(other.getGraphs(), new IntermediateListener(ml, "Graph:      "));
+					}
+				}, () -> shared.load(other.getShared(), new IntermediateListener(ml, "Shared:    ")),
+				() -> objects.load(other.getObjects(), new IntermediateListener(ml, "Object:    "))).startAll()
+				.joinAndCrashIfRequired();
 		ml.unregisterAllThreads();
 	}
 
@@ -129,7 +126,8 @@ public class WriteFourSectionDictionary extends BaseDictionary {
 
 	@Override
 	public String getType() {
-		return supportGraphs() ? HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION : HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION;
+		return supportGraphs() ? HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION
+				: HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION;
 	}
 
 	@Override

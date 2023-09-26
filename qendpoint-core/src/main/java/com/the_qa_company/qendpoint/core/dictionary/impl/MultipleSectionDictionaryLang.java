@@ -40,10 +40,10 @@ import static java.lang.String.format;
 public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 	private static final Logger logger = LoggerFactory.getLogger(MultipleSectionDictionaryLang.class);
 
-
 	public MultipleSectionDictionaryLang(HDTOptions spec) {
 		this(spec, false);
 	}
+
 	public MultipleSectionDictionaryLang(HDTOptions spec, boolean quad) {
 		super(spec);
 		// FIXME: Read type from spec.
@@ -60,17 +60,17 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 	}
 
 	public MultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
-										 DictionarySectionPrivate predicates, DictionarySectionPrivate nonTyped,
-										 TreeMap<ByteString, DictionarySectionPrivate> typed,
-										 TreeMap<ByteString, DictionarySectionPrivate> languages, DictionarySectionPrivate shared) {
+			DictionarySectionPrivate predicates, DictionarySectionPrivate nonTyped,
+			TreeMap<ByteString, DictionarySectionPrivate> typed,
+			TreeMap<ByteString, DictionarySectionPrivate> languages, DictionarySectionPrivate shared) {
 		this(spec, subjects, predicates, nonTyped, typed, languages, shared, null);
 	}
 
 	public MultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
-										 DictionarySectionPrivate predicates, DictionarySectionPrivate nonTyped,
-										 TreeMap<ByteString, DictionarySectionPrivate> typed,
-										 TreeMap<ByteString, DictionarySectionPrivate> languages, DictionarySectionPrivate shared,
-										 DictionarySectionPrivate graph) {
+			DictionarySectionPrivate predicates, DictionarySectionPrivate nonTyped,
+			TreeMap<ByteString, DictionarySectionPrivate> typed,
+			TreeMap<ByteString, DictionarySectionPrivate> languages, DictionarySectionPrivate shared,
+			DictionarySectionPrivate graph) {
 		super(spec);
 		this.subjects = subjects;
 		this.predicates = predicates;
@@ -187,8 +187,7 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 					if (supportGraphs()) {
 						graph.load(other.getGraphs(), iListener);
 					}
-				}, "MultiSecSAsyncReaderG"),
-				new ExceptionThread(() -> {
+				}, "MultiSecSAsyncReaderG"), new ExceptionThread(() -> {
 					StopPredicate<CharSequence> pred = new StopPredicate<>();
 					PeekIterator<? extends CharSequence> it = new com.the_qa_company.qendpoint.core.iterator.utils.StopIterator<>(
 							new MapIterator<>(other.getObjects().getSortedEntries(), LiteralsUtils::prefToLitLang),

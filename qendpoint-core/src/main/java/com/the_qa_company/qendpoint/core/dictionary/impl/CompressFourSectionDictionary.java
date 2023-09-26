@@ -174,7 +174,8 @@ public class CompressFourSectionDictionary implements TempDictionary {
 				long header = CompressUtil.getHeaderId(index + 1);
 				sortedGraph.setLastHeader(header);
 				nodeConsumer.onGraph(node.getIndex(), header);
-				// force duplication because it's not made in a pipe like with the
+				// force duplication because it's not made in a pipe like with
+				// the
 				// others
 				return new CompactString(node.getNode());
 			}), graphs);

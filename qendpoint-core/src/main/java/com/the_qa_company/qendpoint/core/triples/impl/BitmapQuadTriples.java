@@ -243,7 +243,8 @@ public class BitmapQuadTriples extends BitmapTriples {
 			return new BitmapTriplesIteratorGraphG(this, pattern);
 		}
 
-		return new BitmapTriplesIteratorGraph(this, super.search(pattern.copyNoGraph()), pattern.isQuad() ? pattern.getGraph() : 0);
+		return new BitmapTriplesIteratorGraph(this, super.search(pattern.copyNoGraph()),
+				pattern.isQuad() ? pattern.getGraph() : 0);
 	}
 
 	@Override
@@ -322,7 +323,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 
 		adjY = new AdjacencyList(seqY, bitmapY);
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
-
 
 		Closer.closeSingle(quadInfoAG);
 		quadInfoAG.clear();

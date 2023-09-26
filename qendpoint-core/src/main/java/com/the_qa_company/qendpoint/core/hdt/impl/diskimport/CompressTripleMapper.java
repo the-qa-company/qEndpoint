@@ -51,8 +51,9 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 				new SequenceLog64BigDisk(locationObjects.toAbsolutePath().toString(), numbits, tripleCount + 2, true),
 				tripleCount, maxElement);
 		if (quads) {
-			graph = new WriteLongArrayBuffer(new SequenceLog64BigDisk(locationGraph.toAbsolutePath().toString(),
-					numbits, tripleCount + 2, true), tripleCount, maxElement);
+			graph = new WriteLongArrayBuffer(
+					new SequenceLog64BigDisk(locationGraph.toAbsolutePath().toString(), numbits, tripleCount + 2, true),
+					tripleCount, maxElement);
 		} else {
 			graph = null;
 		}
@@ -147,6 +148,7 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 	public long extractObjects(long id) {
 		return extract(objects, id);
 	}
+
 	/**
 	 * extract the map id of a graph
 	 *

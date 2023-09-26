@@ -16,8 +16,8 @@ import java.util.stream.StreamSupport;
 /**
  * Class to close many {@link java.io.Closeable} objects at once without having
  * to do a large try-finally tree, handle {@link Closeable}, {@link Iterable},
- * array, record, {@link Map}, {@link Stream}, the {@link Throwable} are also rethrown, it can
- * be useful to close and throw at the same time.
+ * array, record, {@link Map}, {@link Stream}, the {@link Throwable} are also
+ * rethrown, it can be useful to close and throw at the same time.
  * <p>
  * It's using a deep search over the elements.
  *

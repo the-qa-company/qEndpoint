@@ -14,6 +14,7 @@ public class IndexedTriple {
 	public IndexedTriple(IndexedNode subject, IndexedNode predicate, IndexedNode object, IndexedNode graph) {
 		load(subject, predicate, object, graph);
 	}
+
 	public IndexedTriple(IndexedNode subject, IndexedNode predicate, IndexedNode object) {
 		load(subject, predicate, object, null);
 	}

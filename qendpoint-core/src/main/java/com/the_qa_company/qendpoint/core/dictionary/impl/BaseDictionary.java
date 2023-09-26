@@ -45,266 +45,266 @@ import java.util.TreeMap;
  */
 public abstract class BaseDictionary implements DictionaryPrivate {
 
-    protected final HDTOptions spec;
+	protected final HDTOptions spec;
 
-    protected DictionarySectionPrivate subjects;
-    protected DictionarySectionPrivate predicates;
-    protected DictionarySectionPrivate objects;
-    protected DictionarySectionPrivate shared;
-    protected DictionarySectionPrivate graphs;
+	protected DictionarySectionPrivate subjects;
+	protected DictionarySectionPrivate predicates;
+	protected DictionarySectionPrivate objects;
+	protected DictionarySectionPrivate shared;
+	protected DictionarySectionPrivate graphs;
 
-    public BaseDictionary(HDTOptions spec) {
-        this.spec = spec;
-    }
+	public BaseDictionary(HDTOptions spec) {
+		this.spec = spec;
+	}
 
-    protected long getGlobalId(long id, DictionarySectionRole position) {
-        return switch (position) {
-            case SUBJECT, OBJECT -> shared.getNumberOfElements() + id;
-            case PREDICATE, SHARED, GRAPH -> id;
-        };
-    }
+	protected long getGlobalId(long id, DictionarySectionRole position) {
+		return switch (position) {
+		case SUBJECT, OBJECT -> shared.getNumberOfElements() + id;
+		case PREDICATE, SHARED, GRAPH -> id;
+		};
+	}
 
-    protected long getLocalId(long id, TripleComponentRole position) {
-        switch (position) {
-            case SUBJECT, OBJECT -> {
-                if (id <= shared.getNumberOfElements()) {
-                    return id;
-                } else {
-                    return id - shared.getNumberOfElements();
-                }
-            }
-            case PREDICATE, GRAPH -> {
-                return id;
-            }
-            default -> throw new IllegalArgumentException();
-        }
-    }
+	protected long getLocalId(long id, TripleComponentRole position) {
+		switch (position) {
+		case SUBJECT, OBJECT -> {
+			if (id <= shared.getNumberOfElements()) {
+				return id;
+			} else {
+				return id - shared.getNumberOfElements();
+			}
+		}
+		case PREDICATE, GRAPH -> {
+			return id;
+		}
+		default -> throw new IllegalArgumentException();
+		}
+	}
 
-    @Override
-    public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
-        switch (role) {
-            case SUBJECT -> {
-                if (!includeShared) {
-                    return getSubjects().getSortedEntries();
-                }
+	@Override
+	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
+		switch (role) {
+		case SUBJECT -> {
+			if (!includeShared) {
+				return getSubjects().getSortedEntries();
+			}
 
-                return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
-            }
-            case PREDICATE -> {
-                return getPredicates().getSortedEntries();
-            }
-            case OBJECT -> {
-                if (!includeShared) {
-                    return getObjects().getSortedEntries();
-                }
+			return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+		}
+		case PREDICATE -> {
+			return getPredicates().getSortedEntries();
+		}
+		case OBJECT -> {
+			if (!includeShared) {
+				return getObjects().getSortedEntries();
+			}
 
-                return CatIterator.of(getShared().getSortedEntries(), getObjects().getSortedEntries());
-            }
-            case GRAPH -> {
-                if (!supportGraphs()) {
-                    throw new IllegalArgumentException("This dictionary doesn't support graphs!");
-                }
+			return CatIterator.of(getShared().getSortedEntries(), getObjects().getSortedEntries());
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			}
 
-                return getGraphs().getSortedEntries();
-            }
-            default -> throw new IllegalArgumentException("Unknown role: " + role);
-        }
-    }
+			return getGraphs().getSortedEntries();
+		}
+		default -> throw new IllegalArgumentException("Unknown role: " + role);
+		}
+	}
 
-    /*
-     * (non-Javadoc)
-     * @see hdt.dictionary.Dictionary#stringToId(java.lang.CharSequence,
-     * datatypes.TripleComponentRole)
-     */
-    @Override
-    public long stringToId(CharSequence str, TripleComponentRole position) {
-        str = DelayedString.unwrap(str);
+	/*
+	 * (non-Javadoc)
+	 * @see hdt.dictionary.Dictionary#stringToId(java.lang.CharSequence,
+	 * datatypes.TripleComponentRole)
+	 */
+	@Override
+	public long stringToId(CharSequence str, TripleComponentRole position) {
+		str = DelayedString.unwrap(str);
 
-        if (str == null || str.length() == 0) {
-            return 0;
-        }
+		if (str == null || str.length() == 0) {
+			return 0;
+		}
 
-        if (str instanceof String) {
-            // CompactString is more efficient for the binary search.
-            str = new CompactString(str);
-        }
+		if (str instanceof String) {
+			// CompactString is more efficient for the binary search.
+			str = new CompactString(str);
+		}
 
-        long ret;
-        switch (position) {
-            case SUBJECT -> {
-                ret = shared.locate(str);
-                if (ret != 0) {
-                    return getGlobalId(ret, DictionarySectionRole.SHARED);
-                }
-                ret = subjects.locate(str);
-                if (ret != 0) {
-                    return getGlobalId(ret, DictionarySectionRole.SUBJECT);
-                }
-                return -1;
-            }
-            case PREDICATE -> {
-                ret = predicates.locate(str);
-                if (ret != 0) {
-                    return getGlobalId(ret, DictionarySectionRole.PREDICATE);
-                }
-                return -1;
-            }
-            case GRAPH -> {
-                ret = graphs.locate(str);
-                if (ret != 0) {
-                    return getGlobalId(ret, DictionarySectionRole.GRAPH);
-                }
-                return -1;
-            }
-            case OBJECT -> {
-                if (str.charAt(0) != '"') {
-                    ret = shared.locate(str);
-                    if (ret != 0) {
-                        return getGlobalId(ret, DictionarySectionRole.SHARED);
-                    }
-                }
-                ret = objects.locate(str);
-                if (ret != 0) {
-                    return getGlobalId(ret, DictionarySectionRole.OBJECT);
-                }
-                return -1;
-            }
-            default -> throw new IllegalArgumentException();
-        }
-    }
+		long ret;
+		switch (position) {
+		case SUBJECT -> {
+			ret = shared.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.SHARED);
+			}
+			ret = subjects.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.SUBJECT);
+			}
+			return -1;
+		}
+		case PREDICATE -> {
+			ret = predicates.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.PREDICATE);
+			}
+			return -1;
+		}
+		case GRAPH -> {
+			ret = graphs.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.GRAPH);
+			}
+			return -1;
+		}
+		case OBJECT -> {
+			if (str.charAt(0) != '"') {
+				ret = shared.locate(str);
+				if (ret != 0) {
+					return getGlobalId(ret, DictionarySectionRole.SHARED);
+				}
+			}
+			ret = objects.locate(str);
+			if (ret != 0) {
+				return getGlobalId(ret, DictionarySectionRole.OBJECT);
+			}
+			return -1;
+		}
+		default -> throw new IllegalArgumentException();
+		}
+	}
 
-    @Override
-    public long getNumberOfElements() {
-        long s = subjects.getNumberOfElements();
-        long p = predicates.getNumberOfElements();
-        long o = objects.getNumberOfElements();
-        if (!supportGraphs()) {
-            return s + p + o;
-        }
-        long g = graphs.getNumberOfElements();
-        return s + p + o + g;
-    }
+	@Override
+	public long getNumberOfElements() {
+		long s = subjects.getNumberOfElements();
+		long p = predicates.getNumberOfElements();
+		long o = objects.getNumberOfElements();
+		if (!supportGraphs()) {
+			return s + p + o;
+		}
+		long g = graphs.getNumberOfElements();
+		return s + p + o + g;
+	}
 
-    @Override
-    public long size() {
-        long s = subjects.size();
-        long p = predicates.size();
-        long o = objects.size();
-        if (!supportGraphs()) {
-            return s + p + o;
-        }
-        long g = graphs.size();
-        return s + p + o + g;
-    }
+	@Override
+	public long size() {
+		long s = subjects.size();
+		long p = predicates.size();
+		long o = objects.size();
+		if (!supportGraphs()) {
+			return s + p + o;
+		}
+		long g = graphs.size();
+		return s + p + o + g;
+	}
 
-    @Override
-    public long getNsubjects() {
-        return subjects.getNumberOfElements() + shared.getNumberOfElements();
-    }
+	@Override
+	public long getNsubjects() {
+		return subjects.getNumberOfElements() + shared.getNumberOfElements();
+	}
 
-    @Override
-    public long getNpredicates() {
-        return predicates.getNumberOfElements();
-    }
+	@Override
+	public long getNpredicates() {
+		return predicates.getNumberOfElements();
+	}
 
-    @Override
-    public long getNobjects() {
-        return objects.getNumberOfElements() + shared.getNumberOfElements();
-    }
+	@Override
+	public long getNobjects() {
+		return objects.getNumberOfElements() + shared.getNumberOfElements();
+	}
 
-    @Override
-    public long getNgraphs() {
-        if (graphs == null) {
-            return 0;
-        }
-        return graphs.getNumberOfElements();
-    }
+	@Override
+	public long getNgraphs() {
+		if (graphs == null) {
+			return 0;
+		}
+		return graphs.getNumberOfElements();
+	}
 
-    @Override
-    public long getNshared() {
-        return shared.getNumberOfElements();
-    }
+	@Override
+	public long getNshared() {
+		return shared.getNumberOfElements();
+	}
 
-    @Override
-    public DictionarySection getSubjects() {
-        return subjects;
-    }
+	@Override
+	public DictionarySection getSubjects() {
+		return subjects;
+	}
 
-    @Override
-    public DictionarySection getPredicates() {
-        return predicates;
-    }
+	@Override
+	public DictionarySection getPredicates() {
+		return predicates;
+	}
 
-    @Override
-    public DictionarySection getObjects() {
-        return objects;
-    }
+	@Override
+	public DictionarySection getObjects() {
+		return objects;
+	}
 
-    @Override
-    public DictionarySection getGraphs() {
-        return graphs;
-    }
+	@Override
+	public DictionarySection getGraphs() {
+		return graphs;
+	}
 
-    @Override
-    public DictionarySection getShared() {
-        return shared;
-    }
+	@Override
+	public DictionarySection getShared() {
+		return shared;
+	}
 
-    private DictionarySectionPrivate getSection(long id, TripleComponentRole role) {
-        switch (role) {
-            case SUBJECT -> {
-                if (id <= shared.getNumberOfElements()) {
-                    return shared;
-                } else {
-                    return subjects;
-                }
-            }
-            case PREDICATE -> {
-                return predicates;
-            }
-            case OBJECT -> {
-                if (id <= shared.getNumberOfElements()) {
-                    return shared;
-                } else {
-                    return objects;
-                }
-            }
-            case GRAPH -> {
-                return graphs;
-            }
-            default -> throw new IllegalArgumentException();
-        }
-    }
+	private DictionarySectionPrivate getSection(long id, TripleComponentRole role) {
+		switch (role) {
+		case SUBJECT -> {
+			if (id <= shared.getNumberOfElements()) {
+				return shared;
+			} else {
+				return subjects;
+			}
+		}
+		case PREDICATE -> {
+			return predicates;
+		}
+		case OBJECT -> {
+			if (id <= shared.getNumberOfElements()) {
+				return shared;
+			} else {
+				return objects;
+			}
+		}
+		case GRAPH -> {
+			return graphs;
+		}
+		default -> throw new IllegalArgumentException();
+		}
+	}
 
-    /*
-     * (non-Javadoc)
-     * @see hdt.dictionary.Dictionary#idToString(int,
-     * datatypes.TripleComponentRole)
-     */
-    @Override
-    public CharSequence idToString(long id, TripleComponentRole role) {
-        DictionarySectionPrivate section = getSection(id, role);
-        long localId = getLocalId(id, role);
-        return section.extract(localId);
-    }
+	/*
+	 * (non-Javadoc)
+	 * @see hdt.dictionary.Dictionary#idToString(int,
+	 * datatypes.TripleComponentRole)
+	 */
+	@Override
+	public CharSequence idToString(long id, TripleComponentRole role) {
+		DictionarySectionPrivate section = getSection(id, role);
+		long localId = getLocalId(id, role);
+		return section.extract(localId);
+	}
 
-    @Override
-    public TreeMap<? extends CharSequence, DictionarySection> getAllObjects() {
-        return new TreeMap<>(Map.of(LiteralsUtils.NO_DATATYPE, objects));
-    }
+	@Override
+	public TreeMap<? extends CharSequence, DictionarySection> getAllObjects() {
+		return new TreeMap<>(Map.of(LiteralsUtils.NO_DATATYPE, objects));
+	}
 
-    @Override
-    public long getNAllObjects() {
-        throw new IllegalArgumentException("Method is not applicable on this dictionary");
-    }
+	@Override
+	public long getNAllObjects() {
+		throw new IllegalArgumentException("Method is not applicable on this dictionary");
+	}
 
-    @Override
-    public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
-        throw new NotImplementedException();
-    }
+	@Override
+	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
+		throw new NotImplementedException();
+	}
 
-    @Override
-    public OptimizedExtractor createOptimizedMapExtractor() {
-        return new DictionaryPFCOptimizedExtractor(this);
-    }
+	@Override
+	public OptimizedExtractor createOptimizedMapExtractor() {
+		return new DictionaryPFCOptimizedExtractor(this);
+	}
 }
