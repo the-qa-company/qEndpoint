@@ -350,7 +350,8 @@ public class MultiRoaringBitmap implements SimpleModifiableBitmap, Closeable {
 				break;
 			}
 			count -= countOnes;
-			delta += idx != maps.size() - 1 ? chunkSize : maps.get(idx++).getNumBits();
+			delta += idx != maps.size() - 1 ? chunkSize : maps.get(idx).getNumBits();
+			idx++;
 		}
 
 		if (idx == maps.size()) {

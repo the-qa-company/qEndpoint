@@ -21,6 +21,8 @@ package com.the_qa_company.qendpoint.core.dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.header.Header;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.Closeable;
 import java.util.Iterator;
@@ -245,4 +247,16 @@ public interface Dictionary extends Closeable {
 	 * @return type
 	 */
 	String getType();
+
+	default TripleID toTripleId(TripleString tsstr) {
+		TripleID tid = new TripleID(
+				stringToId(tsstr.getSubject(), TripleComponentRole.SUBJECT),
+				stringToId(tsstr.getPredicate(), TripleComponentRole.PREDICATE),
+				stringToId(tsstr.getObject(), TripleComponentRole.OBJECT)
+		);
+		if (tsstr.getGraph() != null && !tsstr.getGraph().isEmpty()) {
+			tid.setGraph(stringToId(tsstr.getGraph(), TripleComponentRole.GRAPH));
+		}
+		return tid;
+	}
 }

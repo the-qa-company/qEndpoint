@@ -122,7 +122,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
-	public TripleID findTriple(long position) {
+	public TripleID findTriple(long position, TripleID tripleID) {
 		throw new NotImplementedException();
 	}
 

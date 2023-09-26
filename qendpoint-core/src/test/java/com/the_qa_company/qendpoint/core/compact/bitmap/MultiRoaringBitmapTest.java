@@ -164,7 +164,23 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 				assertEquals("rank0#" + i + "/" + size, memmap.rank0(i), map.rank0(i));
 			}
 			for (int i = 0; i < numBits; i++) {
+				long n = i;
+				long j = -1;
+				while (n > 0) {
+					if (memmap.access(++j)) {
+						n--;
+					}
+				}
+				assertEquals(j, memmap.select1(i));
 				assertEquals("select1#" + i + "/" + numBits, memmap.select1(i), map.select1(i));
+			}
+
+			for (int i = 0; i < numBits; i++) {
+				assertEquals("selectNext1#" + i + "/" + numBits, memmap.selectNext1(i), map.selectNext1(i));
+			}
+
+			for (int i = 0; i < numBits; i++) {
+				assertEquals("selectPrev1#" + i + "/" + numBits, memmap.selectPrev1(i), map.selectPrev1(i));
 			}
 		}
 	}

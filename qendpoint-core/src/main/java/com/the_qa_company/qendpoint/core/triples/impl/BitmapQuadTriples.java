@@ -18,41 +18,26 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
-import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
-import com.the_qa_company.qendpoint.core.compact.bitmap.RoaringBitmap64;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
-import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
-import com.the_qa_company.qendpoint.core.iterator.SequentialSearchIteratorTripleID;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.quad.impl.BitmapQuadsIterator;
-import com.the_qa_company.qendpoint.core.quad.impl.BitmapQuadsIteratorG;
-import com.the_qa_company.qendpoint.core.quad.impl.BitmapQuadsIteratorYFOQ;
-import com.the_qa_company.qendpoint.core.quad.impl.BitmapQuadsIteratorYGFOQ;
-import com.the_qa_company.qendpoint.core.quad.impl.BitmapQuadsIteratorZFOQ;
-import com.the_qa_company.qendpoint.core.quad.impl.BitmapQuadsIteratorZGFOQ;
+import com.the_qa_company.qendpoint.core.quad.impl.BitmapTriplesIteratorGraph;
+import com.the_qa_company.qendpoint.core.quad.impl.BitmapTriplesIteratorGraphG;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -62,9 +47,14 @@ import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 
-import com.github.andrewoma.dexx.collection.Pair;
-
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author mario.arias
@@ -249,29 +239,11 @@ public class BitmapQuadTriples extends BitmapTriples {
 		TripleOrderConvert.swapComponentOrder(reorderedPat, TripleComponentOrder.SPO, order);
 		String patternString = reorderedPat.getPatternString();
 
-		if (patternString.equals("?P??"))
-			return new BitmapQuadsIteratorYFOQ(this, pattern);
-
-		if (patternString.equals("?P?G"))
-			return new BitmapQuadsIteratorYGFOQ(this, pattern);
-
-		if (patternString.equals("?PO?") || patternString.equals("??O?"))
-			return new BitmapQuadsIteratorZFOQ(this, pattern);
-
-		if (patternString.equals("?POG") || patternString.equals("??OG"))
-			return new BitmapQuadsIteratorZGFOQ(this, pattern);
-
-		SuppliableIteratorTripleID bitIt;
-		if (patternString.endsWith("G"))
-			bitIt = new BitmapQuadsIteratorG(this, pattern);
-		else
-			bitIt = new BitmapQuadsIterator(this, pattern);
-		if (patternString.equals("????") || patternString.equals("???G") || patternString.equals("S???")
-				|| patternString.equals("S??G") || patternString.equals("SP??") || patternString.equals("SP?G")
-				|| patternString.equals("SPO?") || patternString.equals("SPOG")) {
-			return bitIt;
+		if (hasFOQIndex() && patternString.equals("???G")) {
+			return new BitmapTriplesIteratorGraphG(this, pattern);
 		}
-		return new SequentialSearchIteratorTripleID(pattern, bitIt);
+
+		return new BitmapTriplesIteratorGraph(this, super.search(pattern.copyNoGraph()), pattern.isQuad() ? pattern.getGraph() : 0);
 	}
 
 	@Override

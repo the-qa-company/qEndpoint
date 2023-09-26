@@ -329,4 +329,11 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 		}
 		return (int) (subject * 13 + predicate * 17 + object * 31);
 	}
+
+	/**
+	 * @return a copy of this triple id without the graph part
+	 */
+	public TripleID copyNoGraph() {
+		return new TripleID(subject, predicate, object);
+	}
 }

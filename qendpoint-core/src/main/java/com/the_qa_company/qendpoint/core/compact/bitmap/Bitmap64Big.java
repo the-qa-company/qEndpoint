@@ -276,7 +276,7 @@ public class Bitmap64Big implements Closeable, ModifiableBitmap {
 	}
 
 	public long selectPrev1(long start) {
-		throw new NotImplementedException();
+		return select1(rank1(start));
 	}
 
 	public long getNumBits() {

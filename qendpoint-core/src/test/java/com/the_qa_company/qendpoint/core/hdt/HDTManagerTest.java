@@ -288,7 +288,7 @@ public class HDTManagerTest {
 				tripleIt.next();
 				count++;
 			}
-			assertEquals(hdt.getTriples().getNumberOfElements(), count);
+			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
 		}
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
@@ -1121,7 +1121,7 @@ public class HDTManagerTest {
 						IteratorTripleString it2 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), graph);
 						if (!it2.hasNext()) {
 							BitmapTriplesIteratorPositionTest.printIterator(it2);
-							fail("Can't find " + ts);
+							fail("Can't find #" + count + " " +  ts);
 						}
 						TripleString ts2 = it2.next();
 						assertEquals(ts, ts2);
@@ -1188,8 +1188,10 @@ public class HDTManagerTest {
 							case GRAPH -> h.search("", "", "", component);
 						};
 
+						long countEid = 0;
 						while (eid.hasNext()) {
 							TripleString tsstr = eid.next().tripleToString();
+							countEid++;
 							if (role == TripleComponentRole.GRAPH && !tsstr.getGraph().equals(str)) {
 								// the default graph "" is searching all the
 								// graphs, so we need
@@ -1199,7 +1201,9 @@ public class HDTManagerTest {
 							if (!dataset2.remove(tsstr)) {
 								BitmapTriplesIteratorPositionTest.printIterator(eid);
 								fail("can't remove " + tsstr + "\nfor " + role + "=" + component + "(" + cid + ")"
-										+ "\ndone: " + roleDesc.substring(1) + "\n" + String.join(",", components));
+										+ "\ndone: " + roleDesc.substring(1) + "\n" + String.join(",", components
+										+ "\nexists: " + dataset.contains(tsstr) + ", id: " + countEid
+										+ "\npattern: " + h.getDictionary().toTripleId(tsstr)));
 							}
 						}
 					}
