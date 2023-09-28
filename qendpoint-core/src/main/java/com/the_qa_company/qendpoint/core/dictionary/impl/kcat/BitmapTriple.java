@@ -10,11 +10,14 @@ public class BitmapTriple implements Closeable {
 	private final ModifiableBitmap subjects;
 	private final ModifiableBitmap predicates;
 	private final ModifiableBitmap objects;
+	private final ModifiableBitmap graphs;
 
-	public BitmapTriple(ModifiableBitmap subjects, ModifiableBitmap predicates, ModifiableBitmap objects) {
+	public BitmapTriple(ModifiableBitmap subjects, ModifiableBitmap predicates, ModifiableBitmap objects,
+			ModifiableBitmap graphs) {
 		this.subjects = subjects;
 		this.predicates = predicates;
 		this.objects = objects;
+		this.graphs = graphs;
 	}
 
 	public ModifiableBitmap getSubjects() {
@@ -25,12 +28,16 @@ public class BitmapTriple implements Closeable {
 		return predicates;
 	}
 
+	public ModifiableBitmap getGraphs() {
+		return graphs;
+	}
+
 	public ModifiableBitmap getObjects() {
 		return objects;
 	}
 
 	@Override
 	public void close() throws IOException {
-		Closer.closeAll(subjects, predicates, objects);
+		Closer.closeAll(subjects, predicates, objects, graphs);
 	}
 }

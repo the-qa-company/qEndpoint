@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.hdt;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
@@ -99,9 +100,7 @@ public class HDTManagerTest {
 		}
 
 		protected static List<String> diskDictCat() {
-			return List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+			return diskDict();
 		}
 
 		/**
@@ -410,6 +409,7 @@ public class HDTManagerTest {
 		public long size;
 		@Parameterized.Parameter(9)
 		public String addedSpecs;
+		public boolean quadDict;
 
 		@Before
 		public void setupSpecs() {
@@ -418,12 +418,15 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_KEY, compressMode);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 			spec.set(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY, true);
+
+			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 		}
 
 		private void generateDiskTest() throws IOException, ParserException, NotFoundException, InterruptedException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withSameTripleString(true).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withSameTripleString(true).withUnicode(true)
+					.withQuads(quadDict);
 
 			if (spec.getBoolean("debug.disk.slow.stream")) {
 				supplier.withSlowStream(25);
@@ -434,8 +437,9 @@ public class HDTManagerTest {
 					.createNTInputStream(CompressionType.GZIP);
 			HDT actual = null;
 			try {
-				actual = HDTManager.generateHDTDisk(genActual.getStream(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
-						CompressionType.GZIP, spec, quiet ? null : this);
+				actual = HDTManager.generateHDTDisk(genActual.getStream(), HDTTestUtils.BASE_URI,
+						quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, CompressionType.GZIP, spec,
+						quiet ? null : this);
 				checkHDTConsistency(actual);
 			} finally {
 				if (actual == null) {
@@ -451,8 +455,8 @@ public class HDTManagerTest {
 			// create MEMORY HDT
 			HDT expected = null;
 			try {
-				expected = HDTManager.generateHDT(genExpected.getStream(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
-						CompressionType.GZIP, spec, null);
+				expected = HDTManager.generateHDT(genExpected.getStream(), HDTTestUtils.BASE_URI,
+						quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, CompressionType.GZIP, spec, null);
 				checkHDTConsistency(expected);
 			} finally {
 				if (expected == null) {
@@ -475,7 +479,8 @@ public class HDTManagerTest {
 		public void generateSaveLoadMapTest() throws IOException, ParserException, NotFoundException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true)
+					.withQuads(DictionaryFactory.isQuadDictionary(dictionaryType));
 
 			// create MEMORY HDT
 
@@ -517,7 +522,7 @@ public class HDTManagerTest {
 			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			// create DISK HDT
 			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
@@ -525,7 +530,8 @@ public class HDTManagerTest {
 			HDT actual = null;
 			try {
 				actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.memory(), genActual.getStream(),
-						HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec, quiet ? null : this);
+						HDTTestUtils.BASE_URI, quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec,
+						quiet ? null : this);
 			} finally {
 				if (actual == null) {
 					genActual.getThread().interrupt();
@@ -555,7 +561,7 @@ public class HDTManagerTest {
 			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			spec.set("debug.disk.build", true);
 
@@ -565,7 +571,8 @@ public class HDTManagerTest {
 			HDT actual = null;
 			try {
 				actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.disk(), genActual.getStream(),
-						HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec, quiet ? null : this);
+						HDTTestUtils.BASE_URI, quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec,
+						quiet ? null : this);
 			} finally {
 				if (actual == null) {
 					genActual.getThread().interrupt();
@@ -633,10 +640,13 @@ public class HDTManagerTest {
 		@Parameterized.Parameter(8)
 		public boolean async;
 
+		public boolean quadDict;
+
 		@Before
 		public void setupSpecs() {
 			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
+			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 
 			if (kCat != 0) {
 				spec.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, kCat);
@@ -650,7 +660,7 @@ public class HDTManagerTest {
 		public void catTreeTest() throws IOException, ParserException, NotFoundException, InterruptedException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			// create DISK HDT
 			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
@@ -660,8 +670,8 @@ public class HDTManagerTest {
 			try {
 				try {
 					actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.memory(),
-							genActual.getStream(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
-							quiet ? null : this);
+							genActual.getStream(), HDTTestUtils.BASE_URI,
+							quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec, quiet ? null : this);
 				} finally {
 					if (actual == null) {
 						genActual.getThread().interrupt();
@@ -689,7 +699,7 @@ public class HDTManagerTest {
 		public void catTreeDiskTest() throws IOException, ParserException, NotFoundException, InterruptedException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			// create DISK HDT
 			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
@@ -697,7 +707,8 @@ public class HDTManagerTest {
 			HDT actual = null;
 			try {
 				actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.disk(), genActual.getStream(),
-						HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec, quiet ? null : this);
+						HDTTestUtils.BASE_URI, quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec,
+						quiet ? null : this);
 			} finally {
 				if (actual == null) {
 					genActual.getThread().interrupt();
@@ -1702,8 +1713,8 @@ public class HDTManagerTest {
 	public static class MSDLangQuadTest extends HDTManagerTestBase {
 		@Test
 		public void msdLangTest() throws Exception {
-			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
-					34);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withQuads(true);
 			Path ntFile = tempDir.newFile().toPath();
 			try {
 
@@ -1717,7 +1728,7 @@ public class HDTManagerTest {
 				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION);
 
-				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NQUAD, spec,
 						ProgressListener.ignore())) {
 					Dictionary msdl = hdt.getDictionary();
 					assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD, msdl.getType());
@@ -1726,8 +1737,8 @@ public class HDTManagerTest {
 
 					// the HDT is fine, does it contain all the triples?
 
-					try (HDT hdtFSD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
-							specFSD, ProgressListener.ignore())) {
+					try (HDT hdtFSD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NQUAD, specFSD,
+							ProgressListener.ignore())) {
 						Dictionary fsd = hdtFSD.getDictionary();
 
 						assertTrue("not a fsd", fsd instanceof BaseDictionary);
@@ -1847,7 +1858,8 @@ public class HDTManagerTest {
 		@Test
 		public void idFromIteratorTest() throws IOException, ParserException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(5000, 34).withMaxLiteralSize(50).withMaxElementSplit(20);
+					.createSupplierWithMaxTriples(5000, 34).withMaxLiteralSize(50).withMaxElementSplit(20)
+					.withQuads(true);
 			Path rootDir = tempDir.newFolder().toPath();
 			try {
 				Path hdtPath = rootDir.resolve("ds.nt");

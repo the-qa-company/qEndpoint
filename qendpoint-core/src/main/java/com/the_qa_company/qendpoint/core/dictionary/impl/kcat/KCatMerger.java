@@ -56,6 +56,7 @@ public class KCatMerger implements AutoCloseable {
 	final SyncSeq[] subjectsMaps;
 	final SyncSeq[] predicatesMaps;
 	final SyncSeq[] objectsMaps;
+	final SyncSeq[] graphsMaps;
 	private final ExceptionThread catMergerThread;
 	final boolean typedHDT;
 	final boolean langHDT;
@@ -69,8 +70,10 @@ public class KCatMerger implements AutoCloseable {
 	private final ExceptionIterator<DuplicateBuffer, RuntimeException> sortedObject;
 	private final ExceptionIterator<DuplicateBuffer, RuntimeException> sortedPredicates;
 	private final Map<ByteString, ExceptionIterator<DuplicateBuffer, RuntimeException>> sortedSubSections;
+	private final ExceptionIterator<DuplicateBuffer, RuntimeException> sortedGraphs;
 
 	private final long estimatedSizeP;
+	private final long estimatedSizeG;
 	private final AtomicLong countTyped = new AtomicLong();
 	private final AtomicLong countShared = new AtomicLong();
 	private final AtomicLong countNonTyped = new AtomicLong();
@@ -81,6 +84,7 @@ public class KCatMerger implements AutoCloseable {
 	private final WriteDictionarySection sectionShared;
 	private final WriteDictionarySection sectionObject;
 	private final WriteDictionarySection sectionPredicate;
+	private final WriteDictionarySection sectionGraph;
 	private final Map<ByteString, WriteDictionarySection> sectionSub;
 	private final Map<ByteString, Integer> typeId = new HashMap<>();
 	private boolean running;
@@ -93,11 +97,12 @@ public class KCatMerger implements AutoCloseable {
 	 * @param listener       listener to log the state
 	 * @param bufferSize     buffer size
 	 * @param dictionaryType dictionary type
+	 * @param quad           quad
 	 * @param spec           spec to config the HDT
 	 * @throws java.io.IOException io exception
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
-			int bufferSize, String dictionaryType, HDTOptions spec) throws IOException {
+			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
 		this.hdts = hdts;
 		this.listener = listener;
 		this.dictionaryType = dictionaryType;
@@ -106,7 +111,9 @@ public class KCatMerger implements AutoCloseable {
 		subjectsMaps = new SyncSeq[hdts.length];
 		predicatesMaps = new SyncSeq[hdts.length];
 		objectsMaps = new SyncSeq[hdts.length];
-		locations = new CloseSuppressPath[hdts.length * 3];
+		graphsMaps = quad ? new SyncSeq[hdts.length] : null;
+		int locationDelta = quad ? 4 : 3;
+		locations = new CloseSuppressPath[hdts.length * locationDelta];
 
 		countSubject = IntStream.range(0, hdts.length).mapToObj(i -> new AtomicLong()).toArray(AtomicLong[]::new);
 		countObject = IntStream.range(0, hdts.length).mapToObj(i -> new AtomicLong()).toArray(AtomicLong[]::new);
@@ -116,6 +123,7 @@ public class KCatMerger implements AutoCloseable {
 		long sizeO = 0;
 		long sizeONoTyped = 0;
 		long sizeShared = 0;
+		long sizeG = 0;
 
 		// if this HDT is typed, we don't have to allocate 1 bit / node to note
 		// a typed node
@@ -138,6 +146,7 @@ public class KCatMerger implements AutoCloseable {
 			sizeS += cat.countSubjects();
 			sizeP += cat.countPredicates();
 			sizeO += cat.countObjects();
+			sizeG += cat.countGraphs();
 			DictionarySection objectSection = cat.getObjectSection();
 			sizeONoTyped += objectSection == null ? 0 : objectSection.getNumberOfElements();
 			sizeShared += cat.countShared();
@@ -158,22 +167,33 @@ public class KCatMerger implements AutoCloseable {
 		}
 
 		this.estimatedSizeP = sizeP;
+		this.estimatedSizeG = sizeG;
+
 		try {
 			// create maps, allocate more bits for the shared part
 			int numbitsS = BitUtil.log2(sizeS + 1 + sizeShared) + 1 + shift;
 			int numbitsP = BitUtil.log2(sizeP + 1);
 			int numbitsO = BitUtil.log2(sizeO + 1 + sizeShared) + 1 + shift;
+			int numbitsG = BitUtil.log2(sizeG + 1);
 			for (int i = 0; i < cats.length; i++) {
 				DictionaryKCat cat = cats[i];
-				subjectsMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
-						(locations[i * 3] = location.resolve("subjectsMap_" + i)).toAbsolutePath().toString(), numbitsS,
-						cat.countSubjects() + 1));
+				subjectsMaps[i] = new SyncSeq(
+						new SequenceLog64BigDisk((locations[i * locationDelta] = location.resolve("subjectsMap_" + i))
+								.toAbsolutePath().toString(), numbitsS, cat.countSubjects() + 1));
 				predicatesMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
-						(locations[i * 3 + 1] = location.resolve("predicatesMap_" + i)).toAbsolutePath().toString(),
+						(locations[i * locationDelta + 1] = location.resolve("predicatesMap_" + i)).toAbsolutePath()
+								.toString(),
 						numbitsP, cat.countPredicates() + 1));
 				objectsMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
-						(locations[i * 3 + 2] = location.resolve("objectsMap_" + i)).toAbsolutePath().toString(),
+						(locations[i * locationDelta + 2] = location.resolve("objectsMap_" + i)).toAbsolutePath()
+								.toString(),
 						numbitsO, cat.countObjects() + 1));
+				if (quad) {
+					graphsMaps[i] = new SyncSeq(new SequenceLog64BigDisk(
+							(locations[i * locationDelta + 3] = location.resolve("graphsMap_" + i)).toAbsolutePath()
+									.toString(),
+							numbitsG, cat.countGraphs() + 1));
+				}
 			}
 
 			// merge the subjects/objects/shared from all the HDTs
@@ -216,6 +236,23 @@ public class KCatMerger implements AutoCloseable {
 							((element, index) -> new LocatedIndexedNode(hdtIndex, index + 1, ByteString.of(element))));
 				}
 			}).notif(sizeP, 20, "Merge predicates", listener);
+
+			sortedGraphs = quad ? mergeSection(cats, (hdtIndex, c) -> {
+				ExceptionIterator<? extends CharSequence, RuntimeException> of = ExceptionIterator
+						.of(c.getGraphSection().getSortedEntries());
+				if (deletedTriple != null) {
+					ModifiableBitmap deleteBitmap = deletedTriple[hdtIndex].getGraphs();
+					return of.mapFiltered(((element, index) -> {
+						if (deleteBitmap.access(index + 1)) {
+							return null;
+						}
+						return new LocatedIndexedNode(hdtIndex, index + 1, ByteString.of(element));
+					}));
+				} else {
+					return of.map(
+							((element, index) -> new LocatedIndexedNode(hdtIndex, index + 1, ByteString.of(element))));
+				}
+			}).notif(sizeP, 20, "Merge graphs", listener) : null;
 
 			sortedSubSections = new TreeMap<>();
 			// create a merge section for each section
@@ -293,6 +330,7 @@ public class KCatMerger implements AutoCloseable {
 			sectionShared = new WriteDictionarySection(spec, location.resolve("sortedShared"), bufferSize);
 			sectionObject = new WriteDictionarySection(spec, location.resolve("sortedObject"), bufferSize);
 			sectionPredicate = new WriteDictionarySection(spec, location.resolve("sortedPredicate"), bufferSize);
+			sectionGraph = quad ? new WriteDictionarySection(spec, location.resolve("sortedGraph"), bufferSize) : null;
 			sectionSub = new TreeMap<>();
 			sortedSubSections.keySet().forEach((key) -> sectionSub.put(key,
 					new WriteDictionarySection(spec, location.resolve("sortedSub" + getTypeId(key)), bufferSize)));
@@ -449,7 +487,7 @@ public class KCatMerger implements AutoCloseable {
 		catMergerThread.joinAndCrashIfRequired();
 
 		return DictionaryFactory.createWriteDictionary(dictionaryType, null, getSectionSubject(), getSectionPredicate(),
-				getSectionObject(), getSectionShared(), getSectionSub());
+				getSectionObject(), getSectionShared(), getSectionSub(), getSectionGraph());
 	}
 
 	private void runSharedCompute() {
@@ -521,6 +559,18 @@ public class KCatMerger implements AutoCloseable {
 			return db.peek();
 		}).asIterator(), estimatedSizeP), null);
 
+		// load graphs
+		if (sectionGraph != null) {
+			sectionGraph.load(new OneReadDictionarySection(sortedGraphs.map((db, id) -> {
+				db.stream().forEach(node -> {
+					SyncSeq map = graphsMaps[node.getHdt()];
+					assert map.get(node.getIndex()) == 0 : "overwriting previous graph value";
+					map.set(node.getIndex(), id + 1);
+				});
+				return db.peek();
+			}).asIterator(), estimatedSizeG), null);
+		}
+
 		long shift = 1L;
 		// load data typed sections
 		for (Map.Entry<ByteString, WriteDictionarySection> e : sectionSub.entrySet()) {
@@ -561,8 +611,8 @@ public class KCatMerger implements AutoCloseable {
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		} finally {
-			Closer.closeAll(sectionSubject, sectionPredicate, sectionObject, sectionShared, sectionSub, subjectsMaps,
-					predicatesMaps, objectsMaps, locations);
+			Closer.closeAll(sectionSubject, sectionPredicate, sectionGraph, sectionObject, sectionShared, sectionSub,
+					subjectsMaps, predicatesMaps, graphsMaps, objectsMaps, locations);
 		}
 	}
 
@@ -603,6 +653,17 @@ public class KCatMerger implements AutoCloseable {
 	}
 
 	/**
+	 * extract the graph from an HDTq
+	 *
+	 * @param hdtIndex the HDT index
+	 * @param oldID    the ID in the HDT triples
+	 * @return ID in the new HDT
+	 */
+	public long extractGraph(int hdtIndex, long oldID) {
+		return graphsMaps[hdtIndex].get(oldID);
+	}
+
+	/**
 	 * extract the object from an HDT
 	 *
 	 * @param hdtIndex the HDT index
@@ -635,8 +696,15 @@ public class KCatMerger implements AutoCloseable {
 	 * @return mapped tripleID
 	 */
 	public TripleID extractMapped(int hdtIndex, TripleID id) {
-		TripleID mapped = new TripleID(extractSubject(hdtIndex, id.getSubject()),
-				extractPredicate(hdtIndex, id.getPredicate()), extractObject(hdtIndex, id.getObject()));
+		TripleID mapped;
+		if (graphsMaps != null) {
+			mapped = new TripleID(extractSubject(hdtIndex, id.getSubject()),
+					extractPredicate(hdtIndex, id.getPredicate()), extractObject(hdtIndex, id.getObject()),
+					extractGraph(hdtIndex, id.getGraph()));
+		} else {
+			mapped = new TripleID(extractSubject(hdtIndex, id.getSubject()),
+					extractPredicate(hdtIndex, id.getPredicate()), extractObject(hdtIndex, id.getObject()));
+		}
 		assert mapped.isValid() : "mapped to empty triples! " + id + " => " + mapped;
 		return mapped;
 	}
@@ -677,6 +745,13 @@ public class KCatMerger implements AutoCloseable {
 	}
 
 	/**
+	 * @return graph section
+	 */
+	public WriteDictionarySection getSectionGraph() {
+		return sectionGraph;
+	}
+
+	/**
 	 * @return sub sections
 	 */
 	public TreeMap<ByteString, DictionarySectionPrivate> getSectionSub() {
@@ -695,6 +770,13 @@ public class KCatMerger implements AutoCloseable {
 		running = true;
 
 		catMergerThread.startAll();
+	}
+
+	/**
+	 * @return if the merge is handling quads
+	 */
+	public boolean isQuad() {
+		return graphsMaps != null;
 	}
 
 	static class BiDuplicateBuffer implements Comparable<BiDuplicateBuffer> {

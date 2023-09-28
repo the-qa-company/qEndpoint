@@ -43,6 +43,11 @@ public class MultipleSectionLangDictionaryKCat implements DictionaryKCat {
 	}
 
 	@Override
+	public DictionarySection getGraphSection() {
+		return dictionary.getGraphs();
+	}
+
+	@Override
 	public DictionarySection getObjectSection() {
 		return allObjects.get(LiteralsUtils.NO_DATATYPE);
 	}
@@ -80,6 +85,11 @@ public class MultipleSectionLangDictionaryKCat implements DictionaryKCat {
 	public long nonTypedShift() {
 		// NDT are first
 		return countShared();
+	}
+
+	@Override
+	public long countGraphs() {
+		return dictionary.supportGraphs() ? dictionary.getGraphs().getNumberOfElements() : 0;
 	}
 
 	@Override

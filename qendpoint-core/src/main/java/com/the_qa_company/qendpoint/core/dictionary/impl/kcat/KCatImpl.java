@@ -124,6 +124,7 @@ public class KCatImpl implements Closeable {
 	private final boolean clearLocation;
 	private final MultiThreadListener listener;
 	private final String dictionaryType;
+	private final boolean quad;
 	private final int bufferSize;
 	private final HDTOptions hdtFormat;
 	private final TripleComponentOrder order;
@@ -173,6 +174,7 @@ public class KCatImpl implements Closeable {
 			hdts[firstIndex] = firstHDT;
 
 			dictionaryType = firstHDT.getDictionary().getType();
+			quad = firstHDT.getDictionary().supportGraphs();
 			baseURI = firstHDT.getBaseURI();
 			order = getOrder(firstHDT);
 
@@ -244,9 +246,11 @@ public class KCatImpl implements Closeable {
 							hdt.getDictionary().getNpredicates() + 1));
 					ModifiableBitmap bo = NegBitmap.of(Bitmap64Big.disk(diffLocation.resolve("d" + index + "o"),
 							hdt.getDictionary().getNobjects() + 1));
+					ModifiableBitmap bg = quad ? NegBitmap.of(Bitmap64Big.disk(diffLocation.resolve("d" + index + "g"),
+							hdt.getDictionary().getNgraphs() + 1)) : null;
 
 					// noinspection resource
-					deleteBitmapTriples[index] = new BitmapTriple(bs, bp, bo);
+					deleteBitmapTriples[index] = new BitmapTriple(bs, bp, bo, bg);
 
 					IteratorTripleID searchAll = hdt.getTriples().searchAll();
 					long numberOfElements = hdt.getTriples().getNumberOfElements();
@@ -260,11 +264,17 @@ public class KCatImpl implements Closeable {
 								"building diff bitmaps " + c + "/" + numberOfElements + " (hdt " + index + "/"
 										+ hdts.length + ")");
 
-						if (!deleteBitmap.access(searchAll.getLastTriplePosition())) {
+						if (!deleteBitmap.access(searchAll.getLastTriplePosition())) { // TODO:
+																						// use
+																						// graph
+																						// bitmap?
 							// not deleted
 							bs.set(tripleID.getSubject(), false);
 							bp.set(tripleID.getPredicate(), false);
 							bo.set(tripleID.getObject(), false);
+							if (quad) {
+								bg.set(tripleID.getGraph(), false);
+							}
 						}
 					}
 				}
@@ -306,7 +316,8 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception
 	 */
 	KCatMerger createMerger(ProgressListener listener) throws IOException {
-		return new KCatMerger(hdts, deleteBitmapTriples, location, listener, bufferSize, dictionaryType, hdtFormat);
+		return new KCatMerger(hdts, deleteBitmapTriples, location, listener, bufferSize, dictionaryType, quad,
+				hdtFormat);
 	}
 
 	/**
@@ -330,7 +341,7 @@ public class KCatImpl implements Closeable {
 				// stream
 				Iterator<TripleID> tripleIterator = GroupBySubjectMapIterator.fromHDTs(merger, hdts, deleteBitmaps);
 				try (WriteBitmapTriples triples = new WriteBitmapTriples(hdtFormat, location.resolve("triples"),
-						bufferSize)) {
+						bufferSize, quad)) {
 					long count = Arrays.stream(hdts).mapToLong(h -> h.getTriples().getNumberOfElements()).sum();
 
 					il.setRange(40, 80);

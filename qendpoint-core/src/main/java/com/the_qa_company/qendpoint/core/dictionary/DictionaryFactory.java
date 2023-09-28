@@ -264,9 +264,11 @@ public class DictionaryFactory {
 	public static DictionaryKCat createDictionaryKCat(Dictionary dictionary) {
 		String type = dictionary.getType();
 		return switch (type) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION -> new FourSectionDictionaryKCat(dictionary);
+		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION ->
+			new FourSectionDictionaryKCat(dictionary);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionaryKCat(dictionary);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG -> new MultipleSectionLangDictionaryKCat(dictionary);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
+			new MultipleSectionLangDictionaryKCat(dictionary);
 		default -> throw new IllegalArgumentException("Implementation of DictionaryKCat not found for " + type);
 		};
 	}
@@ -274,27 +276,30 @@ public class DictionaryFactory {
 	public static DictionaryPrivate createWriteDictionary(String type, HDTOptions spec,
 			DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
 			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub) {
-		return switch (type) {
-		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
-			new WriteFourSectionDictionary(spec, subject, predicate, object, shared);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION ->
-			new WriteMultipleSectionDictionary(spec, subject, predicate, shared, sub);
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG ->
-			new WriteMultipleSectionDictionaryLang(spec, subject, predicate, shared, sub);
-		default -> throw new IllegalArgumentException("Unknown dictionary type " + type);
-		};
+		return createWriteDictionary(type, spec, subject, predicate, object, shared, sub, null);
 	}
 
 	public static DictionaryPrivate createWriteDictionary(String type, HDTOptions spec,
 			DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
 			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub,
 			DictionarySectionPrivate graph) {
+		if (graph == null) {
+			return switch (type) {
+			case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
+				new WriteFourSectionDictionary(spec, subject, predicate, object, shared);
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION ->
+				new WriteMultipleSectionDictionary(spec, subject, predicate, shared, sub);
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG ->
+				new WriteMultipleSectionDictionaryLang(spec, subject, predicate, shared, sub);
+			default -> throw new IllegalArgumentException("Unknown dictionary type " + type);
+			};
+		}
 		return switch (type) {
 		case HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION ->
 			new WriteFourSectionDictionary(spec, subject, predicate, object, shared, graph);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
 			new WriteMultipleSectionDictionaryLang(spec, subject, predicate, shared, sub, graph);
-		default -> throw new IllegalArgumentException("Unknown dictionary type " + type);
+		default -> throw new IllegalArgumentException("Unknown quad dictionary type " + type);
 		};
 	}
 }

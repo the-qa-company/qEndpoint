@@ -27,9 +27,11 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 	private final List<TripleID> groupList = new ArrayList<>();
 	private Iterator<TripleID> groupListIterator;
 	private TripleID next;
+	private final boolean quad;
 
-	private GroupBySubjectMapIterator(Iterator<TripleID> mergeIterator) {
+	private GroupBySubjectMapIterator(Iterator<TripleID> mergeIterator, boolean quad) {
 		this.mergeIterator = new PeekIteratorImpl<>(mergeIterator);
+		this.quad = quad;
 	}
 
 	@Override
@@ -65,7 +67,11 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 		} while (mergeIterator.hasNext() && mergeIterator.peek().getSubject() == subject
 				&& mergeIterator.peek().getPredicate() == predicate);
 
-		groupList.sort(Comparator.comparingLong(TripleID::getObject));
+		if (quad) {
+			groupList.sort(Comparator.comparingLong(TripleID::getObject).thenComparingLong(TripleID::getGraph));
+		} else {
+			groupList.sort(Comparator.comparingLong(TripleID::getObject));
+		}
 
 		groupListIterator = groupList.iterator();
 
@@ -118,6 +124,7 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 	 */
 	public static Iterator<TripleID> fromHDTs(KCatMerger merger, HDT[] hdts, List<? extends Bitmap> deleteBitmaps) {
 		final long shared = merger.getCountShared();
+		boolean quad = merger.isQuad();
 		// sorted shared
 		List<ExceptionIterator<TripleID, RuntimeException>> sharedSubjectIterators = IntStream.range(0, hdts.length)
 				.mapToObj(hdtIndex -> {
@@ -206,7 +213,8 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				MergeExceptionIterator.buildOfTree(Function.identity(), GroupBySubjectMapIterator::compareSP,
 						sharedSubjectIterators, 0, sharedSubjectIterators.size()).asIterator(),
 				MergeExceptionIterator.buildOfTree(Function.identity(), GroupBySubjectMapIterator::compareSP,
-						subjectIterators, 0, subjectIterators.size()).asIterator()))));
+						subjectIterators, 0, subjectIterators.size()).asIterator()))),
+				quad);
 	}
 
 	private static Iterator<TripleID> createIdMapper(KCatMerger merger, int hdtIndex, HDT hdt, Iterator<TripleID> it,
