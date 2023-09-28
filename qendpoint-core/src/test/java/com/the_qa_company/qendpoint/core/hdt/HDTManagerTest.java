@@ -791,6 +791,54 @@ public class HDTManagerTest {
 
 	public static class StaticTest extends HDTManagerTestBase {
 		@Test
+		public void dirInjectionTest() throws Exception {
+			Path root = tempDir.newFolder().toPath();
+
+			int seed = 345678;
+			int split = 10;
+			long size = 500;
+
+			try {
+
+				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(size, seed);
+
+				HDTOptions gen = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG, HDTOptionsKeys.LOADER_TYPE_KEY,
+						HDTOptionsKeys.LOADER_CATTREE_LOADERTYPE_KEY, HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY,
+						root.resolve("work"), HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY,
+						root.resolve("work.hdt"), HDTOptionsKeys.LOADER_CATTREE_LOADERTYPE_KEY, "disk",
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("workd"),
+						HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("workd.hdt"));
+
+				Path didr = root.resolve("test");
+
+				Files.createDirectories(didr);
+
+				for (int i = 0; i < split; i++) {
+					supplier.createNTFile(didr.resolve("d" + i + ".nt"));
+				}
+
+				LargeFakeDataSetStreamSupplier supplier2 = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(size * split, seed);
+				Path exc = root.resolve("expected.hdt");
+				supplier2.createAndSaveFakeHDT(gen, exc);
+
+				Path actual = root.resolve("actual.hdt");
+				try (HDT hdt = HDTManager.generateHDT(didr, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.DIR,
+						gen, ProgressListener.ignore())) {
+					hdt.saveToHDT(actual);
+				}
+
+				try (HDT actHDT = HDTManager.mapHDT(actual); HDT excHDT = HDTManager.mapHDT(exc)) {
+					assertEqualsHDT(excHDT, actHDT);
+				}
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+
+		@Test
 		public void multiSectionTest() throws ParserException, IOException, NotFoundException {
 			Path root = tempDir.newFolder().toPath();
 			Path hdtFile = root.resolve("testhdt.hdt");
