@@ -34,6 +34,7 @@ import java.util.zip.GZIPOutputStream;
  * @author Antoine Willerval
  */
 public class LargeFakeDataSetStreamSupplier {
+	public static final String BASE_URI = "http://w";
 
 	private static final Charset DEFAULT_CHARSET = ByteStringUtil.STRING_ENCODING;
 
@@ -243,7 +244,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 * @throws IOException     io exception
 	 */
 	public HDT createFakeHDT(HDTOptions spec) throws ParserException, IOException {
-		return HDTManager.generateHDT(createTripleStringStream(), "http://w", spec, null);
+		return HDTManager.generateHDT(createTripleStringStream(), BASE_URI, spec, null);
 	}
 
 	/**
@@ -294,7 +295,7 @@ public class LargeFakeDataSetStreamSupplier {
 	}
 
 	private CharSequence createIRI() {
-		return "http://w" + random.nextInt(maxElementSplit) + "i.test.org/#Obj" + random.nextInt(maxElementSplit);
+		return BASE_URI + random.nextInt(maxElementSplit) + "i.test.org/#Obj" + random.nextInt(maxElementSplit);
 	}
 
 	private CharSequence createType() {

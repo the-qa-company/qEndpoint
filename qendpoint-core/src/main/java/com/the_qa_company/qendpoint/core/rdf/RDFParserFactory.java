@@ -95,4 +95,19 @@ public class RDFParserFactory {
 				(triple, pos) -> pipe.addElement(triple.tripleToString())));
 	}
 
+	/**
+	 * convert a stream to a triple iterator
+	 *
+	 * @param parser   the parser to convert the stream
+	 * @param file     path to the file to parse
+	 * @param baseUri  the base uri to parse
+	 * @param notation the rdf notation to parse
+	 * @return iterator
+	 */
+	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
+			boolean keepBNode, RDFNotation notation) {
+		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
+				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+	}
+
 }

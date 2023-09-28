@@ -276,8 +276,13 @@ public class HDTManagerImpl extends HDTManager {
 	public HDT doGenerateHDTDisk(String rdfFileName, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
-		// read this file as stream, do not compress to allow the
-		// compressionType to be different from the file extension
+		if (compressionType == CompressionType.NONE) {
+			RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
+			try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, rdfFileName,
+					baseURI, true, rdfNotation)) {
+				return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
+			}
+		}
 		try (InputStream stream = IOUtil.getFileInputStream(rdfFileName, false)) {
 			return doGenerateHDTDisk(stream, baseURI, rdfNotation, compressionType, hdtFormat, listener);
 		}
@@ -420,8 +425,10 @@ public class HDTManagerImpl extends HDTManager {
 	protected HDT doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, String filename, String baseURI,
 			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
-		try (InputStream is = IOUtil.getFileInputStream(filename)) {
-			return doHDTCatTree(fluxStop, supplier, is, baseURI, rdfNotation, hdtFormat, listener);
+		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
+		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, filename, baseURI, true,
+				rdfNotation)) {
+			return doHDTCatTree(fluxStop, supplier, iterator, baseURI, hdtFormat, listener);
 		}
 	}
 
