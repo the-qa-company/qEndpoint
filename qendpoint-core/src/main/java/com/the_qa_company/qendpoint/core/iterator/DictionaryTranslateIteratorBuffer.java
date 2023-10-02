@@ -79,7 +79,7 @@ public class DictionaryTranslateIteratorBuffer implements IteratorTripleString {
 
 	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID, DictionaryPrivate dictionary,
 			CharSequence s, CharSequence p, CharSequence o, CharSequence g) {
-		this(iteratorTripleID, dictionary, s, p, o, g, DEFAULT_BLOCK_SIZE, true);
+		this(iteratorTripleID, dictionary, s, p, o, g, DEFAULT_BLOCK_SIZE, g != null);
 	}
 
 	public DictionaryTranslateIteratorBuffer(SuppliableIteratorTripleID iteratorTripleID, DictionaryPrivate dictionary,

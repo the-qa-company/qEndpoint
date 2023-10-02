@@ -370,8 +370,8 @@ public class QEPCoreTest {
 		}
 
 		@Test
-		public void rdfNodeTypeMapTest() throws QEPCoreException, IOException {
-			try (HDT hdt = HDTManager.mapHDT(rootHDT); QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
+		public void rdfNodeTypeMapTest() throws QEPCoreException {
+			try (QEPCore core = new QEPCore(coreRoot, HDTOptions.of())) {
 				try (QueryCloseableIterator it = core.search()) {
 					while (it.hasNext()) {
 						QEPComponentTriple triple = it.next();

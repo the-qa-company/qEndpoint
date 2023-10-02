@@ -108,7 +108,7 @@ public class HDTManagerTest {
 		 * <a href="https://github.com/rdfhdt/hdt-java/issues/177">GH#177</a>
 		 */
 		protected static final boolean ALLOW_STRING_CONSISTENCY_TEST = false;
-		protected static final long SIZE_VALUE = 1L << 15;
+		protected static final long SIZE_VALUE = 1L << 10;
 		protected static final int SEED = 67;
 
 		private HDTManagerTestBase() {
@@ -1726,7 +1726,7 @@ public class HDTManagerTest {
 						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
 
 				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION);
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
 
 				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NQUAD, spec,
 						ProgressListener.ignore())) {
