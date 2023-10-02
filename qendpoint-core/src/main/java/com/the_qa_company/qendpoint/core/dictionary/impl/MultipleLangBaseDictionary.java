@@ -293,6 +293,9 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 
 			return null;
 		}
+		case GRAPH -> {
+			return graph.extract(id);
+		}
 		default -> throw new NotImplementedException();
 		}
 	}

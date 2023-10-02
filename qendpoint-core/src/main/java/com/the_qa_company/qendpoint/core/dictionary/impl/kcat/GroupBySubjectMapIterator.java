@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.GraphDeleteBitmap;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -130,7 +131,9 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				.mapToObj(hdtIndex -> {
 					// extract hdt elements for this index
 					HDT hdt = hdts[hdtIndex];
-					Bitmap deleteBitmap = deleteBitmaps == null ? null : deleteBitmaps.get(hdtIndex);
+					GraphDeleteBitmap deleteBitmap = deleteBitmaps == null ? null
+							: GraphDeleteBitmap.wrap(deleteBitmaps.get(hdtIndex),
+									quad ? hdt.getDictionary().getNgraphs() : 1);
 
 					if (hdt.getTriples().getNumberOfElements() == 0) {
 						// no triples
@@ -169,7 +172,9 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				.mapToObj(hdtIndex -> {
 					// extract hdt elements for this index
 					HDT hdt = hdts[hdtIndex];
-					Bitmap deleteBitmap = deleteBitmaps == null ? null : deleteBitmaps.get(hdtIndex);
+					GraphDeleteBitmap deleteBitmap = deleteBitmaps == null ? null
+							: GraphDeleteBitmap.wrap(deleteBitmaps.get(hdtIndex),
+									quad ? hdt.getDictionary().getNgraphs() : 1);
 
 					if (hdt.getTriples().getNumberOfElements() == 0) {
 						// no triples
@@ -218,21 +223,29 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 	}
 
 	private static Iterator<TripleID> createIdMapper(KCatMerger merger, int hdtIndex, HDT hdt, Iterator<TripleID> it,
-			long start, Bitmap deleteBitmap) {
+			long start, GraphDeleteBitmap deleteBitmap) {
 		if (deleteBitmap == null) {
 			return new MapIterator<>(it, (tid) -> {
 				assert inHDT(tid, hdt);
 				return merger.extractMapped(hdtIndex, tid);
 			});
-		} else {
+		}
+		if (hdt.getDictionary().supportGraphs()) {
 			return MapFilterIterator.of(it, (tid, index) -> {
-				if (deleteBitmap.access(index + start)) {
+				if (deleteBitmap.access(tid.getGraph() - 1, index + start)) {
 					return null;
 				}
 				assert inHDT(tid, hdt);
 				return merger.extractMapped(hdtIndex, tid);
 			});
 		}
+		return MapFilterIterator.of(it, (tid, index) -> {
+			if (deleteBitmap.access(index + start)) {
+				return null;
+			}
+			assert inHDT(tid, hdt);
+			return merger.extractMapped(hdtIndex, tid);
+		});
 	}
 
 	private static int compareSP(TripleID t1, TripleID t2) {

@@ -15,6 +15,7 @@ import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTManagerTest;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -60,7 +61,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@Suite.SuiteClasses({KCatMergerTest.BaseTest.class, KCatMergerTest.QuadCatDiffTests.class})
+@Suite.SuiteClasses({ KCatMergerTest.BaseTest.class, KCatMergerTest.QuadCatDiffTests.class })
 @RunWith(Suite.class)
 public class KCatMergerTest extends AbstractMapMemoryTest {
 	@RunWith(Parameterized.class)
@@ -71,7 +72,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			return Stream.of(false, true)
 					.flatMap(multi -> Stream.of(false, true)
 							.flatMap(unicode -> Stream.of(false, true).flatMap(
-									map -> Stream.of(2, 10).map(kcat -> new Object[]{multi, unicode, map, kcat}))))
+									map -> Stream.of(2, 10).map(kcat -> new Object[] { multi, unicode, map, kcat }))))
 					.collect(Collectors.toList());
 		}
 
@@ -97,8 +98,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			return section;
 		}
 
-		private Map<? extends CharSequence, DictionarySection> loadMultiSection(List<CharSequence> seq, InputStream stream)
-				throws IOException {
+		private Map<? extends CharSequence, DictionarySection> loadMultiSection(List<CharSequence> seq,
+				InputStream stream) throws IOException {
 			Map<ByteString, DictionarySection> sectionMap = new TreeMap<>();
 			for (CharSequence key : seq) {
 				PFCDictionarySection section = new PFCDictionarySection(HDTOptions.EMPTY);
@@ -116,7 +117,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 				if (multi) {
 					spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
+					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
 				}
 
 				// create "kcat" fake HDTs
@@ -184,7 +186,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 							long predicates = hdt.getDictionary().getPredicates().getNumberOfElements();
 							long objects = multi
 									? hdt.getDictionary().getAllObjects().values().stream()
-									.mapToLong(DictionarySection::getNumberOfElements).sum()
+											.mapToLong(DictionarySection::getNumberOfElements).sum()
 									: hdt.getDictionary().getObjects().getNumberOfElements();
 
 							assertEquals(shared + objects, objectCount.get());
@@ -194,14 +196,14 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 								long sv = sm.get(i);
 								long ov = om.get(i);
 								if (merger.removeHeader(sv) == 0) {
-									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing shared subject #" + i + "/"
-									     + shared + " for node: "
-									     + hdt.getDictionary().idToString(i, TripleComponentRole.SUBJECT));
+									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing shared subject #" + i
+											+ "/" + shared + " for node: "
+											+ hdt.getDictionary().idToString(i, TripleComponentRole.SUBJECT));
 								}
 								if (merger.removeHeader(ov) == 0) {
 									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing shared object #" + i + "/"
-									     + shared + " for node: "
-									     + hdt.getDictionary().idToString(i, TripleComponentRole.OBJECT));
+											+ shared + " for node: "
+											+ hdt.getDictionary().idToString(i, TripleComponentRole.OBJECT));
 								}
 
 								assertEquals("shared element not mapped to the same object", ov, sv);
@@ -211,24 +213,24 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 							for (long i = 1; i <= subjects; i++) {
 								if (merger.removeHeader(sm.get(shared + i)) == 0) {
 									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing subject #" + i + "/"
-									     + subjects + " for node: "
-									     + hdt.getDictionary().idToString(i + shared, TripleComponentRole.SUBJECT));
+											+ subjects + " for node: "
+											+ hdt.getDictionary().idToString(i + shared, TripleComponentRole.SUBJECT));
 								}
 							}
 
 							for (long i = 1; i <= objects; i++) {
 								if (merger.removeHeader(om.get(shared + i)) == 0) {
-									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing object #" + i + "/" + subjects
-									     + " for node: "
-									     + hdt.getDictionary().idToString(i + shared, TripleComponentRole.OBJECT));
+									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing object #" + i + "/"
+											+ subjects + " for node: "
+											+ hdt.getDictionary().idToString(i + shared, TripleComponentRole.OBJECT));
 								}
 							}
 
 							for (long i = 1; i <= predicates; i++) {
 								if (pm.get(i) == 0) {
 									fail("HDT #" + hdtId + "/" + impl.hdts.length + " Missing predicate #" + i + "/"
-									     + subjects + " for node: "
-									     + hdt.getDictionary().idToString(i, TripleComponentRole.PREDICATE));
+											+ subjects + " for node: "
+											+ hdt.getDictionary().idToString(i, TripleComponentRole.PREDICATE));
 								}
 							}
 
@@ -238,8 +240,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				try (InputStream stream = new BufferedInputStream(Files.newInputStream(dictFile))) {
 					// read the sections
 					try (DictionarySection sh = loadSection(stream);
-					     DictionarySection su = loadSection(stream);
-					     DictionarySection pr = loadSection(stream)) {
+							DictionarySection su = loadSection(stream);
+							DictionarySection pr = loadSection(stream)) {
 						Map<? extends CharSequence, DictionarySection> dictionarySectionMap;
 						DictionarySection ob;
 						if (multi) {
@@ -256,9 +258,10 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 								assertNotEquals("Invalid test, shared section empty", 0,
 										exceptedHDT.getDictionary().getShared().getNumberOfElements());
 								// assert equals between the dictionaries
-								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Shared", exceptedDict.getShared(), sh);
-								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Subjects", exceptedDict.getSubjects(),
-										su);
+								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Shared", exceptedDict.getShared(),
+										sh);
+								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Subjects",
+										exceptedDict.getSubjects(), su);
 								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Predicates",
 										exceptedDict.getPredicates(), pr);
 								if (multi) {
@@ -267,12 +270,13 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 									dictionarySectionMap.forEach((key, sec) -> {
 										DictionarySection subSec = exceptedDictSub.get(key);
 										assertNotNull("sub#" + key + " wasn't found", subSec);
-										HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Section#" + key, subSec, sec);
+										HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Section#" + key, subSec,
+												sec);
 									});
 								} else {
 									assert ob != null;
-									HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Objects", exceptedDict.getObjects(),
-											ob);
+									HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Objects",
+											exceptedDict.getObjects(), ob);
 								}
 							}
 						} finally {
@@ -297,7 +301,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				HDTOptions spec = HDTOptions.of();
 				if (multi) {
 					spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
+					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
 				}
 
 				if (map) {
@@ -305,8 +310,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				}
 
 				// create "kcat" fake HDTs
-				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42).withMaxElementSplit(50)
-						.withUnicode(unicode);
+				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42)
+						.withMaxElementSplit(50).withUnicode(unicode);
 
 				long size = 0;
 				List<String> hdts = new ArrayList<>();
@@ -350,7 +355,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				HDTOptions spec = HDTOptions.of();
 				if (multi) {
 					spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
+					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
 				}
 
 				if (map) {
@@ -358,8 +364,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				}
 
 				// create "kcat" fake HDTs
-				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42).withMaxElementSplit(50)
-						.withUnicode(unicode);
+				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42)
+						.withMaxElementSplit(50).withUnicode(unicode);
 
 				Random rndDelete = new Random(45678);
 				List<String> hdts = new ArrayList<>();
@@ -420,7 +426,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				HDTOptions spec = HDTOptions.of();
 				if (multi) {
 					spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
+					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
 				}
 
 				if (map) {
@@ -428,8 +435,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				}
 
 				// create "kcat" fake HDTs
-				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42).withMaxElementSplit(50)
-						.withUnicode(unicode);
+				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42)
+						.withMaxElementSplit(50).withUnicode(unicode);
 
 				Random rndDelete = new Random(45678);
 				List<String> hdts = new ArrayList<>();
@@ -494,8 +501,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				try (InputStream stream = new BufferedInputStream(Files.newInputStream(dictFile))) {
 					// read the sections
 					try (DictionarySection sh = loadSection(stream);
-					     DictionarySection su = loadSection(stream);
-					     DictionarySection pr = loadSection(stream)) {
+							DictionarySection su = loadSection(stream);
+							DictionarySection pr = loadSection(stream)) {
 						Map<? extends CharSequence, DictionarySection> dictionarySectionMap;
 						DictionarySection ob;
 						if (multi) {
@@ -512,9 +519,10 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 								assertNotEquals("Invalid test, shared section empty", 0,
 										exceptedHDT.getDictionary().getShared().getNumberOfElements());
 								// assert equals between the dictionaries
-								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Shared", exceptedDict.getShared(), sh);
-								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Subjects", exceptedDict.getSubjects(),
-										su);
+								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Shared", exceptedDict.getShared(),
+										sh);
+								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Subjects",
+										exceptedDict.getSubjects(), su);
 								HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Predicates",
 										exceptedDict.getPredicates(), pr);
 								if (multi) {
@@ -523,12 +531,13 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 									dictionarySectionMap.forEach((key, sec) -> {
 										DictionarySection subSec = exceptedDictSub.get(key);
 										assertNotNull("sub#" + key + " wasn't found", subSec);
-										HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Section#" + key, subSec, sec);
+										HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Section#" + key, subSec,
+												sec);
 									});
 								} else {
 									assert ob != null;
-									HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Objects", exceptedDict.getObjects(),
-											ob);
+									HDTManagerTest.HDTManagerTestBase.assertEqualsHDT("Objects",
+											exceptedDict.getObjects(), ob);
 								}
 							}
 						} finally {
@@ -547,14 +556,13 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 		@Rule
 		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
-		@Parameterized.Parameters(name = "{0}")
+		@Parameterized.Parameters(name = "{0} default:{1}")
 		public static Collection<Object[]> params() {
-			return Stream.of(
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD
-			).flatMap(dict -> Stream.of(true, false)
-					.map(defaultGraph -> new Object[]{dict, defaultGraph})
-			).toList();
+			return Stream
+					.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+							HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD)
+					.flatMap(dict -> Stream.of(true, false).map(defaultGraph -> new Object[] { dict, defaultGraph }))
+					.toList();
 		}
 
 		@Parameterized.Parameter
@@ -567,9 +575,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 		@Before
 		public void setupVals() throws IOException {
-			spec = HDTOptions.of(
-					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType
-			);
+			spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType);
 			root = tempDir.newFolder().toPath();
 		}
 
@@ -584,16 +590,19 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			int count = 10;
 
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(size, 6789)
-					.withMaxElementSplit((int) (size / 50))
-					.withQuads(true)
-					.withNoDefaultGraph(defaultGraph);
+					.createSupplierWithMaxTriples(size, 6789).withMaxElementSplit((int) (size / 50)).withQuads(true)
+					.withNoDefaultGraph(!defaultGraph);
 
 			List<Path> files = IntStream.range(0, count).mapToObj(i -> root.resolve("sub-" + i + ".hdt")).toList();
 
+			List<Bitmap> deletes = new ArrayList<>();
 			// create the files to cat
 			for (Path file : files) {
-				supplier.createAndSaveFakeHDT(spec, file);
+				try (HDT hdt = supplier.createFakeHDT(spec)) {
+					hdt.saveToHDT(file);
+					deletes.add(GraphDeleteBitmap.empty(hdt.getDictionary().getNgraphs(),
+							hdt.getTriples().getNumberOfElements()));
+				}
 			}
 
 			supplier.withMaxTriples(count * size);
@@ -603,32 +612,48 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 			supplier.createAndSaveFakeHDT(spec, exceptedHDT);
 
-
 			Path actualHDT = root.resolve("actual.hdt");
+			Path actualdiffHDT = root.resolve("actualdiff.hdt");
+
+			// compute using cat algorithm
 			try (HDT hdt = HDTManager.catHDTPath(files, spec, ProgressListener.ignore())) {
 				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt);
+				assertTrue(hdt.getDictionary().supportGraphs());
 				hdt.saveToHDT(actualHDT);
 			}
 
-			try (
-					HDT excepted = HDTManager.mapHDT(exceptedHDT);
-					HDT actual = HDTManager.mapHDT(actualHDT)
-			) {
+			// compute using diff algorithm with empty bitmaps
+			try (HDT hdt = HDTManager.diffBitCatHDTPath(files, deletes, spec, ProgressListener.ignore())) {
+				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt);
+				assertTrue(hdt.getDictionary().supportGraphs());
+				hdt.saveToHDT(actualdiffHDT);
+			}
+
+			// test results
+			try (HDT excepted = HDTManager.mapHDT(exceptedHDT);
+					HDT actual = HDTManager.mapHDT(actualHDT);
+					HDT actualdiff = HDTManager.mapHDT(actualdiffHDT)) {
+				// clear original size because it impossible to compute it in a
+				// diff
+				excepted.getHeader().remove("_:statistics", HDTVocabulary.ORIGINAL_SIZE, "");
+				actual.getHeader().remove("_:statistics", HDTVocabulary.ORIGINAL_SIZE, "");
+				actualdiff.getHeader().remove("_:statistics", HDTVocabulary.ORIGINAL_SIZE, "");
+
 				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(actual);
 				HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(excepted, actual);
+				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(actualdiff);
+				HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(excepted, actualdiff);
 			}
 		}
 
 		@Test
 		public void catDiffTest() throws ParserException, IOException, NotFoundException {
-			long size = 1000;
+			long size = 1625;
 			int count = 10;
 
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(size, 6789)
-					.withMaxElementSplit((int) (size / 50))
-					.withQuads(true)
-					.withNoDefaultGraph(defaultGraph);
+					.createSupplierWithMaxTriples(size, 6789).withMaxElementSplit((int) (size / 50)).withQuads(true)
+					.withNoDefaultGraph(!defaultGraph);
 
 			List<Path> files = IntStream.range(0, count).mapToObj(i -> root.resolve("sub-" + i + ".hdt")).toList();
 
@@ -642,20 +667,21 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				for (Path file : files) {
 					try (HDT hdt = supplier.createFakeHDT(spec)) {
 						hdt.saveToHDT(file);
-						long graphs = hdt.getDictionary().getNgraphs();
+						long graphs = hdt.getDictionary().supportGraphs() ? hdt.getDictionary().getNgraphs() : 1;
+						assert graphs > 0;
 						long triples = hdt.getTriples().getNumberOfElements();
 
-						GraphDeleteBitmap memory = GraphDeleteBitmap.memory(graphs, triples);
+						GraphDeleteBitmap memory = GraphDeleteBitmap.memory(graphs, triples + 1);
 
 						// create delete bitmap
 						int toDelete = (int) (triples / 200);
 						for (int i = 0; i < toDelete; i++) {
-							int tripleId = deleteRnd.nextInt((int) triples);
+							int tripleId = 1 + deleteRnd.nextInt((int) triples);
 
 							// add +1 for a special case to delete all the nodes
 							int graphId = deleteRnd.nextInt((int) graphs + 1);
 
-							if (graphId == graphs) {
+							if (graphId >= graphs) {
 								// delete the triple
 								for (int j = 0; j < graphs; j++) {
 									memory.set(j, tripleId, true);
@@ -671,7 +697,10 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						while (it.hasNext()) {
 							TripleString ts = it.next();
 							long pos = it.getLastTriplePosition();
-							long g = ts.getGraph().isEmpty() ? 1 : hdt.getDictionary().stringToId(ts.getGraph(), TripleComponentRole.GRAPH);
+							long g = ts.getGraph().isEmpty() ? 0
+									: (hdt.getDictionary().stringToId(ts.getGraph(), TripleComponentRole.GRAPH) - 1);
+
+							assert g >= 0;
 
 							if (!memory.access(g, pos)) {
 								// not deleted, we can add it
@@ -687,26 +716,24 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 				Path exceptedHDT = root.resolve("excepted.hdt");
 
-				try (HDT hdt = HDTManager.generateHDT(dataset.iterator(), "http://w", spec, ProgressListener.ignore())) {
+				try (HDT hdt = HDTManager.generateHDT(dataset.iterator(), LargeFakeDataSetStreamSupplier.BASE_URI, spec,
+						ProgressListener.ignore())) {
 					hdt.saveToHDT(exceptedHDT);
 				}
 
-				// supplier.createAndSaveFakeHDT(spec, exceptedHDT);
-
-				// create HDT by iterating and removing the quads
-
-
 				Path actualHDT = root.resolve("actual.hdt");
-				try (HDT hdt = HDTManager.catHDTPath(files, spec, ProgressListener.ignore())) {
+				try (HDT hdt = HDTManager.diffBitCatHDTPath(files, deleteBitmaps, spec, ProgressListener.ignore())) {
 					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt);
 					hdt.saveToHDT(actualHDT);
 				}
 
-				try (
-						HDT excepted = HDTManager.mapHDT(exceptedHDT);
-						HDT actual = HDTManager.mapHDT(actualHDT)
-				) {
+				try (HDT excepted = HDTManager.mapHDT(exceptedHDT); HDT actual = HDTManager.mapHDT(actualHDT)) {
 					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(actual);
+
+					// clear original size because it impossible to compute it
+					// in a diff
+					excepted.getHeader().remove("_:statistics", HDTVocabulary.ORIGINAL_SIZE, "");
+					actual.getHeader().remove("_:statistics", HDTVocabulary.ORIGINAL_SIZE, "");
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(excepted, actual);
 				}
 			} finally {

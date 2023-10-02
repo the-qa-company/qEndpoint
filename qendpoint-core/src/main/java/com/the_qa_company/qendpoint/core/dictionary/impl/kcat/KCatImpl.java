@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
+import com.the_qa_company.qendpoint.core.compact.bitmap.GraphDeleteBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.NegBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
@@ -257,6 +258,11 @@ public class KCatImpl implements Closeable {
 
 					// fill the maps based on the deleted triples
 					long c = 0;
+
+					@SuppressWarnings("resource")
+					GraphDeleteBitmap bm = GraphDeleteBitmap.wrap(deleteBitmap,
+							quad ? hdt.getDictionary().getNgraphs() : 1);
+
 					while (searchAll.hasNext()) {
 						TripleID tripleID = searchAll.next();
 
@@ -264,10 +270,11 @@ public class KCatImpl implements Closeable {
 								"building diff bitmaps " + c + "/" + numberOfElements + " (hdt " + index + "/"
 										+ hdts.length + ")");
 
-						if (!deleteBitmap.access(searchAll.getLastTriplePosition())) { // TODO:
-																						// use
-																						// graph
-																						// bitmap?
+						long g = quad ? (tripleID.getGraph() - 1) : 0;
+
+						assert g >= 0;
+
+						if (!bm.access(g, searchAll.getLastTriplePosition())) {
 							// not deleted
 							bs.set(tripleID.getSubject(), false);
 							bp.set(tripleID.getPredicate(), false);
