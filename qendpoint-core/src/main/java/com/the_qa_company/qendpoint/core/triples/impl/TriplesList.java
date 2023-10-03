@@ -347,6 +347,11 @@ public class TriplesList implements TempTriples {
 	}
 
 	@Override
+	public TripleID findTriple(long position, TripleID buffer) {
+		return arrayOfTriples.get((int) position).asTripleID();
+	}
+
+	@Override
 	public TripleID findTriple(long position) {
 		return arrayOfTriples.get((int) position).asTripleID();
 	}

@@ -80,5 +80,18 @@ public interface Triples extends Closeable {
 	 * @see IteratorTripleID#getLastTriplePosition()
 	 * @see IteratorTripleString#getLastTriplePosition()
 	 */
-	TripleID findTriple(long position);
+	default TripleID findTriple(long position) {
+		return findTriple(position, new TripleID());
+	}
+
+	/**
+	 * Find a triple with his position
+	 *
+	 * @param position The triple position
+	 * @param buffer   buffer to put the triple if an allocation is required
+	 * @return triple
+	 * @see IteratorTripleID#getLastTriplePosition()
+	 * @see IteratorTripleString#getLastTriplePosition()
+	 */
+	TripleID findTriple(long position, TripleID buffer);
 }

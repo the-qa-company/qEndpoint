@@ -36,7 +36,7 @@ public class BitmapFactoryImpl extends BitmapFactory {
 	protected ModifiableBitmap doCreateModifiableBitmap(String type) {
 		return switch (Objects.requireNonNullElse(type, HDTVocabulary.BITMAP_TYPE_PLAIN)) {
 		case HDTVocabulary.BITMAP_TYPE_PLAIN -> Bitmap375Big.memory(0);
-		case HDTVocabulary.BITMAP_TYPE_ROARING -> new RoaringBitmap();
+		case HDTVocabulary.BITMAP_TYPE_ROARING -> new RoaringBitmap64();
 		default -> throw new IllegalArgumentException("Implementation not found for Bitmap with type " + type);
 		};
 	}

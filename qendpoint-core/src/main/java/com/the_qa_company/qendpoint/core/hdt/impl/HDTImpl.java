@@ -271,9 +271,17 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		}
 
 		// Conversion from TripleString to TripleID
-		TripleID triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
-				dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
-				dictionary.stringToId(object, TripleComponentRole.OBJECT));
+		TripleID triple;
+
+		if (dictionary.supportGraphs()) {
+			triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
+					dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
+					dictionary.stringToId(object, TripleComponentRole.OBJECT), 0);
+		} else {
+			triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
+					dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
+					dictionary.stringToId(object, TripleComponentRole.OBJECT));
+		}
 
 		if (triple.isNoMatch()) {
 			// throw new NotFoundException("String not found in dictionary");
@@ -309,17 +317,20 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			};
 		}
 
+		CharSequence g = dictionary.supportGraphs() ? "" : null;
+
 		if (isMapped) {
 			try {
 				return new DictionaryTranslateIteratorBuffer(triples.search(triple), dictionary, subject, predicate,
-						object);
+						object, g);
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				// FIXME: find why this can happen
-				return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object);
+				return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object,
+						g);
 			}
 		} else {
-			return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object);
+			return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object, g);
 		}
 	}
 

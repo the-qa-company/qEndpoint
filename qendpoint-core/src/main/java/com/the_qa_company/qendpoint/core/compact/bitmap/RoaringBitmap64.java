@@ -1,15 +1,15 @@
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.roaringbitmap.longlong.Roaring64Bitmap;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 /**
  * {@link ModifiableBitmap} wrapper of the {@link Roaring64Bitmap} class, it
@@ -19,10 +19,10 @@ import java.nio.ByteBuffer;
  *
  * @author Antoine Willerval
  */
-public class RoaringBitmap implements SimpleModifiableBitmap {
+public class RoaringBitmap64 implements SimpleModifiableBitmap {
 	private final Roaring64Bitmap rbm;
 
-	public RoaringBitmap() {
+	public RoaringBitmap64() {
 		this.rbm = Roaring64Bitmap.bitmapOf();
 	}
 
@@ -37,29 +37,25 @@ public class RoaringBitmap implements SimpleModifiableBitmap {
 
 	@Override
 	public long getNumBits() {
-		throw new NotImplementedException();
+		return rbm.getLongCardinality();
 	}
 
 	@Override
 	public long getSizeBytes() {
-		return rbm.serializedSizeInBytes();
+		return rbm.serializedSizeInBytes() + 8;
 	}
 
 	@Override
 	public void save(OutputStream output, ProgressListener listener) throws IOException {
-		long size = getSizeBytes();
+		long size = rbm.serializedSizeInBytes();
 		IOUtil.writeLong(output, size);
-		ByteBuffer b2 = ByteBuffer.allocate((int) size);
-		rbm.serialize(b2);
-		output.write(b2.array());
+		rbm.serialize(new DataOutputStream(output));
 	}
 
 	@Override
 	public void load(InputStream input, ProgressListener listener) throws IOException {
-		long size = IOUtil.readLong(input);
-		ByteBuffer b2 = ByteBuffer.allocate((int) size);
-		input.read(b2.array());
-		rbm.deserialize(b2);
+		IOUtil.readLong(input); // ignored
+		rbm.deserialize(new DataInputStream(input));
 	}
 
 	@Override

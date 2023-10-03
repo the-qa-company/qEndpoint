@@ -54,11 +54,13 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	protected SortedDictionarySectionIndex nonTypedIndex;
 	protected SortedDictionarySectionIndex subjectResIndex;
 	protected SortedDictionarySectionIndex sharedIndex;
+	protected SortedDictionarySectionIndex graphIndex;
 	protected TreeMap<ByteString, DictionarySectionPrivate> languages;
 	protected TreeMap<ByteString, DictionarySectionPrivate> typed;
 	protected TreeMap<ByteString, ObjectIdLocationData> objectsLocations;
 	protected TreeMap<ByteString, ObjectIdLocationData> languagesLocations;
 	protected DictionarySectionPrivate shared;
+	protected DictionarySectionPrivate graph;
 
 	// locations
 	protected LongArray objectIdLocations = LongArray.of(0);
@@ -86,6 +88,9 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 
 	@Override
 	public String getType() {
+		if (supportGraphs()) {
+			return HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD;
+		}
 		return HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG;
 	}
 
@@ -127,6 +132,11 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	}
 
 	@Override
+	public long getNgraphs() {
+		return graph.getNumberOfElements();
+	}
+
+	@Override
 	public DictionarySection getSubjects() {
 		return subjects;
 	}
@@ -139,6 +149,11 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	@Override
 	public DictionarySection getObjects() {
 		throw new NotImplementedException();
+	}
+
+	@Override
+	public DictionarySectionPrivate getGraphs() {
+		return graph;
 	}
 
 	@Override
@@ -238,6 +253,9 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			nonTypedIndex = new SortedDictionarySectionIndex(nonTyped);
 			subjectResIndex = new SortedDictionarySectionIndex(subjects);
 			sharedIndex = new SortedDictionarySectionIndex(shared);
+			if (supportGraphs()) {
+				graphIndex = new SortedDictionarySectionIndex(graph);
+			}
 		}
 	}
 
@@ -275,6 +293,9 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 
 			return null;
 		}
+		case GRAPH -> {
+			return graph.extract(id);
+		}
 		default -> throw new NotImplementedException();
 		}
 	}
@@ -289,6 +310,13 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		switch (position) {
 		case PREDICATE -> {
 			long id = predicates.locate(str);
+			return id > 0 ? id : -1;
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			}
+			long id = graph.locate(str);
 			return id > 0 ? id : -1;
 		}
 		case SUBJECT -> {
@@ -367,6 +395,12 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 				return StringSuffixIterator.of(sec.getSortedEntries(), suffix);
 			}).toList());
 		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			}
+			return getGraphs().getSortedEntries();
+		}
 		default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
@@ -436,6 +470,12 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 			}
 			return nonTypedIndex.getNodeType(id - nshared);
 		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			}
+			return graphIndex.getNodeType(id);
+		}
 		}
 		throw new IllegalArgumentException("Method is not applicable on z this dictionary");
 	}
@@ -456,8 +496,13 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	}
 
 	@Override
+	public boolean supportGraphs() {
+		return graph != null;
+	}
+
+	@Override
 	public void close() throws IOException {
-		Closer.closeAll(subjects, predicates, nonTyped, typed, languages, shared);
+		Closer.closeAll(subjects, predicates, nonTyped, typed, languages, shared, graph);
 	}
 
 	protected static class StopPredicate<T extends CharSequence> implements Predicate<T> {

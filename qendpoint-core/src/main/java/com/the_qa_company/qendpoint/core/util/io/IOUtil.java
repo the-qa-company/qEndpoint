@@ -46,6 +46,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -186,6 +187,13 @@ public class IOUtil {
 	public static CloseMappedByteBuffer mapChannel(String filename, FileChannel ch, FileChannel.MapMode mode,
 			long position, long size) throws IOException {
 		return new CloseMappedByteBuffer(filename, ch.map(mode, position, size), false);
+	}
+
+	public static long readLong(long location, FileChannel channel, ByteOrder order) throws IOException {
+		try (CloseMappedByteBuffer buffer = new CloseMappedByteBuffer("readLong",
+				channel.map(FileChannel.MapMode.READ_ONLY, location, 8), false)) {
+			return buffer.order(order).getLong(0);
+		}
 	}
 
 	/**

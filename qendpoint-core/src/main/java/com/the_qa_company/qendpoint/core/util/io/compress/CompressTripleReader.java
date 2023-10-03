@@ -20,9 +20,12 @@ public class CompressTripleReader implements ExceptionIterator<TripleID, IOExcep
 	private final CRCInputStream stream;
 	private final TripleID next = new TripleID(-1, -1, -1);
 	private boolean read = false, end = false;
+	private final boolean quad;
 
-	public CompressTripleReader(InputStream stream) {
+	public CompressTripleReader(InputStream stream) throws IOException {
 		this.stream = new CRCInputStream(stream, new CRC32());
+		int flags = this.stream.read();
+		this.quad = (flags & CompressTripleWriter.FLAG_QUAD) != 0;
 	}
 
 	@Override
@@ -38,17 +41,31 @@ public class CompressTripleReader implements ExceptionIterator<TripleID, IOExcep
 
 		long s, p, o;
 
-		do {
-			s = VByte.decode(stream);
-			p = VByte.decode(stream);
-			o = VByte.decode(stream);
-			// continue to read to avoid duplicated triples
-		} while (s == next.getSubject() && p == next.getPredicate() && o == next.getObject());
+		if (quad) {
+			long g;
+			do {
+				s = VByte.decode(stream);
+				p = VByte.decode(stream);
+				o = VByte.decode(stream);
+				g = VByte.decode(stream);
+				// continue to read to avoid duplicated triples
+			} while (s == next.getSubject() && p == next.getPredicate() && o == next.getObject()
+					&& g == next.getGraph());
 
-		return !setAllOrEnd(s, p, o);
+			return !setAllOrEnd(s, p, o, g);
+		} else {
+			do {
+				s = VByte.decode(stream);
+				p = VByte.decode(stream);
+				o = VByte.decode(stream);
+				// continue to read to avoid duplicated triples
+			} while (s == next.getSubject() && p == next.getPredicate() && o == next.getObject());
+
+			return !setAllOrEnd(s, p, o, 0);
+		}
 	}
 
-	private boolean setAllOrEnd(long s, long p, long o) throws IOException {
+	private boolean setAllOrEnd(long s, long p, long o, long g) throws IOException {
 		if (end) {
 			// already completed
 			return true;
@@ -65,9 +82,16 @@ public class CompressTripleReader implements ExceptionIterator<TripleID, IOExcep
 			end = true;
 			return true;
 		}
+		if (quad && g == 0) {
+			throw new IOException("Triple got null graph, but not all the nodes are 0! " + s + " " + p + " " + o);
+		}
 		// map the triples to the end id, compute the shared with the end shared
 		// size
-		next.setAll(s, p, o);
+		if (quad) {
+			next.setAll(s, p, o, g);
+		} else {
+			next.setAll(s, p, o);
+		}
 		read = true;
 		return false;
 	}

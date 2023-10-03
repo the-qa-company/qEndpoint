@@ -19,10 +19,10 @@ import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -133,18 +133,11 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 	 */
 	public TripleCompressionResult merge(int workers, String mode)
 			throws KWayMerger.KWayMergerException, InterruptedException, IOException {
-		if (mode == null) {
-			mode = "";
-		}
-		switch (mode) {
-		case "":
-		case CompressionResult.COMPRESSION_MODE_COMPLETE:
-			return mergeToFile(workers);
-		case CompressionResult.COMPRESSION_MODE_PARTIAL:
-			return mergeToPartial();
-		default:
-			throw new IllegalArgumentException("Unknown compression mode: " + mode);
-		}
+		return switch (Objects.requireNonNullElse(mode, "")) {
+		case "", CompressionResult.COMPRESSION_MODE_COMPLETE -> mergeToFile(workers);
+		case CompressionResult.COMPRESSION_MODE_PARTIAL -> mergeToPartial();
+		default -> throw new IllegalArgumentException("Unknown compression mode: " + mode);
+		};
 	}
 
 	@Override
@@ -154,9 +147,18 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 		ParallelSortableArrayList<TripleID> tripleIDS = buffer.triples;
 		listener.notifyProgress(10, "reading triples part2  " + triplesCount);
 		TripleID next;
+		boolean quad = mapper.supportsGraph();
 		while ((next = flux.get()) != null) {
-			TripleID mappedTriple = new TripleID(mapper.extractSubject(next.getSubject()),
-					mapper.extractPredicate(next.getPredicate()), mapper.extractObjects(next.getObject()));
+			TripleID mappedTriple;
+
+			if (quad) {
+				mappedTriple = new TripleID(mapper.extractSubject(next.getSubject()),
+						mapper.extractPredicate(next.getPredicate()), mapper.extractObjects(next.getObject()),
+						mapper.extractGraph(next.getGraph()));
+			} else {
+				mappedTriple = new TripleID(mapper.extractSubject(next.getSubject()),
+						mapper.extractPredicate(next.getPredicate()), mapper.extractObjects(next.getObject()));
+			}
 			assert mappedTriple.isValid();
 			tripleIDS.add(mappedTriple);
 			long count = triplesCount.incrementAndGet();
@@ -174,9 +176,9 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 			IntermediateListener il = new IntermediateListener(listener);
 			il.setRange(70, 100);
 			il.setPrefix("writing triples " + output.getFileName() + " ");
-			try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize))) {
+			try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize), quad)) {
 				il.notifyProgress(0, "creating file");
-				TripleID prev = new TripleID(-1, -1, -1);
+				TripleID prev = quad ? new TripleID(-1, -1, -1, -1) : new TripleID(-1, -1, -1);
 				for (TripleID triple : tripleIDS) {
 					count++;
 					if (count % block == 0) {
@@ -185,7 +187,11 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 					if (prev.match(triple)) {
 						continue;
 					}
-					prev.setAll(triple.getSubject(), triple.getPredicate(), triple.getObject());
+					if (quad) {
+						prev.setAll(triple.getSubject(), triple.getPredicate(), triple.getObject(), triple.getGraph());
+					} else {
+						prev.setAll(triple.getSubject(), triple.getPredicate(), triple.getObject());
+					}
 					w.appendTriple(triple);
 				}
 				listener.notifyProgress(100, "writing completed " + triplesCount + " " + output.getFileName());
@@ -206,7 +212,8 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 					readers[i] = new CompressTripleReader(inputs.get(i).openInputStream(bufferSize));
 				}
 
-				try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize))) {
+				try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize),
+						mapper.supportsGraph())) {
 					ExceptionIterator<TripleID, IOException> it = CompressTripleMergeIterator.buildOfTree(readers,
 							order);
 					while (it.hasNext()) {

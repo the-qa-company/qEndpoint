@@ -77,6 +77,7 @@ public class HDTVocabulary {
 	public static final String DICTIONARY_TYPE_MULT_SECTION = HDT_DICTIONARY_BASE + "Mult>";
 	public static final String DICTIONARY_TYPE_FOUR_QUAD_SECTION = HDT_DICTIONARY_BASE + "FourQuad>";
 	public static final String DICTIONARY_TYPE_MULT_SECTION_LANG = HDT_DICTIONARY_BASE + "MultLang>";
+	public static final String DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD = HDT_DICTIONARY_BASE + "MultLangQuad>";
 
 	public static final String DICTIONARY_TYPE_FOUR_PSFC_SECTION = HDT_DICTIONARY_BASE + "FourPsfc>";
 
@@ -114,6 +115,7 @@ public class HDTVocabulary {
 	// Bitmaps
 	public static final String BITMAP_TYPE_PLAIN = HDT_BITMAP_BASE + "Plain>";
 	public static final String BITMAP_TYPE_ROARING = HDT_BITMAP_BASE + "Roaring>";
+	public static final String BITMAP_TYPE_ROARING_MULTI = HDT_BITMAP_BASE + "RoaringMulti>";
 
 	// Misc
 	public static final String ORIGINAL_SIZE = HDT_BASE + "originalSize>";

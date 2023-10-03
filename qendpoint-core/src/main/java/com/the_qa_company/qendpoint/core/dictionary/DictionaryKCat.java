@@ -30,6 +30,11 @@ public interface DictionaryKCat {
 	DictionarySection getSharedSection();
 
 	/**
+	 * @return the graph section
+	 */
+	DictionarySection getGraphSection();
+
+	/**
 	 * @return the number of subjects
 	 */
 	long countSubjects();
@@ -48,6 +53,12 @@ public interface DictionaryKCat {
 	 * @return the number of objects
 	 */
 	long countObjects();
+
+	/**
+	 * @return the number of graphs, returns 0 if the dictionary doesn't support
+	 *         graphs
+	 */
+	long countGraphs();
 
 	/**
 	 * @return the object shift in the dictionary IDs

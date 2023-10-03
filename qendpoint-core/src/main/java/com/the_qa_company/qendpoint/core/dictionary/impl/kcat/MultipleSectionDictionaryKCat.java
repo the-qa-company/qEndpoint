@@ -41,6 +41,11 @@ public class MultipleSectionDictionaryKCat implements DictionaryKCat {
 	}
 
 	@Override
+	public DictionarySection getGraphSection() {
+		return dictionary.getGraphs();
+	}
+
+	@Override
 	public DictionarySection getObjectSection() {
 		return dictionary.getAllObjects().get("NO_DATATYPE");
 	}
@@ -72,6 +77,11 @@ public class MultipleSectionDictionaryKCat implements DictionaryKCat {
 			count += sec.getNumberOfElements();
 		}
 		return count + countShared();
+	}
+
+	@Override
+	public long countGraphs() {
+		return dictionary.supportGraphs() ? dictionary.getGraphs().getNumberOfElements() : 0;
 	}
 
 	@Override

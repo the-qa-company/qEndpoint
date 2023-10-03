@@ -179,7 +179,7 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
-	public TripleID findTriple(long position) {
+	public TripleID findTriple(long position, TripleID buffer) {
 		throw new NotImplementedException();
 	}
 

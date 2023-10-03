@@ -195,7 +195,8 @@ public class PlainHeader implements HeaderPrivate, RDFCallback {
 
 	@Override
 	public void remove(CharSequence subject, CharSequence predicate, CharSequence object) {
-		TripleString pattern = new TripleString(subject.toString(), predicate.toString(), object.toString());
+		TripleString pattern = new TripleString(HeaderUtil.cleanURI(subject.toString()),
+				HeaderUtil.cleanURI(predicate.toString()), HeaderUtil.cleanURI(object.toString()));
 		triples.removeIf(next -> next.match(pattern));
 	}
 

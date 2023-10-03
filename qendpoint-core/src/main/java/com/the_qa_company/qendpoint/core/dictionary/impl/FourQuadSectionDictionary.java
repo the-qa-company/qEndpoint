@@ -28,6 +28,7 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
@@ -41,26 +42,17 @@ import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
-public class FourQuadSectionDictionary extends FourSectionDictionary {
+public class FourQuadSectionDictionary extends FourSectionDictionaryBig {
 
 	public FourQuadSectionDictionary(HDTOptions spec, DictionarySectionPrivate s, DictionarySectionPrivate p,
 			DictionarySectionPrivate o, DictionarySectionPrivate sh, DictionarySectionPrivate g) {
-		super(spec);
-		this.subjects = s;
-		this.predicates = p;
-		this.objects = o;
-		this.shared = sh;
+		super(spec, s, p, o, sh);
 		this.graphs = g;
 	}
 
 	public FourQuadSectionDictionary(HDTOptions spec) {
 		super(spec);
-		// FIXME: Read type from spec.
-		subjects = new PFCDictionarySection(spec);
-		predicates = new PFCDictionarySection(spec);
-		objects = new PFCDictionarySection(spec);
-		shared = new PFCDictionarySection(spec);
-		graphs = new PFCDictionarySection(spec);
+		graphs = new PFCDictionarySectionBig(spec);
 	}
 
 	/*

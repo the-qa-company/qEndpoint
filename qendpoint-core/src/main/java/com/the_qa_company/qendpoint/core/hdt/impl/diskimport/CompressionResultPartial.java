@@ -24,13 +24,14 @@ public class CompressionResultPartial implements CompressionResult {
 	private final ExceptionIterator<IndexedNode, IOException> subject;
 	private final ExceptionIterator<IndexedNode, IOException> predicate;
 	private final ExceptionIterator<IndexedNode, IOException> object;
+	private final ExceptionIterator<IndexedNode, IOException> graph;
 
-	public CompressionResultPartial(List<SectionCompressor.TripleFile> files, long triplesCount, long ntSize)
-			throws IOException {
+	public CompressionResultPartial(List<SectionCompressor.TripleFile> files, long triplesCount, long ntSize,
+			boolean graph) throws IOException {
 		this.files = new ArrayList<>(files.size());
 		this.ntSize = ntSize;
 		for (SectionCompressor.TripleFile file : files) {
-			this.files.add(new CompressNodeReaderTriple(file));
+			this.files.add(new CompressNodeReaderTriple(file, graph));
 		}
 		this.triplesCount = triplesCount;
 
@@ -38,6 +39,11 @@ public class CompressionResultPartial implements CompressionResult {
 		this.subject = createBTree(0, files.size(), CompressNodeReaderTriple::getS);
 		this.predicate = createBTree(0, files.size(), CompressNodeReaderTriple::getP);
 		this.object = createBTree(0, files.size(), CompressNodeReaderTriple::getO);
+		if (graph) {
+			this.graph = createBTree(0, files.size(), CompressNodeReaderTriple::getG);
+		} else {
+			this.graph = null;
+		}
 	}
 
 	private ExceptionIterator<IndexedNode, IOException> createBTree(int start, int end,
@@ -61,6 +67,11 @@ public class CompressionResultPartial implements CompressionResult {
 	}
 
 	@Override
+	public boolean supportsGraph() {
+		return graph != null;
+	}
+
+	@Override
 	public ExceptionIterator<IndexedNode, IOException> getSubjects() {
 		return subject;
 	}
@@ -73,6 +84,11 @@ public class CompressionResultPartial implements CompressionResult {
 	@Override
 	public ExceptionIterator<IndexedNode, IOException> getObjects() {
 		return object;
+	}
+
+	@Override
+	public ExceptionIterator<IndexedNode, IOException> getGraph() {
+		return graph;
 	}
 
 	@Override
@@ -109,24 +125,34 @@ public class CompressionResultPartial implements CompressionResult {
 	}
 
 	@Override
+	public long getGraphCount() {
+		return triplesCount;
+	}
+
+	@Override
 	public long getRawSize() {
 		return ntSize;
 	}
 
 	private static class CompressNodeReaderTriple implements Closeable {
-		final CompressNodeReader s, p, o;
+		final CompressNodeReader s, p, o, g;
 		final SectionCompressor.TripleFile file;
 
-		public CompressNodeReaderTriple(SectionCompressor.TripleFile file) throws IOException {
+		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph) throws IOException {
 			this.s = new CompressNodeReader(file.openRSubject());
 			this.p = new CompressNodeReader(file.openRPredicate());
 			this.o = new CompressNodeReader(file.openRObject());
+			if (graph) {
+				this.g = new CompressNodeReader(file.openRGraph());
+			} else {
+				this.g = null;
+			}
 			this.file = file;
 		}
 
 		@Override
 		public void close() throws IOException {
-			IOUtil.closeAll(s, p, o);
+			IOUtil.closeAll(s, p, o, g);
 		}
 
 		public CompressNodeReader getS() {
@@ -139,6 +165,10 @@ public class CompressionResultPartial implements CompressionResult {
 
 		public CompressNodeReader getO() {
 			return o;
+		}
+
+		public CompressNodeReader getG() {
+			return g;
 		}
 	}
 }

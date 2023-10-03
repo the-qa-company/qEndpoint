@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.hdt;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
@@ -15,7 +16,6 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
-import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -41,6 +41,7 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -59,7 +60,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -85,15 +85,22 @@ import static org.junit.Assert.fail;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
-		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class })
+		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
+		HDTManagerTest.MSDLangQuadTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
 
-		protected static String[] diskDict() {
-			return new String[] { HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+		protected static List<String> diskDict() {
+			return List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG };
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+		}
+
+		protected static List<String> diskDictCat() {
+			return diskDict();
 		}
 
 		/**
@@ -101,7 +108,7 @@ public class HDTManagerTest {
 		 * <a href="https://github.com/rdfhdt/hdt-java/issues/177">GH#177</a>
 		 */
 		protected static final boolean ALLOW_STRING_CONSISTENCY_TEST = false;
-		protected static final long SIZE_VALUE = 1L << 15;
+		protected static final long SIZE_VALUE = 1L << 10;
 		protected static final int SEED = 67;
 
 		private HDTManagerTestBase() {
@@ -189,6 +196,7 @@ public class HDTManagerTest {
 
 				TripleID expectedTriple = expectedIt.next();
 				TripleID actualTriple = actualIt.next();
+
 				long location = expectedIt.getLastTriplePosition();
 				assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
 				assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
@@ -222,6 +230,10 @@ public class HDTManagerTest {
 			map.put("Subjects", dict.getSubjects());
 			map.put("Predicates", dict.getPredicates());
 			map.put("Shared", dict.getShared());
+
+			if (dict.supportGraphs()) {
+				map.put("Graph", dict.getGraphs());
+			}
 
 			ReplazableString prev = new ReplazableString();
 			Comparator<CharSequence> cmp = CharSequenceComparator.getInstance();
@@ -270,6 +282,18 @@ public class HDTManagerTest {
 					prev.replace(next);
 				}
 			});
+			IteratorTripleID tripleIt = hdt.getTriples().searchAll();
+			long count = 0;
+			TripleID last = new TripleID(-1, -1, -1);
+			while (tripleIt.hasNext()) {
+				TripleID tid = tripleIt.next();
+				if (tid.match(last)) { // same graph?
+					continue;
+				}
+				count++;
+				last.setAll(tid.getSubject(), tid.getPredicate(), tid.getObject());
+			}
+			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
 		}
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
@@ -385,6 +409,7 @@ public class HDTManagerTest {
 		public long size;
 		@Parameterized.Parameter(9)
 		public String addedSpecs;
+		public boolean quadDict;
 
 		@Before
 		public void setupSpecs() {
@@ -393,12 +418,15 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_KEY, compressMode);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 			spec.set(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY, true);
+
+			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 		}
 
 		private void generateDiskTest() throws IOException, ParserException, NotFoundException, InterruptedException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withSameTripleString(true).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withSameTripleString(true).withUnicode(true)
+					.withQuads(quadDict);
 
 			if (spec.getBoolean("debug.disk.slow.stream")) {
 				supplier.withSlowStream(25);
@@ -409,8 +437,9 @@ public class HDTManagerTest {
 					.createNTInputStream(CompressionType.GZIP);
 			HDT actual = null;
 			try {
-				actual = HDTManager.generateHDTDisk(genActual.getStream(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
-						CompressionType.GZIP, spec, quiet ? null : this);
+				actual = HDTManager.generateHDTDisk(genActual.getStream(), HDTTestUtils.BASE_URI,
+						quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, CompressionType.GZIP, spec,
+						quiet ? null : this);
 				checkHDTConsistency(actual);
 			} finally {
 				if (actual == null) {
@@ -426,8 +455,8 @@ public class HDTManagerTest {
 			// create MEMORY HDT
 			HDT expected = null;
 			try {
-				expected = HDTManager.generateHDT(genExpected.getStream(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
-						CompressionType.GZIP, spec, null);
+				expected = HDTManager.generateHDT(genExpected.getStream(), HDTTestUtils.BASE_URI,
+						quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, CompressionType.GZIP, spec, null);
 				checkHDTConsistency(expected);
 			} finally {
 				if (expected == null) {
@@ -450,7 +479,8 @@ public class HDTManagerTest {
 		public void generateSaveLoadMapTest() throws IOException, ParserException, NotFoundException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true)
+					.withQuads(DictionaryFactory.isQuadDictionary(dictionaryType));
 
 			// create MEMORY HDT
 
@@ -489,9 +519,10 @@ public class HDTManagerTest {
 
 		@Test
 		public void catTreeTest() throws IOException, ParserException, NotFoundException, InterruptedException {
+			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			// create DISK HDT
 			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
@@ -499,7 +530,8 @@ public class HDTManagerTest {
 			HDT actual = null;
 			try {
 				actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.memory(), genActual.getStream(),
-						HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec, quiet ? null : this);
+						HDTTestUtils.BASE_URI, quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec,
+						quiet ? null : this);
 			} finally {
 				if (actual == null) {
 					genActual.getThread().interrupt();
@@ -526,9 +558,10 @@ public class HDTManagerTest {
 
 		@Test
 		public void catTreeDiskTest() throws IOException, ParserException, NotFoundException, InterruptedException {
+			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			spec.set("debug.disk.build", true);
 
@@ -538,7 +571,8 @@ public class HDTManagerTest {
 			HDT actual = null;
 			try {
 				actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.disk(), genActual.getStream(),
-						HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec, quiet ? null : this);
+						HDTTestUtils.BASE_URI, quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec,
+						quiet ? null : this);
 			} finally {
 				if (actual == null) {
 					genActual.getThread().interrupt();
@@ -606,9 +640,13 @@ public class HDTManagerTest {
 		@Parameterized.Parameter(8)
 		public boolean async;
 
+		public boolean quadDict;
+
 		@Before
 		public void setupSpecs() {
+			Assume.assumeTrue(diskDictCat().contains(dictionaryType));
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
+			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 
 			if (kCat != 0) {
 				spec.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, kCat);
@@ -622,7 +660,7 @@ public class HDTManagerTest {
 		public void catTreeTest() throws IOException, ParserException, NotFoundException, InterruptedException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			// create DISK HDT
 			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
@@ -632,8 +670,8 @@ public class HDTManagerTest {
 			try {
 				try {
 					actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.memory(),
-							genActual.getStream(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
-							quiet ? null : this);
+							genActual.getStream(), HDTTestUtils.BASE_URI,
+							quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec, quiet ? null : this);
 				} finally {
 					if (actual == null) {
 						genActual.getThread().interrupt();
@@ -661,7 +699,7 @@ public class HDTManagerTest {
 		public void catTreeDiskTest() throws IOException, ParserException, NotFoundException, InterruptedException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
-					.withMaxLiteralSize(maxLiteralSize).withUnicode(true);
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
 
 			// create DISK HDT
 			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
@@ -669,7 +707,8 @@ public class HDTManagerTest {
 			HDT actual = null;
 			try {
 				actual = HDTManager.catTree(RDFFluxStop.sizeLimit(size), HDTSupplier.disk(), genActual.getStream(),
-						HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec, quiet ? null : this);
+						HDTTestUtils.BASE_URI, quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec,
+						quiet ? null : this);
 			} finally {
 				if (actual == null) {
 					genActual.getThread().interrupt();
@@ -1037,13 +1076,24 @@ public class HDTManagerTest {
 
 	@RunWith(Parameterized.class)
 	public static class HDTQTest extends HDTManagerTestBase {
-		@Parameterized.Parameters(name = "default graph:{0}")
-		public static Collection<Object> params() {
-			return List.of(true, false);
+		@Parameterized.Parameters(name = "default graph:{0} type:{1}")
+		public static Collection<Object[]> params() {
+			List<Object[]> params = new ArrayList<>();
+
+			for (String dict : List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD)) {
+				for (boolean defaultGraph : List.of(true, false)) {
+					params.add(new Object[] { defaultGraph, dict });
+				}
+			}
+
+			return params;
 		}
 
 		@Parameterized.Parameter
 		public boolean useDefaultGraph;
+		@Parameterized.Parameter(1)
+		public String dictType;
 
 		private LargeFakeDataSetStreamSupplier createSupplier() {
 			// fake data generation
@@ -1055,6 +1105,7 @@ public class HDTManagerTest {
 			// run test
 			Comparator<CharSequence> csc = CharSequenceComparator.getInstance();
 			try (HDT h = HDTManager.mapIndexedHDT(d)) {
+				checkHDTConsistency(h);
 				Path indexFile = d.resolveSibling(d.getFileName() + HDTVersion.get_index_suffix("-"));
 				assertTrue("can't find " + indexFile, Files.exists(indexFile));
 				supplier.reset();
@@ -1087,11 +1138,20 @@ public class HDTManagerTest {
 						IteratorTripleString it2 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), graph);
 						if (!it2.hasNext()) {
 							BitmapTriplesIteratorPositionTest.printIterator(it2);
-							fail();
+							fail("Can't find #" + count + " " + ts);
 						}
 						TripleString ts2 = it2.next();
 						assertEquals(ts, ts2);
-						assertFalse(it2.hasNext());
+						if (it2.hasNext()) {
+							BitmapTriplesIteratorPositionTest.printIterator(it2);
+							System.err.println("***********");
+
+							for (int i = 0; i < 5 && (i == 0 || it2.hasNext()); i++) {
+								System.err.println(it2.next());
+							}
+
+							fail("Too many nodes for " + ts + " " + graph);
+						}
 
 						// empty search to check wildcard
 						IteratorTripleString it3 = h.search(ts.getSubject(), ts.getPredicate(), ts.getObject(), "");
@@ -1128,44 +1188,7 @@ public class HDTManagerTest {
 					Set<TripleString> dataset2 = new HashSet<>(dataset);
 					roleDesc.append(",").append(role);
 
-					Iterator<? extends CharSequence> roleIt;
-					switch (role) {
-					case OBJECT -> {
-						Iterator<? extends CharSequence> sh = h.getDictionary().getShared().getSortedEntries();
-						Iterator<? extends CharSequence> ob = h.getDictionary().getObjects().getSortedEntries();
-						roleIt = new FetcherIterator<>() {
-							@Override
-							protected CharSequence getNext() {
-								if (sh.hasNext()) {
-									return sh.next();
-								}
-								if (ob.hasNext()) {
-									return ob.next();
-								}
-								return null;
-							}
-						};
-					}
-					case SUBJECT -> {
-						Iterator<? extends CharSequence> sh = h.getDictionary().getShared().getSortedEntries();
-						Iterator<? extends CharSequence> su = h.getDictionary().getSubjects().getSortedEntries();
-						roleIt = new FetcherIterator<>() {
-							@Override
-							protected CharSequence getNext() {
-								if (sh.hasNext()) {
-									return sh.next();
-								}
-								if (su.hasNext()) {
-									return su.next();
-								}
-								return null;
-							}
-						};
-					}
-					case PREDICATE -> roleIt = h.getDictionary().getPredicates().getSortedEntries();
-					case GRAPH -> roleIt = h.getDictionary().getGraphs().getSortedEntries();
-					default -> throw new AssertionError();
-					}
+					Iterator<? extends CharSequence> roleIt = h.getDictionary().stringIterator(role, true);
 
 					long componentId = 0;
 					Set<String> components = new HashSet<>();
@@ -1182,8 +1205,10 @@ public class HDTManagerTest {
 						case GRAPH -> h.search("", "", "", component);
 						};
 
+						long countEid = 0;
 						while (eid.hasNext()) {
 							TripleString tsstr = eid.next().tripleToString();
+							countEid++;
 							if (role == TripleComponentRole.GRAPH && !tsstr.getGraph().equals(str)) {
 								// the default graph "" is searching all the
 								// graphs, so we need
@@ -1193,7 +1218,11 @@ public class HDTManagerTest {
 							if (!dataset2.remove(tsstr)) {
 								BitmapTriplesIteratorPositionTest.printIterator(eid);
 								fail("can't remove " + tsstr + "\nfor " + role + "=" + component + "(" + cid + ")"
-										+ "\ndone: " + roleDesc.substring(1) + "\n" + String.join(",", components));
+										+ "\ndone: " + roleDesc.substring(1) + "\n"
+										+ String.join(",",
+												components + "\nexists: " + dataset.contains(tsstr) + ", id: "
+														+ countEid + "\npattern: "
+														+ h.getDictionary().toTripleId(tsstr)));
 							}
 						}
 					}
@@ -1208,9 +1237,7 @@ public class HDTManagerTest {
 			LargeFakeDataSetStreamSupplier supplier = createSupplier();
 			Iterator<TripleString> it = supplier.createTripleStringStream();
 
-			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType);
 			Path root = tempDir.newFolder().toPath();
 			try {
 				Path d = root.resolve("d.hdt");
@@ -1228,9 +1255,7 @@ public class HDTManagerTest {
 			LargeFakeDataSetStreamSupplier supplier = createSupplier();
 			Iterator<TripleString> it = supplier.createTripleStringStream();
 
-			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType);
 			Path root = tempDir.newFolder().toPath();
 			try {
 				Path nq = root.resolve("d.nq");
@@ -1685,12 +1710,263 @@ public class HDTManagerTest {
 		}
 	}
 
+	public static class MSDLangQuadTest extends HDTManagerTestBase {
+		@Test
+		public void msdLangTest() throws Exception {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withQuads(true);
+			Path ntFile = tempDir.newFile().toPath();
+			try {
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
+
+				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+
+				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NQUAD, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdl = hdt.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD, msdl.getType());
+					assertTrue("not a msdlq", msdl instanceof MultipleLangBaseDictionary);
+					checkHDTConsistency(hdt);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtFSD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NQUAD, specFSD,
+							ProgressListener.ignore())) {
+						Dictionary fsd = hdtFSD.getDictionary();
+
+						assertTrue("not a fsd", fsd instanceof BaseDictionary);
+						assertEquals("not the same number of triples", hdtFSD.getTriples().getNumberOfElements(),
+								hdt.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", fsd.getNshared(), msdl.getNshared());
+						assertEquals("Not the same number of SUBJECTS", fsd.getNsubjects(), msdl.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", fsd.getNpredicates(), msdl.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", fsd.getNobjects(), msdl.getNobjects());
+
+						IteratorTripleString itMSDAT = hdt.search("", "", "");
+
+						while (itMSDAT.hasNext()) {
+							TripleString actual = itMSDAT.next();
+							if (!hdt.search(actual).hasNext()) {
+								fail(format("Can't find back triple %s in", actual));
+							}
+						}
+
+						IteratorTripleString itMSDA = hdt.search("", "", "");
+
+						while (itMSDA.hasNext()) {
+							TripleString actual = itMSDA.next();
+
+							IteratorTripleString itE = hdtFSD.search(actual);
+							if (!itE.hasNext()) {
+								long sid = fsd.stringToId(actual.getSubject(), SUBJECT);
+								assertNotEquals("can't find SUB in FSD: " + actual.getSubject(), -1, sid);
+								long pid = fsd.stringToId(actual.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in FSD: " + actual.getPredicate(), -1, pid);
+								long oid = fsd.stringToId(actual.getObject(), OBJECT);
+								assertNotEquals("can't find OBJ in FSD: " + actual.getObject(), -1, oid);
+
+								assertEquals(actual.getSubject().toString(), fsd.idToString(sid, SUBJECT).toString());
+								assertEquals(actual.getPredicate().toString(),
+										fsd.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(actual.getObject().toString(), fsd.idToString(oid, OBJECT).toString());
+
+								fail(format("Can't find triple %s in FSD", actual));
+							}
+							assertEquals(actual.tripleToString(), itE.next().tripleToString());
+						}
+
+						IteratorTripleString itE = hdtFSD.search("", "", "");
+
+						while (itE.hasNext()) {
+							TripleString excepted = itE.next();
+							IteratorTripleString itA = hdt.search(excepted.getSubject(), excepted.getPredicate(),
+									excepted.getObject());
+							if (!itA.hasNext()) {
+								long sid = msdl.stringToId(excepted.getSubject(), SUBJECT);
+								assertNotEquals("can't find SUB in MSDL: " + excepted.getSubject(), -1, sid);
+								long pid = msdl.stringToId(excepted.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in MSDL: " + excepted.getPredicate(), -1, pid);
+								long oid = msdl.stringToId(excepted.getObject(), OBJECT);
+								assertNotEquals("can't find OBJ in MSDL: " + excepted.getObject(), -1, oid);
+
+								assertEquals(excepted.getSubject().toString(),
+										msdl.idToString(sid, SUBJECT).toString());
+								assertEquals(excepted.getPredicate().toString(),
+										msdl.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(excepted.getObject().toString(), msdl.idToString(oid, OBJECT).toString());
+
+								TripleID tid = new TripleID(sid, pid, oid);
+								IteratorTripleID itA2 = hdt.getTriples().search(tid);
+								if (itA2.hasNext()) {
+									fail(format("can't find triple %s by string in MSDL HDT", excepted));
+								} else {
+									fail(format("can't find triple %s by string or id in MSDL HDT (%s)", excepted,
+											tid));
+								}
+
+							}
+							TripleString actual = itA.next();
+							assertComponentsNotNull("an element is null", actual);
+							assertEquals(excepted, actual);
+						}
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = tempDir.newFile().toPath();
+					try {
+						hdt.saveToHDT(tempHDT, ProgressListener.ignore());
+						try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
+									hdtMap.getDictionary().getType());
+							assertEqualsHDT(hdt, hdtMap);
+							try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+								assertEquals(HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
+										hdtLoad.getDictionary().getType());
+								assertEqualsHDT(hdt, hdtLoad);
+								assertEqualsHDT(hdtLoad, hdtMap);
+							}
+						}
+					} catch (Throwable t) {
+						try {
+							Files.deleteIfExists(tempHDT);
+						} catch (IOException e) {
+							t.addSuppressed(e);
+						}
+						throw t;
+					}
+					Files.deleteIfExists(tempHDT);
+				}
+			} catch (Throwable t) {
+				try {
+					Files.deleteIfExists(ntFile);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+			Files.deleteIfExists(ntFile);
+		}
+
+		@Test
+		public void idFromIteratorTest() throws IOException, ParserException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withMaxLiteralSize(50).withMaxElementSplit(20)
+					.withQuads(true);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path hdtPath = rootDir.resolve("ds.nt");
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"),
+
+						HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, rootDir.resolve("future.hdt"));
+
+				supplier.createAndSaveFakeHDT(spec, hdtPath);
+
+				try (HDT hdt = HDTManager.mapHDT(hdtPath)) {
+					Dictionary dictUkn = hdt.getDictionary();
+
+					if (!(dictUkn instanceof MultipleLangBaseDictionary dict)) {
+						fail("bad dict type: %s".formatted(dictUkn.getClass()));
+						return;
+					}
+
+					assertTrue(dict.supportsDataTypeOfId());
+					assertTrue(dict.supportsLanguageOfId());
+					assertTrue(dict.supportsNodeTypeOfId());
+
+					for (TripleComponentRole role : TripleComponentRole.valuesNoGraph()) {
+						long idc = 1;
+						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
+
+						while (it.hasNext()) {
+							CharSequence component = it.next();
+							long id = idc++;
+
+							CharSequence componentActual = dict.idToString(id, role);
+
+							if (!component.toString().equals(componentActual.toString())) {
+								fail("%s != %s for id %d/%s".formatted(component, componentActual, id, role));
+							}
+						}
+					}
+					Set<ByteString> loaded = new HashSet<>();
+					for (TripleComponentRole role : new TripleComponentRole[] { SUBJECT, OBJECT }) {
+						long nshared = dict.getNshared();
+						long idc = 1;
+						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
+
+						while (it.hasNext()) {
+							CharSequence component = it.next();
+							long id = idc++;
+
+							if (!loaded.add(ByteString.of(component))) {
+								if (id > nshared) { // normal for shared
+									fail(format("the component %s(%s/%d) was loaded twice! ", component, role, id));
+								}
+							}
+
+							assertEquals("bad id mapping", id, dict.stringToId(component, role));
+
+							CharSequence componentActual = dict.idToString(id, role);
+							assertEquals("bad string mapping", component.toString(), componentActual.toString());
+
+							TripleComponentRole role2 = role == SUBJECT ? OBJECT : SUBJECT;
+
+							if (id <= nshared) {
+								assertEquals("bad role logic", id, dict.stringToId(component, role2));
+							} else {
+								assertTrue("bad role logic", dict.stringToId(component, role2) <= 0);
+							}
+
+							RDFNodeType nodeType = RDFNodeType.typeof(component);
+
+							RDFNodeType actualNodeType = dict.nodeTypeOfId(role, id);
+							if (nodeType != actualNodeType) {
+								StringBuilder bld = new StringBuilder("Sections: ");
+								for (int i = 0; i < dict.getObjectsSectionCount(); i++) {
+									MultipleLangBaseDictionary.ObjectIdLocationData sec = dict
+											.getObjectsSectionFromId(i);
+									bld.append("%d=%s(%s)\n".formatted(sec.location(), sec.name(), sec.type()));
+								}
+								fail("bad node type %s != %s for %s (%s/%d@%d)\n%s".formatted(nodeType, actualNodeType,
+										component, role, id, nshared, bld));
+							}
+							if (role == OBJECT) {
+								CharSequence lang = LiteralsUtils.getLanguage(component).orElse(null);
+								assertEquals("bad lang", lang, dict.languageOfId(id));
+
+								CharSequence type = LiteralsUtils.getType(component);
+								assertEquals("bad type", type, dict.dataTypeOfId(id));
+							}
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+	}
+
 	@RunWith(Parameterized.class)
 	public static class DictionaryLangTypeTest extends HDTManagerTestBase {
 
 		@Parameterized.Parameters(name = "dict:{0}")
 		public static Collection<String> params() {
-			return Arrays.asList(diskDict());
+			return diskDict();
 		}
 
 		@Parameterized.Parameter

@@ -310,7 +310,7 @@ public class BitmapTriples implements TriplesPrivate {
 			}
 		}
 
-		if (indexZ != null && bitmapIndexZ != null) {
+		if (hasFOQIndex()) {
 			// USE FOQ
 			if (patternString.equals("?PO") || patternString.equals("??O")) {
 				return new BitmapTriplesIteratorZFOQ(this, pattern);
@@ -1007,10 +1007,11 @@ public class BitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
-	public TripleID findTriple(long position) {
+	public TripleID findTriple(long position, TripleID tripleID) {
 		if (position == 0) {
 			// remove this special case so we can use position-1
-			return new TripleID(1, seqY.get(0), seqZ.get(0));
+			tripleID.setAll(1, seqY.get(0), seqZ.get(0));
+			return tripleID;
 		}
 		// get the object at the given position
 		long z = seqZ.get(position);
@@ -1021,7 +1022,8 @@ public class BitmapTriples implements TriplesPrivate {
 
 		if (posY == 0) {
 			// remove this case to do posY - 1
-			return new TripleID(1, y, z);
+			tripleID.setAll(1, y, z);
+			return tripleID;
 		}
 
 		// -1 so we don't count end of tree
@@ -1029,7 +1031,8 @@ public class BitmapTriples implements TriplesPrivate {
 		long x = posX + 1; // the subject ID is the position + 1, IDs start from
 							// 1 not zero
 
-		return new TripleID(x, y, z);
+		tripleID.setAll(x, y, z);
+		return tripleID;
 	}
 
 	/*
@@ -1217,6 +1220,10 @@ public class BitmapTriples implements TriplesPrivate {
 			predicateIndex = null;
 			bitmapIndexZ = null;
 		}
+	}
+
+	public boolean hasFOQIndex() {
+		return indexZ != null && bitmapIndexZ != null;
 	}
 
 	@Override

@@ -1,14 +1,12 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.iterator.charsequence.StopIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
@@ -43,6 +41,10 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 	private static final Logger logger = LoggerFactory.getLogger(MultipleSectionDictionaryLang.class);
 
 	public MultipleSectionDictionaryLang(HDTOptions spec) {
+		this(spec, false);
+	}
+
+	public MultipleSectionDictionaryLang(HDTOptions spec, boolean quad) {
 		super(spec);
 		// FIXME: Read type from spec.
 		subjects = new PFCDictionarySectionBig(spec);
@@ -52,12 +54,23 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		languages = new TreeMap<>(cmp);
 		nonTyped = new PFCDictionarySectionBig(spec);
 		shared = new PFCDictionarySectionBig(spec);
+		if (quad) {
+			graph = new PFCDictionarySectionBig(spec);
+		}
 	}
 
 	public MultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate nonTyped,
 			TreeMap<ByteString, DictionarySectionPrivate> typed,
 			TreeMap<ByteString, DictionarySectionPrivate> languages, DictionarySectionPrivate shared) {
+		this(spec, subjects, predicates, nonTyped, typed, languages, shared, null);
+	}
+
+	public MultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
+			DictionarySectionPrivate predicates, DictionarySectionPrivate nonTyped,
+			TreeMap<ByteString, DictionarySectionPrivate> typed,
+			TreeMap<ByteString, DictionarySectionPrivate> languages, DictionarySectionPrivate shared,
+			DictionarySectionPrivate graph) {
 		super(spec);
 		this.subjects = subjects;
 		this.predicates = predicates;
@@ -65,6 +78,7 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		this.languages = languages;
 		this.nonTyped = Objects.requireNonNullElseGet(nonTyped, () -> new PFCDictionarySection(spec));
 		this.shared = shared;
+		this.graph = graph;
 		syncLocations();
 	}
 
@@ -80,6 +94,10 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		subjects = DictionarySectionFactory.loadFrom(input, iListener);
 		predicates = DictionarySectionFactory.loadFrom(input, iListener);
 		nonTyped = DictionarySectionFactory.loadFrom(input, iListener);
+
+		if (supportGraphs()) {
+			graph = DictionarySectionFactory.loadFrom(input, iListener);
+		}
 
 		readLiteralsMaps(input, listener);
 	}
@@ -97,6 +115,10 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		subjects = DictionarySectionFactory.loadFrom(in, f, iListener);
 		predicates = DictionarySectionFactory.loadFrom(in, f, iListener);
 		nonTyped = DictionarySectionFactory.loadFrom(in, f, iListener);
+
+		if (supportGraphs()) {
+			graph = DictionarySectionFactory.loadFrom(in, f, iListener);
+		}
 
 		mapLiteralsMaps(in, f, listener);
 	}
@@ -149,6 +171,9 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		}
 
 		shared.load(other.getShared(), iListener);
+		if (supportGraphs()) {
+			graph.load(other.getGraphs(), iListener);
+		}
 		syncLocations();
 	}
 
@@ -159,6 +184,10 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 				new ExceptionThread(() -> subjects.load(other.getSubjects(), iListener), "MultiSecSAsyncReaderS"),
 				new ExceptionThread(() -> shared.load(other.getShared(), iListener), "MultiSecSAsyncReaderSh"),
 				new ExceptionThread(() -> {
+					if (supportGraphs()) {
+						graph.load(other.getGraphs(), iListener);
+					}
+				}, "MultiSecSAsyncReaderG"), new ExceptionThread(() -> {
 					StopPredicate<CharSequence> pred = new StopPredicate<>();
 					PeekIterator<? extends CharSequence> it = new com.the_qa_company.qendpoint.core.iterator.utils.StopIterator<>(
 							new MapIterator<>(other.getObjects().getSortedEntries(), LiteralsUtils::prefToLitLang),
@@ -199,6 +228,9 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		subjects.save(output, iListener);
 		predicates.save(output, iListener);
 		nonTyped.save(output, iListener);
+		if (supportGraphs()) {
+			graph.save(output, iListener);
+		}
 
 		writeLiteralsMaps(output, iListener);
 	}
@@ -264,15 +296,5 @@ public class MultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
 		}
 
 		syncLocations();
-	}
-
-	@Override
-	public long getNgraphs() {
-		return 0;
-	}
-
-	@Override
-	public DictionarySection getGraphs() {
-		throw new NotImplementedException();
 	}
 }

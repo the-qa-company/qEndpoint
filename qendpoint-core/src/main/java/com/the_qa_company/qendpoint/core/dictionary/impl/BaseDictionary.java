@@ -100,6 +100,13 @@ public abstract class BaseDictionary implements DictionaryPrivate {
 
 			return CatIterator.of(getShared().getSortedEntries(), getObjects().getSortedEntries());
 		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			}
+
+			return getGraphs().getSortedEntries();
+		}
 		default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
