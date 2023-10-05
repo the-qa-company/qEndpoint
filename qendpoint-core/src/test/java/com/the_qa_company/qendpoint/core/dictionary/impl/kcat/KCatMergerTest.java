@@ -2,8 +2,10 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
-import com.the_qa_company.qendpoint.core.compact.bitmap.GraphDeleteBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
@@ -600,8 +602,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			for (Path file : files) {
 				try (HDT hdt = supplier.createFakeHDT(spec)) {
 					hdt.saveToHDT(file);
-					deletes.add(GraphDeleteBitmap.empty(hdt.getDictionary().getNgraphs(),
-							hdt.getTriples().getNumberOfElements()));
+					deletes.add(EmptyBitmap.of(hdt.getTriples().getNumberOfElements(), hdt.getDictionary().getNgraphs()));
 				}
 			}
 
@@ -671,7 +672,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						assert graphs > 0;
 						long triples = hdt.getTriples().getNumberOfElements();
 
-						GraphDeleteBitmap memory = GraphDeleteBitmap.memory(graphs, triples + 1);
+						MultiRoaringBitmap memory = MultiRoaringBitmap.memory(triples + 1, graphs);
 
 						// create delete bitmap
 						int toDelete = (int) (triples / 200);

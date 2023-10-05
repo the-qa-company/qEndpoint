@@ -26,12 +26,12 @@ public class TripleCompressionResultPartial implements TripleCompressionResult {
 	private final TripleComponentOrder order;
 
 	public TripleCompressionResultPartial(List<CloseSuppressPath> files, long tripleCount, TripleComponentOrder order,
-			int bufferSize) throws IOException {
+										  int bufferSize, long graphs) throws IOException {
 		this.files = new ArrayList<>(files.size());
 		this.tripleCount = tripleCount;
 		this.order = order;
 		this.triples = new OneReadTempTriples(createBTree(files, 0, files.size(), bufferSize).asIterator(), order,
-				tripleCount);
+				tripleCount, graphs);
 	}
 
 	private ExceptionIterator<TripleID, IOException> createBTree(List<CloseSuppressPath> files, int start, int end,

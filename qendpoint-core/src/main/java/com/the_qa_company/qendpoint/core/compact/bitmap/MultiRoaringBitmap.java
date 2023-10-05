@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
@@ -32,7 +33,7 @@ import static java.lang.String.format;
  *
  * @author Antoine Willerval
  */
-public class MultiRoaringBitmap implements Closeable {
+public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap {
 	// cookie + maps_nb + chunk_size + numbits + num_layers
 	private static final int HEADER_SIZE = 8 + 4 + 4 + 8 + 8;
 	public static final long COOKIE = 0x6347008534687531L;
@@ -136,6 +137,7 @@ public class MultiRoaringBitmap implements Closeable {
 
 	static int defaultChunkSize = 1 << 29;
 	final List<List<Bitmap>> maps = new ArrayList<>();
+	final int chunks;
 	final int chunkSize;
 	final long layers;
 	private final long numbits;
@@ -153,7 +155,7 @@ public class MultiRoaringBitmap implements Closeable {
 			throw new IOException(format("found bad cookie %x != %x", cookie, COOKIE));
 		}
 
-		int chunks = buffer.getInt(8);
+		chunks = buffer.getInt(8);
 		chunkSize = buffer.getInt(12);
 		numbits = buffer.getLong(16);
 		layers = buffer.getLong(24);
@@ -185,7 +187,7 @@ public class MultiRoaringBitmap implements Closeable {
 		this.layers = layers;
 		this.numbits = size;
 
-		int chunks = (int) ((size - 1) / chunkSize + 1);
+		chunks = (int) ((size - 1) / chunkSize + 1);
 
 		try {
 			if (output != null) {
@@ -241,7 +243,7 @@ public class MultiRoaringBitmap implements Closeable {
 			if (cookie != COOKIE) {
 				throw new IOException(format("Bad cookie for multi roaring bitmap %x != %x", cookie, COOKIE));
 			}
-			int bitmapCount = header.getInt(8);
+			chunks = header.getInt(8);
 			chunkSize = header.getInt(12);
 			numbits = header.getLong(16);
 			layers = header.getLong(24);
@@ -250,7 +252,7 @@ public class MultiRoaringBitmap implements Closeable {
 			}
 
 			long shift = HEADER_SIZE + start;
-			for (int i = 0; i < bitmapCount; i++) {
+			for (int i = 0; i < chunks; i++) {
 				long sizeBytes = IOUtil.readLong(shift, channel, ByteOrder.LITTLE_ENDIAN);
 				long layer = IOUtil.readLong(shift += 8, channel);
 
@@ -319,6 +321,7 @@ public class MultiRoaringBitmap implements Closeable {
 		buffer.putInt(8, maps.size());
 		buffer.putInt(12, chunkSize);
 		buffer.putLong(16, numbits);
+		buffer.putLong(24, maps.size());
 
 		output.write(bytes);
 
@@ -340,6 +343,7 @@ public class MultiRoaringBitmap implements Closeable {
 	}
 
 
+	@Override
 	public boolean access(long graph, long position) {
 		int location = (int) (position / chunkSize);
 		if (location >= maps.size() || position < 0) {
@@ -349,22 +353,47 @@ public class MultiRoaringBitmap implements Closeable {
 		return maps.get((int) graph).get(location).access(localLocation);
 	}
 
+	@Override
 	public long getNumBits() {
 		return numbits;
 	}
 
+	@Override
 	public long getSizeBytes() {
 		return HEADER_SIZE + maps.stream().flatMap(Collection::stream).mapToLong(Bitmap::getSizeBytes).sum();
 	}
 
+	@Override
+	public void save(OutputStream output, ProgressListener listener) throws IOException {
+		save(output);
+	}
+
+	@Override
+	public void load(InputStream input, ProgressListener listener) throws IOException {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public String getType() {
 		return HDTVocabulary.BITMAP_TYPE_ROARING_MULTI;
 	}
 
+	@Override
+	public long getLayersCount() {
+		return layers;
+	}
+
+	@Override
 	public long countOnes(long graph) {
 		return maps.get((int) graph).stream().mapToLong(Bitmap::countOnes).sum();
 	}
 
+	@Override
+	public long countZeros(long layer) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public long select1(long graph, long n) {
 		long count = n;
 		long delta = 0;
@@ -392,6 +421,7 @@ public class MultiRoaringBitmap implements Closeable {
 		return delta + map.get(idx).select1(count);
 	}
 
+	@Override
 	public long rank1(long graph, long position) {
 		List<Bitmap> map = maps.get((int) graph);
 		int location = (int) (position / chunkSize);
@@ -410,10 +440,17 @@ public class MultiRoaringBitmap implements Closeable {
 		return delta + map.get(location).rank1(localLocation);
 	}
 
+	@Override
+	public long rank0(long layer, long position) {
+		return position + 1L - rank1(layer, position);
+	}
+
+	@Override
 	public long selectPrev1(long graph, long start) {
 		return select1(graph, rank1(graph, start));
 	}
 
+	@Override
 	public long selectNext1(long graph, long start) {
 		long pos = rank1(graph, start - 1);
 		if (pos < getNumBits())
@@ -422,12 +459,17 @@ public class MultiRoaringBitmap implements Closeable {
 	}
 
 	@Override
+	public long select0(long layer, long n) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public void close() throws IOException {
 		try {
 			if (output != null) {
 				// write remaining
 				Closer.closeAll(IntStream.range(0, maps.size())
-						.mapToObj(layer -> IntStream.range(0, maps.get(layer).size())
+						.mapToObj(layer -> IntStream.range(0, maps.get(layer) == null ? 0 : maps.get(layer).size())
 								.mapToObj(index -> (Closeable) (() -> closeStreamBitmap(layer, index))))
 						.flatMap(Function.identity())
 				);
@@ -438,10 +480,22 @@ public class MultiRoaringBitmap implements Closeable {
 	}
 
 
-	public void set(long graph, long position, boolean value) {
+	@Override
+	public void set(long layer, long position, boolean value) {
 		if (!writable) {
 			throw new IllegalArgumentException("not writable");
 		}
+
+		if (layer >= maps.size()) {
+			for (int i = 0; i <= layer; i++) {
+				List<Bitmap> map = new ArrayList<>();
+				maps.add(map);
+				for (int j = 0; j < chunks; j++) {
+					map.add(new RoaringBitmap32()); // to on use?
+				}
+			}
+		}
+		List<Bitmap> maps = this.maps.get((int) layer);
 
 		int location = (int) (position / chunkSize);
 		if (location >= maps.size() || position < 0) {
@@ -457,13 +511,13 @@ public class MultiRoaringBitmap implements Closeable {
 			// clear previous
 			try {
 				Closer.closeAll(
-						IntStream.range(0, location).mapToObj(index -> (Closeable) (() -> closeStreamBitmap((int) graph, index))));
+						IntStream.range(0, location).mapToObj(index -> (Closeable) (() -> closeStreamBitmap((int) layer, index))));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
 
 		// set the bit
-		((ModifiableBitmap) maps.get((int) graph).get(location)).set(localLocation, value);
+		((ModifiableBitmap) maps.get(location)).set(localLocation, value);
 	}
 }

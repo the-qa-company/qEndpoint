@@ -712,6 +712,12 @@ public class IOUtil {
 		}
 	}
 
+	public static void closeQuietly(Object output) {
+		if (output instanceof Closeable cl) {
+			closeQuietly(cl);
+		}
+	}
+
 	public static void closeQuietly(Closeable output) {
 		if (output == null)
 			return;

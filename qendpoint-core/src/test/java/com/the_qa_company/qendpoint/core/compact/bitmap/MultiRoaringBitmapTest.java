@@ -43,20 +43,20 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 		try {
 			Path output = root.resolve("tmp.bin");
 			MultiRoaringBitmap.defaultChunkSize = 9;
-			try (MultiRoaringBitmap map = MultiRoaringBitmap.memoryStream(100, output)) {
+			try (MultiRoaringBitmap map = MultiRoaringBitmap.memoryStream(100, 1, output)) {
 				assertEquals(9, map.chunkSize);
 				assertEquals(12, map.maps.size());
-				map.set(0, true);
-				map.set(42, true);
-				map.set(80, true);
-				map.set(90, true);
+				map.set(0, 0, true);
+				map.set(0, 42, true);
+				map.set(0, 80, true);
+				map.set(0, 90, true);
 			}
 
 			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
-					case 0, 42, 80, 90 -> assertTrue(map.access(i));
-					default -> assertFalse(map.access(i));
+					case 0, 42, 80, 90 -> assertTrue(map.access(0, i));
+					default -> assertFalse(map.access(0, i));
 					}
 				}
 			}
@@ -65,8 +65,8 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
-					case 0, 42, 80, 90 -> assertTrue(map.access(i));
-					default -> assertFalse(map.access(i));
+					case 0, 42, 80, 90 -> assertTrue(map.access(0, i));
+					default -> assertFalse(map.access(0, i));
 					}
 				}
 			}
@@ -89,13 +89,13 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 
 			MultiRoaringBitmap.defaultChunkSize = size / 9;
 
-			try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size)) {
+			try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size, 1)) {
 				assertEquals(MultiRoaringBitmap.defaultChunkSize, map.chunkSize);
 				assertEquals((size - 1) / map.chunkSize + 1, map.maps.size());
 
 				for (int i = 0; i < size / 50; i++) {
 					int position = rnd.nextInt(size);
-					map.set(position, true);
+					map.set(0, position, true);
 				}
 
 				try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(output))) {
@@ -107,7 +107,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 
 			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
 				for (int i = 0; i < size / 50; i++) {
-					assertTrue(map.access(rnd.nextInt(size)));
+					assertTrue(map.access(0, rnd.nextInt(size)));
 				}
 			}
 
@@ -116,7 +116,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
 					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < size / 50; i++) {
-					assertTrue(map.access(rnd.nextInt(size)));
+					assertTrue(map.access(0, rnd.nextInt(size)));
 				}
 			}
 
@@ -133,14 +133,14 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 		Random rnd = new Random(seed);
 		MultiRoaringBitmap.defaultChunkSize = size / 9;
 
-		try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size);
+		try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size, 1);
 				Bitmap375Big memmap = Bitmap375Big.memory(size)) {
 			assertEquals(MultiRoaringBitmap.defaultChunkSize, map.chunkSize);
 			assertEquals((size - 1) / map.chunkSize + 1, map.maps.size());
 
 			for (int i = 0; i < size / 50; i++) {
 				int position = rnd.nextInt(size);
-				map.set(position, true);
+				map.set(0, position, true);
 				memmap.set(position, true);
 			}
 
@@ -148,17 +148,17 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 
 			long numBits = memmap.countOnes();
 
-			assertEquals("countOnes", numBits, map.countOnes());
+			assertEquals("countOnes", numBits, map.countOnes(0));
 
 			for (int i = 0; i < size; i++) {
-				assertEquals("access#" + i + "/" + size, memmap.access(i), map.access(i));
+				assertEquals("access#" + i + "/" + size, memmap.access(i), map.access(0, i));
 			}
 
 			for (int i = 0; i < size; i++) {
-				assertEquals("rank1#" + i + "/" + size, memmap.rank1(i), map.rank1(i));
+				assertEquals("rank1#" + i + "/" + size, memmap.rank1(i), map.rank1(0, i));
 			}
 			for (int i = 0; i < size; i++) {
-				assertEquals("rank0#" + i + "/" + size, memmap.rank0(i), map.rank0(i));
+				assertEquals("rank0#" + i + "/" + size, memmap.rank0(i), map.rank0(0, i));
 			}
 			for (int i = 0; i < numBits; i++) {
 				long n = i;
@@ -169,15 +169,15 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 					}
 				}
 				assertEquals(j, memmap.select1(i));
-				assertEquals("select1#" + i + "/" + numBits, memmap.select1(i), map.select1(i));
+				assertEquals("select1#" + i + "/" + numBits, memmap.select1(i), map.select1(0, i));
 			}
 
 			for (int i = 0; i < numBits; i++) {
-				assertEquals("selectNext1#" + i + "/" + numBits, memmap.selectNext1(i), map.selectNext1(i));
+				assertEquals("selectNext1#" + i + "/" + numBits, memmap.selectNext1(i), map.selectNext1(0, i));
 			}
 
 			for (int i = 0; i < numBits; i++) {
-				assertEquals("selectPrev1#" + i + "/" + numBits, memmap.selectPrev1(i), map.selectPrev1(i));
+				assertEquals("selectPrev1#" + i + "/" + numBits, memmap.selectPrev1(i), map.selectPrev1(0, i));
 			}
 		}
 	}

@@ -34,10 +34,16 @@ import java.util.Iterator;
 public class OneReadTempTriples implements TempTriples {
 	private IteratorTripleID iterator;
 	private TripleComponentOrder order;
+	private long graphs;
 
 	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples) {
+		this(iterator, order, triples, 0);
+	}
+
+	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples, long graphs) {
 		this.iterator = new SimpleIteratorTripleID(iterator, order, triples);
 		this.order = order;
+		this.graphs = graphs;
 	}
 
 	@Override
@@ -143,6 +149,7 @@ public class OneReadTempTriples implements TempTriples {
 		if (input instanceof OneReadTempTriples input2) {
 			this.iterator = input2.iterator;
 			this.order = input2.order;
+			this.graphs = input2.graphs;
 		} else {
 			throw new NotImplementedException();
 		}
@@ -186,6 +193,11 @@ public class OneReadTempTriples implements TempTriples {
 	@Override
 	public void close() throws IOException {
 		// nothing to do
+	}
+
+	@Override
+	public long getGraphsCount() {
+		return graphs;
 	}
 
 	private static class SimpleIteratorTripleID implements IteratorTripleID {

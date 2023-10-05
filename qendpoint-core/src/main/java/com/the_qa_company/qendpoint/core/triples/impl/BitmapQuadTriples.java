@@ -19,12 +19,12 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableMultiLayerBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
@@ -53,16 +53,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author mario.arias
  */
 public class BitmapQuadTriples extends BitmapTriples {
 
-	protected MultiRoaringBitmap graphs = MultiRoaringBitmap.memory(0, 0);
+	protected ModifiableMultiLayerBitmap graphs = MultiRoaringBitmap.memory(0, 0);
 
 	public BitmapQuadTriples() throws IOException {
 		super();
@@ -111,9 +108,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 				throw new IllegalFormatException("None of the components of a quad can be null");
 			}
 			if (g > numGraphs) {
-				for (long i = numGraphs; i < g; i++) {
-					quadInfoAG.add(MultiRoaringBitmap.memory(i, number));
-				}
 				numGraphs = g;
 			}
 			long graphIndex = g - 1;
@@ -122,7 +116,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 				tripleIndex += 1;
 			}
 
-			quadInfoAG.get((int) graphIndex).set(tripleIndex, true);
+			graphs.set(graphIndex, tripleIndex, true);
 
 			if (sameAsLast) {
 				continue;
@@ -204,8 +198,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 	public long size() {
 		if (isClosed)
 			return 0;
-		long graphs = quadInfoAG.stream().mapToLong(Bitmap::getSizeBytes).sum();
-		return seqY.size() + seqZ.size() + bitmapY.getSizeBytes() + bitmapZ.getSizeBytes() + graphs;
+		return seqY.size() + seqZ.size() + bitmapY.getSizeBytes() + bitmapZ.getSizeBytes() + graphs.getSizeBytes();
 	}
 
 	@Override
@@ -221,10 +214,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 		bitmapZ.save(output, iListener);
 		seqY.save(output, iListener);
 		seqZ.save(output, iListener);
-		VByte.encode(output, quadInfoAG.size());
-		for (ModifiableBitmap b : quadInfoAG) {
-			b.save(output, iListener);
-		}
+		graphs.save(output, iListener);
 	}
 
 	@Override
@@ -278,19 +268,9 @@ public class BitmapQuadTriples extends BitmapTriples {
 		adjY = new AdjacencyList(seqY, bitmapY);
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
 
-		Closer.closeSingle(quadInfoAG);
-		quadInfoAG.clear();
+		Closer.closeSingle(graphs);
 
-		long numGraphs = VByte.decode(input);
-
-		Path fPath = f.toPath();
-		for (long i = 0; i < numGraphs; i++) {
-			// map the multi roaring bitmap and skip the bytes
-			long base = input.getTotalBytes();
-			MultiRoaringBitmap mapped = MultiRoaringBitmap.mapped(fPath, base);
-			input.skipNBytes(mapped.getSizeBytes());
-			quadInfoAG.add(mapped);
-		}
+		graphs = MultiRoaringBitmap.mapped(f.toPath(), input.getTotalBytes());
 
 		isClosed = false;
 	}
@@ -326,26 +306,21 @@ public class BitmapQuadTriples extends BitmapTriples {
 		adjY = new AdjacencyList(seqY, bitmapY);
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
 
-		Closer.closeSingle(quadInfoAG);
-		quadInfoAG.clear();
+		Closer.closeSingle(graphs);
 
-		long numGraphs = VByte.decode(input);
-
-		for (long i = 0; i < numGraphs; i++) {
-			quadInfoAG.add(MultiRoaringBitmap.load(input));
-		}
+		graphs = MultiRoaringBitmap.load(input);
 
 		isClosed = false;
 	}
 
 	// Fast but dangerous covariant cast
 	@Override
-	public List<? extends Bitmap> getQuadInfoAG() {
-		return quadInfoAG;
+	public MultiLayerBitmap getQuadInfoAG() {
+		return graphs;
 	}
 
 	@Override
 	public void close() throws IOException {
-		Closer.closeAll((Closeable) super::close, quadInfoAG);
+		Closer.closeAll((Closeable) super::close, graphs);
 	}
 }
