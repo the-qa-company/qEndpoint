@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
-import com.the_qa_company.qendpoint.core.compact.bitmap.GraphDeleteBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -131,9 +131,8 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				.mapToObj(hdtIndex -> {
 					// extract hdt elements for this index
 					HDT hdt = hdts[hdtIndex];
-					GraphDeleteBitmap deleteBitmap = deleteBitmaps == null ? null
-							: GraphDeleteBitmap.wrap(deleteBitmaps.get(hdtIndex),
-									quad ? hdt.getDictionary().getNgraphs() : 1);
+					MultiLayerBitmap deleteBitmap = deleteBitmaps == null ? null
+							: MultiLayerBitmap.ofBitmap(deleteBitmaps.get(hdtIndex));
 
 					if (hdt.getTriples().getNumberOfElements() == 0) {
 						// no triples
@@ -172,9 +171,8 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				.mapToObj(hdtIndex -> {
 					// extract hdt elements for this index
 					HDT hdt = hdts[hdtIndex];
-					GraphDeleteBitmap deleteBitmap = deleteBitmaps == null ? null
-							: GraphDeleteBitmap.wrap(deleteBitmaps.get(hdtIndex),
-									quad ? hdt.getDictionary().getNgraphs() : 1);
+					MultiLayerBitmap deleteBitmap = deleteBitmaps == null ? null
+							: MultiLayerBitmap.ofBitmap(deleteBitmaps.get(hdtIndex));
 
 					if (hdt.getTriples().getNumberOfElements() == 0) {
 						// no triples
@@ -223,7 +221,7 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 	}
 
 	private static Iterator<TripleID> createIdMapper(KCatMerger merger, int hdtIndex, HDT hdt, Iterator<TripleID> it,
-			long start, GraphDeleteBitmap deleteBitmap) {
+			long start, MultiLayerBitmap deleteBitmap) {
 		if (deleteBitmap == null) {
 			return new MapIterator<>(it, (tid) -> {
 				assert inHDT(tid, hdt);
@@ -240,7 +238,7 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 			});
 		}
 		return MapFilterIterator.of(it, (tid, index) -> {
-			if (deleteBitmap.access(index + start)) {
+			if (deleteBitmap.access(0, index + start)) {
 				return null;
 			}
 			assert inHDT(tid, hdt);

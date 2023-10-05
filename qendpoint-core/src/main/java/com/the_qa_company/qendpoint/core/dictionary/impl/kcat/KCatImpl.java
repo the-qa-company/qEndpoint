@@ -2,8 +2,8 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
-import com.the_qa_company.qendpoint.core.compact.bitmap.GraphDeleteBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.NegBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
@@ -260,8 +260,7 @@ public class KCatImpl implements Closeable {
 					long c = 0;
 
 					@SuppressWarnings("resource")
-					GraphDeleteBitmap bm = GraphDeleteBitmap.wrap(deleteBitmap,
-							quad ? hdt.getDictionary().getNgraphs() : 1);
+					MultiLayerBitmap bm = MultiLayerBitmap.ofBitmap(deleteBitmap);
 
 					while (searchAll.hasNext()) {
 						TripleID tripleID = searchAll.next();
@@ -347,14 +346,15 @@ public class KCatImpl implements Closeable {
 				// create a GROUP BY subject iterator to get the new ordered
 				// stream
 				Iterator<TripleID> tripleIterator = GroupBySubjectMapIterator.fromHDTs(merger, hdts, deleteBitmaps);
+				long quads = quad ? dictionary.getNgraphs() : -1;
 				try (WriteBitmapTriples triples = new WriteBitmapTriples(hdtFormat, location.resolve("triples"),
-						bufferSize, quad)) {
+						bufferSize, quads)) {
 					long count = Arrays.stream(hdts).mapToLong(h -> h.getTriples().getNumberOfElements()).sum();
 
 					il.setRange(40, 80);
 					il.setPrefix("Merge triples: ");
 					il.notifyProgress(0, "start");
-					triples.load(new OneReadTempTriples(tripleIterator, order, count), il);
+					triples.load(new OneReadTempTriples(tripleIterator, order, count, quads), il);
 					profiler.popSection();
 
 					WriteHDTImpl writeHDT = new WriteHDTImpl(hdtFormat, location, dictionary, triples,

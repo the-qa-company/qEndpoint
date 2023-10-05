@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.core.quad.impl;
 
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
@@ -27,7 +27,7 @@ public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implem
 
 	@Override
 	protected TripleID getNext() {
-		List<? extends Bitmap> quadInfoAG = quads.getQuadInfoAG();
+		MultiLayerBitmap quadInfoAG = quads.getQuadInfoAG();
 		while (true) {
 			if (tid == null) { // we need to compute the next one
 				if (!tidIt.hasNext()) {
@@ -43,7 +43,7 @@ public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implem
 				// we are searching for a particular graph, we only need to
 				// check if this graph
 				// contains the current triple
-				if (quadInfoAG.get((int) graph - 1).access(posZ)) {
+				if (quadInfoAG.access(graph - 1, posZ)) {
 					TripleID id = tid;
 					tid = null; // pass to the next one in the future case
 					return id;
@@ -52,8 +52,8 @@ public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implem
 				continue;
 			}
 
-			for (long i = tid.getGraph() + 1; i <= quadInfoAG.size(); i++) {
-				if (quadInfoAG.get((int) i - 1).access(posZ)) {
+			for (long i = tid.getGraph() + 1; i <= quadInfoAG.getLayersCount(); i++) {
+				if (quadInfoAG.access(i - 1, posZ)) {
 					// found a graph containing it
 					tid.setGraph(i);
 					return tid;
