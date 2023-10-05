@@ -155,6 +155,9 @@ public abstract class HDTBase<H extends Header, D extends DictionaryPrivate, T e
 		header.insert(baseUri, HDTVocabulary.VOID_PROPERTIES, dictionary.getNpredicates());
 		header.insert(baseUri, HDTVocabulary.VOID_DISTINCT_SUBJECTS, dictionary.getNsubjects());
 		header.insert(baseUri, HDTVocabulary.VOID_DISTINCT_OBJECTS, dictionary.getNobjects());
+		if (dictionary.supportGraphs()) {
+			header.insert(baseUri, HDTVocabulary.VOID_DISTINCT_GRAPHS, dictionary.getNgraphs());
+		}
 
 		// Structure
 		String formatNode = "_:format";

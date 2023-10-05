@@ -75,6 +75,16 @@ public enum RDFNotation {
 	NQUAD,
 
 	/**
+	 * Trig
+	 */
+	TRIG,
+
+	/**
+	 * Trix
+	 */
+	TRIX,
+
+	/**
 	 * JSON-LD
 	 */
 	JSONLD,
@@ -132,6 +142,12 @@ public enum RDFNotation {
 		case "hdt" -> {
 			return HDT;
 		}
+		case "trig" -> {
+			return TRIG;
+		}
+		case "trix" -> {
+			return TRIX;
+		}
 		}
 		throw new IllegalArgumentException();
 	}
@@ -175,6 +191,10 @@ public enum RDFNotation {
 			return LIST;
 		} else if (str.endsWith("hdt")) {
 			return HDT;
+		} else if (str.endsWith("trig")) {
+			return TRIG;
+		} else if (str.endsWith("trix")) {
+			return TRIX;
 		}
 
 		throw new IllegalArgumentException("Could not guess the format for " + fileName);

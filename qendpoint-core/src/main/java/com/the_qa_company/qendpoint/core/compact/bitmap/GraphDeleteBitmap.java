@@ -7,12 +7,8 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Bitmap to delete inside a graph, all the ids are mapped on a bitmap with the
- * formula
- *
- * <pre>
- * (id, graph) -> id * graphs + graph
- * </pre>
+ * Bitmap to delete inside a graph, all the ids are mapped on a bitmap
+ * with the formula <pre>(id, graph) -> id * graphs + graph</pre>
  *
  * @author Antoine Willerval
  */
@@ -44,8 +40,7 @@ public class GraphDeleteBitmap implements SimpleModifiableBitmap, Closeable {
 	 *
 	 * @param bitmap bitmap
 	 * @param graphs graphs count
-	 * @return bitmap if already instanceof graph delete bitmap and contains the
-	 *         right graphs number or wrap into GraphDeleteBitmap
+	 * @return bitmap if already instanceof graph delete bitmap and contains the right graphs number or wrap into GraphDeleteBitmap
 	 */
 	public static GraphDeleteBitmap wrap(Bitmap bitmap, long graphs) {
 		if (bitmap instanceof GraphDeleteBitmap gdb && gdb.graphs == graphs) {
@@ -80,8 +75,7 @@ public class GraphDeleteBitmap implements SimpleModifiableBitmap, Closeable {
 	 * @param graph    graph
 	 * @param position position
 	 * @param value    value
-	 * @throws ClassCastException if the wrapped bitmap isn't a modifiable
-	 *                            bitmap
+	 * @throws ClassCastException if the wrapped bitmap isn't a modifiable bitmap
 	 */
 	public void set(int graph, long position, boolean value) {
 		set(position * graphs + graph, value);

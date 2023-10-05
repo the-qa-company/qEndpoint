@@ -222,8 +222,9 @@ public class RDF2HDT implements ProgressListener {
 				colorTool.logValue("Different subjects .... ", String.valueOf(hdt.getDictionary().getNsubjects()));
 				colorTool.logValue("Different predicates .. ", String.valueOf(hdt.getDictionary().getNpredicates()));
 				colorTool.logValue("Different objects ..... ", String.valueOf(hdt.getDictionary().getNobjects()));
-				if (isQuad)
+				if (hdt.getDictionary().supportGraphs()) {
 					colorTool.logValue("Different graphs ...... ", String.valueOf(hdt.getDictionary().getNgraphs()));
+				}
 				colorTool.logValue("Common Subject/Object . ", String.valueOf(hdt.getDictionary().getNshared()));
 			}
 

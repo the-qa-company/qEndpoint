@@ -57,6 +57,8 @@ public class RDFParserFactory {
 		case TURTLE:
 		case N3:
 		case RDFXML:
+		case TRIG:
+		case TRIX:
 			return new RDFParserRIOT();
 		case DIR:
 			return new RDFParserDir(spec);

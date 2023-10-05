@@ -44,6 +44,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 
@@ -61,7 +62,7 @@ import java.util.List;
  */
 public class BitmapQuadTriples extends BitmapTriples {
 
-	protected final List<ModifiableBitmap> quadInfoAG = new ArrayList<>();
+	protected MultiRoaringBitmap graphs = MultiRoaringBitmap.memory(0, 0);
 
 	public BitmapQuadTriples() throws IOException {
 		super();
@@ -82,6 +83,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 
 	@Override
 	public void load(IteratorTripleID it, ProgressListener listener) {
+		IOUtil.closeQuietly(graphs);
 		long number = it.estimatedNumResults();
 
 		DynamicSequence vectorY = new SequenceLog64Big(BitUtil.log2(number), number + 1);
@@ -110,7 +112,7 @@ public class BitmapQuadTriples extends BitmapTriples {
 			}
 			if (g > numGraphs) {
 				for (long i = numGraphs; i < g; i++) {
-					quadInfoAG.add(MultiRoaringBitmap.memory(number));
+					quadInfoAG.add(MultiRoaringBitmap.memory(i, number));
 				}
 				numGraphs = g;
 			}

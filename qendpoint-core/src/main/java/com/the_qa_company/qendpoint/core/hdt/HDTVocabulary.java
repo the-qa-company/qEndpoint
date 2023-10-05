@@ -51,6 +51,7 @@ public class HDTVocabulary {
 	public static final String VOID_PROPERTIES = VOID_BASE + "properties>";
 	public static final String VOID_DISTINCT_SUBJECTS = VOID_BASE + "distinctSubjects>";
 	public static final String VOID_DISTINCT_OBJECTS = VOID_BASE + "distinctObjects>";
+	public static final String VOID_DISTINCT_GRAPHS = VOID_BASE + "distinctGraphs>";
 
 	// Header
 	public static final String HEADER_NTRIPLES = "ntriples";
