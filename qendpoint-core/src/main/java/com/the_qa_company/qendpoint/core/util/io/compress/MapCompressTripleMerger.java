@@ -46,8 +46,8 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 	private final long graphs;
 
 	public MapCompressTripleMerger(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleID> source,
-								   CompressTripleMapper mapper, MultiThreadListener listener, TripleComponentOrder order, int bufferSize,
-								   long chunkSize, int k, long graphs) {
+			CompressTripleMapper mapper, MultiThreadListener listener, TripleComponentOrder order, int bufferSize,
+			long chunkSize, int k, long graphs) {
 		this.baseFileName = baseFileName;
 		this.source = source;
 		this.mapper = mapper;

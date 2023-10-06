@@ -33,7 +33,8 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 	private final boolean quads;
 	private final long graphs;
 
-	public CompressTripleMapper(CloseSuppressPath location, long tripleCount, long chunkSize, boolean quads, long graphs) {
+	public CompressTripleMapper(CloseSuppressPath location, long tripleCount, long chunkSize, boolean quads,
+			long graphs) {
 		this.tripleCount = tripleCount;
 		this.quads = quads;
 

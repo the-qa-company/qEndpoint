@@ -28,10 +28,11 @@ public class EmptyBitmap implements ModifiableBitmap, ModifiableMultiLayerBitmap
 	public static EmptyBitmap of(long size) {
 		return new EmptyBitmap(size, 0);
 	}
+
 	/**
 	 * create empty bitmap simulating a bitmap of a particular size
 	 *
-	 * @param size the size
+	 * @param size   the size
 	 * @param layers layers
 	 * @return bitmap
 	 */

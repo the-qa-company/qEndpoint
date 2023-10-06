@@ -83,10 +83,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
+@Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class})
+		HDTManagerTest.MSDLangQuadTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -143,7 +143,7 @@ public class HDTManagerTest {
 		}
 
 		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
-		                                        Iterator<? extends CharSequence> it2) {
+				Iterator<? extends CharSequence> it2) {
 			while (it1.hasNext()) {
 				Assert.assertTrue(it2.hasNext());
 				Assert.assertEquals(it1.next().toString(), it2.next().toString());
@@ -181,7 +181,7 @@ public class HDTManagerTest {
 				});
 			} else {
 				assertFalse("actual dictionary is of type MultipleBaseDictionary, but ed is, actual: " + ad.getClass()
-				            + ", excepted: " + ed.getClass(), ad instanceof MultipleBaseDictionary);
+						+ ", excepted: " + ed.getClass(), ad instanceof MultipleBaseDictionary);
 				assertEqualsHDT("Objects", ed.getObjects(), ad.getObjects());
 			}
 			assertEqualsHDT("Shared", ed.getShared(), ad.getShared());
@@ -214,7 +214,7 @@ public class HDTManagerTest {
 				actual.getHeader().search("", "", "").forEachRemaining(l -> bld.append(l).append('\n'));
 
 				fail("Size of the header doesn't match " + bld + expected.getHeader().getNumberOfElements() + "!="
-				     + actual.getHeader().getNumberOfElements());
+						+ actual.getHeader().getNumberOfElements());
 			}
 		}
 
@@ -298,7 +298,7 @@ public class HDTManagerTest {
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
 			if (ts.getSubject() == null || ts.getSubject().isEmpty() || ts.getPredicate() == null
-			    || ts.getPredicate().isEmpty() || ts.getObject() == null || ts.getObject().isEmpty()) {
+					|| ts.getPredicate().isEmpty() || ts.getObject() == null || ts.getObject().isEmpty()) {
 				fail(message + " (" + ts + ")");
 			}
 		}
@@ -347,41 +347,41 @@ public class HDTManagerTest {
 			List<Object[]> params = new ArrayList<>();
 			for (String dict : diskDict()) {
 				params.addAll(List.of(
-						new Object[]{"slow-str1", 10, 2, 4, 2,
+						new Object[] { "slow-str1", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream=true"},
-						new Object[]{"slow-str2", 10, 2, 4, 2,
+								"debug.disk.slow.stream=true" },
+						new Object[] { "slow-str2", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream2=true"},
-						new Object[]{"slow-cfsd", 10, 2, 4, 2,
+								"debug.disk.slow.stream2=true" },
+						new Object[] { "slow-cfsd", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.pfsd=true"},
-						new Object[]{"slow-kw-d", 10, 2, 4, 2,
+								"debug.disk.slow.pfsd=true" },
+						new Object[] { "slow-kw-d", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.dict=true"},
-						new Object[]{"slow-kw-t", 10, 2, 4, 2,
+								"debug.disk.slow.kway.dict=true" },
+						new Object[] { "slow-kw-t", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.triple=true"}));
-				for (int threads : new int[]{
+								"debug.disk.slow.kway.triple=true" }));
+				for (int threads : new int[] {
 						// sync
 						1,
 						// async, low thread count
 						2,
 						// async, large thread count
-						8}) {
+						8 }) {
 					List<String> modes;
 					// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
 					modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					for (String mode : modes) {
 						params.addAll(List.of(
-								new Object[]{"base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
-										false, dict, SIZE_VALUE, ""},
-								new Object[]{"duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
-										mode, false, dict, SIZE_VALUE, ""},
-								new Object[]{"large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
-										threads, mode, false, dict, SIZE_VALUE, ""},
-								new Object[]{"quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
-										false, dict, SIZE_VALUE, ""}));
+								new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
+										false, dict, SIZE_VALUE, "" },
+								new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
+										mode, false, dict, SIZE_VALUE, "" },
+								new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
+										threads, mode, false, dict, SIZE_VALUE, "" },
+								new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
+										false, dict, SIZE_VALUE, "" }));
 					}
 				}
 			}
@@ -605,16 +605,16 @@ public class HDTManagerTest {
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
 			for (String dict : diskDict()) {
-				for (boolean async : new boolean[]{false, true}) {
-					for (long kcat : new long[]{2, 10, 0}) {
+				for (boolean async : new boolean[] { false, true }) {
+					for (long kcat : new long[] { 2, 10, 0 }) {
 						params.add(
-								new Object[]{"base", SIZE_VALUE * 16, 20, 50, false, dict, SIZE_VALUE, kcat, async});
-						params.add(new Object[]{"duplicates", SIZE_VALUE * 16, 10, 50, false, dict, SIZE_VALUE, kcat,
-								async});
-						params.add(new Object[]{"large-literals", SIZE_VALUE * 4, 20, 250, false, dict, SIZE_VALUE,
-								kcat, async});
-						params.add(new Object[]{"quiet", SIZE_VALUE * 16, 10, 50, false, dict, SIZE_VALUE, kcat,
-								async});
+								new Object[] { "base", SIZE_VALUE * 16, 20, 50, false, dict, SIZE_VALUE, kcat, async });
+						params.add(new Object[] { "duplicates", SIZE_VALUE * 16, 10, 50, false, dict, SIZE_VALUE, kcat,
+								async });
+						params.add(new Object[] { "large-literals", SIZE_VALUE * 4, 20, 250, false, dict, SIZE_VALUE,
+								kcat, async });
+						params.add(new Object[] { "quiet", SIZE_VALUE * 16, 10, 50, false, dict, SIZE_VALUE, kcat,
+								async });
 					}
 				}
 			}
@@ -740,8 +740,8 @@ public class HDTManagerTest {
 	public static class FileDynamicTest extends HDTManagerTestBase {
 		@Parameterized.Parameters(name = "{0}")
 		public static Collection<Object[]> params() {
-			return List.of(new Object[]{"hdtGenDisk/unicode_disk_encode.nt", true, SIZE_VALUE},
-					new Object[]{"unicodeTest.nt", true, SIZE_VALUE});
+			return List.of(new Object[] { "hdtGenDisk/unicode_disk_encode.nt", true, SIZE_VALUE },
+					new Object[] { "unicodeTest.nt", true, SIZE_VALUE });
 		}
 
 		@Parameterized.Parameter
@@ -1041,9 +1041,9 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-							// free
-							.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
-							), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+					// free
+					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
+					), HDTSupplier.disk(), "M:\\WIKI\\latest-all.nt.bz2", HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
 					spec, (level, message) -> System.out.println("[" + level + "] " + message))) {
 				System.out.println(watch.stopAndShow());
 				System.out.println(hdt.getTriples().getNumberOfElements());
@@ -1064,9 +1064,9 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.PROFILER_KEY, "true");
 			watch.reset();
 			try (HDT hdt = HDTManager.catTree(RDFFluxStop.sizeLimit(100_000_000_000L) // 300GB
-							// free
-							.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
-							), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
+					// free
+					.and(RDFFluxStop.countLimit(700_000_000L) // ~9GB maps
+					), HDTSupplier.disk(), supplier.createTripleStringStream(), HDTTestUtils.BASE_URI, spec,
 					(level, message) -> System.out.println("[" + level + "] " + message))) {
 				System.out.println(watch.stopAndShow());
 				System.out.println(hdt.getTriples().getNumberOfElements());
@@ -1076,30 +1076,22 @@ public class HDTManagerTest {
 		@Test
 		public void quadTest() throws IOException, ParserException {
 			Path file = Path.of("C:\\Users\\wilat\\workspace\\hdtq\\trusty.LIDDIv1.01.trig");
-			HDTOptions spec = HDTOptions.readFromFile(Path.of("C:\\Users\\wilat\\workspace\\hdtq\\qendpoint-cli-1.13.7\\bin\\opt.hdtspec"));
-
+			HDTOptions spec = HDTOptions
+					.readFromFile(Path.of("C:\\Users\\wilat\\workspace\\hdtq\\qendpoint-cli-1.13.7\\bin\\opt.hdtspec"));
 
 			long size = 100_000;
-			int[] graph = {
-					10,
-					100,
-					1000,
-					10000,
-					25000,
-					50000
-			};
+			int[] graph = { 10, 100, 1000, 10000, 25000, 50000 };
 
 			for (int g : graph) {
 				Path ff = file.resolveSibling("ds-" + g + ".nq.gz");
 				LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(size, (int) (Math.tan(g) * 100))
-						.withMaxElementSplit((int) (size / 500))
-						.withMaxGraph(g)
-						.withQuads(true)
+						.withMaxElementSplit((int) (size / 500)).withMaxGraph(g).withQuads(true)
 						.createNTFile(ff, CompressionType.GZIP);
 
-				//try (HDT hdt = HDTManager.generateHDT(ff, ff.toString().replace('\\', '/'), RDFNotation.NQUAD, spec, ProgressListener.sout())) {
-				//	hdt.saveToHDT(ff.resolveSibling("liddi.hdtq"));
-				//}
+				try (HDT hdt = HDTManager.generateHDT(ff, ff.toString().replace('\\', '/'), RDFNotation.NQUAD, spec,
+						ProgressListener.sout())) {
+					hdt.saveToHDT(ff.resolveSibling("big.hdtq"));
+				}
 			}
 		}
 	}
@@ -1113,7 +1105,7 @@ public class HDTManagerTest {
 			for (String dict : List.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD)) {
 				for (boolean defaultGraph : List.of(true, false)) {
-					params.add(new Object[]{defaultGraph, dict});
+					params.add(new Object[] { defaultGraph, dict });
 				}
 			}
 
@@ -1229,10 +1221,10 @@ public class HDTManagerTest {
 						long cid = componentId++;
 
 						Iterator<TripleString> eid = switch (role) {
-							case OBJECT -> h.search("", "", component, "");
-							case SUBJECT -> h.search(component, "", "", "");
-							case PREDICATE -> h.search("", component, "", "");
-							case GRAPH -> h.search("", "", "", component);
+						case OBJECT -> h.search("", "", component, "");
+						case SUBJECT -> h.search(component, "", "", "");
+						case PREDICATE -> h.search("", component, "", "");
+						case GRAPH -> h.search("", "", "", component);
 						};
 
 						long countEid = 0;
@@ -1248,11 +1240,11 @@ public class HDTManagerTest {
 							if (!dataset2.remove(tsstr)) {
 								BitmapTriplesIteratorPositionTest.printIterator(eid);
 								fail("can't remove " + tsstr + "\nfor " + role + "=" + component + "(" + cid + ")"
-								     + "\ndone: " + roleDesc.substring(1) + "\n"
-								     + String.join(",",
-										components + "\nexists: " + dataset.contains(tsstr) + ", id: "
-										+ countEid + "\npattern: "
-										+ h.getDictionary().toTripleId(tsstr)));
+										+ "\ndone: " + roleDesc.substring(1) + "\n"
+										+ String.join(",",
+												components + "\nexists: " + dataset.contains(tsstr) + ", id: "
+														+ countEid + "\npattern: "
+														+ h.getDictionary().toTripleId(tsstr)));
 							}
 						}
 					}
@@ -1683,7 +1675,7 @@ public class HDTManagerTest {
 						}
 					}
 					Set<ByteString> loaded = new HashSet<>();
-					for (TripleComponentRole role : new TripleComponentRole[]{SUBJECT, OBJECT}) {
+					for (TripleComponentRole role : new TripleComponentRole[] { SUBJECT, OBJECT }) {
 						long nshared = dict.getNshared();
 						long idc = 1;
 						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
@@ -1934,7 +1926,7 @@ public class HDTManagerTest {
 						}
 					}
 					Set<ByteString> loaded = new HashSet<>();
-					for (TripleComponentRole role : new TripleComponentRole[]{SUBJECT, OBJECT}) {
+					for (TripleComponentRole role : new TripleComponentRole[] { SUBJECT, OBJECT }) {
 						long nshared = dict.getNshared();
 						long idc = 1;
 						Iterator<? extends CharSequence> it = dict.stringIterator(role, true);
@@ -2016,7 +2008,7 @@ public class HDTManagerTest {
 
 				try (HDT hdt = supplier.createFakeHDT(HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType))) {
 					if (!hdt.getDictionary().supportsDataTypeOfId() && !hdt.getDictionary().supportsLanguageOfId()
-					    && !hdt.getDictionary().supportsNodeTypeOfId()) {
+							&& !hdt.getDictionary().supportsNodeTypeOfId()) {
 						logger.debug("This dictionary doesn't support datatype/language/rdf-type retrieve");
 						return;
 					}

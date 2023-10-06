@@ -45,14 +45,15 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 			MultiRoaringBitmap.defaultChunkSize = 9;
 			try (MultiRoaringBitmap map = MultiRoaringBitmap.memoryStream(100, 1, output)) {
 				assertEquals(9, map.chunkSize);
-				assertEquals(12, map.maps.size());
+				assertEquals(12, map.maps.get(0).size());
 				map.set(0, 0, true);
 				map.set(0, 42, true);
 				map.set(0, 80, true);
 				map.set(0, 90, true);
 			}
 
-			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
+			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
+					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
 					case 0, 42, 80, 90 -> assertTrue(map.access(0, i));
@@ -61,8 +62,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 				}
 			}
 
-			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
-					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
+			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
 					case 0, 42, 80, 90 -> assertTrue(map.access(0, i));
@@ -80,6 +80,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 	public void largeSerialSyncTest() throws IOException {
 		final int seed = 684;
 		final int size = 10_000;
+		final int layers = 21;
 
 		Random rnd = new Random(seed);
 		Path root = tempDir.newFolder().toPath();
@@ -89,13 +90,16 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 
 			MultiRoaringBitmap.defaultChunkSize = size / 9;
 
-			try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size, 1)) {
+			try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size, layers)) {
 				assertEquals(MultiRoaringBitmap.defaultChunkSize, map.chunkSize);
-				assertEquals((size - 1) / map.chunkSize + 1, map.maps.size());
+				assertEquals(layers, map.maps.size());
+				assertEquals((size - 1) / map.chunkSize + 1, map.maps.get(0).size());
 
 				for (int i = 0; i < size / 50; i++) {
+					int layer = rnd.nextInt(layers);
 					int position = rnd.nextInt(size);
-					map.set(0, position, true);
+					map.set(layer, position, true);
+					assertTrue(map.access(layer, position));
 				}
 
 				try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(output))) {
@@ -105,18 +109,19 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 
 			rnd = new Random(seed);
 
-			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
+			try (MultiRoaringBitmap map = MultiRoaringBitmap.load(output)) {
 				for (int i = 0; i < size / 50; i++) {
-					assertTrue(map.access(0, rnd.nextInt(size)));
+					int layer = rnd.nextInt(layers);
+					assertTrue(map.access(layer, rnd.nextInt(size)));
 				}
 			}
 
 			rnd = new Random(seed);
 
-			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
-					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
+			try (MultiRoaringBitmap map = MultiRoaringBitmap.mapped(output)) {
 				for (int i = 0; i < size / 50; i++) {
-					assertTrue(map.access(0, rnd.nextInt(size)));
+					int layer = rnd.nextInt(layers);
+					assertTrue(map.access(layer, rnd.nextInt(size)));
 				}
 			}
 
@@ -126,58 +131,69 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 	}
 
 	@Test
+	@SuppressWarnings("resource")
 	public void rankSelectTest() throws IOException {
 		final int seed = 684;
 		final int size = 10_000;
+		final int layers = 20;
 
 		Random rnd = new Random(seed);
 		MultiRoaringBitmap.defaultChunkSize = size / 9;
 
-		try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size, 1);
-				Bitmap375Big memmap = Bitmap375Big.memory(size)) {
+		try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(size, layers)) {
+			Bitmap375Big[] memmaps = new Bitmap375Big[layers];
+
+			for (int i = 0; i < memmaps.length; i++) {
+				memmaps[i] = Bitmap375Big.memory(size);
+			}
 			assertEquals(MultiRoaringBitmap.defaultChunkSize, map.chunkSize);
-			assertEquals((size - 1) / map.chunkSize + 1, map.maps.size());
+			assertEquals((size - 1) / map.chunkSize + 1, map.maps.get(0).size());
 
-			for (int i = 0; i < size / 50; i++) {
-				int position = rnd.nextInt(size);
-				map.set(0, position, true);
-				memmap.set(position, true);
-			}
-
-			memmap.updateIndex();
-
-			long numBits = memmap.countOnes();
-
-			assertEquals("countOnes", numBits, map.countOnes(0));
-
-			for (int i = 0; i < size; i++) {
-				assertEquals("access#" + i + "/" + size, memmap.access(i), map.access(0, i));
-			}
-
-			for (int i = 0; i < size; i++) {
-				assertEquals("rank1#" + i + "/" + size, memmap.rank1(i), map.rank1(0, i));
-			}
-			for (int i = 0; i < size; i++) {
-				assertEquals("rank0#" + i + "/" + size, memmap.rank0(i), map.rank0(0, i));
-			}
-			for (int i = 0; i < numBits; i++) {
-				long n = i;
-				long j = -1;
-				while (n > 0) {
-					if (memmap.access(++j)) {
-						n--;
-					}
+			for (int l = 0; l < layers; l++) {
+				Bitmap375Big memmap = memmaps[l];
+				for (int i = 0; i < size / 50; i++) {
+					int position = rnd.nextInt(size);
+					map.set(l, position, true);
+					memmap.set(position, true);
 				}
-				assertEquals(j, memmap.select1(i));
-				assertEquals("select1#" + i + "/" + numBits, memmap.select1(i), map.select1(0, i));
+				memmap.updateIndex();
 			}
 
-			for (int i = 0; i < numBits; i++) {
-				assertEquals("selectNext1#" + i + "/" + numBits, memmap.selectNext1(i), map.selectNext1(0, i));
-			}
+			for (int l = 0; l < layers; l++) {
+				Bitmap375Big memmap = memmaps[l];
+				long numBits = memmap.countOnes();
 
-			for (int i = 0; i < numBits; i++) {
-				assertEquals("selectPrev1#" + i + "/" + numBits, memmap.selectPrev1(i), map.selectPrev1(0, i));
+				assertEquals("countOnes", numBits, map.countOnes(l));
+
+				for (int i = 0; i < size; i++) {
+					assertEquals("access#" + i + "/" + size, memmap.access(i), map.access(l, i));
+				}
+
+				for (int i = 0; i < size; i++) {
+					assertEquals("rank1#" + i + "/" + size, memmap.rank1(i), map.rank1(l, i));
+				}
+				for (int i = 0; i < size; i++) {
+					assertEquals("rank0#" + i + "/" + size, memmap.rank0(i), map.rank0(l, i));
+				}
+				for (int i = 0; i < numBits; i++) {
+					long n = i;
+					long j = -1;
+					while (n > 0) {
+						if (memmap.access(++j)) {
+							n--;
+						}
+					}
+					assertEquals(j, memmap.select1(i));
+					assertEquals("select1#" + i + "/" + numBits, memmap.select1(i), map.select1(l, i));
+				}
+
+				for (int i = 0; i < numBits; i++) {
+					assertEquals("selectNext1#" + i + "/" + numBits, memmap.selectNext1(i), map.selectNext1(l, i));
+				}
+
+				for (int i = 0; i < numBits; i++) {
+					assertEquals("selectPrev1#" + i + "/" + numBits, memmap.selectPrev1(i), map.selectPrev1(l, i));
+				}
 			}
 		}
 	}

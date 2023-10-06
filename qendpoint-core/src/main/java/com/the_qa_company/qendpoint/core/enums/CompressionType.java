@@ -63,7 +63,8 @@ public enum CompressionType {
 	private final ExceptionFunction<InputStream, InputStream, IOException> decompress;
 	private final ExceptionFunction<OutputStream, OutputStream, IOException> compress;
 
-	CompressionType(ExceptionFunction<InputStream, InputStream, IOException> decompress, ExceptionFunction<OutputStream, OutputStream, IOException> compress, String... ext) {
+	CompressionType(ExceptionFunction<InputStream, InputStream, IOException> decompress,
+			ExceptionFunction<OutputStream, OutputStream, IOException> compress, String... ext) {
 		this.decompress = decompress;
 		this.compress = compress;
 		this.ext = ext;

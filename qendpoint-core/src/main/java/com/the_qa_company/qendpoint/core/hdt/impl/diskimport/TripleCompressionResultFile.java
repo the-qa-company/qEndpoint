@@ -22,7 +22,7 @@ public class TripleCompressionResultFile implements TripleCompressionResult {
 	private final long graphs;
 
 	public TripleCompressionResultFile(long tripleCount, CloseSuppressPath triples, TripleComponentOrder order,
-									   int bufferSize, long graphs) throws IOException {
+			int bufferSize, long graphs) throws IOException {
 		this.tripleCount = tripleCount;
 		this.graphs = graphs;
 		this.reader = new CompressTripleReader(triples.openInputStream(bufferSize));

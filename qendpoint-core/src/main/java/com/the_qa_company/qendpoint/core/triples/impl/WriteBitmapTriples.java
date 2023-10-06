@@ -195,7 +195,8 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 		long graphs = triples.getGraphsCount();
 		try {
-			quadInfoAG = graphs <= 0 ? null : MultiRoaringBitmap.memoryStream(number, graphs, this.triples.resolve("quads.bin"));
+			quadInfoAG = graphs <= 0 ? null
+					: MultiRoaringBitmap.memoryStream(number, graphs, this.triples.resolve("quads.bin"));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -292,7 +293,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 	@Override
 	public void close() throws IOException {
-		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, triples, quadInfoAG);
+		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, quadInfoAG, triples);
 	}
 
 	public class BitmapTriplesAppender {

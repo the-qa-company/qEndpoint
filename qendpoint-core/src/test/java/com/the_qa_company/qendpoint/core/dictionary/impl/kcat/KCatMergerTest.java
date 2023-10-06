@@ -4,7 +4,6 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
-import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
@@ -602,7 +601,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 			for (Path file : files) {
 				try (HDT hdt = supplier.createFakeHDT(spec)) {
 					hdt.saveToHDT(file);
-					deletes.add(EmptyBitmap.of(hdt.getTriples().getNumberOfElements(), hdt.getDictionary().getNgraphs()));
+					deletes.add(
+							EmptyBitmap.of(hdt.getTriples().getNumberOfElements(), hdt.getDictionary().getNgraphs()));
 				}
 			}
 
@@ -671,6 +671,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						long graphs = hdt.getDictionary().supportGraphs() ? hdt.getDictionary().getNgraphs() : 1;
 						assert graphs > 0;
 						long triples = hdt.getTriples().getNumberOfElements();
+						assertNotEquals(0, triples);
 
 						MultiRoaringBitmap memory = MultiRoaringBitmap.memory(triples + 1, graphs);
 
@@ -695,7 +696,9 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 						IteratorTripleString it = hdt.searchAll();
 
-						while (it.hasNext()) {
+						assertTrue(it.hasNext());
+
+						do {
 							TripleString ts = it.next();
 							long pos = it.getLastTriplePosition();
 							long g = ts.getGraph().isEmpty() ? 0
@@ -707,7 +710,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 								// not deleted, we can add it
 								dataset.add(ts.tripleToString());
 							}
-						}
+						} while (it.hasNext());
 
 						deleteBitmaps.add(memory);
 					}
@@ -716,6 +719,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 				supplier.withMaxTriples(count * size);
 
 				Path exceptedHDT = root.resolve("excepted.hdt");
+
+				assertNotEquals(0, dataset.size());
 
 				try (HDT hdt = HDTManager.generateHDT(dataset.iterator(), LargeFakeDataSetStreamSupplier.BASE_URI, spec,
 						ProgressListener.ignore())) {
