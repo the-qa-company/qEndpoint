@@ -93,4 +93,6 @@ public interface TempTriples extends TriplesPrivate, Closeable {
 
 	void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj,
 			DictionaryIDMapping mapGraph);
+
+	long getGraphsCount();
 }

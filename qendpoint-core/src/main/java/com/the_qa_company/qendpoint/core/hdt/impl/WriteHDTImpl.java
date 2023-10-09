@@ -40,7 +40,7 @@ public class WriteHDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, Trip
 		// we need to have the bitmaps in memory, so we can't bypass the
 		// implementation
 		triples = new WriteBitmapTriples(this.spec, workingLocation.resolve("tripleBitmap"), bufferSize,
-				dictionary.supportGraphs());
+				dictionary.supportGraphs() ? 1 : -1);
 		// small, can use default implementation
 		header = HeaderFactory.createHeader(this.spec);
 	}

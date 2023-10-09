@@ -64,6 +64,7 @@ public class TriplesList implements TempTriples {
 	 */
 	private TripleComponentOrder order;
 	private long numValidTriples;
+	private long numGraphs;
 
 	private boolean sorted;
 
@@ -203,6 +204,7 @@ public class TriplesList implements TempTriples {
 			arrayOfTriples.add(new TripleIDInt(iterator.next()));
 			numValidTriples++;
 		}
+		numGraphs = input.getGraphsCount();
 
 		sorted = false;
 	}
@@ -232,6 +234,11 @@ public class TriplesList implements TempTriples {
 		for (TripleID triple : triples) {
 			arrayOfTriples.add(new TripleIDInt(triple));
 			numValidTriples++;
+			if (triple.isQuad()) {
+				if (numGraphs < triple.getGraph()) {
+					numGraphs = triple.getGraph();
+				}
+			}
 		}
 		sorted = false;
 		return true;
@@ -253,6 +260,9 @@ public class TriplesList implements TempTriples {
 	public boolean insert(long subject, long predicate, long object, long graph) {
 		arrayOfTriples.add(new TripleIDInt(subject, predicate, object, graph));
 		numValidTriples++;
+		if (numGraphs < graph) {
+			numGraphs = graph;
+		}
 		sorted = false;
 		return true;
 	}
@@ -551,4 +561,8 @@ public class TriplesList implements TempTriples {
 		}
 	}
 
+	@Override
+	public long getGraphsCount() {
+		return numGraphs;
+	}
 }

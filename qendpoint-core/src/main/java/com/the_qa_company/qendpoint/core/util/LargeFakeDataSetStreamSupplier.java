@@ -13,10 +13,11 @@ import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
-import java.io.BufferedWriter;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
@@ -180,7 +181,20 @@ public class LargeFakeDataSetStreamSupplier {
 	 * @see #createNTFile(java.lang.String)
 	 */
 	public void createNTFile(Path file) throws IOException {
-		try (BufferedWriter writer = Files.newBufferedWriter(file)) {
+		createNTFile(file, CompressionType.NONE);
+	}
+
+	/**
+	 * create a nt file from the stream
+	 *
+	 * @param file            the file to write
+	 * @param compressionType compression type
+	 * @throws IOException io exception
+	 * @see #createNTFile(java.lang.String)
+	 */
+	public void createNTFile(Path file, CompressionType compressionType) throws IOException {
+		try (Writer writer = new OutputStreamWriter(
+				new BufferedOutputStream(compressionType.compress(Files.newOutputStream(file))))) {
 			createNTFile(writer);
 		}
 	}

@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.core.quad.impl;
 
-import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
@@ -11,7 +11,8 @@ import com.the_qa_company.qendpoint.core.triples.impl.BitmapQuadTriples;
 
 public class BitmapTriplesIteratorGraphG extends FetcherIterator<TripleID> implements SuppliableIteratorTripleID {
 	private final long graph;
-	private final Bitmap bitmapW;
+	private final MultiLayerBitmap mlb;
+	private final long posW;
 	protected final long minZ, maxZ;
 	protected final TripleID qid = new TripleID();
 	protected final BitmapQuadTriples triples;
@@ -21,10 +22,12 @@ public class BitmapTriplesIteratorGraphG extends FetcherIterator<TripleID> imple
 		this.triples = triples;
 		this.graph = pattern.getGraph();
 
-		bitmapW = triples.getQuadInfoAG().get((int) (graph - 1));
+		mlb = triples.getQuadInfoAG();
 
-		minZ = bitmapW.select1(1);
-		maxZ = bitmapW.select1(bitmapW.countOnes());
+		posW = graph - 1;
+
+		minZ = mlb.select1(posW, 1);
+		maxZ = mlb.select1(posW, mlb.countOnes(posW));
 
 		goToStart();
 	}
@@ -38,7 +41,7 @@ public class BitmapTriplesIteratorGraphG extends FetcherIterator<TripleID> imple
 		if (posZ == -1) {
 			posZ = minZ; // start
 		} else {
-			posZ = bitmapW.select1(bitmapW.rank1(posZ) + 1); // next
+			posZ = mlb.select1(posW, mlb.rank1(posW, posZ) + 1); // next
 		}
 
 		TripleID tripleID = triples.findTriple(posZ, qid);
@@ -73,7 +76,7 @@ public class BitmapTriplesIteratorGraphG extends FetcherIterator<TripleID> imple
 
 	@Override
 	public long estimatedNumResults() {
-		return bitmapW.rank1(maxZ) - bitmapW.rank1(minZ) + 1;
+		return mlb.rank1(posW, maxZ) - mlb.rank1(posW, minZ) + 1;
 	}
 
 	@Override

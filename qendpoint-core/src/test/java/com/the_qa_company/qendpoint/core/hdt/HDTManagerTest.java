@@ -1072,6 +1072,28 @@ public class HDTManagerTest {
 				System.out.println(hdt.getTriples().getNumberOfElements());
 			}
 		}
+
+		@Test
+		public void quadTest() throws IOException, ParserException {
+			Path file = Path.of("C:\\Users\\wilat\\workspace\\hdtq\\trusty.LIDDIv1.01.trig");
+			HDTOptions spec = HDTOptions
+					.readFromFile(Path.of("C:\\Users\\wilat\\workspace\\hdtq\\qendpoint-cli-1.13.7\\bin\\opt.hdtspec"));
+
+			long size = 100_000;
+			int[] graph = { 10, 100, 1000, 10000, 25000, 50000 };
+
+			for (int g : graph) {
+				Path ff = file.resolveSibling("ds-" + g + ".nq.gz");
+				LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(size, (int) (Math.tan(g) * 100))
+						.withMaxElementSplit((int) (size / 500)).withMaxGraph(g).withQuads(true)
+						.createNTFile(ff, CompressionType.GZIP);
+
+				try (HDT hdt = HDTManager.generateHDT(ff, ff.toString().replace('\\', '/'), RDFNotation.NQUAD, spec,
+						ProgressListener.sout())) {
+					hdt.saveToHDT(ff.resolveSibling("big.hdtq"));
+				}
+			}
+		}
 	}
 
 	@RunWith(Parameterized.class)

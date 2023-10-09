@@ -23,6 +23,7 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
@@ -1296,7 +1297,7 @@ public class BitmapTriples implements TriplesPrivate {
 		}
 	}
 
-	public List<? extends Bitmap> getQuadInfoAG() {
+	public MultiLayerBitmap getQuadInfoAG() {
 		throw new UnsupportedOperationException("Cannot get quad info from a BitmapTriples");
 	}
 }

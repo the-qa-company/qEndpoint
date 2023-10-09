@@ -27,7 +27,7 @@ public class TripleCompressionResultEmpty implements TripleCompressionResult {
 			public TripleID next() {
 				return null;
 			}
-		}, order, 0);
+		}, order, 0, 0);
 	}
 
 	@Override

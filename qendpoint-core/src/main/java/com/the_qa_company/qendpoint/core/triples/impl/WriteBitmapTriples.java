@@ -1,7 +1,8 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableMultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -31,8 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Appendable write {@link BitmapTriples} version
@@ -45,13 +44,13 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	private final AppendableWriteBitmap bitY, bitZ;
 	private final CloseSuppressPath seqY, seqZ, triples;
 	private SequenceLog64BigDisk vectorY, vectorZ;
-	private final List<MultiRoaringBitmap> quadInfoAG;
+	private ModifiableMultiLayerBitmap quadInfoAG;
 
 	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize) throws IOException {
-		this(spec, triples, bufferSize, false);
+		this(spec, triples, bufferSize, -1);
 	}
 
-	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, boolean quads)
+	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, long quads)
 			throws IOException {
 		String orderStr = spec.get(HDTOptionsKeys.TRIPLE_ORDER_KEY);
 		if (orderStr == null) {
@@ -67,8 +66,8 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		seqY = triples.resolve("seqY");
 		seqZ = triples.resolve("seqZ");
 
-		if (quads) {
-			quadInfoAG = new ArrayList<>();
+		if (quads < 0) {
+			quadInfoAG = EmptyBitmap.of(0, 0);
 		} else {
 			quadInfoAG = null;
 		}
@@ -90,18 +89,9 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 		if (quadInfoAG != null) {
 			// quads
-			int numGraphs = quadInfoAG.size();
-			VByte.encode(output, numGraphs);
+			Closer.closeAll(quadInfoAG);
 
-			try {
-				Closer.closeAll(quadInfoAG);
-			} finally {
-				quadInfoAG.clear();
-			}
-
-			for (int i = 0; i < numGraphs; i++) {
-				Files.copy(this.triples.resolve("g-" + i + ".bin"), output);
-			}
+			Files.copy(this.triples.resolve("quads.bin"), output);
 		}
 	}
 
@@ -203,6 +193,14 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		numTriples = 0;
 		long numGraphs = 0;
 
+		long graphs = triples.getGraphsCount();
+		try {
+			quadInfoAG = graphs <= 0 ? null
+					: MultiRoaringBitmap.memoryStream(number, graphs, this.triples.resolve("quads.bin"));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
 		while (it.hasNext()) {
 			TripleID triple = it.next();
 			TripleOrderConvert.swapComponentOrder(triple, TripleComponentOrder.SPO, order);
@@ -217,14 +215,6 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 			if (quadInfoAG != null) {
 				if (g > numGraphs) {
-					for (long i = numGraphs; i < g; i++) {
-						try {
-							quadInfoAG.add(
-									MultiRoaringBitmap.memoryStream(number, this.triples.resolve("g-" + i + ".bin")));
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-					}
 					numGraphs = g;
 				}
 				long graphIndex = g - 1;
@@ -233,7 +223,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 					numTriples += 1;
 				}
 
-				quadInfoAG.get((int) graphIndex).set(numTriples - 1, true);
+				quadInfoAG.set(graphIndex, numTriples - 1, true);
 
 				if (sameAsLast) {
 					continue;
@@ -303,7 +293,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 	@Override
 	public void close() throws IOException {
-		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, triples, quadInfoAG);
+		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, quadInfoAG, triples);
 	}
 
 	public class BitmapTriplesAppender {

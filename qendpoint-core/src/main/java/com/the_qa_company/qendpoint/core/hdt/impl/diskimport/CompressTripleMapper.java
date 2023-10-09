@@ -31,8 +31,10 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 	private long shared = -1;
 	private final long tripleCount;
 	private final boolean quads;
+	private final long graphs;
 
-	public CompressTripleMapper(CloseSuppressPath location, long tripleCount, long chunkSize, boolean quads) {
+	public CompressTripleMapper(CloseSuppressPath location, long tripleCount, long chunkSize, boolean quads,
+			long graphs) {
 		this.tripleCount = tripleCount;
 		this.quads = quads;
 
@@ -40,6 +42,7 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 		locationPredicates = location.resolve("map_predicates");
 		locationObjects = location.resolve("map_objects");
 		locationGraph = location.resolve("map_graph");
+		this.graphs = graphs;
 		int numbits = BitUtil.log2(tripleCount + 2) + CompressUtil.INDEX_SHIFT;
 		int maxElement = (int) Math.min(chunkSize / Long.BYTES / 3, Integer.MAX_VALUE - 5);
 		subjects = new WriteLongArrayBuffer(
@@ -171,5 +174,9 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 
 	public boolean supportsGraph() {
 		return quads;
+	}
+
+	public long getGraphsCount() {
+		return graphs;
 	}
 }
