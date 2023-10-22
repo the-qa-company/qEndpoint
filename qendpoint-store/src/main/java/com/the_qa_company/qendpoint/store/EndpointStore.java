@@ -788,7 +788,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples())) {
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
 			rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
-			try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser, null)) {
+			try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser)) {
 				while (res.hasNext()) {
 					Statement st = res.next();
 					IteratorTripleString search = this.hdt.search(st.getSubject().toString(),
@@ -998,7 +998,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		try (SailConnection connection = getChangingStore().getConnection()) {
 			// https://github.com/eclipse/rdf4j/discussions/3734
 			// return connection.size() >= number;
-			try (CloseableIteration<? extends Statement, SailException> it = connection.getStatements(null, null, null,
+			try (CloseableIteration<? extends Statement> it = connection.getStatements(null, null, null,
 					false)) {
 				for (long i = 0; i < number; i++) {
 					if (!it.hasNext()) {

@@ -107,7 +107,7 @@ public class TypeSailFilter implements SailFilter {
 			// did we already saw the type in the connection?
 			if (type == null) {
 				// query the type
-				try (CloseableIteration<? extends Statement, SailException> it = subConnection.getStatements(subj,
+				try (CloseableIteration<? extends Statement> it = subConnection.getStatements(subj,
 						predicate, null, false)) {
 					if (it.hasNext()) {
 						type = it.next().getObject();

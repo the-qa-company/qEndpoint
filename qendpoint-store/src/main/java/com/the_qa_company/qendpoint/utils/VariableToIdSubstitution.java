@@ -63,7 +63,8 @@ public class VariableToIdSubstitution implements QueryOptimizer {
 					}
 				}
 				if (id != -1) {
-					var.setValue(converter.idToHDTValue(id, position));
+					Var var1 = new Var(var.getName(), converter.idToHDTValue(id, position), var.isAnonymous(), var.isConstant());
+					var.replaceWith(var1);
 				}
 			}
 		}

@@ -164,7 +164,7 @@ public class QEPCoreTest {
 					QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
 					Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
-				try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> search = core.search("", "",
+				try (CloseableIterator<? extends QEPComponentTriple> search = core.search("", "",
 						"")) {
 
 					long count = 0;
@@ -231,7 +231,7 @@ public class QEPCoreTest {
 					// convert to a triple string to search over the main HDT
 					count++;
 					// search the ts
-					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> searchIt = core.search(ts)) {
+					try (CloseableIterator<? extends QEPComponentTriple> searchIt = core.search(ts)) {
 						assertTrue("missing triple for " + ts + " in core", searchIt.hasNext());
 
 						QEPComponentTriple qts = searchIt.next();
@@ -450,14 +450,14 @@ public class QEPCoreTest {
 					assertEquals("size isn't matching", ts.size(), core.triplesCount());
 
 					for (TripleString t : ts) {
-						try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> s = core.search(t)) {
+						try (CloseableIterator<? extends QEPComponentTriple> s = core.search(t)) {
 							if (!s.hasNext()) {
 								throw new AssertionError(format("Can't find triple '%s' in the core", t));
 							}
 						}
 					}
 
-					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> sit = core.search()) {
+					try (CloseableIterator<? extends QEPComponentTriple> sit = core.search()) {
 						while (sit.hasNext()) {
 							QEPComponentTriple triple = sit.next();
 							// we need to convert it using tripleToString()

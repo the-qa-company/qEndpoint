@@ -17,6 +17,7 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
 import com.the_qa_company.qendpoint.core.storage.iterator.CatQueryCloseable;
+import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.merge.QEPCoreMergeThread;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
@@ -31,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.Serial;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -79,6 +82,7 @@ import static com.the_qa_company.qendpoint.core.options.HDTOptionsKeys.TEMP_DICT
  * @author Antoine Willerval
  */
 public class QEPCore implements AutoCloseable {
+
 	private static final Logger logger = LoggerFactory.getLogger(QEPCore.class);
 	/**
 	 * the max size of a dataset id
@@ -117,9 +121,7 @@ public class QEPCore implements AutoCloseable {
 	 */
 	public static final String FILE_CORE_CONFIG_OPT = "config.opt";
 
-	private final Map<String, QEPDataset> dataset = new HashMap<>();
-	private final Object datasetLock = new Object() {};
-	private final ReentrantLock insertLock = new ReentrantLock();
+	  private final Map<String, QEPDataset> dataset = new HashMap<>();private final Object datasetLock = new Object() {};private final ReentrantLock insertLock = new ReentrantLock();
 	private final Object bindLock = new Object() {};
 	private final Object idBuilderLock = new Object() {};
 	private final ConcurrentMap<Integer, QEPDataset> datasetByUid = new ConcurrentHashMap<>();

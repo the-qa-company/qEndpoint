@@ -95,7 +95,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 	}
 
 	@Override
-	protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
+	protected CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr,
 			Dataset dataset, BindingSet bindings, boolean includeInferred, int maxExecutionTime)
 			throws QueryEvaluationException {
 
@@ -163,8 +163,8 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		}
 
 		public TupleQueryResult evaluate() throws QueryEvaluationException {
-			CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter1 = null;
-			CloseableIteration<? extends BindingSet, QueryEvaluationException> bindingsIter2 = null;
+			CloseableIteration<? extends BindingSet> bindingsIter1 = null;
+			CloseableIteration<? extends BindingSet> bindingsIter2 = null;
 			IteratingTupleQueryResult result;
 			boolean allGood = false;
 

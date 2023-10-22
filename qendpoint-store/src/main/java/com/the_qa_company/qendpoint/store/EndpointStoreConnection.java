@@ -154,7 +154,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	// for SPARQL queries
 	@Override
-	protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr,
+	protected CloseableIteration<? extends BindingSet> evaluateInternal(TupleExpr tupleExpr,
 			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
 		return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
 	}
@@ -172,7 +172,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	// USED from connection get api not SPARQL
 	@Override
-	protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred,
+	protected CloseableIteration<? extends Statement> getStatementsInternal(Resource subj, IRI pred,
 			Value obj, boolean includeInferred, Resource... contexts) throws SailException {
 		if (MergeRunnableStopPoint.disableRequest) {
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
@@ -189,12 +189,12 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		if (timeout.get()) {
 			throw new EndpointTimeoutException();
 		}
-		CloseableIteration<? extends Statement, QueryEvaluationException> result = tripleSource.getStatements(subj,
+		CloseableIteration<? extends Statement> result = tripleSource.getStatements(subj,
 				pred, obj, contexts);
 
 		return new ExceptionConvertingIteration<Statement, SailException>(result) {
 			@Override
-			protected SailException convert(Exception e) {
+			protected SailException convert(RuntimeException e) {
 				return new SailException(e);
 			}
 		};
@@ -280,7 +280,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			// check if we need to search over the other native connection
 			if (endpoint.isMerging()) {
 				if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-					try (CloseableIteration<? extends Statement, SailException> other = getOtherConnectionRead()
+					try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
 							.getStatements(newSubj, newPred, newObj, false, contexts)) {
 						if (other.hasNext()) {
 							return;
@@ -322,7 +322,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	}
 
 	@Override
-	protected CloseableIteration<? extends Namespace, SailException> getNamespacesInternal() throws SailException {
+	protected CloseableIteration<? extends Namespace> getNamespacesInternal() throws SailException {
 		return getCurrentConnectionRead().getNamespaces();
 	}
 
@@ -397,11 +397,6 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	}
 
 	@Override
-	public boolean pendingRemovals() {
-		return false;
-	}
-
-	@Override
 	protected void closeInternal() throws SailException {
 		logger.debug("Number of times native store was called:" + this.tripleSource.getCount());
 		if (isWriteConnection) {
@@ -425,7 +420,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	}
 
 	@Override
-	protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal() throws SailException {
+	protected CloseableIteration<? extends Resource> getContextIDsInternal() throws SailException {
 		return getCurrentConnectionRead().getContextIDs();
 	}
 

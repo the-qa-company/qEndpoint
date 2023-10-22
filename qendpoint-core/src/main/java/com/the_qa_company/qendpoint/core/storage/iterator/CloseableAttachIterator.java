@@ -11,32 +11,32 @@ import java.util.function.Consumer;
  * @param <T>
  * @param <E>
  */
-public class CloseableAttachIterator<T, E extends Exception> implements CloseableIterator<T, E> {
+public class CloseableAttachIterator<T extends RuntimeException> implements CloseableIterator<T> {
 	@SafeVarargs
-	public static <T, E extends Exception> CloseableIterator<T, E> of(CloseableIterator<T, E> it,
-			AutoCloseableGeneric<E>... closeables) {
+	public static <T> CloseableIterator<T> of(CloseableIterator<T> it,
+                                                                   AutoCloseableGeneric<? extends RuntimeException>... closeables) {
 		if (closeables.length == 0) {
 			return it;
 		}
-		return new CloseableAttachIterator<>(it, closeables);
+		return new CloseableAttachIterator(it, closeables);
 	}
 
-	private final CloseableIterator<T, E> handle;
-	private final List<AutoCloseableGeneric<E>> closeables;
+	private final CloseableIterator<T> handle;
+	private final List<AutoCloseableGeneric<RuntimeException>> closeables;
 
 	@SafeVarargs
-	private CloseableAttachIterator(CloseableIterator<T, E> handle, AutoCloseableGeneric<E>... closeableGenerics) {
+	private CloseableAttachIterator(CloseableIterator<T> handle, AutoCloseableGeneric<RuntimeException>... closeableGenerics) {
 		this.handle = handle;
 		closeables = new ArrayList<>(List.of(closeableGenerics));
 	}
 
 	@Override
-	public void close() throws E {
+	public void close()  {
 		try {
 			handle.close();
 		} catch (Error | Exception t) {
 			try {
-				AutoCloseableGeneric.<E>closeAll(closeables);
+				AutoCloseableGeneric.closeAll(closeables);
 			} catch (RuntimeException | Error err) {
 				err.addSuppressed(t);
 				throw err;
@@ -60,12 +60,6 @@ public class CloseableAttachIterator<T, E extends Exception> implements Closeabl
 	@Override
 	public void remove() {
 		handle.remove();
-	}
-
-	@Override
-	public CloseableIterator<T, E> attach(AutoCloseableGeneric<E> closeable) {
-		closeables.add(closeable);
-		return this;
 	}
 
 	@Override

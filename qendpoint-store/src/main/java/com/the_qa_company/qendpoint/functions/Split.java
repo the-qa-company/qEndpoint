@@ -25,7 +25,7 @@ public class Split implements TupleFunction {
 	}
 
 	@Override
-	public CloseableIteration<? extends List<? extends Value>, QueryEvaluationException> evaluate(
+	public CloseableIteration<? extends List<? extends Value>> evaluate(
 			final ValueFactory valueFactory, Value... args) throws QueryEvaluationException {
 		if (args.length != 2) {
 			throw new ValueExprEvaluationException(

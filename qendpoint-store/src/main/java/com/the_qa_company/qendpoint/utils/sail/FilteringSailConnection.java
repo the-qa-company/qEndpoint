@@ -53,7 +53,7 @@ class FilteringSailConnection implements NotifyingSailConnection, SourceSailConn
 	}
 
 	@Override
-	public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
+	public CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr,
 			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
 		if (filter.shouldHandleExpression(tupleExpr, dataset, bindings, includeInferred)) {
 			return connectionIfYes.evaluate(tupleExpr, dataset, bindings, includeInferred);
@@ -63,12 +63,12 @@ class FilteringSailConnection implements NotifyingSailConnection, SourceSailConn
 	}
 
 	@Override
-	public CloseableIteration<? extends Resource, SailException> getContextIDs() throws SailException {
+	public CloseableIteration<? extends Resource> getContextIDs() throws SailException {
 		return connectionIfYes.getContextIDs();
 	}
 
 	@Override
-	public CloseableIteration<? extends Statement, SailException> getStatements(Resource subj, IRI pred, Value obj,
+	public CloseableIteration<? extends Statement> getStatements(Resource subj, IRI pred, Value obj,
 			boolean includeInferred, Resource... contexts) throws SailException {
 		if (filter.shouldHandleGet(subj, pred, obj, includeInferred, contexts)) {
 			return connectionIfYes.getStatements(subj, pred, obj, includeInferred, contexts);
@@ -163,7 +163,7 @@ class FilteringSailConnection implements NotifyingSailConnection, SourceSailConn
 	}
 
 	@Override
-	public CloseableIteration<? extends Namespace, SailException> getNamespaces() throws SailException {
+	public CloseableIteration<? extends Namespace> getNamespaces() throws SailException {
 		return connectionIfYes.getNamespaces();
 	}
 
@@ -185,11 +185,6 @@ class FilteringSailConnection implements NotifyingSailConnection, SourceSailConn
 	@Override
 	public void clearNamespaces() throws SailException {
 		connectionIfYes.clearNamespaces();
-	}
-
-	@Override
-	public boolean pendingRemovals() {
-		return connectionIfYes.pendingRemovals();
 	}
 
 	@Override

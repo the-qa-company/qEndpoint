@@ -25,6 +25,6 @@ public interface TripleSourceGetter extends AutoCloseable {
 	 * @throws SailCompiler.SailCompilerException error while getting the
 	 *                                            triples
 	 */
-	CloseableIteration<Statement, SailCompiler.SailCompilerException> getStatements(Resource s, IRI p, Value o)
+	CloseableIteration<Statement> getStatements(Resource s, IRI p, Value o)
 			throws SailCompiler.SailCompilerException;
 }

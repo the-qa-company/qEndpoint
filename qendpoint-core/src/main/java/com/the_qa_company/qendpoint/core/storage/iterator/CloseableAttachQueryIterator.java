@@ -12,7 +12,7 @@ public class CloseableAttachQueryIterator implements QueryCloseableIterator {
 
 	@SafeVarargs
 	public static QueryCloseableIterator of(QueryCloseableIterator it,
-			AutoCloseableGeneric<QEPCoreException>... closeables) {
+			AutoCloseableGeneric<? extends RuntimeException>... closeables) {
 		Objects.requireNonNull(it, "it can't be null!");
 		if (closeables.length == 0) {
 			return it;
@@ -21,11 +21,11 @@ public class CloseableAttachQueryIterator implements QueryCloseableIterator {
 	}
 
 	private final QueryCloseableIterator handle;
-	private final List<AutoCloseableGeneric<QEPCoreException>> closeables;
+	private final List<AutoCloseableGeneric<? extends RuntimeException>> closeables;
 
 	@SafeVarargs
 	private CloseableAttachQueryIterator(QueryCloseableIterator handle,
-			AutoCloseableGeneric<QEPCoreException>... closeableGenerics) {
+			AutoCloseableGeneric<? extends RuntimeException>... closeableGenerics) {
 		this.handle = handle;
 		closeables = new ArrayList<>(List.of(closeableGenerics));
 	}
@@ -68,7 +68,7 @@ public class CloseableAttachQueryIterator implements QueryCloseableIterator {
 	}
 
 	@Override
-	public QueryCloseableIterator attach(AutoCloseableGeneric<QEPCoreException> closeable) {
+	public QueryCloseableIterator attach(AutoCloseableGeneric<? extends RuntimeException> closeable) {
 		closeables.add(closeable);
 		return this;
 	}

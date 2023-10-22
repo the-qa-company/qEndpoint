@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class EndpointStoreTripleIterator implements CloseableIteration<Statement, QueryEvaluationException> {
+public class EndpointStoreTripleIterator implements CloseableIteration<Statement> {
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStoreTripleIterator.class);
 
 	private final AtomicBoolean closed = new AtomicBoolean();
@@ -26,11 +26,11 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 	private final EndpointStoreConnection connection;
 	private final EndpointTripleSource endpointTripleSource;
 	private final IteratorTripleID iterator;
-	private final CloseableIteration<? extends Statement, SailException> repositoryResult;
+	private final CloseableIteration<? extends Statement> repositoryResult;
 	private Statement next;
 
 	public EndpointStoreTripleIterator(EndpointStoreConnection connection, EndpointTripleSource endpointTripleSource,
-			IteratorTripleID iter, CloseableIteration<? extends Statement, SailException> repositoryResult) {
+			IteratorTripleID iter, CloseableIteration<? extends Statement> repositoryResult) {
 		this.connection = Objects.requireNonNull(connection, "connection can't be null!");
 		this.endpoint = Objects.requireNonNull(connection.getEndpoint(), "endpoint can't be null!");
 		this.endpointTripleSource = Objects.requireNonNull(endpointTripleSource, "endpointTripleSource can't be null!");

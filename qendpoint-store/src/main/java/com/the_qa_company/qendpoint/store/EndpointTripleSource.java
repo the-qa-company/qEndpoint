@@ -40,7 +40,7 @@ public class EndpointTripleSource implements TripleSource {
 	}
 
 	@Override
-	public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(Resource resource, IRI iri,
+	public CloseableIteration<? extends Statement> getStatements(Resource resource, IRI iri,
 			Value value, Resource... resources) throws QueryEvaluationException {
 
 		if (EndpointStoreConnection.debugWaittime != 0) {
@@ -89,16 +89,16 @@ public class EndpointTripleSource implements TripleSource {
 		logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
-		CloseableIteration<? extends Statement, SailException> repositoryResult;
+		CloseableIteration<? extends Statement> repositoryResult;
 		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
 			logger.debug("Searching over native store");
 			count++;
 			if (endpoint.isMergeTriggered) {
 				// query both native stores
 				logger.debug("Query both RDF4j stores!");
-				CloseableIteration<? extends Statement, SailException> repositoryResult1 = this.endpointStoreConnection
+				CloseableIteration<? extends Statement> repositoryResult1 = this.endpointStoreConnection
 						.getConnA_read().getStatements(newSubj, newPred, newObj, false, resources);
-				CloseableIteration<? extends Statement, SailException> repositoryResult2 = this.endpointStoreConnection
+				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection
 						.getConnB_read().getStatements(newSubj, newPred, newObj, false, resources);
 				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 

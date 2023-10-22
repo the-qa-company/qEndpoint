@@ -9,10 +9,10 @@ import org.eclipse.rdf4j.sail.SailException;
  *
  * @author Ali Haidar
  */
-public class CombinedNativeStoreResult implements CloseableIteration<Statement, SailException> {
+public class CombinedNativeStoreResult implements CloseableIteration<Statement> {
 
-	private final CloseableIteration<? extends Statement, SailException> repositoryResult1;
-	private final CloseableIteration<? extends Statement, SailException> repositoryResult2;
+	private final CloseableIteration<? extends Statement> repositoryResult1;
+	private final CloseableIteration<? extends Statement> repositoryResult2;
 
 	/**
 	 * create a combined CloseableIteration
@@ -20,8 +20,8 @@ public class CombinedNativeStoreResult implements CloseableIteration<Statement, 
 	 * @param repositoryResult1 the first iteration of element
 	 * @param repositoryResult2 the second iterator of element
 	 */
-	public CombinedNativeStoreResult(CloseableIteration<? extends Statement, SailException> repositoryResult1,
-			CloseableIteration<? extends Statement, SailException> repositoryResult2) {
+	public CombinedNativeStoreResult(CloseableIteration<? extends Statement> repositoryResult1,
+			CloseableIteration<? extends Statement> repositoryResult2) {
 		this.repositoryResult1 = repositoryResult1;
 		this.repositoryResult2 = repositoryResult2;
 	}

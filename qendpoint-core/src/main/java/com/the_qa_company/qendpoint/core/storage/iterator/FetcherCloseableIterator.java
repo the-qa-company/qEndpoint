@@ -9,7 +9,7 @@ package com.the_qa_company.qendpoint.core.storage.iterator;
  * @param <T> iterator type
  * @param <E> close type
  */
-public abstract class FetcherCloseableIterator<T, E extends Exception> implements CloseableIterator<T, E> {
+public abstract class FetcherCloseableIterator<T, E extends Exception> implements CloseableIterator<T> {
 	private T next;
 
 	protected FetcherCloseableIterator() {
