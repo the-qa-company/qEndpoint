@@ -27,19 +27,20 @@ public class QEPComponent implements Cloneable, Serializable {
 	@Serial
 	private static final long serialVersionUID = 6621230579376315429L;
 
-	record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset, String debugMapped) implements Serializable {}
+	record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset, String debugMapped)
+			implements Serializable {}
 
 	record PredicateElement(long id, QEPDataset dataset) implements Serializable {}
 
 	private static final Logger logger = LoggerFactory.getLogger(QEPComponent.class);
 
-     Map<Integer, PredicateElement> predicateIds;
-     Map<Integer, SharedElement> sharedIds;
-     CharSequence value;
-     RDFNodeType rdfNodeType;
-	 Optional<CharSequence> language;
-     CharSequence datatype;
-     transient final QEPCore core;
+	Map<Integer, PredicateElement> predicateIds;
+	Map<Integer, SharedElement> sharedIds;
+	CharSequence value;
+	RDFNodeType rdfNodeType;
+	Optional<CharSequence> language;
+	CharSequence datatype;
+	transient final QEPCore core;
 
 	private QEPComponent(QEPComponent other) {
 		this.predicateIds = new HashMap<>(other.predicateIds);

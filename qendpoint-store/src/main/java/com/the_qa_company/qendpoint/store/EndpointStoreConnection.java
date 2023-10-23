@@ -154,8 +154,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	// for SPARQL queries
 	@Override
-	protected CloseableIteration<? extends BindingSet> evaluateInternal(TupleExpr tupleExpr,
-			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+	protected CloseableIteration<? extends BindingSet> evaluateInternal(TupleExpr tupleExpr, Dataset dataset,
+			BindingSet bindings, boolean includeInferred) throws SailException {
 		return queryPreparer.evaluate(tupleExpr, dataset, bindings, includeInferred, 0);
 	}
 
@@ -172,8 +172,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	// USED from connection get api not SPARQL
 	@Override
-	protected CloseableIteration<? extends Statement> getStatementsInternal(Resource subj, IRI pred,
-			Value obj, boolean includeInferred, Resource... contexts) throws SailException {
+	protected CloseableIteration<? extends Statement> getStatementsInternal(Resource subj, IRI pred, Value obj,
+			boolean includeInferred, Resource... contexts) throws SailException {
 		if (MergeRunnableStopPoint.disableRequest) {
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
 		}
@@ -189,8 +189,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		if (timeout.get()) {
 			throw new EndpointTimeoutException();
 		}
-		CloseableIteration<? extends Statement> result = tripleSource.getStatements(subj,
-				pred, obj, contexts);
+		CloseableIteration<? extends Statement> result = tripleSource.getStatements(subj, pred, obj, contexts);
 
 		return new ExceptionConvertingIteration<Statement, SailException>(result) {
 			@Override
@@ -280,8 +279,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			// check if we need to search over the other native connection
 			if (endpoint.isMerging()) {
 				if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-					try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
-							.getStatements(newSubj, newPred, newObj, false, contexts)) {
+					try (CloseableIteration<? extends Statement> other = getOtherConnectionRead().getStatements(newSubj,
+							newPred, newObj, false, contexts)) {
 						if (other.hasNext()) {
 							return;
 						}

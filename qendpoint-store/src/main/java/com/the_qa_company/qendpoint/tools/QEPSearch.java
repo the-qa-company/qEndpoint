@@ -453,8 +453,7 @@ public class QEPSearch {
 		MultiThreadListenerConsole console = colorTool.getConsole();
 		console.notifyProgress(0, "open connection to native store");
 		try (SailConnection conn = sail.getConnection()) {
-			try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null,
-					false)) {
+			try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
 				long triples = 0;
 				HDTConverter converter = ep.getHdtConverter();
 				long shared = ep.getHdt().getDictionary().getNshared();

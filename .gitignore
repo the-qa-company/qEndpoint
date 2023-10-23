@@ -55,3 +55,6 @@ release/RELEASE_OUTPUT.md
 .idea
 data
 .nvmrc
+wikidata
+qendpoint-store/wdbench-indexes
+wdbench-results

@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.common.iteration.IndexReportingIterator;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class EndpointStoreTripleIterator implements CloseableIteration<Statement> {
+public class EndpointStoreTripleIterator implements CloseableIteration<Statement>, IndexReportingIterator {
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStoreTripleIterator.class);
 
 	private final AtomicBoolean closed = new AtomicBoolean();
@@ -106,6 +107,15 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			} finally {
 				repositoryResult.close();
 			}
+		}
+	}
+
+	@Override
+	public String getIndexName() {
+		if (iterator instanceof IndexReportingIterator) {
+			return ((IndexReportingIterator) iterator).getIndexName();
+		} else {
+			return null;
 		}
 	}
 }

@@ -19,7 +19,13 @@
 
 package com.the_qa_company.qendpoint.core.enums;
 
+import org.eclipse.rdf4j.common.order.StatementOrder;
+
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Indicates the order of the triples
@@ -86,6 +92,24 @@ public enum TripleComponentOrder {
 	 * @param <T>   value type
 	 * @return find value, null for no matching value
 	 */
+	public static <T, Z extends TripleComponentOrder> List<Z> fetchAllBestForCfg(int flags, Map<Z, T> map) {
+		ArrayList<Z> ret = new ArrayList<>();
+		for (Map.Entry<Z, T> e : map.entrySet()) {
+			if ((e.getKey().mask & flags) != 0) {
+				ret.add(e.getKey());
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Search for an acceptable value in a map of orders
+	 *
+	 * @param flags flags to search the value
+	 * @param map   map
+	 * @param <T>   value type
+	 * @return find value, null for no matching value
+	 */
 	public static <T> T fetchBestForCfg(int flags, Map<? extends TripleComponentOrder, T> map) {
 		for (Map.Entry<? extends TripleComponentOrder, T> e : map.entrySet()) {
 			if ((e.getKey().mask & flags) != 0) {
@@ -122,5 +146,40 @@ public enum TripleComponentOrder {
 
 	public TripleComponentRole getObjectMapping() {
 		return objectMapping;
+	}
+
+	public Set<StatementOrder> getStatementOrder(boolean subject, boolean predicate, boolean object) {
+		List<TripleComponentRole> subjectMappings = List.of(subjectMapping, predicateMapping, objectMapping);
+
+		EnumSet<StatementOrder> statementOrders = EnumSet.noneOf(StatementOrder.class);
+		if (subject) {
+			statementOrders.add(StatementOrder.S);
+		}
+		if (predicate) {
+			statementOrders.add(StatementOrder.P);
+		}
+		if (object) {
+			statementOrders.add(StatementOrder.O);
+		}
+
+		for (TripleComponentRole mapping : subjectMappings) {
+			if (mapping == TripleComponentRole.SUBJECT) {
+				if (!subject) {
+					statementOrders.add(StatementOrder.S);
+					break;
+				}
+			} else if (mapping == TripleComponentRole.PREDICATE) {
+				if (!predicate) {
+					statementOrders.add(StatementOrder.P);
+					break;
+				}
+			} else if (mapping == TripleComponentRole.OBJECT) {
+				if (!object) {
+					statementOrders.add(StatementOrder.O);
+					break;
+				}
+			}
+		}
+		return statementOrders;
 	}
 }

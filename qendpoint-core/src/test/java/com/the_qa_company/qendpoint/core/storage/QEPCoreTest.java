@@ -164,8 +164,7 @@ public class QEPCoreTest {
 					QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
 					Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
-				try (CloseableIterator<? extends QEPComponentTriple> search = core.search("", "",
-						"")) {
+				try (CloseableIterator<? extends QEPComponentTriple> search = core.search("", "", "")) {
 
 					long count = 0;
 					while (search.hasNext()) {

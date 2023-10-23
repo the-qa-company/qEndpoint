@@ -117,9 +117,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 	File checkFile;
 
 	// flag if the store is merging or not
-	private boolean isMerging = false;
+	private volatile boolean isMerging = false;
 
-	public boolean isMergeTriggered = false;
+	public volatile boolean isMergeTriggered = false;
 
 	private boolean freezeNotifications = false;
 
@@ -998,8 +998,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		try (SailConnection connection = getChangingStore().getConnection()) {
 			// https://github.com/eclipse/rdf4j/discussions/3734
 			// return connection.size() >= number;
-			try (CloseableIteration<? extends Statement> it = connection.getStatements(null, null, null,
-					false)) {
+			try (CloseableIteration<? extends Statement> it = connection.getStatements(null, null, null, false)) {
 				for (long i = 0; i < number; i++) {
 					if (!it.hasNext()) {
 						return false;

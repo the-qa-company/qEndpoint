@@ -395,8 +395,9 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 	 */
 	@Override
 	public long getNumberOfElements() {
-		if (isClosed)
+		if (isClosed) {
 			return 0;
+		}
 		return seqZ.getNumberOfElements();
 	}
 
@@ -406,8 +407,9 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 	 */
 	@Override
 	public long size() {
-		if (isClosed)
+		if (isClosed) {
 			return 0;
+		}
 		return seqY.size() + seqZ.size() + bitmapY.getSizeBytes() + bitmapZ.getSizeBytes();
 	}
 
@@ -472,6 +474,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 	@Override
 	public void mapFromFile(CountInputStream input, File f, ProgressListener listener) throws IOException {
+		log.info("Mapping BitmapTriples from {}", f.getName());
 		ControlInformation ci = new ControlInformation();
 		ci.load(input);
 		if (ci.getType() != ControlInfo.Type.TRIPLES) {
@@ -1078,6 +1081,29 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 		tripleID.setAll(x, y, z);
 		return tripleID;
+	}
+
+	@Override
+	public List<TripleComponentOrder> getTripleComponentOrder(TripleID pattern) {
+		if (isClosed) {
+			throw new IllegalStateException("Cannot search on BitmapTriples if it's already closed");
+		}
+
+		if (getNumberOfElements() == 0 || pattern.isNoMatch()) {
+			return List.of(TripleComponentOrder.POS, TripleComponentOrder.PSO, TripleComponentOrder.SPO,
+					TripleComponentOrder.SOP, TripleComponentOrder.OSP, TripleComponentOrder.OPS);
+		}
+
+		TripleID reorderedPat = new TripleID(pattern);
+		TripleOrderConvert.swapComponentOrder(reorderedPat, TripleComponentOrder.SPO, order);
+		int flags = reorderedPat.getPatternOrderFlags();
+
+		if ((indexesMask & flags) != 0) {
+			return TripleComponentOrder.fetchAllBestForCfg(flags, indexes);
+		}
+
+		return List.of();
+
 	}
 
 	/*

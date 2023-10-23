@@ -69,6 +69,19 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>oss.sonatype.org-snapshot</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>

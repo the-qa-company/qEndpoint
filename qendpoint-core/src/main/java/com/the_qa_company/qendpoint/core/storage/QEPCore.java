@@ -121,7 +121,9 @@ public class QEPCore implements AutoCloseable {
 	 */
 	public static final String FILE_CORE_CONFIG_OPT = "config.opt";
 
-	  private final Map<String, QEPDataset> dataset = new HashMap<>();private final Object datasetLock = new Object() {};private final ReentrantLock insertLock = new ReentrantLock();
+	private final Map<String, QEPDataset> dataset = new HashMap<>();
+	private final Object datasetLock = new Object() {};
+	private final ReentrantLock insertLock = new ReentrantLock();
 	private final Object bindLock = new Object() {};
 	private final Object idBuilderLock = new Object() {};
 	private final ConcurrentMap<Integer, QEPDataset> datasetByUid = new ConcurrentHashMap<>();

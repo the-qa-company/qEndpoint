@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 public class CloseableAttachIterator<T extends RuntimeException> implements CloseableIterator<T> {
 	@SafeVarargs
 	public static <T> CloseableIterator<T> of(CloseableIterator<T> it,
-                                                                   AutoCloseableGeneric<? extends RuntimeException>... closeables) {
+			AutoCloseableGeneric<? extends RuntimeException>... closeables) {
 		if (closeables.length == 0) {
 			return it;
 		}
@@ -25,13 +25,14 @@ public class CloseableAttachIterator<T extends RuntimeException> implements Clos
 	private final List<AutoCloseableGeneric<RuntimeException>> closeables;
 
 	@SafeVarargs
-	private CloseableAttachIterator(CloseableIterator<T> handle, AutoCloseableGeneric<RuntimeException>... closeableGenerics) {
+	private CloseableAttachIterator(CloseableIterator<T> handle,
+			AutoCloseableGeneric<RuntimeException>... closeableGenerics) {
 		this.handle = handle;
 		closeables = new ArrayList<>(List.of(closeableGenerics));
 	}
 
 	@Override
-	public void close()  {
+	public void close() {
 		try {
 			handle.close();
 		} catch (Error | Exception t) {

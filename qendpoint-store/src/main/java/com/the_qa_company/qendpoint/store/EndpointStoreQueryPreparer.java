@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.UpdateExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.AbstractQueryPreparer;
 import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
+import org.eclipse.rdf4j.query.algebra.evaluation.QueryEvaluationStep;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.ExtendedEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.BindingAssignerOptimizer;
@@ -95,9 +96,8 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 	}
 
 	@Override
-	protected CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr,
-			Dataset dataset, BindingSet bindings, boolean includeInferred, int maxExecutionTime)
-			throws QueryEvaluationException {
+	protected CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr, Dataset dataset,
+			BindingSet bindings, boolean includeInferred, int maxExecutionTime) throws QueryEvaluationException {
 
 		if (this.cloneTupleExpression) {
 			tupleExpr = tupleExpr.clone();
@@ -128,7 +128,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			new DisjunctiveConstraintOptimizer().optimize(tupleExpr, dataset, bindings);
 			new SameTermFilterOptimizer().optimize(tupleExpr, dataset, bindings);
 			new QueryModelNormalizerOptimizer().optimize(tupleExpr, dataset, bindings);
-			new QueryJoinOptimizer(evaluationStatistics).optimize(tupleExpr, dataset, bindings);
+			new QueryJoinOptimizer(evaluationStatistics, tripleSource).optimize(tupleExpr, dataset, bindings);
 			new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
 			new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 			new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
@@ -136,7 +136,9 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 
 		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);
 
-		return strategy.evaluate(tupleExpr, bindings);
+		QueryEvaluationStep precompile = strategy.precompile(tupleExpr);
+
+		return precompile.evaluate(bindings);
 	}
 
 	// @todo: this looks wrong, apperently if one wraps around the store

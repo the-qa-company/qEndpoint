@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * {@link TempTriples} only readable once with the {@link #searchAll()} method
@@ -204,6 +205,11 @@ public class OneReadTempTriples implements TempTriples {
 	@Override
 	public TripleID findTriple(long position, TripleID buffer) {
 		throw new NotImplementedException();
+	}
+
+	@Override
+	public List<TripleComponentOrder> getTripleComponentOrder(TripleID t) {
+		return List.of();
 	}
 
 	@Override

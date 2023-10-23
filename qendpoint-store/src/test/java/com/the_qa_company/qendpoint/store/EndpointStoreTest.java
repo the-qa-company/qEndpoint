@@ -707,6 +707,7 @@ public class EndpointStoreTest {
 
 		try {
 			try (RepositoryConnection connection = endpointStore.getConnection()) {
+				connection.begin();
 				ValueFactory vf = connection.getValueFactory();
 				String ex = "http://example.com/";
 				IRI ali = vf.createIRI(ex, "Ali");
@@ -714,6 +715,16 @@ public class EndpointStoreTest {
 				IRI guo = vf.createIRI(ex, "Guo");
 				IRI has = vf.createIRI(ex, "has");
 				connection.add(guo, has, FOAF.ACCOUNT);
+				connection.commit();
+			}
+
+			// force merge so that we can use merge join later
+			store.mergeStore();
+			while (store.isMergeTriggered || store.isMerging()) {
+				Thread.onSpinWait();
+			}
+
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
 
 				TupleQuery tupleQuery = connection.prepareTupleQuery(
 						String.join("\n", "", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",

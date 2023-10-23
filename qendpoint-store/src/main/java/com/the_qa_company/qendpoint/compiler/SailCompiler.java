@@ -400,8 +400,7 @@ public class SailCompiler {
 		 */
 		public Value searchOne(Resource subject, IRI predicate) throws SailCompilerException {
 			Value out;
-			try (CloseableIteration<? extends Statement> it = connection.getStatements(subject,
-					predicate, null)) {
+			try (CloseableIteration<? extends Statement> it = connection.getStatements(subject, predicate, null)) {
 				if (!it.hasNext()) {
 					throw new SailCompilerException(
 							"Can't find statements for the query (" + subject + ", " + predicate + ", ???)!");
@@ -426,8 +425,7 @@ public class SailCompiler {
 		 */
 		public Optional<Value> searchOneOpt(Resource subject, IRI predicate) throws SailCompilerException {
 			Value out;
-			try (CloseableIteration<? extends Statement> it = connection.getStatements(subject,
-					predicate, null)) {
+			try (CloseableIteration<? extends Statement> it = connection.getStatements(subject, predicate, null)) {
 				if (!it.hasNext()) {
 					return Optional.empty();
 				}
@@ -466,8 +464,7 @@ public class SailCompiler {
 		 */
 		public List<Value> search(Resource subject, IRI predicate) {
 			List<Value> values = new ArrayList<>();
-			try (CloseableIteration<? extends Statement> it = connection.getStatements(subject,
-					predicate, null)) {
+			try (CloseableIteration<? extends Statement> it = connection.getStatements(subject, predicate, null)) {
 				it.stream().forEach(s -> values.add(s.getObject()));
 			}
 			return values;

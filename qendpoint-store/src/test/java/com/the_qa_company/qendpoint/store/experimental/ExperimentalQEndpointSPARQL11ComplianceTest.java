@@ -49,9 +49,7 @@ public class ExperimentalQEndpointSPARQL11ComplianceTest {
 		@Rule
 		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
-		public QueryTest(String displayName, String testURI, String name, String queryFileURL, String resultFileURL,
-				Dataset dataset, boolean ordered, boolean laxCardinality) {
-			super(displayName, testURI, name, queryFileURL, resultFileURL, dataset, ordered, laxCardinality);
+		public QueryTest() {
 
 			if (DISABLE_GRAPH_TESTS) {
 				this.setIgnoredTests(new ArrayList<>(List.of("constructwhere04 - CONSTRUCT WHERE",
@@ -76,10 +74,7 @@ public class ExperimentalQEndpointSPARQL11ComplianceTest {
 		@Rule
 		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
-		public UpdateTest(String displayName, String testURI, String name, String requestFile, IRI defaultGraphURI,
-				Map<String, IRI> inputNamedGraphs, IRI resultDefaultGraphURI, Map<String, IRI> resultNamedGraphs) {
-			super(displayName, testURI, name, requestFile, defaultGraphURI, inputNamedGraphs, resultDefaultGraphURI,
-					resultNamedGraphs);
+		public UpdateTest() {
 
 			if (DISABLE_GRAPH_TESTS) {
 				this.setIgnoredTests(new ArrayList<>(List.of("INSERT 03", "INSERT 04", "INSERT USING 01",

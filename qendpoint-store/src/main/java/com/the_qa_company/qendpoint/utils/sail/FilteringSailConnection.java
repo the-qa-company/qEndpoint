@@ -53,8 +53,8 @@ class FilteringSailConnection implements NotifyingSailConnection, SourceSailConn
 	}
 
 	@Override
-	public CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr,
-			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+	public CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings,
+			boolean includeInferred) throws SailException {
 		if (filter.shouldHandleExpression(tupleExpr, dataset, bindings, includeInferred)) {
 			return connectionIfYes.evaluate(tupleExpr, dataset, bindings, includeInferred);
 		} else {

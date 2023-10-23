@@ -239,8 +239,8 @@ public class QEPSailStore implements SailStore {
 		}
 
 		@Override
-		public QEPCloseableIteration<? extends Statement> getStatements(Resource subj, IRI pred,
-				Value obj, Resource... contexts) throws SailException {
+		public QEPCloseableIteration<? extends Statement> getStatements(Resource subj, IRI pred, Value obj,
+				Resource... contexts) throws SailException {
 			if (!explicit) {
 				return QEPCloseableIteration.of();
 			}
@@ -254,5 +254,6 @@ public class QEPSailStore implements SailStore {
 						return null;
 					});
 		}
+
 	}
 }
