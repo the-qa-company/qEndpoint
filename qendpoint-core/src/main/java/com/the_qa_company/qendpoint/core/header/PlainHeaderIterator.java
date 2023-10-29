@@ -19,6 +19,7 @@
 
 package com.the_qa_company.qendpoint.core.header;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
@@ -111,4 +112,8 @@ public class PlainHeaderIterator implements IteratorTripleString {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public TripleComponentOrder getOrder() {
+		return TripleComponentOrder.Unknown;
+	}
 }

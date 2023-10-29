@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.iterator;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
@@ -159,6 +160,11 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 	@Override
 	public long getLastTriplePosition() {
 		return iterator.getLastTriplePosition();
+	}
+
+	@Override
+	public TripleComponentOrder getOrder() {
+		return iterator.getOrder();
 	}
 
 }

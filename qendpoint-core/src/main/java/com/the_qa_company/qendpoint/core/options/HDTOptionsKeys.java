@@ -508,6 +508,12 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "Dump binary offsets, default false")
 	public static final String DUMP_BINARY_OFFSETS = "bump.binary.offsets";
 
+	@Key(type = Key.Type.STRING, desc = "Create other indexes in bitmaptriples pattern values (spo, ops, etc.), default none")
+	public static final String BITMAPTRIPLES_INDEX_OTHERS = "bitmaptriples.index.others";
+
+	@Key(type = Key.Type.BOOLEAN, desc = "No FoQ index generation default false")
+	public static final String BITMAPTRIPLES_INDEX_NO_FOQ = "bitmaptriples.index.noFoQ";
+
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();
 

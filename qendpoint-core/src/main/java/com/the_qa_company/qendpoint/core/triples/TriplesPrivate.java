@@ -1,17 +1,17 @@
 package com.the_qa_company.qendpoint.core.triples;
 
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.ControlInfo;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
-import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.options.ControlInfo;
-import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
+import java.nio.file.Path;
 
 public interface TriplesPrivate extends Triples {
 	/**
@@ -20,14 +20,6 @@ public interface TriplesPrivate extends Triples {
 	 * @param output The OutputStream to save the triples to
 	 */
 	void save(OutputStream output, ControlInfo ci, ProgressListener listener) throws IOException;
-
-	/**
-	 * Iterates over all triples that match the pattern.
-	 *
-	 * @param pattern The pattern to match against
-	 * @return IteratorTripleID
-	 */
-	SuppliableIteratorTripleID search(TripleID pattern);
 
 	/**
 	 * Loads the structure from an InputStream
@@ -61,6 +53,16 @@ public interface TriplesPrivate extends Triples {
 	 * @throws IOException
 	 */
 	void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) throws IOException;
+
+	/**
+	 * Sync or create the asked other index
+	 *
+	 * @param file     hdt file
+	 * @param spec     spec
+	 * @param listener listener
+	 * @throws IOException io
+	 */
+	void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) throws IOException;
 
 	/**
 	 * Saves the associated Index to an OutputStream

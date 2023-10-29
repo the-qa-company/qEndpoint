@@ -240,7 +240,7 @@ public class BitmapTriplesIteratorZFOQ implements SuppliableIteratorTripleID {
 	 */
 	@Override
 	public TripleComponentOrder getOrder() {
-		return triples.order;
+		return TripleComponentOrder.Unknown;// triples.order;
 	}
 
 	/*

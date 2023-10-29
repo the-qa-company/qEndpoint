@@ -6,11 +6,14 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 /**
@@ -106,6 +109,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 		inMemory = false;
 		this.output = new NioFile(file);
 		writeBits();
+
 		for (int offset = 0; offset < words.length; offset++) {
 			output.writeLong(words[offset], 8L * (offset + 1));
 		}
@@ -119,8 +123,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 	 */
 	private void writeBits() throws IOException {
 		// write the length of the array in the beginning
-		int nwords = (int) numWords(allBits);
-		this.output.writeLong(nwords, 0);
+		this.output.writeLong((int) numWords(allBits), 0);
 	}
 
 	private void initWordsArray(long nbits) throws IOException {
@@ -137,12 +140,18 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 				int lastNonZero = -1;
 				// read previous values
-				for (int i = 0; i < this.words.length; i++) {
-					long v = this.output.readLong((i + 1) * 8L);
-					if (v != 0) {
-						this.words[i] = v;
-						lastNonZero = i;
+				try (BufferedInputStream is = new BufferedInputStream(
+						Files.newInputStream(this.output.getFile().toPath()))) {
+					// skip header
+					is.skipNBytes(8);
+					for (int i = 0; i < this.words.length; i++) {
+						long v = IOUtil.readLongBigEndian(is);
+						if (v != 0) {
+							this.words[i] = v;
+							lastNonZero = i;
+						}
 					}
+				} catch (EOFException ignore) {
 				}
 				// recompute numbits if we have at least one bit
 				if (lastNonZero != -1)

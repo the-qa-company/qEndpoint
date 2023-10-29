@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
@@ -114,12 +115,22 @@ public class TriplesListLong implements TempTriples {
 		}
 	}
 
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
+		return search(pattern);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see hdt.triples.Triples#searchAll()
 	 */
 	@Override
 	public IteratorTripleID searchAll() {
+		return searchAll(TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
 		TripleID all = new TripleID(0, 0, 0);
 		return this.search(all);
 	}
@@ -520,6 +531,10 @@ public class TriplesListLong implements TempTriples {
 
 	@Override
 	public void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) {
+	}
+
+	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
 	}
 
 	@Override

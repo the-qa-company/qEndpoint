@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
@@ -186,6 +187,18 @@ public class PlainHeader implements HeaderPrivate, RDFCallback {
 					HeaderUtil.cleanURI(graph));
 		}
 		return new PlainHeaderIterator(this, pattern);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			int searchOrderMask) throws NotFoundException {
+		return search(subject, predicate, object);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph, int searchOrderMask) throws NotFoundException {
+		return search(subject, predicate, object, graph);
 	}
 
 	@Override

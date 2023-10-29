@@ -46,8 +46,8 @@ public class SimpleBNodeHDT extends AbstractBNode implements HDTValue {
 			return false;
 		if (this == o) {
 			return true;
-		} else if (o instanceof SimpleBNodeHDT && this.id != -1 && ((SimpleBNodeHDT) o).getHdtId() != -1) {
-			return this.id == (((SimpleBNodeHDT) o).getHdtId());
+		} else if (o instanceof HDTValue hv && this.id != -1 && hv.getHDTId() != -1) {
+			return this.id == hv.getHDTId();
 		} else { // could not compare IDs, we have to compare to string
 			if (!(o instanceof BNode)) {
 				return false;
@@ -80,8 +80,14 @@ public class SimpleBNodeHDT extends AbstractBNode implements HDTValue {
 		}
 	}
 
-	public long getHdtId() {
+	@Override
+	public long getHDTId() {
 		return id;
+	}
+
+	@Override
+	public int getHDTPosition() {
+		return position;
 	}
 
 	@Override

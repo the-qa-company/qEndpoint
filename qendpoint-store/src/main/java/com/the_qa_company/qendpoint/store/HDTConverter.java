@@ -112,7 +112,7 @@ public class HDTConverter {
 				}
 				return hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
 			} else if (obj instanceof SimpleLiteralHDT hdtObj) {
-				return hdtObj.getHdtID();
+				return hdtObj.getHDTId();
 			} else {
 				if (QueryEvaluationUtil.isSimpleLiteral(obj)) {
 					return this.hdt.getDictionary().stringToId('"' + obj.stringValue() + '"',

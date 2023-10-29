@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -115,6 +116,11 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public void load(InputStream input, ControlInfo ci, ProgressListener listener) throws IOException {
 		throw new NotImplementedException();
 	}
@@ -136,6 +142,11 @@ public class OneReadTempTriples implements TempTriples {
 
 	@Override
 	public void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
 		throw new NotImplementedException();
 	}
 
@@ -162,6 +173,11 @@ public class OneReadTempTriples implements TempTriples {
 
 	@Override
 	public IteratorTripleID searchAll() {
+		return new NoDuplicateTripleIDIterator(iterator);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
 		return new NoDuplicateTripleIDIterator(iterator);
 	}
 
