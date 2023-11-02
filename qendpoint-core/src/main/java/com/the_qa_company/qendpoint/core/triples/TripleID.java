@@ -19,10 +19,18 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
+import com.the_qa_company.qendpoint.core.util.LongCompare;
+
 import java.io.Serial;
 import java.io.Serializable;
 
-import com.the_qa_company.qendpoint.core.util.LongCompare;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.ALL_MASK;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.OPS;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.OSP;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.POS;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.PSO;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.SOP;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.SPO;
 
 /**
  * TripleID holds a triple using Long IDs
@@ -335,5 +343,35 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	 */
 	public TripleID copyNoGraph() {
 		return new TripleID(subject, predicate, object);
+	}
+
+	/**
+	 * @return the pattern order flags for this triple id
+	 */
+	public int getPatternOrderFlags() {
+		if (subject == 0) {
+			if (predicate == 0) {
+				if (object == 0) {
+					return ALL_MASK; // ???
+				}
+				return OPS.mask | OSP.mask; // ??o
+			}
+			if (object == 0) {
+				return POS.mask | PSO.mask; // ?p?
+			} else {
+				return OPS.mask | POS.mask; // ?po
+			}
+		}
+		if (predicate == 0) {
+			if (object == 0) {
+				return SPO.mask | SOP.mask; // s??
+			}
+			return SOP.mask | OSP.mask; // s?o
+		}
+		if (object == 0) {
+			return SPO.mask | PSO.mask; // sp?
+		} else {
+			return ALL_MASK; // spo
+		}
 	}
 }

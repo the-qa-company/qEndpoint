@@ -20,13 +20,16 @@
 package com.the_qa_company.qendpoint.core.triples;
 
 import java.io.Closeable;
+import java.util.Iterator;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.header.Header;
+import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 
 /**
  * Interface for Triples implementation.
  */
-public interface Triples extends Closeable {
+public interface Triples extends Closeable, Iterable<TripleID> {
 	/**
 	 * Iterates over all triples. Equivalent to this.search(new TripleID());
 	 *
@@ -35,12 +38,31 @@ public interface Triples extends Closeable {
 	IteratorTripleID searchAll();
 
 	/**
+	 * Iterates over all triples. Equivalent to this.search(new TripleID());
+	 *
+	 * @param searchMask search index mark, done by combining
+	 *                   {@link TripleComponentOrder#mask}
+	 * @return IteratorTripleID
+	 */
+	IteratorTripleID searchAll(int searchMask);
+
+	/**
 	 * Iterates over all triples that match the pattern.
 	 *
 	 * @param pattern The pattern to match against
 	 * @return IteratorTripleID
 	 */
 	IteratorTripleID search(TripleID pattern);
+
+	/**
+	 * Iterates over all triples that match the pattern.
+	 *
+	 * @param pattern    The pattern to match against
+	 * @param searchMask search index mark, done by combining
+	 *                   {@link TripleComponentOrder#mask}
+	 * @return IteratorTripleID
+	 */
+	SuppliableIteratorTripleID search(TripleID pattern, int searchMask);
 
 	/**
 	 * Returns the total number of triples
@@ -94,4 +116,9 @@ public interface Triples extends Closeable {
 	 * @see IteratorTripleString#getLastTriplePosition()
 	 */
 	TripleID findTriple(long position, TripleID buffer);
+
+	@Override
+	default Iterator<TripleID> iterator() {
+		return searchAll();
+	}
 }

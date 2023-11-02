@@ -877,11 +877,11 @@ public class QEPSearch {
 		}
 
 		if (object instanceof SimpleLiteralHDT hdtLit) {
-			return out + colorTool.yellow() + " (" + hdtLit.getHdtID() + ")";
+			return out + colorTool.yellow() + " (" + hdtLit.getHDTId() + ")";
 		} else if (object instanceof SimpleIRIHDT hdtIri) {
 			return out + colorTool.yellow() + " (" + hdtIri.getId() + ")";
 		} else if (object instanceof SimpleBNodeHDT hdtBN) {
-			return out + colorTool.yellow() + " (" + hdtBN.getHdtId() + ")";
+			return out + colorTool.yellow() + " (" + hdtBN.getHDTId() + ")";
 		} else {
 			return out + colorTool.yellow();
 		}

@@ -57,6 +57,16 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 		this.localNameIdx = -1;
 	}
 
+	@Override
+	public long getHDTId() {
+		return id;
+	}
+
+	@Override
+	public int getHDTPosition() {
+		return postion;
+	}
+
 	public long getId() {
 		return id;
 	}

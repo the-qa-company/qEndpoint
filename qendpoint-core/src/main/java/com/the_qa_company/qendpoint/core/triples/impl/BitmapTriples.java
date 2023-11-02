@@ -72,19 +72,31 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author mario.arias
  */
-public class BitmapTriples implements TriplesPrivate {
+public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 	private static final Logger log = LoggerFactory.getLogger(BitmapTriples.class);
 
 	protected TripleComponentOrder order;
+
+	protected final Map<TripleComponentOrder, BitmapTriplesIndex> indexes = new HashMap<>();
+	protected int indexesMask = 0;
 
 	protected Sequence seqY, seqZ, indexZ, predicateCount;
 	protected Bitmap bitmapY, bitmapZ, bitmapIndexZ;
@@ -285,12 +297,13 @@ public class BitmapTriples implements TriplesPrivate {
 		this.load(it, listener);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.triples.Triples#search(hdt.triples.TripleID)
-	 */
 	@Override
 	public SuppliableIteratorTripleID search(TripleID pattern) {
+		return search(pattern, TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
 		if (isClosed) {
 			throw new IllegalStateException("Cannot search on BitmapTriples if it's already closed");
 		}
@@ -301,6 +314,32 @@ public class BitmapTriples implements TriplesPrivate {
 
 		TripleID reorderedPat = new TripleID(pattern);
 		TripleOrderConvert.swapComponentOrder(reorderedPat, TripleComponentOrder.SPO, order);
+		int flags = reorderedPat.getPatternOrderFlags();
+
+		if ((flags & searchMask & this.order.mask) != 0) {
+			// we can use the default order, so we use it
+			return new BitmapTriplesIterator(this, pattern);
+		}
+
+		if ((indexesMask & flags) != 0) {
+			BitmapTriplesIndex idx;
+
+			int bestOrders = flags & searchMask;
+
+			if ((indexesMask & bestOrders) != 0) {
+				// we can use the asked order
+				idx = TripleComponentOrder.fetchBestForCfg(bestOrders, indexes);
+			} else {
+				// no asked order found, we can still use the best index
+				idx = TripleComponentOrder.fetchBestForCfg(flags, indexes);
+			}
+
+			assert idx != null : String.format("the tid flags were describing an unknown pattern: %x &= %x", flags,
+					indexesMask & flags);
+
+			return new BitmapTriplesIterator(idx, pattern);
+		}
+
 		String patternString = reorderedPat.getPatternString();
 
 		if (patternString.equals("?P?")) {
@@ -342,7 +381,12 @@ public class BitmapTriples implements TriplesPrivate {
 	 */
 	@Override
 	public IteratorTripleID searchAll() {
-		return this.search(new TripleID());
+		return searchAll(TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
+		return this.search(new TripleID(), searchMask);
 	}
 
 	/*
@@ -1030,7 +1074,7 @@ public class BitmapTriples implements TriplesPrivate {
 		// -1 so we don't count end of tree
 		long posX = bitmapY.rank1(posY - 1);
 		long x = posX + 1; // the subject ID is the position + 1, IDs start from
-							// 1 not zero
+		// 1 not zero
 
 		tripleID.setAll(x, y, z);
 		return tripleID;
@@ -1208,10 +1252,16 @@ public class BitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) throws IOException {
+		syncOtherIndexes(file, spec, listener);
+	}
+
+	@Override
 	public void close() throws IOException {
 		isClosed = true;
 		try {
-			Closer.closeAll(seqY, seqZ, indexZ, predicateCount, predicateIndex, bitmapIndexZ, diskSequenceLocation);
+			Closer.closeAll(seqY, seqZ, indexZ, predicateCount, predicateIndex, bitmapIndexZ, diskSequenceLocation,
+					indexes);
 		} finally {
 			diskSequenceLocation = null;
 			seqY = null;
@@ -1220,11 +1270,79 @@ public class BitmapTriples implements TriplesPrivate {
 			predicateCount = null;
 			predicateIndex = null;
 			bitmapIndexZ = null;
+			indexes.clear();
+			indexesMask = 0;
 		}
 	}
 
 	public boolean hasFOQIndex() {
 		return indexZ != null && bitmapIndexZ != null;
+	}
+
+	public void syncOtherIndexes(Path fileLocation, HDTOptions spec, ProgressListener listener) throws IOException {
+		Closer.closeAll(indexes);
+		indexes.clear();
+		indexesMask = 0;
+
+		if (fileLocation == null) {
+			return;
+		}
+
+		String otherIdxs = spec.get(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "");
+
+		Set<TripleComponentOrder> askedOrders = Arrays.stream(otherIdxs.toUpperCase().split(",")).map(e -> {
+			if (e.isEmpty() || e.equalsIgnoreCase(TripleComponentOrder.Unknown.name())) {
+				return null;
+			}
+			try {
+				return TripleComponentOrder.valueOf(e);
+			} catch (IllegalArgumentException ex) {
+				log.warn("Trying to use a bad order name {}", e, ex);
+				return null;
+			}
+		}).filter(Objects::nonNull).collect(Collectors.toSet());
+
+		MultiThreadListener mListener = MultiThreadListener.ofSingle(listener);
+		for (TripleComponentOrder order : TripleComponentOrder.values()) {
+			if (order == TripleComponentOrder.Unknown || order == this.order) {
+				continue;
+			}
+
+			Path subIndexPath = BitmapTriplesIndexFile.getIndexPath(fileLocation, order);
+
+			try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
+				// load from the path...
+
+				BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel);
+				BitmapTriplesIndex old = indexes.put(order, idx);
+				indexesMask |= idx.getOrder().mask;
+				if (old != null) {
+					log.warn("an index is using a bad order old:{} cur:{} new:{}", old.getOrder(), order,
+							idx.getOrder());
+				}
+				IOUtil.closeQuietly(old);
+			} catch (NoSuchFileException ignore) {
+				// no index with this name
+				if (!askedOrders.contains(order)) {
+					continue; // not asked by the user, we can ignore
+				}
+				// generate the file
+				BitmapTriplesIndexFile.generateIndex(this, subIndexPath, order, spec, mListener);
+				try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
+					// load from the path...
+					BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel);
+					BitmapTriplesIndex old = indexes.put(order, idx);
+					indexesMask |= order.mask;
+					if (old != null) {
+						log.warn("an index is using a bad order old:{} cur:{} new:{}", old.getOrder(), order,
+								idx.getOrder());
+					}
+					IOUtil.closeQuietly(old); // should be null?
+				} catch (NoSuchFileException ex2) {
+					throw new IOException("index not generated", ex2);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -1236,18 +1354,22 @@ public class BitmapTriples implements TriplesPrivate {
 		return indexZ;
 	}
 
+	@Override
 	public Sequence getSeqY() {
 		return seqY;
 	}
 
+	@Override
 	public Sequence getSeqZ() {
 		return seqZ;
 	}
 
+	@Override
 	public AdjacencyList getAdjacencyListY() {
 		return adjY;
 	}
 
+	@Override
 	public AdjacencyList getAdjacencyListZ() {
 		return adjZ;
 	}
@@ -1256,10 +1378,12 @@ public class BitmapTriples implements TriplesPrivate {
 		return adjIndex;
 	}
 
+	@Override
 	public Bitmap getBitmapY() {
 		return bitmapY;
 	}
 
+	@Override
 	public Bitmap getBitmapZ() {
 		return bitmapZ;
 	}

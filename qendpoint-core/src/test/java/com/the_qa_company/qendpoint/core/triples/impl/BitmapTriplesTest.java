@@ -24,9 +24,12 @@ import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
@@ -298,6 +301,16 @@ public class BitmapTriplesTest {
 
 	@Ignore("Hand tests")
 	public static class HandTest extends AbstractTest {
+		@Test
+		public void readBadChannelTest() throws IOException {
+			// java.nio.file.NoSuchFileException
+			try (FileChannel channel = FileChannel.open(Path.of(UUID.randomUUID().toString()),
+					StandardOpenOption.READ)) {
+				System.out.println(channel.isOpen());
+			}
+
+		}
+
 		@Test
 		public void largeTest() throws IOException {
 			/*

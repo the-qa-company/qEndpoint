@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
@@ -52,6 +53,11 @@ public class JenaModelIterator implements IteratorTripleString {
 	@Override
 	public long getLastTriplePosition() {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public TripleComponentOrder getOrder() {
+		return TripleComponentOrder.Unknown;
 	}
 
 }

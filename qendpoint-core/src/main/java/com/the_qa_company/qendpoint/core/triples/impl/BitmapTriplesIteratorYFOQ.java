@@ -208,7 +208,7 @@ public class BitmapTriplesIteratorYFOQ implements SuppliableIteratorTripleID {
 	 */
 	@Override
 	public TripleComponentOrder getOrder() {
-		return triples.order;
+		return TripleComponentOrder.Unknown; // triples.order;
 	}
 
 	/*
