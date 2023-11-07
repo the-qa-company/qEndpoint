@@ -90,6 +90,11 @@ public enum RDFNotation {
 	JSONLD,
 
 	/**
+	 * Delta file
+	 */
+	DELTAFILE,
+
+	/**
 	 * List of URIs with RDF content in other RDF Formats
 	 */
 	LIST,
@@ -148,6 +153,9 @@ public enum RDFNotation {
 		case "trix" -> {
 			return TRIX;
 		}
+		case "df", "deltafile" -> {
+			return DELTAFILE;
+		}
 		}
 		throw new IllegalArgumentException();
 	}
@@ -195,6 +203,8 @@ public enum RDFNotation {
 			return TRIG;
 		} else if (str.endsWith("trix")) {
 			return TRIX;
+		} else if (str.endsWith("df") || str.endsWith("deltafile")) {
+			return DELTAFILE;
 		}
 
 		throw new IllegalArgumentException("Could not guess the format for " + fileName);
