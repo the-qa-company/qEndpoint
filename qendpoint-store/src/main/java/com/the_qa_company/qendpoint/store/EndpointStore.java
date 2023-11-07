@@ -651,7 +651,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	public void setDeleteBitMap(TripleComponentOrder order,
 			MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper deleteBitMap) {
 		this.deleteBitMap[order.ordinal()] = deleteBitMap;
-		logger.info("set deletebitmap for order {}: delete?: {}", order, deleteBitMap.getMaxNumBits() == 0);
+		//logger.info("set deletebitmap for order {}: delete?: {}", order, deleteBitMap.getMaxNumBits() == 0);
 	}
 
 	public void setDeleteBitMap(MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[] deleteBitMaps) {
