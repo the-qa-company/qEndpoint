@@ -23,6 +23,7 @@ import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserDir;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserHDT;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserList;
@@ -72,6 +73,8 @@ public class RDFParserFactory {
 			return new RDFParserRAR(spec);
 		case HDT:
 			return new RDFParserHDT();
+		case DELTAFILE:
+			return new RDFDeltaFileParser(spec);
 		case JSONLD:
 			// FIXME: Implement
 			throw new NotImplementedException("RDFParserJSONLD not implemented");
