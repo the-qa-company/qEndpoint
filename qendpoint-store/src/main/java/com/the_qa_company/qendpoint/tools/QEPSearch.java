@@ -9,13 +9,16 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.enums.WikidataChangesFlavor;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser;
 import com.the_qa_company.qendpoint.core.tools.HDTVerify;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -23,8 +26,12 @@ import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
+import com.the_qa_company.qendpoint.core.util.crc.CRC32;
+import com.the_qa_company.qendpoint.core.util.crc.CRC8;
+import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.disk.LongArray;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
 import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
@@ -32,6 +39,7 @@ import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.model.SimpleLiteralHDT;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.HDTConverter;
+import com.the_qa_company.qendpoint.utils.FormatUtils;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -46,13 +54,17 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +110,8 @@ public class QEPSearch {
 	public String searchCfg;
 	@Parameter(names = "-binindex", description = "Prints bin index if implemented")
 	public boolean showBinIndex;
+	@Parameter(names = "-nocrc", description = "Avoid CRC checks")
+	public boolean noCRC;
 
 	public String input;
 
@@ -907,7 +921,13 @@ public class QEPSearch {
 			} else if (path.getFileName().toString().endsWith(".prof")) {
 				type = "profiler";
 			} else {
-				throw new IllegalArgumentException("Can't guess type for store " + path + "!");
+				byte[] cookie = FormatUtils.readCookie(path, 8);
+				// search for the right magic
+				if (Arrays.equals(cookie, "$DltF0\n\r".getBytes(UTF_8))) {
+					type = "deltafile";
+				} else {
+					throw new IllegalArgumentException("Can't guess type for store " + path + "!");
+				}
 			}
 		} else {
 			type = this.type.toLowerCase();
@@ -919,6 +939,7 @@ public class QEPSearch {
 		case "hdt" -> executeHDT();
 		case "reader" -> executeReader();
 		case "profiler" -> executeProfiler();
+		case "deltafile" -> executeDeltaFile();
 		default -> throw new IllegalArgumentException("Can't understand store of type " + this.type + "!");
 		}
 	}
@@ -927,6 +948,38 @@ public class QEPSearch {
 		try (Profiler p = Profiler.readFromDisk(Path.of(input))) {
 			p.setDisabled(false);
 			p.writeProfiling();
+		}
+	}
+
+	private void executeDeltaFile() throws IOException {
+		Path file = Path.of(input);
+		MultiThreadListenerConsole console = colorTool.getConsole();
+
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.PARSER_DELTAFILE_NO_CRC, noCRC,
+				HDTOptionsKeys.PARSER_DELTAFILE_NO_EXCEPTION, true);
+
+		try (InputStream stream = new BufferedInputStream(Files.newInputStream(file));
+				RDFDeltaFileParser.DeltaFileReader reader = new RDFDeltaFileParser.DeltaFileReader(stream, spec)) {
+
+			console.printLine(console.color(5, 5, 1) + "files .. " + console.colorReset() + reader.getSize());
+			console.printLine(console.color(5, 5, 1) + "start .. " + console.colorReset() + reader.getStart());
+			console.printLine(console.color(5, 5, 1) + "end .... " + console.colorReset() + reader.getEnd());
+			console.printLine(console.color(5, 5, 1) + "flavor . " + console.colorReset() + reader.getFlavor());
+
+			long i = 0;
+			long size = reader.getSize();
+			while (reader.hasNext()) {
+				i++;
+				RDFDeltaFileParser.DeltaFileComponent comp = reader.next();
+
+				console.notifyProgress((float) (i * 1000 / size) / 10, "reading files " + i + "/" + size + ": "
+						+ console.color(2, 2, 2) + comp.fileName() + console.colorReset());
+			}
+			if (i != size) {
+				console.printLine(console.color(5, 1, 1) + "Error, not everything was read: " + i + " != " + size + " "
+						+ (100 * i / size) + "%");
+			}
+			console.notifyProgress(100, "done");
 		}
 	}
 
