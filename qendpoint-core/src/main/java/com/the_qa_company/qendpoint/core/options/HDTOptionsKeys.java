@@ -261,6 +261,17 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "Use the canonical NT file parser, removing checks")
 	public static final String NT_SIMPLE_PARSER_KEY = "parser.ntSimpleParser";
 	/**
+	 * No crc check with deltafile reader, default to false. Boolean value
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "No crc check with deltafile reader")
+	public static final String PARSER_DELTAFILE_NO_CRC = "parser.deltafile.nocrc";
+	/**
+	 * No exception, only a stop with deltafile reader, default to false.
+	 * Boolean value
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "No exception, only a stop with deltafile reader")
+	public static final String PARSER_DELTAFILE_NO_EXCEPTION = "parser.deltafile.noExceptionOnlyStop";
+	/**
 	 * Key for setting the maximum amount of file loaded with the directory
 	 * parser, 1 for no async parsing, 0 for the number of processors, default
 	 * 1. Number value

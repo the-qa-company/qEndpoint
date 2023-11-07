@@ -24,6 +24,8 @@ param(
     [Parameter()]
     [Switch]
     $memory,
+    [Switch]
+    $nocrc,
     [Parameter(ValueFromRemainingArguments, Position = 0)]
     [string[]]
     $OtherParams
