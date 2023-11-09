@@ -200,7 +200,7 @@ public class KCatMerger implements AutoCloseable {
 			sortedSubject = mergeSection(cats,
 					(hdtIndex, c) -> createMergeIt(hdtIndex, c.getSubjectSection().getSortedEntries(),
 							c.getSharedSection().getSortedEntries(),
-							deletedTriple == null ? null : deletedTriple[hdtIndex].getSubjects(), c.countShared()))
+							deletedTriple == null || deletedTriple[hdtIndex] == null ? null : deletedTriple[hdtIndex].getSubjects(), c.countShared()))
 					.notif(sizeS, 20, "Merge subjects", listener);
 
 			sortedObject = mergeSection(cats, (hdtIndex, c) -> {
@@ -216,14 +216,14 @@ public class KCatMerger implements AutoCloseable {
 						return null;
 					}
 				} : section.getSortedEntries(), c.getSharedSection().getSortedEntries(),
-						deletedTriple == null ? null : deletedTriple[hdtIndex].getObjects(), c.nonTypedShift());
+						deletedTriple == null || deletedTriple[hdtIndex] == null ? null : deletedTriple[hdtIndex].getObjects(), c.nonTypedShift());
 			}).notif(sizeONoTyped, 20, "Merge objects", listener);
 
 			// merge the other sections
 			sortedPredicates = mergeSection(cats, (hdtIndex, c) -> {
 				ExceptionIterator<? extends CharSequence, RuntimeException> of = ExceptionIterator
 						.of(c.getPredicateSection().getSortedEntries());
-				if (deletedTriple != null) {
+				if (deletedTriple != null && deletedTriple[hdtIndex] != null) {
 					ModifiableBitmap deleteBitmap = deletedTriple[hdtIndex].getPredicates();
 					return of.mapFiltered(((element, index) -> {
 						if (deleteBitmap.access(index + 1)) {
@@ -240,7 +240,7 @@ public class KCatMerger implements AutoCloseable {
 			sortedGraphs = quad ? mergeSection(cats, (hdtIndex, c) -> {
 				ExceptionIterator<? extends CharSequence, RuntimeException> of = ExceptionIterator
 						.of(c.getGraphSection().getSortedEntries());
-				if (deletedTriple != null) {
+				if (deletedTriple != null && deletedTriple[hdtIndex] != null) {
 					ModifiableBitmap deleteBitmap = deletedTriple[hdtIndex].getGraphs();
 					return of.mapFiltered(((element, index) -> {
 						if (deleteBitmap.access(index + 1)) {
@@ -261,7 +261,7 @@ public class KCatMerger implements AutoCloseable {
 						ExceptionIterator<? extends CharSequence, RuntimeException> of = ExceptionIterator
 								.of(pre.getSortedEntries());
 
-						if (deletedTriple != null) {
+						if (deletedTriple != null && deletedTriple[hdtIndex] != null) {
 							ModifiableBitmap deleteBitmap = deletedTriple[hdtIndex].getObjects();
 							return of.mapFiltered(((element, index) -> {
 								if (deleteBitmap.access(pre.getStart() + index)) {

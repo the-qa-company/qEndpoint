@@ -596,11 +596,13 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 			List<Path> files = IntStream.range(0, count).mapToObj(i -> root.resolve("sub-" + i + ".hdt")).toList();
 
+			List<Bitmap> deletesNull = new ArrayList<>();
 			List<Bitmap> deletes = new ArrayList<>();
 			// create the files to cat
 			for (Path file : files) {
 				try (HDT hdt = supplier.createFakeHDT(spec)) {
 					hdt.saveToHDT(file);
+					deletesNull.add(null);
 					deletes.add(
 							EmptyBitmap.of(hdt.getTriples().getNumberOfElements(), hdt.getDictionary().getNgraphs()));
 				}
@@ -625,6 +627,13 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 			// compute using diff algorithm with empty bitmaps
 			try (HDT hdt = HDTManager.diffBitCatHDTPath(files, deletes, spec, ProgressListener.ignore())) {
+				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt);
+				assertTrue(hdt.getDictionary().supportGraphs());
+				hdt.saveToHDT(actualdiffHDT);
+			}
+
+			// compute null
+			try (HDT hdt = HDTManager.diffBitCatHDTPath(files, deletesNull, spec, ProgressListener.ignore())) {
 				HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt);
 				assertTrue(hdt.getDictionary().supportGraphs());
 				hdt.saveToHDT(actualdiffHDT);
