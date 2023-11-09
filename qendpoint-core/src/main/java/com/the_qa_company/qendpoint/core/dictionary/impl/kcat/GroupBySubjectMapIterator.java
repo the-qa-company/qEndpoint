@@ -131,7 +131,7 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				.mapToObj(hdtIndex -> {
 					// extract hdt elements for this index
 					HDT hdt = hdts[hdtIndex];
-					MultiLayerBitmap deleteBitmap = deleteBitmaps == null ? null
+					MultiLayerBitmap deleteBitmap = deleteBitmaps == null || deleteBitmaps.get(hdtIndex) == null ? null
 							: MultiLayerBitmap.ofBitmap(deleteBitmaps.get(hdtIndex));
 
 					if (hdt.getTriples().getNumberOfElements() == 0) {
@@ -171,7 +171,7 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 				.mapToObj(hdtIndex -> {
 					// extract hdt elements for this index
 					HDT hdt = hdts[hdtIndex];
-					MultiLayerBitmap deleteBitmap = deleteBitmaps == null ? null
+					MultiLayerBitmap deleteBitmap = deleteBitmaps == null || deleteBitmaps.get(hdtIndex) == null ? null
 							: MultiLayerBitmap.ofBitmap(deleteBitmaps.get(hdtIndex));
 
 					if (hdt.getTriples().getNumberOfElements() == 0) {

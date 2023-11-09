@@ -72,7 +72,7 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception during loading
 	 */
 	public static KCatImpl of(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-			ProgressListener listener) throws IOException {
+							  ProgressListener listener) throws IOException {
 		return new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener, true);
 	}
 
@@ -86,7 +86,7 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception during loading
 	 */
 	public static KCatImpl of(List<HDT> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-			ProgressListener listener, boolean closeHDT) throws IOException {
+							  ProgressListener listener, boolean closeHDT) throws IOException {
 		return new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener, closeHDT);
 	}
 
@@ -143,7 +143,7 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception during loading
 	 */
 	private KCatImpl(List<?> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-			ProgressListener listener, boolean closeHDTs) throws IOException {
+					 ProgressListener listener, boolean closeHDTs) throws IOException {
 		this.listener = ListenerUtil.multiThreadListener(listener);
 		this.closeHDTs = closeHDTs;
 		hdts = new HDT[hdtFileNames.size()];
@@ -238,6 +238,10 @@ public class KCatImpl implements Closeable {
 					Bitmap deleteBitmap = dit.next();
 					HDT hdt = hdts[index];
 
+					if (deleteBitmap == null) {
+						continue;
+					}
+
 					// create a neg bitmap t have by default all the triples
 					// deleted, so we can write twice the
 					// non-deleted nodes
@@ -259,15 +263,16 @@ public class KCatImpl implements Closeable {
 					// fill the maps based on the deleted triples
 					long c = 0;
 
-					@SuppressWarnings("resource")
 					MultiLayerBitmap bm = MultiLayerBitmap.ofBitmap(deleteBitmap);
 
 					while (searchAll.hasNext()) {
 						TripleID tripleID = searchAll.next();
 
-						iListener.notifyProgress((float) (c++ * 10000 / numberOfElements) / 100f,
-								"building diff bitmaps " + c + "/" + numberOfElements + " (hdt " + index + "/"
-										+ hdts.length + ")");
+						if (c % 10000 == 0) {
+							iListener.notifyProgress((float) (c++ * 10000 / numberOfElements) / 100f,
+									"building diff bitmaps " + c + "/" + numberOfElements + " (hdt " + index + "/"
+											+ hdts.length + ")");
+						}
 
 						long g = quad ? (tripleID.getGraph() - 1) : 0;
 
