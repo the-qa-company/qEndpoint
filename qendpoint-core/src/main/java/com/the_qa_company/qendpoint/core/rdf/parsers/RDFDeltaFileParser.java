@@ -43,7 +43,7 @@ public class RDFDeltaFileParser implements RDFParserCallback {
 			boolean nocrc = spec.getBoolean(HDTOptionsKeys.PARSER_DELTAFILE_NO_CRC, false);
 			noExceptionOnlyStop = spec.getBoolean(HDTOptionsKeys.PARSER_DELTAFILE_NO_EXCEPTION, false);
 
-			this.stream = nocrc ? is : new CRCInputStream(is, new CRC8());
+			stream = nocrc ? is : new CRCInputStream(is, new CRC8());
 
 			if (!Arrays.equals(stream.readNBytes(8), COOKIE)) {
 				throw new IOException("Bad cookie");
@@ -158,22 +158,21 @@ public class RDFDeltaFileParser implements RDFParserCallback {
 			throws ParserException {
 		try {
 			// read df file
-			try (DeltaFileReader reader = new DeltaFileReader(in, spec)) {
-				while (reader.hasNext()) {
-					DeltaFileComponent next = reader.next();
-					if (next.data.length == 0) {
-						continue; // deleted
-					}
-					RDFNotation not = RDFNotation.guess(next.fileName);
-					RDFParserCallback parser = RDFParserFactory.getParserCallback(not, spec);
-					try {
-						// read the next byte information
-						parser.doParse(new GZIPInputStream(new ByteArrayInputStream(next.data)), baseUri, not,
-								keepBNode, callback);
-					} catch (IOException e) {
-						throw new ParserException("Error when reading " + next.fileName + " size: " + next.data.length,
-								e);
-					}
+			DeltaFileReader reader = new DeltaFileReader(in, spec);
+			while (reader.hasNext()) {
+				DeltaFileComponent next = reader.next();
+				if (next.data.length == 0) {
+					continue; // deleted
+				}
+				RDFNotation not = RDFNotation.guess(next.fileName);
+				RDFParserCallback parser = RDFParserFactory.getParserCallback(not, spec);
+				try {
+					// read the next byte information
+					parser.doParse(new GZIPInputStream(new ByteArrayInputStream(next.data)), baseUri, not,
+							keepBNode, callback);
+				} catch (IOException e) {
+					throw new ParserException("Error when reading " + next.fileName + " size: " + next.data.length,
+							e);
 				}
 			}
 		} catch (IOException e) {
