@@ -958,8 +958,8 @@ public class QEPSearch {
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.PARSER_DELTAFILE_NO_CRC, noCRC,
 				HDTOptionsKeys.PARSER_DELTAFILE_NO_EXCEPTION, true);
 
-		try (InputStream stream = new BufferedInputStream(Files.newInputStream(file));
-				RDFDeltaFileParser.DeltaFileReader reader = new RDFDeltaFileParser.DeltaFileReader(stream, spec)) {
+		try (RDFDeltaFileParser.DeltaFileReader reader =
+				     new RDFDeltaFileParser.DeltaFileReader(new BufferedInputStream(Files.newInputStream(file)), spec)) {
 
 			console.printLine(console.color(5, 5, 1) + "files .. " + console.colorReset() + reader.getSize());
 			console.printLine(console.color(5, 5, 1) + "start .. " + console.colorReset() + reader.getStart());
