@@ -101,14 +101,11 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 				ExceptionIterator<TripleID, IOException> it = CompressTripleMergeIterator.buildOfTree(readers,
 						TripleComponentOrder.SPO);
 				// at least one
-				long rSize = it.getSize();
-				long size = Math.max(rSize, 1);
-				long block = size < 10 ? 1 : size / 10;
 				try (CompressTripleWriter w = new CompressTripleWriter(output.openOutputStream(bufferSize), false)) {
 					while (it.hasNext()) {
 						w.appendTriple(it.next());
-						if (count % block == 0) {
-							listener.notifyProgress(count / (block / 10f), "merging triples " + count + "/" + size);
+						if (count % 1_000_000 == 0) {
+							listener.notifyProgress(20, "merging triples " + count);
 						}
 						count++;
 					}

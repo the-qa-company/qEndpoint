@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
@@ -278,6 +279,10 @@ public class MergeRunnable {
 
 		@Override
 		public void run() {
+			Profiler profiler = endpoint.getProfiler();
+			if (profiler != null) {
+				profiler.pushSection("merge");
+			}
 			try {
 				this.exceptionRunnable.run(restart, data);
 			} catch (IOException e) {
@@ -508,6 +513,10 @@ public class MergeRunnable {
 	 */
 	private synchronized void step1(boolean restarting, Lock switchLock) throws InterruptedException, IOException {
 		logger.info("Start Merge process...");
+		Profiler profiler = endpoint.getProfiler();
+		if (profiler != null) {
+			profiler.pushSection("init-merge");
+		}
 		markRestartStepCompleted(0);
 
 		debugStepPoint(MergeRunnableStopPoint.STEP1_START);
@@ -583,6 +592,11 @@ public class MergeRunnable {
 		// recover
 		this.endpoint.writeWhichStore();
 		markRestartStepCompleted(2);
+
+		if (profiler != null) {
+			profiler.popSection();
+			profiler.writeProfiling();
+		}
 		step2(false, null, dumpInfo);
 	}
 
@@ -610,6 +624,11 @@ public class MergeRunnable {
 	 */
 	private synchronized void step2(boolean restarting, Lock lock, EndpointStoreDump dumpInfo)
 			throws InterruptedException, IOException {
+
+		Profiler profiler = endpoint.getProfiler();
+		if (profiler != null) {
+			profiler.pushSection("map-catdiff");
+		}
 		debugStepPoint(MergeRunnableStopPoint.STEP2_START);
 		// diff hdt indexes...
 		logger.debug("Dump all triples from the native store to file");
@@ -643,6 +662,10 @@ public class MergeRunnable {
 
 		logger.info("End merge step 2");
 
+		if (profiler != null) {
+			profiler.popSection();
+			profiler.writeProfiling();
+		}
 		step3(false, null, dumpInfo);
 	}
 
@@ -738,6 +761,10 @@ public class MergeRunnable {
 	 */
 	private synchronized void step3(boolean restarting, Lock lock, EndpointStoreDump dumpInfo)
 			throws InterruptedException, IOException {
+		Profiler profiler = endpoint.getProfiler();
+		if (profiler != null) {
+			profiler.pushSection("reindexing");
+		}
 		logger.debug("Start Step 3");
 		debugStepPoint(MergeRunnableStopPoint.STEP3_START);
 		// index the new file
@@ -822,6 +849,11 @@ public class MergeRunnable {
 
 		debugStepPoint(MergeRunnableStopPoint.MERGE_END_OLD_SLEEP);
 
+		if (profiler != null) {
+			profiler.popSection();// step 3
+			profiler.popSection();// merge
+			profiler.writeProfiling();
+		}
 		logger.info("Merge finished");
 		if (restartAnother) {
 			// recurse to the step1 to dump

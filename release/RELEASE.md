@@ -1,1 +1,2 @@
-- fix language literal 
+- improve HDTDiff efficiency
+

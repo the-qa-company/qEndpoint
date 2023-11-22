@@ -72,7 +72,7 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception during loading
 	 */
 	public static KCatImpl of(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-							  ProgressListener listener) throws IOException {
+			ProgressListener listener) throws IOException {
 		return new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener, true);
 	}
 
@@ -86,7 +86,7 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception during loading
 	 */
 	public static KCatImpl of(List<HDT> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-							  ProgressListener listener, boolean closeHDT) throws IOException {
+			ProgressListener listener, boolean closeHDT) throws IOException {
 		return new KCatImpl(hdtFileNames, deleteBitmaps, hdtFormat, listener, closeHDT);
 	}
 
@@ -143,7 +143,7 @@ public class KCatImpl implements Closeable {
 	 * @throws IOException io exception during loading
 	 */
 	private KCatImpl(List<?> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-					 ProgressListener listener, boolean closeHDTs) throws IOException {
+			ProgressListener listener, boolean closeHDTs) throws IOException {
 		this.listener = ListenerUtil.multiThreadListener(listener);
 		this.closeHDTs = closeHDTs;
 		hdts = new HDT[hdtFileNames.size()];
@@ -269,10 +269,10 @@ public class KCatImpl implements Closeable {
 						TripleID tripleID = searchAll.next();
 
 						if (c % 10000 == 0) {
-							iListener.notifyProgress((float) (c++ * 10000 / numberOfElements) / 100f,
-									"building diff bitmaps " + c + "/" + numberOfElements + " (hdt " + index + "/"
-											+ hdts.length + ")");
+							iListener.notifyProgress((float) (c * 100 / numberOfElements), "building diff bitmaps " + c
+									+ "/" + numberOfElements + " (hdt " + index + "/" + hdts.length + ")");
 						}
+						c++;
 
 						long g = quad ? (tripleID.getGraph() - 1) : 0;
 

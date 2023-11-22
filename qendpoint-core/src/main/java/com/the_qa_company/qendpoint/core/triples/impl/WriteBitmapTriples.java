@@ -194,6 +194,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 	@Override
 	public void load(TempTriples triples, ProgressListener listener) {
+		listener = ProgressListener.ofNullable(listener);
 		triples.setOrder(order);
 		triples.sort(listener);
 
@@ -290,7 +291,10 @@ public class WriteBitmapTriples implements TriplesPrivate {
 			lastY = y;
 			lastZ = z;
 
-			ListenerUtil.notifyCond(listener, "Converting to BitmapTriples", numTriples, numTriples, number);
+			if (numTriples % 100000 == 0) {
+				listener.notifyProgress((float) (10000L * numTriples / number) / 100f,
+						"Converting to BitmapTriples (" + numTriples + "/" + number + ")");
+			}
 		}
 
 		if (numTriples > 0) {
@@ -320,7 +324,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 		private BitmapTriplesAppender(long number, ProgressListener listener) {
 			this.number = number;
-			this.listener = listener;
+			this.listener = ProgressListener.ofNullable(listener);
 		}
 
 		public void append(TripleID triple) {
@@ -375,7 +379,10 @@ public class WriteBitmapTriples implements TriplesPrivate {
 			lastY = y;
 			lastZ = z;
 
-			ListenerUtil.notifyCond(listener, "Converting to BitmapTriples", numTriples, numTriples, number);
+			if (numTriples % 100000 == 0) {
+				listener.notifyProgress((float) (10000L * numTriples / number) / 100f,
+						"Converting to BitmapTriples (" + numTriples + "/" + number + ")");
+			}
 			numTriples++;
 		}
 

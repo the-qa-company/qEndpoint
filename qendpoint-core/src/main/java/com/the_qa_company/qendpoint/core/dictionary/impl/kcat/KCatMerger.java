@@ -200,7 +200,9 @@ public class KCatMerger implements AutoCloseable {
 			sortedSubject = mergeSection(cats,
 					(hdtIndex, c) -> createMergeIt(hdtIndex, c.getSubjectSection().getSortedEntries(),
 							c.getSharedSection().getSortedEntries(),
-							deletedTriple == null || deletedTriple[hdtIndex] == null ? null : deletedTriple[hdtIndex].getSubjects(), c.countShared()))
+							deletedTriple == null || deletedTriple[hdtIndex] == null ? null
+									: deletedTriple[hdtIndex].getSubjects(),
+							c.countShared()))
 					.notif(sizeS, 20, "Merge subjects", listener);
 
 			sortedObject = mergeSection(cats, (hdtIndex, c) -> {
@@ -216,7 +218,9 @@ public class KCatMerger implements AutoCloseable {
 						return null;
 					}
 				} : section.getSortedEntries(), c.getSharedSection().getSortedEntries(),
-						deletedTriple == null || deletedTriple[hdtIndex] == null ? null : deletedTriple[hdtIndex].getObjects(), c.nonTypedShift());
+						deletedTriple == null || deletedTriple[hdtIndex] == null ? null
+								: deletedTriple[hdtIndex].getObjects(),
+						c.nonTypedShift());
 			}).notif(sizeONoTyped, 20, "Merge objects", listener);
 
 			// merge the other sections

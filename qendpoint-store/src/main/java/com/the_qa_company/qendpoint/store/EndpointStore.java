@@ -11,6 +11,7 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
@@ -64,6 +65,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class EndpointStore extends AbstractNotifyingSail {
+	public static final String QEP_MERGE_PROFILING = "qenpoint.profiler";
 	/**
 	 * disable the optimizer
 	 */
@@ -145,6 +147,8 @@ public class EndpointStore extends AbstractNotifyingSail {
 	private MergeRunnable.MergeThread<?> mergerThread;
 	private final AtomicReference<EndpointStoreDump> dump = new AtomicReference<>();
 	private final AtomicBoolean dumping = new AtomicBoolean();
+	private final Profiler profiler;
+	private final Path profilerPath;
 
 	public void deleteNativeLocks() throws IOException {
 		// remove lock files of a hard shutdown (SAIL is already locked by
@@ -168,6 +172,19 @@ public class EndpointStore extends AbstractNotifyingSail {
 		this.endpointFiles = files;
 		this.loadIntoMemory = loadIntoMemory;
 		this.mergeRunnable = new MergeRunnable(this);
+		this.profilerPath = spec.getPath(QEP_MERGE_PROFILING);
+
+		if (profilerPath != null) {
+			this.profiler = new Profiler("qendpoint",
+					HDTOptions.of(HDTOptionsKeys.PROFILER_OUTPUT_KEY, profilerPath, HDTOptionsKeys.PROFILER_KEY, true));
+		} else {
+			this.profiler = null;
+		}
+
+		if (profiler != null) {
+			profiler.pushSection("init");
+		}
+
 		logger.info("CHECK IF A PREVIOUS MERGE WAS STOPPED");
 		Optional<MergeRunnable.MergeThread<?>> mergeThread = mergeRunnable.createRestartThread();
 		mergeThread.ifPresent(MergeRunnable.MergeThread::preLoad);
@@ -226,6 +243,11 @@ public class EndpointStore extends AbstractNotifyingSail {
 		this.locksNotify = new LockManager();
 
 		initDeleteArray();
+
+		if (profiler != null) {
+			profiler.popSection();
+			saveProfiler();
+		}
 
 		// initialize the count of the triples
 		mergeThread.ifPresent(thread -> {
@@ -1082,5 +1104,17 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	long getDebugId() {
 		return debugId;
+	}
+
+	public Profiler getProfiler() {
+		return profiler;
+	}
+
+	public void saveProfiler() {
+		try {
+			profiler.writeToDisk(profilerPath);
+		} catch (IOException e) {
+			logger.error("Can't write profiler", e);
+		}
 	}
 }
