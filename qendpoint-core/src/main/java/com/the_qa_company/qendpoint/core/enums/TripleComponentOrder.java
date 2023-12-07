@@ -22,6 +22,7 @@ package com.the_qa_company.qendpoint.core.enums;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Indicates the order of the triples
@@ -70,13 +71,55 @@ public enum TripleComponentOrder {
 	private final TripleComponentRole subjectMapping;
 	private final TripleComponentRole predicateMapping;
 	private final TripleComponentRole objectMapping;
+	private final TripleComponentRole subjectInvMapping;
+	private final TripleComponentRole predicateInvMapping;
+	private final TripleComponentRole objectInvMapping;
 	public final int mask;
 
 	TripleComponentOrder(TripleComponentRole subjectMapping, TripleComponentRole predicateMapping,
-			TripleComponentRole objectMapping, int mask) {
+						 TripleComponentRole objectMapping, int mask) {
 		this.subjectMapping = subjectMapping;
 		this.predicateMapping = predicateMapping;
 		this.objectMapping = objectMapping;
+
+		// OPS -> SPO
+		TripleComponentRole subjectInvMapping = null;
+		TripleComponentRole predicateInvMapping = null;
+		TripleComponentRole objectInvMapping = null;
+
+		if (subjectMapping == TripleComponentRole.PREDICATE) {
+			predicateInvMapping = TripleComponentRole.SUBJECT;
+		} else if (subjectMapping == TripleComponentRole.OBJECT) {
+			objectInvMapping = TripleComponentRole.SUBJECT;
+		} else {
+			subjectInvMapping = TripleComponentRole.SUBJECT;
+		}
+
+		if (predicateMapping == TripleComponentRole.SUBJECT) {
+			subjectInvMapping = TripleComponentRole.PREDICATE;
+		} else if (predicateMapping == TripleComponentRole.OBJECT) {
+			objectInvMapping = TripleComponentRole.PREDICATE;
+		} else {
+			predicateInvMapping= TripleComponentRole.PREDICATE;
+		}
+
+		if (objectMapping == TripleComponentRole.SUBJECT) {
+			subjectInvMapping = TripleComponentRole.OBJECT;
+		} else if (objectMapping == TripleComponentRole.PREDICATE) {
+			objectInvMapping = TripleComponentRole.OBJECT;
+		} else {
+			objectInvMapping = TripleComponentRole.OBJECT;
+		}
+
+		assert subjectMapping == null || subjectInvMapping != null;
+		assert predicateMapping == null || predicateInvMapping != null;
+		assert objectMapping == null || objectInvMapping != null;
+
+		this.subjectInvMapping = subjectInvMapping;
+		this.predicateInvMapping = predicateInvMapping;
+		this.objectInvMapping = objectInvMapping;
+
+
 		this.mask = mask;
 	}
 
@@ -142,6 +185,18 @@ public enum TripleComponentOrder {
 
 	public TripleComponentRole getObjectMapping() {
 		return objectMapping;
+	}
+
+	public TripleComponentRole getSubjectInvMapping() {
+		return subjectInvMapping;
+	}
+
+	public TripleComponentRole getPredicateInvMapping() {
+		return predicateInvMapping;
+	}
+
+	public TripleComponentRole getObjectInvMapping() {
+		return objectInvMapping;
 	}
 
 }

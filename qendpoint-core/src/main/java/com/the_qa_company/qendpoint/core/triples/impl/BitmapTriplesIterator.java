@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.triples.impl;
 
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
@@ -297,5 +298,59 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	@Override
 	public boolean isLastTriplePositionBoundToOrder() {
 		return true;
+	}
+
+	@Override
+	public boolean canJumpToSubject() {
+		return true;
+	}
+
+	@Override
+	public boolean canJumpToPredicate() {
+		return true;
+	}
+
+	@Override
+	public boolean canJumpToObject() {
+		return true;
+	}
+
+	@Override
+	public void jumpToSubject(long id) {
+		jumpTo(idx.getOrder().getSubjectInvMapping(), id);
+	}
+
+	@Override
+	public void jumpToPredicate(long id) {
+		jumpTo(idx.getOrder().getPredicateInvMapping(), id);
+	}
+
+	@Override
+	public void jumpToObject(long id) {
+		jumpTo(idx.getOrder().getObjectInvMapping(), id);
+	}
+
+	private void jumpTo(TripleComponentRole role, long id) {
+		switch (role) {
+			case SUBJECT -> {
+				// x
+
+
+
+			}
+			case PREDICATE -> {
+				// y
+
+
+
+			}
+			case OBJECT -> {
+				// z
+
+
+
+			}
+			case GRAPH -> throw new AssertionError();
+		}
 	}
 }

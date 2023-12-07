@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
+import com.the_qa_company.qendpoint.store.experimental.ExperimentalQEndpointSail;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -34,6 +35,7 @@ import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -129,7 +131,7 @@ public class EndpointStoreTest {
 		SailRepository endpointStore = new SailRepository(
 				new EndpointStore(hdtStore.getAbsolutePath() + File.separatorChar, HDT_INDEX_NAME, spec,
 						nativeStore.getAbsolutePath() + File.separatorChar, true)
-		// new NativeStore(nativeStore,"spoc")
+				// new NativeStore(nativeStore,"spoc")
 		);
 		try {
 			try (SailRepositoryConnection connection = endpointStore.getConnection()) {

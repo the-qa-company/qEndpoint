@@ -20,6 +20,7 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 
 /**

@@ -97,6 +97,47 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 	long getLastTriplePosition();
 
 	/**
+	 * @return if {@link #jumpToSubject(long)} can be used
+	 */
+	default boolean canJumpToSubject() {
+		return false;
+	}
+	/**
+	 * @return if {@link #jumpToPredicate(long)} can be used
+	 */
+	default boolean canJumpToPredicate() {
+		return false;
+	}
+	/**
+	 * @return if {@link #jumpToObject(long)} can be used
+	 */
+	default boolean canJumpToObject() {
+		return false;
+	}
+
+	/**
+	 * jump to a subject, if the subject can't be found to the next element.
+	 * This function doesn't do anything if {@link #canJumpToSubject()} returns false
+	 * @param id id to jump
+	 */
+	default void jumpToSubject(long id) {
+	}
+	/**
+	 * jump to a predicate, if the predicate can't be found to the next element.
+	 * This function doesn't do anything if {@link #canJumpToPredicate()} returns false
+	 * @param id id to jump
+	 */
+	default void jumpToPredicate(long id) {
+	}
+	/**
+	 * jump to an object, if the object can't be found to the next element.
+	 * This function doesn't do anything if {@link #canJumpToObject()} returns false
+	 * @param id id to jump
+	 */
+	default void jumpToObject(long id) {
+	}
+
+	/**
 	 * @return if the {@link #getLastTriplePosition()} function is returning an
 	 *         index based on {@link #getOrder()} or the triples order
 	 */
