@@ -100,13 +100,13 @@ public enum TripleComponentOrder {
 		} else if (predicateMapping == TripleComponentRole.OBJECT) {
 			objectInvMapping = TripleComponentRole.PREDICATE;
 		} else {
-			predicateInvMapping= TripleComponentRole.PREDICATE;
+			predicateInvMapping = TripleComponentRole.PREDICATE;
 		}
 
 		if (objectMapping == TripleComponentRole.SUBJECT) {
 			subjectInvMapping = TripleComponentRole.OBJECT;
 		} else if (objectMapping == TripleComponentRole.PREDICATE) {
-			objectInvMapping = TripleComponentRole.OBJECT;
+			predicateInvMapping = TripleComponentRole.OBJECT;
 		} else {
 			objectInvMapping = TripleComponentRole.OBJECT;
 		}

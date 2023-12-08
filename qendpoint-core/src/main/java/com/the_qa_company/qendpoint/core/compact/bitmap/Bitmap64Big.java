@@ -80,6 +80,21 @@ public class Bitmap64Big implements Closeable, ModifiableBitmap {
 		return new Bitmap64Big(new LargeLongArray(IOUtil.createLargeArray(numWords(nbits))));
 	}
 
+	/**
+	 * create a bitmap with values
+	 * @param values values
+	 * @return bitmap
+	 */
+	public static Bitmap64Big of(boolean... values) {
+		Bitmap64Big bm = memory(values.length);
+
+		for (int i = 0; i < values.length; i++) {
+			bm.set(i, values[i]);
+		}
+
+		return bm;
+	}
+
 	// Constants
 	protected final static int LOGW = 6;
 	protected final static int W = 64;

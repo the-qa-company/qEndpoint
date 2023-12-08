@@ -22,6 +22,7 @@ package com.the_qa_company.qendpoint.core.triples.impl;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 /**
  * @author mario.arias
@@ -84,6 +85,34 @@ public class TripleOrderConvert {
 		}
 		if (swap3) {
 			long tmp = triple.getPredicate();
+			triple.setPredicate(triple.getObject());
+			triple.setObject(tmp);
+		}
+	}
+
+	public static void swapComponentOrder(TripleString triple, TripleComponentOrder from, TripleComponentOrder to) {
+		if (from == to) {
+			return;
+		}
+		if (from == TripleComponentOrder.Unknown || to == TripleComponentOrder.Unknown) {
+			throw new IllegalArgumentException("Cannot swap Unknown Orders");
+		}
+		boolean swap1 = swap1tab[from.ordinal() - 1][to.ordinal() - 1];
+		boolean swap2 = swap2tab[from.ordinal() - 1][to.ordinal() - 1];
+		boolean swap3 = swap3tab[from.ordinal() - 1][to.ordinal() - 1];
+
+		if (swap1) {
+			CharSequence tmp = triple.getSubject();
+			triple.setSubject(triple.getPredicate());
+			triple.setPredicate(tmp);
+		}
+		if (swap2) {
+			CharSequence tmp = triple.getSubject();
+			triple.setSubject(triple.getObject());
+			triple.setObject(tmp);
+		}
+		if (swap3) {
+			CharSequence tmp = triple.getPredicate();
 			triple.setPredicate(triple.getObject());
 			triple.setObject(tmp);
 		}

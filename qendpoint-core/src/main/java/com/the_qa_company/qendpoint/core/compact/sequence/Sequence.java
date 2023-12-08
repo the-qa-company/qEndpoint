@@ -20,6 +20,7 @@
 package com.the_qa_company.qendpoint.core.compact.sequence;
 
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.util.disk.ReadOnlyLongArray;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -30,7 +31,7 @@ import java.util.Iterator;
 /**
  * The array interface represents compact sequences of integers.
  */
-public interface Sequence extends Closeable {
+public interface Sequence extends ReadOnlyLongArray, Closeable {
 
 	/**
 	 * Adds an element to the array
@@ -53,6 +54,11 @@ public interface Sequence extends Closeable {
 	 * @return int
 	 */
 	long getNumberOfElements();
+
+	@Override
+	default long length() {
+		return getNumberOfElements();
+	}
 
 	/**
 	 * Return the size of the data structure in bytes

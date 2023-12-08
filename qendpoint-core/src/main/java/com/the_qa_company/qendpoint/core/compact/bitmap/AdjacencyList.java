@@ -237,4 +237,11 @@ public class AdjacencyList {
 		System.out.println();
 	}
 
+	public Sequence getArray() {
+		return array;
+	}
+
+	public Bitmap getBitmap() {
+		return bitmap;
+	}
 }

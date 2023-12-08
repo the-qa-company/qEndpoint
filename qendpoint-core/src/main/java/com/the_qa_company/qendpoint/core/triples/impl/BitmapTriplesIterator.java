@@ -19,12 +19,14 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 
 /**
  * @author mario.arias
@@ -333,22 +335,55 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	private void jumpTo(TripleComponentRole role, long id) {
 		switch (role) {
 			case SUBJECT -> {
-				// x
+				if (patX != 0) {
+					return;
+				}
 
+				// jump to the next X
+				x = id;
 
+				// TODO: MOVE Y/Z
+				posY = adjY.find(x - 1) + 1;
+				posZ = adjZ.find(posY - 1) + 1;
 
+				nextY = adjY.findNext(x) + 1;
+				nextZ = adjZ.findNext(posY) + 1;
 			}
 			case PREDICATE -> {
-				// y
+				if (patY != 0) {
+					return;
+				}
 
+				// jump to the next Y
+				long nposY = adjY.getArray().binarySearchLocation(id, posY, nextY);
 
+				if (nposY == posY) {
+					return; // no change, already at the right spot
+				}
+				// sync Z
 
+				if (nposY == posY + 1) {
+					// close value
+					posZ = nextZ;
+					nextZ = adjZ.findNext(nextZ) + 1;
+				} else {
+					posZ = adjZ.last(posY - 1) + 1;
+					nextZ = adjZ.findNext(posZ) + 1;
+				}
+
+				posY = nposY;
 			}
 			case OBJECT -> {
-				// z
+				if (patZ != 0) {
+					return;
+				}
 
+				// jump to the next Z
+				if (posZ + 1 >= nextZ || adjZ.get(posZ) >= id) {
+					return; // already last one or we pass the target id
+				}
 
-
+				posZ = adjZ.getArray().binarySearchLocation(id, posZ, nextZ);
 			}
 			case GRAPH -> throw new AssertionError();
 		}
