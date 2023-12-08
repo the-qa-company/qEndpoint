@@ -33,6 +33,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionaryCa
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryBig;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryCat;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
@@ -83,6 +84,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -265,15 +267,35 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 	@Override
 	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws NotFoundException {
+		return search(subject, predicate, object, TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		return search(subject, predicate, object, graph, TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			int searchOrderMask) throws NotFoundException {
 
 		if (isClosed) {
 			throw new IllegalStateException("Cannot search an already closed HDT");
 		}
 
 		// Conversion from TripleString to TripleID
-		TripleID triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
-				dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
-				dictionary.stringToId(object, TripleComponentRole.OBJECT));
+		TripleID triple;
+
+		if (dictionary.supportGraphs()) {
+			triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
+					dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
+					dictionary.stringToId(object, TripleComponentRole.OBJECT), 0);
+		} else {
+			triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
+					dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
+					dictionary.stringToId(object, TripleComponentRole.OBJECT));
+		}
 
 		if (triple.isNoMatch()) {
 			// throw new NotFoundException("String not found in dictionary");
@@ -306,20 +328,105 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 				public long getLastTriplePosition() {
 					throw new NotImplementedException();
 				}
+
+				@Override
+				public TripleComponentOrder getOrder() {
+					return TripleComponentOrder.getAcceptableOrder(searchOrderMask);
+				}
+			};
+		}
+
+		CharSequence g = dictionary.supportGraphs() ? "" : null;
+
+		if (isMapped) {
+			try {
+				return new DictionaryTranslateIteratorBuffer(triples.search(triple, searchOrderMask), dictionary,
+						subject, predicate, object, g);
+			} catch (NullPointerException e) {
+				e.printStackTrace();
+				// FIXME: find why this can happen
+				return new DictionaryTranslateIterator(triples.search(triple, searchOrderMask), dictionary, subject,
+						predicate, object, g);
+			}
+		} else {
+			return new DictionaryTranslateIterator(triples.search(triple, searchOrderMask), dictionary, subject,
+					predicate, object, g);
+		}
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph, int searchOrderMask) throws NotFoundException {
+		if (isClosed) {
+			throw new IllegalStateException("Cannot search an already closed HDT");
+		}
+
+		if (!dictionary.supportGraphs()) {
+			if (graph != null && !graph.isEmpty()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graph");
+			}
+			// fallback to the default implementation
+			return search(subject, predicate, object);
+		}
+
+		// Conversion from TripleString to TripleID
+		TripleID triple = new TripleID(dictionary.stringToId(subject, TripleComponentRole.SUBJECT),
+				dictionary.stringToId(predicate, TripleComponentRole.PREDICATE),
+				dictionary.stringToId(object, TripleComponentRole.OBJECT),
+				dictionary.stringToId(graph, TripleComponentRole.GRAPH));
+
+		if (triple.isNoMatch()) {
+			// throw new NotFoundException("String not found in dictionary");
+			return new IteratorTripleString() {
+				@Override
+				public TripleString next() {
+					return null;
+				}
+
+				@Override
+				public boolean hasNext() {
+					return false;
+				}
+
+				@Override
+				public ResultEstimationType numResultEstimation() {
+					return ResultEstimationType.EXACT;
+				}
+
+				@Override
+				public void goToStart() {
+				}
+
+				@Override
+				public long estimatedNumResults() {
+					return 0;
+				}
+
+				@Override
+				public long getLastTriplePosition() {
+					throw new NotImplementedException();
+				}
+
+				@Override
+				public TripleComponentOrder getOrder() {
+					return TripleComponentOrder.getAcceptableOrder(searchOrderMask);
+				}
 			};
 		}
 
 		if (isMapped) {
 			try {
-				return new DictionaryTranslateIteratorBuffer(triples.search(triple), dictionary, subject, predicate,
-						object);
+				return new DictionaryTranslateIteratorBuffer(triples.search(triple, searchOrderMask), dictionary,
+						subject, predicate, object, graph);
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				// FIXME: find why this can happen
-				return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object);
+				return new DictionaryTranslateIterator(triples.search(triple, searchOrderMask), dictionary, subject,
+						predicate, object, graph);
 			}
 		} else {
-			return new DictionaryTranslateIterator(triples.search(triple), dictionary, subject, predicate, object);
+			return new DictionaryTranslateIterator(triples.search(triple, searchOrderMask), dictionary, subject,
+					predicate, object, graph);
 		}
 	}
 
@@ -372,6 +479,13 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			// We need no index.
 			return;
 		}
+		triples.mapGenOtherIndexes(Path.of(String.valueOf(hdtFileName)), spec, listener);
+
+		// disable the FOQ generation if asked
+		if (spec.getBoolean(HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, false)) {
+			return;
+		}
+
 		ControlInfo ci = new ControlInformation();
 		String indexName = hdtFileName + HDTVersion.get_index_suffix("-");
 		indexName = indexName.replaceAll("\\.hdt\\.gz", "hdt");

@@ -197,6 +197,17 @@ public interface HDTOptions {
 	String get(String key);
 
 	/**
+	 * check if an option is valid
+	 *
+	 * @param key key
+	 * @return true if null or empty, false otherwise
+	 */
+	default boolean contains(String key) {
+		String s = get(key);
+		return s != null && !s.isEmpty();
+	}
+
+	/**
 	 * Get a path value
 	 *
 	 * @param key key

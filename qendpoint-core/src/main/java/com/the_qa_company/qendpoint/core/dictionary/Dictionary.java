@@ -21,6 +21,8 @@ package com.the_qa_company.qendpoint.core.dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.header.Header;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 import java.io.Closeable;
 import java.util.Iterator;
@@ -133,6 +135,15 @@ public interface Dictionary extends Closeable {
 	}
 
 	/**
+	 * Returns whether the dictionary supports graphs
+	 *
+	 * @return true if it supports graphs, false otherwise
+	 */
+	default boolean supportGraphs() {
+		return false;
+	}
+
+	/**
 	 * Returns the number of elements in the dictionary
 	 */
 	long getNumberOfElements();
@@ -156,6 +167,11 @@ public interface Dictionary extends Closeable {
 	 * Returns the number of objects in the dictionary. Note: Includes shared
 	 */
 	long getNobjects();
+
+	/**
+	 * Returns the number of objects in the dictionary. Note: Includes shared
+	 */
+	long getNgraphs();
 
 	/**
 	 * Returns the number of subjects/objects in the dictionary.
@@ -200,6 +216,9 @@ public interface Dictionary extends Closeable {
 				return getNobjects() - getNshared();
 			}
 		}
+		case GRAPH -> {
+			return getNgraphs();
+		}
 		default -> throw new AssertionError();
 		}
 	}
@@ -209,6 +228,8 @@ public interface Dictionary extends Closeable {
 	DictionarySection getPredicates();
 
 	DictionarySection getObjects();
+
+	DictionarySection getGraphs();
 
 	Map<? extends CharSequence, DictionarySection> getAllObjects();
 
@@ -226,4 +247,14 @@ public interface Dictionary extends Closeable {
 	 * @return type
 	 */
 	String getType();
+
+	default TripleID toTripleId(TripleString tsstr) {
+		TripleID tid = new TripleID(stringToId(tsstr.getSubject(), TripleComponentRole.SUBJECT),
+				stringToId(tsstr.getPredicate(), TripleComponentRole.PREDICATE),
+				stringToId(tsstr.getObject(), TripleComponentRole.OBJECT));
+		if (tsstr.getGraph() != null && !tsstr.getGraph().isEmpty()) {
+			tid.setGraph(stringToId(tsstr.getGraph(), TripleComponentRole.GRAPH));
+		}
+		return tid;
+	}
 }

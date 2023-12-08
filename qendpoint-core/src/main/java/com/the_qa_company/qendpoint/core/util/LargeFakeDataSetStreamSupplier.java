@@ -6,17 +6,18 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.quads.QuadString;
+import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
-import java.io.BufferedWriter;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
@@ -34,6 +35,7 @@ import java.util.zip.GZIPOutputStream;
  * @author Antoine Willerval
  */
 public class LargeFakeDataSetStreamSupplier {
+	public static final String BASE_URI = "http://w";
 
 	private static final Charset DEFAULT_CHARSET = ByteStringUtil.STRING_ENCODING;
 
@@ -132,6 +134,7 @@ public class LargeFakeDataSetStreamSupplier {
 	private TripleString buffer;
 	private TripleString next;
 	private boolean nquad;
+	private boolean noDefaultGraph;
 	private boolean useBlankNode = true;
 	private boolean useIRI = true;
 	private boolean useLiteral = true;
@@ -178,7 +181,20 @@ public class LargeFakeDataSetStreamSupplier {
 	 * @see #createNTFile(java.lang.String)
 	 */
 	public void createNTFile(Path file) throws IOException {
-		try (BufferedWriter writer = Files.newBufferedWriter(file)) {
+		createNTFile(file, CompressionType.NONE);
+	}
+
+	/**
+	 * create a nt file from the stream
+	 *
+	 * @param file            the file to write
+	 * @param compressionType compression type
+	 * @throws IOException io exception
+	 * @see #createNTFile(java.lang.String)
+	 */
+	public void createNTFile(Path file, CompressionType compressionType) throws IOException {
+		try (Writer writer = new OutputStreamWriter(
+				new BufferedOutputStream(compressionType.compress(Files.newOutputStream(file))))) {
 			createNTFile(writer);
 		}
 	}
@@ -242,7 +258,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 * @throws IOException     io exception
 	 */
 	public HDT createFakeHDT(HDTOptions spec) throws ParserException, IOException {
-		return HDTManager.generateHDT(createTripleStringStream(), "http://w", spec, null);
+		return HDTManager.generateHDT(createTripleStringStream(), BASE_URI, spec, null);
 	}
 
 	/**
@@ -276,7 +292,7 @@ public class LargeFakeDataSetStreamSupplier {
 			return "";
 		}
 		int rnd = random.nextInt(10);
-		if (rnd < 4) {
+		if (rnd < 4 && !noDefaultGraph) {
 			return ""; // no graph
 		}
 		if (rnd == 4) {
@@ -293,7 +309,7 @@ public class LargeFakeDataSetStreamSupplier {
 	}
 
 	private CharSequence createIRI() {
-		return "http://w" + random.nextInt(maxElementSplit) + "i.test.org/#Obj" + random.nextInt(maxElementSplit);
+		return BASE_URI + random.nextInt(maxElementSplit) + "i.test.org/#Obj" + random.nextInt(maxElementSplit);
 	}
 
 	private CharSequence createType() {
@@ -572,6 +588,17 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public LargeFakeDataSetStreamSupplier withMaxGraph(int maxGraph) {
 		this.maxGraph = maxGraph;
+		return this;
+	}
+
+	/**
+	 * do not use default graph with quad generation
+	 *
+	 * @param noDefaultGraph no default graph
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withNoDefaultGraph(boolean noDefaultGraph) {
+		this.noDefaultGraph = noDefaultGraph;
 		return this;
 	}
 

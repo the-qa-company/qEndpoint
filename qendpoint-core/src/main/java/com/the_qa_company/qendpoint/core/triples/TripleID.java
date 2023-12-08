@@ -19,19 +19,31 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
+import com.the_qa_company.qendpoint.core.util.LongCompare;
+
+import java.io.Serial;
 import java.io.Serializable;
 
-import com.the_qa_company.qendpoint.core.util.LongCompare;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.ALL_MASK;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.OPS;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.OSP;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.POS;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.PSO;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.SOP;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.SPO;
 
 /**
  * TripleID holds a triple using Long IDs
  */
 public final class TripleID implements Comparable<TripleID>, Serializable, Cloneable {
+	@Serial
 	private static final long serialVersionUID = -4685524566493494912L;
 
 	private long subject;
 	private long predicate;
 	private long object;
+	private long graph;
+	private boolean isQuad = false;
 
 	/**
 	 * Basic constructor
@@ -55,6 +67,23 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	}
 
 	/**
+	 * Constructor
+	 *
+	 * @param subject   The subject
+	 * @param predicate The predicate
+	 * @param object    The object
+	 * @param graph     The graph
+	 */
+	public TripleID(long subject, long predicate, long object, long graph) {
+		super();
+		this.subject = subject;
+		this.predicate = predicate;
+		this.object = object;
+		this.graph = graph;
+		this.isQuad = true;
+	}
+
+	/**
 	 * Build a TripleID as a copy of another one.
 	 *
 	 * @param other the triple ID to copy
@@ -64,6 +93,12 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 		this.subject = other.subject;
 		this.predicate = other.predicate;
 		this.object = other.object;
+		this.graph = other.graph;
+		this.isQuad = other.isQuad;
+	}
+
+	public boolean isQuad() {
+		return isQuad;
 	}
 
 	/**
@@ -109,6 +144,21 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	}
 
 	/**
+	 * @return long the graph
+	 */
+	public long getGraph() {
+		return graph;
+	}
+
+	/**
+	 * @param graph the graph to set
+	 */
+	public void setGraph(long graph) {
+		this.graph = graph;
+		this.isQuad = true;
+	}
+
+	/**
 	 * Replace all components of a TripleID at once. Useful to reuse existing
 	 * objects.
 	 *
@@ -122,17 +172,37 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 		this.object = object;
 	}
 
+	/**
+	 * Replace all components of a TripleID at once. Useful to reuse existing
+	 * objects.
+	 *
+	 * @param subject   subject ID
+	 * @param predicate predicate ID
+	 * @param object    object ID
+	 * @param graph     graph ID
+	 */
+	public void setAll(long subject, long predicate, long object, long graph) {
+		this.subject = subject;
+		this.predicate = predicate;
+		this.object = object;
+		this.graph = graph;
+		this.isQuad = true;
+	}
+
 	public void assign(TripleID replacement) {
 		subject = replacement.getSubject();
 		object = replacement.getObject();
 		predicate = replacement.getPredicate();
+		graph = replacement.getGraph();
+		isQuad = replacement.isQuad();
 	}
 
 	/**
 	 * Set all components to zero.
 	 */
 	public void clear() {
-		subject = predicate = object = 0;
+		subject = predicate = object = graph = 0;
+		isQuad = false;
 	}
 
 	/*
@@ -141,6 +211,9 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	 */
 	@Override
 	public String toString() {
+		if (isQuad) {
+			return subject + " " + predicate + " " + object + " " + graph;
+		}
 		return subject + " " + predicate + " " + object;
 	}
 
@@ -178,11 +251,14 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 		long subjectPattern = pattern.getSubject();
 		long predicatePattern = pattern.getPredicate();
 		long objectPattern = pattern.getObject();
+		long graphPattern = pattern.getGraph();
 
 		/* Remember that 0 acts as a wildcard */
 		if (subjectPattern == 0 || this.subject == subjectPattern) {
 			if (predicatePattern == 0 || this.predicate == predicatePattern) {
-				return objectPattern == 0 || this.object == objectPattern;
+				if (objectPattern == 0 || this.object == objectPattern) {
+					return graphPattern == 0 || this.graph == graphPattern;
+				}
 			}
 		}
 		return false;
@@ -194,7 +270,7 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	 * @return boolean
 	 */
 	public boolean isEmpty() {
-		return !(subject != 0 || predicate != 0 || object != 0);
+		return !(subject != 0 || predicate != 0 || object != 0 || graph != 0);
 	}
 
 	/**
@@ -203,7 +279,7 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	 * @return boolean
 	 */
 	public boolean isValid() {
-		return subject > 0 && predicate > 0 && object > 0;
+		return subject > 0 && predicate > 0 && object > 0 && (!isQuad || graph > 0);
 	}
 
 	/**
@@ -212,7 +288,7 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	 * @return boolean
 	 */
 	public boolean isNoMatch() {
-		return subject == -1 || predicate == -1 || object == -1;
+		return subject == -1 || predicate == -1 || object == -1 || (isQuad && graph == -1);
 	}
 
 	/**
@@ -221,7 +297,8 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	 * @return String
 	 */
 	public String getPatternString() {
-		return "" + (subject == 0 ? '?' : 'S') + (predicate == 0 ? '?' : 'P') + (object == 0 ? '?' : 'O');
+		return String.valueOf(subject == 0 ? '?' : 'S') + (predicate == 0 ? '?' : 'P') + (object == 0 ? '?' : 'O')
+				+ (isQuad ? (graph == 0 ? '?' : 'G') : "");
 	}
 
 	/**
@@ -237,11 +314,11 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 	public boolean equals(Object o) {
 		if (o == this)
 			return true;
-		if (!(o instanceof TripleID)) {
+		if (!(o instanceof TripleID other)) {
 			return false;
 		}
-		TripleID other = (TripleID) o;
-		return !(subject != other.subject || predicate != other.predicate || object != other.object);
+		return !(subject != other.subject || predicate != other.predicate || object != other.object
+				|| graph != other.graph);
 	}
 
 	@Override
@@ -255,6 +332,46 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 
 	@Override
 	public int hashCode() {
+		if (isQuad) {
+			return (int) (subject * 13 + predicate * 17 + object * 31 + graph * 37);
+		}
 		return (int) (subject * 13 + predicate * 17 + object * 31);
+	}
+
+	/**
+	 * @return a copy of this triple id without the graph part
+	 */
+	public TripleID copyNoGraph() {
+		return new TripleID(subject, predicate, object);
+	}
+
+	/**
+	 * @return the pattern order flags for this triple id
+	 */
+	public int getPatternOrderFlags() {
+		if (subject == 0) {
+			if (predicate == 0) {
+				if (object == 0) {
+					return ALL_MASK; // ???
+				}
+				return OPS.mask | OSP.mask; // ??o
+			}
+			if (object == 0) {
+				return POS.mask | PSO.mask; // ?p?
+			} else {
+				return OPS.mask | POS.mask; // ?po
+			}
+		}
+		if (predicate == 0) {
+			if (object == 0) {
+				return SPO.mask | SOP.mask; // s??
+			}
+			return SOP.mask | OSP.mask; // s?o
+		}
+		if (object == 0) {
+			return SPO.mask | PSO.mask; // sp?
+		} else {
+			return ALL_MASK; // spo
+		}
 	}
 }

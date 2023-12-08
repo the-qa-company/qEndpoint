@@ -121,6 +121,11 @@ public class HashDictionary extends BaseTempDictionary {
 	}
 
 	@Override
+	public boolean supportGraphs() {
+		return false;
+	}
+
+	@Override
 	public void startProcessing() {
 		// Do nothing.
 	}

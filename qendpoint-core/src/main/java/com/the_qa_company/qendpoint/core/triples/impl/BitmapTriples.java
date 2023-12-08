@@ -23,6 +23,13 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
+import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
+import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -48,40 +55,48 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
-import com.the_qa_company.qendpoint.core.util.io.compress.Pair;
-import org.apache.commons.io.file.PathUtils;
-import com.the_qa_company.qendpoint.core.compact.bitmap.*;
-import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
-import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
-import com.the_qa_company.qendpoint.core.options.*;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.Pair;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+import org.apache.commons.io.file.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author mario.arias
  */
-public class BitmapTriples implements TriplesPrivate {
+public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 	private static final Logger log = LoggerFactory.getLogger(BitmapTriples.class);
 
 	protected TripleComponentOrder order;
+
+	protected final Map<TripleComponentOrder, BitmapTriplesIndex> indexes = new HashMap<>();
+	protected int indexesMask = 0;
 
 	protected Sequence seqY, seqZ, indexZ, predicateCount;
 	protected Bitmap bitmapY, bitmapZ, bitmapIndexZ;
@@ -95,7 +110,7 @@ public class BitmapTriples implements TriplesPrivate {
 	boolean diskSubIndex;
 	CreateOnUsePath diskSequenceLocation;
 
-	private boolean isClosed;
+	protected boolean isClosed;
 
 	public BitmapTriples() throws IOException {
 		this(new HDTSpecification());
@@ -282,12 +297,13 @@ public class BitmapTriples implements TriplesPrivate {
 		this.load(it, listener);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.triples.Triples#search(hdt.triples.TripleID)
-	 */
 	@Override
 	public SuppliableIteratorTripleID search(TripleID pattern) {
+		return search(pattern, TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
 		if (isClosed) {
 			throw new IllegalStateException("Cannot search on BitmapTriples if it's already closed");
 		}
@@ -298,6 +314,32 @@ public class BitmapTriples implements TriplesPrivate {
 
 		TripleID reorderedPat = new TripleID(pattern);
 		TripleOrderConvert.swapComponentOrder(reorderedPat, TripleComponentOrder.SPO, order);
+		int flags = reorderedPat.getPatternOrderFlags();
+
+		if ((flags & searchMask & this.order.mask) != 0) {
+			// we can use the default order, so we use it
+			return new BitmapTriplesIterator(this, pattern);
+		}
+
+		if ((indexesMask & flags) != 0) {
+			BitmapTriplesIndex idx;
+
+			int bestOrders = flags & searchMask;
+
+			if ((indexesMask & bestOrders) != 0) {
+				// we can use the asked order
+				idx = TripleComponentOrder.fetchBestForCfg(bestOrders, indexes);
+			} else {
+				// no asked order found, we can still use the best index
+				idx = TripleComponentOrder.fetchBestForCfg(flags, indexes);
+			}
+
+			assert idx != null : String.format("the tid flags were describing an unknown pattern: %x &= %x", flags,
+					indexesMask & flags);
+
+			return new BitmapTriplesIterator(idx, pattern);
+		}
+
 		String patternString = reorderedPat.getPatternString();
 
 		if (patternString.equals("?P?")) {
@@ -308,7 +350,7 @@ public class BitmapTriples implements TriplesPrivate {
 			}
 		}
 
-		if (indexZ != null && bitmapIndexZ != null) {
+		if (hasFOQIndex()) {
 			// USE FOQ
 			if (patternString.equals("?PO") || patternString.equals("??O")) {
 				return new BitmapTriplesIteratorZFOQ(this, pattern);
@@ -339,7 +381,12 @@ public class BitmapTriples implements TriplesPrivate {
 	 */
 	@Override
 	public IteratorTripleID searchAll() {
-		return this.search(new TripleID());
+		return searchAll(TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
+		return this.search(new TripleID(), searchMask);
 	}
 
 	/*
@@ -952,18 +999,13 @@ public class BitmapTriples implements TriplesPrivate {
 		String indexMethod = specIndex.get(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_RECOMMENDED);
 		switch (indexMethod) {
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_RECOMMENDED:
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED:
+		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_RECOMMENDED,
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED ->
 			createIndexObjectMemoryEfficient();
-			break;
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK:
+		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK ->
 			createIndexObjectDisk(specIndex, dictionary, listener);
-			break;
-		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_LEGACY:
-			createIndexObjects();
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown INDEXING METHOD: " + indexMethod);
+		case HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_LEGACY -> createIndexObjects();
+		default -> throw new IllegalArgumentException("Unknown INDEXING METHOD: " + indexMethod);
 		}
 
 		predicateIndex = new PredicateIndexArray(this);
@@ -1010,10 +1052,11 @@ public class BitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
-	public TripleID findTriple(long position) {
+	public TripleID findTriple(long position, TripleID tripleID) {
 		if (position == 0) {
 			// remove this special case so we can use position-1
-			return new TripleID(1, seqY.get(0), seqZ.get(0));
+			tripleID.setAll(1, seqY.get(0), seqZ.get(0));
+			return tripleID;
 		}
 		// get the object at the given position
 		long z = seqZ.get(position);
@@ -1024,15 +1067,17 @@ public class BitmapTriples implements TriplesPrivate {
 
 		if (posY == 0) {
 			// remove this case to do posY - 1
-			return new TripleID(1, y, z);
+			tripleID.setAll(1, y, z);
+			return tripleID;
 		}
 
 		// -1 so we don't count end of tree
 		long posX = bitmapY.rank1(posY - 1);
 		long x = posX + 1; // the subject ID is the position + 1, IDs start from
-							// 1 not zero
+		// 1 not zero
 
-		return new TripleID(x, y, z);
+		tripleID.setAll(x, y, z);
+		return tripleID;
 	}
 
 	/*
@@ -1207,10 +1252,16 @@ public class BitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) throws IOException {
+		syncOtherIndexes(file, spec, listener);
+	}
+
+	@Override
 	public void close() throws IOException {
 		isClosed = true;
 		try {
-			Closer.closeAll(seqY, seqZ, indexZ, predicateCount, predicateIndex, bitmapIndexZ, diskSequenceLocation);
+			Closer.closeAll(seqY, seqZ, indexZ, predicateCount, predicateIndex, bitmapIndexZ, diskSequenceLocation,
+					indexes);
 		} finally {
 			diskSequenceLocation = null;
 			seqY = null;
@@ -1219,6 +1270,78 @@ public class BitmapTriples implements TriplesPrivate {
 			predicateCount = null;
 			predicateIndex = null;
 			bitmapIndexZ = null;
+			indexes.clear();
+			indexesMask = 0;
+		}
+	}
+
+	public boolean hasFOQIndex() {
+		return indexZ != null && bitmapIndexZ != null;
+	}
+
+	public void syncOtherIndexes(Path fileLocation, HDTOptions spec, ProgressListener listener) throws IOException {
+		Closer.closeAll(indexes);
+		indexes.clear();
+		indexesMask = 0;
+
+		if (fileLocation == null) {
+			return;
+		}
+
+		String otherIdxs = spec.get(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "");
+
+		Set<TripleComponentOrder> askedOrders = Arrays.stream(otherIdxs.toUpperCase().split(",")).map(e -> {
+			if (e.isEmpty() || e.equalsIgnoreCase(TripleComponentOrder.Unknown.name())) {
+				return null;
+			}
+			try {
+				return TripleComponentOrder.valueOf(e);
+			} catch (IllegalArgumentException ex) {
+				log.warn("Trying to use a bad order name {}", e, ex);
+				return null;
+			}
+		}).filter(Objects::nonNull).collect(Collectors.toSet());
+
+		MultiThreadListener mListener = MultiThreadListener.ofSingle(listener);
+		for (TripleComponentOrder order : TripleComponentOrder.values()) {
+			if (order == TripleComponentOrder.Unknown || order == this.order) {
+				continue;
+			}
+
+			Path subIndexPath = BitmapTriplesIndexFile.getIndexPath(fileLocation, order);
+
+			try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
+				// load from the path...
+
+				BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel);
+				BitmapTriplesIndex old = indexes.put(order, idx);
+				indexesMask |= idx.getOrder().mask;
+				if (old != null) {
+					log.warn("an index is using a bad order old:{} cur:{} new:{}", old.getOrder(), order,
+							idx.getOrder());
+				}
+				IOUtil.closeQuietly(old);
+			} catch (NoSuchFileException ignore) {
+				// no index with this name
+				if (!askedOrders.contains(order)) {
+					continue; // not asked by the user, we can ignore
+				}
+				// generate the file
+				BitmapTriplesIndexFile.generateIndex(this, subIndexPath, order, spec, mListener);
+				try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
+					// load from the path...
+					BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel);
+					BitmapTriplesIndex old = indexes.put(order, idx);
+					indexesMask |= order.mask;
+					if (old != null) {
+						log.warn("an index is using a bad order old:{} cur:{} new:{}", old.getOrder(), order,
+								idx.getOrder());
+					}
+					IOUtil.closeQuietly(old); // should be null?
+				} catch (NoSuchFileException ex2) {
+					throw new IOException("index not generated", ex2);
+				}
+			}
 		}
 	}
 
@@ -1231,18 +1354,36 @@ public class BitmapTriples implements TriplesPrivate {
 		return indexZ;
 	}
 
+	@Override
 	public Sequence getSeqY() {
 		return seqY;
 	}
 
+	@Override
 	public Sequence getSeqZ() {
 		return seqZ;
 	}
 
+	@Override
+	public AdjacencyList getAdjacencyListY() {
+		return adjY;
+	}
+
+	@Override
+	public AdjacencyList getAdjacencyListZ() {
+		return adjZ;
+	}
+
+	public AdjacencyList getAdjacencyListIndex() {
+		return adjIndex;
+	}
+
+	@Override
 	public Bitmap getBitmapY() {
 		return bitmapY;
 	}
 
+	@Override
 	public Bitmap getBitmapZ() {
 		return bitmapZ;
 	}
@@ -1278,5 +1419,9 @@ public class BitmapTriples implements TriplesPrivate {
 				PathUtils.deleteDirectory(path);
 			}
 		}
+	}
+
+	public MultiLayerBitmap getQuadInfoAG() {
+		throw new UnsupportedOperationException("Cannot get quad info from a BitmapTriples");
 	}
 }

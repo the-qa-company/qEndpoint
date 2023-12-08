@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -173,6 +174,7 @@ public class CompressUtil {
 	public static class DuplicatedIterator implements Iterator<IndexedNode> {
 		private final Iterator<IndexedNode> it;
 		private final ReplazableString prev = new ReplazableString();
+		private boolean prevRead = false;
 		private IndexedNode next;
 		private long id;
 		private final DuplicatedNodeConsumer duplicatedNodeConsumer;
@@ -194,10 +196,14 @@ public class CompressUtil {
 				int cmp = prev.compareTo(next);
 				assert cmp <= 0 : "bad order : " + prev + " > " + next;
 				if (cmp == 0) {
-					// same as previous, ignore
-					assert this.id != node.getIndex() : "same index and prevIndex";
-					duplicatedNodeConsumer.onDuplicated(this.id, node.getIndex(), lastHeader);
-					continue;
+					if (!prev.isEmpty() || prevRead) {
+						// same as previous, ignore
+						assert this.id != node.getIndex() : "same index and prevIndex";
+						duplicatedNodeConsumer.onDuplicated(this.id, node.getIndex(), lastHeader);
+						continue;
+					} else {
+						prevRead = true;
+					}
 				}
 				this.next = node;
 				prev.replace(next);

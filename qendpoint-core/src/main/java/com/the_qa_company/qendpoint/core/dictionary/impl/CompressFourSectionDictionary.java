@@ -36,6 +36,7 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	private final TempDictionarySection predicate;
 	private final TempDictionarySection object;
 	private final TempDictionarySection shared;
+	private final TempDictionarySection graph;
 
 	private static void sendPiped(IndexedNode node, long index, PipedCopyIterator<CharSequence> pipe,
 			CompressUtil.DuplicatedIterator it, NodeConsumerMethod method) {
@@ -45,7 +46,7 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	}
 
 	public CompressFourSectionDictionary(CompressionResult compressionResult, NodeConsumer nodeConsumer,
-			ProgressListener listener, boolean debugOrder) {
+			ProgressListener listener, boolean debugOrder, boolean quad) {
 		long splits = Math.max(20, compressionResult.getTripleCount() / 10_000);
 		Consumer<IndexedNode> debugOrderCheckerS = DebugOrderNodeIterator.of(debugOrder, "Subject");
 		Consumer<IndexedNode> debugOrderCheckerO = DebugOrderNodeIterator.of(debugOrder, "Object");
@@ -62,10 +63,20 @@ public class CompressFourSectionDictionary implements TempDictionary {
 				new NotificationExceptionIterator<>(compressionResult.getObjects(), compressionResult.getTripleCount(),
 						splits, "Object section filling", listener),
 				(originalIndex, duplicatedIndex, lastHeader) -> nodeConsumer.onObject(duplicatedIndex, lastHeader));
+		CompressUtil.DuplicatedIterator sortedGraph;
+		if (quad) {
+			sortedGraph = CompressUtil.asNoDupeCharSequenceIterator(
+					new NotificationExceptionIterator<>(compressionResult.getGraph(),
+							compressionResult.getTripleCount(), splits, "Graph section filling", listener),
+					(originalIndex, duplicatedIndex, lastHeader) -> nodeConsumer.onGraph(duplicatedIndex, lastHeader));
+		} else {
+			sortedGraph = null;
+		}
 		long subjects = compressionResult.getSubjectsCount();
 		long predicates = compressionResult.getPredicatesCount();
 		long objects = compressionResult.getObjectsCount();
 		long shareds = compressionResult.getSharedCount();
+		long graphs = quad ? compressionResult.getGraphCount() : 0;
 
 		// iterator to pipe to the s p o sh
 		PipedCopyIterator<CharSequence> subject = new PipedCopyIterator<>();
@@ -158,6 +169,19 @@ public class CompressFourSectionDictionary implements TempDictionary {
 		}), predicates);
 		this.object = new OneReadDictionarySection(object, objects);
 		this.shared = new OneReadDictionarySection(shared, shareds);
+		if (quad) {
+			this.graph = new OneReadDictionarySection(new MapIterator<>(sortedGraph, (node, index) -> {
+				long header = CompressUtil.getHeaderId(index + 1);
+				sortedGraph.setLastHeader(header);
+				nodeConsumer.onGraph(node.getIndex(), header);
+				// force duplication because it's not made in a pipe like with
+				// the
+				// others
+				return new CompactString(node.getNode());
+			}), graphs);
+		} else {
+			this.graph = null;
+		}
 	}
 
 	@Override
@@ -178,6 +202,19 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	@Override
 	public TempDictionarySection getShared() {
 		return shared;
+	}
+
+	@Override
+	public TempDictionarySection getGraphs() {
+		if (supportGraphs()) {
+			return graph;
+		}
+		throw new IllegalArgumentException("This dictionary doesn't support graph!");
+	}
+
+	@Override
+	public boolean supportGraphs() {
+		return graph != null;
 	}
 
 	@Override
@@ -233,6 +270,8 @@ public class CompressFourSectionDictionary implements TempDictionary {
 		void onPredicate(long preMapId, long newMapId);
 
 		void onObject(long preMapId, long newMapId);
+
+		void onGraph(long preMapId, long newMapId);
 	}
 
 	private interface NodeConsumerMethod {

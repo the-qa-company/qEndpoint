@@ -1,12 +1,13 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.HashDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
@@ -18,7 +19,6 @@ import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.CustomIterator;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -242,6 +241,16 @@ public class MultipleSectionDictionaryBig extends MultipleBaseDictionary {
 	@Override
 	public String getType() {
 		return HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION;
+	}
+
+	@Override
+	public long getNgraphs() {
+		return 0;
+	}
+
+	@Override
+	public DictionarySection getGraphs() {
+		throw new NotImplementedException();
 	}
 
 	@Override

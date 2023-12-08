@@ -19,8 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.enums;
 
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
-
 import java.util.function.Supplier;
 
 /**
@@ -32,7 +30,30 @@ public enum TripleComponentRole {
 	/** The triple is a predicate */
 	PREDICATE(() -> DictionarySectionRole.PREDICATE, "p", "predicate", false),
 	/** The triple is an object */
-	OBJECT(() -> DictionarySectionRole.OBJECT, "o", "object", true);
+	OBJECT(() -> DictionarySectionRole.OBJECT, "o", "object", true),
+	/** The triple is an object */
+	GRAPH(() -> DictionarySectionRole.GRAPH, "g", "graph", false);
+
+	private static final TripleComponentRole[] NO_GRAPH_ROLES;
+
+	static {
+		TripleComponentRole[] values = values();
+		NO_GRAPH_ROLES = new TripleComponentRole[values.length - 1];
+		int j = 0;
+		for (TripleComponentRole value : values) {
+			if (value == GRAPH) {
+				continue;
+			}
+			NO_GRAPH_ROLES[j++] = value;
+		}
+	}
+
+	/**
+	 * @return same as {@link #values()} without the graph role
+	 */
+	public static TripleComponentRole[] valuesNoGraph() {
+		return NO_GRAPH_ROLES;
+	}
 
 	private DictionarySectionRole dictionarySectionRole;
 	private final Supplier<DictionarySectionRole> dictionarySectionRoleSupplier;

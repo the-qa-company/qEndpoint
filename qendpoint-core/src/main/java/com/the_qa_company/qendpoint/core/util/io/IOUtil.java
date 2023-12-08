@@ -46,6 +46,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -186,6 +187,13 @@ public class IOUtil {
 	public static CloseMappedByteBuffer mapChannel(String filename, FileChannel ch, FileChannel.MapMode mode,
 			long position, long size) throws IOException {
 		return new CloseMappedByteBuffer(filename, ch.map(mode, position, size), false);
+	}
+
+	public static long readLong(long location, FileChannel channel, ByteOrder order) throws IOException {
+		try (CloseMappedByteBuffer buffer = new CloseMappedByteBuffer("readLong",
+				channel.map(FileChannel.MapMode.READ_ONLY, location, 8), false)) {
+			return buffer.order(order).getLong(0);
+		}
 	}
 
 	/**
@@ -475,6 +483,46 @@ public class IOUtil {
 	}
 
 	/**
+	 * Write long, little endian
+	 *
+	 * @param output os
+	 * @param value  long
+	 * @throws IOException io exception
+	 */
+	public static void writeLong(ByteBuffer output, long value) throws IOException {
+		byte[] writeBuffer = new byte[8];
+		writeBuffer[7] = (byte) (value >>> 56);
+		writeBuffer[6] = (byte) (value >>> 48);
+		writeBuffer[5] = (byte) (value >>> 40);
+		writeBuffer[4] = (byte) (value >>> 32);
+		writeBuffer[3] = (byte) (value >>> 24);
+		writeBuffer[2] = (byte) (value >>> 16);
+		writeBuffer[1] = (byte) (value >>> 8);
+		writeBuffer[0] = (byte) (value);
+		output.put(writeBuffer, 0, 8);
+	}
+
+	/**
+	 * Write long, little endian
+	 *
+	 * @param output os
+	 * @param value  long
+	 * @throws IOException io exception
+	 */
+	public static void writeLong(int idx, ByteBuffer output, long value) throws IOException {
+		byte[] writeBuffer = new byte[8];
+		writeBuffer[7] = (byte) (value >>> 56);
+		writeBuffer[6] = (byte) (value >>> 48);
+		writeBuffer[5] = (byte) (value >>> 40);
+		writeBuffer[4] = (byte) (value >>> 32);
+		writeBuffer[3] = (byte) (value >>> 24);
+		writeBuffer[2] = (byte) (value >>> 16);
+		writeBuffer[1] = (byte) (value >>> 8);
+		writeBuffer[0] = (byte) (value);
+		output.put(idx, writeBuffer, 0, 8);
+	}
+
+	/**
 	 * Read long, little endian.
 	 *
 	 * @param input is
@@ -494,6 +542,41 @@ public class IOUtil {
 				+ ((long) (readBuffer[5] & 255) << 40) + ((long) (readBuffer[4] & 255) << 32)
 				+ ((long) (readBuffer[3] & 255) << 24) + ((readBuffer[2] & 255) << 16) + ((readBuffer[1] & 255) << 8)
 				+ ((readBuffer[0] & 255));
+	}
+
+	/**
+	 * Read long, big endian.
+	 *
+	 * @param input is
+	 * @throws IOException io exception
+	 */
+	public static long readLongBigEndian(InputStream input) throws IOException {
+		int n = 0;
+		byte[] readBuffer = new byte[8];
+		while (n < 8) {
+			int count = input.read(readBuffer, n, 8 - n);
+			if (count < 0)
+				throw new EOFException();
+			n += count;
+		}
+
+		return ((long) readBuffer[0] << 56) + ((long) (readBuffer[1] & 255) << 48)
+				+ ((long) (readBuffer[2] & 255) << 40) + ((long) (readBuffer[3] & 255) << 32)
+				+ ((long) (readBuffer[4] & 255) << 24) + ((readBuffer[5] & 255) << 16) + ((readBuffer[6] & 255) << 8)
+				+ ((readBuffer[7] & 255));
+	}
+
+	public static long readLong(long location, FileChannel channel) throws IOException {
+		try (CloseMappedByteBuffer buffer = new CloseMappedByteBuffer("readLong",
+				channel.map(FileChannel.MapMode.READ_ONLY, location, 8), false)) {
+			byte[] readBuffer = new byte[8];
+			buffer.get(readBuffer);
+
+			return ((long) readBuffer[7] << 56) + ((long) (readBuffer[6] & 255) << 48)
+					+ ((long) (readBuffer[5] & 255) << 40) + ((long) (readBuffer[4] & 255) << 32)
+					+ ((long) (readBuffer[3] & 255) << 24) + ((readBuffer[2] & 255) << 16)
+					+ ((readBuffer[1] & 255) << 8) + ((readBuffer[0] & 255));
+		}
 	}
 
 	/**
@@ -648,6 +731,12 @@ public class IOUtil {
 		long totalSkipped = in.skip(n);
 		while (totalSkipped < n) {
 			totalSkipped += in.skip(n - totalSkipped);
+		}
+	}
+
+	public static void closeQuietly(Object output) {
+		if (output instanceof Closeable cl) {
+			closeQuietly(cl);
 		}
 	}
 

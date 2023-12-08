@@ -24,8 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryIDMapping;
@@ -63,6 +63,7 @@ public class TriplesListLong implements TempTriples {
 	private long numValidTriples;
 
 	private boolean sorted = false;
+	private long numGraphs;
 
 	/**
 	 * Constructor, given an order to sort by
@@ -74,7 +75,7 @@ public class TriplesListLong implements TempTriples {
 		// precise allocation of the array (minimal memory wasting)
 		long numTriples = RDFInfo.getTriples(specification);
 		numTriples = (numTriples > 0) ? numTriples : 100;
-		this.arrayOfTriples = new ArrayList<TripleID>((int) numTriples);
+		this.arrayOfTriples = new ArrayList<>((int) numTriples);
 
 		// choosing starting(or default) component order
 		String orderStr = specification.get(HDTOptionsKeys.TRIPLE_ORDER_KEY);
@@ -93,7 +94,7 @@ public class TriplesListLong implements TempTriples {
 	 */
 	public boolean reallocateIfEmpty(int numTriples) {
 		if (arrayOfTriples.isEmpty()) {
-			arrayOfTriples = new ArrayList<TripleID>(numTriples);
+			arrayOfTriples = new ArrayList<>(numTriples);
 			return true;
 		} else {
 			return false;
@@ -114,12 +115,22 @@ public class TriplesListLong implements TempTriples {
 		}
 	}
 
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
+		return search(pattern);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see hdt.triples.Triples#searchAll()
 	 */
 	@Override
 	public IteratorTripleID searchAll() {
+		return searchAll(TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
 		TripleID all = new TripleID(0, 0, 0);
 		return this.search(all);
 	}
@@ -201,6 +212,7 @@ public class TriplesListLong implements TempTriples {
 			arrayOfTriples.add(iterator.next());
 			numValidTriples++;
 		}
+		numGraphs = input.getGraphsCount();
 
 		sorted = false;
 	}
@@ -229,6 +241,11 @@ public class TriplesListLong implements TempTriples {
 		for (TripleID triple : triples) {
 			arrayOfTriples.add(new TripleID(triple));
 			numValidTriples++;
+			if (triple.isQuad()) {
+				if (numGraphs < triple.getGraph()) {
+					numGraphs = triple.getGraph();
+				}
+			}
 		}
 		sorted = false;
 		return true;
@@ -244,6 +261,14 @@ public class TriplesListLong implements TempTriples {
 		numValidTriples++;
 		sorted = false;
 		return true;
+	}
+
+	@Override
+	public boolean insert(long subject, long predicate, long object, long graph) {
+		if (numGraphs < graph) {
+			numGraphs = graph;
+		}
+		return this.insert(subject, predicate, object);
 	}
 
 	/*
@@ -274,7 +299,7 @@ public class TriplesListLong implements TempTriples {
 	@Override
 	public void sort(ProgressListener listener) {
 		if (!sorted) {
-			Collections.sort(arrayOfTriples, TripleIDComparator.getComparator(order));
+			arrayOfTriples.sort(TripleIDComparator.getComparator(order));
 		}
 		sorted = true;
 	}
@@ -336,26 +361,25 @@ public class TriplesListLong implements TempTriples {
 	}
 
 	@Override
+	public TripleID findTriple(long position, TripleID buffer) {
+		return arrayOfTriples.get((int) position);
+	}
+
+	@Override
 	public TripleID findTriple(long position) {
 		return arrayOfTriples.get((int) position);
 	}
 
 	@Override
 	public void generateIndex(ProgressListener listener, HDTOptions specIndex, Dictionary dictionary) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
-	public void loadIndex(InputStream input, ControlInfo ci, ProgressListener listener) throws IOException {
-		// TODO Auto-generated method stub
-
+	public void loadIndex(InputStream input, ControlInfo ci, ProgressListener listener) {
 	}
 
 	@Override
-	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) throws IOException {
-		// TODO Auto-generated method stub
-
+	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) {
 	}
 
 	@Override
@@ -387,7 +411,7 @@ public class TriplesListLong implements TempTriples {
 	 *
 	 * @author mario.arias
 	 */
-	public class TriplesListIterator implements SuppliableIteratorTripleID {
+	public static class TriplesListIterator implements SuppliableIteratorTripleID {
 		private long lastPosition;
 		private final TriplesListLong triplesList;
 		private int pos;
@@ -506,7 +530,11 @@ public class TriplesListLong implements TempTriples {
 	}
 
 	@Override
-	public void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) throws IOException {
+	public void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) {
+	}
+
+	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
 	}
 
 	@Override
@@ -518,4 +546,18 @@ public class TriplesListLong implements TempTriples {
 		}
 	}
 
+	@Override
+	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj,
+			DictionaryIDMapping mapGraph) {
+		sorted = false;
+		for (TripleID triple : arrayOfTriples) {
+			triple.setAll(mapSubj.getNewID(triple.getSubject() - 1), mapPred.getNewID(triple.getPredicate() - 1),
+					mapObj.getNewID(triple.getObject() - 1), mapGraph.getNewID(triple.getGraph() - 1));
+		}
+	}
+
+	@Override
+	public long getGraphsCount() {
+		return numGraphs;
+	}
 }

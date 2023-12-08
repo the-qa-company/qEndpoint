@@ -13,7 +13,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
  */
 public class NoDuplicateTripleIDIterator implements IteratorTripleID {
 	private TripleID next;
-	private final TripleID prev = new TripleID(-1, -1, -1);
+	private final TripleID prev = new TripleID(-1, -1, -1, -1);
 	private final IteratorTripleID it;
 
 	public NoDuplicateTripleIDIterator(IteratorTripleID it) {
@@ -29,10 +29,10 @@ public class NoDuplicateTripleIDIterator implements IteratorTripleID {
 
 			TripleID next = it.next();
 
-			if (next.match(prev)) {
+			if (next.equals(prev)) {
 				continue;
 			}
-			prev.setAll(next.getSubject(), next.getPredicate(), next.getObject());
+			prev.setAll(next.getSubject(), next.getPredicate(), next.getObject(), next.getGraph());
 
 			this.next = next;
 		}

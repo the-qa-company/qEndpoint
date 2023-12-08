@@ -64,7 +64,7 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 		 * @return the roaring bitmap associated with this snapshot, can be null
 		 *         for empty value
 		 */
-		RoaringBitmap roaringBitmap();
+		RoaringBitmap64 roaringBitmap();
 	}
 
 	private class DeltaBitmap implements SimpleBitmap, AddSnapshotDeltaBitmap {
@@ -72,7 +72,7 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 		/**
 		 * compressed memory bitmap storing the delta
 		 */
-		final RoaringBitmap snapshot = new RoaringBitmap();
+		final RoaringBitmap64 snapshot = new RoaringBitmap64();
 		/**
 		 * next snapshot created after this one
 		 */
@@ -94,7 +94,7 @@ public class AddSnapshotBitmap extends ModifiableBitmapWrapper {
 		}
 
 		@Override
-		public RoaringBitmap roaringBitmap() {
+		public RoaringBitmap64 roaringBitmap() {
 			return snapshot;
 		}
 

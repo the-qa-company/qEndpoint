@@ -201,9 +201,11 @@ public class HDTDiskImporter implements Closeable {
 		profiler.pushSection("dictionary write");
 		// create sections and triple mapping
 		DictionaryPrivate dictionary = hdt.getDictionary();
-		CompressTripleMapper mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize);
+		CompressTripleMapper mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize,
+				compressionResult.supportsGraph(),
+				compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
 		try (CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(compressionResult,
-				mapper, listener, debugHDTBuilding)) {
+				mapper, listener, debugHDTBuilding, compressionResult.supportsGraph())) {
 			dictionary.loadAsync(modifiableDictionary, listener);
 		} catch (InterruptedException e) {
 			throw new ParserException(e);
@@ -238,8 +240,9 @@ public class HDTDiskImporter implements Closeable {
 		profiler.pushSection("triple compression/map");
 		try {
 			MapCompressTripleMerger tripleMapper = new MapCompressTripleMerger(basePath.resolve("tripleMapper"),
-					new AsyncIteratorFetcher<>(new TripleGenerator(mapper.getTripleCount())), mapper, listener, order,
-					bufferSize, chunkSize, 1 << ways);
+					new AsyncIteratorFetcher<>(TripleGenerator.of(mapper.getTripleCount(), mapper.supportsGraph())),
+					mapper, listener, order, bufferSize, chunkSize, 1 << ways,
+					mapper.supportsGraph() ? mapper.getGraphsCount() : 0);
 			tripleCompressionResult = tripleMapper.merge(workers, compressMode);
 		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);

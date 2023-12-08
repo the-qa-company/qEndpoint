@@ -32,11 +32,14 @@ public enum DictionaryType {
 	public static DictionaryType fromDictionaryType(String dictType) {
 		return switch (Objects.requireNonNullElse(dictType, "")) {
 		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_PSFC_SECTION ->
 			FSD;
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> MSD;
-		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG ->
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+				HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			MSDL;
 		default -> throw new NotImplementedException("Can't find type for name: " + dictType);
 		};

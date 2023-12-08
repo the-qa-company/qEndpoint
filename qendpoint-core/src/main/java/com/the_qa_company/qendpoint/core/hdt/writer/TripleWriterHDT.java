@@ -29,7 +29,6 @@ public class TripleWriterHDT implements TripleWriter {
 	HDTOptions spec;
 	String baseUri;
 
-	StopWatch st = new StopWatch();
 	TempHDT modHDT;
 	TempDictionary dictionary;
 	TempTriples triples;
@@ -67,15 +66,27 @@ public class TripleWriterHDT implements TripleWriter {
 	}
 
 	@Override
-	public void addTriple(TripleString triple) throws IOException {
-		triples.insert(dictionary.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
-				dictionary.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
-				dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT));
+	public void addTriple(TripleString triple) {
+		boolean isQuad = triple.getGraph().length() > 0;
+		if (isQuad) {
+			triples.insert(dictionary.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
+					dictionary.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
+					dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT),
+					dictionary.insert(triple.getGraph(), TripleComponentRole.GRAPH));
+		} else {
+			triples.insert(dictionary.insert(triple.getSubject(), TripleComponentRole.SUBJECT),
+					dictionary.insert(triple.getPredicate(), TripleComponentRole.PREDICATE),
+					dictionary.insert(triple.getObject(), TripleComponentRole.OBJECT));
+		}
 		num++;
-		size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4; // Spaces
-																													// and
-																													// final
-																													// dot
+		size += triple.getSubject().length() + triple.getPredicate().length() + triple.getObject().length() + 4 // Spaces
+																												// and
+																												// final
+																												// dot
+		;
+		if (isQuad) {
+			size += triple.getGraph().length() + 1; // Space
+		}
 	}
 
 	@Override
@@ -100,7 +111,7 @@ public class TripleWriterHDT implements TripleWriter {
 			long originalSize = HeaderUtil.getPropertyLong(modHDT.getHeader(), "_:statistics",
 					HDTVocabulary.ORIGINAL_SIZE);
 			hdt.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
-		} catch (NotFoundException e) {
+		} catch (NotFoundException ignore) {
 		}
 
 		modHDT.close();

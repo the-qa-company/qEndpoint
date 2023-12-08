@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -34,14 +35,25 @@ import java.util.Iterator;
 public class OneReadTempTriples implements TempTriples {
 	private IteratorTripleID iterator;
 	private TripleComponentOrder order;
+	private long graphs;
 
 	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples) {
+		this(iterator, order, triples, 0);
+	}
+
+	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples, long graphs) {
 		this.iterator = new SimpleIteratorTripleID(iterator, order, triples);
 		this.order = order;
+		this.graphs = graphs;
 	}
 
 	@Override
 	public boolean insert(long subject, long predicate, long object) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public boolean insert(long subject, long predicate, long object, long graph) {
 		throw new NotImplementedException();
 	}
 
@@ -88,12 +100,23 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
+	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj,
+			DictionaryIDMapping mapGraph) {
+
+	}
+
+	@Override
 	public void save(OutputStream output, ControlInfo ci, ProgressListener listener) throws IOException {
 		throw new NotImplementedException();
 	}
 
 	@Override
 	public SuppliableIteratorTripleID search(TripleID pattern) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
 		throw new NotImplementedException();
 	}
 
@@ -123,16 +146,21 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) {
 		throw new NotImplementedException();
 	}
 
 	@Override
 	public void load(TempTriples input, ProgressListener listener) {
-		if (input instanceof OneReadTempTriples) {
-			OneReadTempTriples input2 = (OneReadTempTriples) input;
+		if (input instanceof OneReadTempTriples input2) {
 			this.iterator = input2.iterator;
 			this.order = input2.order;
+			this.graphs = input2.graphs;
 		} else {
 			throw new NotImplementedException();
 		}
@@ -145,6 +173,11 @@ public class OneReadTempTriples implements TempTriples {
 
 	@Override
 	public IteratorTripleID searchAll() {
+		return new NoDuplicateTripleIDIterator(iterator);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
 		return new NoDuplicateTripleIDIterator(iterator);
 	}
 
@@ -169,13 +202,18 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
-	public TripleID findTriple(long position) {
+	public TripleID findTriple(long position, TripleID buffer) {
 		throw new NotImplementedException();
 	}
 
 	@Override
 	public void close() throws IOException {
 		// nothing to do
+	}
+
+	@Override
+	public long getGraphsCount() {
+		return graphs;
 	}
 
 	private static class SimpleIteratorTripleID implements IteratorTripleID {

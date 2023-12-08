@@ -24,10 +24,13 @@ import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
-import java.util.List;
+import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
@@ -180,14 +183,22 @@ public class BitmapTriplesTest {
 
 	@RunWith(Parameterized.class)
 	public static class DynamicTest extends AbstractTest {
-		@Parameterized.Parameters(name = "indexing: {0}")
-		public static Collection<Object> params() {
-			return List.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK,
-					HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED);
+		@Parameterized.Parameters(name = "indexing: {0}, dict {1}")
+		public static Collection<Object[]> params() {
+			return Stream
+					.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK,
+							HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED)
+					.flatMap(indexMethod -> Stream
+							.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+									HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION)
+							.map(dict -> new Object[] { indexMethod, dict }))
+					.toList();
 		}
 
 		@Parameterized.Parameter
 		public String indexMethod;
+		@Parameterized.Parameter(1)
+		public String dict;
 
 		public void diskBitmapIndexTest(boolean map, boolean disk) throws IOException, ParserException {
 			Path root = tempDir.newFolder().toPath();
@@ -207,9 +218,11 @@ public class BitmapTriplesTest {
 				Files.copy(hdt1Path, hdt2Path);
 
 				// optDisk = DISK, optDefault = OLD IMPLEMENTATION
-				HDTOptions optDisk = HDTOptions.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY, indexMethod);
+				HDTOptions optDisk = HDTOptions.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY, indexMethod,
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, dict);
 				HDTOptions optDefault = HDTOptions.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
-						HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_LEGACY);
+						HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_LEGACY, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						dict);
 
 				// set config
 				if (disk) {
@@ -288,6 +301,16 @@ public class BitmapTriplesTest {
 
 	@Ignore("Hand tests")
 	public static class HandTest extends AbstractTest {
+		@Test
+		public void readBadChannelTest() throws IOException {
+			// java.nio.file.NoSuchFileException
+			try (FileChannel channel = FileChannel.open(Path.of(UUID.randomUUID().toString()),
+					StandardOpenOption.READ)) {
+				System.out.println(channel.isOpen());
+			}
+
+		}
+
 		@Test
 		public void largeTest() throws IOException {
 			/*

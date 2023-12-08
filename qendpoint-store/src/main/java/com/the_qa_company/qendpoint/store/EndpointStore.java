@@ -14,8 +14,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
-import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
-import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
+import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
@@ -803,24 +802,20 @@ public class EndpointStore extends AbstractNotifyingSail {
 		// mark in HDT the store the subject, predicate, objects that are used
 		// in rdf4j
 		long subjectID;
-		if (subject instanceof SimpleIRIHDT iriHDT) {
-			subjectID = iriHDT.getId();
-		} else if (subject instanceof SimpleBNodeHDT bNodeHDT) {
-			subjectID = bNodeHDT.getHdtId();
+		if (subject instanceof HDTValue hv) {
+			subjectID = hv.getHDTId();
 		} else {
 			subjectID = -1;
 		}
 		long predicateID;
-		if (predicate instanceof SimpleIRIHDT iriHDT) {
-			predicateID = iriHDT.getId();
+		if (predicate instanceof HDTValue hv) {
+			predicateID = hv.getHDTId();
 		} else {
 			predicateID = -1;
 		}
 		long objectID;
-		if (object instanceof SimpleIRIHDT iriHDT) {
-			objectID = iriHDT.getId();
-		} else if (object instanceof SimpleBNodeHDT bNodeHDT) {
-			objectID = bNodeHDT.getHdtId();
+		if (object instanceof HDTValue hv) {
+			objectID = hv.getHDTId();
 		} else {
 			objectID = -1;
 		}

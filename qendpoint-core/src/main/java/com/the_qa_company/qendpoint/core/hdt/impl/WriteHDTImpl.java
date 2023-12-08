@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.hdt.impl;
 
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.header.HeaderFactory;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
@@ -39,7 +40,8 @@ public class WriteHDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, Trip
 		dictionary = DictionaryFactory.createWriteDictionary(this.spec, workingLocation.resolve("section"), bufferSize);
 		// we need to have the bitmaps in memory, so we can't bypass the
 		// implementation
-		triples = new WriteBitmapTriples(this.spec, workingLocation.resolve("tripleBitmap"), bufferSize);
+		triples = new WriteBitmapTriples(this.spec, workingLocation.resolve("tripleBitmap"), bufferSize,
+				dictionary.supportGraphs() ? 1 : -1);
 		// small, can use default implementation
 		header = HeaderFactory.createHeader(this.spec);
 	}
@@ -121,4 +123,11 @@ public class WriteHDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, Trip
 	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object) {
 		throw new NotImplementedException();
 	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			int searchOrderMask) throws NotFoundException {
+		throw new NotImplementedException();
+	}
+
 }

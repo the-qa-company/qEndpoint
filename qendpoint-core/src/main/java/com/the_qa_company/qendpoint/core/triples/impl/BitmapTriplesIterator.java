@@ -30,29 +30,35 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
  */
 public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
-	private final BitmapTriples triples;
-	private final TripleID pattern, returnTriple;
-	private long lastPosition;
-	private long patX, patY, patZ;
+	protected final BitmapTriplesIndex idx;
+	protected final TripleID pattern, returnTriple;
+	protected long lastPosition;
+	protected long patX, patY, patZ;
 
-	private AdjacencyList adjY, adjZ;
-	long posY, posZ, minY, minZ, maxY, maxZ;
-	private long nextY, nextZ;
-	private long x, y, z;
+	protected AdjacencyList adjY, adjZ;
+	protected long posY, posZ, minY, minZ, maxY, maxZ;
+	protected long nextY, nextZ;
+	protected long x, y, z;
 
-	public BitmapTriplesIterator(BitmapTriples triples, TripleID pattern) {
-		this.triples = triples;
+	protected BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern, boolean search) {
+		this.idx = idx;
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
-		newSearch(pattern);
+		if (search) {
+			newSearch(pattern);
+		}
 	}
 
-	public BitmapTriplesIterator(BitmapTriples triples, long minZ, long maxZ) {
-		this.triples = triples;
+	public BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern) {
+		this(idx, pattern, true);
+	}
+
+	public BitmapTriplesIterator(BitmapTriplesIndex idx, long minZ, long maxZ) {
+		this.idx = idx;
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
-		adjY = triples.adjY;
-		adjZ = triples.adjZ;
+		adjY = idx.getAdjacencyListY();
+		adjZ = idx.getAdjacencyListZ();
 
 		this.minZ = minZ;
 		this.maxZ = maxZ;
@@ -64,13 +70,13 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	public void newSearch(TripleID pattern) {
 		this.pattern.assign(pattern);
 
-		TripleOrderConvert.swapComponentOrder(this.pattern, TripleComponentOrder.SPO, triples.order);
+		TripleOrderConvert.swapComponentOrder(this.pattern, TripleComponentOrder.SPO, idx.getOrder());
 		patX = this.pattern.getSubject();
 		patY = this.pattern.getPredicate();
 		patZ = this.pattern.getObject();
 
-		adjY = triples.adjY;
-		adjZ = triples.adjZ;
+		adjY = idx.getAdjacencyListY();
+		adjZ = idx.getAdjacencyListZ();
 
 		// ((BitSequence375)triples.bitmapZ).dump();
 
@@ -78,10 +84,10 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 		goToStart();
 	}
 
-	private void updateOutput() {
+	protected void updateOutput() {
 		lastPosition = posZ;
 		returnTriple.setAll(x, y, z);
-		TripleOrderConvert.swapComponentOrder(returnTriple, triples.order, TripleComponentOrder.SPO);
+		TripleOrderConvert.swapComponentOrder(returnTriple, idx.getOrder(), TripleComponentOrder.SPO);
 	}
 
 	private void findRange() {
@@ -271,7 +277,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	 */
 	@Override
 	public TripleComponentOrder getOrder() {
-		return triples.order;
+		return idx.getOrder();
 	}
 
 	/*

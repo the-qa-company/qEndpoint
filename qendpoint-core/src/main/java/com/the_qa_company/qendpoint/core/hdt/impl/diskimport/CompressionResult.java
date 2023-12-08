@@ -32,6 +32,11 @@ public interface CompressionResult extends Closeable {
 	long getTripleCount();
 
 	/**
+	 * @return if the result is using graph
+	 */
+	boolean supportsGraph();
+
+	/**
 	 * @return a sorted iterator of subject
 	 */
 	ExceptionIterator<IndexedNode, IOException> getSubjects();
@@ -47,6 +52,11 @@ public interface CompressionResult extends Closeable {
 	ExceptionIterator<IndexedNode, IOException> getObjects();
 
 	/**
+	 * @return a sorted iterator of graphs
+	 */
+	ExceptionIterator<IndexedNode, IOException> getGraph();
+
+	/**
 	 * @return the count of subjects
 	 */
 	long getSubjectsCount();
@@ -60,6 +70,11 @@ public interface CompressionResult extends Closeable {
 	 * @return the count of objects
 	 */
 	long getObjectsCount();
+
+	/**
+	 * @return the count of graphs
+	 */
+	long getGraphCount();
 
 	/**
 	 * @return the count of shared

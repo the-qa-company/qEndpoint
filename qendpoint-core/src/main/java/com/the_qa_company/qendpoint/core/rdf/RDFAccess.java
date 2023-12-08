@@ -45,17 +45,81 @@ public interface RDFAccess extends Iterable<TripleString> {
 	IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws NotFoundException;
 
+	/**
+	 * Iterate over the triples of an RDF Set that match the specified pattern.
+	 * null and empty strings act as a wildcard. Default implementation ignore
+	 * the graph (e.g. search(null, null, null, null) iterates over all
+	 * elements)
+	 *
+	 * @param subject   The subject to search
+	 * @param predicate The predicate to search
+	 * @param object    The object to search
+	 * @param graph     The graph to search
+	 * @return Iterator of TripleStrings
+	 * @throws NotFoundException when the triple cannot be found
+	 */
+	default IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		return search(subject, predicate, object);
+	}
+
 	default IteratorTripleString search(TripleString triple) throws NotFoundException {
-		return search(triple.getSubject(), triple.getPredicate(), triple.getObject());
+		return search(triple.getSubject(), triple.getPredicate(), triple.getObject(), triple.getGraph());
 	}
 
 	default IteratorTripleString searchAll() throws NotFoundException {
-		return search("", "", "");
+		return search("", "", "", "");
 	}
 
+	/**
+	 * Iterate over the triples of an RDF Set that match the specified pattern.
+	 * null and empty strings act as a wildcard. (e.g. search(null, null, null)
+	 * iterates over all elements)
+	 *
+	 * @param subject         The subject to search
+	 * @param predicate       The predicate to search
+	 * @param object          The object to search
+	 * @param searchOrderMask The search order mask, can be get using
+	 *                        {@link com.the_qa_company.qendpoint.core.enums.TripleComponentOrder#mask}
+	 * @return Iterator of TripleStrings
+	 * @throws NotFoundException when the triple cannot be found
+	 */
+	IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object, int searchOrderMask)
+			throws NotFoundException;
+
+	/**
+	 * Iterate over the triples of an RDF Set that match the specified pattern.
+	 * null and empty strings act as a wildcard. Default implementation ignore
+	 * the graph (e.g. search(null, null, null, null) iterates over all
+	 * elements)
+	 *
+	 * @param subject         The subject to search
+	 * @param predicate       The predicate to search
+	 * @param object          The object to search
+	 * @param graph           The graph to search
+	 * @param searchOrderMask The search order mask, can be get using
+	 *                        {@link com.the_qa_company.qendpoint.core.enums.TripleComponentOrder#mask}
+	 * @return Iterator of TripleStrings
+	 * @throws NotFoundException when the triple cannot be found
+	 */
+	default IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph, int searchOrderMask) throws NotFoundException {
+		return search(subject, predicate, object, searchOrderMask);
+	}
+
+	default IteratorTripleString search(TripleString triple, int searchOrderMask) throws NotFoundException {
+		return search(triple.getSubject(), triple.getPredicate(), triple.getObject(), triple.getGraph(),
+				searchOrderMask);
+	}
+
+	default IteratorTripleString searchAll(int searchOrderMask) throws NotFoundException {
+		return search("", "", "", "", searchOrderMask);
+	}
+
+	@Override
 	default Iterator<TripleString> iterator() {
 		try {
-			return search("", "", "");
+			return searchAll();
 		} catch (NotFoundException e) {
 			return EmptyIterator.of();
 		}

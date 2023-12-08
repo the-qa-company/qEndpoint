@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
@@ -20,6 +21,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Iterator;
 
 /**
  * HDT implementation delaying the map method to avoid mapping into memory a
@@ -99,6 +101,49 @@ public class MapOnCallHDT implements HDTPrivate {
 	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws NotFoundException {
 		return mapOrGetHDT().search(subject, predicate, object);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		return mapOrGetHDT().search(subject, predicate, object, graph);
+	}
+
+	@Override
+	public IteratorTripleString search(TripleString triple) throws NotFoundException {
+		return mapOrGetHDT().search(triple);
+	}
+
+	@Override
+	public IteratorTripleString searchAll() throws NotFoundException {
+		return mapOrGetHDT().searchAll();
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			int searchOrderMask) throws NotFoundException {
+		return mapOrGetHDT().search(subject, predicate, object, searchOrderMask);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph, int searchOrderMask) throws NotFoundException {
+		return mapOrGetHDT().search(subject, predicate, object, graph, searchOrderMask);
+	}
+
+	@Override
+	public IteratorTripleString search(TripleString triple, int searchOrderMask) throws NotFoundException {
+		return mapOrGetHDT().search(triple, searchOrderMask);
+	}
+
+	@Override
+	public IteratorTripleString searchAll(int searchOrderMask) throws NotFoundException {
+		return mapOrGetHDT().searchAll(searchOrderMask);
+	}
+
+	@Override
+	public Iterator<TripleString> iterator() {
+		return mapOrGetHDT().iterator();
 	}
 
 	@Override

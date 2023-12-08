@@ -89,4 +89,22 @@ public class CloseSafeHDT implements HDT {
 			throws NotFoundException {
 		return hdt.search(subject, predicate, object);
 	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) throws NotFoundException {
+		return hdt.search(subject, predicate, object, graph);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			int searchOrderMask) throws NotFoundException {
+		return hdt.search(subject, predicate, object, searchOrderMask);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph, int searchOrderMask) throws NotFoundException {
+		return hdt.search(subject, predicate, object, graph, searchOrderMask);
+	}
 }

@@ -302,6 +302,10 @@ public class HDTOptionsKeys {
 	@Value(key = TEMP_DICTIONARY_IMPL_KEY, desc = "hash dictionary")
 	public static final String TEMP_DICTIONARY_IMPL_VALUE_HASH = "hash";
 	/**
+	 * use Hash quad to create the HDTQ
+	 */
+	public static final String TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD = "hashQuad";
+	/**
 	 * use Hash map to create the HDT and store the multisection dictionary,
 	 * mandatory to create MSC
 	 */
@@ -324,6 +328,11 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Four section dictionary")
 	public static final String DICTIONARY_TYPE_VALUE_FOUR_SECTION = HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION;
+	/*
+	 * 4 Quad Section dictionary
+	 */
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Four quad section dictionary")
+	public static final String DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION = HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION;
 	/**
 	 * Prefix AND Suffix front-coded (PSFC) 4 Section dictionary
 	 */
@@ -340,10 +349,15 @@ public class HDTOptionsKeys {
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS = "dictionaryMultiObj";
 	/**
-	 * multi section dictionary
+	 * multi section dictionary lang
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG = "dictionaryMultiObjLang";
+	/**
+	 * multi section dictionary lang quad
+	 */
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language")
+	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD = "dictionaryMultiObjLangQuad";
 
 	/**
 	 * Ignore MSDL RDFTYPE INDEX
@@ -493,6 +507,12 @@ public class HDTOptionsKeys {
 
 	@Key(type = Key.Type.BOOLEAN, desc = "Dump binary offsets, default false")
 	public static final String DUMP_BINARY_OFFSETS = "bump.binary.offsets";
+
+	@Key(type = Key.Type.STRING, desc = "Create other indexes in bitmaptriples pattern values (spo, ops, etc.), default none")
+	public static final String BITMAPTRIPLES_INDEX_OTHERS = "bitmaptriples.index.others";
+
+	@Key(type = Key.Type.BOOLEAN, desc = "No FoQ index generation default false")
+	public static final String BITMAPTRIPLES_INDEX_NO_FOQ = "bitmaptriples.index.noFoQ";
 
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();

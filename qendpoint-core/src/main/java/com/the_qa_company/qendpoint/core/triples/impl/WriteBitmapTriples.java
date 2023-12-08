@@ -1,5 +1,8 @@
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableMultiLayerBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiRoaringBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -19,8 +22,8 @@ import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.compact.bitmap.AppendableWriteBitmap;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
+import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 
@@ -28,6 +31,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Appendable write {@link BitmapTriples} version
@@ -40,8 +45,14 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	private final AppendableWriteBitmap bitY, bitZ;
 	private final CloseSuppressPath seqY, seqZ, triples;
 	private SequenceLog64BigDisk vectorY, vectorZ;
+	private ModifiableMultiLayerBitmap quadInfoAG;
 
 	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize) throws IOException {
+		this(spec, triples, bufferSize, -1);
+	}
+
+	public WriteBitmapTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, long quads)
+			throws IOException {
 		String orderStr = spec.get(HDTOptionsKeys.TRIPLE_ORDER_KEY);
 		if (orderStr == null) {
 			this.order = TripleComponentOrder.SPO;
@@ -55,6 +66,12 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		bitZ = new AppendableWriteBitmap(triples.resolve("bitmapZ"), bufferSize);
 		seqY = triples.resolve("seqY");
 		seqZ = triples.resolve("seqZ");
+
+		if (quads < 0) {
+			quadInfoAG = EmptyBitmap.of(0, 0);
+		} else {
+			quadInfoAG = null;
+		}
 	}
 
 	@Override
@@ -70,6 +87,13 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		bitZ.save(output, iListener);
 		vectorY.save(output, iListener);
 		vectorZ.save(output, iListener);
+
+		if (quadInfoAG != null) {
+			// quads
+			Closer.closeAll(quadInfoAG);
+
+			Files.copy(this.triples.resolve("quads.bin"), output);
+		}
 	}
 
 	@Override
@@ -78,7 +102,17 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
+	public IteratorTripleID searchAll(int searchMask) {
+		throw new NotImplementedException();
+	}
+
+	@Override
 	public SuppliableIteratorTripleID search(TripleID pattern) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
 		throw new NotImplementedException();
 	}
 
@@ -115,11 +149,11 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 	@Override
 	public String getType() {
-		return HDTVocabulary.TRIPLES_TYPE_BITMAP;
+		return quadInfoAG != null ? HDTVocabulary.TRIPLES_TYPE_BITMAP_QUAD : HDTVocabulary.TRIPLES_TYPE_BITMAP;
 	}
 
 	@Override
-	public TripleID findTriple(long position) {
+	public TripleID findTriple(long position, TripleID tripleID) {
 		throw new NotImplementedException();
 	}
 
@@ -149,15 +183,13 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	}
 
 	@Override
-	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) {
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
 		throw new NotImplementedException();
 	}
 
-	public BitmapTriplesAppender createAppender(long numElements, ProgressListener listener) {
-		vectorY = new SequenceLog64BigDisk(seqY.toAbsolutePath().toString(), BitUtil.log2(numElements));
-		vectorZ = new SequenceLog64BigDisk(seqZ.toAbsolutePath().toString(), BitUtil.log2(numElements));
-		numTriples = 0;
-		return new BitmapTriplesAppender(numElements, listener);
+	@Override
+	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) {
+		throw new NotImplementedException();
 	}
 
 	@Override
@@ -173,8 +205,17 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		vectorZ = new SequenceLog64BigDisk(seqZ.toAbsolutePath().toString(), BitUtil.log2(number));
 
 		long lastX = 0, lastY = 0, lastZ = 0;
-		long x, y, z;
+		long x, y, z, g;
 		numTriples = 0;
+		long numGraphs = 0;
+
+		long graphs = triples.getGraphsCount();
+		try {
+			quadInfoAG = graphs <= 0 ? null
+					: MultiRoaringBitmap.memoryStream(number, graphs, this.triples.resolve("quads.bin"));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
 		while (it.hasNext()) {
 			TripleID triple = it.next();
@@ -183,11 +224,31 @@ public class WriteBitmapTriples implements TriplesPrivate {
 			x = triple.getSubject();
 			y = triple.getPredicate();
 			z = triple.getObject();
-			if (x == 0 || y == 0 || z == 0) {
+			g = triple.isQuad() ? triple.getGraph() : -1;
+			if (x == 0 || y == 0 || z == 0 || g == 0) {
 				throw new IllegalFormatException("None of the components of a triple can be null");
 			}
 
-			if (numTriples == 0) {
+			if (quadInfoAG != null) {
+				if (g > numGraphs) {
+					numGraphs = g;
+				}
+				long graphIndex = g - 1;
+				boolean sameAsLast = x == lastX && y == lastY && z == lastZ;
+				if (!sameAsLast) {
+					numTriples += 1;
+				}
+
+				quadInfoAG.set(graphIndex, numTriples - 1, true);
+
+				if (sameAsLast) {
+					continue;
+				}
+			} else {
+				numTriples++;
+			}
+
+			if (numTriples == 1) {
 				// First triple
 				vectorY.append(y);
 				vectorZ.append(z);
@@ -230,7 +291,6 @@ public class WriteBitmapTriples implements TriplesPrivate {
 			lastZ = z;
 
 			ListenerUtil.notifyCond(listener, "Converting to BitmapTriples", numTriples, numTriples, number);
-			numTriples++;
 		}
 
 		if (numTriples > 0) {
@@ -249,7 +309,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 
 	@Override
 	public void close() throws IOException {
-		IOUtil.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, triples);
+		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, quadInfoAG, triples);
 	}
 
 	public class BitmapTriplesAppender {

@@ -795,7 +795,7 @@ public class EndpointStoreTest {
 			Resource bnode = converter.idToSubjectHDTResource(1L);
 			Assert.assertTrue(bnode instanceof BNode);
 			Assert.assertTrue(bnode instanceof SimpleBNodeHDT);
-			Assert.assertEquals(1L, ((SimpleBNodeHDT) bnode).getHdtId());
+			Assert.assertEquals(1L, ((SimpleBNodeHDT) bnode).getHDTId());
 			Assert.assertEquals("aaaa", ((BNode) bnode).getID());
 			Assert.assertEquals("_:aaaa", bnode.toString());
 			try (SailRepositoryConnection connection = repo.getConnection()) {

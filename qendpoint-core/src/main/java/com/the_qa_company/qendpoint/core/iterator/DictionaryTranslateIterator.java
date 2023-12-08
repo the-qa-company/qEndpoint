@@ -21,7 +21,9 @@ package com.the_qa_company.qendpoint.core.iterator;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -37,22 +39,10 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 	/** The dictionary */
 	final Dictionary dictionary;
 
-	CharSequence s, p, o;
+	CharSequence s, p, o, g;
 
-	long lastSid, lastPid, lastOid;
-	CharSequence lastSstr, lastPstr, lastOstr;
-
-	/**
-	 * Basic constructor
-	 *
-	 * @param iteratorTripleID Iterator of TripleID to be used
-	 * @param dictionary       The dictionary to be used
-	 */
-	public DictionaryTranslateIterator(IteratorTripleID iteratorTripleID, Dictionary dictionary) {
-		this.iterator = iteratorTripleID;
-		this.dictionary = dictionary;
-		this.s = this.p = this.o = "";
-	}
+	long lastSid, lastPid, lastOid, lastGid;
+	CharSequence lastSstr, lastPstr, lastOstr, lastGstr;
 
 	/**
 	 * Basic constructor
@@ -67,6 +57,23 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 		this.s = s == null ? "" : s;
 		this.p = p == null ? "" : p;
 		this.o = o == null ? "" : o;
+		this.g = null;
+	}
+
+	/**
+	 * Basic constructor
+	 *
+	 * @param iteratorTripleID Iterator of TripleID to be used
+	 * @param dictionary       The dictionary to be used
+	 */
+	public DictionaryTranslateIterator(IteratorTripleID iteratorTripleID, Dictionary dictionary, CharSequence s,
+			CharSequence p, CharSequence o, CharSequence g) {
+		this.iterator = iteratorTripleID;
+		this.dictionary = dictionary;
+		this.s = s == null ? "" : s;
+		this.p = p == null ? "" : p;
+		this.o = o == null ? "" : o;
+		this.g = g;
 	}
 
 	/*
@@ -108,7 +115,17 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 			lastOid = triple.getObject();
 		}
 
-		return new TripleString(lastSstr, lastPstr, lastOstr);
+		if (g == null) {
+			// no graph
+			return new TripleString(lastSstr, lastPstr, lastOstr);
+		} else if (!g.isEmpty()) {
+			return new QuadString(lastSstr, lastPstr, lastOstr, g);
+		} else if (triple.getGraph() != lastGid) {
+			lastGstr = dictionary.idToString(triple.getGraph(), TripleComponentRole.GRAPH);
+			lastGid = triple.getGraph();
+		}
+
+		return new QuadString(lastSstr, lastPstr, lastOstr, lastGstr);
 //		return DictionaryUtil.tripleIDtoTripleString(dictionary, triple);
 	}
 
@@ -143,6 +160,11 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 	@Override
 	public long getLastTriplePosition() {
 		return iterator.getLastTriplePosition();
+	}
+
+	@Override
+	public TripleComponentOrder getOrder() {
+		return iterator.getOrder();
 	}
 
 }

@@ -146,6 +146,17 @@ public class RDF2HDT implements ProgressListener {
 			}
 		}
 
+		boolean isQuad = notation == RDFNotation.NQUAD;
+
+		if (isQuad) {
+			if (!spec.contains(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY)) {
+				spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD);
+			}
+			if (!spec.contains(HDTOptionsKeys.DICTIONARY_TYPE_KEY)) {
+				spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			}
+		}
+
 		colorTool.log("Converting " + rdfInput + " to " + hdtOutput + " as " + notation.name());
 
 		if (ntSimpleLoading) {
@@ -207,11 +218,14 @@ public class RDF2HDT implements ProgressListener {
 		try {
 			// Show Basic stats
 			if (!quiet) {
-				colorTool.logValue("Total Triples ......... ", "" + hdt.getTriples().getNumberOfElements());
-				colorTool.logValue("Different subjects .... ", "" + hdt.getDictionary().getNsubjects());
-				colorTool.logValue("Different predicates .. ", "" + hdt.getDictionary().getNpredicates());
-				colorTool.logValue("Different objects ..... ", "" + hdt.getDictionary().getNobjects());
-				colorTool.logValue("Common Subject/Object . ", "" + hdt.getDictionary().getNshared());
+				colorTool.logValue("Total Triples ......... ", String.valueOf(hdt.getTriples().getNumberOfElements()));
+				colorTool.logValue("Different subjects .... ", String.valueOf(hdt.getDictionary().getNsubjects()));
+				colorTool.logValue("Different predicates .. ", String.valueOf(hdt.getDictionary().getNpredicates()));
+				colorTool.logValue("Different objects ..... ", String.valueOf(hdt.getDictionary().getNobjects()));
+				if (hdt.getDictionary().supportGraphs()) {
+					colorTool.logValue("Different graphs ...... ", String.valueOf(hdt.getDictionary().getNgraphs()));
+				}
+				colorTool.logValue("Common Subject/Object . ", String.valueOf(hdt.getDictionary().getNshared()));
 			}
 
 			// Dump to HDT file

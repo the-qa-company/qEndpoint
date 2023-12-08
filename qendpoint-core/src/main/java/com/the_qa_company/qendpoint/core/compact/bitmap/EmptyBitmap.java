@@ -18,21 +18,34 @@ import java.io.OutputStream;
  * in memory, will throw a {@link NotImplementedException} if we try to add a
  * non 0 value
  */
-public class EmptyBitmap implements ModifiableBitmap {
+public class EmptyBitmap implements ModifiableBitmap, ModifiableMultiLayerBitmap {
 	/**
 	 * create empty bitmap simulating a bitmap of a particular size
 	 *
 	 * @param size the size
 	 * @return bitmap
 	 */
-	public static ModifiableBitmap of(long size) {
-		return new EmptyBitmap(size);
+	public static EmptyBitmap of(long size) {
+		return new EmptyBitmap(size, 0);
+	}
+
+	/**
+	 * create empty bitmap simulating a bitmap of a particular size
+	 *
+	 * @param size   the size
+	 * @param layers layers
+	 * @return bitmap
+	 */
+	public static EmptyBitmap of(long size, long layers) {
+		return new EmptyBitmap(size, layers);
 	}
 
 	private long size;
+	private final long layers;
 
-	private EmptyBitmap(long size) {
+	private EmptyBitmap(long size, long layers) {
 		this.size = size;
+		this.layers = layers;
 	}
 
 	@Override
@@ -85,8 +98,53 @@ public class EmptyBitmap implements ModifiableBitmap {
 	}
 
 	@Override
+	public boolean access(long layer, long position) {
+		return false;
+	}
+
+	@Override
+	public long rank1(long layer, long position) {
+		return rank1(position);
+	}
+
+	@Override
+	public long rank0(long layer, long position) {
+		return rank0(position);
+	}
+
+	@Override
+	public long selectPrev1(long layer, long start) {
+		return selectPrev1(start);
+	}
+
+	@Override
+	public long selectNext1(long layer, long start) {
+		return selectNext1(start);
+	}
+
+	@Override
+	public long select0(long layer, long n) {
+		return select0(n);
+	}
+
+	@Override
+	public long select1(long layer, long n) {
+		return select1(n);
+	}
+
+	@Override
 	public long getNumBits() {
 		return size;
+	}
+
+	@Override
+	public long countOnes(long layer) {
+		return countOnes();
+	}
+
+	@Override
+	public long countZeros(long layer) {
+		return countZeros();
 	}
 
 	@Override
@@ -129,6 +187,16 @@ public class EmptyBitmap implements ModifiableBitmap {
 
 	@Override
 	public String getType() {
-		return HDTVocabulary.BITMAP_TYPE_PLAIN;
+		return layers == 0 ? HDTVocabulary.BITMAP_TYPE_PLAIN : HDTVocabulary.BITMAP_TYPE_ROARING_MULTI;
+	}
+
+	@Override
+	public long getLayersCount() {
+		return layers;
+	}
+
+	@Override
+	public void set(long layer, long position, boolean value) {
+		set(position, value);
 	}
 }

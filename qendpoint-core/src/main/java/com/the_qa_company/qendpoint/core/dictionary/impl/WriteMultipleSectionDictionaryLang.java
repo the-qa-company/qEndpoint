@@ -47,6 +47,10 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 	}
 
 	public WriteMultipleSectionDictionaryLang(HDTOptions spec, Path filename, int bufferSize) {
+		this(spec, filename, bufferSize, false);
+	}
+
+	public WriteMultipleSectionDictionaryLang(HDTOptions spec, Path filename, int bufferSize, boolean quad) {
 		super(withoutRDFType(spec));
 		this.filename = filename;
 		this.bufferSize = bufferSize;
@@ -57,11 +61,20 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 		nonTyped = new WriteDictionarySection(spec, filename.resolveSibling(name + "NT"), bufferSize);
 		shared = new WriteDictionarySection(spec, filename.resolveSibling(name + "SH"), bufferSize);
 		languages = new TreeMap<>();
+		if (quad) {
+			graph = new WriteDictionarySection(spec, filename.resolveSibling(name + "GR"), bufferSize);
+		}
 	}
 
 	public WriteMultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
 			TreeMap<ByteString, DictionarySectionPrivate> objects) {
+		this(spec, subjects, predicates, shared, objects, null);
+	}
+
+	public WriteMultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
+			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
+			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph) {
 		super(spec);
 		// useless
 		this.filename = null;
@@ -73,6 +86,7 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 		this.typed = new TreeMap<>();
 		this.languages = new TreeMap<>();
 		this.shared = shared;
+		this.graph = graph;
 		for (var e : objects.entrySet()) {
 			ByteString type = e.getKey();
 			DictionarySectionPrivate sec = e.getValue();
@@ -92,6 +106,7 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 
 	private ExceptionThread fillSection(Iterator<? extends CharSequence> objects, long count,
 			ProgressListener listener) {
+		@SuppressWarnings("resource")
 		PipedCopyIterator<TypedByteString> datatypeIterator = new PipedCopyIterator<>();
 		String name = filename.getFileName().toString();
 		Map<ByteString, DictionarySectionPrivate> theTyped = Collections.synchronizedMap(this.typed);
@@ -194,11 +209,13 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
 		MultiThreadListener ml = ListenerUtil.multiThreadListener(listener);
 		ml.unregisterAllThreads();
-		ExceptionThread
-				.async("MultiSecSAsyncReader",
-						() -> predicates.load(other.getPredicates(), new IntermediateListener(ml, "Predicate: ")),
-						() -> subjects.load(other.getSubjects(), new IntermediateListener(ml, "Subjects:  ")),
-						() -> shared.load(other.getShared(), new IntermediateListener(ml, "Shared:    ")))
+		ExceptionThread.async("MultiSecSAsyncReader",
+				() -> predicates.load(other.getPredicates(), new IntermediateListener(ml, "Predicate: ")), () -> {
+					if (supportGraphs()) {
+						graph.load(other.getGraphs(), new IntermediateListener(ml, "Graph:      "));
+					}
+				}, () -> subjects.load(other.getSubjects(), new IntermediateListener(ml, "Subjects:  ")),
+				() -> shared.load(other.getShared(), new IntermediateListener(ml, "Shared:    ")))
 				.attach(fillSection(other.getObjects().getEntries(), other.getObjects().getNumberOfElements(),
 						new IntermediateListener(ml, "Objects:   ")))
 				.startAll().joinAndCrashIfRequired();
@@ -222,10 +239,21 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 		iListener.setRange(40, 60);
 		iListener.setPrefix("Save predicates: ");
 		predicates.save(output, iListener);
+
 		iListener.setRange(60, 80);
 		iListener.setPrefix("Save non typed objects: ");
 		nonTyped.save(output, iListener);
-		iListener.setRange(80, 100);
+
+		int rangeStart;
+		if (supportGraphs()) {
+			iListener.setRange(80, 85);
+			iListener.setPrefix("Save graphs: ");
+			graph.save(output, listener);
+			rangeStart = 85;
+		} else {
+			rangeStart = 80;
+		}
+		iListener.setRange(rangeStart, 100);
 		iListener.setPrefix("Save objects: ");
 
 		int count = typed.size() + languages.size();
@@ -249,6 +277,7 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 			IOUtil.writeSizedBuffer(output, entry.getKey(), iListener);
 			entry.getValue().save(output, iListener);
 		}
+
 	}
 
 	@Override

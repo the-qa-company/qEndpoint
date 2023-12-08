@@ -149,6 +149,11 @@ public abstract class BaseTempDictionary implements TempDictionary {
 		return shared;
 	}
 
+	@Override
+	public TempDictionarySection getGraphs() {
+		throw new NotImplementedException();
+	}
+
 	protected long getGlobalId(long id, DictionarySectionRole position) {
 		switch (position) {
 		case SUBJECT:

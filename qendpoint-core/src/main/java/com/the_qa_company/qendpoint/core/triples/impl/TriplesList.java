@@ -19,10 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.DictionaryIDMapping;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
@@ -42,22 +38,34 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleIDComparatorInt;
 import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.RDFInfo;
-import com.the_qa_company.qendpoint.core.triples.*;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
 
 /**
  * Implementation of TempTriples using a List of TripleID.
  */
 public class TriplesList implements TempTriples {
 
-	/** The array to hold the triples */
+	/**
+	 * The array to hold the triples
+	 */
 	private ArrayList<TripleIDInt> arrayOfTriples;
 
-	/** The order of the triples */
+	/**
+	 * The order of the triples
+	 */
 	private TripleComponentOrder order;
 	private long numValidTriples;
+	private long numGraphs;
 
 	private boolean sorted;
 
@@ -71,7 +79,7 @@ public class TriplesList implements TempTriples {
 		// precise allocation of the array (minimal memory wasting)
 		long numTriples = RDFInfo.getTriples(specification);
 		numTriples = (numTriples > 0) ? numTriples : 100;
-		this.arrayOfTriples = new ArrayList<TripleIDInt>((int) numTriples);
+		this.arrayOfTriples = new ArrayList<>((int) numTriples);
 
 		// choosing starting(or default) component order
 		String orderStr = specification.get(HDTOptionsKeys.TRIPLE_ORDER_KEY);
@@ -90,7 +98,7 @@ public class TriplesList implements TempTriples {
 	 */
 	public boolean reallocateIfEmpty(int numTriples) {
 		if (arrayOfTriples.isEmpty()) {
-			arrayOfTriples = new ArrayList<TripleIDInt>(numTriples);
+			arrayOfTriples = new ArrayList<>(numTriples);
 			return true;
 		} else {
 			return false;
@@ -111,12 +119,22 @@ public class TriplesList implements TempTriples {
 		}
 	}
 
+	@Override
+	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
+		return search(pattern);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see hdt.triples.Triples#searchAll()
 	 */
 	@Override
 	public IteratorTripleID searchAll() {
+		return searchAll(TripleComponentOrder.ALL_MASK);
+	}
+
+	@Override
+	public IteratorTripleID searchAll(int searchMask) {
 		TripleID all = new TripleID(0, 0, 0);
 		return this.search(all);
 	}
@@ -197,6 +215,7 @@ public class TriplesList implements TempTriples {
 			arrayOfTriples.add(new TripleIDInt(iterator.next()));
 			numValidTriples++;
 		}
+		numGraphs = input.getGraphsCount();
 
 		sorted = false;
 	}
@@ -226,6 +245,11 @@ public class TriplesList implements TempTriples {
 		for (TripleID triple : triples) {
 			arrayOfTriples.add(new TripleIDInt(triple));
 			numValidTriples++;
+			if (triple.isQuad()) {
+				if (numGraphs < triple.getGraph()) {
+					numGraphs = triple.getGraph();
+				}
+			}
 		}
 		sorted = false;
 		return true;
@@ -239,6 +263,17 @@ public class TriplesList implements TempTriples {
 	public boolean insert(long subject, long predicate, long object) {
 		arrayOfTriples.add(new TripleIDInt(subject, predicate, object));
 		numValidTriples++;
+		sorted = false;
+		return true;
+	}
+
+	@Override
+	public boolean insert(long subject, long predicate, long object, long graph) {
+		arrayOfTriples.add(new TripleIDInt(subject, predicate, object, graph));
+		numValidTriples++;
+		if (numGraphs < graph) {
+			numGraphs = graph;
+		}
 		sorted = false;
 		return true;
 	}
@@ -271,7 +306,7 @@ public class TriplesList implements TempTriples {
 	@Override
 	public void sort(ProgressListener listener) {
 		if (!sorted) {
-			Collections.sort(arrayOfTriples, TripleIDComparatorInt.getComparator(order));
+			arrayOfTriples.sort(TripleIDComparatorInt.getComparator(order));
 		}
 		sorted = true;
 	}
@@ -285,7 +320,7 @@ public class TriplesList implements TempTriples {
 			return;
 		}
 
-		if (order == TripleComponentOrder.Unknown || !sorted) {
+		if (order == TripleComponentOrder.Unknown) {
 			throw new IllegalArgumentException("Cannot remove duplicates unless sorted");
 		}
 
@@ -333,26 +368,25 @@ public class TriplesList implements TempTriples {
 	}
 
 	@Override
+	public TripleID findTriple(long position, TripleID buffer) {
+		return arrayOfTriples.get((int) position).asTripleID();
+	}
+
+	@Override
 	public TripleID findTriple(long position) {
 		return arrayOfTriples.get((int) position).asTripleID();
 	}
 
 	@Override
 	public void generateIndex(ProgressListener listener, HDTOptions specIndex, Dictionary dictionary) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
-	public void loadIndex(InputStream input, ControlInfo ci, ProgressListener listener) throws IOException {
-		// TODO Auto-generated method stub
-
+	public void loadIndex(InputStream input, ControlInfo ci, ProgressListener listener) {
 	}
 
 	@Override
-	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) throws IOException {
-		// TODO Auto-generated method stub
-
+	public void saveIndex(OutputStream output, ControlInfo ci, ProgressListener listener) {
 	}
 
 	@Override
@@ -504,16 +538,47 @@ public class TriplesList implements TempTriples {
 	}
 
 	@Override
-	public void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) throws IOException {
+	public void mapIndex(CountInputStream input, File f, ControlInfo ci, ProgressListener listener) {
+	}
+
+	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj,
+			DictionaryIDMapping mapGraph) {
+		sorted = false;
+		for (TripleIDInt triple : arrayOfTriples) {
+			if (triple.isQuad()) {
+				triple.setAll((int) mapSubj.getNewID(triple.getSubject() - 1),
+						(int) mapPred.getNewID(triple.getPredicate() - 1),
+						(int) mapObj.getNewID(triple.getObject() - 1), (int) mapGraph.getNewID(triple.getGraph() - 1));
+			} else {
+				throw new IllegalArgumentException(
+						"You must call the replaceAllIds method without a DictionaryIDMapping for graphs if the triples are not quads.");
+			}
+		}
 	}
 
 	@Override
 	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj) {
 		sorted = false;
 		for (TripleIDInt triple : arrayOfTriples) {
-			triple.setAll((int) mapSubj.getNewID(triple.getSubject() - 1),
-					(int) mapPred.getNewID(triple.getPredicate() - 1), (int) mapObj.getNewID(triple.getObject() - 1));
+			if (triple.isQuad()) {
+				throw new IllegalArgumentException(
+						"You must call the replaceAllIds  method with a DictionaryIDMapping for graphs if the triples are quads.");
+			} else {
+				triple.setAll((int) mapSubj.getNewID(triple.getSubject() - 1),
+						(int) mapPred.getNewID(triple.getPredicate() - 1),
+						(int) mapObj.getNewID(triple.getObject() - 1));
+			}
 		}
 	}
 
+	@Override
+	public long getGraphsCount() {
+		return numGraphs;
+	}
 }

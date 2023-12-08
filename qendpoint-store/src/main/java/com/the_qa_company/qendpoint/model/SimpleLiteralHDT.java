@@ -232,8 +232,8 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 			return true;
 		}
 
-		if (o instanceof SimpleLiteralHDT) {
-			return ((SimpleLiteralHDT) o).getHdtID() == getHdtID();
+		if (o instanceof HDTValue hv) {
+			return hv.getHDTId() == getHDTId();
 		} else if (o instanceof Literal other) {
 			// Compare datatypes
 			if (!getDatatype().equals(other.getDatatype())) {
@@ -281,8 +281,14 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 				});
 	}
 
-	public long getHdtID() {
+	@Override
+	public long getHDTId() {
 		return hdtID;
+	}
+
+	@Override
+	public int getHDTPosition() {
+		return SimpleIRIHDT.OBJECT_POS; // a literal is only an object
 	}
 
 	@Override

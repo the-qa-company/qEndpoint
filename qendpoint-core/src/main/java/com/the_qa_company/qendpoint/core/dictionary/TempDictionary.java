@@ -38,6 +38,15 @@ public interface TempDictionary extends Closeable {
 
 	TempDictionarySection getShared();
 
+	TempDictionarySection getGraphs();
+
+	/**
+	 * Returns whether the dictionary supports graphs
+	 *
+	 * @return true if it supports graphs, false otherwise
+	 */
+	boolean supportGraphs();
+
 	/**
 	 * To be executed at the start of the processing
 	 */

@@ -47,19 +47,24 @@ public final class TripleIDComparatorSPO implements Comparator<TripleID> {
 
 		int result = LongCompare.compare(o1.getSubject(), o2.getSubject());
 
-		if (result == 0) {
-			result = LongCompare.compare(o1.getPredicate(), o2.getPredicate());
-			if (result == 0) {
-				// The third component is different?
-				return LongCompare.compare(o1.getObject(), o2.getObject());
-			} else {
-				// the second component is different
-				return result;
-			}
-		} else {
+		if (result != 0) {
 			// the first component is different
 			return result;
 		}
+
+		result = LongCompare.compare(o1.getPredicate(), o2.getPredicate());
+
+		if (result != 0) {
+			// the second component is different
+			return result;
+		}
+		// The third component is different?
+		result = LongCompare.compare(o1.getObject(), o2.getObject());
+		if (result != 0) {
+			return result;
+		}
+
+		return LongCompare.compare(o1.getGraph(), o2.getGraph());
 	}
 
 }

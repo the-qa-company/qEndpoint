@@ -1,7 +1,8 @@
-package com.the_qa_company.qendpoint.core.quads;
+package com.the_qa_company.qendpoint.core.quad;
 
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
 public class QuadString extends TripleString {
 	protected CharSequence context;
@@ -18,7 +19,7 @@ public class QuadString extends TripleString {
 
 	public QuadString(TripleString other) {
 		super(other);
-		this.context = other.getObject();
+		this.context = other.getGraph();
 	}
 
 	@Override
@@ -29,12 +30,15 @@ public class QuadString extends TripleString {
 
 	@Override
 	public boolean equals(Object other) {
-		if (context.isEmpty()) {
-			return super.equals(other);
+		if (!(other instanceof QuadString qs)) {
+			if (context.length() == 0) {
+				// not a quad string, maybe it is a TripleString
+				return super.equals(other);
+			}
+			return false;
 		}
-		return other instanceof QuadString qs && equalsCharSequence(subject, qs.subject)
-				&& equalsCharSequence(predicate, qs.predicate) && equalsCharSequence(object, qs.object)
-				&& equalsCharSequence(context, qs.context);
+		return equalsCharSequence(subject, qs.subject) && equalsCharSequence(predicate, qs.predicate)
+				&& equalsCharSequence(object, qs.object) && equalsCharSequence(context, qs.context);
 	}
 
 	@Override
@@ -68,13 +72,14 @@ public class QuadString extends TripleString {
 
 	@Override
 	public boolean match(TripleString pattern) {
-		if (!context.isEmpty() && !(pattern instanceof QuadString qs && equalsCharSequence(qs.context, context))) {
+		if (context.length() != 0
+				&& !(pattern instanceof QuadString && equalsCharSequence(((QuadString) pattern).context, context))) {
 			// if a context is defined, we don't match
 			return false;
 		}
-		if (pattern.getSubject().isEmpty() || equalsCharSequence(pattern.getSubject(), this.subject)) {
-			if (pattern.getPredicate().isEmpty() || equalsCharSequence(pattern.getPredicate(), this.predicate)) {
-				return pattern.getObject().isEmpty() || equalsCharSequence(pattern.getObject(), this.object);
+		if (pattern.getSubject().length() == 0 || equalsCharSequence(pattern.getSubject(), this.subject)) {
+			if (pattern.getPredicate().length() == 0 || equalsCharSequence(pattern.getPredicate(), this.predicate)) {
+				return pattern.getObject().length() == 0 || equalsCharSequence(pattern.getObject(), this.object);
 			}
 		}
 		return false;
@@ -82,7 +87,7 @@ public class QuadString extends TripleString {
 
 	@Override
 	public boolean isEmpty() {
-		return super.isEmpty() && context.isEmpty();
+		return super.isEmpty() && context.length() == 0;
 	}
 
 	@Override
@@ -109,5 +114,25 @@ public class QuadString extends TripleString {
 	@Override
 	public QuadString tripleToString() {
 		return new QuadString(subject.toString(), predicate.toString(), object.toString(), context.toString());
+	}
+
+	@Override
+	public TripleString tripleToByteString() {
+		return new QuadString(ByteString.copy(subject), ByteString.copy(predicate), ByteString.copy(object),
+				ByteString.copy(context));
+	}
+
+	@Override
+	public TripleString tripleToByteStringCast() {
+		return new QuadString(ByteString.of(subject), ByteString.of(predicate), ByteString.of(object),
+				ByteString.copy(context));
+	}
+
+	@Override
+	public String toString() {
+		if (context.length() == 0) {
+			return super.toString();
+		}
+		return super.toString() + " " + context;
 	}
 }

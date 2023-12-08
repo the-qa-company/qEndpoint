@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
@@ -17,6 +18,7 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 	public static final byte PREDICATE_POS = 2;
 	public static final byte OBJECT_POS = 3;
 	public static final byte SHARED_POS = 4;
+	public static final byte GRAPH_POS = 5;
 
 	public static byte getPos(DictionarySectionRole role) {
 		return switch (role) {
@@ -24,6 +26,7 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 		case SUBJECT -> SUBJECT_POS;
 		case PREDICATE -> PREDICATE_POS;
 		case OBJECT -> OBJECT_POS;
+		case GRAPH -> throw new NotImplementedException("TODO: GRAPH");
 		};
 	}
 
@@ -52,6 +55,16 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 		this.iriString = iriString;
 		this.id = -1;
 		this.localNameIdx = -1;
+	}
+
+	@Override
+	public long getHDTId() {
+		return id;
+	}
+
+	@Override
+	public int getHDTPosition() {
+		return postion;
 	}
 
 	public long getId() {

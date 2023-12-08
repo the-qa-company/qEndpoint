@@ -150,6 +150,16 @@ public class HDTManagerImpl extends HDTManager {
 		// choose the importer
 		String loaderType = spec.get(HDTOptionsKeys.LOADER_TYPE_KEY);
 		TempHDTImporter loader;
+		boolean isQuad = rdfNotation == RDFNotation.NQUAD;
+		if (isQuad) {
+			if (!spec.contains(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY)) {
+				spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD);
+			}
+			if (!spec.contains(HDTOptionsKeys.DICTIONARY_TYPE_KEY)) {
+				spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION);
+			}
+		}
+
 		if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(loaderType)) {
 			return doGenerateHDTDisk(rdfFileName, baseURI, rdfNotation, CompressionType.guess(rdfFileName), spec,
 					listener);
@@ -266,8 +276,13 @@ public class HDTManagerImpl extends HDTManager {
 	public HDT doGenerateHDTDisk(String rdfFileName, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
-		// read this file as stream, do not compress to allow the
-		// compressionType to be different from the file extension
+		if (compressionType == CompressionType.NONE) {
+			RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
+			try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, rdfFileName,
+					baseURI, true, rdfNotation)) {
+				return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
+			}
+		}
 		try (InputStream stream = IOUtil.getFileInputStream(rdfFileName, false)) {
 			return doGenerateHDTDisk(stream, baseURI, rdfNotation, compressionType, hdtFormat, listener);
 		}
@@ -410,8 +425,10 @@ public class HDTManagerImpl extends HDTManager {
 	protected HDT doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, String filename, String baseURI,
 			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
-		try (InputStream is = IOUtil.getFileInputStream(filename)) {
-			return doHDTCatTree(fluxStop, supplier, is, baseURI, rdfNotation, hdtFormat, listener);
+		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
+		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, filename, baseURI, true,
+				rdfNotation)) {
+			return doHDTCatTree(fluxStop, supplier, iterator, baseURI, hdtFormat, listener);
 		}
 	}
 

@@ -27,11 +27,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserSimple;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -172,13 +174,42 @@ public class PlainHeader implements HeaderPrivate, RDFCallback {
 	}
 
 	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph) {
+		TripleString pattern;
+		String objStr = object.toString();
+		if (objStr.isEmpty() || objStr.charAt(0) == '<' || objStr.charAt(0) == '"' || objStr.startsWith("http://")
+				|| objStr.startsWith("file://")) {
+			pattern = new QuadString(HeaderUtil.cleanURI(subject), HeaderUtil.cleanURI(predicate),
+					HeaderUtil.cleanURI(object), HeaderUtil.cleanURI(graph));
+		} else {
+			pattern = new QuadString(HeaderUtil.cleanURI(subject), HeaderUtil.cleanURI(predicate), '"' + objStr + '"',
+					HeaderUtil.cleanURI(graph));
+		}
+		return new PlainHeaderIterator(this, pattern);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			int searchOrderMask) throws NotFoundException {
+		return search(subject, predicate, object);
+	}
+
+	@Override
+	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
+			CharSequence graph, int searchOrderMask) throws NotFoundException {
+		return search(subject, predicate, object, graph);
+	}
+
+	@Override
 	public void processTriple(TripleString triple, long pos) {
 		triples.add(new TripleString(triple));
 	}
 
 	@Override
 	public void remove(CharSequence subject, CharSequence predicate, CharSequence object) {
-		TripleString pattern = new TripleString(subject.toString(), predicate.toString(), object.toString());
+		TripleString pattern = new TripleString(HeaderUtil.cleanURI(subject.toString()),
+				HeaderUtil.cleanURI(predicate.toString()), HeaderUtil.cleanURI(object.toString()));
 		triples.removeIf(next -> next.match(pattern));
 	}
 

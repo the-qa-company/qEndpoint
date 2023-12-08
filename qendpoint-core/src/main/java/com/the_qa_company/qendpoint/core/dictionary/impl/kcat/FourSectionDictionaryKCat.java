@@ -35,6 +35,11 @@ public class FourSectionDictionaryKCat implements DictionaryKCat {
 	}
 
 	@Override
+	public DictionarySection getGraphSection() {
+		return dictionary.getGraphs();
+	}
+
+	@Override
 	public DictionarySection getSharedSection() {
 		return dictionary.getShared();
 	}
@@ -57,6 +62,11 @@ public class FourSectionDictionaryKCat implements DictionaryKCat {
 	@Override
 	public long countObjects() {
 		return dictionary.getObjects().getNumberOfElements() + countShared();
+	}
+
+	@Override
+	public long countGraphs() {
+		return dictionary.supportGraphs() ? dictionary.getGraphs().getNumberOfElements() : 0;
 	}
 
 	@Override
