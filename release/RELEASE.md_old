@@ -1,3 +1,10 @@
+## Version 1.13.8
+        
+- Include FOQ index in dump (#415)
+- Fix msdl index ids (#416)
+## Version 1.13.7
+        
+- fix language literal 
 ## Version 1.13.6
         
 - fix msdl predicate retrieve (#409)
