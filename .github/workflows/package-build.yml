@@ -16,6 +16,10 @@ on:
         required: true
         type: boolean
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check_release:
     name: Check input parameters
