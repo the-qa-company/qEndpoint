@@ -299,7 +299,8 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 		}
 	}
 
-	public static BitmapTriplesIndexFile of(Sequence seqY, Sequence seqZ, Bitmap bitY, Bitmap bitZ, TripleComponentOrder order) {
+	public static BitmapTriplesIndexFile of(Sequence seqY, Sequence seqZ, Bitmap bitY, Bitmap bitZ,
+			TripleComponentOrder order) {
 		return new BitmapTriplesIndexFile(seqY, seqZ, bitY, bitZ, order);
 	}
 

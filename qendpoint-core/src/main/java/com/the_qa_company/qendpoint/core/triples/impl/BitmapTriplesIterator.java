@@ -334,58 +334,66 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 	private void jumpTo(TripleComponentRole role, long id) {
 		switch (role) {
-			case SUBJECT -> {
-				if (patX != 0) {
-					return;
-				}
-
-				// jump to the next X
-				x = id;
-
-				// TODO: MOVE Y/Z
-				posY = adjY.find(x - 1) + 1;
-				posZ = adjZ.find(posY - 1) + 1;
-
-				nextY = adjY.findNext(x) + 1;
-				nextZ = adjZ.findNext(posY) + 1;
+		case SUBJECT -> {
+			if (patX != 0 || id <= x || id > adjY.countListsX()) {
+				return;
 			}
-			case PREDICATE -> {
-				if (patY != 0) {
-					return;
-				}
 
-				// jump to the next Y
-				long nposY = adjY.getArray().binarySearchLocation(id, posY, nextY);
+			// jump to the next X
+			x = id;
 
-				if (nposY == posY) {
-					return; // no change, already at the right spot
-				}
-				// sync Z
+			posZ = adjZ.find(adjY.find(id - 1));
+			posY = adjZ.findListIndex(posZ);
 
-				if (nposY == posY + 1) {
-					// close value
-					posZ = nextZ;
-					nextZ = adjZ.findNext(nextZ) + 1;
-				} else {
-					posZ = adjZ.last(posY - 1) + 1;
-					nextZ = adjZ.findNext(posZ) + 1;
-				}
+			z = adjZ.get(posZ);
+			y = adjY.get(posY);
+			x = adjY.findListIndex(posY) + 1;
 
-				posY = nposY;
+			nextY = adjY.last(x - 1) + 1;
+			nextZ = adjZ.last(posY) + 1;
+
+		}
+		case PREDICATE -> {
+			if (posY == nextY || patY != 0 || id <= 0 || id > adjY.getNumberOfElements()) {
+				return;
 			}
-			case OBJECT -> {
-				if (patZ != 0) {
-					return;
-				}
 
-				// jump to the next Z
-				if (posZ + 1 >= nextZ || adjZ.get(posZ) >= id) {
-					return; // already last one or we pass the target id
-				}
+			// jump to the next Y
+			long nposY = adjY.getArray().binarySearchLocation(id, posY, nextY);
 
-				posZ = adjZ.getArray().binarySearchLocation(id, posZ, nextZ);
+			if (nposY == nextY) {
+				nposY--;
 			}
-			case GRAPH -> throw new AssertionError();
+
+			if (nposY == posY) {
+				return; // no change, already at the right spot
+			}
+
+			if (posY + 1 == nposY) {
+				// direct +1, we can use the next value
+				posZ = nextZ;
+				return;
+			}
+
+			posY = nposY;
+			y = adjY.get(posY);
+
+			posZ = adjZ.find(posY);
+			nextZ = adjZ.last(posY);
+		}
+		case OBJECT -> {
+			if (patZ != 0 || id <= 0 || id > adjZ.getNumberOfElements()) {
+				return;
+			}
+
+			// jump to the next Z
+			if (posZ == nextZ || adjZ.get(posZ) >= id) {
+				return; // already last one or we pass the target id
+			}
+
+			posZ = adjZ.getArray().binarySearchLocation(id, posZ, nextZ);
+		}
+		case GRAPH -> throw new AssertionError();
 		}
 	}
 }

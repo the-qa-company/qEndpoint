@@ -131,7 +131,7 @@ public class EndpointStoreTest {
 		SailRepository endpointStore = new SailRepository(
 				new EndpointStore(hdtStore.getAbsolutePath() + File.separatorChar, HDT_INDEX_NAME, spec,
 						nativeStore.getAbsolutePath() + File.separatorChar, true)
-				// new NativeStore(nativeStore,"spoc")
+		// new NativeStore(nativeStore,"spoc")
 		);
 		try {
 			try (SailRepositoryConnection connection = endpointStore.getConnection()) {

@@ -168,11 +168,10 @@ public class RDFDeltaFileParser implements RDFParserCallback {
 				RDFParserCallback parser = RDFParserFactory.getParserCallback(not, spec);
 				try {
 					// read the next byte information
-					parser.doParse(new GZIPInputStream(new ByteArrayInputStream(next.data)), baseUri, not,
-							keepBNode, callback);
+					parser.doParse(new GZIPInputStream(new ByteArrayInputStream(next.data)), baseUri, not, keepBNode,
+							callback);
 				} catch (IOException e) {
-					throw new ParserException("Error when reading " + next.fileName + " size: " + next.data.length,
-							e);
+					throw new ParserException("Error when reading " + next.fileName + " size: " + next.data.length, e);
 				}
 			}
 		} catch (IOException e) {

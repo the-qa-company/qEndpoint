@@ -82,6 +82,7 @@ public class Bitmap64Big implements Closeable, ModifiableBitmap {
 
 	/**
 	 * create a bitmap with values
+	 *
 	 * @param values values
 	 * @return bitmap
 	 */

@@ -77,7 +77,7 @@ public enum TripleComponentOrder {
 	public final int mask;
 
 	TripleComponentOrder(TripleComponentRole subjectMapping, TripleComponentRole predicateMapping,
-						 TripleComponentRole objectMapping, int mask) {
+			TripleComponentRole objectMapping, int mask) {
 		this.subjectMapping = subjectMapping;
 		this.predicateMapping = predicateMapping;
 		this.objectMapping = objectMapping;
@@ -118,7 +118,6 @@ public enum TripleComponentOrder {
 		this.subjectInvMapping = subjectInvMapping;
 		this.predicateInvMapping = predicateInvMapping;
 		this.objectInvMapping = objectInvMapping;
-
 
 		this.mask = mask;
 	}
