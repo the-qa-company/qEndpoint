@@ -399,6 +399,17 @@ public class HDTOptionsKeys {
 	public static final String HDTCAT_DELETE_LOCATION = "hdtcat.deleteLocation";
 
 	/**
+	 * KCat premapper split size, 0 for default
+	 */
+	@Key(type = Key.Type.NUMBER, desc = "KCat premapper split size")
+	public static final String HDTCAT_KCAT_SPLIT = "hdtcat.kcat.split";
+	/**
+	 * KCat premapper look ahead count, 0 for default
+	 */
+	@Key(type = Key.Type.NUMBER, desc = "KCat premapper look ahead count")
+	public static final String HDTCAT_KCAT_LOOKAHEAD_COUNT = "hdtcat.kcat.lookahead.count";
+
+	/**
 	 * Use disk implementation to generate the hdt sub-index, default false
 	 */
 	@Key(type = Key.Type.BOOLEAN, desc = "Use disk implementation to generate the hdt sub-index, default false")

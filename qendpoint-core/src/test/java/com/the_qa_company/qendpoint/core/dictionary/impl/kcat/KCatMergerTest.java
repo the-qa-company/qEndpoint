@@ -68,12 +68,11 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 	@RunWith(Parameterized.class)
 	public static class BaseTest {
 
-		@Parameterized.Parameters(name = "multi: {0}, unicode: {1}, map: {2}, count: {3}")
+		@Parameterized.Parameters(name = "multi: {0}, unicode: {1}, map: {2}, count: {3}, split: {4}")
 		public static Collection<Object[]> params() {
-			return Stream.of(false, true)
-					.flatMap(multi -> Stream.of(false, true)
-							.flatMap(unicode -> Stream.of(false, true).flatMap(
-									map -> Stream.of(2, 10).map(kcat -> new Object[] { multi, unicode, map, kcat }))))
+			return Stream.of(false, true).flatMap(split -> Stream.of(false, true)
+					.flatMap(multi -> Stream.of(false, true).flatMap(unicode -> Stream.of(false, true).flatMap(
+							map -> Stream.of(2, 10).map(kcat -> new Object[] { multi, unicode, map, kcat, split })))))
 					.collect(Collectors.toList());
 		}
 
@@ -85,6 +84,8 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 		public boolean map;
 		@Parameterized.Parameter(3)
 		public int kcat;
+		@Parameterized.Parameter(4)
+		public boolean useSplit;
 
 		@Rule
 		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
@@ -120,6 +121,11 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 					spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 					spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
 							HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
+				}
+
+				if (useSplit) {
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_SPLIT, 50);
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_LOOKAHEAD_COUNT, 333);
 				}
 
 				// create "kcat" fake HDTs
@@ -310,6 +316,11 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 					spec.set(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("futurehc.hdt").toAbsolutePath());
 				}
 
+				if (useSplit) {
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_SPLIT, countPerHDT / 100);
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_LOOKAHEAD_COUNT, countPerHDT / 9);
+				}
+
 				// create "kcat" fake HDTs
 				LargeFakeDataSetStreamSupplier s = LargeFakeDataSetStreamSupplier.createInfinite(42)
 						.withMaxElementSplit(50).withUnicode(unicode);
@@ -362,6 +373,11 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 				if (map) {
 					spec.set(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("futurehc.hdt").toAbsolutePath());
+				}
+
+				if (useSplit) {
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_SPLIT, countPerHDT / 100);
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_LOOKAHEAD_COUNT, countPerHDT / 9);
 				}
 
 				// create "kcat" fake HDTs
@@ -433,6 +449,11 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 
 				if (map) {
 					spec.set(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("futurehc.hdt").toAbsolutePath());
+				}
+
+				if (useSplit) {
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_SPLIT, countPerHDT / 100);
+					spec.set(HDTOptionsKeys.HDTCAT_KCAT_LOOKAHEAD_COUNT, countPerHDT / 9);
 				}
 
 				// create "kcat" fake HDTs

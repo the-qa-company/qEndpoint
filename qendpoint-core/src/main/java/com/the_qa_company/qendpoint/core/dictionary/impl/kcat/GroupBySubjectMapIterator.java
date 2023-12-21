@@ -2,6 +2,9 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.kcat;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
@@ -24,6 +27,11 @@ import java.util.stream.IntStream;
  * @author Antoine Willerval
  */
 public class GroupBySubjectMapIterator implements Iterator<TripleID> {
+	/**
+	 * 2^62, assume that all the ids are bellow this (NOT A HARD ONE IN 2023)
+	 * not 63 because the number would be negative
+	 */
+	private static final long UNMAPPED_BIT = 0x4000000000000000L;
 	private final PeekIteratorImpl<TripleID> mergeIterator;
 	private final List<TripleID> groupList = new ArrayList<>();
 	private Iterator<TripleID> groupListIterator;
@@ -120,12 +128,21 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 	 * @param hdts          the HDTs to iterate
 	 * @param deleteBitmaps delete bitmaps to remove from the HDTs' triples (can
 	 *                      be null)
+	 * @param spec          hdt options
 	 * @return sorted iterator of tripleID usable into a BitmapTriples
 	 *         generation
 	 */
-	public static Iterator<TripleID> fromHDTs(KCatMerger merger, HDT[] hdts, List<? extends Bitmap> deleteBitmaps) {
+	public static Iterator<TripleID> fromHDTs(KCatMerger merger, HDT[] hdts, List<? extends Bitmap> deleteBitmaps,
+			HDTOptions spec) {
 		final long shared = merger.getCountShared();
 		boolean quad = merger.isQuad();
+
+		long lookAheadCountCfg = spec.getInt(HDTOptionsKeys.HDTCAT_KCAT_LOOKAHEAD_COUNT, 0);
+		int lookAheadCount = (int) ((lookAheadCountCfg > Integer.MAX_VALUE - 5) ? Integer.MAX_VALUE - 5
+				: lookAheadCountCfg);
+		long lookAheadSplit = spec.getInt(HDTOptionsKeys.HDTCAT_KCAT_SPLIT, 0);
+		boolean lookAhead = !(lookAheadCount <= 1 || lookAheadSplit <= 1);
+
 		// sorted shared
 		List<ExceptionIterator<TripleID, RuntimeException>> sharedSubjectIterators = IntStream.range(0, hdts.length)
 				.mapToObj(hdtIndex -> {
@@ -150,8 +167,10 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 						IteratorTripleID subjectIterator = hdt.getTriples().searchAll();
 						subjectIterator.goTo(firstSubjectTripleId);
 
-						subjectIteratorMapped = ExceptionIterator.of(new SharedOnlyIterator(createIdMapper(merger,
-								hdtIndex, hdt, subjectIterator, firstSubjectTripleId, deleteBitmap), shared));
+						subjectIteratorMapped = ExceptionIterator.of(new SharedOnlyIterator(
+								createIdMapper(merger, hdtIndex, hdt, subjectIterator, firstSubjectTripleId,
+										deleteBitmap, lookAhead, lookAheadCount, lookAheadSplit),
+								shared));
 					}
 
 					if (shared == 0) {
@@ -160,8 +179,8 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 
 					Iterator<TripleID> sharedIterator = new SharedStopIterator(hdt.getTriples().searchAll(),
 							hdt.getDictionary().getNshared());
-					Iterator<TripleID> sharedIteratorMapped = new SharedOnlyIterator(
-							createIdMapper(merger, hdtIndex, hdt, sharedIterator, 0, deleteBitmap), shared);
+					Iterator<TripleID> sharedIteratorMapped = new SharedOnlyIterator(createIdMapper(merger, hdtIndex,
+							hdt, sharedIterator, 0, deleteBitmap, lookAhead, lookAheadCount, lookAheadSplit), shared);
 
 					return new MergeExceptionIterator<>(subjectIteratorMapped,
 							ExceptionIterator.of(sharedIteratorMapped), TripleID::compareTo);
@@ -190,8 +209,10 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 						IteratorTripleID subjectIterator = hdt.getTriples().searchAll();
 						subjectIterator.goTo(firstSubjectTripleId);
 
-						subjectIteratorMapped = ExceptionIterator.of(new NoSharedIterator(createIdMapper(merger,
-								hdtIndex, hdt, subjectIterator, firstSubjectTripleId, deleteBitmap), shared));
+						subjectIteratorMapped = ExceptionIterator.of(new NoSharedIterator(
+								createIdMapper(merger, hdtIndex, hdt, subjectIterator, firstSubjectTripleId,
+										deleteBitmap, lookAhead, lookAheadCount, lookAheadSplit),
+								shared));
 					}
 
 					if (shared == 0 || deleteBitmap == null) {
@@ -205,8 +226,8 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 					long sharedCount = hdt.getDictionary().getNshared();
 					Iterator<TripleID> sharedIterator = new SharedStopIterator(hdt.getTriples().searchAll(),
 							sharedCount);
-					Iterator<TripleID> sharedIteratorMapped = new NoSharedIterator(
-							createIdMapper(merger, hdtIndex, hdt, sharedIterator, 0, deleteBitmap), shared);
+					Iterator<TripleID> sharedIteratorMapped = new NoSharedIterator(createIdMapper(merger, hdtIndex, hdt,
+							sharedIterator, 0, deleteBitmap, lookAhead, lookAheadCount, lookAheadSplit), shared);
 
 					return new MergeExceptionIterator<>(subjectIteratorMapped,
 							ExceptionIterator.of(sharedIteratorMapped), TripleID::compareTo);
@@ -221,7 +242,30 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 	}
 
 	private static Iterator<TripleID> createIdMapper(KCatMerger merger, int hdtIndex, HDT hdt, Iterator<TripleID> it,
-			long start, MultiLayerBitmap deleteBitmap) {
+			long start, MultiLayerBitmap deleteBitmap, boolean lookAhead, long lookAheadCount, long lookAheadSplit) {
+		if (lookAhead) {
+			if (deleteBitmap != null) {
+				if (hdt.getDictionary().supportGraphs()) {
+					it = MapFilterIterator.of(it, (tid, index) -> {
+						if (deleteBitmap.access(tid.getGraph() - 1, index + start)) {
+							return null;
+						}
+						assert inHDT(tid, hdt);
+						return tid;
+					});
+				} else {
+					it = MapFilterIterator.of(it, (tid, index) -> {
+						if (deleteBitmap.access(0, index + start)) {
+							return null;
+						}
+						assert inHDT(tid, hdt);
+						return tid;
+					});
+				}
+			}
+
+			return new BufferedTripleIDMapper(merger, hdtIndex, it, (int) lookAheadCount, lookAheadSplit);
+		}
 		if (deleteBitmap == null) {
 			return new MapIterator<>(it, (tid) -> {
 				assert inHDT(tid, hdt);
@@ -425,6 +469,93 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 			} finally {
 				next = null;
 			}
+		}
+	}
+
+	private static class BufferedTripleIDMapper extends FetcherIterator<TripleID> {
+		private final KCatMerger merger;
+		private final int hdtIndex;
+		private final Iterator<TripleID> it;
+		private final int lookAheadCount;
+		private final long idsSplit;
+		private Iterator<TripleID> nexts;
+
+		private BufferedTripleIDMapper(KCatMerger merger, int hdtIndex, Iterator<TripleID> it, int lookAheadCount,
+				long idsSplit) {
+			this.merger = merger;
+			this.hdtIndex = hdtIndex;
+			this.it = it;
+			if (idsSplit <= 0) {
+				throw new IllegalArgumentException("ids split can't be negative or 0!");
+			}
+			this.idsSplit = idsSplit;
+			if (lookAheadCount <= 0) {
+				throw new IllegalArgumentException("Look ahead can't be negative or 0!");
+			}
+			this.lookAheadCount = lookAheadCount;
+		}
+
+		@Override
+		protected TripleID getNext() {
+			if (nexts != null) {
+				if (nexts.hasNext()) {
+					return nexts.next();
+				}
+				nexts = null;
+			}
+			if (!it.hasNext()) {
+				return null;
+			}
+
+			// read ahead lookAheadCount triples
+			List<TripleID> nextTriples = new ArrayList<>();
+
+			do {
+				TripleID ti = it.next();
+
+				// subject ~ sequential read
+				// predicate too small to care
+				// the objects are creating random reading
+
+				TripleID mapped;
+				if (merger.graphsMaps != null) {
+					mapped = new TripleID(merger.extractSubject(hdtIndex, ti.getSubject()),
+							merger.extractPredicate(hdtIndex, ti.getPredicate()), ti.getObject() | UNMAPPED_BIT,
+							merger.extractGraph(hdtIndex, ti.getGraph()));
+				} else {
+					mapped = new TripleID(merger.extractSubject(hdtIndex, ti.getSubject()),
+							merger.extractPredicate(hdtIndex, ti.getPredicate()), ti.getObject() | UNMAPPED_BIT);
+				}
+				nextTriples.add(mapped);
+			} while (it.hasNext() && nextTriples.size() < this.lookAheadCount);
+
+			// map the ids
+			long nsubjects = merger.hdts[hdtIndex].getDictionary().getNsubjects();
+			long split = nsubjects / this.idsSplit + 1;
+
+			// split is the amount of pass to do
+
+			for (long i = 0; i < split; i++) {
+				long start = i * idsSplit + 1;
+				long end = Math.min((i + 1) * idsSplit, nsubjects) + 1;
+
+				for (TripleID nextTriple : nextTriples) {
+					if ((nextTriple.getObject() & UNMAPPED_BIT) == 0) {
+						continue; // already done
+					}
+					long oid = nextTriple.getObject() & ~UNMAPPED_BIT;
+
+					if (oid >= start && oid < end) {
+						// map the id
+						nextTriple.setObject(merger.extractObject(hdtIndex, oid));
+					}
+				}
+			}
+
+			// maybe add assert to debug if no object has an unmapped bit?
+
+			nexts = nextTriples.iterator();
+			return getNext();
 		}
 	}
 }

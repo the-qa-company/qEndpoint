@@ -350,7 +350,8 @@ public class KCatImpl implements Closeable {
 				profiler.pushSection("triples");
 				// create a GROUP BY subject iterator to get the new ordered
 				// stream
-				Iterator<TripleID> tripleIterator = GroupBySubjectMapIterator.fromHDTs(merger, hdts, deleteBitmaps);
+				Iterator<TripleID> tripleIterator = GroupBySubjectMapIterator.fromHDTs(merger, hdts, deleteBitmaps,
+						hdtFormat);
 				long quads = quad ? dictionary.getNgraphs() : -1;
 				try (WriteBitmapTriples triples = new WriteBitmapTriples(hdtFormat, location.resolve("triples"),
 						bufferSize, quads)) {
