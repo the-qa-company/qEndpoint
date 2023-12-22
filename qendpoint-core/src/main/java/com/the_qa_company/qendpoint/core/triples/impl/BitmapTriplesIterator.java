@@ -362,7 +362,9 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 			long nposY = adjY.getArray().binarySearchLocation(id, posY, nextY);
 
 			if (nposY == nextY) {
-				nposY--;
+				// reached end, jump to the next X value
+				jumpTo(TripleComponentRole.SUBJECT, x + 1);
+				return;
 			}
 
 			if (nposY == posY) {
@@ -393,7 +395,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 			posZ = adjZ.getArray().binarySearchLocation(id, posZ, nextZ);
 		}
-		case GRAPH -> throw new AssertionError();
+		default -> throw new IllegalStateException("Unexpected value: " + role);
 		}
 	}
 }
