@@ -293,4 +293,9 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	public long getLastTriplePosition() {
 		return lastPosition;
 	}
+
+	@Override
+	public boolean isLastTriplePositionBoundToOrder() {
+		return true;
+	}
 }

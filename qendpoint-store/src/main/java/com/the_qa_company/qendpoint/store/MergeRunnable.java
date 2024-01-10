@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
@@ -559,10 +560,14 @@ public class MergeRunnable {
 		// a lock is needed here
 		if (restarting) {
 			// delete previous array in case of restart
-			Files.deleteIfExists(Path.of(endpointFiles.getTripleDeleteCopyArr()));
+			for (TripleComponentOrder order : endpoint.getValidOrders()) {
+				Files.deleteIfExists(Path.of(endpointFiles.getTripleDeleteCopyArr(order)));
+			}
 		}
-		Files.copy(Path.of(endpointFiles.getTripleDeleteArr()), Path.of(endpointFiles.getTripleDeleteCopyArr()),
-				StandardCopyOption.REPLACE_EXISTING);
+		for (TripleComponentOrder order : endpoint.getValidOrders()) {
+			Files.copy(Path.of(endpointFiles.getTripleDeleteArr(order)),
+					Path.of(endpointFiles.getTripleDeleteCopyArr(order)), StandardCopyOption.REPLACE_EXISTING);
+		}
 		EndpointStoreDump dumpInfo = endpoint.getDumpRef().getAndSet(null);
 
 		// #391: stop the lucene updates
@@ -622,7 +627,7 @@ public class MergeRunnable {
 		createHDTDump(endpointFiles.getRDFTempOutput(), endpointFiles.getHDTTempOutput());
 		// cat the original index and the temp index
 		logger.debug("HDT Cat/Diff");
-		catDiffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr(),
+		catDiffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr(TripleComponentOrder.SPO),
 				endpointFiles.getHDTTempOutput(), endpointFiles.getHDTNewIndex());
 		logger.debug("CAT completed!!!!! " + endpointFiles.getLocationHdt());
 
@@ -638,8 +643,10 @@ public class MergeRunnable {
 		// deletes
 		delete(endpointFiles.getRDFTempOutput());
 		delete(endpointFiles.getHDTTempOutput());
-		delete(endpointFiles.getTripleDeleteCopyArr());
-		delete(endpointFiles.getTripleDeleteArr());
+		for (TripleComponentOrder order : endpoint.getValidOrders()) {
+			delete(endpointFiles.getTripleDeleteCopyArr(order));
+			delete(endpointFiles.getTripleDeleteArr(order));
+		}
 
 		logger.info("End merge step 2");
 
@@ -662,7 +669,8 @@ public class MergeRunnable {
 	 */
 	private Step3SubStep getStep3SubStep() {
 
-		boolean existsOldTripleDeleteTempArr = existsOld(endpointFiles.getTripleDeleteTempArr());
+		boolean existsOldTripleDeleteTempArr = endpoint.getValidOrders().stream()
+				.anyMatch(order -> existsOld(endpointFiles.getTripleDeleteTempArr(order)));
 
 		if (!exists(endpointFiles.getHDTNewIndexV11()) && existsOldTripleDeleteTempArr) {
 			// after rename(endpointFiles.getHDTNewIndexV11(),
@@ -693,7 +701,9 @@ public class MergeRunnable {
 	 * preload data for step 3 if restarting
 	 */
 	private void preloadStep3() {
-		deleteIfExists(endpointFiles.getTripleDeleteArr());
+		for (TripleComponentOrder order : endpoint.getValidOrders()) {
+			deleteIfExists(endpointFiles.getTripleDeleteArr(order));
+		}
 
 		Step3SubStep step3SubStep = getStep3SubStep();
 
@@ -709,7 +719,9 @@ public class MergeRunnable {
 		case AFTER_INDEX_OLD_RENAME:
 			renameFromOld(endpointFiles.getHDTIndex());
 		case AFTER_TRIPLEDEL_TMP_OLD_RENAME:
-			renameFromOld(endpointFiles.getTripleDeleteTempArr());
+			for (TripleComponentOrder order : endpoint.getValidOrders()) {
+				renameFromOld(endpointFiles.getTripleDeleteTempArr(order));
+			}
 		case BEFORE_ALL:
 			break;
 		}
@@ -777,7 +789,9 @@ public class MergeRunnable {
 
 		// rename new hdt to old hdt name so that they are replaces
 		// BEFORE_ALL
-		renameToOld(endpointFiles.getTripleDeleteTempArr());
+		for (TripleComponentOrder order : endpoint.getValidOrders()) {
+			renameToOld(endpointFiles.getTripleDeleteTempArr(order));
+		}
 		// AFTER_TRIPLEDEL_TMP_OLD_RENAME
 		renameToOld(endpointFiles.getHDTIndex());
 		debugStepPoint(MergeRunnableStopPoint.STEP3_FILES_MID1);
@@ -810,7 +824,9 @@ public class MergeRunnable {
 		debugStepPoint(MergeRunnableStopPoint.STEP3_END);
 		completedMerge();
 		// we've deleted the rename marker, we can delete the old HDT
-		deleteOld(endpointFiles.getTripleDeleteTempArr());
+		for (TripleComponentOrder order : endpoint.getValidOrders()) {
+			deleteOld(endpointFiles.getTripleDeleteTempArr(order));
+		}
 		deleteOld(endpointFiles.getHDTIndex());
 		deleteOld(endpointFiles.getHDTIndexV11());
 

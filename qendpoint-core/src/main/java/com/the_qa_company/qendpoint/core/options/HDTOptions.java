@@ -30,7 +30,9 @@ import java.io.InputStream;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +43,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Options storage, see {@link HDTOptionsKeys} for more information.
@@ -488,6 +491,8 @@ public interface HDTOptions {
 			set(key, fs);
 		} else if (value instanceof Path p) {
 			set(key, p.toAbsolutePath().toString());
+		} else if (value instanceof EnumSet<?> p) {
+			set(key, p);
 		} else if (value instanceof File f) {
 			set(key, f.getAbsolutePath());
 		} else {
@@ -723,5 +728,74 @@ public interface HDTOptions {
 				return HDTOptions.this.getKeys();
 			}
 		};
+	}
+
+	/**
+	 * set enum set, the elements are split using comas
+	 *
+	 * @param key key
+	 * @param set set
+	 */
+	default void set(String key, EnumSet<?> set) {
+		set(key, set.stream().map(Enum::name).collect(Collectors.joining(",")));
+	}
+
+	/**
+	 * get enum set from value, the elements are split using comas
+	 *
+	 * @param key key
+	 * @param cls enum class
+	 * @return enum set
+	 * @param <E> enum type
+	 */
+	default <E extends Enum<E>> EnumSet<E> getEnumSet(String key, Class<E> cls) {
+		return getEnumSet(key, cls, EnumSet.noneOf(cls));
+	}
+
+	/**
+	 * get enum set from value, the elements are split using comas
+	 *
+	 * @param key          key
+	 * @param cls          enum class
+	 * @param defaultValue default value
+	 * @return enum set
+	 * @param <E> enum type
+	 */
+	default <E extends Enum<E>> EnumSet<E> getEnumSet(String key, Class<E> cls, EnumSet<E> defaultValue) {
+		return getEnumSet(key, cls, () -> defaultValue);
+	}
+
+	/**
+	 * get enum set from value, the elements are split using comas
+	 *
+	 * @param key          key
+	 * @param cls          enum class
+	 * @param defaultValue default value supplier
+	 * @return enum set
+	 * @param <E> enum type
+	 */
+	default <E extends Enum<E>> EnumSet<E> getEnumSet(String key, Class<E> cls, Supplier<EnumSet<E>> defaultValue) {
+		String val = get(key);
+
+		if (val == null || val.isEmpty()) {
+			return defaultValue.get();
+		}
+
+		EnumSet<E> set = EnumSet.noneOf(cls);
+
+		String[] values = val.split(",");
+
+		mainFor:
+		for (String value : values) {
+			for (E e : cls.getEnumConstants()) {
+				if (e.name().equalsIgnoreCase(value)) {
+					set.add(e);
+					continue mainFor;
+				}
+			}
+			throw new IllegalArgumentException("Bad option value: " + value);
+		}
+
+		return set;
 	}
 }

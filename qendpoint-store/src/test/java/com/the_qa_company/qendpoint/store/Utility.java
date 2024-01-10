@@ -90,7 +90,7 @@ public class Utility {
 		} catch (ParserException e) {
 			throw new IOException("Can't generate hdt", e);
 		}
-		return HDTManager.indexedHDT(hdt, null);
+		return HDTManager.indexedHDT(hdt, null, spec);
 	}
 
 	/**

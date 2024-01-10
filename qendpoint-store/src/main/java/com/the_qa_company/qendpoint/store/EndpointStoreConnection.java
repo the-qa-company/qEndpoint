@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.ConfigSailConnection;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -435,7 +436,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		long sizeNativeB = connB_read.size(contexts);
 		long sizeHdt = this.endpoint.getHdt().getTriples().getNumberOfElements();
 
-		long sizeDeleted = this.endpoint.getDeleteBitMap().countOnes();
+		long sizeDeleted = this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).countOnes();
 		logger.info("---------------------------");
 		logger.info("Size native A:" + sizeNativeA);
 		logger.info("Size native B:" + sizeNativeB);
@@ -512,7 +513,10 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		if (iter.hasNext()) {
 			iter.next();
 			long index = iter.getLastTriplePosition();
-			return !this.endpoint.getDeleteBitMap().access(index);
+			return !this.endpoint
+					.getDeleteBitMap(
+							iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO)
+					.access(index);
 		}
 		return false;
 	}
@@ -520,17 +524,25 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	private void assignBitMapDeletes(TripleID tripleID, Resource subj, IRI pred, Value obj) throws SailException {
 
 		if (tripleID.getSubject() != -1 && tripleID.getPredicate() != -1 && tripleID.getObject() != -1) {
-			IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID);
+			for (TripleComponentOrder order : endpoint.getValidOrders()) {
+				IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID, order.mask);
 
-			if (iter.hasNext()) {
-				iter.next();
-				long index = iter.getLastTriplePosition();
+				if (iter.hasNext()) {
+					iter.next();
+					long index = iter.getLastTriplePosition();
 
-				if (!this.endpoint.getDeleteBitMap().access(index)) {
-					this.endpoint.getDeleteBitMap().set(index, true);
-					if (this.endpoint.isMerging())
-						this.endpoint.getTempDeleteBitMap().set(index, true);
-					notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
+					assert iter.isLastTriplePositionBoundToOrder();
+					TripleComponentOrder sorder = iter.getOrder();
+
+					if (!this.endpoint.getDeleteBitMap(sorder).access(index)) {
+						this.endpoint.getDeleteBitMap(sorder).set(index, true);
+						if (this.endpoint.isMerging()) {
+							this.endpoint.getTempDeleteBitMap(sorder).set(index, true);
+						}
+						if (order == TripleComponentOrder.SPO) {
+							notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
+						}
+					}
 				}
 			}
 		} else {

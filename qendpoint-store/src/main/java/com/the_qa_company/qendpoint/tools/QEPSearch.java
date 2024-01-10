@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -623,7 +624,7 @@ public class QEPSearch {
 						size = ep.getHdt().getDictionary().getNobjects() - shared;
 					}
 					case "bitd" -> {
-						bm = ep.getDeleteBitMap();
+						bm = ep.getDeleteBitMap(TripleComponentOrder.SPO);
 						size = ep.getHdt().getTriples().getNumberOfElements();
 					}
 					default -> {

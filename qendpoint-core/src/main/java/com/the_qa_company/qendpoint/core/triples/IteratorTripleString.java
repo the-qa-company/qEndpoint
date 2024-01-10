@@ -63,4 +63,6 @@ public interface IteratorTripleString extends Iterator<TripleString> {
 	 * @return order of the components from the iterator
 	 */
 	TripleComponentOrder getOrder();
+
+	boolean isLastTriplePositionBoundToOrder();
 }

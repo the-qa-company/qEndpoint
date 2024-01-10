@@ -60,4 +60,8 @@ public class JenaModelIterator implements IteratorTripleString {
 		return TripleComponentOrder.Unknown;
 	}
 
+	@Override
+	public boolean isLastTriplePositionBoundToOrder() {
+		return false;
+	}
 }

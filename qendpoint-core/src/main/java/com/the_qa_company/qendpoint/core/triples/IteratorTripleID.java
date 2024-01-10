@@ -19,10 +19,10 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+
+import java.util.Iterator;
 
 /**
  * Iterator of TripleID
@@ -95,4 +95,12 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 	 * @see Triples#findTriple(long)
 	 */
 	long getLastTriplePosition();
+
+	/**
+	 * @return if the {@link #getLastTriplePosition()} function is returning an
+	 *         index based on {@link #getOrder()} or the triples order
+	 */
+	default boolean isLastTriplePositionBoundToOrder() {
+		return false;
+	}
 }

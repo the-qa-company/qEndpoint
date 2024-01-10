@@ -167,4 +167,9 @@ public class DictionaryTranslateIterator implements IteratorTripleString {
 		return iterator.getOrder();
 	}
 
+	@Override
+	public boolean isLastTriplePositionBoundToOrder() {
+		return iterator.isLastTriplePositionBoundToOrder();
+	}
+
 }

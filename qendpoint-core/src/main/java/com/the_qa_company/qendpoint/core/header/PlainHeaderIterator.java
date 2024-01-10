@@ -116,4 +116,9 @@ public class PlainHeaderIterator implements IteratorTripleString {
 	public TripleComponentOrder getOrder() {
 		return TripleComponentOrder.Unknown;
 	}
+
+	@Override
+	public boolean isLastTriplePositionBoundToOrder() {
+		return false;
+	}
 }

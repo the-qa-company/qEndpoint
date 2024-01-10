@@ -221,7 +221,6 @@ public class MergeRestartTest {
 			executeTestAddHDT(countFile, endpointStore, 4, count);
 
 			// show the bitmap and the file value
-			logger.debug("STEP1_TEST_BITMAP0o: {}", store.getDeleteBitMap().printInfo());
 			try (BitArrayDisk arr = new BitArrayDisk(0, hdtStore.getAbsolutePath() + "/triples-delete.arr")) {
 				logger.debug("STEP1_TEST_BITMAP0n: {}", arr.printInfo());
 			}
@@ -280,7 +279,6 @@ public class MergeRestartTest {
 				executeTestAddRDF(countFile, endpointStore, 4, count);
 				executeTestAddHDT(countFile, endpointStore, 4, count);
 
-				logger.debug("count of deleted in hdt step2s: " + store.getDeleteBitMap().countOnes());
 				// test if the count is correct
 				executeTestCount(countFile, endpointStore, store);
 				++step;
@@ -304,7 +302,6 @@ public class MergeRestartTest {
 				executeTestAddRDF(countFile, endpointStore, 4, count);
 				executeTestAddHDT(countFile, endpointStore, 4, count);
 
-				logger.debug("count of deleted in hdt step2e: " + store.getDeleteBitMap().countOnes());
 				// test if the count is correct
 				executeTestCount(countFile, endpointStore, store);
 				++step;
@@ -434,10 +431,6 @@ public class MergeRestartTest {
 
 		MergeRunnableStopPoint.STEP2_START.debugWaitForEvent();
 		if (point.ordinal() <= MergeRunnableStopPoint.STEP2_START.ordinal()) {
-			logger.debug("test count 0");
-			logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
-			if (store2.getTempDeleteBitMap() != null)
-				logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
 			// test if the count is correct
 			executeTestCount(countFile, endpointStore2, store2);
 		}
@@ -445,10 +438,6 @@ public class MergeRestartTest {
 
 		MergeRunnableStopPoint.STEP2_END.debugWaitForEvent();
 		if (point.ordinal() <= MergeRunnableStopPoint.STEP2_END.ordinal()) {
-			logger.debug("test count 1");
-			logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
-			if (store2.getTempDeleteBitMap() != null)
-				logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
 			// test if the count is correct
 			executeTestCount(countFile, endpointStore2, store2);
 		}
@@ -457,10 +446,6 @@ public class MergeRestartTest {
 		// wait for the merge to complete
 		MergeRunnable.debugWaitMerge();
 
-		logger.debug("test count 2");
-		logger.debug("count of deleted in hdt: {}", store2.getDeleteBitMap().countOnes());
-		if (store2.getTempDeleteBitMap() != null)
-			logger.debug("count of tmp del in hdt: {}", store2.getTempDeleteBitMap().countOnes());
 		// test if the count is correct
 		executeTestCount(countFile, endpointStore2, store2);
 	}
@@ -793,9 +778,6 @@ public class MergeRestartTest {
 		logger.debug("HDT: ");
 		while (it.hasNext()) {
 			logger.debug("- {}", it.next());
-		}
-		if (store != null) {
-			logger.debug("bitmap: {}", store.getDeleteBitMap().printInfo());
 		}
 	}
 
