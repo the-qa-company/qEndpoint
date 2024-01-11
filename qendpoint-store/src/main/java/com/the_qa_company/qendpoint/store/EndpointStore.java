@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -57,6 +58,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -95,10 +97,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 	// location of the native store
 
 	// bitmap to mark which triples in HDT were deleted
-	private BitArrayDisk deleteBitMap;
+	private final BitArrayDisk[] deleteBitMap = new BitArrayDisk[TripleComponentOrder.values().length];
 	// bitmap used to mark deleted triples in HDT during a merge operation
 	// FIXME: is this needed?
-	private BitArrayDisk tempdeleteBitMap;
+	private final BitArrayDisk[] tempdeleteBitMap = new BitArrayDisk[TripleComponentOrder.values().length];
 	// setting to put the delete map only in memory, i.e don't write to disk
 	private final boolean inMemDeletes;
 	private final boolean loadIntoMemory;
@@ -145,6 +147,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	private MergeRunnable.MergeThread<?> mergerThread;
 	private final AtomicReference<EndpointStoreDump> dump = new AtomicReference<>();
 	private final AtomicBoolean dumping = new AtomicBoolean();
+	private final EnumSet<TripleComponentOrder> validOrders;
 
 	public void deleteNativeLocks() throws IOException {
 		// remove lock files of a hard shutdown (SAIL is already locked by
@@ -163,6 +166,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 			throws IOException {
 		// load HDT file
 		this.spec = (spec = HDTOptions.ofNullable(spec));
+		validOrders = getHDTSpec().getEnumSet(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, TripleComponentOrder.class);
+		validOrders.add(TripleComponentOrder.SPO); // we need at least SPO
+
 		debugId = ENDPOINT_DEBUG_ID_GEN.incrementAndGet();
 		EndpointStoreUtils.openEndpoint(this);
 		this.endpointFiles = files;
@@ -343,12 +349,16 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	// init the delete array upon the first start of the store
 	private void initDeleteArray() throws IOException {
-		if (this.inMemDeletes)
-			setDeleteBitMap(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements()));
-		else {
+		if (this.inMemDeletes) {
+			for (TripleComponentOrder order : validOrders) {
+				setDeleteBitMap(order, new BitArrayDisk(this.hdt.getTriples().getNumberOfElements()));
+			}
+		} else {
 			// @todo: these should be recovered from the file if it is there
-			setDeleteBitMap(
-					new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(), endpointFiles.getTripleDeleteArr()));
+			for (TripleComponentOrder order : validOrders) {
+				setDeleteBitMap(order, new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
+						endpointFiles.getTripleDeleteArr(order)));
+			}
 		}
 	}
 
@@ -493,14 +503,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 			return HDTManager.loadIndexedHDT(endpointFiles.getHDTIndex(), null, spec);
 		} else {
 			// use disk implementation to generate the index if required
-			OverrideHDTOptions specOver = new OverrideHDTOptions(spec);
-			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
+			HDTOptions top = spec.pushTop();
+			top.set(HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
 					HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK);
-			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK, true);
-			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, true);
-			specOver.setOverride(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,
+			top.set(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK, true);
+			top.set(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, true);
+			top.set(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,
 					endpointFiles.getLocationHdtPath().resolve("indexload").toAbsolutePath());
-			return HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), specOver, null);
+			return HDTManager.mapIndexedHDT(endpointFiles.getHDTIndex(), top, null);
 		}
 	}
 
@@ -591,16 +601,26 @@ public class EndpointStore extends AbstractNotifyingSail {
 		this.hdtProps = hdtProps;
 	}
 
-	public BitArrayDisk getDeleteBitMap() {
+	public BitArrayDisk getDeleteBitMap(TripleComponentOrder order) {
+		return deleteBitMap[order.ordinal()];
+	}
+
+	public BitArrayDisk[] getDeleteBitMaps() {
 		return deleteBitMap;
 	}
 
-	public void setDeleteBitMap(BitArrayDisk deleteBitMap) {
-		this.deleteBitMap = deleteBitMap;
+	public void setDeleteBitMap(TripleComponentOrder order, BitArrayDisk deleteBitMap) {
+		this.deleteBitMap[order.ordinal()] = deleteBitMap;
 	}
 
-	public BitArrayDisk getTempDeleteBitMap() {
-		return tempdeleteBitMap;
+	public void setDeleteBitMap(BitArrayDisk[] deleteBitMaps) {
+		for (TripleComponentOrder order : validOrders) {
+			this.deleteBitMap[order.ordinal()] = deleteBitMaps[order.ordinal()];
+		}
+	}
+
+	public BitArrayDisk getTempDeleteBitMap(TripleComponentOrder order) {
+		return tempdeleteBitMap[order.ordinal()];
 	}
 
 	public NTriplesWriter getRdfWriterTempTriples() {
@@ -612,9 +632,15 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * while merging
 	 */
 	public void initTempDeleteArray() throws IOException {
-		this.tempdeleteBitMap = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
-				endpointFiles.getTripleDeleteTempArr());
-		this.tempdeleteBitMap.force(false);
+		for (TripleComponentOrder order : validOrders) {
+			this.tempdeleteBitMap[order.ordinal()] = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
+					endpointFiles.getTripleDeleteTempArr(order));
+		}
+		for (BitArrayDisk b : this.tempdeleteBitMap) {
+			if (b != null) {
+				b.force(false);
+			}
+		}
 	}
 
 	/**
@@ -641,7 +667,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 	public void resetDeleteArray(HDT newHdt) throws IOException {
 		// delete array created at merge time
 
-		BitArrayDisk newDeleteArray = new BitArrayDisk(newHdt.getTriples().getNumberOfElements());
+		BitArrayDisk[] newDeleteArray = new BitArrayDisk[TripleComponentOrder.values().length];
+		for (TripleComponentOrder order : validOrders) {
+			newDeleteArray[order.ordinal()] = new BitArrayDisk(newHdt.getTriples().getNumberOfElements());
+		}
 
 		long lastOldSubject = -2;
 		long lastNewSubject = -2;
@@ -661,8 +690,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 		// iterate over the temp array, convert the triples and mark it as
 		// deleted in the new HDT file
-		for (long i = 0; i < tempdeleteBitMap.getNumBits(); i++) {
-			if (tempdeleteBitMap.access(i)) { // means that a triple has been
+		BitArrayDisk tempDeleteBitMap = getTempDeleteBitMap(TripleComponentOrder.SPO);
+		for (long i = 0; i < tempDeleteBitMap.getNumBits(); i++) {
+			if (tempDeleteBitMap.access(i)) { // means that a triple has been
 				// deleted during merge
 				// find the deleted triple in the old HDT index
 				TripleID tripleID = this.hdt.getTriples().findTriple(i);
@@ -722,35 +752,33 @@ public class EndpointStore extends AbstractNotifyingSail {
 					TripleID triple = new TripleID(subject, predicate, object);
 
 					if (!triple.isNoMatch()) {
-						IteratorTripleID next = newHdt.getTriples().search(triple);
-						if (next.hasNext()) {
-							next.next();
-							long newIndex = next.getLastTriplePosition();
-							newDeleteArray.set(newIndex, true);
+						for (TripleComponentOrder sorder : validOrders) {
+							IteratorTripleID next = newHdt.getTriples().search(triple, sorder.mask);
+							if (next.hasNext()) {
+								assert next.getOrder() == sorder : "invalid order";
+								next.next();
+								long newIndex = next.getLastTriplePosition();
+								newDeleteArray[sorder.ordinal()].set(newIndex, true);
+							}
 						}
 					}
 				}
 			}
 		}
 
-		if (MergeRunnableStopPoint.debug) {
-			logger.debug("HDT cache saved element(s) ones={} in {}", tempdeleteBitMap.countOnes(), watch.stopAndShow());
-			if (debugTotal != 0) {
-				logger.debug("debugSavedSubject        : {} % | {} / {}", 100 * debugSavedSubject / debugTotal,
-						debugSavedSubject, debugTotal);
-				logger.debug("debugSavedPredicate      : {} % | {} / {}", 100 * debugSavedPredicate / debugTotal,
-						debugSavedPredicate, debugTotal);
-				logger.debug("debugSavedObject         : {} % | {} / {}", 100 * debugSavedObject / debugTotal,
-						debugSavedObject, debugTotal);
-			} else {
-				logger.debug("no remap");
+		Closer.closeSingle(getDeleteBitMaps());
+		try {
+			for (TripleComponentOrder sorder : validOrders) {
+				newDeleteArray[sorder.ordinal()].changeToInDisk(new File(endpointFiles.getTripleDeleteArr(sorder)));
 			}
-			logger.debug("Tmp map: {}", tempdeleteBitMap.printInfo());
-			logger.debug("New map: {}", newDeleteArray.printInfo());
+		} catch (Throwable t) {
+			try {
+				Closer.closeSingle(newDeleteArray);
+			} catch (Throwable t2) {
+				t.addSuppressed(t2);
+			}
+			throw t;
 		}
-
-		getDeleteBitMap().close();
-		newDeleteArray.changeToInDisk(new File(endpointFiles.getTripleDeleteArr()));
 		this.setDeleteBitMap(newDeleteArray);
 	}
 
@@ -769,7 +797,13 @@ public class EndpointStore extends AbstractNotifyingSail {
 						search.next();
 						long index = search.getLastTriplePosition();
 						if (index >= 0) {
-							this.deleteBitMap.set(index, true);
+							TripleComponentOrder order;
+							if (search.isLastTriplePositionBoundToOrder()) {
+								order = search.getOrder();
+							} else {
+								order = TripleComponentOrder.SPO;
+							}
+							this.deleteBitMap[order.ordinal()].set(index, true);
 						}
 					}
 				}
@@ -988,10 +1022,18 @@ public class EndpointStore extends AbstractNotifyingSail {
 	}
 
 	public void flushWrites() throws IOException {
-		getDeleteBitMap().force(true);
+		for (BitArrayDisk b : deleteBitMap) {
+			if (b != null) {
+				b.force(true);
+			}
+		}
 		if (isMerging()) {
 			getRdfWriterTempTriples().getWriter().flush();
-			getTempDeleteBitMap().force(true);
+			for (BitArrayDisk b : tempdeleteBitMap) {
+				if (b != null) {
+					b.force(true);
+				}
+			}
 		}
 		logger.debug("Writes completed");
 	}
@@ -1082,5 +1124,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	long getDebugId() {
 		return debugId;
+	}
+
+	public EnumSet<TripleComponentOrder> getValidOrders() {
+		return validOrders;
 	}
 }

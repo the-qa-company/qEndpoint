@@ -284,6 +284,11 @@ public class DictionaryTranslateIteratorBuffer implements IteratorTripleString {
 		return iterator.getOrder();
 	}
 
+	@Override
+	public boolean isLastTriplePositionBoundToOrder() {
+		return iterator.isLastTriplePositionBoundToOrder();
+	}
+
 	public static void setBlockSize(int size) {
 		DEFAULT_BLOCK_SIZE = size;
 	}

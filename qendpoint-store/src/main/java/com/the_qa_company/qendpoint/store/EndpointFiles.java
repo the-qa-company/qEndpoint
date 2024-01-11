@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.ParsedStringValue;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 
 import java.io.File;
@@ -226,27 +227,33 @@ public class EndpointFiles {
 	 * @return the delete triple
 	 *         {@link com.the_qa_company.qendpoint.utils.BitArrayDisk} file
 	 */
-	@ParsedStringValue("store.deleteBitmap")
-	public String getTripleDeleteArr() {
-		return this.locationHdt + "triples-delete.arr";
+	public String getTripleDeleteArr(TripleComponentOrder order) {
+		if (order == TripleComponentOrder.SPO) {
+			return this.locationHdt + "triples-delete.arr";
+		}
+		return this.locationHdt + "triples-delete-" + order.name().toLowerCase() + ".arr";
 	}
 
 	/**
 	 * @return the temp delete triple
 	 *         {@link com.the_qa_company.qendpoint.utils.BitArrayDisk} file
 	 */
-	@ParsedStringValue("store.tempDeleteBitmap")
-	public String getTripleDeleteTempArr() {
-		return this.locationHdt + "triples-delete-temp.arr";
+	public String getTripleDeleteTempArr(TripleComponentOrder order) {
+		if (order == TripleComponentOrder.SPO) {
+			return this.locationHdt + "triples-delete-temp.arr";
+		}
+		return this.locationHdt + "triples-delete-" + order.name().toLowerCase() + "-temp.arr";
 	}
 
 	/**
 	 * @return the copy delete triple
 	 *         {@link com.the_qa_company.qendpoint.utils.BitArrayDisk} file
 	 */
-	@ParsedStringValue("store.tempDeleteBitmapCopy")
-	public String getTripleDeleteCopyArr() {
-		return this.locationHdt + "triples-delete-cpy.arr";
+	public String getTripleDeleteCopyArr(TripleComponentOrder order) {
+		if (order == TripleComponentOrder.SPO) {
+			return this.locationHdt + "triples-delete-cpy.arr";
+		}
+		return this.locationHdt + "triples-delete-" + order.name().toLowerCase() + "-cpy.arr";
 	}
 
 	/**

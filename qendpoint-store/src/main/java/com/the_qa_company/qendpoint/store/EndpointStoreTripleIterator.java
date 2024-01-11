@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
@@ -52,7 +53,9 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		while (iterator.hasNext()) {
 			TripleID tripleID = iterator.next();
 			long index = iterator.getLastTriplePosition();
-			if (!endpoint.getDeleteBitMap().access(index)) {
+			TripleComponentOrder order = iterator.isLastTriplePositionBoundToOrder() ? iterator.getOrder()
+					: TripleComponentOrder.SPO;
+			if (!endpoint.getDeleteBitMap(order).access(index)) {
 				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
 				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());

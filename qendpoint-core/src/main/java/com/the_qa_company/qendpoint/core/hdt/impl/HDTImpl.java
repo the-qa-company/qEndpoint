@@ -333,6 +333,11 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 				public TripleComponentOrder getOrder() {
 					return TripleComponentOrder.getAcceptableOrder(searchOrderMask);
 				}
+
+				@Override
+				public boolean isLastTriplePositionBoundToOrder() {
+					return false;
+				}
 			};
 		}
 
@@ -410,6 +415,11 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 				@Override
 				public TripleComponentOrder getOrder() {
 					return TripleComponentOrder.getAcceptableOrder(searchOrderMask);
+				}
+
+				@Override
+				public boolean isLastTriplePositionBoundToOrder() {
+					return false;
 				}
 			};
 		}
