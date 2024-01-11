@@ -2,6 +2,10 @@ name: Pull request Tests
 
 on: [pull_request]
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   find_changes:
     name: Find changes
