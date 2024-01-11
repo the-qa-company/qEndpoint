@@ -6,7 +6,7 @@ on:
       - "master"
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.ref }}-sync
   cancel-in-progress: true
 
 jobs:
