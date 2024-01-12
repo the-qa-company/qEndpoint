@@ -35,12 +35,6 @@ import java.util.stream.Collectors;
 // this is the main class telling how, given a triple pattern, to find the results in HDT and the current stores
 public class EndpointTripleSource implements TripleSource {
 
-	/**
-	 * This flag can be set to false in order to disable the use of merge join.
-	 * This can be useful for comparing performance.
-	 */
-	private static boolean ENABLE_MERGE_JOIN = true;
-
 	private static final Logger logger = LoggerFactory.getLogger(EndpointTripleSource.class);
 	private final EndpointStore endpoint;
 	private long numberOfCurrentTriples;
@@ -48,11 +42,13 @@ public class EndpointTripleSource implements TripleSource {
 	// only for debugging ...
 	private long count = 0;
 	private final EndpointStoreConnection endpointStoreConnection;
+	private final boolean enableMergeJoin;
 
 	public EndpointTripleSource(EndpointStoreConnection endpointStoreConnection, EndpointStore endpoint) {
 		this.endpoint = endpoint;
 		this.numberOfCurrentTriples = endpoint.getHdt().getTriples().getNumberOfElements();
 		this.endpointStoreConnection = endpointStoreConnection;
+		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean("qendpoint.mergejoin", true);
 	}
 
 	private void initHDTIndex() {
@@ -296,7 +292,7 @@ public class EndpointTripleSource implements TripleSource {
 	@Override
 	public Set<StatementOrder> getSupportedOrders(Resource subj, IRI pred, Value obj, Resource... contexts) {
 
-		if (!ENABLE_MERGE_JOIN) {
+		if (!enableMergeJoin) {
 			return Set.of();
 		}
 
