@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -243,7 +245,7 @@ public class EndpointTripleSource implements TripleSource {
 		}
 
 		Optional<TripleComponentOrder> first = tripleComponentOrder.stream()
-				.filter(o -> o.getStatementOrder(subj != null, pred != null, obj != null).contains(statementOrder))
+				.filter(o -> getStatementOrder(o, subj != null, pred != null, obj != null).contains(statementOrder))
 				.findFirst();
 
 		if (first.isEmpty()) {
@@ -252,6 +254,43 @@ public class EndpointTripleSource implements TripleSource {
 		}
 		int indexMaskMatchingStatementOrder = first.get().mask;
 		return indexMaskMatchingStatementOrder;
+	}
+
+	public static Set<StatementOrder> getStatementOrder(TripleComponentOrder tripleComponentOrder, boolean subject,
+			boolean predicate, boolean object) {
+		List<TripleComponentRole> subjectMappings = List.of(tripleComponentOrder.getSubjectMapping(),
+				tripleComponentOrder.getPredicateMapping(), tripleComponentOrder.getObjectMapping());
+
+		EnumSet<StatementOrder> statementOrders = EnumSet.noneOf(StatementOrder.class);
+		if (subject) {
+			statementOrders.add(StatementOrder.S);
+		}
+		if (predicate) {
+			statementOrders.add(StatementOrder.P);
+		}
+		if (object) {
+			statementOrders.add(StatementOrder.O);
+		}
+
+		for (TripleComponentRole mapping : subjectMappings) {
+			if (mapping == TripleComponentRole.SUBJECT) {
+				if (!subject) {
+					statementOrders.add(StatementOrder.S);
+					break;
+				}
+			} else if (mapping == TripleComponentRole.PREDICATE) {
+				if (!predicate) {
+					statementOrders.add(StatementOrder.P);
+					break;
+				}
+			} else if (mapping == TripleComponentRole.OBJECT) {
+				if (!object) {
+					statementOrders.add(StatementOrder.O);
+					break;
+				}
+			}
+		}
+		return statementOrders;
 	}
 
 	@Override
@@ -321,7 +360,7 @@ public class EndpointTripleSource implements TripleSource {
 					.getTripleComponentOrder(t);
 
 			var orders = tripleComponentOrder.stream()
-					.map(o -> o.getStatementOrder(subj != null, pred != null, obj != null)).filter(Objects::nonNull)
+					.map(o -> getStatementOrder(o, subj != null, pred != null, obj != null)).filter(Objects::nonNull)
 					.flatMap(Collection::stream).filter(p -> p != StatementOrder.P)
 					// we do not support predicate ordering since it doesn't use
 					// the same IDs as other IRIs

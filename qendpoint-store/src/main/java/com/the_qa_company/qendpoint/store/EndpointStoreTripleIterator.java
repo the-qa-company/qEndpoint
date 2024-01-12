@@ -112,10 +112,10 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 
 	@Override
 	public String getIndexName() {
-		if (iterator instanceof IndexReportingIterator) {
-			return ((IndexReportingIterator) iterator).getIndexName();
-		} else {
-			return null;
+		TripleComponentOrder order = iterator.getOrder();
+		if (order != null) {
+			return order.name();
 		}
+		return null;
 	}
 }

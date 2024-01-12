@@ -24,12 +24,11 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
-import org.eclipse.rdf4j.common.iteration.IndexReportingIterator;
 
 /**
  * @author mario.arias
  */
-public class BitmapTriplesIterator implements SuppliableIteratorTripleID, IndexReportingIterator {
+public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 	protected final BitmapTriplesIndex idx;
 	protected final TripleID pattern, returnTriple;
