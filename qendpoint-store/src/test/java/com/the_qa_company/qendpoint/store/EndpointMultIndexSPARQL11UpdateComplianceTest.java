@@ -27,11 +27,8 @@ import java.util.stream.Stream;
 
 public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
-	public EndpointMultIndexSPARQL11UpdateComplianceTest(String displayName, String testURI, String name,
-			String requestFile, IRI defaultGraphURI, Map<String, IRI> inputNamedGraphs, IRI resultDefaultGraphURI,
-			Map<String, IRI> resultNamedGraphs) {
-		super(displayName, testURI, name, requestFile, defaultGraphURI, inputNamedGraphs, resultDefaultGraphURI,
-				resultNamedGraphs);
+	public EndpointMultIndexSPARQL11UpdateComplianceTest() {
+		super();
 		List<String> testToIgnore = new ArrayList<>();
 		// @todo these tests are failing and should not, they are skipped so
 		// that we can be sure that we see when
@@ -95,8 +92,4 @@ public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11Updat
 		// NativeStore(tempDir.newFolder(), "spoc")));
 	}
 
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-	}
 }

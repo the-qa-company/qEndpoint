@@ -295,11 +295,6 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	}
 
 	@Override
-	public String getIndexName() {
-		return idx.getOrder().toString();
-	}
-
-	@Override
 	public boolean isLastTriplePositionBoundToOrder() {
 		return true;
 	}
