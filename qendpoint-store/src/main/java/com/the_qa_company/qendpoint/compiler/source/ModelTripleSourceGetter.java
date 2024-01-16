@@ -32,7 +32,7 @@ public class ModelTripleSourceGetter implements TripleSourceGetter, TripleSource
 	}
 
 	@Override
-	public CloseableIteration<Statement, SailCompiler.SailCompilerException> getStatements(Resource s, IRI p, Value o) {
+	public CloseableIteration<Statement> getStatements(Resource s, IRI p, Value o) {
 		final Iterator<Statement> it = model.getStatements(s, p, o).iterator();
 		return new CloseableIteration<>() {
 			@Override

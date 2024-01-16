@@ -34,11 +34,8 @@ import java.util.stream.Stream;
 public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 	private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
-	public EndpointMultIndexSPARQL11QueryComplianceTest(String displayName, String testURI, String name,
-			String queryFileURL, String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality)
-			throws ParserException, NotFoundException, IOException {
-		super(displayName, testURI, name, queryFileURL, resultFileURL, null, ordered, laxCardinality);
-		setUpHDT(dataset);
+	public EndpointMultIndexSPARQL11QueryComplianceTest() {
+		super();
 		List<String> testToIgnore = new ArrayList<>();
 		// @todo these tests are failing and should not, they are skipped so
 		// that we can be sure that we see when
@@ -71,6 +68,16 @@ public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryC
 	EndpointStore endpoint;
 	File nativeStore;
 	File hdtStore;
+
+	@Override
+	protected void testParameterListener(String displayName, String testURI, String name, String queryFileURL,
+			String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
+		try {
+			setUpHDT(dataset);
+		} catch (IOException | ParserException | NotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	protected Repository newRepository() throws Exception {
@@ -114,11 +121,6 @@ public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryC
 		};
 		// endpoint.setThreshold(2);
 		return new SailRepository(endpoint);
-	}
-
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
 	}
 
 	HDT hdt;

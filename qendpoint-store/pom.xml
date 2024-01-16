@@ -23,12 +23,25 @@
         </license>
     </licenses>
 
+    <repositories>
+        <repository>
+            <id>oss.sonatype.org-snapshot</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <common_codec.version>1.15</common_codec.version>
         <json_simple.version>1.1.1</json_simple.version>
         <junit.version>4.13.2</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
-        <rdf4j.version>4.3.2</rdf4j.version>
+        <rdf4j.version>5.0.0-SNAPSHOT</rdf4j.version>
         <logback.version>1.4.5</logback.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

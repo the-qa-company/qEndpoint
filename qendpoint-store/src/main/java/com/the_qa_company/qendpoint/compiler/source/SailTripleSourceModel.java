@@ -58,10 +58,8 @@ public class SailTripleSourceModel implements TripleSourceModel {
 		}
 
 		@Override
-		public CloseableIteration<Statement, SailCompiler.SailCompilerException> getStatements(Resource s, IRI p,
-				Value o) {
-			CloseableIteration<? extends Statement, SailException> it = sail.getConnection().getStatements(s, p, o,
-					false);
+		public CloseableIteration<Statement> getStatements(Resource s, IRI p, Value o) {
+			CloseableIteration<? extends Statement> it = sail.getConnection().getStatements(s, p, o, false);
 			return new CloseableIteration<>() {
 				@Override
 				public void close() throws SailCompiler.SailCompilerException {

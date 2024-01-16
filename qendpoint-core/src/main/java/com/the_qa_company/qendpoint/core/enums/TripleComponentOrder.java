@@ -19,6 +19,8 @@
 
 package com.the_qa_company.qendpoint.core.enums;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -86,6 +88,24 @@ public enum TripleComponentOrder {
 	 * @param <T>   value type
 	 * @return find value, null for no matching value
 	 */
+	public static <T, Z extends TripleComponentOrder> List<Z> fetchAllBestForCfg(int flags, Map<Z, T> map) {
+		ArrayList<Z> ret = new ArrayList<>();
+		for (Map.Entry<Z, T> e : map.entrySet()) {
+			if ((e.getKey().mask & flags) != 0) {
+				ret.add(e.getKey());
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Search for an acceptable value in a map of orders
+	 *
+	 * @param flags flags to search the value
+	 * @param map   map
+	 * @param <T>   value type
+	 * @return find value, null for no matching value
+	 */
 	public static <T> T fetchBestForCfg(int flags, Map<? extends TripleComponentOrder, T> map) {
 		for (Map.Entry<? extends TripleComponentOrder, T> e : map.entrySet()) {
 			if ((e.getKey().mask & flags) != 0) {
@@ -123,4 +143,5 @@ public enum TripleComponentOrder {
 	public TripleComponentRole getObjectMapping() {
 		return objectMapping;
 	}
+
 }

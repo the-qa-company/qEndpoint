@@ -222,7 +222,7 @@ public class QEPSailStore implements SailStore {
 		}
 
 		@Override
-		public QEPCloseableIteration<? extends Namespace, SailException> getNamespaces() throws SailException {
+		public QEPCloseableIteration<? extends Namespace> getNamespaces() throws SailException {
 			Map<String, String> namespaces = core.getNamespaceData().getNamespaces();
 			return QEPCloseableIteration.of(CloseableIterator.of(
 					namespaces.entrySet().stream().map(e -> new SimpleNamespace(e.getKey(), e.getValue())).iterator()));
@@ -234,13 +234,13 @@ public class QEPSailStore implements SailStore {
 		}
 
 		@Override
-		public QEPCloseableIteration<? extends Resource, SailException> getContextIDs() throws SailException {
+		public QEPCloseableIteration<? extends Resource> getContextIDs() throws SailException {
 			return QEPCloseableIteration.of();
 		}
 
 		@Override
-		public QEPCloseableIteration<? extends Statement, SailException> getStatements(Resource subj, IRI pred,
-				Value obj, Resource... contexts) throws SailException {
+		public QEPCloseableIteration<? extends Statement> getStatements(Resource subj, IRI pred, Value obj,
+				Resource... contexts) throws SailException {
 			if (!explicit) {
 				return QEPCloseableIteration.of();
 			}
@@ -254,5 +254,6 @@ public class QEPSailStore implements SailStore {
 						return null;
 					});
 		}
+
 	}
 }

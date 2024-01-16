@@ -396,8 +396,8 @@ public class EndpointStoreNotifyTest {
 			MergeRunnable.debugWaitMerge();
 
 			try (NotifyingSailConnection co = store.getConnection()) {
-				try (CloseableIteration<? extends Statement, SailException> stmt = co.getStatements(iri("ex5"),
-						iri("p"), iri("placeholder"), false)) {
+				try (CloseableIteration<? extends Statement> stmt = co.getStatements(iri("ex5"), iri("p"),
+						iri("placeholder"), false)) {
 					assertTrue(stmt.hasNext());
 					assertTrue(stmt.next().getSubject() instanceof HDTValue);
 					assertFalse(stmt.hasNext());
@@ -466,8 +466,8 @@ public class EndpointStoreNotifyTest {
 			MergeRunnable.debugWaitMerge();
 
 			try (NotifyingSailConnection co = store.getConnection()) {
-				try (CloseableIteration<? extends Statement, SailException> stmt = co.getStatements(iri("ex5"),
-						iri("p"), iri("placeholder"), false)) {
+				try (CloseableIteration<? extends Statement> stmt = co.getStatements(iri("ex5"), iri("p"),
+						iri("placeholder"), false)) {
 					assertTrue(stmt.hasNext());
 					assertTrue(stmt.next().getSubject() instanceof HDTValue);
 					assertFalse(stmt.hasNext());
@@ -563,8 +563,8 @@ public class EndpointStoreNotifyTest {
 			MergeRunnable.debugWaitMerge();
 
 			try (NotifyingSailConnection co = store.getConnection()) {
-				try (CloseableIteration<? extends Statement, SailException> stmt = co.getStatements(iri("ex5"),
-						iri("p"), iri("placeholder"), false)) {
+				try (CloseableIteration<? extends Statement> stmt = co.getStatements(iri("ex5"), iri("p"),
+						iri("placeholder"), false)) {
 					assertTrue(stmt.hasNext());
 					assertTrue(stmt.next().getSubject() instanceof HDTValue);
 					assertFalse(stmt.hasNext());
@@ -671,8 +671,8 @@ public class EndpointStoreNotifyTest {
 				}
 
 				@Override
-				public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
-						Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+				public CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr, Dataset dataset,
+						BindingSet bindings, boolean includeInferred) throws SailException {
 					tupleExpr = tupleExpr.clone();
 					if (!(tupleExpr instanceof QueryRoot)) {
 						tupleExpr = new QueryRoot(tupleExpr);

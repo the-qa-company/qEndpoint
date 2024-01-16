@@ -206,7 +206,8 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			String hdtFormat = ci.getFormat();
 			if (!hdtFormat.equals(HDTVocabulary.HDT_CONTAINER) && !hdtFormat.equals(HDTVocabulary.HDT_CONTAINER_2)) {
 				throw new IllegalFormatException("This software (v" + HDTVersion.HDT_VERSION + ".x.x | v"
-						+ HDTVersion.HDT_VERSION_2 + ".x.x) cannot open this version of HDT File (" + hdtFormat + ")");
+						+ HDTVersion.HDT_VERSION_2 + ".x.x) cannot open this version of HDT File hdtFileName:"
+						+ hdtFileName + " format:" + hdtFormat + "");
 			}
 
 			input.printIndex("HDT Header");

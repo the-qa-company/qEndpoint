@@ -19,12 +19,13 @@
 
 package com.the_qa_company.qendpoint.core.triples;
 
-import java.io.Closeable;
-import java.util.Iterator;
-
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
+
+import java.io.Closeable;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Interface for Triples implementation.
@@ -120,5 +121,9 @@ public interface Triples extends Closeable, Iterable<TripleID> {
 	@Override
 	default Iterator<TripleID> iterator() {
 		return searchAll();
+	}
+
+	default List<TripleComponentOrder> getTripleComponentOrder(TripleID t) {
+		return List.of();
 	}
 }

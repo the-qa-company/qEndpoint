@@ -13,7 +13,7 @@ public interface HDTValue {
 			return c;
 		}
 
-		return Long.compare(v1.getHDTPosition(), v2.getHDTPosition());
+		return Long.compare(v1.getHDTId(), v2.getHDTId());
 	}
 
 	/**
