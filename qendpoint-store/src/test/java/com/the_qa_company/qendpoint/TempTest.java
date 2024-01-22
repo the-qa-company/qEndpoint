@@ -114,11 +114,13 @@ public class TempTest {
 					        ?stat epo:hasReceivedTenders ?bidders .
 					      	
 					      	?resultnotice epo:refersToProcedure ?proc .
-					        ?resultnotice epo:refersToRole ?buyerrole .					      	
+					        ?resultnotice epo:refersToRole ?buyerrole .				      	
 					        ?resultnotice a epo:ResultNotice .
 					        ?resultnotice epo:hasDispatchDate ?ddate .
 					      
-					      
+					      	FILTER ( ?p != <http://publications.europa.eu/resource/authority/procurement-procedure-type/neg-wo-call>)
+							BIND(year(xsd:dateTime(?ddate)) AS ?year) .
+												        
 					        {
 					          SELECT DISTINCT ?buyerrole ?countryID WHERE {
 					            ?org epo:hasBuyerType ?buytype .
@@ -131,11 +133,6 @@ public class TempTest {
 					      
 					           }
 					        }
-					        
-							FILTER ( ?p != <http://publications.europa.eu/resource/authority/procurement-procedure-type/neg-wo-call>)
-												        BIND(year(xsd:dateTime(?ddate)) AS ?year) .
-
-        
 					} GROUP BY ?countryID ?year
 					
 							
@@ -170,7 +167,7 @@ public class TempTest {
 		StopWatch stopWatch = StopWatch.createStarted();
 		TupleQuery tupleQuery = connection.prepareTupleQuery(query);
 		tupleQuery.setMaxExecutionTime(60*10);
-		Explanation explain = tupleQuery.explain(Explanation.Level.Optimized);
+		Explanation explain = tupleQuery.explain(Explanation.Level.Timed);
 //		System.out.println(explain);
 //		System.out.println();
 		System.out.println("Took: " + stopWatch.formatTime());

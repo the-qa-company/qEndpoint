@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
+import org.eclipse.rdf4j.common.transaction.IsolationLevels;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
@@ -142,7 +143,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	@Override
 	public void begin() throws SailException {
-		logger.info("Begin connection transaction");
+		logger.debug("Begin connection transaction");
 
 		super.begin();
 
