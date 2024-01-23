@@ -134,7 +134,7 @@ You can install is using this command
 brew install the-qa-company/tap/qendpoint
 ```
 
-### Command Line Interface
+#### Command Line Interface
 
 If you don't have access to Brew or Scoop, the qEndpoint command line interface is available in [the releases page)(https://github.com/the-qa-company/qEndpoint/releases) under the file `qendpoint-cli.zip`. By extracting it, you can a bin directory that can be added to your path.
 
