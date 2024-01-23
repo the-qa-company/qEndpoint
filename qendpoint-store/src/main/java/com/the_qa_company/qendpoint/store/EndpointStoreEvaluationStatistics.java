@@ -24,9 +24,12 @@ public class EndpointStoreEvaluationStatistics extends EvaluationStatistics {
 		protected double getCardinality(StatementPattern sp) {
 			double hdtCard = endpointStoreEvaluationStatisticsHDT.getCardinality(sp);
 			double nativeCard = nativeEvaluationStatistics.getCardinality(sp);
-			if (hdtCard == Integer.MAX_VALUE && nativeCard > 0)
+			if (hdtCard == Integer.MAX_VALUE && nativeCard > 0) {
 				hdtCard = 0;
-			return hdtCard + nativeCard;
+			}
+			double cardinality = hdtCard + nativeCard;
+			System.out.println("Cardinality for " + sp.toString().replace("\n", " ") + " is " + cardinality + " (HDT: " + hdtCard + ", Native: " + nativeCard + ")");
+			return cardinality;
 		}
 	}
 

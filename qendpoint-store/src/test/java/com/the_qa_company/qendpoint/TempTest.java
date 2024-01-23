@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.store.Utility;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.junit.After;
@@ -114,12 +115,15 @@ public class TempTest {
 					        ?stat epo:hasReceivedTenders ?bidders .
 					      	
 					      	?resultnotice epo:refersToProcedure ?proc .
-					        ?resultnotice epo:refersToRole ?buyerrole .				      	
 					        ?resultnotice a epo:ResultNotice .
 					        ?resultnotice epo:hasDispatchDate ?ddate .
 					      
 					      	FILTER ( ?p != <http://publications.europa.eu/resource/authority/procurement-procedure-type/neg-wo-call>)
 							BIND(year(xsd:dateTime(?ddate)) AS ?year) .
+								
+							# This line should be above the FILTER and BIND, but doing so causes the QueryJoinOptimizer to not optimize the query for some unknown reason	
+					        ?resultnotice epo:refersToRole ?buyerrole .				      	
+								
 												        
 					        {
 					          SELECT DISTINCT ?buyerrole ?countryID WHERE {
@@ -165,6 +169,13 @@ public class TempTest {
 
 	private static Explanation runQuery(SailRepositoryConnection connection, String query) {
 		StopWatch stopWatch = StopWatch.createStarted();
+		{
+			TupleQuery tupleQuery = connection.prepareTupleQuery(query);
+			try (TupleQueryResult evaluate = tupleQuery.evaluate()) {
+				long count = evaluate.stream().count();
+				System.out.println(count);
+			}
+		}
 		TupleQuery tupleQuery = connection.prepareTupleQuery(query);
 		tupleQuery.setMaxExecutionTime(60*10);
 		Explanation explain = tupleQuery.explain(Explanation.Level.Timed);
