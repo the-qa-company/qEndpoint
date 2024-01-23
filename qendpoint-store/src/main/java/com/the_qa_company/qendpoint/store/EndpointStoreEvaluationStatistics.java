@@ -28,7 +28,7 @@ public class EndpointStoreEvaluationStatistics extends EvaluationStatistics {
 				hdtCard = 0;
 			}
 			double cardinality = hdtCard + nativeCard;
-			System.out.println("Cardinality for " + sp.toString().replace("\n", " ") + " is " + cardinality + " (HDT: " + hdtCard + ", Native: " + nativeCard + ")");
+			System.out.println("Cardinality for " + sp.toString().replace("\n", " ") + " is " + cardinality + " (HDT: " + hdtCard + ", Native: " + nativeCard + ")\n");
 			return cardinality;
 		}
 	}
