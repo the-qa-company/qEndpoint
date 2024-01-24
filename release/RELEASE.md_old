@@ -1,3 +1,7 @@
+## Version 1.15.0
+        
+- add delete bitmap for multiple co-indexes (#440)
+
 ## Version 1.14.1
         
 - add hdt diffcat tool
