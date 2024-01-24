@@ -1,9 +1,16 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
+import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import com.the_qa_company.qendpoint.utils.CombinedNativeStoreResult;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.EmptyIteration;
+import org.eclipse.rdf4j.common.order.StatementOrder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -12,15 +19,22 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.sail.SailException;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
-import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 // this is the main class telling how, given a triple pattern, to find the results in HDT and the current stores
 public class EndpointTripleSource implements TripleSource {
+
 	private static final Logger logger = LoggerFactory.getLogger(EndpointTripleSource.class);
 	private final EndpointStore endpoint;
 	private long numberOfCurrentTriples;
@@ -28,11 +42,13 @@ public class EndpointTripleSource implements TripleSource {
 	// only for debugging ...
 	private long count = 0;
 	private final EndpointStoreConnection endpointStoreConnection;
+	private final boolean enableMergeJoin;
 
 	public EndpointTripleSource(EndpointStoreConnection endpointStoreConnection, EndpointStore endpoint) {
 		this.endpoint = endpoint;
 		this.numberOfCurrentTriples = endpoint.getHdt().getTriples().getNumberOfElements();
 		this.endpointStoreConnection = endpointStoreConnection;
+		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean("qendpoint.mergejoin", true);
 	}
 
 	private void initHDTIndex() {
@@ -40,8 +56,21 @@ public class EndpointTripleSource implements TripleSource {
 	}
 
 	@Override
-	public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(Resource resource, IRI iri,
-			Value value, Resource... resources) throws QueryEvaluationException {
+	public CloseableIteration<? extends Statement> getStatements(Resource subj, IRI pred, Value obj,
+			Resource... contexts) throws QueryEvaluationException {
+
+		return getStatements(null, subj, pred, obj, contexts);
+
+	}
+
+	@Override
+	public CloseableIteration<? extends Statement> getStatements(StatementOrder statementOrder, Resource subj, IRI pred,
+			Value obj, Resource... contexts) throws SailException {
+
+		if (statementOrder != null && logger.isDebugEnabled()) {
+			logger.debug("getStatements(StatementOrder {}, Subject {}, Predicate {}, Object {}, Contexts... {})",
+					statementOrder, subj, pred, obj, contexts);
+		}
 
 		if (EndpointStoreConnection.debugWaittime != 0) {
 			try {
@@ -66,22 +95,22 @@ public class EndpointTripleSource implements TripleSource {
 		Resource newSubj;
 		IRI newPred;
 		Value newObj;
-		long subjectID = this.endpoint.getHdtConverter().subjectToID(resource);
-		long predicateID = this.endpoint.getHdtConverter().predicateToID(iri);
-		long objectID = this.endpoint.getHdtConverter().objectToID(value);
+		long subjectID = this.endpoint.getHdtConverter().subjectToID(subj);
+		long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
+		long objectID = this.endpoint.getHdtConverter().objectToID(obj);
 
 		if (subjectID == 0 || subjectID == -1) {
-			newSubj = resource;
+			newSubj = subj;
 		} else {
 			newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
 		}
 		if (predicateID == 0 || predicateID == -1) {
-			newPred = iri;
+			newPred = pred;
 		} else {
 			newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
 		}
 		if (objectID == 0 || objectID == -1) {
-			newObj = value;
+			newObj = obj;
 		} else {
 			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
 		}
@@ -89,23 +118,27 @@ public class EndpointTripleSource implements TripleSource {
 		logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
-		CloseableIteration<? extends Statement, SailException> repositoryResult;
+		CloseableIteration<? extends Statement> repositoryResult;
 		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
+			if (statementOrder != null) {
+				throw new UnsupportedOperationException(
+						"Statement ordering is not supported when searching over the native store");
+			}
 			logger.debug("Searching over native store");
 			count++;
 			if (endpoint.isMergeTriggered) {
 				// query both native stores
 				logger.debug("Query both RDF4j stores!");
-				CloseableIteration<? extends Statement, SailException> repositoryResult1 = this.endpointStoreConnection
-						.getConnA_read().getStatements(newSubj, newPred, newObj, false, resources);
-				CloseableIteration<? extends Statement, SailException> repositoryResult2 = this.endpointStoreConnection
-						.getConnB_read().getStatements(newSubj, newPred, newObj, false, resources);
+				CloseableIteration<? extends Statement> repositoryResult1 = this.endpointStoreConnection.getConnA_read()
+						.getStatements(newSubj, newPred, newObj, false, contexts);
+				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection.getConnB_read()
+						.getStatements(newSubj, newPred, newObj, false, contexts);
 				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
 			} else {
 				logger.debug("Query only one RDF4j stores!");
 				repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
-						newPred, newObj, false, resources);
+						newPred, newObj, false, contexts);
 			}
 		} else {
 			logger.debug("Not searching over native store");
@@ -117,8 +150,18 @@ public class EndpointTripleSource implements TripleSource {
 		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
 			logger.debug("Searching over HDT {} {} {}", subjectID, predicateID, objectID);
 			TripleID t = new TripleID(subjectID, predicateID, objectID);
-			// search with the ID to check if the triples has been deleted
-			iterator = this.endpoint.getHdt().getTriples().search(t);
+
+			if (statementOrder != null) {
+				int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
+						obj, t);
+
+				// search with the ID to check if the triples has been deleted
+				iterator = this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder);
+			} else {
+				// search with the ID to check if the triples has been deleted
+				iterator = this.endpoint.getHdt().getTriples().search(t);
+			}
+
 		} else {// no need to search over hdt
 			iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
 		}
@@ -184,5 +227,165 @@ public class EndpointTripleSource implements TripleSource {
 
 	public long getCount() {
 		return count;
+	}
+
+	private int getIndexMaskMatchingStatementOrder(StatementOrder statementOrder, Resource subj, IRI pred, Value obj,
+			TripleID t) {
+		List<TripleComponentOrder> tripleComponentOrder = this.endpoint.getHdt().getTriples()
+				.getTripleComponentOrder(t);
+
+		if (subj != null && pred != null && obj != null) {
+			if (!tripleComponentOrder.isEmpty()) {
+				return tripleComponentOrder.get(0).mask;
+			}
+		}
+
+		Optional<TripleComponentOrder> first = tripleComponentOrder.stream()
+				.filter(o -> getStatementOrder(o, subj != null, pred != null, obj != null).contains(statementOrder))
+				.findFirst();
+
+		if (first.isEmpty()) {
+			throw new AssertionError(
+					"Statement order " + statementOrder + " not supported for triple pattern " + t.getPatternString());
+		}
+		int indexMaskMatchingStatementOrder = first.get().mask;
+		return indexMaskMatchingStatementOrder;
+	}
+
+	public static Set<StatementOrder> getStatementOrder(TripleComponentOrder tripleComponentOrder, boolean subject,
+			boolean predicate, boolean object) {
+		List<TripleComponentRole> subjectMappings = List.of(tripleComponentOrder.getSubjectMapping(),
+				tripleComponentOrder.getPredicateMapping(), tripleComponentOrder.getObjectMapping());
+
+		EnumSet<StatementOrder> statementOrders = EnumSet.noneOf(StatementOrder.class);
+		if (subject) {
+			statementOrders.add(StatementOrder.S);
+		}
+		if (predicate) {
+			statementOrders.add(StatementOrder.P);
+		}
+		if (object) {
+			statementOrders.add(StatementOrder.O);
+		}
+
+		for (TripleComponentRole mapping : subjectMappings) {
+			if (mapping == TripleComponentRole.SUBJECT) {
+				if (!subject) {
+					statementOrders.add(StatementOrder.S);
+					break;
+				}
+			} else if (mapping == TripleComponentRole.PREDICATE) {
+				if (!predicate) {
+					statementOrders.add(StatementOrder.P);
+					break;
+				}
+			} else if (mapping == TripleComponentRole.OBJECT) {
+				if (!object) {
+					statementOrders.add(StatementOrder.O);
+					break;
+				}
+			}
+		}
+		return statementOrders;
+	}
+
+	@Override
+	public Set<StatementOrder> getSupportedOrders(Resource subj, IRI pred, Value obj, Resource... contexts) {
+
+		if (!enableMergeJoin) {
+			return Set.of();
+		}
+
+		if (EndpointStoreConnection.debugWaittime != 0) {
+			try {
+				Thread.sleep(EndpointStoreConnection.debugWaittime);
+			} catch (InterruptedException e) {
+				throw new AssertionError("no interruption during sleep", e);
+			}
+		}
+
+		if (endpointStoreConnection.isTimeout()) {
+			throw new EndpointTimeoutException();
+		}
+
+		// @todo: should we not move this to the EndpointStore in the resetHDT
+		// function?
+		// check if the index changed, then refresh it
+		if (this.numberOfCurrentTriples != this.endpoint.getHdt().getTriples().getNumberOfElements()) {
+			initHDTIndex();
+		}
+
+		// convert uris into ids if needed
+		Resource newSubj;
+		IRI newPred;
+		Value newObj;
+		long subjectID = this.endpoint.getHdtConverter().subjectToID(subj);
+		long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
+		long objectID = this.endpoint.getHdtConverter().objectToID(obj);
+
+		if (subjectID == 0 || subjectID == -1) {
+			newSubj = subj;
+		} else {
+			newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
+		}
+		if (predicateID == 0 || predicateID == -1) {
+			newPred = pred;
+		} else {
+			newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
+		}
+		if (objectID == 0 || objectID == -1) {
+			newObj = obj;
+		} else {
+			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
+		}
+
+		logger.debug("getSupportedOrders {} {} {}", newSubj, newPred, newObj);
+
+		// check if we need to search over the delta, in which case the
+		// statements can not be ordered
+		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
+			return Set.of();
+		}
+
+		// iterate over the HDT file
+		IteratorTripleID iterator;
+		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
+			TripleID t = new TripleID(subjectID, predicateID, objectID);
+			// search with the ID to check if the triples has been deleted
+			List<TripleComponentOrder> tripleComponentOrder = this.endpoint.getHdt().getTriples()
+					.getTripleComponentOrder(t);
+
+			var orders = tripleComponentOrder.stream()
+					.map(o -> getStatementOrder(o, subj != null, pred != null, obj != null)).filter(Objects::nonNull)
+					.flatMap(Collection::stream).filter(p -> p != StatementOrder.P)
+					// we do not support predicate ordering since it doesn't use
+					// the same IDs as other IRIs
+					.collect(Collectors.toSet());
+
+			if (logger.isDebugEnabled()) {
+				logger.debug("Triple pattern: {}\nMatching indexes: {}\nPossible orders: {}", t.getPatternString(),
+						Arrays.toString(tripleComponentOrder.toArray()), Arrays.toString(orders.toArray()));
+			}
+
+			return orders;
+
+		} else {// no need to search over hdt
+			return Set.of(StatementOrder.S, StatementOrder.P, StatementOrder.O, StatementOrder.C);
+		}
+
+	}
+
+	@Override
+	public Comparator<Value> getComparator() {
+		return (o1, o2) -> {
+			if (o1 instanceof HDTValue && o2 instanceof HDTValue) {
+				assert ((HDTValue) o1).getHDTPosition() != 2 : "o1 is in predicate position";
+				assert ((HDTValue) o2).getHDTPosition() != 2 : "o2 is in predicate position";
+
+				return Long.compare(((HDTValue) o1).getHDTId(), ((HDTValue) o2).getHDTId());
+			}
+			throw new UnsupportedOperationException(
+					"Cannot compare values of type " + o1.getClass() + " and " + o2.getClass());
+		};
 	}
 }

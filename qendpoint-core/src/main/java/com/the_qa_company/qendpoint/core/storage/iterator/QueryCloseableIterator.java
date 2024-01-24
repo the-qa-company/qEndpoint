@@ -8,7 +8,7 @@ import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
  *
  * @author Antoine Willerval
  */
-public interface QueryCloseableIterator extends CloseableIterator<QEPComponentTriple, QEPCoreException> {
+public interface QueryCloseableIterator extends CloseableIterator<QEPComponentTriple> {
 	static QueryCloseableIterator empty() {
 		return new QueryCloseableIterator() {
 			@Override
@@ -39,7 +39,7 @@ public interface QueryCloseableIterator extends CloseableIterator<QEPComponentTr
 	long estimateCardinality();
 
 	@Override
-	default QueryCloseableIterator attach(AutoCloseableGeneric<QEPCoreException> closeable) {
+	default QueryCloseableIterator attach(AutoCloseableGeneric<? extends RuntimeException> closeable) {
 		return CloseableAttachQueryIterator.of(this, closeable);
 	}
 }

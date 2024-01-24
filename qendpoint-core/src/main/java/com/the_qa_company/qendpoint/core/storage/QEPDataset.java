@@ -14,6 +14,8 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Serial;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +28,10 @@ import static java.lang.String.format;
  * @author Antoine Willerval
  * @see QEPCore
  */
-public class QEPDataset implements Closeable {
+public class QEPDataset implements Closeable, Serializable {
+
+	@Serial
+	private static final long serialVersionUID = 7525689572432598258L;
 
 	public record ComponentFind(QEPDataset dataset, TripleComponentRole role, long id, long pid) {
 		public boolean isFind() {
@@ -261,7 +266,7 @@ public class QEPDataset implements Closeable {
 	public QueryCloseableIterator search(CharSequence subject, CharSequence predicate, CharSequence object)
 			throws QEPCoreException {
 		QEPDatasetContext ctx = createContext();
-		return search(ctx, subject, predicate, object).attach(ctx);
+		return (QueryCloseableIterator) search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -278,7 +283,7 @@ public class QEPDataset implements Closeable {
 	public QueryCloseableIterator search(QEPComponent subject, QEPComponent predicate, QEPComponent object)
 			throws QEPCoreException {
 		QEPDatasetContext ctx = createContext();
-		return search(ctx, subject, predicate, object).attach(ctx);
+		return (QueryCloseableIterator) search(ctx, subject, predicate, object).attach(ctx);
 	}
 
 	/**
@@ -292,7 +297,7 @@ public class QEPDataset implements Closeable {
 	 */
 	public QueryCloseableIterator search(QEPComponentTriple pattern) throws QEPCoreException {
 		QEPDatasetContext ctx = createContext();
-		return search(ctx, pattern).attach(ctx);
+		return (QueryCloseableIterator) search(ctx, pattern).attach(ctx);
 	}
 
 	/**

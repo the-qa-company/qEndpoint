@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.map;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +17,11 @@ import java.util.function.Function;
  * @param <V> value type
  * @author Antoine Willerval
  */
-public class CopyOnWriteMap<K, V> implements Map<K, V> {
+public class CopyOnWriteMap<K, V> implements Map<K, V>, Serializable {
+
+	@Serial
+	private static final long serialVersionUID = -3127117388123088572L;
+
 	private Map<K, V> wrapper;
 	private boolean write;
 

@@ -1,12 +1,13 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 import org.eclipse.rdf4j.model.util.URIUtil;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 import java.io.Serial;
 
@@ -127,14 +128,20 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == null)
+		if (o == null) {
 			return false;
+		}
 		if (this == o) {
 			return true;
 		} else if (o instanceof SimpleIRIHDT && this.id != -1 && ((SimpleIRIHDT) o).getId() != -1) {
 			return this.id == (((SimpleIRIHDT) o).getId());
 		} else { // could not compare IDs, we have to compare to string
-			return toString().equals(o.toString());
+			if (o instanceof IRI) {
+				return toString().equals(o.toString());
+			} else {
+				return false;
+			}
+
 		}
 	}
 
@@ -142,17 +149,18 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 	public int hashCode() {
 		if (id != -1 && !delegate) {
 			String prefix = "http://hdt.org/";
-			if (this.postion == SHARED_POS)
+			if (this.postion == SHARED_POS) {
 				prefix += "SO";
-			else if (this.postion == SUBJECT_POS)
+			} else if (this.postion == SUBJECT_POS) {
 				prefix += "S";
-			else if (this.postion == PREDICATE_POS)
+			} else if (this.postion == PREDICATE_POS) {
 				prefix += "P";
-			else if (this.postion == OBJECT_POS)
+			} else if (this.postion == OBJECT_POS) {
 				prefix += "O";
-			else {
-				if (iriString != null)
+			} else {
+				if (iriString != null) {
 					prefix = iriString;
+				}
 				return prefix.hashCode();
 			}
 			prefix += id;
@@ -182,4 +190,5 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 	public boolean isDelegate() {
 		return delegate;
 	}
+
 }

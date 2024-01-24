@@ -10,6 +10,8 @@ import com.the_qa_company.qendpoint.core.util.map.CopyOnWriteMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +23,14 @@ import java.util.Optional;
  *
  * @author Antoine Willerval
  */
-public class QEPComponent implements Cloneable {
-	record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset, String debugMapped) {}
+public class QEPComponent implements Cloneable, Serializable {
+	@Serial
+	private static final long serialVersionUID = 6621230579376315429L;
 
-	record PredicateElement(long id, QEPDataset dataset) {}
+	record SharedElement(long id, DictionarySectionRole role, QEPDataset dataset, String debugMapped)
+			implements Serializable {}
+
+	record PredicateElement(long id, QEPDataset dataset) implements Serializable {}
 
 	private static final Logger logger = LoggerFactory.getLogger(QEPComponent.class);
 
@@ -34,7 +40,7 @@ public class QEPComponent implements Cloneable {
 	RDFNodeType rdfNodeType;
 	Optional<CharSequence> language;
 	CharSequence datatype;
-	final QEPCore core;
+	transient final QEPCore core;
 
 	private QEPComponent(QEPComponent other) {
 		this.predicateIds = new HashMap<>(other.predicateIds);

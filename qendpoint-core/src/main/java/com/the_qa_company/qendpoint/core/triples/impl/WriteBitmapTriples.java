@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Appendable write {@link BitmapTriples} version
@@ -155,6 +156,11 @@ public class WriteBitmapTriples implements TriplesPrivate {
 	@Override
 	public TripleID findTriple(long position, TripleID tripleID) {
 		throw new NotImplementedException();
+	}
+
+	@Override
+	public List<TripleComponentOrder> getTripleComponentOrder(TripleID t) {
+		return List.of();
 	}
 
 	@Override

@@ -12,7 +12,7 @@ import java.util.function.Consumer;
  * @param <E> AutoCloseable close exception
  * @author Antoine Willerval
  */
-public interface CloseableIterator<T, E extends Exception> extends Iterator<T>, AutoCloseableGeneric<E> {
+public interface CloseableIterator<T> extends Iterator<T>, AutoCloseableGeneric<Exception> {
 	/**
 	 * create a closeable iterator from an iterator, if the iterator is an
 	 * {@link AutoCloseable}, it will assume that E is the only thrown
@@ -25,15 +25,13 @@ public interface CloseableIterator<T, E extends Exception> extends Iterator<T>, 
 	 * @return closeable iterator
 	 */
 	@SuppressWarnings("unchecked")
-	static <T, E extends Exception> CloseableIterator<T, E> of(Iterator<T> it) {
+	static <T> CloseableIterator<T> of(Iterator<T> it) {
 		if (it instanceof AutoCloseable) {
 			return of(it, () -> {
 				try {
 					((AutoCloseable) it).close();
-				} catch (Error | RuntimeException e) {
-					throw e;
 				} catch (Exception e) {
-					throw (E) e;
+					throw new RuntimeException(e);
 				}
 			});
 		}
@@ -49,10 +47,10 @@ public interface CloseableIterator<T, E extends Exception> extends Iterator<T>, 
 	 * @param <E>            close exception
 	 * @return closeable iterator
 	 */
-	static <T, E extends Exception> CloseableIterator<T, E> of(Iterator<T> it, AutoCloseableGeneric<E> closeOperation) {
+	static <T> CloseableIterator<T> of(Iterator<T> it, AutoCloseableGeneric<RuntimeException> closeOperation) {
 		return new CloseableIterator<>() {
 			@Override
-			public void close() throws E {
+			public void close() {
 				closeOperation.close();
 			}
 
@@ -83,7 +81,7 @@ public interface CloseableIterator<T, E extends Exception> extends Iterator<T>, 
 	 * @param <E> close exception
 	 * @return empty closeable iterator
 	 */
-	static <T, E extends Exception> CloseableIterator<T, E> empty() {
+	static <T, E extends Exception> CloseableIterator<T> empty() {
 		return empty(() -> {});
 	}
 
@@ -93,12 +91,12 @@ public interface CloseableIterator<T, E extends Exception> extends Iterator<T>, 
 	 * @param <E>       close exception
 	 * @return empty closeable iterator
 	 */
-	static <T, E extends Exception> CloseableIterator<T, E> empty(AutoCloseableGeneric<E> closeable) {
+	static <T> CloseableIterator<T> empty(AutoCloseableGeneric<RuntimeException> closeable) {
 		return of(new EmptyIterator<>(), closeable);
 	}
 
 	@Override
-	void close() throws E;
+	void close();
 
 	/**
 	 * attach an auto closeable element to this iterator
@@ -106,7 +104,7 @@ public interface CloseableIterator<T, E extends Exception> extends Iterator<T>, 
 	 * @param closeable closeable element
 	 * @return new iterator with the new closeable element
 	 */
-	default CloseableIterator<T, E> attach(AutoCloseableGeneric<E> closeable) {
+	default CloseableIterator<T> attach(AutoCloseableGeneric<? extends RuntimeException> closeable) {
 		return CloseableAttachIterator.of(this, closeable);
 	}
 }

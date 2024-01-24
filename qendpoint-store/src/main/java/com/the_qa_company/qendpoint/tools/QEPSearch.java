@@ -221,7 +221,7 @@ public class QEPSearch {
 				System.err.println(colorTool.red() + "Can't do SPO with NO_SPO=true" + colorTool.colorReset());
 				return;
 			}
-			try (CloseableIteration<? extends Statement, SailException> it = conn.getStatements(ms, mp, mo, false)) {
+			try (CloseableIteration<? extends Statement> it = conn.getStatements(ms, mp, mo, false)) {
 				count = 0;
 				while (it.hasNext()) {
 					Statement triple = it.next();
@@ -453,8 +453,7 @@ public class QEPSearch {
 		MultiThreadListenerConsole console = colorTool.getConsole();
 		console.notifyProgress(0, "open connection to native store");
 		try (SailConnection conn = sail.getConnection()) {
-			try (CloseableIteration<? extends Statement, SailException> it = conn.getStatements(null, null, null,
-					false)) {
+			try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
 				long triples = 0;
 				HDTConverter converter = ep.getHdtConverter();
 				long shared = ep.getHdt().getDictionary().getNshared();

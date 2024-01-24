@@ -4,9 +4,9 @@ import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 
 public class IteratorToIteration<T, E extends Exception> implements ExceptionIterator<T, E>, AutoCloseable {
-	private final CloseableIteration<T, E> delegate;
+	private final CloseableIteration<T> delegate;
 
-	public IteratorToIteration(CloseableIteration<T, E> delegate) {
+	public IteratorToIteration(CloseableIteration<T> delegate) {
 		this.delegate = delegate;
 	}
 

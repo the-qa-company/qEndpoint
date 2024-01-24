@@ -2,7 +2,9 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
@@ -13,10 +15,8 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.algebra.evaluation.util.QueryEvaluationUtil;
-import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
-import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 
 // there are 4 types of resources:
 // resources coming from outside,
@@ -29,7 +29,7 @@ public class HDTConverter {
 	public static final String HDT_URI = "http://hdt.org/";
 	private final EndpointStore endpoint;
 	private final HDT hdt;
-	private final ValueFactory valueFactory = new MemValueFactory();
+	private final ValueFactory valueFactory = SimpleValueFactory.getInstance();
 
 	public HDTConverter(EndpointStore endpoint) {
 		this.endpoint = endpoint;
@@ -51,6 +51,7 @@ public class HDTConverter {
 		if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
 			return id;
 		}
+
 		String translate;
 		if (position == SimpleIRIHDT.PREDICATE_POS) {
 			translate = hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
@@ -59,7 +60,9 @@ public class HDTConverter {
 		} else {
 			translate = "";
 		}
+
 		id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
+
 		return id;
 	}
 

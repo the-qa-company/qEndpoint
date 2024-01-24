@@ -8,47 +8,47 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings("deprecation")
-public class QEPCloseableIteration<T, E extends Exception> implements CloseableIteration<T, E> {
+public class QEPCloseableIteration<T> implements CloseableIteration<T> {
 
-	public static <T, E extends Exception> QEPCloseableIteration<T, E> of(CloseableIterator<T, E> it) {
-		return new QEPCloseableIteration<>(Objects.requireNonNull(it, "it can't be null!"));
+	public static <T> QEPCloseableIteration<T> of(CloseableIterator<T> it) {
+		return new QEPCloseableIteration<T>(Objects.requireNonNull(it, "it can't be null!"));
 	}
 
-	public static <T, E extends Exception> QEPCloseableIteration<T, E> of() {
+	public static <T> QEPCloseableIteration<T> of() {
 		return of(CloseableIterator.empty());
 	}
 
-	private final CloseableIterator<T, E> it;
+	private final CloseableIterator<T> it;
 
-	private QEPCloseableIteration(CloseableIterator<T, E> it) {
+	private QEPCloseableIteration(CloseableIterator<T> it) {
 		this.it = it;
 	}
 
 	@Override
-	public void close() throws E {
+	public void close() {
 		it.close();
 	}
 
 	@Override
-	public boolean hasNext() throws E {
+	public boolean hasNext() {
 		return it.hasNext();
 	}
 
 	@Override
-	public T next() throws E {
+	public T next() {
 		return it.next();
 	}
 
 	@Override
-	public void remove() throws E {
+	public void remove() {
 		it.remove();
 	}
 
-	public <U, E2 extends Exception> QEPCloseableIteration<U, E2> map(Function<T, U> mapElem,
+	public <U, E2 extends RuntimeException> QEPCloseableIteration<U> map(Function<T, U> mapElem,
 			Function<Throwable, E2> map) {
 		return new QEPCloseableIteration<>(new CloseableIterator<>() {
 			@Override
-			public void close() throws E2 {
+			public void close() {
 				try {
 					it.close();
 				} catch (Throwable t) {

@@ -53,8 +53,8 @@ public class WikibaseLabelService implements FederatedService {
 	}
 
 	@Override
-	public CloseableIteration<BindingSet, QueryEvaluationException> select(Service service, Set<String> set,
-			BindingSet bindingSet, String s) throws QueryEvaluationException {
+	public CloseableIteration<BindingSet> select(Service service, Set<String> set, BindingSet bindingSet, String s)
+			throws QueryEvaluationException {
 		System.out.println("Should never pass here, report the query if this is the case!");
 		return null;
 	}
@@ -126,9 +126,8 @@ public class WikibaseLabelService implements FederatedService {
 	}
 
 	@Override
-	public CloseableIteration<BindingSet, QueryEvaluationException> evaluate(Service service,
-			CloseableIteration<BindingSet, QueryEvaluationException> closeableIteration, String s)
-			throws QueryEvaluationException {
+	public CloseableIteration<BindingSet> evaluate(Service service, CloseableIteration<BindingSet> closeableIteration,
+			String s) throws QueryEvaluationException {
 		TupleExpr tupleExpr = service.getArg();
 		// currently implements only the automatic mode
 		// https://en.wikibooks.org/wiki/SPARQL/SERVICE_-_Label
@@ -196,9 +195,8 @@ public class WikibaseLabelService implements FederatedService {
 				valuesWithLabels.add(bindingSet.getBinding(name).getValue());
 				namesWithLabels.add(name + expantionNameSuffix[e]);
 				if (bindingSet.getBinding(name).getValue() instanceof Resource) {
-					try (CloseableIteration<? extends Statement, QueryEvaluationException> iteration = tripleSource
-							.getStatements((Resource) bindingSet.getBinding(name).getValue(), expantionProperties[e],
-									null)) {
+					try (CloseableIteration<? extends Statement> iteration = tripleSource.getStatements(
+							(Resource) bindingSet.getBinding(name).getValue(), expantionProperties[e], null)) {
 						while (iteration.hasNext()) {
 							Statement next = iteration.next();
 							if (next.getObject().isLiteral()) {

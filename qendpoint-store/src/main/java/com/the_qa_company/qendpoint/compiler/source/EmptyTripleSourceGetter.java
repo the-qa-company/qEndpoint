@@ -22,7 +22,7 @@ public class EmptyTripleSourceGetter implements TripleSourceGetter, TripleSource
 	}
 
 	@Override
-	public CloseableIteration<Statement, SailCompiler.SailCompilerException> getStatements(Resource s, IRI p, Value o)
+	public CloseableIteration<Statement> getStatements(Resource s, IRI p, Value o)
 			throws SailCompiler.SailCompilerException {
 		return new CloseableIteration<>() {
 			@Override
