@@ -17,7 +17,7 @@ on:
         type: boolean
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.ref }}-build
   cancel-in-progress: true
 
 jobs:

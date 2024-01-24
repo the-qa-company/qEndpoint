@@ -1,1 +1,2 @@
-- add hdt diffcat tool
+- add delete bitmap for multiple co-indexes (#440)
+

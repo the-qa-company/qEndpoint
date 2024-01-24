@@ -54,12 +54,13 @@ The QA Company over the social networks
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-    - [Installers](#installers)
     - [Scoop](#scoop)
     - [Brew](#brew)
+    - [Command Line Interface](#command-line-interface)
     - [Code](#code)
       - [Back-end](#back-end)
       - [Front-end](#front-end)
+    - [Installers](#installers)
 - [Usage](#usage)
   - [Docker Image](#docker-image)
     - [`qacompany/qendpoint`](#qacompanyqendpoint)
@@ -110,10 +111,6 @@ For the frontend (not mandatory to run the backend)
 
 ### Installation
 
-#### Installers
-
-Installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases).
-
 #### Scoop
 
 You can install qEndpoint using the [Scoop package manager](http://scoop.sh/).
@@ -136,6 +133,10 @@ You can install is using this command
 ```bash
 brew install the-qa-company/tap/qendpoint
 ```
+
+#### Command Line Interface
+
+If you don't have access to Brew or Scoop, the qEndpoint command line interface is available in [the releases page](https://github.com/the-qa-company/qEndpoint/releases) under the file `qendpoint-cli.zip`. By extracting it, you can a bin directory that can be added to your path.
 
 #### Code
 
@@ -163,6 +164,10 @@ brew install the-qa-company/tap/qendpoint
 - Move to the front-end directory `cd qendpoint-frontend`
 - Install the packages using `npm install`
 - Run the project using `npm start`
+
+#### Installers
+
+The endpoint installers for Linux, MacOS and Windows can be found [here](https://github.com/the-qa-company/qEndpoint/releases), **the installers do not contain the command line (cli), only the endpoint**.
 
 ---
 
