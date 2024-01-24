@@ -1,2 +1,3 @@
-- add delete bitmap for multiple co-indexes (#440)
+- fix idx after merge
+- merge join (#428)
 
