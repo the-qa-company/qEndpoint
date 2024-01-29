@@ -150,8 +150,8 @@ public class IOUtil {
 	 * @throws IOException close exception
 	 */
 	public static void closeObject(Object object) throws IOException {
-		if (object instanceof Closeable) {
-			((Closeable) object).close();
+		if (object instanceof Closeable clo) {
+			clo.close();
 		}
 	}
 

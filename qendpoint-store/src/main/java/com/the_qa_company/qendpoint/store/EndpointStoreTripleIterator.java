@@ -56,7 +56,7 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			long index = iterator.getLastTriplePosition();
 			TripleComponentOrder order = iterator.isLastTriplePositionBoundToOrder() ? iterator.getOrder()
 					: TripleComponentOrder.SPO;
-			if (!endpoint.getDeleteBitMap(order).access(index)) {
+			if (!endpoint.getDeleteBitMap(order).access(tripleID.isQuad() ? tripleID.getGraph() - 1 : 0, index)) {
 				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
 				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());

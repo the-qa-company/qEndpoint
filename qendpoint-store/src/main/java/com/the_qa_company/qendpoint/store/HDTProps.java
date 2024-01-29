@@ -17,12 +17,18 @@ public class HDTProps {
 	private final long startBlankSubjects;
 	private final long endBlankSubjects;
 
+	private final long startBlankGraph;
+	private final long endBlankGraph;
+
+	private final long defaultGraph;
+
 	public HDTProps(HDT hdt) {
 
 		this.startLiteral = BinarySearch.first(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
 				hdt.getDictionary().getNobjects(), "\"", TripleComponentRole.OBJECT);
 		this.endLiteral = BinarySearch.last(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
 				hdt.getDictionary().getNobjects(), hdt.getDictionary().getNobjects(), "\"", TripleComponentRole.OBJECT);
+
 		long start;
 		long end;
 		// if the dictionay is spliting the objects to sections - we just have
@@ -64,6 +70,25 @@ public class HDTProps {
 		this.endBlankSubjects = BinarySearch.last(hdt.getDictionary(), hdt.getDictionary().getNshared() + 1,
 				hdt.getDictionary().getNsubjects(), hdt.getDictionary().getNsubjects(), "_",
 				TripleComponentRole.SUBJECT);
+
+		if (hdt.getDictionary().supportGraphs()) {
+			this.startBlankGraph = BinarySearch.first(hdt.getDictionary(), 1, hdt.getDictionary().getNgraphs(), "_",
+					TripleComponentRole.GRAPH);
+			this.endBlankGraph = BinarySearch.last(hdt.getDictionary(), 1, hdt.getDictionary().getNgraphs(),
+					hdt.getDictionary().getNgraphs(), "_", TripleComponentRole.GRAPH);
+		} else {
+			this.startBlankGraph = 0;
+			this.endBlankGraph = 0;
+		}
+
+		// check if this hdt has a default graph
+		if (hdt.getDictionary().supportGraphs()
+		    && hdt.getDictionary().getNgraphs() > 0
+		    && hdt.getDictionary().idToString(1, TripleComponentRole.GRAPH).isEmpty()) {
+			this.defaultGraph = 1;
+		} else {
+			this.defaultGraph = -1;
+		}
 	}
 
 	public long getEndLiteral() {
@@ -96,5 +121,17 @@ public class HDTProps {
 
 	public long getEndBlankSubjects() {
 		return endBlankSubjects;
+	}
+
+	public long getStartBlankGraph() {
+		return startBlankGraph;
+	}
+
+	public long getEndBlankGraph() {
+		return endBlankGraph;
+	}
+
+	public long getDefaultGraph() {
+		return defaultGraph;
 	}
 }

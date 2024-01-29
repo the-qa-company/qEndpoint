@@ -41,7 +41,7 @@ public class MergeMethodTest {
 		// create a test HDT, saving it and printing it
 		try (HDT hdt = MergeRestartTest.createTestHDT(tempDir.newFile().getAbsolutePath(), spec, count)) {
 			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
-			MergeRestartTest.printHDT(hdt, null);
+			MergeRestartTest.printHDT(hdt);
 		}
 
 		// start an endpoint store

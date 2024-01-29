@@ -12,7 +12,6 @@ import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIndexFile;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.junit.Assert;
 import org.junit.Rule;

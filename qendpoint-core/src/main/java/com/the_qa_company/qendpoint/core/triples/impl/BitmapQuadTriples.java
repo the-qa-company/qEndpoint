@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 
 /**
  * @author mario.arias
@@ -333,6 +334,12 @@ public class BitmapQuadTriples extends BitmapTriples {
 		graphs = MultiRoaringBitmap.load(input);
 
 		isClosed = false;
+	}
+
+	@Override
+	public void mapGenOtherIndexes(Path file, HDTOptions spec, ProgressListener listener) {
+		// super.mapGenOtherIndexes(file, spec, listener); // TODO: not
+		// available for quads
 	}
 
 	// Fast but dangerous covariant cast
