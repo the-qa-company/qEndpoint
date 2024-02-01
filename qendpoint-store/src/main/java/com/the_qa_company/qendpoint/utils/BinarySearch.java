@@ -57,9 +57,11 @@ public class BinarySearch {
 			long mid = (high + low) / 2;
 			int c = -1;
 			if (mid != n) {
-				c = COMPARATOR.compare(string, dictionary.idToString(mid + 1, role).toString().subSequence(0, 1));
+				String s = dictionary.idToString(mid + 1, role).toString();
+				c = COMPARATOR.compare(string, s.isEmpty() ? "" : s.subSequence(0, 1));
 			}
-			int c2 = COMPARATOR.compare(string, dictionary.idToString(mid, role).toString().subSequence(0, 1));
+			String s = dictionary.idToString(mid, role).toString();
+			int c2 = COMPARATOR.compare(string, s.isEmpty() ? "": s.subSequence(0, 1));
 			// System.out.println("c"+c);
 			// System.out.println("c2 "+c2);
 			if ((mid == n || c != 0) && c2 == 0)

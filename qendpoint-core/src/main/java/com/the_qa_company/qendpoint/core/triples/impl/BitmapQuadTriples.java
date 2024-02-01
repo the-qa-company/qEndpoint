@@ -219,28 +219,6 @@ public class BitmapQuadTriples extends BitmapTriples {
 	}
 
 	@Override
-	public SuppliableIteratorTripleID search(TripleID pattern) {
-		if (isClosed) {
-			throw new IllegalStateException("Cannot search on BitmapTriples if it's already closed");
-		}
-
-		if (getNumberOfElements() == 0 || pattern.isNoMatch()) {
-			return new EmptyTriplesIterator(order);
-		}
-
-		TripleID reorderedPat = new TripleID(pattern);
-		TripleOrderConvert.swapComponentOrder(reorderedPat, TripleComponentOrder.SPO, order);
-		String patternString = reorderedPat.getPatternString();
-
-		if (hasFOQIndex() && patternString.equals("???G")) {
-			return new BitmapTriplesIteratorGraphG(this, pattern);
-		}
-
-		return new BitmapTriplesIteratorGraph(this, super.search(pattern.copyNoGraph()),
-				pattern.isQuad() ? pattern.getGraph() : 0);
-	}
-
-	@Override
 	public SuppliableIteratorTripleID search(TripleID pattern, int searchMask) {
 		if (isClosed) {
 			throw new IllegalStateException("Cannot search on BitmapTriples if it's already closed");

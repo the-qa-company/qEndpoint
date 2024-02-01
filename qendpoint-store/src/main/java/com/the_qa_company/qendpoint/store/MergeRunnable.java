@@ -640,10 +640,10 @@ public class MergeRunnable {
 		logger.debug("Create HDT index from dumped file");
 		createHDTDump(endpointFiles.getRDFTempOutput(graph), endpointFiles.getHDTTempOutput());
 		// cat the original index and the temp index
-		logger.debug("HDT Cat/Diff");
+		logger.debug("HDT diffcat");
 		catDiffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr(TripleComponentOrder.SPO),
 				endpointFiles.getHDTTempOutput(), endpointFiles.getHDTNewIndex());
-		logger.debug("CAT completed!!!!! " + endpointFiles.getLocationHdt());
+		logger.debug("CAT completed {}", endpointFiles.getLocationHdt());
 
 		// #391: save DUMP HDT
 		if (dumpInfo != null) {
@@ -686,12 +686,12 @@ public class MergeRunnable {
 		boolean existsOldTripleDeleteTempArr = endpoint.getValidOrders().stream()
 				.anyMatch(order -> existsOld(endpointFiles.getTripleDeleteTempArr(order)));
 
-		if (!exists(endpointFiles.getHDTNewIndexV11()) && existsOldTripleDeleteTempArr) {
+		if (existsOldTripleDeleteTempArr && !exists(endpointFiles.getHDTNewIndexV11())) {
 			// after rename(endpointFiles.getHDTNewIndexV11(),
 			// endpointFiles.getHDTIndexV11());
 			return Step3SubStep.AFTER_INDEX_V11_RENAME;
 		}
-		if (!exists(endpointFiles.getHDTNewIndex()) && existsOldTripleDeleteTempArr) {
+		if (existsOldTripleDeleteTempArr && !exists(endpointFiles.getHDTNewIndex())) {
 			// after rename(endpointFiles.getHDTNewIndex(),
 			// endpointFiles.getHDTIndex());
 			return Step3SubStep.AFTER_INDEX_RENAME;
@@ -904,7 +904,7 @@ public class MergeRunnable {
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gen"));
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("wip.hdt"));
 		try {
-			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
+			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.guess(rdfInput),
 					oopt, null)) {
 				logger.info("File converted in: " + sw.stopAndShow());
 				hdt.saveToHDT(hdtOutput, null);
@@ -945,7 +945,7 @@ public class MergeRunnable {
 
 				Statement stmConverted;
 				if (graph) {
-					Resource newCtxIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDsubject(stm.getContext());
+					Resource newCtxIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDcontext(stm.getContext());
 					newCtxIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newCtxIRI);
 
 					stmConverted = this.endpoint.getValueFactory().createStatement(
@@ -982,7 +982,7 @@ public class MergeRunnable {
 						Resource oldSubject = iriConverter.rdf4jToHdtIDsubject(s.getSubject());
 						IRI oldPredicate = iriConverter.rdf4jToHdtIDpredicate(s.getPredicate());
 						Value oldObject = iriConverter.rdf4jToHdtIDobject(s.getObject());
-						Resource oldContext = graph ? s.getContext() : null;
+						Resource oldContext = graph ? iriConverter.rdf4jToHdtIDcontext(s.getContext()) : null;
 
 						// if the old string cannot be converted than we can
 						// keep the

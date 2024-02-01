@@ -81,6 +81,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * set the user locales
 	 */
 	public static final String QUERY_CONFIG_USER_LOCALES = "user_locales";
+	/**
+	 * enable the merge join, default true
+	 */
+	public static final String OPTION_QENDPOINT_MERGE_JOIN = "qendpoint.mergejoin";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;
@@ -438,9 +442,20 @@ public class EndpointStore extends AbstractNotifyingSail {
 		}
 	}
 
-	// force access to the store via reflection, the library does not allow
-	// directly since the method is protected
+	/**
+	 * force access to the store via reflection, the library does not allow directly since the method is protected
+	 * @return sailstore
+	 * @deprecated use {@link #getCurrentSailStore()} instead
+	 */
+	@Deprecated
 	public SailStore getCurrentSaliStore() {
+		return getCurrentSailStore();
+	}
+	/**
+	 * force access to the store via reflection, the library does not allow directly since the method is protected
+	 * @return sailstore
+	 */
+	public SailStore getCurrentSailStore() {
 		try {
 			Sail sail = getChangingStore();
 			Method method = sail.getClass().getDeclaredMethod("getSailStore");
@@ -650,7 +665,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		}
 		for (MultiLayerBitmapWrapper b : this.tempdeleteBitMap) {
 			if (b != null) {
-				((BitArrayDisk) b.getHandle()).force(false);
+				b.<BitArrayDisk>getHandle().force(false);
 			}
 		}
 	}
@@ -790,9 +805,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 									TripleID tid = next.next();
 
 									long newIndex = next.getLastTriplePosition();
-									int graph;
+									long graph;
 									if (newHdt.getDictionary().supportGraphs()) {
-										graph = (int) tid.getGraph();
+										graph = tid.getGraph();
 									} else {
 										graph = 1;
 									}
@@ -808,8 +823,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		Closer.closeSingle(getDeleteBitMaps());
 		try {
 			for (TripleComponentOrder sorder : validOrders) {
-				MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper bitArrayDisks = newDeleteArray[sorder.ordinal()];
-				((BitArrayDisk) bitArrayDisks.getHandle())
+				newDeleteArray[sorder.ordinal()].<BitArrayDisk>getHandle()
 						.changeToInDisk(new File(endpointFiles.getTripleDeleteArr(sorder)));
 			}
 		} catch (Throwable t) {
@@ -851,9 +865,11 @@ public class EndpointStore extends AbstractNotifyingSail {
 						searchId = new TripleID(sid, pid, oid);
 					}
 
+					logger.info("search triple {}", searchId);
 					IteratorTripleID search = this.hdt.getTriples().search(searchId);
 					while (search.hasNext()) {
 						TripleID ts = search.next();
+						logger.info("-> {}", ts);
 						long index = search.getLastTriplePosition();
 						if (index >= 0) {
 							TripleComponentOrder order;
@@ -1083,14 +1099,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 	public void flushWrites() throws IOException {
 		for (MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper b : deleteBitMap) {
 			if (b != null) {
-				((BitArrayDisk) b.getHandle()).force(true);
+				b.<BitArrayDisk>getHandle().force(true);
 			}
 		}
 		if (isMerging()) {
 			getRdfWriterTempTriples().getWriter().flush();
 			for (MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper b : tempdeleteBitMap) {
 				if (b != null) {
-					((BitArrayDisk) b.getHandle()).force(true);
+					b.<BitArrayDisk>getHandle().force(true);
 				}
 			}
 		}

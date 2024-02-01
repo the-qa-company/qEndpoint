@@ -1,16 +1,23 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.util.Connections;
+import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -27,36 +34,58 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static java.lang.String.format;
 import static org.junit.Assert.fail;
 
+@RunWith(Parameterized.class)
 public class MergeRestartTest {
+	@Parameterized.Parameters(name = "quads: {0}")
+	public static Collection<Object> params() {
+		return List.of(true, false);
+	}
 	private static final Logger logger = LoggerFactory.getLogger(MergeRestartTest.class);
 	private static final File HALT_TEST_DIR = new File("tests", "halt_test_dir");
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 	HDTOptions spec;
+	@Parameterized.Parameter
+	public boolean quadTest;
 
 	@Before
 	public void setUp() {
-		spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
-				HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+		if (quadTest) {
+			spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
+		} else {
+			spec = HDTOptions.of(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY,
+					HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH, HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+		}
 		// set the MergeRunnable in test mode
 		MergeRunnableStopPoint.debug = true;
 		MergeRunnableStopPoint.unlockAll();
@@ -459,86 +488,14 @@ public class MergeRestartTest {
 		executeTestCount(countFile, endpointStore2, store2);
 	}
 
-	/**
-	 * basic synced files/value class
-	 */
-	private static class FileStore {
-		File root1;
-		File root2;
-		boolean switchValue = false;
-
-		public FileStore(File root1, File root2) {
-			this.root1 = root1;
-			this.root2 = root2;
-		}
-
-		/**
-		 * switch the file
-		 */
-		public synchronized void switchValue() {
-			switchValue = !switchValue;
-		}
-
-		/**
-		 * @return the root file
-		 */
-		public synchronized File getRoot() {
-			return switchValue ? root2 : root1;
-		}
-
-		/**
-		 * @return the root store dir
-		 */
-		public synchronized File getHdtStore() {
-			return new File(getRoot(), "hdt-store");
-		}
-	}
-
 	public void mergeRestartTest(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException {
 		MergeRunnableStopPoint.disableRequest = false;
 		MergeRunnableStopPoint.unlockAll();
 		File testRoot = tempDir.newFolder();
 		File root1 = new File(testRoot, "root1");
 		File root2 = new File(testRoot, "root2");
-		Thread knowledgeThread = null;
 		try (Closer closer = Closer.of()) {
 			// create a store to tell which dir we are using
-			FileStore store = new FileStore(root1, root2);
-			knowledgeThread = new Thread(() -> {
-				// lock the points we need, this is done before and after the
-				// crash,
-				// so we don't have to check
-				// if this is before or after the stop point
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLock();
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugLockTest();
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLock();
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugLockTest();
-
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugWaitForEvent();
-				{
-					// log the bitmap state at STEP1_TEST_BITMAP1
-					try (BitArrayDisk bitmap = new BitArrayDisk(4,
-							store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
-						logger.debug("STEP1_TEST_BITMAP1: {}", bitmap.printInfo());
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP1.debugUnlockTest();
-
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugWaitForEvent();
-				{
-					// log the bitmap state at STEP1_TEST_BITMAP2
-					try (BitArrayDisk bitmap = new BitArrayDisk(4,
-							store.getHdtStore().getAbsolutePath() + "/triples-delete.arr")) {
-						logger.debug("STEP1_TEST_BITMAP2: {}", bitmap.printInfo());
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-				MergeRunnableStopPoint.STEP1_TEST_BITMAP2.debugUnlockTest();
-			}, "KnowledgeThread");
-			knowledgeThread.start();
 
 			// start the first phase
 			mergeRestartTest1(stopPoint, root1, closer);
@@ -549,15 +506,20 @@ public class MergeRestartTest {
 
 			// switch the directory we are using
 			swapDir(root1, root2);
-			store.switchValue();
+
 			// start the second phase
 			mergeRestartTest2(stopPoint, root2, closer);
+		} catch (Throwable  t) {
+			try {
+				FileUtils.deleteDirectory(testRoot);
+			} catch (IOException e) {
+				t.addSuppressed(e);
+			}
+			throw t;
 		} finally {
-			FileUtils.deleteDirectory(testRoot);
-			assert knowledgeThread != null;
-			knowledgeThread.interrupt();
 			MergeRunnableStopPoint.disableRequest = false;
 		}
+		FileUtils.deleteDirectory(testRoot);
 	}
 
 	/**
@@ -930,6 +892,10 @@ public class MergeRestartTest {
 			connection.remove(stm);
 		});
 		writeInfoCount(out, count);
+		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+			buff.write(("REM HDT " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
+		}
+
 	}
 
 	/**
@@ -950,6 +916,9 @@ public class MergeRestartTest {
 			connection.remove(stm);
 		});
 		writeInfoCount(out, count);
+		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+			buff.write(("REM RDF " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
+		}
 	}
 
 	/**
@@ -970,6 +939,9 @@ public class MergeRestartTest {
 			connection.add(stm);
 		});
 		writeInfoCount(out, count);
+		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+			buff.write(("ADD RDF " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
+		}
 	}
 
 	/**
@@ -991,6 +963,9 @@ public class MergeRestartTest {
 			connection.add(stm);
 		});
 		writeInfoCount(out, count);
+		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+			buff.write(("ADD HDT " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
+		}
 	}
 
 	/**
@@ -1003,15 +978,66 @@ public class MergeRestartTest {
 	 */
 	private void executeTestCount(File out, SailRepository repo, EndpointStore store) throws IOException {
 		int excepted = getInfoCount(out);
-		if (store != null) {
-			printHDT(store.getHdt());
-		}
 		openConnection(repo, (vf, connection) -> {
 			int count = count(connection);
+			System.out.println("values:");
+
 			if (count != excepted) {
-				try (RepositoryResult<Statement> query = connection.getStatements(null, null, null)) {
-					query.forEach(System.out::println);
+			try (RepositoryResult<Statement> query = connection.getStatements(null, null, null, false)) {
+				query.forEach(EndpointStoreGraphTest::printStmt);
+			}
+			if (store != null) {
+				System.out.println("curr ns: " + (store.switchStore ? "2" : "1"));
+				System.out.println("ns1:");
+				Consumer<Statement> printer = stmt -> {
+					HDTConverter converter = store.getHdtConverter();
+					EndpointStoreGraphTest.printStmt(converter.rdf4ToHdt(stmt));
+				};
+				try (NotifyingSailConnection conn = store.getNativeStoreA().getConnection()) {
+					try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
+						it.forEachRemaining(printer);
+					}
 				}
+				System.out.println("ns2:");
+				try (NotifyingSailConnection conn = store.getNativeStoreB().getConnection()) {
+					try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
+						it.forEachRemaining(printer);
+					}
+				}
+				System.out.println("hdt:");
+				try {
+					store.getHdt().searchAll().forEachRemaining(System.out::println);
+				} catch (NotFoundException e) {
+					throw new RuntimeException(e);
+				}
+				System.out.println("bitmaps:");
+
+				long size = store.getHdt().getTriples().getNumberOfElements();
+				long graphs = store.getGraphsCount();
+				for (int i = 0; i < store.getDeleteBitMaps().length; i++) {
+					TripleComponentOrder order = TripleComponentOrder.values()[i];
+					MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper bm = store.getDeleteBitMaps()[i];
+					if (bm == null) {
+						continue;
+					}
+
+					System.out.println(order);
+					for (int g = 0; g < graphs; g++) {
+						System.out.print("g" + (g + 1) + ": ");
+						for (long t = 0; t < size; t++) {
+							System.out.print(bm.access(g, t) ? "1" : "0");
+						}
+						System.out.println();
+					}
+				}
+			}
+
+			System.out.println("operations:");
+			try {
+				System.out.println(Files.readString(Path.of(out.getAbsolutePath() + ".delta")));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 				fail(format("count:%d != excepted:%d : Invalid test count", count, excepted));
 			}
 		});

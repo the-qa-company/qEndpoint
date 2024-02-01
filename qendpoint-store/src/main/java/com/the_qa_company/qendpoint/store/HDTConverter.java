@@ -124,20 +124,18 @@ public class HDTConverter {
 	}
 
 	public Resource[] graphIdToIRI(Resource[] contexts, long[] contextIds) {
-		if (contexts.length == 0 || Arrays.stream(contexts).noneMatch(Objects::nonNull)) {
+		if (contexts.length == 0) {
 			return contexts; // nothing to remap
 		}
 
 		Resource[] newcontexts = new Resource[contexts.length];
 
 		for (int i = 0; i < newcontexts.length; i++) {
-			if (contexts[i] != null) {
-				contextIds[i] = contextToID(contexts[i]);
-				if (contextIds[i] > 0) {
-					newcontexts[i] = graphIdToIRI(contextIds[i]);
-				} else {
-					newcontexts[i] = contexts[i];
-				}
+			contextIds[i] = contextToID(contexts[i]);
+			if (contextIds[i] > 0) {
+				newcontexts[i] = graphIdToIRI(contextIds[i]);
+			} else {
+				newcontexts[i] = contexts[i];
 			}
 		}
 
@@ -170,7 +168,7 @@ public class HDTConverter {
 
 	public Resource rdf4jToHdtIDcontext(Resource ctx) {
 		if (ctx == null || !hdt.getDictionary().supportGraphs()) {
-			return null;
+			return ctx;
 		}
 		long id = rdf4jContextToHdtID(ctx);
 		if (id != -1) {
@@ -180,6 +178,9 @@ public class HDTConverter {
 	}
 
 	public long rdf4jSubjectToHdtID(Resource subj) {
+		if (subj == null) {
+			return -1;
+		}
 		String iriString = subj.stringValue();
 		if (iriString.startsWith((HDT_URI))) {
 			if (iriString.startsWith("SO", HDT_URI.length())) {
@@ -192,6 +193,9 @@ public class HDTConverter {
 	}
 
 	public long rdf4jPredicateToHdtID(IRI pred) {
+		if (pred == null) {
+			return -1;
+		}
 		String iriString = pred.stringValue();
 		if (iriString.startsWith((HDT_URI))) {
 			if (iriString.startsWith("P", HDT_URI.length())) {
@@ -202,6 +206,9 @@ public class HDTConverter {
 	}
 
 	public long rdf4jObjectToHdtID(Value object) {
+		if (object == null) {
+			return -1;
+		}
 		String iriString = object.stringValue();
 		if (iriString.startsWith(HDT_URI)) {
 			if (iriString.startsWith("SO", HDT_URI.length())) {
@@ -215,7 +222,7 @@ public class HDTConverter {
 
 	public long rdf4jContextToHdtID(Resource ctx) {
 		if (ctx == null) {
-			return -1;
+			return endpoint.getHdtProps().getDefaultGraph();
 		}
 		String iriString = ctx.stringValue();
 		if (iriString.startsWith((HDT_URI))) {
@@ -300,12 +307,14 @@ public class HDTConverter {
 	}
 
 	public Resource idToGraphHDTResource(long graphID) {
+		if (graphID == endpoint.getHdtProps().getDefaultGraph()) {
+			return null;
+		}
 		if ((graphID >= endpoint.getHdtProps().getStartBlankGraph()
 				&& graphID <= endpoint.getHdtProps().getEndBlankGraph())) {
 			return new SimpleBNodeHDT(hdt, SimpleIRIHDT.GRAPH_POS, graphID);
-		} else {
-			return new SimpleIRIHDT(hdt, SimpleIRIHDT.GRAPH_POS, graphID);
 		}
+		return new SimpleIRIHDT(hdt, SimpleIRIHDT.GRAPH_POS, graphID);
 	}
 
 	public Resource subjectHdtResourceToResource(Resource subject) {

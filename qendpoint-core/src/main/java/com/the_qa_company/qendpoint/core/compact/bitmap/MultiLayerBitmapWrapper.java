@@ -19,7 +19,7 @@ public class MultiLayerBitmapWrapper implements MultiLayerBitmap, Closeable {
 
 		@Override
 		public void set(long layer, long position, boolean value) {
-			((ModifiableBitmap) handle).set(graphs * layer + position, value);
+			((ModifiableBitmap) handle).set(graphs * position + layer, value);
 		}
 	}
 
@@ -51,13 +51,14 @@ public class MultiLayerBitmapWrapper implements MultiLayerBitmap, Closeable {
 		this.graphs = graphs;
 	}
 
-	public Bitmap getHandle() {
-		return handle;
+	@SuppressWarnings("unchecked")
+	public <T extends Bitmap> T getHandle() {
+		return (T)handle;
 	}
 
 	@Override
 	public boolean access(long layer, long position) {
-		return handle.access(graphs * layer + position);
+		return handle.access(graphs * position + layer);
 	}
 
 	@Override
@@ -132,7 +133,7 @@ public class MultiLayerBitmapWrapper implements MultiLayerBitmap, Closeable {
 
 	@Override
 	public boolean access(long position) {
-		return handle.access(position);
+		return access(0, position);
 	}
 
 	@Override

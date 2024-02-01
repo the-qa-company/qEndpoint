@@ -350,7 +350,7 @@ public class CompiledSail extends SailWrapper {
 		private NotifyingSail sourceSail;
 		private EndpointFiles endpointFiles;
 		private HDTOptions spec;
-		private String hdtSpec;
+		private HDTOptions hdtSpec;
 		private final Map<String, String> stringConfig = new HashMap<>();
 		private final List<Object> stringObject = new ArrayList<>();
 		private CompiledSailOptions options;
@@ -518,6 +518,21 @@ public class CompiledSail extends SailWrapper {
 		 * @throws java.lang.NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withHDTSpec(String hdtSpec) {
+			HDTOptions spec = HDTOptions.of();
+			spec.setOptions(hdtSpec);
+			return withHDTSpec(spec);
+		}
+
+
+		/**
+		 * set the hdt spec for the endpoint store, won't be used if the source
+		 * is defined or if the generated source isn't an endpoint store
+		 *
+		 * @param hdtSpec the spec
+		 * @return this
+		 * @throws java.lang.NullPointerException a parameter is null
+		 */
+		public CompiledSailCompiler withHDTSpec(HDTOptions hdtSpec) {
 			this.hdtSpec = Objects.requireNonNull(hdtSpec, "hdtSpec can't be null!");
 			return this;
 		}

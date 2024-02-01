@@ -2,7 +2,6 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.ConfigSailConnection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -61,7 +60,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	private final Map<String, String> config = new HashMap<>();
 
 	public EndpointStoreConnection(EndpointStore endpoint) throws InterruptedException {
-		super(endpoint, endpoint.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
+		super(endpoint, endpoint.getCurrentSailStore(), new StrictEvaluationStrategyFactory());
 		this.debugId = DEBUG_ID_STORE.getAndIncrement();
 		this.endpoint = endpoint;
 		EndpointStoreUtils.openConnection(this);
@@ -420,7 +419,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			try {
 				endpoint.flushWrites();
 			} catch (IOException e) {
-				throw new SailException("Can't flush enpoint store writes", e);
+				throw new SailException("Can't flush endpoint store writes", e);
 			}
 		}
 		this.connA_write.flush();
@@ -558,7 +557,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				this.getCurrentConnectionWrite().removeStatement(op, newSubj, newPred, newObj, contexts);
 			}
 
-			assignBitMapDeletes(tid, newSubj, newPred, newObj, contexts, null);
+			assignBitMapDeletes(tid, subj, pred, obj, contexts, null);
 		} else {
 			long[] contextIds = new long[contexts.length];
 			Resource[] newcontexts = this.endpoint.getHdtConverter().graphIdToIRI(contexts, contextIds);
@@ -616,16 +615,17 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		long o = tid.getObject();
 
 		TripleID tripleID = new TripleID(s, p, o);
+		boolean supportGraphs = endpoint.getHdt().getDictionary().supportGraphs();
 		if (s != -1 && p != -1 && o != -1) {
-			if (contexts.length == 0 || !endpoint.getHdt().getDictionary().supportGraphs()) {
-				if (endpoint.getHdt().getDictionary().supportGraphs()) {
-					tripleID.setGraph(endpoint.getHdtProps().getDefaultGraph());
+			if (contexts.length == 0 || !supportGraphs) {
+				if (supportGraphs) {
+					tripleID.setGraph(0); // all patterns
 				}
 				for (TripleComponentOrder order : endpoint.getValidOrders()) {
 					IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID, order.mask);
 
-					if (iter.hasNext()) {
-						iter.next();
+					while (iter.hasNext()) {
+						TripleID removedId = iter.next();
 						long index = iter.getLastTriplePosition();
 
 						assert iter.isLastTriplePositionBoundToOrder();
@@ -633,10 +633,17 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 						assert sorder == order;
 
-						if (!this.endpoint.getDeleteBitMap(sorder).access(0, index)) {
-							this.endpoint.getDeleteBitMap(sorder).set(0, index, true);
+						long layer;
+						if (supportGraphs) {
+							layer = removedId.getGraph() - 1;
+						} else {
+							layer = 0;
+						}
+
+						if (!this.endpoint.getDeleteBitMap(sorder).access(layer, index)) {
+							this.endpoint.getDeleteBitMap(sorder).set(layer, index, true);
 							if (this.endpoint.isMerging()) {
-								this.endpoint.getTempDeleteBitMap(sorder).set(0, index, true);
+								this.endpoint.getTempDeleteBitMap(sorder).set(layer, index, true);
 							}
 							if (order == TripleComponentOrder.SPO) {
 								notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
@@ -647,11 +654,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			} else {
 				for (int i = 0; i < contexts.length; i++) {
 					Resource context = contexts[i];
-					if (context == null) {
-						tripleID.setGraph(endpoint.getHdtProps().getDefaultGraph());
-					} else {
-						tripleID.setGraph(contextIds[i]);
-					}
+					tripleID.setGraph(contextIds[i]);
 					if (tripleID.getGraph() == -1) {
 						continue; // bad context
 					}
@@ -659,16 +662,17 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 						IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID, order.mask);
 
 						if (iter.hasNext()) {
-							iter.next();
+							TripleID removedId = iter.next();
 							long index = iter.getLastTriplePosition();
 
 							assert iter.isLastTriplePositionBoundToOrder();
 							TripleComponentOrder sorder = iter.getOrder();
 
-							if (!this.endpoint.getDeleteBitMap(sorder).access(index)) {
-								this.endpoint.getDeleteBitMap(sorder).set(tripleID.getGraph() - 1, index, true);
+
+							if (!this.endpoint.getDeleteBitMap(sorder).access(removedId.getGraph() - 1, index)) {
+								this.endpoint.getDeleteBitMap(sorder).set(removedId.getGraph() - 1, index, true);
 								if (this.endpoint.isMerging()) {
-									this.endpoint.getTempDeleteBitMap(sorder).set(tripleID.getGraph() - 1, index, true);
+									this.endpoint.getTempDeleteBitMap(sorder).set(removedId.getGraph() - 1, index, true);
 								}
 								if (order == TripleComponentOrder.SPO) {
 									notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj, context));
@@ -687,7 +691,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				NTriplesWriter writer = this.endpoint.getRdfWriterTempTriples();
 				if (writer != null) {
 					synchronized (writer) {
-						if (contexts.length == 0 || !this.endpoint.getHdt().getDictionary().supportGraphs()) {
+						if (contexts.length == 0 || !supportGraphs) {
 							writer.handleStatement(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
 						} else {
 							for (Resource ctx : contexts) {

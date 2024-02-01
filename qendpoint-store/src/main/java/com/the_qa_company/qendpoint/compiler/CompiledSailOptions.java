@@ -36,7 +36,7 @@ public class CompiledSailOptions {
 	private int rdf4jSplitUpdate;
 	private int endpointThreshold;
 	private int port;
-	private String hdtSpec;
+	private HDTOptions hdtSpec;
 	private int timeoutUpdate;
 	private int timeoutQuery;
 	private Map<String, String> hdtOptions;
@@ -74,7 +74,7 @@ public class CompiledSailOptions {
 		rdf4jSplitUpdate = SailCompilerSchema.RDF_STORE_SPLIT_STORAGE.getHandler().defaultValue();
 		endpointThreshold = SailCompilerSchema.ENDPOINT_THRESHOLD.getHandler().defaultValue();
 		port = SailCompilerSchema.SERVER_PORT.getHandler().defaultValue();
-		hdtSpec = "";
+		hdtSpec = HDTOptions.empty();
 		timeoutUpdate = SailCompilerSchema.TIMEOUT_UPDATE.getHandler().defaultValue();
 		timeoutQuery = SailCompilerSchema.TIMEOUT_QUERY.getHandler().defaultValue();
 		hdtOptions = Map.of();
@@ -96,7 +96,7 @@ public class CompiledSailOptions {
 		endpointThreshold = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.ENDPOINT_THRESHOLD);
 		hdtReadMode = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_READ_MODE_PROPERTY);
 		port = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.SERVER_PORT);
-		hdtSpec = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_SPEC_PROPERTY);
+		hdtSpec = HDTOptions.of(reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.HDT_SPEC_PROPERTY));
 		timeoutUpdate = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_UPDATE);
 		timeoutQuery = reader.searchPropertyValue(SailCompilerSchema.MAIN, SailCompilerSchema.TIMEOUT_QUERY);
 		hdtOptions = reader.search(SailCompilerSchema.MAIN, SailCompilerSchema.GEN_HDT_OPTION_PARAM).stream()
@@ -224,7 +224,7 @@ public class CompiledSailOptions {
 		this.port = port;
 	}
 
-	public String getHdtSpec() {
+	public HDTOptions getHdtSpec() {
 		return hdtSpec;
 	}
 
@@ -238,10 +238,7 @@ public class CompiledSailOptions {
 	 * @return HDTOptions
 	 */
 	public HDTOptions createSpecHDTOptions() {
-		HDTOptions opt = new HDTOptionsBase();
-
-		// set hdtspec config
-		opt.setOptions(getHdtSpec());
+		HDTOptions opt = HDTOptions.of(getHdtSpec());
 
 		// set model config
 		getHdtOptions().forEach(opt::set);
@@ -277,7 +274,7 @@ public class CompiledSailOptions {
 		return opt;
 	}
 
-	public void setHdtSpec(String hdtSpec) {
+	public void setHdtSpec(HDTOptions hdtSpec) {
 		this.hdtSpec = hdtSpec;
 	}
 
