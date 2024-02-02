@@ -128,7 +128,7 @@ public class EndpointTripleSource implements TripleSource {
 			newContextes = contexts;
 		}
 
-		//logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
+		// logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
 		CloseableIteration<? extends Statement> repositoryResult;
@@ -161,7 +161,8 @@ public class EndpointTripleSource implements TripleSource {
 		// iterate over the HDT file
 		IteratorTripleID iterator;
 		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
-			//logger.debug("Searching over HDT {} {} {}", subjectID, predicateID, objectID);
+			// logger.debug("Searching over HDT {} {} {}", subjectID,
+			// predicateID, objectID);
 			TripleID t = new TripleID(subjectID, predicateID, objectID);
 
 			if (graph && contexts.length > 1) {
@@ -169,10 +170,13 @@ public class EndpointTripleSource implements TripleSource {
 					int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
 							obj, t);
 
-					// search with the ID to check if the triples has been deleted
-					iterator = new GraphFilteringTripleId(this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder), graphID);
+					// search with the ID to check if the triples has been
+					// deleted
+					iterator = new GraphFilteringTripleId(
+							this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder), graphID);
 				} else {
-					// search with the ID to check if the triples has been deleted
+					// search with the ID to check if the triples has been
+					// deleted
 					iterator = new GraphFilteringTripleId(this.endpoint.getHdt().getTriples().search(t), graphID);
 				}
 			} else {
@@ -183,10 +187,12 @@ public class EndpointTripleSource implements TripleSource {
 					int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
 							obj, t);
 
-					// search with the ID to check if the triples has been deleted
+					// search with the ID to check if the triples has been
+					// deleted
 					iterator = this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder);
 				} else {
-					// search with the ID to check if the triples has been deleted
+					// search with the ID to check if the triples has been
+					// deleted
 					iterator = this.endpoint.getHdt().getTriples().search(t);
 				}
 			}
@@ -277,8 +283,7 @@ public class EndpointTripleSource implements TripleSource {
 			throw new AssertionError(
 					"Statement order " + statementOrder + " not supported for triple pattern " + t.getPatternString());
 		}
-		int indexMaskMatchingStatementOrder = first.get().mask;
-		return indexMaskMatchingStatementOrder;
+		return first.get().mask;
 	}
 
 	public static Set<StatementOrder> getStatementOrder(TripleComponentOrder tripleComponentOrder, boolean subject,

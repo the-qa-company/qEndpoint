@@ -63,6 +63,7 @@ public class MergeRestartTest {
 	public static Collection<Object> params() {
 		return List.of(true, false);
 	}
+
 	private static final Logger logger = LoggerFactory.getLogger(MergeRestartTest.class);
 	private static final File HALT_TEST_DIR = new File("tests", "halt_test_dir");
 	@Rule
@@ -150,15 +151,13 @@ public class MergeRestartTest {
 		}
 	}
 
-	private void mergeRestartTest1(MergeRunnableStopPoint stopPoint)
-			throws IOException, InterruptedException {
+	private void mergeRestartTest1(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException {
 		try (Closer closer = Closer.of()) {
 			mergeRestartTest1(stopPoint, MergeRestartTest.HALT_TEST_DIR, closer);
 		}
 	}
 
-	private void mergeRestartTest2(MergeRunnableStopPoint stopPoint)
-			throws IOException, InterruptedException {
+	private void mergeRestartTest2(MergeRunnableStopPoint stopPoint) throws IOException, InterruptedException {
 		try (Closer closer = Closer.of()) {
 			mergeRestartTest2(stopPoint, MergeRestartTest.HALT_TEST_DIR, closer);
 		}
@@ -431,7 +430,8 @@ public class MergeRestartTest {
 				EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + File.separator, false);
 		SailRepository endpointStore2 = new SailRepository(store2);
 
-		closer.with((Closeable) endpointStore2::shutDown, (Closeable) store2::deleteNativeLocks, (Closeable) MergeRunnableStopPoint::unlockAll);
+		closer.with((Closeable) endpointStore2::shutDown, (Closeable) store2::deleteNativeLocks,
+				(Closeable) MergeRunnableStopPoint::unlockAll);
 		// a merge should be triggered
 
 		// test at each step if the count is the same
@@ -505,7 +505,7 @@ public class MergeRestartTest {
 
 			// start the second phase
 			mergeRestartTest2(stopPoint, root2, closer);
-		} catch (Throwable  t) {
+		} catch (Throwable t) {
 			try {
 				FileUtils.deleteDirectory(testRoot);
 			} catch (IOException e) {
@@ -738,7 +738,7 @@ public class MergeRestartTest {
 	/**
 	 * print the HDT and the bitmap (if store not null)
 	 *
-	 * @param hdt   the hdt to print
+	 * @param hdt the hdt to print
 	 */
 	public static void printHDT(HDT hdt) {
 		IteratorTripleString it;
@@ -888,7 +888,8 @@ public class MergeRestartTest {
 			connection.remove(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new BufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("REM HDT " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 
@@ -912,7 +913,8 @@ public class MergeRestartTest {
 			connection.remove(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new BufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("REM RDF " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 	}
@@ -935,7 +937,8 @@ public class MergeRestartTest {
 			connection.add(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new BufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("ADD RDF " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 	}
@@ -959,7 +962,8 @@ public class MergeRestartTest {
 			connection.add(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new BufferedOutputStream(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new BufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("ADD HDT " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 	}
@@ -979,61 +983,61 @@ public class MergeRestartTest {
 			System.out.println("values:");
 
 			if (count != excepted) {
-			try (RepositoryResult<Statement> query = connection.getStatements(null, null, null, false)) {
-				query.forEach(EndpointStoreGraphTest::printStmt);
-			}
-			if (store != null) {
-				System.out.println("curr ns: " + (store.switchStore ? "2" : "1"));
-				System.out.println("ns1:");
-				Consumer<Statement> printer = stmt -> {
-					HDTConverter converter = store.getHdtConverter();
-					EndpointStoreGraphTest.printStmt(converter.rdf4ToHdt(stmt));
-				};
-				try (NotifyingSailConnection conn = store.getNativeStoreA().getConnection()) {
-					try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
-						it.forEachRemaining(printer);
+				try (RepositoryResult<Statement> query = connection.getStatements(null, null, null, false)) {
+					query.forEach(EndpointStoreGraphTest::printStmt);
+				}
+				if (store != null) {
+					System.out.println("curr ns: " + (store.switchStore ? "2" : "1"));
+					System.out.println("ns1:");
+					Consumer<Statement> printer = stmt -> {
+						HDTConverter converter = store.getHdtConverter();
+						EndpointStoreGraphTest.printStmt(converter.rdf4ToHdt(stmt));
+					};
+					try (NotifyingSailConnection conn = store.getNativeStoreA().getConnection()) {
+						try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
+							it.forEachRemaining(printer);
+						}
+					}
+					System.out.println("ns2:");
+					try (NotifyingSailConnection conn = store.getNativeStoreB().getConnection()) {
+						try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
+							it.forEachRemaining(printer);
+						}
+					}
+					System.out.println("hdt:");
+					try {
+						store.getHdt().searchAll().forEachRemaining(System.out::println);
+					} catch (NotFoundException e) {
+						throw new RuntimeException(e);
+					}
+					System.out.println("bitmaps:");
+
+					long size = store.getHdt().getTriples().getNumberOfElements();
+					long graphs = store.getGraphsCount();
+					for (int i = 0; i < store.getDeleteBitMaps().length; i++) {
+						TripleComponentOrder order = TripleComponentOrder.values()[i];
+						MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper bm = store.getDeleteBitMaps()[i];
+						if (bm == null) {
+							continue;
+						}
+
+						System.out.println(order);
+						for (int g = 0; g < graphs; g++) {
+							System.out.print("g" + (g + 1) + ": ");
+							for (long t = 0; t < size; t++) {
+								System.out.print(bm.access(g, t) ? "1" : "0");
+							}
+							System.out.println();
+						}
 					}
 				}
-				System.out.println("ns2:");
-				try (NotifyingSailConnection conn = store.getNativeStoreB().getConnection()) {
-					try (CloseableIteration<? extends Statement> it = conn.getStatements(null, null, null, false)) {
-						it.forEachRemaining(printer);
-					}
-				}
-				System.out.println("hdt:");
+
+				System.out.println("operations:");
 				try {
-					store.getHdt().searchAll().forEachRemaining(System.out::println);
-				} catch (NotFoundException e) {
+					System.out.println(Files.readString(Path.of(out.getAbsolutePath() + ".delta")));
+				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
-				System.out.println("bitmaps:");
-
-				long size = store.getHdt().getTriples().getNumberOfElements();
-				long graphs = store.getGraphsCount();
-				for (int i = 0; i < store.getDeleteBitMaps().length; i++) {
-					TripleComponentOrder order = TripleComponentOrder.values()[i];
-					MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper bm = store.getDeleteBitMaps()[i];
-					if (bm == null) {
-						continue;
-					}
-
-					System.out.println(order);
-					for (int g = 0; g < graphs; g++) {
-						System.out.print("g" + (g + 1) + ": ");
-						for (long t = 0; t < size; t++) {
-							System.out.print(bm.access(g, t) ? "1" : "0");
-						}
-						System.out.println();
-					}
-				}
-			}
-
-			System.out.println("operations:");
-			try {
-				System.out.println(Files.readString(Path.of(out.getAbsolutePath() + ".delta")));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
 				fail(format("count:%d != excepted:%d : Invalid test count", count, excepted));
 			}
 		});

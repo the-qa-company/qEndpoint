@@ -155,6 +155,7 @@ public interface HDTOptions {
 
 	/**
 	 * create modifiable options with a string config
+	 *
 	 * @param cfg config
 	 * @return options
 	 */
@@ -587,6 +588,7 @@ public interface HDTOptions {
 
 	/**
 	 * add options from another set
+	 *
 	 * @param other other set
 	 */
 	default void setOptions(HDTOptions other) {

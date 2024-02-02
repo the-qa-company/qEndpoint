@@ -3,7 +3,6 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
@@ -16,9 +15,6 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-
-import java.util.Arrays;
-import java.util.Objects;
 
 // there are 4 types of resources:
 // resources coming from outside,
@@ -49,11 +45,11 @@ public class HDTConverter {
 
 		long id = hdtval.getHDTId();
 		return switch (hdtval.getHDTPosition()) {
-			case SimpleIRIHDT.SUBJECT_POS, SimpleIRIHDT.SHARED_POS -> id;
-			case SimpleIRIHDT.PREDICATE_POS, SimpleIRIHDT.GRAPH_POS ->
-					hdt.getDictionary().stringToId(subj.toString(), TripleComponentRole.SUBJECT);
-			case SimpleIRIHDT.OBJECT_POS -> -1; // not shared
-			default -> throw new IllegalArgumentException("Invalid HDT position: " + hdtval.getHDTPosition());
+		case SimpleIRIHDT.SUBJECT_POS, SimpleIRIHDT.SHARED_POS -> id;
+		case SimpleIRIHDT.PREDICATE_POS, SimpleIRIHDT.GRAPH_POS ->
+			hdt.getDictionary().stringToId(subj.toString(), TripleComponentRole.SUBJECT);
+		case SimpleIRIHDT.OBJECT_POS -> -1; // not shared
+		default -> throw new IllegalArgumentException("Invalid HDT position: " + hdtval.getHDTPosition());
 		};
 	}
 
@@ -79,11 +75,11 @@ public class HDTConverter {
 
 		long id = hdtval.getHDTId();
 		return switch (hdtval.getHDTPosition()) {
-			case SimpleIRIHDT.OBJECT_POS, SimpleIRIHDT.SHARED_POS -> id;
-			case SimpleIRIHDT.PREDICATE_POS, SimpleIRIHDT.GRAPH_POS ->
-					hdt.getDictionary().stringToId(obj.toString(), TripleComponentRole.OBJECT);
-			case SimpleIRIHDT.SUBJECT_POS -> -1; // not shared
-			default -> throw new IllegalArgumentException("Invalid HDT position: " + hdtval.getHDTPosition());
+		case SimpleIRIHDT.OBJECT_POS, SimpleIRIHDT.SHARED_POS -> id;
+		case SimpleIRIHDT.PREDICATE_POS, SimpleIRIHDT.GRAPH_POS ->
+			hdt.getDictionary().stringToId(obj.toString(), TripleComponentRole.OBJECT);
+		case SimpleIRIHDT.SUBJECT_POS -> -1; // not shared
+		default -> throw new IllegalArgumentException("Invalid HDT position: " + hdtval.getHDTPosition());
 		};
 	}
 

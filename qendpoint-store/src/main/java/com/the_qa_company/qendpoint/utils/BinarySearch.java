@@ -61,7 +61,7 @@ public class BinarySearch {
 				c = COMPARATOR.compare(string, s.isEmpty() ? "" : s.subSequence(0, 1));
 			}
 			String s = dictionary.idToString(mid, role).toString();
-			int c2 = COMPARATOR.compare(string, s.isEmpty() ? "": s.subSequence(0, 1));
+			int c2 = COMPARATOR.compare(string, s.isEmpty() ? "" : s.subSequence(0, 1));
 			// System.out.println("c"+c);
 			// System.out.println("c2 "+c2);
 			if ((mid == n || c != 0) && c2 == 0)

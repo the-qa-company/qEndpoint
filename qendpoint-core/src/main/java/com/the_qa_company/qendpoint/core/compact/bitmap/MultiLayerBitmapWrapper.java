@@ -53,7 +53,7 @@ public class MultiLayerBitmapWrapper implements MultiLayerBitmap, Closeable {
 
 	@SuppressWarnings("unchecked")
 	public <T extends Bitmap> T getHandle() {
-		return (T)handle;
+		return (T) handle;
 	}
 
 	@Override

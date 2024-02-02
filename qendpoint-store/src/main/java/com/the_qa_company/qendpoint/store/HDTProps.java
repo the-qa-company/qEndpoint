@@ -34,8 +34,7 @@ public class HDTProps {
 		// if the dictionay is spliting the objects to sections - we just have
 		// to look in the
 		// NO_DATATYPE section for the blank nodes range
-		if (hdt.getDictionary() instanceof MultipleSectionDictionary) {
-			MultipleSectionDictionary dictionary = (MultipleSectionDictionary) hdt.getDictionary();
+		if (hdt.getDictionary() instanceof MultipleSectionDictionary dictionary) {
 			start = dictionary.getDataTypeRange("NO_DATATYPE").getKey();
 			end = dictionary.getDataTypeRange("NO_DATATYPE").getValue();
 			if (end == 0) {
@@ -82,9 +81,8 @@ public class HDTProps {
 		}
 
 		// check if this hdt has a default graph
-		if (hdt.getDictionary().supportGraphs()
-		    && hdt.getDictionary().getNgraphs() > 0
-		    && hdt.getDictionary().idToString(1, TripleComponentRole.GRAPH).isEmpty()) {
+		if (hdt.getDictionary().supportGraphs() && hdt.getDictionary().getNgraphs() > 0
+				&& hdt.getDictionary().idToString(1, TripleComponentRole.GRAPH).isEmpty()) {
 			this.defaultGraph = 1;
 		} else {
 			this.defaultGraph = -1;

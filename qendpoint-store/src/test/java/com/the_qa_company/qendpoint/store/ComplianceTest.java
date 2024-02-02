@@ -14,7 +14,6 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
@@ -46,7 +45,8 @@ public class ComplianceTest {
 			List<String> testToIgnore = new ArrayList<>();
 			// @todo these tests are failing and should not, they are skipped so
 			// that we can be sure that we see when
-			// currently passing tests are not failing. Many of these tests are not
+			// currently passing tests are not failing. Many of these tests are
+			// not
 			// so problematic since we do not support
 			// named graphs anyway
 			testToIgnore.add("constructwhere02 - CONSTRUCT WHERE");
@@ -78,7 +78,7 @@ public class ComplianceTest {
 
 		@Override
 		protected void testParameterListener(String displayName, String testURI, String name, String queryFileURL,
-		                                     String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
+				String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
 			try {
 				setUpHDT(dataset);
 			} catch (IOException | ParserException | NotFoundException e) {
@@ -154,8 +154,8 @@ public class ComplianceTest {
 
 			HDTOptions spec = HDTOptions.of();
 
-			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec,
-					null);
+			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file),
+					spec, null);
 			assert hdt != null;
 			hdt.search("", "", "").forEachRemaining(System.out::println);
 		}
@@ -168,7 +168,8 @@ public class ComplianceTest {
 			List<String> testToIgnore = new ArrayList<>();
 			// @todo these tests are failing and should not, they are skipped so
 			// that we can be sure that we see when
-			// currently passing tests are not failing. Many of these tests are not
+			// currently passing tests are not failing. Many of these tests are
+			// not
 			// so problematic since we do not support
 			// named graphs anyway
 			testToIgnore.add("DELETE INSERT 1b");
@@ -194,8 +195,8 @@ public class ComplianceTest {
 				hdt.saveToHDT(fileName, null);
 			}
 
-			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-					spec, nativeStore.getAbsolutePath() + "/", true) {
+			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/",
+					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true) {
 
 				@Override
 				public HDT loadIndex() throws IOException {
@@ -222,8 +223,6 @@ public class ComplianceTest {
 			// endpoint.setThreshold(2);
 
 			return new SailRepository(endpoint);
-			// return new DatasetRepository(new SailRepository(new
-			// NativeStore(tempDir.newFolder(), "spoc")));
 		}
 
 	}
@@ -238,7 +237,8 @@ public class ComplianceTest {
 					// @todo these tests are failing and should not, they are
 					// skipped so
 					// that we can be sure that we see when
-					// currently passing tests are not failing. Many of these tests
+					// currently passing tests are not failing. Many of these
+					// tests
 					// are not
 					// so problematic since we do not support
 					// named graphs anyway
@@ -258,7 +258,7 @@ public class ComplianceTest {
 
 		@Override
 		protected void testParameterListener(String displayName, String testURI, String name, String queryFileURL,
-		                                     String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
+				String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
 			try {
 				setUpHDT(dataset);
 			} catch (IOException | ParserException | NotFoundException e) {
@@ -317,8 +317,8 @@ public class ComplianceTest {
 
 			HDTOptions spec = HDTOptions.of();
 
-			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec,
-					null);
+			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file),
+					spec, null);
 			assert hdt != null;
 			hdt.search("", "", "").forEachRemaining(System.out::println);
 		}
@@ -331,7 +331,8 @@ public class ComplianceTest {
 			List<String> testToIgnore = new ArrayList<>();
 			// @todo these tests are failing and should not, they are skipped so
 			// that we can be sure that we see when
-			// currently passing tests are not failing. Many of these tests are not
+			// currently passing tests are not failing. Many of these tests are
+			// not
 			// so problematic since we do not support
 			// named graphs anyway
 			testToIgnore.add("DELETE INSERT 1b");
@@ -355,8 +356,8 @@ public class ComplianceTest {
 				hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 			}
 
-			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-					spec, nativeStore.getAbsolutePath() + "/", true);
+			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/",
+					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true);
 			// endpoint.setThreshold(2);
 
 			return new SailRepository(endpoint);
@@ -371,7 +372,7 @@ public class ComplianceTest {
 
 		@Override
 		protected void testParameterListener(String displayName, String testURI, String name, String queryFileURL,
-		                                     String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
+				String resultFileURL, Dataset dataset, boolean ordered, boolean laxCardinality) {
 			try {
 				setUpHDT(dataset);
 			} catch (IOException | ParserException | NotFoundException e) {
@@ -430,8 +431,8 @@ public class ComplianceTest {
 
 			HDTOptions spec = HDTOptions.of();
 
-			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file), spec,
-					null);
+			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file),
+					spec, null);
 			assert hdt != null;
 			hdt.search("", "", "").forEachRemaining(System.out::println);
 		}
@@ -453,8 +454,8 @@ public class ComplianceTest {
 				hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 			}
 
-			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-					spec, nativeStore.getAbsolutePath() + "/", true);
+			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/",
+					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true);
 
 			return new SailRepository(endpoint);
 		}
@@ -465,22 +466,27 @@ public class ComplianceTest {
 	public Collection<DynamicTest> multiIndexQuery() {
 		return new EndpointMultIndexSPARQL11QueryComplianceTest().tests();
 	}
+
 	@TestFactory
 	public Collection<DynamicTest> multiIndexUpdate() {
 		return new EndpointMultIndexSPARQL11UpdateComplianceTest().getTestData();
 	}
+
 	@TestFactory
 	public Collection<DynamicTest> indexQuery() {
 		return new EndpointSPARQL11QueryComplianceTest().tests();
 	}
+
 	@TestFactory
 	public Collection<DynamicTest> indexUpdate() {
 		return new EndpointSPARQL11UpdateComplianceTest().getTestData();
 	}
+
 	@TestFactory
 	public Collection<DynamicTest> quadQuery() {
 		return new EndpointQuadSPARQL11QueryComplianceTest().tests();
 	}
+
 	@TestFactory
 	public Collection<DynamicTest> quadUpdate() {
 		return new EndpointQuadSPARQL11UpdateComplianceTest().getTestData();

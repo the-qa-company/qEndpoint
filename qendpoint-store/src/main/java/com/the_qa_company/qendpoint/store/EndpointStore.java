@@ -443,7 +443,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 	}
 
 	/**
-	 * force access to the store via reflection, the library does not allow directly since the method is protected
+	 * force access to the store via reflection, the library does not allow
+	 * directly since the method is protected
+	 *
 	 * @return sailstore
 	 * @deprecated use {@link #getCurrentSailStore()} instead
 	 */
@@ -451,8 +453,11 @@ public class EndpointStore extends AbstractNotifyingSail {
 	public SailStore getCurrentSaliStore() {
 		return getCurrentSailStore();
 	}
+
 	/**
-	 * force access to the store via reflection, the library does not allow directly since the method is protected
+	 * force access to the store via reflection, the library does not allow
+	 * directly since the method is protected
+	 *
 	 * @return sailstore
 	 */
 	public SailStore getCurrentSailStore() {
@@ -684,7 +689,8 @@ public class EndpointStore extends AbstractNotifyingSail {
 				Files.createFile(file.toPath());
 			}
 			OutputStream rdfWriterTempTriplesOut = new BufferedOutputStream(new FileOutputStream(file, isRestarting));
-			this.rdfWriterTempTriples = graph ? new NQuadsWriter(rdfWriterTempTriplesOut) : new NTriplesWriter(rdfWriterTempTriplesOut);
+			this.rdfWriterTempTriples = graph ? new NQuadsWriter(rdfWriterTempTriplesOut)
+					: new NTriplesWriter(rdfWriterTempTriplesOut);
 			this.rdfWriterTempTriples.startRDF();
 		} catch (IOException e) {
 			e.printStackTrace();

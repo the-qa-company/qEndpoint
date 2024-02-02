@@ -268,7 +268,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		}
 
 		if (!this.endpoint.getHdt().getDictionary().supportGraphs()) {
-			// note that in the native store we insert a mix of native IRIs and HDT
+			// note that in the native store we insert a mix of native IRIs and
+			// HDT
 			// IRIs, depending if the resource is in
 			// HDT or not
 			TripleID tripleID = new TripleID(subjectID, predicateID, objectID);
@@ -276,8 +277,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				// check if we need to search over the other native connection
 				if (endpoint.isMerging()) {
 					if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-						try (CloseableIteration<? extends Statement> other = getOtherConnectionRead().getStatements(newSubj,
-								newPred, newObj, false)) {
+						try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
+								.getStatements(newSubj, newPred, newObj, false)) {
 							if (other.hasNext()) {
 								return;
 							}
@@ -305,17 +306,15 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			if (graphID == -1) {
 				newGraph = contexts;
 			} else {
-				newGraph = new Resource[] {
-						this.endpoint.getHdtConverter().graphIdToIRI(graphID)
-				};
+				newGraph = new Resource[] { this.endpoint.getHdtConverter().graphIdToIRI(graphID) };
 			}
 			TripleID tripleID = new TripleID(subjectID, predicateID, objectID, graphID);
 			if (quadDoesntExistInHDT(tripleID)) {
 				// check if we need to search over the other native connection
 				if (endpoint.isMerging()) {
 					if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-						try (CloseableIteration<? extends Statement> other = getOtherConnectionRead().getStatements(newSubj,
-								newPred, newObj, false, newGraph)) {
+						try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
+								.getStatements(newSubj, newPred, newObj, false, newGraph)) {
 							if (other.hasNext()) {
 								return;
 							}
@@ -331,9 +330,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				this.endpoint.triplesCount++;
 			}
 		} else {
-			Resource[] newGraph = new Resource[] {
-					null
-			};
+			Resource[] newGraph = new Resource[] { null };
 			for (Resource context : contexts) {
 				long graphID;
 				if (context != null) {
@@ -349,11 +346,12 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				}
 				TripleID tripleID = new TripleID(subjectID, predicateID, objectID, graphID);
 				if (quadDoesntExistInHDT(tripleID)) {
-					// check if we need to search over the other native connection
+					// check if we need to search over the other native
+					// connection
 					if (endpoint.isMerging()) {
 						if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-							try (CloseableIteration<? extends Statement> other = getOtherConnectionRead().getStatements(newSubj,
-									newPred, newObj, false, newGraph)) {
+							try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
+									.getStatements(newSubj, newPred, newObj, false, newGraph)) {
 								if (other.hasNext()) {
 									continue;
 								}
@@ -591,10 +589,13 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			return this.endpoint
 					.getDeleteBitMap(
 							iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO)
-					.access(endpoint.getHdt().getDictionary().supportGraphs() ? (tid.isQuad() ?  tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1 : 0, index);
+					.access(endpoint.getHdt().getDictionary().supportGraphs()
+							? (tid.isQuad() ? tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1
+							: 0, index);
 		}
 		return true;
 	}
+
 	private boolean quadDoesntExistInHDT(TripleID tripleID) {
 		IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID);
 		// if iterator is empty then the given triple 't' doesn't exist in HDT
@@ -604,12 +605,13 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			return this.endpoint
 					.getDeleteBitMap(
 							iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO)
-					.access((tid.isQuad() ?  tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1, index);
+					.access((tid.isQuad() ? tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1, index);
 		}
 		return true;
 	}
 
-	private void assignBitMapDeletes(TripleID tid, Resource subj, IRI pred, Value obj, Resource[] contexts, long[] contextIds) throws SailException {
+	private void assignBitMapDeletes(TripleID tid, Resource subj, IRI pred, Value obj, Resource[] contexts,
+			long[] contextIds) throws SailException {
 		long s = tid.getSubject();
 		long p = tid.getPredicate();
 		long o = tid.getObject();
@@ -646,7 +648,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 								this.endpoint.getTempDeleteBitMap(sorder).set(layer, index, true);
 							}
 							if (order == TripleComponentOrder.SPO) {
-								notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
+								notifyStatementRemoved(
+										this.endpoint.getValueFactory().createStatement(subj, pred, obj));
 							}
 						}
 					}
@@ -668,14 +671,15 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 							assert iter.isLastTriplePositionBoundToOrder();
 							TripleComponentOrder sorder = iter.getOrder();
 
-
 							if (!this.endpoint.getDeleteBitMap(sorder).access(removedId.getGraph() - 1, index)) {
 								this.endpoint.getDeleteBitMap(sorder).set(removedId.getGraph() - 1, index, true);
 								if (this.endpoint.isMerging()) {
-									this.endpoint.getTempDeleteBitMap(sorder).set(removedId.getGraph() - 1, index, true);
+									this.endpoint.getTempDeleteBitMap(sorder).set(removedId.getGraph() - 1, index,
+											true);
 								}
 								if (order == TripleComponentOrder.SPO) {
-									notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj, context));
+									notifyStatementRemoved(
+											this.endpoint.getValueFactory().createStatement(subj, pred, obj, context));
 								}
 							}
 						}
@@ -695,7 +699,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 							writer.handleStatement(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
 						} else {
 							for (Resource ctx : contexts) {
-								writer.handleStatement(this.endpoint.getValueFactory().createStatement(subj, pred, obj, ctx));
+								writer.handleStatement(
+										this.endpoint.getValueFactory().createStatement(subj, pred, obj, ctx));
 							}
 						}
 					}

@@ -62,6 +62,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 
 	/**
 	 * Compute triples signature
+	 *
 	 * @param triples triples
 	 * @return signature
 	 */
@@ -76,7 +77,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 	 *
 	 * @param file    file
 	 * @param channel channel
-	 * @param triples    triples
+	 * @param triples triples
 	 * @return index
 	 * @throws IOException io
 	 */

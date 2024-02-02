@@ -349,7 +349,6 @@ public class CompiledSail extends SailWrapper {
 		private Model configModel;
 		private NotifyingSail sourceSail;
 		private EndpointFiles endpointFiles;
-		private HDTOptions spec;
 		private HDTOptions hdtSpec;
 		private final Map<String, String> stringConfig = new HashMap<>();
 		private final List<Object> stringObject = new ArrayList<>();
@@ -522,7 +521,6 @@ public class CompiledSail extends SailWrapper {
 			spec.setOptions(hdtSpec);
 			return withHDTSpec(spec);
 		}
-
 
 		/**
 		 * set the hdt spec for the endpoint store, won't be used if the source

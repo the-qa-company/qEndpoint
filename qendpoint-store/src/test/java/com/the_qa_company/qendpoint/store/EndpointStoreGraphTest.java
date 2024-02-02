@@ -29,15 +29,14 @@ public class EndpointStoreGraphTest {
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
 
-
 	public static String posStr(int pos) {
 		return switch (pos) {
-			case SimpleIRIHDT.SUBJECT_POS -> "s";
-			case SimpleIRIHDT.PREDICATE_POS -> "p";
-			case SimpleIRIHDT.OBJECT_POS -> "o";
-			case SimpleIRIHDT.SHARED_POS -> "sh";
-			case SimpleIRIHDT.GRAPH_POS -> "g";
-			default -> "unk" + pos;
+		case SimpleIRIHDT.SUBJECT_POS -> "s";
+		case SimpleIRIHDT.PREDICATE_POS -> "p";
+		case SimpleIRIHDT.OBJECT_POS -> "o";
+		case SimpleIRIHDT.SHARED_POS -> "sh";
+		case SimpleIRIHDT.GRAPH_POS -> "g";
+		default -> "unk" + pos;
 		};
 	}
 
@@ -47,8 +46,10 @@ public class EndpointStoreGraphTest {
 		}
 		return val.toString();
 	}
+
 	public static void printStmt(Statement stmt) {
-		System.out.print(printVal(stmt.getSubject()) + ", " + printVal(stmt.getPredicate()) + ", " + printVal(stmt.getObject()));
+		System.out.print(
+				printVal(stmt.getSubject()) + ", " + printVal(stmt.getPredicate()) + ", " + printVal(stmt.getObject()));
 		if (stmt.getContext() != null) {
 			System.out.println(" [" + printVal(stmt.getContext()) + "]");
 		} else {
@@ -75,15 +76,15 @@ public class EndpointStoreGraphTest {
 				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD
 				// temp dict
 				, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_HASH_QUAD
-				// merge join?
-				//, EndpointStore.OPTION_QENDPOINT_MERGE_JOIN, false
+		// merge join?
+		// , EndpointStore.OPTION_QENDPOINT_MERGE_JOIN, false
 
 		);
-		SparqlRepository sparqlRepository = CompiledSail.compiler()
-				.withEndpointFiles(new EndpointFiles(roo.toPath()))
+		SparqlRepository sparqlRepository = CompiledSail.compiler().withEndpointFiles(new EndpointFiles(roo.toPath()))
 				.withHDTSpec(spec).compileToSparqlRepository();
 
-		EndpointStore endpointStore = (EndpointStore) ((CompiledSail) sparqlRepository.getRepository().getSail()).getSource();
+		EndpointStore endpointStore = (EndpointStore) ((CompiledSail) sparqlRepository.getRepository().getSail())
+				.getSource();
 
 		ValueFactory vf = sparqlRepository.getRepository().getValueFactory();
 		try {
@@ -91,27 +92,19 @@ public class EndpointStoreGraphTest {
 				System.out.println("ADD");
 				try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 					conn.begin();
-					conn.add(vf.createStatement(
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+					conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph")
-					));
-					conn.add(vf.createStatement(
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph")));
+					conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa")
-					));
-					conn.add(vf.createStatement(
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "ss"),
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa")));
+					conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "ss"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "p"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa5")
-					));
-					conn.add(vf.createStatement(
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "ss"),
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa5")));
+					conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "ss"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "p"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa6")
-					));
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa6")));
 					conn.commit();
 				}
 			}
@@ -130,15 +123,18 @@ public class EndpointStoreGraphTest {
 			{
 				try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 					System.out.println("SEARCH GRAPH");
-					try (RepositoryResult<Statement> st = conn.getStatements(null, null, null, false, vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph"))) {
+					try (RepositoryResult<Statement> st = conn.getStatements(null, null, null, false,
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph"))) {
 						st.stream().forEach(EndpointStoreGraphTest::printStmt);
 					}
 					System.out.println("SEARCH NO GRAPH");
-					try (RepositoryResult<Statement> st = conn.getStatements(null, null, null, false, (Resource) null)) {
+					try (RepositoryResult<Statement> st = conn.getStatements(null, null, null, false,
+							(Resource) null)) {
 						st.stream().forEach(EndpointStoreGraphTest::printStmt);
 					}
 					System.out.println("SEARCH BOTH GRAPH");
-					try (RepositoryResult<Statement> st = conn.getStatements(null, null, null, false, vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph"), null)) {
+					try (RepositoryResult<Statement> st = conn.getStatements(null, null, null, false,
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph"), null)) {
 						st.stream().forEach(EndpointStoreGraphTest::printStmt);
 					}
 
@@ -148,11 +144,9 @@ public class EndpointStoreGraphTest {
 				System.out.println("REM DEFAULT");
 				try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 					conn.begin();
-					conn.remove(
-					vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
-					vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
-					vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
-					(Resource) null);
+					conn.remove(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"), (Resource) null);
 					conn.commit();
 				}
 			}
@@ -168,11 +162,11 @@ public class EndpointStoreGraphTest {
 				System.out.println("REM GRAPH");
 				try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 					conn.begin();
-					conn.remove(vf.createStatement(
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa")
-					), vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph"));
+					conn.remove(
+							vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+									vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
+									vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa")),
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph"));
 					conn.commit();
 				}
 			}
@@ -207,12 +201,10 @@ public class EndpointStoreGraphTest {
 			{
 				try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 					conn.begin();
-					conn.add(vf.createStatement(
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+					conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
 							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa2"),
-							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")
-					));
+							vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")));
 					conn.commit();
 				}
 			}
@@ -229,12 +221,10 @@ public class EndpointStoreGraphTest {
 				{
 					try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 						conn.begin();
-						conn.add(vf.createStatement(
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+						conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa3"),
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")
-						));
+								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")));
 						conn.commit();
 					}
 				}
@@ -246,32 +236,26 @@ public class EndpointStoreGraphTest {
 				{
 					try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 						conn.begin();
-						conn.add(vf.createStatement(
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+						conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa4"),
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")
-						));
+								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")));
 						conn.commit();
 					}
 					try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 						conn.begin();
-						conn.add(vf.createStatement(
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
+						conn.add(vf.createStatement(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "o"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa3"),
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")
-						));
+								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "graph2")));
 						conn.commit();
 					}
 					System.out.println("REM 6");
 					try (SailRepositoryConnection conn = sparqlRepository.getConnection()) {
 						conn.begin();
-						conn.remove(
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "ss"),
+						conn.remove(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "ss"),
 								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "p"),
-								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa6"),
-								(Resource) null);
+								vf.createIRI(Utility.EXAMPLE_NAMESPACE + "aa6"), (Resource) null);
 						conn.commit();
 					}
 				}

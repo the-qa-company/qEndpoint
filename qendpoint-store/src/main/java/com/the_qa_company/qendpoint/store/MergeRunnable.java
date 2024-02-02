@@ -298,7 +298,7 @@ public class MergeRunnable {
 				e.printStackTrace();
 			} finally {
 				if (MergeRunnableStopPoint.debug) {
-					//MergeRunnableStopPoint.unlockAll();
+					// MergeRunnableStopPoint.unlockAll();
 					debugLock.release();
 				}
 			}
@@ -904,8 +904,8 @@ public class MergeRunnable {
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gen"));
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("wip.hdt"));
 		try {
-			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.guess(rdfInput),
-					oopt, null)) {
+			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI,
+					RDFNotation.guess(rdfInput), oopt, null)) {
 				logger.info("File converted in: " + sw.stopAndShow());
 				hdt.saveToHDT(hdtOutput, null);
 				logger.info("HDT saved to file in: " + sw.stopAndShow());
@@ -948,11 +948,10 @@ public class MergeRunnable {
 					Resource newCtxIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDcontext(stm.getContext());
 					newCtxIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newCtxIRI);
 
-					stmConverted = this.endpoint.getValueFactory().createStatement(
-							newSubjIRI, newPredIRI, newObjIRI, newCtxIRI);
+					stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI, newObjIRI,
+							newCtxIRI);
 				} else {
-					stmConverted = this.endpoint.getValueFactory().createStatement(
-							newSubjIRI, newPredIRI, newObjIRI);
+					stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI, newObjIRI);
 				}
 
 				writer.handleStatement(stmConverted);
