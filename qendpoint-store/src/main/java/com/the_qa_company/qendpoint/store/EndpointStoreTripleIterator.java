@@ -8,9 +8,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryInterruptedException;
-import org.eclipse.rdf4j.sail.SailException;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import org.slf4j.Logger;
@@ -50,20 +48,28 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		if (connection.isTimeout()) {
 			throw new EndpointTimeoutException();
 		}
+		boolean supportGraphs = endpoint.getHdt().getDictionary().supportGraphs();
 		// iterate over the result of hdt
 		while (iterator.hasNext()) {
 			TripleID tripleID = iterator.next();
 			long index = iterator.getLastTriplePosition();
 			TripleComponentOrder order = iterator.isLastTriplePositionBoundToOrder() ? iterator.getOrder()
 					: TripleComponentOrder.SPO;
-			if (!endpoint.getDeleteBitMap(order).access(index)) {
+			if (!endpoint.getDeleteBitMap(order).access(tripleID.isQuad() ? tripleID.getGraph() - 1 : 0, index)) {
 				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
 				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());
 				if (logger.isTraceEnabled()) {
 					logger.trace("From HDT   {} {} {} ", subject, predicate, object);
 				}
-				next = endpointTripleSource.getValueFactory().createStatement(subject, predicate, object);
+				if (supportGraphs) {
+					Resource ctx = tripleID.isQuad()
+							? endpoint.getHdtConverter().idToGraphHDTResource(tripleID.getGraph())
+							: null;
+					next = endpointTripleSource.getValueFactory().createStatement(subject, predicate, object, ctx);
+				} else {
+					next = endpointTripleSource.getValueFactory().createStatement(subject, predicate, object);
+				}
 				return true;
 			}
 		}
@@ -73,8 +79,9 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			Resource newSubj = endpoint.getHdtConverter().rdf4jToHdtIDsubject(stm.getSubject());
 			IRI newPred = endpoint.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
 			Value newObject = endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
-			next = endpointTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject,
-					stm.getContext());
+			Resource newContext = endpoint.getHdtConverter().rdf4jToHdtIDcontext(stm.getContext());
+
+			next = endpointTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject, newContext);
 			if (logger.isTraceEnabled()) {
 				logger.trace("From RDF4j {} {} {}", next.getSubject(), next.getPredicate(), next.getObject());
 			}

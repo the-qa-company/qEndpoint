@@ -3,7 +3,6 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
@@ -16,7 +15,6 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.algebra.evaluation.util.QueryEvaluationUtil;
 
 // there are 4 types of resources:
 // resources coming from outside,
@@ -41,91 +39,60 @@ public class HDTConverter {
 		if (subj == null) {
 			return 0;
 		}
-		if (!(subj instanceof SimpleIRIHDT hdtSubj)) {
+		if (!(subj instanceof HDTValue hdtval)) {
 			return this.hdt.getDictionary().stringToId(subj.toString(), TripleComponentRole.SUBJECT);
 		}
-		// if it is a HDT IRI we do not need to make a full conversion, we
-		// already have the IDs
-		long id = hdtSubj.getId();
-		long position = hdtSubj.getPostion();
-		if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
-			return id;
-		}
 
-		String translate;
-		if (position == SimpleIRIHDT.PREDICATE_POS) {
-			translate = hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
-		} else if (position == SimpleIRIHDT.OBJECT_POS) {
-			translate = hdt.getDictionary().idToString(id, TripleComponentRole.OBJECT).toString();
-		} else {
-			translate = "";
-		}
-
-		id = hdt.getDictionary().stringToId(translate, TripleComponentRole.SUBJECT);
-
-		return id;
+		long id = hdtval.getHDTId();
+		return switch (hdtval.getHDTPosition()) {
+		case SimpleIRIHDT.SUBJECT_POS, SimpleIRIHDT.SHARED_POS -> id;
+		case SimpleIRIHDT.PREDICATE_POS, SimpleIRIHDT.GRAPH_POS ->
+			hdt.getDictionary().stringToId(subj.toString(), TripleComponentRole.SUBJECT);
+		case SimpleIRIHDT.OBJECT_POS -> -1; // not shared
+		default -> throw new IllegalArgumentException("Invalid HDT position: " + hdtval.getHDTPosition());
+		};
 	}
 
 	public long predicateToID(IRI pred) {
-		if (pred != null) {
-			// if it is a HDT IRI we do not need to make a full conversion, we
-			// already have the IDs
-			if (pred instanceof SimpleIRIHDT hdtPred) {
-				long id = hdtPred.getId();
-				long position = hdtPred.getPostion();
-				if (position == SimpleIRIHDT.PREDICATE_POS) {
-					return id;
-				}
-				String translate;
-				if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.SUBJECT_POS) {
-					translate = hdt.getDictionary().idToString(id, TripleComponentRole.SUBJECT).toString();
-				} else if (position == SimpleIRIHDT.OBJECT_POS) {
-					translate = hdt.getDictionary().idToString(id, TripleComponentRole.OBJECT).toString();
-				} else {
-					translate = "";
-				}
-				return hdt.getDictionary().stringToId(translate, TripleComponentRole.PREDICATE);
-
-			} else {
-				return this.hdt.getDictionary().stringToId(pred.toString(), TripleComponentRole.PREDICATE);
-			}
-
-		} else {
+		if (pred == null) {
 			return 0;
 		}
+
+		if (!(pred instanceof HDTValue hdtval && hdtval.getHDTPosition() == SimpleIRIHDT.PREDICATE_POS)) {
+			return this.hdt.getDictionary().stringToId(pred.toString(), TripleComponentRole.PREDICATE);
+		}
+
+		return hdtval.getHDTId();
 	}
 
 	public long objectToID(Value obj) {
-		if (obj != null) {
-			// if it is a HDT IRI we do not need to make a full conversion, we
-			// already have the IDs
-			if (obj instanceof SimpleIRIHDT hdtObj) {
-				long id = hdtObj.getId();
-				int position = hdtObj.getPostion();
-				if (position == SimpleIRIHDT.SHARED_POS || position == SimpleIRIHDT.OBJECT_POS) {
-					return id;
-				}
-				String translate;
-				if (position == SimpleIRIHDT.PREDICATE_POS) {
-					translate = hdt.getDictionary().idToString(id, TripleComponentRole.PREDICATE).toString();
-				} else if (position == SimpleIRIHDT.SUBJECT_POS) {
-					translate = hdt.getDictionary().idToString(id, TripleComponentRole.SUBJECT).toString();
-				} else {
-					translate = "";
-				}
-				return hdt.getDictionary().stringToId(translate, TripleComponentRole.OBJECT);
-			} else if (obj instanceof SimpleLiteralHDT hdtObj) {
-				return hdtObj.getHDTId();
-			} else {
-				if (QueryEvaluationUtil.isSimpleLiteral(obj)) {
-					return this.hdt.getDictionary().stringToId('"' + obj.stringValue() + '"',
-							TripleComponentRole.OBJECT);
-				}
-				return this.hdt.getDictionary().stringToId(obj.toString(), TripleComponentRole.OBJECT);
-			}
-		} else {
+		if (obj == null) {
 			return 0;
 		}
+		if (!(obj instanceof HDTValue hdtval)) {
+			return this.hdt.getDictionary().stringToId(obj.toString(), TripleComponentRole.OBJECT);
+		}
+
+		long id = hdtval.getHDTId();
+		return switch (hdtval.getHDTPosition()) {
+		case SimpleIRIHDT.OBJECT_POS, SimpleIRIHDT.SHARED_POS -> id;
+		case SimpleIRIHDT.PREDICATE_POS, SimpleIRIHDT.GRAPH_POS ->
+			hdt.getDictionary().stringToId(obj.toString(), TripleComponentRole.OBJECT);
+		case SimpleIRIHDT.SUBJECT_POS -> -1; // not shared
+		default -> throw new IllegalArgumentException("Invalid HDT position: " + hdtval.getHDTPosition());
+		};
+	}
+
+	public long contextToID(Resource context) {
+		if (context == null) {
+			return endpoint.getHdtProps().getDefaultGraph();
+		}
+
+		if (!(context instanceof HDTValue hdtval && hdtval.getHDTPosition() == SimpleIRIHDT.GRAPH_POS)) {
+			return this.hdt.getDictionary().stringToId(context.toString(), TripleComponentRole.GRAPH);
+		}
+
+		return hdtval.getHDTId();
 	}
 
 	public IRI subjectIdToIRI(long id) {
@@ -146,6 +113,29 @@ public class HDTConverter {
 		} else {
 			return valueFactory.createIRI(HDT_URI + "O" + id);
 		}
+	}
+
+	public IRI graphIdToIRI(long id) {
+		return valueFactory.createIRI(HDT_URI + "G" + id);
+	}
+
+	public Resource[] graphIdToIRI(Resource[] contexts, long[] contextIds) {
+		if (contexts.length == 0) {
+			return contexts; // nothing to remap
+		}
+
+		Resource[] newcontexts = new Resource[contexts.length];
+
+		for (int i = 0; i < newcontexts.length; i++) {
+			contextIds[i] = contextToID(contexts[i]);
+			if (contextIds[i] > 0) {
+				newcontexts[i] = graphIdToIRI(contextIds[i]);
+			} else {
+				newcontexts[i] = contexts[i];
+			}
+		}
+
+		return newcontexts;
 	}
 
 	public Resource rdf4jToHdtIDsubject(Resource subj) {
@@ -172,7 +162,21 @@ public class HDTConverter {
 		return object;
 	}
 
+	public Resource rdf4jToHdtIDcontext(Resource ctx) {
+		if (ctx == null || !hdt.getDictionary().supportGraphs()) {
+			return ctx;
+		}
+		long id = rdf4jContextToHdtID(ctx);
+		if (id != -1) {
+			return idToGraphHDTResource(id);
+		}
+		return ctx;
+	}
+
 	public long rdf4jSubjectToHdtID(Resource subj) {
+		if (subj == null) {
+			return -1;
+		}
 		String iriString = subj.stringValue();
 		if (iriString.startsWith((HDT_URI))) {
 			if (iriString.startsWith("SO", HDT_URI.length())) {
@@ -185,6 +189,9 @@ public class HDTConverter {
 	}
 
 	public long rdf4jPredicateToHdtID(IRI pred) {
+		if (pred == null) {
+			return -1;
+		}
 		String iriString = pred.stringValue();
 		if (iriString.startsWith((HDT_URI))) {
 			if (iriString.startsWith("P", HDT_URI.length())) {
@@ -195,11 +202,27 @@ public class HDTConverter {
 	}
 
 	public long rdf4jObjectToHdtID(Value object) {
+		if (object == null) {
+			return -1;
+		}
 		String iriString = object.stringValue();
 		if (iriString.startsWith(HDT_URI)) {
 			if (iriString.startsWith("SO", HDT_URI.length())) {
 				return Long.parseLong(iriString, HDT_URI.length() + 2, iriString.length(), 10);
 			} else if (iriString.startsWith("O", HDT_URI.length())) {
+				return Long.parseLong(iriString, HDT_URI.length() + 1, iriString.length(), 10);
+			}
+		}
+		return -1;
+	}
+
+	public long rdf4jContextToHdtID(Resource ctx) {
+		if (ctx == null) {
+			return endpoint.getHdtProps().getDefaultGraph();
+		}
+		String iriString = ctx.stringValue();
+		if (iriString.startsWith((HDT_URI))) {
+			if (iriString.startsWith("G", HDT_URI.length())) {
 				return Long.parseLong(iriString, HDT_URI.length() + 1, iriString.length(), 10);
 			}
 		}
@@ -222,7 +245,7 @@ public class HDTConverter {
 		case SUBJECT -> idToSubjectHDTResource0(id);
 		case PREDICATE -> idToPredicateHDTResource(id);
 		case OBJECT -> idToObjectHDTResource0(id);
-		case GRAPH -> throw new NotImplementedException("TODO: GRAPH");
+		case GRAPH -> idToGraphHDTResource(id);
 		};
 	}
 
@@ -279,6 +302,17 @@ public class HDTConverter {
 		}
 	}
 
+	public Resource idToGraphHDTResource(long graphID) {
+		if (graphID == endpoint.getHdtProps().getDefaultGraph()) {
+			return null;
+		}
+		if ((graphID >= endpoint.getHdtProps().getStartBlankGraph()
+				&& graphID <= endpoint.getHdtProps().getEndBlankGraph())) {
+			return new SimpleBNodeHDT(hdt, SimpleIRIHDT.GRAPH_POS, graphID);
+		}
+		return new SimpleIRIHDT(hdt, SimpleIRIHDT.GRAPH_POS, graphID);
+	}
+
 	public Resource subjectHdtResourceToResource(Resource subject) {
 		if (subject instanceof SimpleIRIHDT) {
 			return this.endpoint.getChangingStore().getValueFactory().createIRI(subject.stringValue());
@@ -319,6 +353,7 @@ public class HDTConverter {
 		case SimpleIRIHDT.SUBJECT_POS, SimpleIRIHDT.SHARED_POS -> idToSubjectHDTResource(id);
 		case SimpleIRIHDT.PREDICATE_POS -> idToPredicateHDTResource(id);
 		case SimpleIRIHDT.OBJECT_POS -> idToObjectHDTResource(id);
+		case SimpleIRIHDT.GRAPH_POS -> idToGraphHDTResource(id);
 		default -> throw new IllegalArgumentException("bad position: " + position);
 		};
 	}
@@ -327,6 +362,14 @@ public class HDTConverter {
 		Resource s = rdf4jToHdtIDsubject(statement.getSubject());
 		IRI p = rdf4jToHdtIDpredicate(statement.getPredicate());
 		Value o = rdf4jToHdtIDobject(statement.getObject());
+		if (hdt.getDictionary().supportGraphs()) {
+			Resource g = rdf4jToHdtIDcontext(statement.getContext());
+			if (s == statement.getSubject() && p == statement.getPredicate() && o == statement.getObject()
+					&& g == statement.getContext()) {
+				return statement;
+			}
+			return valueFactory.createStatement(s, p, o, g);
+		}
 		if (s == statement.getSubject() && p == statement.getPredicate() && o == statement.getObject()) {
 			return statement;
 		}
@@ -343,6 +386,7 @@ public class HDTConverter {
 		delegate(statement.getSubject());
 		delegate(statement.getPredicate());
 		delegate(statement.getObject());
+		delegate(statement.getContext());
 		return statement;
 	}
 

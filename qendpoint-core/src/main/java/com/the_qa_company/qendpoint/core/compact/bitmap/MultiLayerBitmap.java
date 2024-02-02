@@ -7,95 +7,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public interface MultiLayerBitmap extends Bitmap {
-	static MultiLayerBitmap ofBitmap(Bitmap bitmap) {
+	static MultiLayerBitmap ofBitmap(Bitmap bitmap, long graphs) {
 		if (bitmap instanceof MultiLayerBitmap mlb) {
 			return mlb;
 		}
-		return new MultiLayerBitmap() {
-
-			@Override
-			public boolean access(long layer, long position) {
-				assert layer == 0;
-				return bitmap.access(position);
-			}
-
-			@Override
-			public long rank1(long layer, long position) {
-				return bitmap.rank1(position);
-			}
-
-			@Override
-			public long rank0(long layer, long position) {
-				assert layer == 0;
-				return bitmap.rank0(position);
-			}
-
-			@Override
-			public long selectPrev1(long layer, long start) {
-				assert layer == 0;
-				return bitmap.selectPrev1(start);
-			}
-
-			@Override
-			public long selectNext1(long layer, long start) {
-				assert layer == 0;
-				return bitmap.selectNext1(start);
-			}
-
-			@Override
-			public long select0(long layer, long n) {
-				assert layer == 0;
-				return bitmap.select0(n);
-			}
-
-			@Override
-			public long select1(long layer, long n) {
-				assert layer == 0;
-				return bitmap.select1(n);
-			}
-
-			@Override
-			public long getNumBits() {
-				return bitmap.getNumBits();
-			}
-
-			@Override
-			public long countOnes(long layer) {
-				assert layer == 0;
-				return bitmap.countOnes();
-			}
-
-			@Override
-			public long countZeros(long layer) {
-				assert layer == 0;
-				return bitmap.countZeros();
-			}
-
-			@Override
-			public long getSizeBytes() {
-				return bitmap.getSizeBytes();
-			}
-
-			@Override
-			public void save(OutputStream output, ProgressListener listener) throws IOException {
-				bitmap.save(output, listener);
-			}
-
-			@Override
-			public void load(InputStream input, ProgressListener listener) throws IOException {
-				bitmap.load(input, listener);
-			}
-
-			@Override
-			public String getType() {
-				return bitmap.getType();
-			}
-
-			@Override
-			public long getLayersCount() {
-				return 1;
-			}
-		};
+		return MultiLayerBitmapWrapper.of(bitmap, graphs);
 	}
 
 	/**

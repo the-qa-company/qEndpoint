@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.iterator.utils.GraphFilteringTripleId;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.impl.EmptyTriplesIterator;
@@ -48,7 +49,7 @@ public class EndpointTripleSource implements TripleSource {
 		this.endpoint = endpoint;
 		this.numberOfCurrentTriples = endpoint.getHdt().getTriples().getNumberOfElements();
 		this.endpointStoreConnection = endpointStoreConnection;
-		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean("qendpoint.mergejoin", true);
+		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean(EndpointStore.OPTION_QENDPOINT_MERGE_JOIN, true);
 	}
 
 	private void initHDTIndex() {
@@ -91,13 +92,17 @@ public class EndpointTripleSource implements TripleSource {
 			initHDTIndex();
 		}
 
+		boolean graph = endpoint.getHdt().getDictionary().supportGraphs();
+
 		// convert uris into ids if needed
 		Resource newSubj;
 		IRI newPred;
 		Value newObj;
+		Resource[] newContextes;
 		long subjectID = this.endpoint.getHdtConverter().subjectToID(subj);
 		long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
 		long objectID = this.endpoint.getHdtConverter().objectToID(obj);
+		long[] graphID;
 
 		if (subjectID == 0 || subjectID == -1) {
 			newSubj = subj;
@@ -115,7 +120,15 @@ public class EndpointTripleSource implements TripleSource {
 			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
 		}
 
-		logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
+		if (graph) {
+			graphID = new long[contexts.length];
+			newContextes = this.endpoint.getHdtConverter().graphIdToIRI(contexts, graphID);
+		} else {
+			graphID = null;
+			newContextes = contexts;
+		}
+
+		// logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
 		CloseableIteration<? extends Statement> repositoryResult;
@@ -130,15 +143,15 @@ public class EndpointTripleSource implements TripleSource {
 				// query both native stores
 				logger.debug("Query both RDF4j stores!");
 				CloseableIteration<? extends Statement> repositoryResult1 = this.endpointStoreConnection.getConnA_read()
-						.getStatements(newSubj, newPred, newObj, false, contexts);
+						.getStatements(newSubj, newPred, newObj, false, newContextes);
 				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection.getConnB_read()
-						.getStatements(newSubj, newPred, newObj, false, contexts);
+						.getStatements(newSubj, newPred, newObj, false, newContextes);
 				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
 			} else {
 				logger.debug("Query only one RDF4j stores!");
 				repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
-						newPred, newObj, false, contexts);
+						newPred, newObj, false, newContextes);
 			}
 		} else {
 			logger.debug("Not searching over native store");
@@ -148,18 +161,40 @@ public class EndpointTripleSource implements TripleSource {
 		// iterate over the HDT file
 		IteratorTripleID iterator;
 		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
-			logger.debug("Searching over HDT {} {} {}", subjectID, predicateID, objectID);
+			// logger.debug("Searching over HDT {} {} {}", subjectID,
+			// predicateID, objectID);
 			TripleID t = new TripleID(subjectID, predicateID, objectID);
 
-			if (statementOrder != null) {
-				int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
-						obj, t);
+			if (graph && contexts.length > 1) {
+				if (statementOrder != null) {
+					int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
+							obj, t);
 
-				// search with the ID to check if the triples has been deleted
-				iterator = this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder);
+					// search with the ID to check if the triples has been
+					// deleted
+					iterator = new GraphFilteringTripleId(
+							this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder), graphID);
+				} else {
+					// search with the ID to check if the triples has been
+					// deleted
+					iterator = new GraphFilteringTripleId(this.endpoint.getHdt().getTriples().search(t), graphID);
+				}
 			} else {
-				// search with the ID to check if the triples has been deleted
-				iterator = this.endpoint.getHdt().getTriples().search(t);
+				if (graph && contexts.length == 1) {
+					t.setGraph(graphID[0]);
+				}
+				if (statementOrder != null) {
+					int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
+							obj, t);
+
+					// search with the ID to check if the triples has been
+					// deleted
+					iterator = this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder);
+				} else {
+					// search with the ID to check if the triples has been
+					// deleted
+					iterator = this.endpoint.getHdt().getTriples().search(t);
+				}
 			}
 
 		} else {// no need to search over hdt
@@ -248,8 +283,7 @@ public class EndpointTripleSource implements TripleSource {
 			throw new AssertionError(
 					"Statement order " + statementOrder + " not supported for triple pattern " + t.getPatternString());
 		}
-		int indexMaskMatchingStatementOrder = first.get().mask;
-		return indexMaskMatchingStatementOrder;
+		return first.get().mask;
 	}
 
 	public static Set<StatementOrder> getStatementOrder(TripleComponentOrder tripleComponentOrder, boolean subject,
