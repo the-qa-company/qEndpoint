@@ -53,6 +53,7 @@ public class TempTest {
 		HDTOptions options = HDTOptions.of(
 				// disable the default index (to use the custom indexes)
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true,
+
 				// set the custom indexes we want
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "sop,ops,osp,pso,pos");
 
@@ -76,6 +77,8 @@ public class TempTest {
 		}
 
 		repository = CompiledSail.compiler().withEndpointFiles(new EndpointFiles(locationNative, hdtstore, indexName))
+				.withHDTSpec(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS + "=sop,ops,osp,pso,pos;"
+						+ HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ + "=true")
 				.compileToSparqlRepository();
 		try (InputStream is = new BufferedInputStream(Objects.requireNonNull(loader.getResourceAsStream(filename),
 				filename + " doesn't exist"))) {
