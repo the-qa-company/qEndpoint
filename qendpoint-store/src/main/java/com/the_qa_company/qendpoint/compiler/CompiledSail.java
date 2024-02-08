@@ -80,13 +80,24 @@ public class CompiledSail extends SailWrapper {
 			files = Objects.requireNonNullElseGet(config.endpointFiles,
 					() -> new EndpointFiles(Path.of("native-store"), Path.of("hdt-store"), "index_dev.hdt"));
 		}
+
 		SailCompiler sailCompiler = new SailCompiler();
+
+		// load the validator
 		if (config.validator != null) {
 			sailCompiler.setValidator(config.validator);
 		}
+
+		// register custom strings
 		sailCompiler.registerDirObject(files);
 		config.stringObject.forEach(sailCompiler::registerDirObject);
 		config.stringConfig.forEach(sailCompiler::registerDirString);
+
+		// register custom configs
+		if (config.sailCompilerConfig != null) {
+			config.sailCompilerConfig.config(sailCompiler);
+		}
+
 		LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) sailCompiler
 				.getCompiler(SailCompilerSchema.LUCENE_TYPE);
 
@@ -355,6 +366,7 @@ public class CompiledSail extends SailWrapper {
 		private final List<Object> stringObject = new ArrayList<>();
 		private CompiledSailOptions options;
 		private SailCompilerValidator validator;
+		private SailCompilerConfig sailCompilerConfig;
 
 		private CompiledSailCompiler() {
 		}
@@ -479,6 +491,18 @@ public class CompiledSail extends SailWrapper {
 		 */
 		public CompiledSailCompiler withValidator(SailCompilerValidator validator) {
 			this.validator = Objects.requireNonNull(validator, "validator can't be null!");
+			return this;
+		}
+
+		/**
+		 * set the config for the sail compiler
+		 *
+		 * @param config the config
+		 * @return this
+		 * @throws java.lang.NullPointerException a parameter is null
+		 */
+		public CompiledSailCompiler withCompilerConfig(SailCompilerConfig config) {
+			this.sailCompilerConfig = Objects.requireNonNull(config, "config can't be null!");
 			return this;
 		}
 
