@@ -80,13 +80,24 @@ public class CompiledSail extends SailWrapper {
 			files = Objects.requireNonNullElseGet(config.endpointFiles,
 					() -> new EndpointFiles(Path.of("native-store"), Path.of("hdt-store"), "index_dev.hdt"));
 		}
+
 		SailCompiler sailCompiler = new SailCompiler();
+
+		// load the validator
 		if (config.validator != null) {
 			sailCompiler.setValidator(config.validator);
 		}
+
+		// register custom strings
 		sailCompiler.registerDirObject(files);
 		config.stringObject.forEach(sailCompiler::registerDirObject);
 		config.stringConfig.forEach(sailCompiler::registerDirString);
+
+		// register custom configs
+		if (config.sailCompilerConfig != null) {
+			config.sailCompilerConfig.config(sailCompiler);
+		}
+
 		LuceneSailCompiler luceneCompiler = (LuceneSailCompiler) sailCompiler
 				.getCompiler(SailCompilerSchema.LUCENE_TYPE);
 
@@ -349,12 +360,12 @@ public class CompiledSail extends SailWrapper {
 		private Model configModel;
 		private NotifyingSail sourceSail;
 		private EndpointFiles endpointFiles;
-		private HDTOptions spec;
-		private String hdtSpec;
+		private HDTOptions hdtSpec;
 		private final Map<String, String> stringConfig = new HashMap<>();
 		private final List<Object> stringObject = new ArrayList<>();
 		private CompiledSailOptions options;
 		private SailCompilerValidator validator;
+		private SailCompilerConfig sailCompilerConfig;
 
 		private CompiledSailCompiler() {
 		}
@@ -483,6 +494,18 @@ public class CompiledSail extends SailWrapper {
 		}
 
 		/**
+		 * set the config for the sail compiler
+		 *
+		 * @param config the config
+		 * @return this
+		 * @throws java.lang.NullPointerException a parameter is null
+		 */
+		public CompiledSailCompiler withCompilerConfig(SailCompilerConfig config) {
+			this.sailCompilerConfig = Objects.requireNonNull(config, "config can't be null!");
+			return this;
+		}
+
+		/**
 		 * set a source sail to wrap with this compiled sail
 		 *
 		 * @param sourceSail the source sail
@@ -518,6 +541,20 @@ public class CompiledSail extends SailWrapper {
 		 * @throws java.lang.NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withHDTSpec(String hdtSpec) {
+			HDTOptions spec = HDTOptions.of();
+			spec.setOptions(hdtSpec);
+			return withHDTSpec(spec);
+		}
+
+		/**
+		 * set the hdt spec for the endpoint store, won't be used if the source
+		 * is defined or if the generated source isn't an endpoint store
+		 *
+		 * @param hdtSpec the spec
+		 * @return this
+		 * @throws java.lang.NullPointerException a parameter is null
+		 */
+		public CompiledSailCompiler withHDTSpec(HDTOptions hdtSpec) {
 			this.hdtSpec = Objects.requireNonNull(hdtSpec, "hdtSpec can't be null!");
 			return this;
 		}

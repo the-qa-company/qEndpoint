@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
@@ -28,9 +30,11 @@ import com.the_qa_company.qendpoint.core.util.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -293,8 +297,10 @@ public class MergeRunnable {
 					debugLastMergeException = e;
 				e.printStackTrace();
 			} finally {
-				if (MergeRunnableStopPoint.debug)
+				if (MergeRunnableStopPoint.debug) {
+					// MergeRunnableStopPoint.unlockAll();
 					debugLock.release();
+				}
 			}
 		}
 
@@ -321,6 +327,13 @@ public class MergeRunnable {
 			}
 			// start the thread
 			super.start();
+		}
+
+		public void closeDebugAndJoin() throws InterruptedException {
+			if (MergeRunnableStopPoint.debug) {
+				MergeRunnableStopPoint.unlockAll();
+			}
+			join();
 		}
 	}
 
@@ -618,18 +631,19 @@ public class MergeRunnable {
 		debugStepPoint(MergeRunnableStopPoint.STEP2_START);
 		// diff hdt indexes...
 		logger.debug("Dump all triples from the native store to file");
+		boolean graph = endpoint.getHdt().getDictionary().supportGraphs();
 		try (RepositoryConnection nativeStoreConnection = endpoint.getConnectionToFreezedStore()) {
-			writeTempFile(nativeStoreConnection, endpointFiles.getRDFTempOutput());
+			writeTempFile(nativeStoreConnection, endpointFiles.getRDFTempOutput(graph), graph);
 			nativeStoreConnection.commit();
 		}
 
 		logger.debug("Create HDT index from dumped file");
-		createHDTDump(endpointFiles.getRDFTempOutput(), endpointFiles.getHDTTempOutput());
+		createHDTDump(endpointFiles.getRDFTempOutput(graph), endpointFiles.getHDTTempOutput());
 		// cat the original index and the temp index
-		logger.debug("HDT Cat/Diff");
+		logger.debug("HDT diffcat");
 		catDiffIndexes(endpointFiles.getHDTIndex(), endpointFiles.getTripleDeleteCopyArr(TripleComponentOrder.SPO),
 				endpointFiles.getHDTTempOutput(), endpointFiles.getHDTNewIndex());
-		logger.debug("CAT completed!!!!! " + endpointFiles.getLocationHdt());
+		logger.debug("CAT completed {}", endpointFiles.getLocationHdt());
 
 		// #391: save DUMP HDT
 		if (dumpInfo != null) {
@@ -641,7 +655,7 @@ public class MergeRunnable {
 
 		// delete the file after the mark if the shutdown occurs during the
 		// deletes
-		delete(endpointFiles.getRDFTempOutput());
+		delete(endpointFiles.getRDFTempOutput(graph));
 		delete(endpointFiles.getHDTTempOutput());
 		for (TripleComponentOrder order : endpoint.getValidOrders()) {
 			delete(endpointFiles.getTripleDeleteCopyArr(order));
@@ -672,12 +686,12 @@ public class MergeRunnable {
 		boolean existsOldTripleDeleteTempArr = endpoint.getValidOrders().stream()
 				.anyMatch(order -> existsOld(endpointFiles.getTripleDeleteTempArr(order)));
 
-		if (!exists(endpointFiles.getHDTNewIndexV11()) && existsOldTripleDeleteTempArr) {
+		if (existsOldTripleDeleteTempArr && !exists(endpointFiles.getHDTNewIndexV11())) {
 			// after rename(endpointFiles.getHDTNewIndexV11(),
 			// endpointFiles.getHDTIndexV11());
 			return Step3SubStep.AFTER_INDEX_V11_RENAME;
 		}
-		if (!exists(endpointFiles.getHDTNewIndex()) && existsOldTripleDeleteTempArr) {
+		if (existsOldTripleDeleteTempArr && !exists(endpointFiles.getHDTNewIndex())) {
 			// after rename(endpointFiles.getHDTNewIndex(),
 			// endpointFiles.getHDTIndex());
 			return Step3SubStep.AFTER_INDEX_RENAME;
@@ -756,11 +770,13 @@ public class MergeRunnable {
 
 		Lock translateLock;
 
+		boolean graph;
 		try (HDT newHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTNewIndex(), endpoint.getHDTSpec(), null)) {
 			if (dumpInfo != null) {
 				dumpInfo.afterIndexing(endpoint, Path.of(endpointFiles.getHDTNewIndexV11()));
 				endpoint.setDumping(endpoint.getDumpRef().get() != null);
 			}
+			graph = newHdt.getDictionary().supportGraphs();
 			// convert all triples added to the merge store to new IDs of the
 			// new
 			// generated HDT
@@ -806,7 +822,7 @@ public class MergeRunnable {
 
 		HDT tempHdt = endpoint.loadIndex();
 
-		convertOldToNew(tempHdt);
+		convertOldToNew(tempHdt, graph);
 		this.endpoint.resetHDT(tempHdt, true);
 
 		// mark the triples as deleted from the temp file stored while merge
@@ -857,11 +873,14 @@ public class MergeRunnable {
 		// @todo: should we not use the already mapped HDT file instead of
 		// remapping
 		StopWatch sw;
+		Dictionary dic = endpoint.getHdt().getDictionary();
+		long graphs = dic.supportGraphs() ? dic.getNgraphs() : 1;
 		OverrideHDTOptions catOpt = new OverrideHDTOptions(endpoint.getHDTSpec());
 		catOpt.setOverride(HDTOptionsKeys.HDTCAT_LOCATION, location);
 		catOpt.setOverride(HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, file.getAbsolutePath());
-		try (BitArrayDisk deleteBitmap = new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements(),
-				new File(bitArray))) {
+		try (MultiLayerBitmapWrapper deleteBitmap = MultiLayerBitmapWrapper.of(
+				new BitArrayDisk(endpoint.getHdt().getTriples().getNumberOfElements() * graphs, new File(bitArray)),
+				graphs)) {
 			try (HDT hdt = HDTManager.diffBitCatHDT(List.of(hdtInput1, hdtInput2),
 					List.of(deleteBitmap, BitmapFactory.empty()), catOpt, null)) {
 				sw = new StopWatch();
@@ -885,8 +904,8 @@ public class MergeRunnable {
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gen"));
 		oopt.setOverride(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("wip.hdt"));
 		try {
-			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI, RDFNotation.NTRIPLES,
-					oopt, null)) {
+			try (HDT hdt = HDTManager.generateHDT(new File(rdfInput).getAbsolutePath(), baseURI,
+					RDFNotation.guess(rdfInput), oopt, null)) {
 				logger.info("File converted in: " + sw.stopAndShow());
 				hdt.saveToHDT(hdtOutput, null);
 				logger.info("HDT saved to file in: " + sw.stopAndShow());
@@ -905,9 +924,10 @@ public class MergeRunnable {
 		}
 	}
 
-	private void writeTempFile(RepositoryConnection connection, String file) throws IOException {
-		try (FileOutputStream out = new FileOutputStream(file)) {
-			RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
+	private void writeTempFile(RepositoryConnection connection, String file, boolean graph) throws IOException {
+		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+			RDFWriter writer = Rio.createWriter(
+					endpoint.getHdt().getDictionary().supportGraphs() ? RDFFormat.NQUADS : RDFFormat.NTRIPLES, out);
 			RepositoryResult<Statement> repositoryResult = connection.getStatements(null, null, null, false);
 			writer.startRDF();
 			logger.debug("Content dumped file");
@@ -923,17 +943,24 @@ public class MergeRunnable {
 				Value newObjIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
 				newObjIRI = this.endpoint.getHdtConverter().objectHdtResourceToResource(newObjIRI);
 
-				Statement stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI,
-						newObjIRI);
-				logger.debug("  {} {} {}", stmConverted.getSubject(), stmConverted.getPredicate(),
-						stmConverted.getObject());
+				Statement stmConverted;
+				if (graph) {
+					Resource newCtxIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDcontext(stm.getContext());
+					newCtxIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newCtxIRI);
+
+					stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI, newObjIRI,
+							newCtxIRI);
+				} else {
+					stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI, newObjIRI);
+				}
+
 				writer.handleStatement(stmConverted);
 			}
 			writer.endRDF();
 		}
 	}
 
-	private void convertOldToNew(HDT newHDT) throws IOException {
+	private void convertOldToNew(HDT newHDT, boolean graph) throws IOException {
 		logger.info("Started converting IDs in the merge store");
 		try {
 			Stopwatch stopwatch = Stopwatch.createStarted();
@@ -954,6 +981,7 @@ public class MergeRunnable {
 						Resource oldSubject = iriConverter.rdf4jToHdtIDsubject(s.getSubject());
 						IRI oldPredicate = iriConverter.rdf4jToHdtIDpredicate(s.getPredicate());
 						Value oldObject = iriConverter.rdf4jToHdtIDobject(s.getObject());
+						Resource oldContext = graph ? iriConverter.rdf4jToHdtIDcontext(s.getContext()) : null;
 
 						// if the old string cannot be converted than we can
 						// keep the
@@ -975,9 +1003,20 @@ public class MergeRunnable {
 						if (id != -1) {
 							newObjIRI = iriConverter.objectIdToIRI(id);
 						}
-						logger.debug("old:[{} {} {}]", oldSubject, oldPredicate, oldObject);
-						logger.debug("new:[{} {} {}]", newSubjIRI, newPredIRI, newObjIRI);
-						connectionFreezed.add(newSubjIRI, newPredIRI, newObjIRI);
+
+						Resource newCtxIRI = oldContext;
+						if (newCtxIRI != null) {
+							id = newHDT.getDictionary().stringToId(oldContext.toString(), TripleComponentRole.GRAPH);
+							if (id != -1) {
+								newCtxIRI = iriConverter.graphIdToIRI(id);
+							}
+						}
+
+						if (newCtxIRI != null) {
+							connectionFreezed.add(newSubjIRI, newPredIRI, newObjIRI, newCtxIRI);
+						} else {
+							connectionFreezed.add(newSubjIRI, newPredIRI, newObjIRI);
+						}
 						// alternative, i.e. make inplace replacements
 						// connectionChanging.remove(s.getSubject(),
 						// s.getPredicate(),
@@ -986,7 +1025,6 @@ public class MergeRunnable {
 						// newObjIRI);
 
 						if (count % MERGE_OLD_TO_NEW_SPLIT == 0) {
-							logger.debug("Converted {}", count);
 							connectionFreezed.commit();
 							connectionFreezed.begin();
 						}

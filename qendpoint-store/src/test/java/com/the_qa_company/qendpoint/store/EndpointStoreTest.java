@@ -461,11 +461,11 @@ public class EndpointStoreTest {
 				connection.remove(ali, RDF.TYPE, FOAF.PERSON);
 				connection.commit();
 				// query everything of type PERSON
-				try (RepositoryResult<Statement> it = connection.getStatements(null, null, null, true)) {
+				try (RepositoryResult<Statement> it = connection.getStatements(null, null, null, false)) {
 					int count = 0;
 					while (it.hasNext()) {
 						count++;
-						it.next();
+						System.out.println(it.next());
 					}
 					assertEquals(3, count);
 				}

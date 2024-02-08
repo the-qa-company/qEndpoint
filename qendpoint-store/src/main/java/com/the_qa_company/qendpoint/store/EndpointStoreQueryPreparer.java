@@ -60,7 +60,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		cloneTupleExpression = true;
 
 		evaluationStatistics = new EndpointStoreEvaluationStatistics(new EndpointStoreEvaluationStatisticsHDT(endpoint),
-				endpoint.getCurrentSaliStore().getEvaluationStatistics());
+				endpoint.getCurrentSailStore().getEvaluationStatistics());
 	}
 
 	public void setExplanationLevel(Explanation.Level level) {

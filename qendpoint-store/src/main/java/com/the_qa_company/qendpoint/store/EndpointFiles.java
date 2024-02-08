@@ -140,9 +140,8 @@ public class EndpointFiles {
 	/**
 	 * @return the temp triples file
 	 */
-	@ParsedStringValue("store.tempTriples")
-	public String getTempTriples() {
-		return locationNative + "tempTriples.nt";
+	public String getTempTriples(boolean graph) {
+		return locationNative + (graph ? "tempTriples.nq" : "tempTriples.nt");
 	}
 
 	/**
@@ -231,6 +230,7 @@ public class EndpointFiles {
 		if (order == TripleComponentOrder.SPO) {
 			return this.locationHdt + "triples-delete.arr";
 		}
+
 		return this.locationHdt + "triples-delete-" + order.name().toLowerCase() + ".arr";
 	}
 
@@ -259,9 +259,8 @@ public class EndpointFiles {
 	/**
 	 * @return the temp RDF delete file
 	 */
-	@ParsedStringValue("store.tempRDFOutput")
-	public String getRDFTempOutput() {
-		return locationHdt + "temp.nt";
+	public String getRDFTempOutput(boolean graph) {
+		return locationHdt + (graph ? "temp.nq" : "temp.nt");
 	}
 
 	/**

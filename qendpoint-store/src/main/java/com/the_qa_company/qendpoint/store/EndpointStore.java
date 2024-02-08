@@ -1,24 +1,24 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableMultiLayerBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
-import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -37,6 +37,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.rio.nquads.NQuadsWriter;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
@@ -49,11 +50,13 @@ import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -78,6 +81,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * set the user locales
 	 */
 	public static final String QUERY_CONFIG_USER_LOCALES = "user_locales";
+	/**
+	 * enable the merge join, default true
+	 */
+	public static final String OPTION_QENDPOINT_MERGE_JOIN = "qendpoint.mergejoin";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;
@@ -97,10 +104,12 @@ public class EndpointStore extends AbstractNotifyingSail {
 	// location of the native store
 
 	// bitmap to mark which triples in HDT were deleted
-	private final BitArrayDisk[] deleteBitMap = new BitArrayDisk[TripleComponentOrder.values().length];
+	private final MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[] deleteBitMap = new MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[TripleComponentOrder
+			.values().length];
 	// bitmap used to mark deleted triples in HDT during a merge operation
 	// FIXME: is this needed?
-	private final BitArrayDisk[] tempdeleteBitMap = new BitArrayDisk[TripleComponentOrder.values().length];
+	private final MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[] tempdeleteBitMap = new MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[TripleComponentOrder
+			.values().length];
 	// setting to put the delete map only in memory, i.e don't write to disk
 	private final boolean inMemDeletes;
 	private final boolean loadIntoMemory;
@@ -349,15 +358,19 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	// init the delete array upon the first start of the store
 	private void initDeleteArray() throws IOException {
+		long graphs = getGraphsCount();
 		if (this.inMemDeletes) {
 			for (TripleComponentOrder order : validOrders) {
-				setDeleteBitMap(order, new BitArrayDisk(this.hdt.getTriples().getNumberOfElements()));
+				setDeleteBitMap(order, MultiLayerBitmapWrapper
+						.of(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements() * graphs), graphs));
 			}
 		} else {
 			// @todo: these should be recovered from the file if it is there
 			for (TripleComponentOrder order : validOrders) {
-				setDeleteBitMap(order, new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
-						endpointFiles.getTripleDeleteArr(order)));
+				setDeleteBitMap(order,
+						MultiLayerBitmapWrapper
+								.of(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements() * graphs,
+										endpointFiles.getTripleDeleteArr(order)), graphs));
 			}
 		}
 	}
@@ -429,9 +442,25 @@ public class EndpointStore extends AbstractNotifyingSail {
 		}
 	}
 
-	// force access to the store via reflection, the library does not allow
-	// directly since the method is protected
+	/**
+	 * force access to the store via reflection, the library does not allow
+	 * directly since the method is protected
+	 *
+	 * @return sailstore
+	 * @deprecated use {@link #getCurrentSailStore()} instead
+	 */
+	@Deprecated
 	public SailStore getCurrentSaliStore() {
+		return getCurrentSailStore();
+	}
+
+	/**
+	 * force access to the store via reflection, the library does not allow
+	 * directly since the method is protected
+	 *
+	 * @return sailstore
+	 */
+	public SailStore getCurrentSailStore() {
 		try {
 			Sail sail = getChangingStore();
 			Method method = sail.getClass().getDeclaredMethod("getSailStore");
@@ -461,7 +490,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		try {
 			try {
 				if (mergerThread != null) {
-					mergerThread.join();
+					mergerThread.closeDebugAndJoin();
 				}
 			} finally {
 				try {
@@ -601,25 +630,26 @@ public class EndpointStore extends AbstractNotifyingSail {
 		this.hdtProps = hdtProps;
 	}
 
-	public BitArrayDisk getDeleteBitMap(TripleComponentOrder order) {
+	public MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper getDeleteBitMap(TripleComponentOrder order) {
 		return deleteBitMap[order.ordinal()];
 	}
 
-	public BitArrayDisk[] getDeleteBitMaps() {
+	public MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[] getDeleteBitMaps() {
 		return deleteBitMap;
 	}
 
-	public void setDeleteBitMap(TripleComponentOrder order, BitArrayDisk deleteBitMap) {
+	public void setDeleteBitMap(TripleComponentOrder order,
+			MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper deleteBitMap) {
 		this.deleteBitMap[order.ordinal()] = deleteBitMap;
 	}
 
-	public void setDeleteBitMap(BitArrayDisk[] deleteBitMaps) {
+	public void setDeleteBitMap(MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[] deleteBitMaps) {
 		for (TripleComponentOrder order : validOrders) {
 			this.deleteBitMap[order.ordinal()] = deleteBitMaps[order.ordinal()];
 		}
 	}
 
-	public BitArrayDisk getTempDeleteBitMap(TripleComponentOrder order) {
+	public ModifiableMultiLayerBitmap getTempDeleteBitMap(TripleComponentOrder order) {
 		return tempdeleteBitMap[order.ordinal()];
 	}
 
@@ -632,13 +662,15 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * while merging
 	 */
 	public void initTempDeleteArray() throws IOException {
+		long graphs = getGraphsCount();
 		for (TripleComponentOrder order : validOrders) {
-			this.tempdeleteBitMap[order.ordinal()] = new BitArrayDisk(this.hdt.getTriples().getNumberOfElements(),
-					endpointFiles.getTripleDeleteTempArr(order));
+			this.tempdeleteBitMap[order.ordinal()] = MultiLayerBitmapWrapper
+					.of(new BitArrayDisk(this.hdt.getTriples().getNumberOfElements() * graphs,
+							endpointFiles.getTripleDeleteTempArr(order)), graphs);
 		}
-		for (BitArrayDisk b : this.tempdeleteBitMap) {
+		for (MultiLayerBitmapWrapper b : this.tempdeleteBitMap) {
 			if (b != null) {
-				b.force(false);
+				b.<BitArrayDisk>getHandle().force(false);
 			}
 		}
 	}
@@ -651,12 +683,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 */
 	public void initTempDump(boolean isRestarting) {
 		try {
-			File file = new File(endpointFiles.getTempTriples());
+			boolean graph = this.hdt.getDictionary().supportGraphs();
+			File file = new File(endpointFiles.getTempTriples(graph));
 			if (!file.exists()) {
 				Files.createFile(file.toPath());
 			}
-			FileOutputStream rdfWriterTempTriplesOut = new FileOutputStream(file, isRestarting);
-			this.rdfWriterTempTriples = new NTriplesWriter(rdfWriterTempTriplesOut);
+			OutputStream rdfWriterTempTriplesOut = new BufferedOutputStream(new FileOutputStream(file, isRestarting));
+			this.rdfWriterTempTriples = graph ? new NQuadsWriter(rdfWriterTempTriplesOut)
+					: new NTriplesWriter(rdfWriterTempTriplesOut);
 			this.rdfWriterTempTriples.startRDF();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -667,9 +701,12 @@ public class EndpointStore extends AbstractNotifyingSail {
 	public void resetDeleteArray(HDT newHdt) throws IOException {
 		// delete array created at merge time
 
-		BitArrayDisk[] newDeleteArray = new BitArrayDisk[TripleComponentOrder.values().length];
+		long graphs = getGraphsCount(newHdt);
+		MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[] newDeleteArray = new MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper[TripleComponentOrder
+				.values().length];
 		for (TripleComponentOrder order : validOrders) {
-			newDeleteArray[order.ordinal()] = new BitArrayDisk(newHdt.getTriples().getNumberOfElements());
+			newDeleteArray[order.ordinal()] = MultiLayerBitmapWrapper
+					.of(new BitArrayDisk(newHdt.getTriples().getNumberOfElements() * graphs), graphs);
 		}
 
 		long lastOldSubject = -2;
@@ -681,84 +718,107 @@ public class EndpointStore extends AbstractNotifyingSail {
 		long lastOldObject = -2;
 		long lastNewObject = -2;
 
-		// @todo: remove debug count
-		int debugSavedSubject = 0;
-		int debugSavedPredicate = 0;
-		int debugSavedObject = 0;
-		int debugTotal = 0;
-		StopWatch watch = new StopWatch();
+		long lastOldGraph = -2;
+		long lastNewGraph = -2;
 
 		// iterate over the temp array, convert the triples and mark it as
 		// deleted in the new HDT file
-		BitArrayDisk tempDeleteBitMap = getTempDeleteBitMap(TripleComponentOrder.SPO);
-		for (long i = 0; i < tempDeleteBitMap.getNumBits(); i++) {
-			if (tempDeleteBitMap.access(i)) { // means that a triple has been
-				// deleted during merge
-				// find the deleted triple in the old HDT index
-				TripleID tripleID = this.hdt.getTriples().findTriple(i);
-				if (tripleID.isValid()) {
-					long oldSubject = tripleID.getSubject();
-					long oldPredicate = tripleID.getPredicate();
-					long oldObject = tripleID.getObject();
+		MultiLayerBitmap tempDeleteBitMap = getTempDeleteBitMap(TripleComponentOrder.SPO);
 
-					// check if the last subject was this subject
+		long triples = hdt.getTriples().getNumberOfElements();
+		for (long i = 0; i < triples; i++) {
+			for (int graphId = 0; graphId < graphs; graphId++) {
+				if (tempDeleteBitMap.access(graphId, i)) { // means that a
+															// triple has been
+					// deleted during merge
+					// find the deleted triple in the old HDT index
+					TripleID tripleID = this.hdt.getTriples().findTriple(i);
+					if (tripleID.isValid()) {
+						long oldSubject = tripleID.getSubject();
+						long oldPredicate = tripleID.getPredicate();
+						long oldObject = tripleID.getObject();
 
-					long subject;
+						// check if the last subject was this subject
 
-					if (oldSubject != lastOldSubject) {
-						subject = newHdt.getDictionary().stringToId(
-								this.hdt.getDictionary().idToString(oldSubject, TripleComponentRole.SUBJECT),
-								TripleComponentRole.SUBJECT);
-						lastNewSubject = subject;
-						lastOldSubject = oldSubject;
-					} else {
-						subject = lastNewSubject;
-						debugSavedSubject++;
-					}
+						long subject;
 
-					// check if the last predicate was this predicate
+						if (oldSubject != lastOldSubject) {
+							subject = newHdt.getDictionary().stringToId(
+									this.hdt.getDictionary().idToString(oldSubject, TripleComponentRole.SUBJECT),
+									TripleComponentRole.SUBJECT);
+							lastNewSubject = subject;
+							lastOldSubject = oldSubject;
+						} else {
+							subject = lastNewSubject;
+						}
 
-					long predicate;
+						// check if the last predicate was this predicate
 
-					if (oldPredicate != lastOldPredicate) {
-						predicate = newHdt.getDictionary().stringToId(
-								this.hdt.getDictionary().idToString(oldPredicate, TripleComponentRole.PREDICATE),
-								TripleComponentRole.PREDICATE);
-						lastNewPredicate = predicate;
-						lastOldPredicate = oldPredicate;
-					} else {
-						predicate = lastNewPredicate;
-						debugSavedPredicate++;
-					}
+						long predicate;
 
-					// check if the last object was this object
+						if (oldPredicate != lastOldPredicate) {
+							predicate = newHdt.getDictionary().stringToId(
+									this.hdt.getDictionary().idToString(oldPredicate, TripleComponentRole.PREDICATE),
+									TripleComponentRole.PREDICATE);
+							lastNewPredicate = predicate;
+							lastOldPredicate = oldPredicate;
+						} else {
+							predicate = lastNewPredicate;
+						}
 
-					long object;
+						// check if the last object was this object
 
-					if (oldObject != lastOldObject) {
-						object = newHdt.getDictionary().stringToId(
-								this.hdt.getDictionary().idToString(oldObject, TripleComponentRole.OBJECT),
-								TripleComponentRole.OBJECT);
-						lastNewObject = object;
-						lastOldObject = oldObject;
-					} else {
-						object = lastNewObject;
-						debugSavedObject++;
-					}
-					debugTotal++;
+						long object;
 
-					// search over the given triple with the ID so that we can
-					// mark the new array..
-					TripleID triple = new TripleID(subject, predicate, object);
+						if (oldObject != lastOldObject) {
+							object = newHdt.getDictionary().stringToId(
+									this.hdt.getDictionary().idToString(oldObject, TripleComponentRole.OBJECT),
+									TripleComponentRole.OBJECT);
+							lastNewObject = object;
+							lastOldObject = oldObject;
+						} else {
+							object = lastNewObject;
+						}
 
-					if (!triple.isNoMatch()) {
-						for (TripleComponentOrder sorder : validOrders) {
-							IteratorTripleID next = newHdt.getTriples().search(triple, sorder.mask);
-							if (next.hasNext()) {
-								assert next.getOrder() == sorder : "invalid order";
-								next.next();
-								long newIndex = next.getLastTriplePosition();
-								newDeleteArray[sorder.ordinal()].set(newIndex, true);
+						// search over the given triple with the ID so that we
+						// can
+						// mark the new array.
+						TripleID triple;
+
+						if (hdt.getDictionary().supportGraphs()) {
+							long graph;
+							long oldGraph = tripleID.getGraph();
+
+							if (oldGraph != lastOldGraph) {
+								graph = newHdt.getDictionary().stringToId(
+										this.hdt.getDictionary().idToString(graphId + 1, TripleComponentRole.GRAPH),
+										TripleComponentRole.GRAPH);
+								lastNewGraph = graph;
+								lastOldGraph = oldGraph;
+							} else {
+								graph = lastNewGraph;
+							}
+							triple = new TripleID(subject, predicate, object, graph);
+						} else {
+							triple = new TripleID(subject, predicate, object);
+						}
+
+						if (!triple.isNoMatch()) {
+							for (TripleComponentOrder sorder : validOrders) {
+								IteratorTripleID next = newHdt.getTriples().search(triple, sorder.mask);
+								if (next.hasNext()) {
+									assert next.getOrder() == sorder : "invalid order";
+									TripleID tid = next.next();
+
+									long newIndex = next.getLastTriplePosition();
+									long graph;
+									if (newHdt.getDictionary().supportGraphs()) {
+										graph = tid.getGraph();
+									} else {
+										graph = 1;
+									}
+									newDeleteArray[sorder.ordinal()].set(graph - 1, newIndex, true);
+								}
 							}
 						}
 					}
@@ -769,7 +829,8 @@ public class EndpointStore extends AbstractNotifyingSail {
 		Closer.closeSingle(getDeleteBitMaps());
 		try {
 			for (TripleComponentOrder sorder : validOrders) {
-				newDeleteArray[sorder.ordinal()].changeToInDisk(new File(endpointFiles.getTripleDeleteArr(sorder)));
+				newDeleteArray[sorder.ordinal()].<BitArrayDisk>getHandle()
+						.changeToInDisk(new File(endpointFiles.getTripleDeleteArr(sorder)));
 			}
 		} catch (Throwable t) {
 			try {
@@ -783,18 +844,38 @@ public class EndpointStore extends AbstractNotifyingSail {
 	}
 
 	public void markDeletedTempTriples() throws IOException {
+		Dictionary dictionary = this.hdt.getDictionary();
+		boolean graph = dictionary.supportGraphs();
 		this.rdfWriterTempTriples.endRDF();
 		this.rdfWriterTempTriples.getWriter().close();
-		try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples())) {
-			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
+		try (InputStream inputStream = new FileInputStream(endpointFiles.getTempTriples(graph))) {
+			RDFParser rdfParser = Rio.createParser(graph ? RDFFormat.NQUADS : RDFFormat.NTRIPLES);
 			rdfParser.getParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false);
 			try (GraphQueryResult res = QueryResults.parseGraphBackground(inputStream, null, rdfParser)) {
 				while (res.hasNext()) {
 					Statement st = res.next();
-					IteratorTripleString search = this.hdt.search(st.getSubject().toString(),
-							st.getPredicate().toString(), st.getObject().toString());
-					if (search.hasNext()) {
-						search.next();
+
+					TripleID searchId;
+					long pid = dictionary.stringToId(st.getPredicate().toString(), TripleComponentRole.PREDICATE);
+					long sid = pid < 0 ? pid
+							: dictionary.stringToId(st.getSubject().toString(), TripleComponentRole.SUBJECT);
+					long oid = sid < 0 ? sid
+							: dictionary.stringToId(st.getObject().toString(), TripleComponentRole.OBJECT);
+
+					if (dictionary.supportGraphs()) {
+						long gid = oid < 0 ? oid
+								: st.getContext() == null ? getHdtProps().getDefaultGraph()
+										: dictionary.stringToId(st.getContext().toString(), TripleComponentRole.GRAPH);
+						searchId = new TripleID(sid, pid, oid, gid);
+					} else {
+						searchId = new TripleID(sid, pid, oid);
+					}
+
+					logger.info("search triple {}", searchId);
+					IteratorTripleID search = this.hdt.getTriples().search(searchId);
+					while (search.hasNext()) {
+						TripleID ts = search.next();
+						logger.info("-> {}", ts);
 						long index = search.getLastTriplePosition();
 						if (index >= 0) {
 							TripleComponentOrder order;
@@ -803,13 +884,18 @@ public class EndpointStore extends AbstractNotifyingSail {
 							} else {
 								order = TripleComponentOrder.SPO;
 							}
-							this.deleteBitMap[order.ordinal()].set(index, true);
+							long graphId;
+
+							if (dictionary.supportGraphs()) {
+								graphId = ts.getGraph();
+							} else {
+								graphId = 1;
+							}
+
+							this.deleteBitMap[order.ordinal()].set(graphId - 1, index, true);
 						}
 					}
 				}
-			} catch (NotFoundException e) {
-				// shouldn't happen
-				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -920,18 +1006,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 		return true;
 	}
 
-	private void failOrWarn(boolean fail, String msg) throws MergeStartException {
-		if (fail) {
-			throw new MergeStartException(msg);
-		} else {
-			logger.warn("{}", msg);
-		}
-	}
-
 	private synchronized void mergeStore(boolean ignoreEmpty, boolean fail) throws MergeStartException {
 		// check that no merge is already triggered
 		if (isMergeTriggered) {
-			failOrWarn(fail, "A merge was triggered, but the store is already merging!");
+			if (fail) {
+				throw new MergeStartException("A merge was triggered, but the store is already merging!");
+			} else {
+				logger.warn("{}", "A merge was triggered, but the store is already merging!");
+			}
 			return; // ignore
 		}
 
@@ -1021,16 +1103,16 @@ public class EndpointStore extends AbstractNotifyingSail {
 	}
 
 	public void flushWrites() throws IOException {
-		for (BitArrayDisk b : deleteBitMap) {
+		for (MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper b : deleteBitMap) {
 			if (b != null) {
-				b.force(true);
+				b.<BitArrayDisk>getHandle().force(true);
 			}
 		}
 		if (isMerging()) {
 			getRdfWriterTempTriples().getWriter().flush();
-			for (BitArrayDisk b : tempdeleteBitMap) {
+			for (MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper b : tempdeleteBitMap) {
 				if (b != null) {
-					b.force(true);
+					b.<BitArrayDisk>getHandle().force(true);
 				}
 			}
 		}
@@ -1127,5 +1209,13 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public EnumSet<TripleComponentOrder> getValidOrders() {
 		return validOrders;
+	}
+
+	public long getGraphsCount(HDT hdt) {
+		return hdt.getDictionary().supportGraphs() ? hdt.getDictionary().getNgraphs() : 1;
+	}
+
+	public long getGraphsCount() {
+		return getGraphsCount(this.hdt);
 	}
 }
