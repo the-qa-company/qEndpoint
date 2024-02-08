@@ -1,3 +1,8 @@
+## Version 1.15.1
+        
+- fix idx after merge
+- merge join (#428)
+
 ## Version 1.15.0
         
 - add delete bitmap for multiple co-indexes (#440)
