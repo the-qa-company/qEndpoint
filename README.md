@@ -86,7 +86,7 @@ The QA Company over the social networks
 ## About
 
 The qEndpoint is a highly scalable triple store with full-text and  [GeoSPARQL](https://www.ogc.org/standards/geosparql) support. It can be used as a standalone SPARQL endpoint, or as a dependency.
-The qEndpoint is for example used in [Kohesio](https://kohesio.ec.europa.eu/) where each interaction with the UI corresponds to an underlying SPARQL query on the qEndpoint.
+The qEndpoint is for example used in [Kohesio](https://kohesio.ec.europa.eu/) where each interaction with the UI corresponds to an underlying SPARQL query on the qEndpoint. Also qEndpoint is part of [QAnswer](https://qanswer.ai) enabeling question answering over RDF Graphs. 
   
 ### Built With
 
