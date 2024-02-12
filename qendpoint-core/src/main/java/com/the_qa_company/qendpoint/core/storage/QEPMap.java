@@ -196,14 +196,13 @@ public class QEPMap implements Closeable {
 			boolean created = !Files.exists(mapHeaderPath);
 			// race condition
 			// we open the header file to see if it's actually the right map
-			try (FileChannel channel = FileChannel.open(mapHeaderPath, StandardOpenOption.READ,
-					StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-					// FIXME: read the magic+version and then read the correct
-					// header size
-					CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
+			try (FileChannel channel = FileChannel.open(mapHeaderPath, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+			     // FIXME: read the magic+version and then read the correct
+			     // header size
+			     CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
 							FileChannel.MapMode.READ_WRITE, 0, HEADER_SIZE);
-					CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
-							FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
+			     CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
+					     FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
 				// store the id and the location to write it after creation
 				long[] index1Size = new long[TripleComponentRole.valuesNoGraph().length];
 				int[] index1Location = new int[index1Size.length];
@@ -250,10 +249,11 @@ public class QEPMap implements Closeable {
 						}
 					} else {
 						// we check the magic
+						byte[] magicRead = new byte[MAGIC.length];
+						header.get(magicRead, 0, magicRead.length);
 						for (; shift < MAGIC.length; shift++) {
-							byte cc = header.get(shift);
-							if (cc != MAGIC[shift]) {
-								throw new IOException("Can't read magic number of dataset linker " + getMapId() + "!");
+							if (magicRead[shift] != MAGIC[shift]) {
+								throw new IOException("Can't read magic number of dataset linker " + getMapId() + "! " + Arrays.toString(magicRead) + " != " + Arrays.toString(MAGIC));
 							}
 						}
 						byte coreVersion = header.get(shift++);
@@ -281,10 +281,12 @@ public class QEPMap implements Closeable {
 						shift += Long.BYTES * 4;
 
 						for (int i = 0; i < index1Size.length; i++) {
+							index1Location[i] = shift;
 							index1Size[i] = header.getLong(shift);
 							shift += Long.BYTES;
 						}
 						for (int i = 0; i < index2Size.length; i++) {
+							index2Location[i] = shift;
 							index2Size[i] = header.getLong(shift);
 							shift += Long.BYTES;
 						}
@@ -415,13 +417,13 @@ public class QEPMap implements Closeable {
 					DynamicSequence objectIdSequence2 = null;
 					DynamicSequence objectMapSequence2 = null;
 					try {
-						long subjectNSection1 = dataset1.dataset().getDictionary().getNSection(SUBJECT, true);
-						long subjectNSection2 = dataset2.dataset().getDictionary().getNSection(SUBJECT, true);
+						long subjectNSection1 = dataset1.dataset().getDictionary().getNSection(SUBJECT, true) + 1;
+						long subjectNSection2 = dataset2.dataset().getDictionary().getNSection(SUBJECT, true) + 1;
 						int subjectNumbitsId1 = BitUtil.log2(subjectNSection1);
 						int subjectNumbitsId2 = BitUtil.log2(subjectNSection2);
 
-						long objectNSection1 = dataset1.dataset().getDictionary().getNSection(OBJECT, false);
-						long objectNSection2 = dataset2.dataset().getDictionary().getNSection(OBJECT, false);
+						long objectNSection1 = dataset1.dataset().getDictionary().getNSection(OBJECT, false) + 1;
+						long objectNSection2 = dataset2.dataset().getDictionary().getNSection(OBJECT, false) + 1;
 						int objectNumbitsId1 = BitUtil.log2(objectNSection1);
 						int objectNumbitsId2 = BitUtil.log2(objectNSection2);
 

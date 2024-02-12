@@ -44,7 +44,7 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 	}
 
 	@Override
-	protected Repository newRepository() throws Exception {
+	protected Repository newRepository() {
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
 		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(tempDir, spec);

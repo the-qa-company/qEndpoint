@@ -17,12 +17,12 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.storage.converter.NodeConverter;
 import com.the_qa_company.qendpoint.core.storage.iterator.CatQueryCloseable;
-import com.the_qa_company.qendpoint.core.storage.iterator.CloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.iterator.QueryCloseableIterator;
 import com.the_qa_company.qendpoint.core.storage.merge.QEPCoreMergeThread;
 import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
+import com.the_qa_company.qendpoint.core.util.debug.DebugInjectionPointManager;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.nsd.NamespaceData;
@@ -32,8 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.Serial;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -48,6 +46,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,6 +85,8 @@ import static com.the_qa_company.qendpoint.core.options.HDTOptionsKeys.TEMP_DICT
  */
 public class QEPCore implements AutoCloseable {
 
+	static final DebugInjectionPointManager.DebugInjectionPoint<QEPCore> preBindInsert = DebugInjectionPointManager.getInstance().registerInjectionPoint("preBindInsert");
+	static final DebugInjectionPointManager.DebugInjectionPoint<QEPCore> postBindInsert = DebugInjectionPointManager.getInstance().registerInjectionPoint("postBindInsert");
 	private static final Logger logger = LoggerFactory.getLogger(QEPCore.class);
 	/**
 	 * the max size of a dataset id
@@ -100,6 +104,10 @@ public class QEPCore implements AutoCloseable {
 	 * do not load dataset except the SPO dataset
 	 */
 	public static final String OPTION_NO_CO_INDEX = "qep.dataset.no_co_index";
+	/**
+	 * threads count for the executor
+	 */
+	public static final String OPTION_EXECUTOR_THREADS = "qep.executor.threads";
 	/**
 	 * prefix of the datasets in the {@link #FILE_DATASET_STORE} directory
 	 */
@@ -138,8 +146,10 @@ public class QEPCore implements AutoCloseable {
 	private long maxId;
 	private final QEPCoreMergeThread mergeThread;
 	private final NamespaceData namespaceData;
+	private final ExecutorService executorService;
 
 	QEPCore() {
+		executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		options = HDTOptions.of();
 		memoryDataset = false;
 		noCoIndex = false;
@@ -194,6 +204,18 @@ public class QEPCore implements AutoCloseable {
 		} else {
 			opt = HDTOptions.ofNullable(defaultOptions);
 		}
+
+		int threads = opt.getInt32(OPTION_EXECUTOR_THREADS, () -> {
+			int nthreads = Runtime.getRuntime().availableProcessors();
+			return nthreads <= 0 ? 1 : nthreads; // at least one
+		});
+
+		if (threads <= 0) {
+			throw new IllegalArgumentException(
+					"Can't have a negative or null thread count with " + OPTION_EXECUTOR_THREADS + ": " + threads);
+		}
+
+		executorService = Executors.newFixedThreadPool(threads);
 
 		// copy the options in a push-bottom way to set default options
 		this.options = opt.pushBottom();
@@ -433,10 +455,32 @@ public class QEPCore implements AutoCloseable {
 				map.clear();
 				Files.createDirectories(mapsDir);
 
+				List<Future<?>> futures = new ArrayList<>();
+
 				for (QEPDataset d1 : snapshot) {
 					for (QEPDataset d2 : snapshot) {
-						bindDataset(d1, d2);
+						Future<?> future = bindDataset(d1, d2);
+						if (future != null) {
+							futures.add(future);
+						}
 					}
+				}
+
+				QEPCoreException exp = null;
+
+				for (Future<?> future : futures) {
+					try {
+						future.get();
+					} catch (InterruptedException | ExecutionException e) {
+						if (exp == null) {
+							exp = new QEPCoreException(e);
+						} else {
+							exp.addSuppressed(new QEPCoreException(e));
+						}
+					}
+				}
+				if (exp != null) {
+					throw exp;
 				}
 			} catch (IOException e) {
 				throw new QEPCoreException("Can't sync map data!", e);
@@ -510,13 +554,13 @@ public class QEPCore implements AutoCloseable {
 	 * @param dataset2 dataset 2
 	 * @throws IOException bind exception
 	 */
-	private void bindDataset(QEPDataset dataset1, QEPDataset dataset2) throws IOException {
+	private Future<?> bindDataset(QEPDataset dataset1, QEPDataset dataset2) throws IOException {
 		if (dataset1.uid() == dataset2.uid()) {
-			return; // same object
+			return null; // same object
 		}
 
 		if (dataset1.id().equals(dataset2.id())) {
-			return; // same id
+			return null; // same id
 		}
 
 		// create a map for our 2 datasets
@@ -527,8 +571,15 @@ public class QEPCore implements AutoCloseable {
 
 		if (old == null) {
 			// it was added, meaning we need to sync it
-			qepMap.sync();
+			return executorService.submit(() -> {
+				try {
+					qepMap.sync();
+				} catch (IOException e) {
+					throw new ContainerException(e);
+				}
+			});
 		}
+		return null;
 	}
 
 	private List<QEPDataset> createDatasetSnapshot() {
@@ -1134,14 +1185,37 @@ public class QEPCore implements AutoCloseable {
 				throw t;
 			}
 
+			preBindInsert.runAction(this);
+
 			// we open the dataset because the memory generation is using more
 			// memory before being reloaded
 			QEPDataset ds = openDataset(id, datasetPath);
 
 			// bind the new dataset with all the previous datasets
 			synchronized (bindLock) {
+				List<Future<?>> futures = new ArrayList<>();
 				for (QEPDataset d2 : createDatasetSnapshot()) {
-					bindDataset(ds, d2);
+					Future<?> future = bindDataset(ds, d2);
+					if (future != null) {
+						futures.add(future);
+					}
+				}
+
+				QEPCoreException exp = null;
+
+				for (Future<?> future : futures) {
+					try {
+						future.get();
+					} catch (InterruptedException | ExecutionException e) {
+						if (exp == null) {
+							exp = new QEPCoreException(e);
+						} else {
+							exp.addSuppressed(new QEPCoreException(e));
+						}
+					}
+				}
+				if (exp != null) {
+					throw exp;
 				}
 
 				synchronized (datasetLock) {
@@ -1149,6 +1223,8 @@ public class QEPCore implements AutoCloseable {
 					datasetByUid.put(ds.uid(), ds);
 				}
 			}
+
+			postBindInsert.runAction(this);
 		} finally {
 			if (checkAlreadyExist) {
 				insertLock.unlock();
@@ -1247,10 +1323,30 @@ public class QEPCore implements AutoCloseable {
 
 				// bind the new dataset with all the previous datasets
 				synchronized (bindLock) {
+					List<Future<?>> futures = new ArrayList<>();
 					for (QEPDataset d2 : createDatasetSnapshot()) {
-						bindDataset(ds, d2);
+						Future<?> future = bindDataset(ds, d2);
+						if (future != null) {
+							futures.add(future);
+						}
 					}
 
+					QEPCoreException exp = null;
+
+					for (Future<?> future : futures) {
+						try {
+							future.get();
+						} catch (InterruptedException | ExecutionException e) {
+							if (exp == null) {
+								exp = new QEPCoreException(e);
+							} else {
+								exp.addSuppressed(new QEPCoreException(e));
+							}
+						}
+					}
+					if (exp != null) {
+						throw exp;
+					}
 					synchronized (datasetLock) {
 						other = dataset.put(ds.id(), ds);
 						datasetByUid.put(ds.uid(), ds);

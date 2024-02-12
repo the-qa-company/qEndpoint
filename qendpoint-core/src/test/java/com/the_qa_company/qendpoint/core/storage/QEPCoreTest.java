@@ -18,11 +18,15 @@ import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
+import com.the_qa_company.qendpoint.core.util.debug.DebugInjectionPointManager;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -52,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ QEPCoreTest.MappingTest.class, QEPCoreTest.GenerationTest.class })
+@Suite.SuiteClasses({QEPCoreTest.MappingTest.class, QEPCoreTest.GenerationTest.class})
 public class QEPCoreTest {
 	public static void dumpCore(QEPCore core, String errorMessage) {
 		for (QEPMap mapper : core.getMappers()) {
@@ -103,7 +107,7 @@ public class QEPCoreTest {
 				PathUtils.deleteDirectory(root);
 				throw t;
 			}
-			return List.of(new Object[][] { { root, rootHDT, splitHDT } });
+			return List.of(new Object[][]{{root, rootHDT, splitHDT}});
 		}
 
 		@Parameterized.AfterParam
@@ -161,8 +165,8 @@ public class QEPCoreTest {
 		@Test
 		public void coreSearchTest() throws QEPCoreException, IOException, NotFoundException {
 			try (HDT hdt = HDTManager.mapHDT(rootHDT);
-					QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
-					Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
+			     QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
+			     Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
 				try (CloseableIterator<? extends QEPComponentTriple> search = core.search("", "", "")) {
 
@@ -473,6 +477,76 @@ public class QEPCoreTest {
 				}
 			} finally {
 				PathUtils.deleteDirectory(root);
+			}
+		}
+
+		@Test
+		@Ignore("large")
+		public void largeAddsTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder("generation").toPath();
+
+			final long size = 100_000;
+			final int counts = 10;
+
+			LargeFakeDataSetStreamSupplier supplier =
+					LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(size, 4567)
+							.withMaxElementSplit(50)
+							.withMaxLiteralSize(50);
+
+			LargeFakeDataSetStreamSupplier supplier2 =
+					LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(size * counts, 4567)
+							.withMaxElementSplit(50)
+							.withMaxLiteralSize(50);
+
+			Path exceptedHDT = root.resolve("excepted.hdt");
+			supplier2.createAndSaveFakeHDT(HDTOptions.empty(), exceptedHDT);
+
+			Path coreTest = root.resolve("coreTest");
+			try (
+					QEPCore core = new QEPCore(coreTest, HDTOptions.of(
+							//QEPCore.OPTION_EXECUTOR_THREADS, 1 // force sync
+					));
+					HDT hdt = HDTManager.mapHDT(exceptedHDT)
+			) {
+				StopWatch sw = new StopWatch();
+
+				QEPCore.preBindInsert.registerAction(DebugInjectionPointManager.DebugPolicy.NO_DELETE, (qepCore -> {
+					System.out.println("preBindTime:  " + sw.stopAndShow());
+					sw.reset();
+				}));
+				QEPCore.postBindInsert.registerAction(DebugInjectionPointManager.DebugPolicy.NO_DELETE, (qepCore -> {
+					System.out.println("postBindTime: " + sw.stopAndShow());
+					sw.reset();
+				}));
+				for (int i = 1; i <= counts; i++) {
+					sw.reset();
+					core.insertTriples(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, true);
+					System.out.println(i + " done");
+				}
+
+				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
+				System.out.println("excepted: " + hdt.getTriples().getNumberOfElements());
+				System.out.println("actual: " + core.triplesCount());
+				for (QEPDataset ds : core.getDatasets()) {
+					System.out.println("- " + ds.uid() + " : " + ds.dataset().getTriples().getNumberOfElements());
+				}
+
+				System.out.println("Check integrity");
+
+				long count = 0;
+				try (QueryCloseableIterator it = core.search()) {
+					while (it.hasNext()) {
+						QEPComponentTriple next = it.next();
+						count++;
+
+						TripleString ts = next.tripleString();
+						if (!hdt.search(ts).hasNext()) {
+							fail("can't find triple: " + next + " / " + ts);
+						}
+					}
+				}
+				assertEquals(core.triplesCount(), count);
+				System.out.println("ok");
 			}
 		}
 	}
