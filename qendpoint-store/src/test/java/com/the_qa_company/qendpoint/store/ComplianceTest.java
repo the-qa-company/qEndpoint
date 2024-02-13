@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 public class ComplianceTest {
 	private static final Logger logger = LoggerFactory.getLogger(ComplianceTest.class);
 
+
 	public static class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 
 		public EndpointMultIndexSPARQL11QueryComplianceTest() {
