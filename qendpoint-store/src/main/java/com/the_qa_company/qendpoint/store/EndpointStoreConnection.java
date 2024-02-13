@@ -297,7 +297,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			long graphID;
 
 			if (contexts.length != 0) {
-				graphID = this.endpoint.getHdtConverter().subjectToID(contexts[0]);
+				graphID = this.endpoint.getHdtConverter().contextToID(contexts[0]);
 			} else {
 				graphID = this.endpoint.getHdtProps().getDefaultGraph();
 			}

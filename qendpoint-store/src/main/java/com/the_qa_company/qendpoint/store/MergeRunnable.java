@@ -1007,7 +1007,7 @@ public class MergeRunnable {
 						Resource newCtxIRI = oldContext;
 						if (newCtxIRI != null) {
 							id = newHDT.getDictionary().stringToId(oldContext.toString(), TripleComponentRole.GRAPH);
-							if (id != -1) {
+							if (id > 0) {
 								newCtxIRI = iriConverter.graphIdToIRI(id);
 							}
 						}

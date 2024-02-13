@@ -56,6 +56,13 @@ public class DebugInjectionPointManager {
 	private static final Logger logger = LoggerFactory.getLogger(DebugInjectionPointManager.class);
 	private static final DebugInjectionPointManager instance = new DebugInjectionPointManager();
 
+	public static void throwAll(DebugInjectionPoint<?>... points) throws Exception {
+		if (points.length == 0) {
+			return;
+		}
+		points[0].throwExceptionResult(points, 1);
+	}
+
 	/**
 	 * @return the instance of the manager
 	 */
@@ -135,20 +142,47 @@ public class DebugInjectionPointManager {
 		 * @throws Exception exception
 		 * @throws Error     error
 		 */
-		public void throwExceptionResult() throws Exception, Error {
+		public void throwExceptionResult(DebugInjectionPoint<?>... others) throws Exception, Error {
+			throwExceptionResult(others, 0);
+		}
+
+		private void throwExceptionResult(DebugInjectionPoint<?>[] others, int offset) throws Exception, Error {
 			ActionInfo<?> act = actions.get(id);
 			if (act != null && act.policy.deleteAfterEnd()) {
 				actions.set(id, null);
 			}
-			if (anyException instanceof Exception e) {
-				throw e;
+
+			Throwable generated = anyException;
+			if (offset < others.length) {
+				try {
+					others[offset].throwExceptionResult(others, offset + 1);
+				} catch (Exception t2) {
+					if (generated != null) {
+						generated.addSuppressed(t2);
+					} else {
+						generated = t2;
+					}
+				} catch (Throwable t2) {
+					if (generated instanceof Error) {
+						generated.addSuppressed(t2);
+					} else {
+						if (generated != null) {
+							t2.addSuppressed(generated);
+						}
+						generated = t2;
+					}
+				}
 			}
-			if (anyException instanceof Error err) {
-				throw err;
+			if (generated == null) {
+				return;
 			}
-			if (anyException != null) {
-				throw new Error(anyException);
+			if (generated instanceof Exception ge) {
+				throw ge;
 			}
+			if (generated instanceof Error ge) {
+				throw ge;
+			}
+			throw new Error(generated);
 		}
 	}
 

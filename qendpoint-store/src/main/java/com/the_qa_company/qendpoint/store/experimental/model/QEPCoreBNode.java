@@ -2,10 +2,11 @@ package com.the_qa_company.qendpoint.store.experimental.model;
 
 import com.the_qa_company.qendpoint.core.storage.QEPComponent;
 import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.base.AbstractBNode;
 
 import java.util.Objects;
 
-public class QEPCoreBNode implements BNode, QEPCoreValue {
+public class QEPCoreBNode extends AbstractBNode implements QEPCoreValue {
 	private final QEPComponent component;
 
 	public QEPCoreBNode(QEPComponent component) {

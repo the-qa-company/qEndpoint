@@ -85,8 +85,10 @@ import static com.the_qa_company.qendpoint.core.options.HDTOptionsKeys.TEMP_DICT
  */
 public class QEPCore implements AutoCloseable {
 
-	static final DebugInjectionPointManager.DebugInjectionPoint<QEPCore> preBindInsert = DebugInjectionPointManager.getInstance().registerInjectionPoint("preBindInsert");
-	static final DebugInjectionPointManager.DebugInjectionPoint<QEPCore> postBindInsert = DebugInjectionPointManager.getInstance().registerInjectionPoint("postBindInsert");
+	static final DebugInjectionPointManager.DebugInjectionPoint<QEPCore> preBindInsert = DebugInjectionPointManager
+			.getInstance().registerInjectionPoint("preBindInsert");
+	static final DebugInjectionPointManager.DebugInjectionPoint<QEPCore> postBindInsert = DebugInjectionPointManager
+			.getInstance().registerInjectionPoint("postBindInsert");
 	private static final Logger logger = LoggerFactory.getLogger(QEPCore.class);
 	/**
 	 * the max size of a dataset id
@@ -1271,7 +1273,7 @@ public class QEPCore implements AutoCloseable {
 	 * @throws IOException exception while loading triples
 	 */
 	public void insertTriples(TempHDT modHdt, boolean checkAlreadyExist, ProgressListener listener) throws IOException {
-
+		preBindInsert.runAction(this);
 		HDTImpl hdt = new HDTImpl(options);
 		QEPDataset other;
 		try {
@@ -1315,6 +1317,8 @@ public class QEPCore implements AutoCloseable {
 				hdt.saveToHDT(datasetPath, combinedListener);
 				hdt.close();
 				hdt = null;
+
+				postBindInsert.runAction(this);
 
 				// we open the dataset because the memory generation is using
 				// more

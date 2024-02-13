@@ -226,7 +226,7 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 		return shared;
 	}
 
-	private AbstractMap.SimpleEntry<CharSequence, DictionarySectionPrivate> getSection(long id,
+	private AbstractMap.SimpleEntry<ByteString, DictionarySectionPrivate> getSection(long id,
 			TripleComponentRole role) {
 		switch (role) {
 		case SUBJECT -> {
@@ -273,7 +273,7 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	 */
 	@Override
 	public ByteString idToString(long id, TripleComponentRole role) {
-		AbstractMap.SimpleEntry<CharSequence, DictionarySectionPrivate> section = getSection(id, role);
+		AbstractMap.SimpleEntry<ByteString, DictionarySectionPrivate> section = getSection(id, role);
 		long localId = getLocalId(id, role);
 		if (section.getKey().equals(LiteralsUtils.NO_DATATYPE) || section.getKey().equals(SectionUtil.SECTION))
 			return ByteString.of(section.getValue().extract(localId));

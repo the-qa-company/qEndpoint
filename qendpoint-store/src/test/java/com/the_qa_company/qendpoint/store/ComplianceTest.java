@@ -9,16 +9,16 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIndexFile;
+import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
-import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +36,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class ComplianceTest {
+
+	@TempDir
+	public Path tempPath;
 	private static final Logger logger = LoggerFactory.getLogger(ComplianceTest.class);
 
-	public static class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 
 		public EndpointMultIndexSPARQL11QueryComplianceTest() {
 			super();
@@ -69,12 +72,7 @@ public class ComplianceTest {
 			this.setIgnoredTests(testToIgnore);
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		EndpointStore endpoint;
-		File nativeStore;
-		File hdtStore;
 
 		@Override
 		protected void testParameterListener(String displayName, String testURI, String name, String queryFileURL,
@@ -88,22 +86,27 @@ public class ComplianceTest {
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			nativeStore = tempDir.newFolder();
-			hdtStore = tempDir.newFolder();
+			Path nativeStore = tempPath.resolve("ns");
+			Path hdtStore = tempPath.resolve("hdt");
+
+			FileUtils.deleteRecursively(nativeStore);
+			FileUtils.deleteRecursively(hdtStore);
+			Files.createDirectories(nativeStore);
+			Files.createDirectories(hdtStore);
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS,
 					EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
-			Path fileName = Path.of(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
+			Path fileName = Path.of(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
 			if (this.hdt == null) {
-				hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+				hdt = Utility.createTempHdtIndex(tempPath, true, false, spec);
 			}
 			assert hdt != null;
 
 			hdt.saveToHDT(fileName, null);
 
-			endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
-					nativeStore.getAbsolutePath() + "/", true) {
+			endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
+					nativeStore.toAbsolutePath() + "/", true) {
 				@Override
 				public HDT loadIndex() throws IOException {
 					HDT idx = super.loadIndex();
@@ -161,7 +164,7 @@ public class ComplianceTest {
 		}
 	}
 
-	public static class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
+	public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
 		public EndpointMultIndexSPARQL11UpdateComplianceTest() {
 			super();
@@ -179,24 +182,26 @@ public class ComplianceTest {
 			this.setIgnoredTests(testToIgnore);
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		@Override
 		protected Repository newRepository() throws Exception {
-			File nativeStore = tempDir.newFolder();
-			File hdtStore = tempDir.newFolder();
+			Path nativeStore = tempPath.resolve("ns");
+			Path hdtStore = tempPath.resolve("hdt");
+
+			FileUtils.deleteRecursively(nativeStore);
+			FileUtils.deleteRecursively(hdtStore);
+			Files.createDirectories(nativeStore);
+			Files.createDirectories(hdtStore);
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS,
 					EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
-			Path fileName = Path.of(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
-			try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			Path fileName = Path.of(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
+			try (HDT hdt = Utility.createTempHdtIndex(tempPath, true, false, spec)) {
 				assert hdt != null;
 				hdt.saveToHDT(fileName, null);
 			}
 
-			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/",
-					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true) {
+			EndpointStore endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/",
+					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.toAbsolutePath() + "/", true) {
 
 				@Override
 				public HDT loadIndex() throws IOException {
@@ -227,7 +232,7 @@ public class ComplianceTest {
 
 	}
 
-	public static class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 		private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
 		public EndpointSPARQL11QueryComplianceTest() {
@@ -266,29 +271,29 @@ public class ComplianceTest {
 			}
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		EndpointStore endpoint;
-		File nativeStore;
-		File hdtStore;
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			nativeStore = tempDir.newFolder();
-			hdtStore = tempDir.newFolder();
+			Path nativeStore = tempPath.resolve("ns");
+			Path hdtStore = tempPath.resolve("hdt");
+
+			FileUtils.deleteRecursively(nativeStore);
+			FileUtils.deleteRecursively(hdtStore);
+			Files.createDirectories(nativeStore);
+			Files.createDirectories(hdtStore);
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 			if (this.hdt == null) {
-				hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+				hdt = Utility.createTempHdtIndex(tempPath, true, false, spec);
 			}
 			assert hdt != null;
 
-			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+			hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 
-			endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
-					nativeStore.getAbsolutePath() + "/", true);
+			endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
+					nativeStore.toAbsolutePath() + "/", true);
 			// endpoint.setThreshold(2);
 			return new SailRepository(endpoint);
 		}
@@ -324,7 +329,7 @@ public class ComplianceTest {
 		}
 	}
 
-	public static class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
+	public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
 		public EndpointSPARQL11UpdateComplianceTest() {
 
@@ -342,22 +347,24 @@ public class ComplianceTest {
 			this.setIgnoredTests(testToIgnore);
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		@Override
 		protected Repository newRepository() throws Exception {
-			File nativeStore = tempDir.newFolder();
-			File hdtStore = tempDir.newFolder();
+			Path nativeStore = tempPath.resolve("ns");
+			Path hdtStore = tempPath.resolve("hdt");
+
+			FileUtils.deleteRecursively(nativeStore);
+			FileUtils.deleteRecursively(hdtStore);
+			Files.createDirectories(nativeStore);
+			Files.createDirectories(hdtStore);
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-			try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			try (HDT hdt = Utility.createTempHdtIndex(tempPath, true, false, spec)) {
 				assert hdt != null;
-				hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+				hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 			}
 
-			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/",
-					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true);
+			EndpointStore endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/",
+					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.toAbsolutePath() + "/", true);
 			// endpoint.setThreshold(2);
 
 			return new SailRepository(endpoint);
@@ -367,7 +374,7 @@ public class ComplianceTest {
 
 	}
 
-	public static class EndpointQuadSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public class EndpointQuadSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 		private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
 		@Override
@@ -380,29 +387,29 @@ public class ComplianceTest {
 			}
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		EndpointStore endpoint;
-		File nativeStore;
-		File hdtStore;
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			nativeStore = tempDir.newFolder();
-			hdtStore = tempDir.newFolder();
+			Path nativeStore = tempPath.resolve("ns");
+			Path hdtStore = tempPath.resolve("hdt");
+
+			FileUtils.deleteRecursively(nativeStore);
+			FileUtils.deleteRecursively(hdtStore);
+			Files.createDirectories(nativeStore);
+			Files.createDirectories(hdtStore);
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
 			if (this.hdt == null) {
-				hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+				hdt = Utility.createTempHdtIndex(tempPath, true, false, spec);
 			}
 			assert hdt != null;
 
-			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+			hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 
-			endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
-					nativeStore.getAbsolutePath() + "/", true);
+			endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
+					nativeStore.toAbsolutePath() + "/", true);
 			// endpoint.setThreshold(2);
 			return new SailRepository(endpoint);
 		}
@@ -438,24 +445,26 @@ public class ComplianceTest {
 		}
 	}
 
-	public static class EndpointQuadSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
-
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+	public class EndpointQuadSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			File nativeStore = tempDir.newFolder();
-			File hdtStore = tempDir.newFolder();
+			Path nativeStore = tempPath.resolve("ns");
+			Path hdtStore = tempPath.resolve("hdt");
+
+			FileUtils.deleteRecursively(nativeStore);
+			FileUtils.deleteRecursively(hdtStore);
+			Files.createDirectories(nativeStore);
+			Files.createDirectories(hdtStore);
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
-			try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			try (HDT hdt = Utility.createTempHdtIndex(tempPath, true, false, spec)) {
 				assert hdt != null;
-				hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+				hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 			}
 
-			EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/",
-					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + "/", true);
+			EndpointStore endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/",
+					EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.toAbsolutePath() + "/", true);
 
 			return new SailRepository(endpoint);
 		}

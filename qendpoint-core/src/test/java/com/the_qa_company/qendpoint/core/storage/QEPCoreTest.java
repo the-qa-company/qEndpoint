@@ -56,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({QEPCoreTest.MappingTest.class, QEPCoreTest.GenerationTest.class})
+@Suite.SuiteClasses({ QEPCoreTest.MappingTest.class, QEPCoreTest.GenerationTest.class })
 public class QEPCoreTest {
 	public static void dumpCore(QEPCore core, String errorMessage) {
 		for (QEPMap mapper : core.getMappers()) {
@@ -107,7 +107,7 @@ public class QEPCoreTest {
 				PathUtils.deleteDirectory(root);
 				throw t;
 			}
-			return List.of(new Object[][]{{root, rootHDT, splitHDT}});
+			return List.of(new Object[][] { { root, rootHDT, splitHDT } });
 		}
 
 		@Parameterized.AfterParam
@@ -165,8 +165,8 @@ public class QEPCoreTest {
 		@Test
 		public void coreSearchTest() throws QEPCoreException, IOException, NotFoundException {
 			try (HDT hdt = HDTManager.mapHDT(rootHDT);
-			     QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
-			     Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
+					QEPCore core = new QEPCore(coreRoot, HDTOptions.of());
+					Bitmap64Big findBM = Bitmap64Big.memory(hdt.getTriples().getNumberOfElements())) {
 				assertEquals(hdt.getTriples().getNumberOfElements(), core.triplesCount());
 				try (CloseableIterator<? extends QEPComponentTriple> search = core.search("", "", "")) {
 
@@ -482,45 +482,40 @@ public class QEPCoreTest {
 
 		@Test
 		@Ignore("large")
-		public void largeAddsTest() throws IOException, ParserException, NotFoundException {
+		public void largeAddsTest() throws Exception {
 			Path root = tempDir.newFolder("generation").toPath();
 
-			final long size = 100_000;
+			final long size = 1_000;
 			final int counts = 10;
 
-			LargeFakeDataSetStreamSupplier supplier =
-					LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(size, 4567)
-							.withMaxElementSplit(50)
-							.withMaxLiteralSize(50);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(size, 4567).withMaxElementSplit(50).withMaxLiteralSize(50);
 
-			LargeFakeDataSetStreamSupplier supplier2 =
-					LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(size * counts, 4567)
-							.withMaxElementSplit(50)
-							.withMaxLiteralSize(50);
+			LargeFakeDataSetStreamSupplier supplier2 = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(size * counts, 4567).withMaxElementSplit(50).withMaxLiteralSize(50);
 
 			Path exceptedHDT = root.resolve("excepted.hdt");
 			supplier2.createAndSaveFakeHDT(HDTOptions.empty(), exceptedHDT);
 
 			Path coreTest = root.resolve("coreTest");
-			try (
-					QEPCore core = new QEPCore(coreTest, HDTOptions.of(
-							//QEPCore.OPTION_EXECUTOR_THREADS, 1 // force sync
-					));
-					HDT hdt = HDTManager.mapHDT(exceptedHDT)
-			) {
+			try (QEPCore core = new QEPCore(coreTest, HDTOptions.of(
+			// QEPCore.OPTION_EXECUTOR_THREADS, 1 // force sync
+			)); HDT hdt = HDTManager.mapHDT(exceptedHDT)) {
 				StopWatch sw = new StopWatch();
 
-				QEPCore.preBindInsert.registerAction(DebugInjectionPointManager.DebugPolicy.NO_DELETE, (qepCore -> {
+				QEPCore.preBindInsert.registerAction((qepCore -> {
 					System.out.println("preBindTime:  " + sw.stopAndShow());
 					sw.reset();
 				}));
-				QEPCore.postBindInsert.registerAction(DebugInjectionPointManager.DebugPolicy.NO_DELETE, (qepCore -> {
+				QEPCore.postBindInsert.registerAction((qepCore -> {
 					System.out.println("postBindTime: " + sw.stopAndShow());
 					sw.reset();
 				}));
 				for (int i = 1; i <= counts; i++) {
+					System.out.println("preinject");
 					sw.reset();
-					core.insertTriples(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, true);
+					core.insertTriples(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI,
+							true);
 					System.out.println(i + " done");
 				}
 
@@ -547,6 +542,8 @@ public class QEPCoreTest {
 				}
 				assertEquals(core.triplesCount(), count);
 				System.out.println("ok");
+			} finally {
+				DebugInjectionPointManager.throwAll(QEPCore.preBindInsert, QEPCore.postBindInsert);
 			}
 		}
 	}

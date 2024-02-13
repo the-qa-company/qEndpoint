@@ -77,12 +77,22 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 		while (customIterator.hasNext()) {
 			PFCDictionarySection section = new PFCDictionarySection(spec);
 			ByteString type = ByteString.of(LiteralsUtils.getType(customIterator.prev));
+
 			long numEntries = literalsCounts.get(type);
 
 			section.load(customIterator, numEntries, listener);
-			objects.put(type, section);
+			addObjectSection(type, section);
 		}
 		shared.load(other.getShared(), iListener);
+	}
+
+	protected void addObjectSection(ByteString type, DictionarySectionPrivate section) {
+		if (type.equals(LiteralsUtils.NO_DATATYPE)) {
+			// the type is encoded inside the dict so we need to replace it to
+			// avoid comparing by string later
+			type = LiteralsUtils.NO_DATATYPE;
+		}
+		objects.put(type, section);
 	}
 
 	@Override
@@ -109,7 +119,7 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 						}
 						section.load(it.map(LiteralsUtils::removeType), count, listener);
 						pred.reset();
-						objects.put(type, section);
+						addObjectSection(type, section);
 					}
 				}, "MultiSecSAsyncReaderO")).startAll().joinAndCrashIfRequired();
 	}
@@ -165,7 +175,7 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 			types.add(new CompactString(type));
 		}
 		for (ByteString type : types) {
-			this.objects.put(type, DictionarySectionFactory.loadFrom(input, listener));
+			addObjectSection(type, DictionarySectionFactory.loadFrom(input, listener));
 		}
 	}
 
@@ -181,7 +191,7 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 		input.printIndex("sections");
 		for (ByteString type : types) {
 			input.printIndex("sections/" + type);
-			this.objects.put(type, DictionarySectionFactory.loadFrom(input, f, listener));
+			addObjectSection(type, DictionarySectionFactory.loadFrom(input, f, listener));
 		}
 
 	}

@@ -116,6 +116,7 @@ public class HDTConverter {
 	}
 
 	public IRI graphIdToIRI(long id) {
+
 		return valueFactory.createIRI(HDT_URI + "G" + id);
 	}
 

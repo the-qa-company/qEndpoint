@@ -47,8 +47,10 @@ import static java.lang.String.format;
  */
 public class QEPMap implements Closeable {
 	private static final Logger logger = LoggerFactory.getLogger(QEPMap.class);
+	static DebugInjectionPointManager.DebugInjectionPoint<QEPMap> preSync = DebugInjectionPointManager.getInstance()
+			.registerInjectionPoint("presync");
 	static DebugInjectionPointManager.DebugInjectionPoint<QEPMap> endSync = DebugInjectionPointManager.getInstance()
-			.registerInjectionPoint(QEPMap.class);
+			.registerInjectionPoint("endsync");
 	public static final long SECTION_MAST = 1;
 	public static final int SECTION_SHIFT = 1;
 	public static final long SECTION_TYPE_SUBJECT = 0;
@@ -189,6 +191,7 @@ public class QEPMap implements Closeable {
 		Path mapHeaderPath = getMapHeaderPath();
 		try {
 			close();
+			preSync.runAction(this);
 			// the CRC used to check the header
 			CRC crc = new CRC16();
 			// create the sync path
@@ -196,13 +199,14 @@ public class QEPMap implements Closeable {
 			boolean created = !Files.exists(mapHeaderPath);
 			// race condition
 			// we open the header file to see if it's actually the right map
-			try (FileChannel channel = FileChannel.open(mapHeaderPath, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-			     // FIXME: read the magic+version and then read the correct
-			     // header size
-			     CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
+			try (FileChannel channel = FileChannel.open(mapHeaderPath, StandardOpenOption.READ,
+					StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+					// FIXME: read the magic+version and then read the correct
+					// header size
+					CloseMappedByteBuffer header = IOUtil.mapChannel(mapHeaderPath, channel,
 							FileChannel.MapMode.READ_WRITE, 0, HEADER_SIZE);
-			     CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
-					     FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
+					CloseMappedByteBuffer crcBuffer = IOUtil.mapChannel(mapHeaderPath, channel,
+							FileChannel.MapMode.READ_WRITE, HEADER_SIZE, crc.sizeof())) {
 				// store the id and the location to write it after creation
 				long[] index1Size = new long[TripleComponentRole.valuesNoGraph().length];
 				int[] index1Location = new int[index1Size.length];
@@ -253,7 +257,8 @@ public class QEPMap implements Closeable {
 						header.get(magicRead, 0, magicRead.length);
 						for (; shift < MAGIC.length; shift++) {
 							if (magicRead[shift] != MAGIC[shift]) {
-								throw new IOException("Can't read magic number of dataset linker " + getMapId() + "! " + Arrays.toString(magicRead) + " != " + Arrays.toString(MAGIC));
+								throw new IOException("Can't read magic number of dataset linker " + getMapId() + "! "
+										+ Arrays.toString(magicRead) + " != " + Arrays.toString(MAGIC));
 							}
 						}
 						byte coreVersion = header.get(shift++);

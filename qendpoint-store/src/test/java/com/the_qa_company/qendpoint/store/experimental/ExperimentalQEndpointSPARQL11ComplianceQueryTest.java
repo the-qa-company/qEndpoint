@@ -2,13 +2,15 @@ package com.the_qa_company.qendpoint.store.experimental;
 
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.storage.QEPCore;
 import com.the_qa_company.qendpoint.store.Utility;
+import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,7 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 	 * Set this to true to print the call to the store when doing the compliance
 	 * tests
 	 */
-	private static final boolean PRINT_CALLS = false;
+	private static final boolean PRINT_CALLS = true;
 
 	/*
 	 * Set this to false to enable the graph tests
@@ -44,9 +46,11 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 	}
 
 	@Override
-	protected Repository newRepository() {
+	protected Repository newRepository() throws IOException {
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, QEPCore.OPTION_EXECUTOR_THREADS, 1);
+		FileUtils.deleteRecursively(tempDir);
+
 		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(tempDir, spec);
 
 		if (PRINT_CALLS) {
