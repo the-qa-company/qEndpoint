@@ -48,7 +48,7 @@ public class EndpointTripleSource implements TripleSource {
 		this.endpoint = endpoint;
 		this.numberOfCurrentTriples = endpoint.getHdt().getTriples().getNumberOfElements();
 		this.endpointStoreConnection = endpointStoreConnection;
-		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean("qendpoint.mergejoin", true);
+		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean("qendpoint.mergejoin", false);
 	}
 
 	private void initHDTIndex() {

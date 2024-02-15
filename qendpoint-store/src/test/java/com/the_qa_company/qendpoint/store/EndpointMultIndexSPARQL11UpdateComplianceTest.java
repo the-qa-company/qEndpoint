@@ -4,25 +4,20 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIndex;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIndexFile;
-import org.eclipse.rdf4j.model.IRI;
+import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
@@ -42,26 +37,29 @@ public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11Updat
 		this.setIgnoredTests(testToIgnore);
 	}
 
-	@Rule
-	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+	@TempDir
+	public Path tempDir;
 
 	@Override
 	protected Repository newRepository() throws Exception {
-		File nativeStore = tempDir.newFolder();
-		File hdtStore = tempDir.newFolder();
+		FileUtils.deleteRecursively(tempDir);
+		Path nativeStore = tempDir.resolve("ns");
+		Path hdtStore = tempDir.resolve("hdt");
+
+		Files.createDirectories(nativeStore);
+		Files.createDirectories(hdtStore);
+
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS,
 				EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
-		Path fileName = Path.of(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
-		long size;
-		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+		Path fileName = Path.of(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
+		try (HDT hdt = Utility.createTempHdtIndex(tempDir.resolve("test.nt").toAbsolutePath().toString(), true, false, spec)) {
 			assert hdt != null;
-			size = hdt.getTriples().getNumberOfElements();
 			hdt.saveToHDT(fileName, null);
 		}
 
-		EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-				spec, nativeStore.getAbsolutePath() + "/", true) {
+		EndpointStore endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
+				spec, nativeStore.toAbsolutePath() + "/", true) {
 
 			@Override
 			public HDT loadIndex() throws IOException {
@@ -71,9 +69,9 @@ public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11Updat
 				}
 				try {
 					Path fileOPS = BitmapTriplesIndexFile.getIndexPath(fileName, TripleComponentOrder.OPS);
-					Assert.assertTrue("can't find " + fileOPS, Files.exists(fileOPS));
+					Assertions.assertTrue(Files.exists(fileOPS), "can't find " + fileOPS);
 					Path filePSO = BitmapTriplesIndexFile.getIndexPath(fileName, TripleComponentOrder.PSO);
-					Assert.assertTrue("can't find " + filePSO, Files.exists(filePSO));
+					Assertions.assertTrue(Files.exists(filePSO), "can't find " + filePSO);
 				} catch (Throwable t) {
 					try (Stream<Path> l = Files.list(fileName.getParent())) {
 						l.forEach(System.err::println);

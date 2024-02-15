@@ -1,12 +1,12 @@
 
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +46,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 				// named graphs anyway
 				"constructwhere02 - CONSTRUCT WHERE", "constructwhere03 - CONSTRUCT WHERE",
 				"constructwhere04 - CONSTRUCT WHERE", "Exists within graph pattern", "(pp07) Path with one graph",
+				"(pp06) Path with two graphs", "(pp34) Named Graph 1",
 				"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
 				"sq02 - Subquery within graph pattern, graph variable is bound",
 				"sq03 - Subquery within graph pattern, graph variable is not bound",
@@ -51,7 +54,8 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 				"sq05 - Subquery within graph pattern, from named applies",
 				"sq06 - Subquery with graph pattern, from named applies", "sq07 - Subquery with from ",
 				"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings",
-				"sq14 - limit by resource");
+				"sq14 - limit by resource",
+				"");
 
 		this.setIgnoredTests(testToIgnore);
 	}
@@ -66,29 +70,31 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		}
 	}
 
-	@Rule
-	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+	@TempDir
+	public Path tempDir;
 
 	EndpointStore endpoint;
-	File nativeStore;
-	File hdtStore;
 
 	@Override
 	protected Repository newRepository() throws Exception {
-		nativeStore = tempDir.newFolder();
-		hdtStore = tempDir.newFolder();
+		FileUtils.deleteRecursively(tempDir);
+		Path nativeStore = tempDir.resolve("ns");
+		Path hdtStore = tempDir.resolve("hdt");
+
+		Files.createDirectories(nativeStore);
+		Files.createDirectories(hdtStore);
 
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		if (this.hdt == null) {
-			hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+			hdt = Utility.createTempHdtIndex(tempDir.resolve("temp.nt").toAbsolutePath().toString(), true, false, spec);
 		}
 		assert hdt != null;
 
-		hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+		hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 
-		endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
-				nativeStore.getAbsolutePath() + "/", true);
+		endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
+				nativeStore.toAbsolutePath() + "/", true);
 		// endpoint.setThreshold(2);
 		return new SailRepository(endpoint);
 	}

@@ -1,16 +1,23 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.iterator.utils.EmptyIterator;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
 import org.junit.Rule;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,22 +44,27 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 		this.setIgnoredTests(testToIgnore);
 	}
 
-	@Rule
-	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+	@TempDir
+	public Path tempDir;
 
 	@Override
 	protected Repository newRepository() throws Exception {
-		File nativeStore = tempDir.newFolder();
-		File hdtStore = tempDir.newFolder();
+		FileUtils.deleteRecursively(tempDir);
+		Path nativeStore = tempDir.resolve("ns");
+		Path hdtStore = tempDir.resolve("hdt");
+
+		Files.createDirectories(nativeStore);
+		Files.createDirectories(hdtStore);
+
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-		try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+		try (HDT hdt = HDTManager.generateHDT(EmptyIterator.of(), Utility.EXAMPLE_NAMESPACE, HDTOptions.of(), ProgressListener.ignore())) {
 			assert hdt != null;
-			hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
+			hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 		}
 
-		EndpointStore endpoint = new EndpointStore(hdtStore.getAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
-				spec, nativeStore.getAbsolutePath() + "/", true);
+		EndpointStore endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME,
+				spec, nativeStore.toAbsolutePath() + "/", true);
 		// endpoint.setThreshold(2);
 
 		return new SailRepository(endpoint);

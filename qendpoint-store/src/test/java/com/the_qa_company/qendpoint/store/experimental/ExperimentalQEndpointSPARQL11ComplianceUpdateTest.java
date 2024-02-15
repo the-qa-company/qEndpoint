@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.store.experimental;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.store.Utility;
+import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
@@ -43,6 +44,8 @@ public class ExperimentalQEndpointSPARQL11ComplianceUpdateTest extends SPARQL11U
 
 	@Override
 	protected Repository newRepository() throws Exception {
+		FileUtils.deleteRecursively(tempDir);
+		Files.createDirectories(tempDir);
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
 		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(tempDir, spec);
