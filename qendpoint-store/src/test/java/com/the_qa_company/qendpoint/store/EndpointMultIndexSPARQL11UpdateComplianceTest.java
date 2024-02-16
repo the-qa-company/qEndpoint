@@ -85,6 +85,9 @@ public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11Updat
 		};
 		// endpoint.setThreshold(2);
 
+		if (EndpointSPARQL11QueryComplianceTest.PRINT) {
+			return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(endpoint)));
+		}
 		return new SailRepository(endpoint);
 		// return new DatasetRepository(new SailRepository(new
 		// NativeStore(tempDir.newFolder(), "spoc")));

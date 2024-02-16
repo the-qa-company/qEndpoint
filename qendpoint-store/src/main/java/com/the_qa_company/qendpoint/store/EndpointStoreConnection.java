@@ -517,6 +517,28 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	}
 
 	private void assignBitMapDeletes(TripleID tripleID, Resource subj, IRI pred, Value obj) throws SailException {
+		if (tripleID.isEmpty()) {
+			// clear
+			for (TripleComponentOrder order : endpoint.getValidOrders()) {
+				IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID, order.mask);
+
+				while (iter.hasNext()) {
+					iter.next();
+					long index = iter.getLastTriplePosition();
+
+					assert iter.isLastTriplePositionBoundToOrder();
+					TripleComponentOrder sorder = iter.getOrder();
+
+					if (!this.endpoint.getDeleteBitMap(sorder).access(index)) {
+						this.endpoint.getDeleteBitMap(sorder).set(index, true);
+						if (this.endpoint.isMerging()) {
+							this.endpoint.getTempDeleteBitMap(sorder).set(index, true);
+						}
+					}
+				}
+			}
+			return;
+		}
 
 		if (tripleID.getSubject() != -1 && tripleID.getPredicate() != -1 && tripleID.getObject() != -1) {
 			for (TripleComponentOrder order : endpoint.getValidOrders()) {
@@ -534,7 +556,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 						if (this.endpoint.isMerging()) {
 							this.endpoint.getTempDeleteBitMap(sorder).set(index, true);
 						}
-						if (order == TripleComponentOrder.SPO && subj != null && pred != null && obj != null) {
+						if (order == TripleComponentOrder.SPO) {
 							notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
 						}
 					}

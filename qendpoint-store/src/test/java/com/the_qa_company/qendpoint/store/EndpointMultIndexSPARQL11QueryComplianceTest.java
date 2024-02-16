@@ -13,13 +13,9 @@ import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
-import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,6 +121,9 @@ public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryC
 			}
 		};
 		// endpoint.setThreshold(2);
+		if (EndpointSPARQL11QueryComplianceTest.PRINT) {
+			return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(endpoint)));
+		}
 		return new SailRepository(endpoint);
 	}
 

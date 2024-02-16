@@ -30,6 +30,7 @@ import java.util.List;
  * @author Ali Haidar
  */
 public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public static boolean PRINT = true;
 	private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
 	public EndpointSPARQL11QueryComplianceTest() {
@@ -95,7 +96,10 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
 				nativeStore.toAbsolutePath() + "/", true);
 		// endpoint.setThreshold(2);
-		return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(endpoint)));
+		if (EndpointSPARQL11QueryComplianceTest.PRINT) {
+			return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(endpoint)));
+		}
+		return new SailRepository(endpoint);
 	}
 
 	HDT hdt;
