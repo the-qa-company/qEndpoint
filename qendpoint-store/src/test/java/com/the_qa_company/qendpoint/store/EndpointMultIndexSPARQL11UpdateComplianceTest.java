@@ -53,7 +53,7 @@ public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11Updat
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS,
 				EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
 		Path fileName = Path.of(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
-		try (HDT hdt = Utility.createTempHdtIndex(tempDir.resolve("test.nt").toAbsolutePath().toString(), true, false, spec)) {
+		try (HDT hdt = Utility.createTempHdtIndex(hdtStore.resolve("test.nt").toAbsolutePath().toString(), true, false, spec)) {
 			assert hdt != null;
 			hdt.saveToHDT(fileName, null);
 		}

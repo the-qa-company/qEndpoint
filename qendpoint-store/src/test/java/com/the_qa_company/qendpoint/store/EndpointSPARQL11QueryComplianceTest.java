@@ -23,7 +23,6 @@ import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -87,7 +86,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		if (this.hdt == null) {
-			hdt = Utility.createTempHdtIndex(tempDir.resolve("temp.nt").toAbsolutePath().toString(), true, false, spec);
+			hdt = Utility.createTempHdtIndex(hdtStore.resolve("temp.nt").toAbsolutePath().toString(), true, false, spec);
 		}
 		assert hdt != null;
 
@@ -96,7 +95,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		endpoint = new EndpointStore(hdtStore.toAbsolutePath() + "/", EndpointStoreTest.HDT_INDEX_NAME, spec,
 				nativeStore.toAbsolutePath() + "/", true);
 		// endpoint.setThreshold(2);
-		return new SailRepository(endpoint);
+		return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(endpoint)));
 	}
 
 	HDT hdt;

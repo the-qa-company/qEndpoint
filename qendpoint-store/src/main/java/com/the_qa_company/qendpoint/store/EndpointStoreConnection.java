@@ -318,6 +318,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	@Override
 	protected void clearInternal(Resource... contexts) throws SailException {
 		getCurrentConnectionWrite().clear(contexts);
+		assignBitMapDeletes(new TripleID(), null, null, null);
 	}
 
 	@Override
@@ -533,7 +534,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 						if (this.endpoint.isMerging()) {
 							this.endpoint.getTempDeleteBitMap(sorder).set(index, true);
 						}
-						if (order == TripleComponentOrder.SPO) {
+						if (order == TripleComponentOrder.SPO && subj != null && pred != null && obj != null) {
 							notifyStatementRemoved(this.endpoint.getValueFactory().createStatement(subj, pred, obj));
 						}
 					}

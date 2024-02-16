@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.model.HDTValue;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -17,9 +19,10 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
@@ -43,6 +46,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class Utility {
 
@@ -177,20 +181,26 @@ public class Utility {
 
 	public static Sail convertToDumpSail(Sail sail) {
 		return new SailWrapper(sail) {
+			private static String toInfoVal(Value value) {
+				if (value instanceof HDTValue hv) {
+					return value + "(" + hv.getHDTPosition() + "/" + hv.getHDTId() + ")";
+				}
+				return Objects.toString(value);
+			}
 			@Override
 			public SailConnection getConnection() throws SailException {
 				return new SailConnectionWrapper(super.getConnection()) {
 					@Override
 					public void addStatement(Resource subj, IRI pred, Value obj, Resource... contexts)
 							throws SailException {
-						System.out.printf("ADD : (%s, %s, %s %s)\n", subj, pred, obj, Arrays.toString(contexts));
+						System.out.printf("ADD : (%s, %s, %s %s)\n", toInfoVal(subj), toInfoVal(pred), toInfoVal(obj), Arrays.toString(contexts));
 						super.addStatement(subj, pred, obj, contexts);
 					}
 
 					@Override
 					public void removeStatement(UpdateContext modify, Resource subj, IRI pred, Value obj,
 							Resource... contexts) throws SailException {
-						System.out.printf("REMOVE[%s] : (%s, %s, %s %s)\n", modify, subj, pred, obj,
+						System.out.printf("REMOVE[%s] : (%s, %s, %s %s)\n", modify, toInfoVal(subj), toInfoVal(pred), toInfoVal(obj),
 								Arrays.toString(contexts));
 						super.removeStatement(modify, subj, pred, obj, contexts);
 					}
@@ -206,6 +216,13 @@ public class Utility {
 	}
 
 	public static Repository convertToDumpRepository(Repository repository) {
+		Repositories.consumeNoTransaction(repository, conn -> {
+			System.out.println("--All statements--");
+			try (RepositoryResult<Statement> statements = conn.getStatements(null, null, null, false)) {
+				statements.forEach(System.out::println);
+			}
+			System.out.println("------------------");
+		});
 		return new RepositoryWrapper(repository) {
 			@Override
 			public void shutDown() throws RepositoryException {
