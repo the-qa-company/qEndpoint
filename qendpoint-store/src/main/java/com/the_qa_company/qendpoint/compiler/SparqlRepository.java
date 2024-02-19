@@ -759,10 +759,34 @@ public class SparqlRepository {
 	 * @param out         the output stream, can be null
 	 */
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
+		executeUpdate(sparqlQuery, timeout, out, null);
+
+	}
+	/**
+	 * execute a sparql update query
+	 *
+	 * @param sparqlQuery the query
+	 * @param timeout     query timeout
+	 * @param out         the output stream, can be null
+	 * @param customConnection custom connection to use
+	 */
+	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out, RepositoryConnection customConnection) {
 		// logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = applyPrefixes(sparqlQuery);
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
-		try (SailRepositoryConnection connection = repository.getConnection()) {
+
+		RepositoryConnection connectionCloseable;
+		RepositoryConnection connection;
+
+		if (customConnection == null) {
+			connection = repository.getConnection();
+			connectionCloseable = connection;
+		} else {
+			connectionCloseable = null;
+			connection = customConnection;
+		}
+
+		try (connectionCloseable) {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
 			Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);
