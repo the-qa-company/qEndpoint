@@ -57,6 +57,9 @@ public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryC
 		testToIgnore.add("sq11 - Subquery limit per resource");
 		testToIgnore.add("sq13 - Subqueries don't inject bindings");
 		testToIgnore.add("sq14 - limit by resource");
+		// remove when fixed by RDF4J?
+		testToIgnore.add("STRDT() TypeErrors");
+		testToIgnore.add("STRLANG() TypeErrors");
 
 		this.setIgnoredTests(testToIgnore);
 	}

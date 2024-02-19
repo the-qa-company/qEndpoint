@@ -6,7 +6,6 @@ import com.the_qa_company.qendpoint.store.Utility;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -41,7 +40,9 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 					"sq04 - Subquery within graph pattern, default graph does not apply",
 					"sq05 - Subquery within graph pattern, from named applies",
 					"sq06 - Subquery with graph pattern, from named applies", "sq07 - Subquery with from",
-					"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings")));
+					"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings",
+					"STRDT() TypeErrors", "STRLANG() TypeErrors"
+			)));
 		}
 	}
 

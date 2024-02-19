@@ -54,7 +54,7 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 				"sq05 - Subquery within graph pattern, from named applies",
 				"sq06 - Subquery with graph pattern, from named applies", "sq07 - Subquery with from ",
 				"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings",
-				"sq14 - limit by resource",
+				"sq14 - limit by resource", "STRDT() TypeErrors", "STRLANG() TypeErrors",
 				"");
 
 		this.setIgnoredTests(testToIgnore);
