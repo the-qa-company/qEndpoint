@@ -135,6 +135,14 @@ public interface Dictionary extends Closeable {
 	}
 
 	/**
+	 * @return if the dictionary is an MSD. if so, {@link #getObjects()} can't
+	 *         be used and the {@link #getAllObjects()} method should be used.
+	 */
+	default boolean isMultiSectionDictionary() {
+		return false;
+	}
+
+	/**
 	 * Returns whether the dictionary supports graphs
 	 *
 	 * @return true if it supports graphs, false otherwise
