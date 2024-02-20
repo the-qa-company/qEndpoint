@@ -1,3 +1,3 @@
-- HDTq store (#443)
-- Add compiler config in CompiledSail builder (#448)
+- add custom connection to SparqlRepository updates
+- add support for MSDL/Graph dict in hdtVerify ci (#451)
 
