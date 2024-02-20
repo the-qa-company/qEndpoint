@@ -4,7 +4,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -237,7 +236,7 @@ public class HDTVerify {
 					try (HDT hdt = hdtl) {
 						boolean error;
 						long count = 0;
-						if (hdt.getDictionary() instanceof MultipleBaseDictionary) {
+						if (hdt.getDictionary().isMultiSectionDictionary()) {
 							colorTool.log("Checking subject entries");
 							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
 									hdt.getDictionary().getSubjects(), console);
@@ -278,6 +277,12 @@ public class HDTVerify {
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
 									hdt.getDictionary().getShared(), console);
 							count += hdt.getDictionary().getShared().getNumberOfElements();
+						}
+						if (hdt.getDictionary().supportGraphs()) {
+							colorTool.log("Checking graph entries");
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "graph",
+									hdt.getDictionary().getGraphs(), console);
+							count += hdt.getDictionary().getGraphs().getNumberOfElements();
 						}
 
 						if (error) {
