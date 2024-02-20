@@ -376,6 +376,11 @@ public abstract class MultipleBaseDictionary implements DictionaryPrivate {
 	}
 
 	@Override
+	public boolean isMultiSectionDictionary() {
+		return true;
+	}
+
+	@Override
 	public OptimizedExtractor createOptimizedMapExtractor() {
 		return new MultDictionaryPFCOptimizedExtractor(this);
 	}

@@ -528,6 +528,11 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		return new MultipleSectionDictionaryLangPFCOptimizedExtractor(this);
 	}
 
+	@Override
+	public boolean isMultiSectionDictionary() {
+		return true;
+	}
+
 	public int getObjectsSectionCount() {
 		return objectIdLocationsSec.length;
 	}
