@@ -1,3 +1,8 @@
+## Version 1.15.2
+        
+- HDTq store (#443)
+- Add compiler config in CompiledSail builder (#448)
+
 ## Version 1.15.1
         
 - fix idx after merge
