@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.common.order.StatementOrder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -44,8 +46,23 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class Utility {
+	/**
+	 * enable repository debug
+	 */
+	public static void enabledSailDebug() {
+		System.setProperty("org.eclipse.rdf4j.repository.debug", "true");
+	}
+
+	/**
+	 * disable repository debug
+	 */
+	public static void disableSailDebug() {
+		System.clearProperty("org.eclipse.rdf4j.repository.debug");
+	}
 
 	/**
 	 * create a temporary HDT Index
@@ -247,6 +264,45 @@ public class Utility {
 					public void clear(Resource... contexts) throws SailException {
 						System.out.printf("CLEAR(%d/%d) %s\n", sailUid, connUid, Arrays.toString(contexts));
 						super.clear(contexts);
+					}
+
+
+					@Override
+					public CloseableIteration<? extends Statement> getStatements(StatementOrder statementOrder, Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws SailException {
+						System.out.printf("GET(%d/%d) %s %s %s (%s) %s\n", sailUid, connUid, subj, pred, obj, includeInferred, Arrays.toString(contexts));
+						CloseableIteration<? extends Statement> it = super.getStatements(statementOrder, subj, pred, obj, includeInferred, contexts);
+						return new CloseableIteration<>() {
+							private final long itUid = UID_GENERATOR.incrementAndGet();
+
+							{
+								System.out.printf("INIT_ITERATOR(%d/%d/%d)\n", sailUid, connUid, itUid);
+							}
+							@Override
+							public void close() {
+								System.out.printf("CLOSE_ITERATOR(%d/%d/%d)\n", sailUid, connUid, itUid);
+								it.close();
+							}
+
+							@Override
+							public boolean hasNext() {
+								return it.hasNext();
+							}
+
+							@Override
+							public Statement next() {
+								return it.next();
+							}
+
+							@Override
+							public void remove() {
+								it.remove();
+							}
+
+							@Override
+							public void forEachRemaining(Consumer<? super Statement> action) {
+								it.forEachRemaining(action);
+							}
+						};
 					}
 				};
 			}
