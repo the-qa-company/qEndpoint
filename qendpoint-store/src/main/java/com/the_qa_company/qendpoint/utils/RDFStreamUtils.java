@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
@@ -17,7 +18,9 @@ import org.eclipse.rdf4j.rio.Rio;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
@@ -27,6 +30,20 @@ import java.util.zip.GZIPInputStream;
  * @author Antoine Willerval
  */
 public class RDFStreamUtils {
+	private static final Map<RDFFormat, RDFNotation> lookupRH = new HashMap<>();
+	private static final Map<RDFNotation, RDFFormat> lookupHR = new HashMap<>();
+
+	static {
+		// register notations
+		registerNotation(RDFNotation.RDFXML, RDFFormat.RDFXML);
+		registerNotation(RDFNotation.NTRIPLES, RDFFormat.NTRIPLES);
+		registerNotation(RDFNotation.TURTLE, RDFFormat.TURTLE);
+		registerNotation(RDFNotation.N3, RDFFormat.N3);
+		registerNotation(RDFNotation.NQUAD, RDFFormat.NQUADS);
+		registerNotation(RDFNotation.TRIG, RDFFormat.TRIG);
+		registerNotation(RDFNotation.TRIX, RDFFormat.TRIX);
+		registerNotation(RDFNotation.JSONLD, RDFFormat.JSONLD);
+	}
 
 	/**
 	 * convert this stream into a CompressorInputStream if the file type is .gz,
@@ -196,6 +213,48 @@ public class RDFStreamUtils {
 		}
 
 		return vf.createStatement((Resource) s, (IRI) p, o);
+	}
+
+	/**
+	 * register notation for {@link #hdtToRDF4JNotation(RDFNotation)} and
+	 * {@link #rdf4jToHDTNotation(RDFFormat)}.
+	 *
+	 * @param hdt hdt notation
+	 * @param rio rdf4j notation
+	 */
+	public static void registerNotation(RDFNotation hdt, RDFFormat rio) {
+		RDFNotation lr = lookupRH.put(rio, hdt);
+		RDFFormat lh = lookupHR.put(hdt, rio);
+
+		assert (lr == null || lr == hdt) && (lh == null || lh == rio) : "registered twice with different values";
+	}
+
+	/**
+	 * hdt {@link RDFNotation} to RDF4J {@link RDFFormat}
+	 *
+	 * @param notation hdt notation
+	 * @return rdf4j notation
+	 */
+	public static RDFFormat hdtToRDF4JNotation(RDFNotation notation) {
+		RDFFormat rdfNotation = lookupHR.get(notation);
+		if (rdfNotation != null) {
+			return rdfNotation;
+		}
+		throw new IllegalArgumentException("Unknown notation: " + notation);
+	}
+
+	/**
+	 * hdt {@link RDFNotation} to RDF4J {@link RDFFormat}
+	 *
+	 * @param notation hdt notation
+	 * @return rdf4j notation
+	 */
+	public static RDFNotation rdf4jToHDTNotation(RDFFormat notation) {
+		RDFNotation rdfNotation = lookupRH.get(notation);
+		if (rdfNotation != null) {
+			return rdfNotation;
+		}
+		throw new IllegalArgumentException("Unknown notation: " + notation);
 	}
 
 	private RDFStreamUtils() {

@@ -76,8 +76,33 @@ public class HDTVerify {
 		}
 	}
 
+	public static void checkHDT(HDT hdt, boolean unicode, ProgressListener listener) {
+		if (hdt.getDictionary().isMultiSectionDictionary()) {
+			checkDictionarySectionOrder(false, unicode, null, "subject", hdt.getDictionary().getSubjects(), listener);
+			hdt.getDictionary().getSubjects().getNumberOfElements();
+			checkDictionarySectionOrder(false, unicode, null, "predicate", hdt.getDictionary().getPredicates(),
+					listener);
+			hdt.getDictionary().getPredicates().getNumberOfElements();
+			Map<? extends CharSequence, DictionarySection> allObjects = hdt.getDictionary().getAllObjects();
+			for (Map.Entry<? extends CharSequence, DictionarySection> entry : allObjects.entrySet()) {
+				DictionarySection section = entry.getValue();
+				checkDictionarySectionOrder(false, unicode, null, "sectionName", section, listener);
+			}
+			checkDictionarySectionOrder(false, unicode, null, "shared", hdt.getDictionary().getShared(), listener);
+		} else {
+			checkDictionarySectionOrder(false, unicode, null, "subject", hdt.getDictionary().getSubjects(), listener);
+			checkDictionarySectionOrder(false, unicode, null, "predicate", hdt.getDictionary().getPredicates(),
+					listener);
+			checkDictionarySectionOrder(false, unicode, null, "object", hdt.getDictionary().getObjects(), listener);
+			checkDictionarySectionOrder(false, unicode, null, "shared", hdt.getDictionary().getShared(), listener);
+		}
+		if (hdt.getDictionary().supportGraphs()) {
+			checkDictionarySectionOrder(false, unicode, null, "graph", hdt.getDictionary().getGraphs(), listener);
+		}
+	}
+
 	public static boolean checkDictionarySectionOrder(boolean binary, boolean unicode, ColorTool colorTool, String name,
-			DictionarySection section, MultiThreadListenerConsole console) {
+			DictionarySection section, ProgressListener console) {
 		Iterator<? extends CharSequence> it = section.getSortedEntries();
 		long size = section.getNumberOfElements();
 		IntermediateListener il = new IntermediateListener(console);
@@ -96,9 +121,17 @@ public class HDTVerify {
 			if (cmp >= 0) {
 				error = true;
 				if (cmp == 0) {
-					colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
+					if (colorTool != null) {
+						colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
+					} else {
+						throw new IllegalArgumentException("Duplicated(bs): " + prev + " == " + charSeq);
+					}
 				} else {
-					colorTool.error("Bad order(bs)", prev + " > " + charSeq);
+					if (colorTool != null) {
+						colorTool.error("Bad order(bs)", prev + " > " + charSeq);
+					} else {
+						throw new IllegalArgumentException("Bad order(bs): " + prev + " > " + charSeq);
+					}
 				}
 			}
 
@@ -110,13 +143,22 @@ public class HDTVerify {
 					if (cmp == 0) {
 						colorTool.error("Duplicated(str)", lastStr + " == " + str);
 					} else {
-						colorTool.error("Bad order(str)", lastStr + " > " + str);
+						if (colorTool != null) {
+							colorTool.error("Bad order(str)", lastStr + " > " + str);
+						} else {
+							throw new IllegalArgumentException("Bad order(str): " + lastStr + " > " + str);
+						}
 					}
 				}
 
 				if (Math.signum(cmp) != Math.signum(cmp2)) {
 					error = true;
-					colorTool.error("Not equal", cmp + " != " + cmp2 + " for " + lastStr + " / " + str);
+					if (colorTool != null) {
+						colorTool.error("Not equal", cmp + " != " + cmp2 + " for " + lastStr + " / " + str);
+					} else {
+						throw new IllegalArgumentException(
+								"Not equal: " + cmp + " != " + cmp2 + " for " + lastStr + " / " + str);
+					}
 					if (binary) {
 						print(prev);
 						print(charSeq);
@@ -129,8 +171,9 @@ public class HDTVerify {
 			}
 
 			if (count % 10_000 == 0) {
-				il.notifyProgress(100f * count / size, "Verify (" + count + "/" + size + "): "
-						+ colorTool.color(3, 3, 3) + (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
+				il.notifyProgress(100f * count / size,
+						"Verify (" + count + "/" + size + "): " + (colorTool != null ? colorTool.color(3, 3, 3) : "")
+								+ (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
 			}
 
 			prev.replace(charSeq);
@@ -140,7 +183,9 @@ public class HDTVerify {
 		if (error) {
 			colorTool.warn("Not valid section");
 		} else {
-			colorTool.log("valid section");
+			if (colorTool != null) {
+				colorTool.log("valid section");
+			}
 		}
 		return error;
 	}
