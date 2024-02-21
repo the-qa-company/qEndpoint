@@ -12,7 +12,6 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
@@ -126,6 +125,9 @@ public class RioRDF2HDT implements ProgressListener {
 				: null;
 
 		HDT hdt = null;
+		System.setProperty("org.eclipse.rdf4j.rio.verify_relative_uris", "false");
+		System.setProperty("org.eclipse.rdf4j.rio.verify_uri_syntax", "false");
+
 		try (InputStream is = new BufferedInputStream(Files.newInputStream(Path.of(rdfInput)))) {
 			Iterator<TripleString> it = RDFStreamUtils.readRDFStreamAsTripleStringIterator(is, notation, true);
 
