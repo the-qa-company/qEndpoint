@@ -405,14 +405,17 @@ public class Sparql {
 	 * @throws IOException io exception
 	 */
 	@PreDestroy
-	public void shutdown() throws IOException {
+	public void shutdown() {
 		startLoading();
 		if (init) {
 			logger.info("Clear old store");
-			init = false;
-			sparqlRepository.shutDown();
-			sparqlRepository = null;
-			endpoint = null;
+			try {
+				sparqlRepository.shutDown();
+			} finally {
+				init = false;
+				sparqlRepository = null;
+				endpoint = null;
+			}
 		}
 	}
 
