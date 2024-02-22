@@ -3,7 +3,6 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.compiler.ConfigSailConnection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
-import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.ExceptionConvertingIteration;
@@ -14,7 +13,6 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.explanation.Explanation;
@@ -189,14 +187,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		if (timeout.get()) {
 			throw new EndpointTimeoutException();
 		}
-		CloseableIteration<? extends Statement> result = tripleSource.getStatements(subj, pred, obj, contexts);
 
-		return new ExceptionConvertingIteration<Statement, SailException>(result) {
-			@Override
-			protected SailException convert(RuntimeException e) {
-				return new SailException(e);
-			}
-		};
+		return tripleSource.getStatements(subj, pred, obj, contexts);
 	}
 
 	@Override
