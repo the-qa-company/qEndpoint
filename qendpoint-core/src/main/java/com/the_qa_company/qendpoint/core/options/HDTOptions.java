@@ -92,7 +92,7 @@ public interface HDTOptions {
 	 */
 	static HDTOptions of(HDTOptions other) {
 		HDTOptions opt = of();
-		other.getKeys().forEach(key -> opt.set(String.valueOf(key), other.get(String.valueOf(key))));
+		opt.setOptions(other);
 		return opt;
 	}
 
@@ -151,6 +151,19 @@ public interface HDTOptions {
 		Objects.requireNonNull(data, "data can't be null!");
 		HDTOptions opt = of();
 		opt.setOptions(data);
+		return opt;
+	}
+
+	/**
+	 * create modifiable options with a string config
+	 *
+	 * @param cfg config
+	 * @return options
+	 */
+	static HDTOptions of(String cfg) {
+		Objects.requireNonNull(cfg, "cfg can't be null!");
+		HDTOptions opt = of();
+		opt.setOptions(cfg);
 		return opt;
 	}
 
@@ -248,13 +261,27 @@ public interface HDTOptions {
 
 	/**
 	 * @return the keys of the options
-	 * @throws NotImplementedException if the implemented class do not implement
+	 * @throws NotImplementedException if the implementation does not implement
 	 *                                 this method (backward compatibility)
 	 */
 	default Set<?> getKeys() {
 		throw new NotImplementedException("getKeys");
 	}
 
+
+	/**
+	 * @return the options to be used with {@link #setOptions(String)}
+	 */
+	default String getOptions() {
+		StringBuilder bld = new StringBuilder();
+
+		for (Object k : getKeys()) {
+			String keyStr = String.valueOf(k);
+			bld.append(keyStr).append("=").append(get(keyStr)).append(";");
+		}
+
+		return bld.toString();
+	}
 	/**
 	 * get a value
 	 *
@@ -495,6 +522,11 @@ public interface HDTOptions {
 			set(key, p);
 		} else if (value instanceof File f) {
 			set(key, f.getAbsolutePath());
+		} else if (value instanceof HDTOptions opt) {
+			for (Object optKey : opt.getKeys()) {
+				String optKeyStr = String.valueOf(optKey);
+				set(key + "." + optKeyStr, opt.get(optKeyStr));
+			}
 		} else {
 			set(key, String.valueOf(value));
 		}
@@ -556,6 +588,14 @@ public interface HDTOptions {
 		options.forEach((k, v) -> set(String.valueOf(k), v));
 	}
 
+	/**
+	 * add options from another set
+	 *
+	 * @param other other set
+	 */
+	default void setOptions(HDTOptions other) {
+		other.getKeys().forEach(key -> set(String.valueOf(key), other.get(String.valueOf(key))));
+	}
 	/**
 	 * add options, each param should be in the format (key, value)*
 	 *

@@ -49,6 +49,7 @@ public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implem
 					return id;
 				}
 				// search another
+				tid = null;
 				continue;
 			}
 
@@ -105,6 +106,10 @@ public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implem
 		return tidIt.getOrder();
 	}
 
+	@Override
+	public boolean isLastTriplePositionBoundToOrder() {
+		return tidIt.isLastTriplePositionBoundToOrder();
+	}
 	@Override
 	public long getLastTriplePosition() {
 		return posZ;

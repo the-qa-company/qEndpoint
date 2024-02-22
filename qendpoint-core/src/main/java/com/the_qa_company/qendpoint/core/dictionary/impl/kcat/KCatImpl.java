@@ -259,8 +259,8 @@ public class KCatImpl implements Closeable {
 					// fill the maps based on the deleted triples
 					long c = 0;
 
-					@SuppressWarnings("resource")
-					MultiLayerBitmap bm = MultiLayerBitmap.ofBitmap(deleteBitmap);
+					MultiLayerBitmap bm = MultiLayerBitmap.ofBitmap(deleteBitmap,
+							hdt.getDictionary().supportGraphs() ? hdt.getDictionary().getNgraphs() : 1);
 
 					while (searchAll.hasNext()) {
 						TripleID tripleID = searchAll.next();
