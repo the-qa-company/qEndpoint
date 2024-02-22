@@ -58,7 +58,8 @@ public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplian
 
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-		try (HDT hdt = HDTManager.generateHDT(EmptyIterator.of(), Utility.EXAMPLE_NAMESPACE, HDTOptions.of(), ProgressListener.ignore())) {
+		try (HDT hdt = HDTManager.generateHDT(EmptyIterator.of(), Utility.EXAMPLE_NAMESPACE, HDTOptions.of(),
+				ProgressListener.ignore())) {
 			assert hdt != null;
 			hdt.saveToHDT(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 		}

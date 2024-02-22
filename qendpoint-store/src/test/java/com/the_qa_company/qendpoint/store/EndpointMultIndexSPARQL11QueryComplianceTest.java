@@ -93,7 +93,8 @@ public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryC
 				EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
 		Path fileName = Path.of(hdtStore.toAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
 		if (this.hdt == null) {
-			hdt = Utility.createTempHdtIndex(hdtStore.resolve("test.nt").toAbsolutePath().toString(), true, false, spec);
+			hdt = Utility.createTempHdtIndex(hdtStore.resolve("test.nt").toAbsolutePath().toString(), true, false,
+					spec);
 		}
 		assert hdt != null;
 

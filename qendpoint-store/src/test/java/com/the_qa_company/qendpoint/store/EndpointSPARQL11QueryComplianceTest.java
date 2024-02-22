@@ -46,16 +46,14 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 				// named graphs anyway
 				"constructwhere02 - CONSTRUCT WHERE", "constructwhere03 - CONSTRUCT WHERE",
 				"constructwhere04 - CONSTRUCT WHERE", "Exists within graph pattern", "(pp07) Path with one graph",
-				"(pp06) Path with two graphs", "(pp34) Named Graph 1",
-				"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
-				"sq02 - Subquery within graph pattern, graph variable is bound",
+				"(pp06) Path with two graphs", "(pp34) Named Graph 1", "(pp35) Named Graph 2",
+				"sq01 - Subquery within graph pattern", "sq02 - Subquery within graph pattern, graph variable is bound",
 				"sq03 - Subquery within graph pattern, graph variable is not bound",
 				"sq04 - Subquery within graph pattern, default graph does not apply",
 				"sq05 - Subquery within graph pattern, from named applies",
 				"sq06 - Subquery with graph pattern, from named applies", "sq07 - Subquery with from ",
 				"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings",
-				"sq14 - limit by resource", "STRDT() TypeErrors", "STRLANG() TypeErrors",
-				"");
+				"sq14 - limit by resource", "STRDT() TypeErrors", "STRLANG() TypeErrors", "");
 
 		this.setIgnoredTests(testToIgnore);
 	}
@@ -87,7 +85,8 @@ public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryCompliance
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 		if (this.hdt == null) {
-			hdt = Utility.createTempHdtIndex(hdtStore.resolve("temp.nt").toAbsolutePath().toString(), true, false, spec);
+			hdt = Utility.createTempHdtIndex(hdtStore.resolve("temp.nt").toAbsolutePath().toString(), true, false,
+					spec);
 		}
 		assert hdt != null;
 

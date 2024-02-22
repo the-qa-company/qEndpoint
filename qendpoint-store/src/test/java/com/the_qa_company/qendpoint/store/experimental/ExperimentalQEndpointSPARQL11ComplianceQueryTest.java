@@ -41,8 +41,7 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 					"sq05 - Subquery within graph pattern, from named applies",
 					"sq06 - Subquery with graph pattern, from named applies", "sq07 - Subquery with from",
 					"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings",
-					"STRDT() TypeErrors", "STRLANG() TypeErrors"
-			)));
+					"STRDT() TypeErrors", "STRLANG() TypeErrors")));
 		}
 	}
 

@@ -59,7 +59,7 @@ public class ExperimentalQEndpointSPARQL11ComplianceUpdateTest extends SPARQL11U
 	@Override
 	public Collection<DynamicTest> getTestData() {
 		// TODO: fixme
-		//return super.getTestData();
+		// return super.getTestData();
 		return List.of();
 	}
 }

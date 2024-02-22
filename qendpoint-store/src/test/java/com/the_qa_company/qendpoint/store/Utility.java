@@ -187,21 +187,23 @@ public class Utility {
 				}
 				return Objects.toString(value);
 			}
+
 			@Override
 			public SailConnection getConnection() throws SailException {
 				return new SailConnectionWrapper(super.getConnection()) {
 					@Override
 					public void addStatement(Resource subj, IRI pred, Value obj, Resource... contexts)
 							throws SailException {
-						System.out.printf("ADD : (%s, %s, %s %s)\n", toInfoVal(subj), toInfoVal(pred), toInfoVal(obj), Arrays.toString(contexts));
+						System.out.printf("ADD : (%s, %s, %s %s)\n", toInfoVal(subj), toInfoVal(pred), toInfoVal(obj),
+								Arrays.toString(contexts));
 						super.addStatement(subj, pred, obj, contexts);
 					}
 
 					@Override
 					public void removeStatement(UpdateContext modify, Resource subj, IRI pred, Value obj,
 							Resource... contexts) throws SailException {
-						System.out.printf("REMOVE[%s] : (%s, %s, %s %s)\n", modify, toInfoVal(subj), toInfoVal(pred), toInfoVal(obj),
-								Arrays.toString(contexts));
+						System.out.printf("REMOVE[%s] : (%s, %s, %s %s)\n", modify, toInfoVal(subj), toInfoVal(pred),
+								toInfoVal(obj), Arrays.toString(contexts));
 						super.removeStatement(modify, subj, pred, obj, contexts);
 					}
 
