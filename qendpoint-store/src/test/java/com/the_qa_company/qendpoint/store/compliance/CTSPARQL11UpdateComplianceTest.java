@@ -21,6 +21,7 @@ public abstract class CTSPARQL11UpdateComplianceTest extends SPARQL11UpdateCompl
 	protected final Repository newRepository() throws Exception {
 		Sail sail = newSail();
 		if (PRINT) {
+			Utility.enabledSailDebug();
 			return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(sail)));
 		}
 		return new SailRepository(sail);

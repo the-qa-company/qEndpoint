@@ -187,14 +187,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		if (timeout.get()) {
 			throw new EndpointTimeoutException();
 		}
-		CloseableIteration<? extends Statement> result = tripleSource.getStatements(subj, pred, obj, contexts);
 
-		return new ExceptionConvertingIteration<Statement, SailException>(result) {
-			@Override
-			protected SailException convert(RuntimeException e) {
-				return new SailException(e);
-			}
-		};
+		return tripleSource.getStatements(subj, pred, obj, contexts);
 	}
 
 	@Override
@@ -267,6 +261,9 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
 		}
 
+		System.out.println("add " + new TripleID(subjectID, predicateID, objectID));
+		System.out.println("add " + newSubj + ", " + newPred + ", " + newObj);
+
 		if (!this.endpoint.getHdt().getDictionary().supportGraphs()) {
 			// note that in the native store we insert a mix of native IRIs and
 			// HDT
@@ -293,57 +290,14 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				// increase the number of statements
 				this.endpoint.triplesCount++;
 			}
-		} else if (contexts.length <= 1) {
-			long graphID;
-
-			if (contexts.length != 0) {
-				graphID = this.endpoint.getHdtConverter().contextToID(contexts[0]);
-			} else {
-				graphID = this.endpoint.getHdtProps().getDefaultGraph();
-			}
-
-			Resource[] newGraph;
-			if (graphID == -1) {
-				newGraph = contexts;
-			} else {
-				newGraph = new Resource[] { this.endpoint.getHdtConverter().graphIdToIRI(graphID) };
-			}
-			TripleID tripleID = new TripleID(subjectID, predicateID, objectID, graphID);
-			if (quadDoesntExistInHDT(tripleID)) {
-				// check if we need to search over the other native connection
-				if (endpoint.isMerging()) {
-					if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
-						try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
-								.getStatements(newSubj, newPred, newObj, false, newGraph)) {
-							if (other.hasNext()) {
-								return;
-							}
-						}
-					}
-				}
-				// here we need uris using the internal IDs
-				getCurrentConnectionWrite().addStatement(newSubj, newPred, newObj, newGraph);
-
-				// modify the bitmaps if the IRIs used are in HDT
-				this.endpoint.modifyBitmaps(subjectID, predicateID, objectID);
-				// increase the number of statements
-				this.endpoint.triplesCount++;
-			}
 		} else {
-			Resource[] newGraph = new Resource[] { null };
-			for (Resource context : contexts) {
-				long graphID;
-				if (context != null) {
-					graphID = this.endpoint.getHdtConverter().subjectToID(context);
-				} else {
-					graphID = this.endpoint.getHdtProps().getDefaultGraph();
-				}
+			long[] newGraphIds = new long[contexts.length];
+			Resource[] newGraph = endpoint.getHdtConverter().graphIdToIRI(contexts, newGraphIds);
 
-				if (graphID == -1) {
-					newGraph[0] = context;
-				} else {
-					newGraph[0] = this.endpoint.getHdtConverter().graphIdToIRI(graphID);
-				}
+			for (int i = 0; i < contexts.length; i++) {
+				Resource context = newGraph[i];
+				long graphID = newGraphIds[i];
+
 				TripleID tripleID = new TripleID(subjectID, predicateID, objectID, graphID);
 				if (quadDoesntExistInHDT(tripleID)) {
 					// check if we need to search over the other native
@@ -351,7 +305,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 					if (endpoint.isMerging()) {
 						if (endpoint.shouldSearchOverRDF4J(subjectID, predicateID, objectID)) {
 							try (CloseableIteration<? extends Statement> other = getOtherConnectionRead()
-									.getStatements(newSubj, newPred, newObj, false, newGraph)) {
+									.getStatements(newSubj, newPred, newObj, false, context)) {
 								if (other.hasNext()) {
 									continue;
 								}
@@ -359,7 +313,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 						}
 					}
 					// here we need uris using the internal IDs
-					getCurrentConnectionWrite().addStatement(newSubj, newPred, newObj, newGraph);
+					getCurrentConnectionWrite().addStatement(newSubj, newPred, newObj, context);
 
 					// modify the bitmaps if the IRIs used are in HDT
 					this.endpoint.modifyBitmaps(subjectID, predicateID, objectID);
@@ -444,10 +398,11 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		// @todo: is this not strange that both are prepared?
 		this.connA_write.startUpdate(op);
 		this.connB_write.startUpdate(op);
-		this.connA_read.close();
-		this.connB_read.close();
-		this.connA_read = endpoint.getNativeStoreA().getConnection();
-		this.connB_read = endpoint.getNativeStoreB().getConnection();
+		// TODO: check the point
+		//this.connA_read.close();
+		//this.connB_read.close();
+		//this.connA_read = endpoint.getNativeStoreA().getConnection();
+		//this.connB_read = endpoint.getNativeStoreB().getConnection();
 
 		logger.debug("Update started");
 		try {
@@ -553,6 +508,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		}
 
 		TripleID tid = new TripleID(subjectID, predicateID, objectID);
+		System.out.println("delete " + tid);
+		System.out.println("delete " + newSubj + ", " + newPred + ", " + newObj);
 
 		if (!this.endpoint.getHdt().getDictionary().supportGraphs()) {
 			// remove statement from both stores... A and B
@@ -625,7 +582,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		long p = tid.getPredicate();
 		long o = tid.getObject();
 		TripleID tripleID = new TripleID(s, p, o);
-		if (tripleID.isEmpty()) {
+		if (tid.isEmpty()) {
 			// clear
 			if (contexts.length == 0 || !supportGraphs) {
 				if (supportGraphs) {

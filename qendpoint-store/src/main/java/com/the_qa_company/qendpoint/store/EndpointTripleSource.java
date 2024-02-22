@@ -128,6 +128,9 @@ public class EndpointTripleSource implements TripleSource {
 			newContextes = contexts;
 		}
 
+		System.out.println("get " + new TripleID(subjectID, predicateID, objectID));
+		System.out.println("get " + newSubj + ", " + newPred + ", " + newObj);
+
 		// logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
@@ -146,8 +149,13 @@ public class EndpointTripleSource implements TripleSource {
 						.getStatements(newSubj, newPred, newObj, false, newContextes);
 				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection.getConnB_read()
 						.getStatements(newSubj, newPred, newObj, false, newContextes);
-				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
-
+				if (repositoryResult1 instanceof EmptyIteration) {
+					repositoryResult = repositoryResult2;
+				} else if (repositoryResult2 instanceof EmptyIteration) {
+					repositoryResult = repositoryResult1;
+				} else {
+					repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
+				}
 			} else {
 				logger.debug("Query only one RDF4j stores!");
 				repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,

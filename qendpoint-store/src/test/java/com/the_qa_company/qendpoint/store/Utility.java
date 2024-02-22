@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -317,6 +318,9 @@ public class Utility {
 
 	public static Repository convertToDumpRepository(Repository repository) {
 		return new RepositoryWrapper(repository) {
+			{
+				System.out.println("INIT REPO");
+			}
 			@Override
 			public void shutDown() throws RepositoryException {
 				System.out.println("SHUTDOWN REPO");
