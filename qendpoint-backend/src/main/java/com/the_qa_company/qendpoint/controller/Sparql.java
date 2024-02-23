@@ -429,7 +429,7 @@ public class Sparql {
 			CompiledSailOptions options = new CompiledSailOptions();
 			options.setPort(port);
 			options.setEndpointThreshold(threshold);
-			options.setHdtSpec(hdtSpec);
+			options.setHdtSpec(HDTOptions.of(hdtSpec));
 			options.setTimeoutQuery(maxTimeoutCfg);
 			options.setTimeoutUpdate(maxTimeoutUpdateCfg);
 

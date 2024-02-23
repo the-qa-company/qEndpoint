@@ -18,8 +18,8 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 	public static final byte SUBJECT_POS = 1;
 	public static final byte PREDICATE_POS = 2;
 	public static final byte OBJECT_POS = 3;
-	public static final byte SHARED_POS = 4;
-	public static final byte GRAPH_POS = 5;
+	public static final byte GRAPH_POS = 4;
+	public static final byte SHARED_POS = 5;
 
 	public static byte getPos(DictionarySectionRole role) {
 		return switch (role) {
@@ -89,16 +89,13 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 		if (this.iriString != null) {
 			return this.iriString;
 		} else {
-			CharSequence charSequence;
-			if (this.postion == SHARED_POS || this.postion == SUBJECT_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT);
-			} else if (this.postion == OBJECT_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.OBJECT);
-			} else if (this.postion == PREDICATE_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
-			} else {
-				throw new EndpointStoreException("bad postion value: " + postion);
-			}
+			CharSequence charSequence = switch (this.postion) {
+				case SHARED_POS, SUBJECT_POS -> hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT);
+				case OBJECT_POS -> hdt.getDictionary().idToString(this.id, TripleComponentRole.OBJECT);
+				case PREDICATE_POS -> hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
+				case GRAPH_POS -> hdt.getDictionary().idToString(this.id, TripleComponentRole.GRAPH);
+				default -> throw new EndpointStoreException("bad position value: " + postion);
+			};
 
 			if (charSequence == null) {
 				throw new EndpointStoreException("Can't find HDT ID: " + id);
@@ -157,6 +154,8 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 				prefix += "P";
 			} else if (this.postion == OBJECT_POS) {
 				prefix += "O";
+			} else if (this.postion == GRAPH_POS) {
+				prefix += "G";
 			} else {
 				if (iriString != null) {
 					prefix = iriString;
