@@ -1,3 +1,7 @@
+## Version 1.15.4
+        
+- add option to delete triple (#455)
+
 ## Version 1.15.3
         
 - add custom connection to SparqlRepository updates
