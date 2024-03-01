@@ -404,4 +404,11 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 				+ (inMemory ? ", inMemory: true" : "\nfile: " + output.getFile().getAbsolutePath())
 				+ (allBits <= 20 ? "\nbits: " + toString(true) : "");
 	}
+
+	/**
+	 * @return the maximum bit of this bitmap
+	 */
+	public long getMaxNumBits() {
+		return numbits;
+	}
 }
