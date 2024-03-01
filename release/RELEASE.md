@@ -1,2 +1,1 @@
-- add option to delete triple (#455)
-
+- disable deletes when not required (#455)
