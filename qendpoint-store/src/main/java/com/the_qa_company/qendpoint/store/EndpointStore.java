@@ -78,6 +78,14 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * set the user locales
 	 */
 	public static final String QUERY_CONFIG_USER_LOCALES = "user_locales";
+	/**
+	 * enable the merge join, default true
+	 */
+	public static final String OPTION_QENDPOINT_MERGE_JOIN = "qendpoint.mergejoin";
+	/**
+	 * disable delete bitmaps, default false
+	 */
+	public static final String OPTION_QENDPOINT_DELETE_DISABLE = "qendpoint.delete.disable";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;
@@ -104,6 +112,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	// setting to put the delete map only in memory, i.e don't write to disk
 	private final boolean inMemDeletes;
 	private final boolean loadIntoMemory;
+	private final boolean deleteDisabled;
 
 	// bitmaps used to mark if the subject, predicate, object elements in HDT
 	// are used in the rdf4j delta store
@@ -166,6 +175,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 			throws IOException {
 		// load HDT file
 		this.spec = (spec = HDTOptions.ofNullable(spec));
+		deleteDisabled = spec.getBoolean(OPTION_QENDPOINT_DELETE_DISABLE, false);
 		validOrders = getHDTSpec().getEnumSet(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, TripleComponentOrder.class);
 		validOrders.add(TripleComponentOrder.SPO); // we need at least SPO
 
@@ -1128,5 +1138,17 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public EnumSet<TripleComponentOrder> getValidOrders() {
 		return validOrders;
+	}
+
+	public long getGraphsCount(HDT hdt) {
+		return hdt.getDictionary().supportGraphs() ? hdt.getDictionary().getNgraphs() : 1;
+	}
+
+	public boolean isDeleteDisabled() {
+		return deleteDisabled;
+	}
+
+	public long getGraphsCount() {
+		return getGraphsCount(this.hdt);
 	}
 }

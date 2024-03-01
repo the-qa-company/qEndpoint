@@ -436,7 +436,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		long sizeNativeB = connB_read.size(contexts);
 		long sizeHdt = this.endpoint.getHdt().getTriples().getNumberOfElements();
 
-		long sizeDeleted = this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).countOnes();
+		long sizeDeleted = endpoint.isDeleteDisabled() ? 0
+				: this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).getHandle().countOnes();
 		logger.info("---------------------------");
 		logger.info("Size native A:" + sizeNativeA);
 		logger.info("Size native B:" + sizeNativeB);
@@ -451,6 +452,10 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			throws SailException {
 		if (MergeRunnableStopPoint.disableRequest)
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+
+		if (endpoint.isDeleteDisabled()) {
+			throw new SailException("This sail doesn't support deletion");
+		}
 
 		isWriteConnection = true;
 
@@ -501,9 +506,23 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		throw new SailReadOnlyException("");
 	}
 
-	private TripleID getTripleID(long subjId, long predId, long objId) {
-		return new TripleID(subjId, predId, objId);
-
+	private boolean tripleDoesntExistInHDT(TripleID tripleID) {
+		IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID);
+		// if iterator is empty then the given triple doesn't exist in HDT
+		if (iter.hasNext()) {
+			TripleID tid = iter.next();
+			if (endpoint.isDeleteDisabled()) {
+				return false;
+			}
+			long index = iter.getLastTriplePosition();
+			return this.endpoint
+					.getDeleteBitMap(
+							iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO)
+					.access(endpoint.getHdt().getDictionary().supportGraphs()
+							? (tid.isQuad() ? tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1
+							: 0, index);
+		}
+		return true;
 	}
 
 	private boolean tripleExistInHDT(TripleID tripleID) {
@@ -511,7 +530,10 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		IteratorTripleID iter = endpoint.getHdt().getTriples().search(tripleID);
 		// if iterator is empty then the given triple 't' doesn't exist in HDT
 		if (iter.hasNext()) {
-			iter.next();
+			TripleID tid = iter.next();
+			if (endpoint.isDeleteDisabled()) {
+				return false;
+			}
 			long index = iter.getLastTriplePosition();
 			return !this.endpoint
 					.getDeleteBitMap(
@@ -521,7 +543,14 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		return false;
 	}
 
-	private void assignBitMapDeletes(TripleID tripleID, Resource subj, IRI pred, Value obj) throws SailException {
+	private void assignBitMapDeletes(TripleID tid, Resource subj, IRI pred, Value obj, Resource[] contexts,
+			long[] contextIds) throws SailException {
+		if (endpoint.isDeleteDisabled()) {
+			throw new SailException("This endpoint doesn't support deletion");
+		}
+		long s = tid.getSubject();
+		long p = tid.getPredicate();
+		long o = tid.getObject();
 
 		if (tripleID.getSubject() != -1 && tripleID.getPredicate() != -1 && tripleID.getObject() != -1) {
 			for (TripleComponentOrder order : endpoint.getValidOrders()) {
