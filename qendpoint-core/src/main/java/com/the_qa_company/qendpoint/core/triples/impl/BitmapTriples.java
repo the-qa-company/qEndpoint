@@ -33,6 +33,7 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.SignatureIOException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.HDTDiskImporter;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskindex.DiskIndexSort;
@@ -1321,7 +1322,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 							idx.getOrder());
 				}
 				IOUtil.closeQuietly(old);
-			} catch (NoSuchFileException ignore) {
+			} catch (NoSuchFileException | SignatureIOException ignore) {
 				// no index with this name
 				if (!askedOrders.contains(order)) {
 					continue; // not asked by the user, we can ignore
