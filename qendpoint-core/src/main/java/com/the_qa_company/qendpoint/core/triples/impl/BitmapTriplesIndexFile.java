@@ -11,6 +11,7 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.SignatureIOException;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
@@ -96,7 +97,8 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 
 			long currentSignature = signature(triples);
 			if (signature != currentSignature) {
-				throw new IOException(format("Wrong signature for file 0x%x != 0x%x", signature, currentSignature));
+				throw new SignatureIOException(
+						format("Wrong signature for file 0x%x != 0x%x", signature, currentSignature));
 			}
 		}
 
