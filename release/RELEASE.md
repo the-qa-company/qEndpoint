@@ -1,1 +1,1 @@
-- disable deletes when not required (#455)
+- fix signature check on new other indexes (#458)
