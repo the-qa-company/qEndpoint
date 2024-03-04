@@ -1,3 +1,6 @@
+## Version 1.15.5
+        
+- disable deletes when not required (#455)
 ## Version 1.15.4
         
 - add option to delete triple (#455)
