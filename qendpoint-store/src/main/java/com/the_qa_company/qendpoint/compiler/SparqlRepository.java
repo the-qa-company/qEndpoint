@@ -11,16 +11,10 @@ import com.the_qa_company.qendpoint.utils.rdf.*;
 import com.the_qa_company.qendpoint.utils.sail.SourceSailConnectionWrapper;
 import jakarta.json.Json;
 import jakarta.json.stream.JsonGenerator;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.base.CoreDatatype;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.query.*;
-import org.eclipse.rdf4j.query.algebra.Var;
-import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.explanation.GenericPlanNode;
 import org.eclipse.rdf4j.query.parser.*;
@@ -104,9 +98,6 @@ public class SparqlRepository {
 
 	/**
 	 * reindex all the lucene sails of this repository
-	 *
-	 * @throws Exception any exception returned by
-	 *                   {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
 	 */
 	public void reindexLuceneSails() {
 		compiledSail.reindexLuceneSails();
@@ -759,10 +750,36 @@ public class SparqlRepository {
 	 * @param out         the output stream, can be null
 	 */
 	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out) {
+		executeUpdate(sparqlQuery, timeout, out, null);
+
+	}
+
+	/**
+	 * execute a sparql update query
+	 *
+	 * @param sparqlQuery      the query
+	 * @param timeout          query timeout
+	 * @param out              the output stream, can be null
+	 * @param customConnection custom connection to use
+	 */
+	public void executeUpdate(String sparqlQuery, int timeout, OutputStream out,
+			RepositoryConnection customConnection) {
 		// logger.info("Running update query:"+sparqlQuery);
 		sparqlQuery = applyPrefixes(sparqlQuery);
 		sparqlQuery = Pattern.compile("MINUS \\{(?s).*?}\\n {2}}").matcher(sparqlQuery).replaceAll("");
-		try (SailRepositoryConnection connection = repository.getConnection()) {
+
+		RepositoryConnection connectionCloseable;
+		RepositoryConnection connection;
+
+		if (customConnection == null) {
+			connection = repository.getConnection();
+			connectionCloseable = connection;
+		} else {
+			connectionCloseable = null;
+			connection = customConnection;
+		}
+
+		try (connectionCloseable) {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
 			Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);

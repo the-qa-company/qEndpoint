@@ -1,3 +1,29 @@
+## Version 1.15.5
+        
+- disable deletes when not required (#455)
+## Version 1.15.4
+        
+- add option to delete triple (#455)
+
+## Version 1.15.3
+        
+- add custom connection to SparqlRepository updates
+- add support for MSDL/Graph dict in hdtVerify ci (#451)
+
+## Version 1.15.2
+        
+- HDTq store (#443)
+- Add compiler config in CompiledSail builder (#448)
+
+## Version 1.15.1
+        
+- fix idx after merge
+- merge join (#428)
+
+## Version 1.15.0
+        
+- add delete bitmap for multiple co-indexes (#440)
+
 ## Version 1.14.1
         
 - add hdt diffcat tool

@@ -1,2 +1,1 @@
-- add delete bitmap for multiple co-indexes (#440)
-
+- fix signature check on new other indexes (#458)

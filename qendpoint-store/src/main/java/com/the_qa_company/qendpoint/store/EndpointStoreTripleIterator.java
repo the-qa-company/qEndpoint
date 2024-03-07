@@ -1,7 +1,9 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
+import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.IndexReportingIterator;
 import org.eclipse.rdf4j.model.IRI;
@@ -52,10 +54,11 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		// iterate over the result of hdt
 		while (iterator.hasNext()) {
 			TripleID tripleID = iterator.next();
-			long index = iterator.getLastTriplePosition();
 			TripleComponentOrder order = iterator.isLastTriplePositionBoundToOrder() ? iterator.getOrder()
 					: TripleComponentOrder.SPO;
-			if (!endpoint.getDeleteBitMap(order).access(tripleID.isQuad() ? tripleID.getGraph() - 1 : 0, index)) {
+			MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper dbm = endpoint.getDeleteBitMap(order);
+			if (endpoint.isDeleteDisabled() || dbm.<BitArrayDisk>getHandle().getMaxNumBits() == 0
+					|| !dbm.access(tripleID.isQuad() ? tripleID.getGraph() - 1 : 0, iterator.getLastTriplePosition())) {
 				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
 				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());

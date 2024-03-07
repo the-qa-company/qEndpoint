@@ -503,7 +503,8 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		long sizeNativeB = connB_read.size(contexts);
 		long sizeHdt = this.endpoint.getHdt().getTriples().getNumberOfElements();
 
-		long sizeDeleted = this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).getHandle().countOnes();
+		long sizeDeleted = endpoint.isDeleteDisabled() ? 0
+				: this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).getHandle().countOnes();
 		logger.info("---------------------------");
 		logger.info("Size native A:" + sizeNativeA);
 		logger.info("Size native B:" + sizeNativeB);
@@ -518,6 +519,10 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			throws SailException {
 		if (MergeRunnableStopPoint.disableRequest)
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+
+		if (endpoint.isDeleteDisabled()) {
+			throw new SailException("This sail doesn't support deletion");
+		}
 
 		isWriteConnection = true;
 
@@ -585,6 +590,9 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		// if iterator is empty then the given triple doesn't exist in HDT
 		if (iter.hasNext()) {
 			TripleID tid = iter.next();
+			if (endpoint.isDeleteDisabled()) {
+				return false;
+			}
 			long index = iter.getLastTriplePosition();
 			return this.endpoint
 					.getDeleteBitMap(
@@ -601,6 +609,9 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		// if iterator is empty then the given triple 't' doesn't exist in HDT
 		if (iter.hasNext()) {
 			TripleID tid = iter.next();
+			if (endpoint.isDeleteDisabled()) {
+				return false;
+			}
 			long index = iter.getLastTriplePosition();
 			return this.endpoint
 					.getDeleteBitMap(
@@ -612,6 +623,9 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	private void assignBitMapDeletes(TripleID tid, Resource subj, IRI pred, Value obj, Resource[] contexts,
 			long[] contextIds) throws SailException {
+		if (endpoint.isDeleteDisabled()) {
+			throw new SailException("This endpoint doesn't support deletion");
+		}
 		long s = tid.getSubject();
 		long p = tid.getPredicate();
 		long o = tid.getObject();
