@@ -35,24 +35,22 @@ public class BitmapTriplesIndexFileTest {
 	public void genTest() throws IOException, ParserException {
 		Path root = tempDir.newFolder().toPath();
 
-		HDTOptions spec = HDTOptions.of(
-				HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "spo,ops",
-				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true
-		);
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "spo,ops",
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true);
 		try {
 			Path hdtPath = root.resolve("temp.hdt");
 
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(1000, 10)
-					.withMaxLiteralSize(50)
-					.withMaxElementSplit(20);
+					.createSupplierWithMaxTriples(1000, 10).withMaxLiteralSize(50).withMaxElementSplit(20);
 
 			supplier.createAndSaveFakeHDT(spec, hdtPath);
 
 			// should load
 			HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
-			assertTrue("ops index doesn't exist", Files.exists(BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OPS)));
-			assertFalse("foq index exists", Files.exists(hdtPath.resolveSibling(hdtPath.getFileName() + HDTVersion.get_index_suffix("-"))));
+			assertTrue("ops index doesn't exist",
+					Files.exists(BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OPS)));
+			assertFalse("foq index exists",
+					Files.exists(hdtPath.resolveSibling(hdtPath.getFileName() + HDTVersion.get_index_suffix("-"))));
 
 			long crcold = crc32(Files.readAllBytes(hdtPath));
 
