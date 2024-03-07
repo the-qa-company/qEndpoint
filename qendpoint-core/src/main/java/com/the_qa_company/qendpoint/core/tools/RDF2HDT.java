@@ -238,7 +238,7 @@ public class RDF2HDT implements ProgressListener {
 			// Generate index and dump it to .hdt.index file
 			sw.reset();
 			if (generateIndex) {
-				hdt = HDTManager.indexedHDT(hdt, this);
+				hdt = HDTManager.indexedHDT(hdt, this, spec);
 				colorTool.logValue("Index generated and saved in ", sw.stopAndShow());
 			}
 		} finally {
