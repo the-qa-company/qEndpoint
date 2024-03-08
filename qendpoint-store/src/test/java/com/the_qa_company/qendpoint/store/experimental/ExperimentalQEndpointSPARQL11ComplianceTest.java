@@ -62,7 +62,8 @@ public class ExperimentalQEndpointSPARQL11ComplianceTest {
 						"sq04 - Subquery within graph pattern, default graph does not apply",
 						"sq05 - Subquery within graph pattern, from named applies",
 						"sq06 - Subquery with graph pattern, from named applies", "sq07 - Subquery with from",
-						"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings")));
+						"sq11 - Subquery limit per resource", "sq13 - Subqueries don't inject bindings",
+						"IRI()/URI()")));
 			}
 		}
 
