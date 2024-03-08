@@ -275,7 +275,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		// note that in the native store we insert a mix of native IRIs and HDT
 		// IRIs, depending if the resource is in
 		// HDT or not
-		TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
+		TripleID tripleID = new TripleID(subjectID, predicateID, objectID);
 		if (!tripleExistInHDT(tripleID)) {
 			// check if we need to search over the other native connection
 			if (endpoint.isMerging()) {
@@ -437,7 +437,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		long sizeHdt = this.endpoint.getHdt().getTriples().getNumberOfElements();
 
 		long sizeDeleted = endpoint.isDeleteDisabled() ? 0
-				: this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).getHandle().countOnes();
+				: this.endpoint.getDeleteBitMap(TripleComponentOrder.SPO).countOnes();
 		logger.info("---------------------------");
 		logger.info("Size native A:" + sizeNativeA);
 		logger.info("Size native B:" + sizeNativeB);
@@ -494,7 +494,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		}
 		// this.endpoint.triplesCount--;
 
-		TripleID tripleID = getTripleID(subjectID, predicateID, objectID);
+		TripleID tripleID = new TripleID(subjectID, predicateID, objectID);
 		assignBitMapDeletes(tripleID, subj, pred, obj);
 	}
 
@@ -518,9 +518,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			return this.endpoint
 					.getDeleteBitMap(
 							iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO)
-					.access(endpoint.getHdt().getDictionary().supportGraphs()
-							? (tid.isQuad() ? tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1
-							: 0, index);
+					.access(index);
 		}
 		return true;
 	}
@@ -543,14 +541,15 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		return false;
 	}
 
-	private void assignBitMapDeletes(TripleID tid, Resource subj, IRI pred, Value obj, Resource[] contexts,
-			long[] contextIds) throws SailException {
+	private void assignBitMapDeletes(TripleID tid, Resource subj, IRI pred, Value obj) throws SailException {
 		if (endpoint.isDeleteDisabled()) {
 			throw new SailException("This endpoint doesn't support deletion");
 		}
 		long s = tid.getSubject();
 		long p = tid.getPredicate();
 		long o = tid.getObject();
+
+		TripleID tripleID = new TripleID(s, p, o);
 
 		if (tripleID.getSubject() != -1 && tripleID.getPredicate() != -1 && tripleID.getObject() != -1) {
 			for (TripleComponentOrder order : endpoint.getValidOrders()) {

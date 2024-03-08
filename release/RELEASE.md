@@ -1,1 +1,3 @@
-- fix signature check on new other indexes (#458)
+- rollback to rdf4j 4.3
+- remove merge join
+- remove quad implementation

@@ -1,6 +1,5 @@
 package com.the_qa_company.qendpoint.store;
 
-import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
@@ -56,9 +55,9 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			TripleID tripleID = iterator.next();
 			TripleComponentOrder order = iterator.isLastTriplePositionBoundToOrder() ? iterator.getOrder()
 					: TripleComponentOrder.SPO;
-			MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper dbm = endpoint.getDeleteBitMap(order);
-			if (endpoint.isDeleteDisabled() || dbm.<BitArrayDisk>getHandle().getMaxNumBits() == 0
-					|| !dbm.access(tripleID.isQuad() ? tripleID.getGraph() - 1 : 0, iterator.getLastTriplePosition())) {
+			BitArrayDisk dbm = endpoint.getDeleteBitMap(order);
+			if (endpoint.isDeleteDisabled() || dbm.getMaxNumBits() == 0
+					|| !dbm.access(iterator.getLastTriplePosition())) {
 				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
 				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());
