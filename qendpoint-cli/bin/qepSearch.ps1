@@ -5,6 +5,8 @@ param(
     $config,
     [String]
     $searchCfg,
+    [String]
+    $csv,
     [Switch]
     $color,
     [Parameter()]
