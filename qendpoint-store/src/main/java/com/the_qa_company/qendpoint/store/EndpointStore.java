@@ -621,11 +621,12 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public void setDeleteBitMap(TripleComponentOrder order, BitArrayDisk deleteBitMap) {
 		this.deleteBitMap[order.ordinal()] = deleteBitMap;
+		logger.info("set deletebitmap for order {}: delete?: {}", order, deleteBitMap.getMaxNumBits() == 0);
 	}
 
 	public void setDeleteBitMap(BitArrayDisk[] deleteBitMaps) {
 		for (TripleComponentOrder order : validOrders) {
-			this.deleteBitMap[order.ordinal()] = deleteBitMaps[order.ordinal()];
+			setDeleteBitMap(order, deleteBitMaps[order.ordinal()]);
 		}
 	}
 
