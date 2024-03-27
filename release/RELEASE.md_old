@@ -1,3 +1,8 @@
+## Version 1.16.0
+        
+- rollback to rdf4j 4.3
+- remove merge join
+- remove quad implementation
 ## Version 1.15.6
         
 - fix signature check on new other indexes (#458)
