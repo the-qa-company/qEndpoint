@@ -70,6 +70,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class EndpointStore extends AbstractNotifyingSail {
 	/**
+	 * base uri
+	 */
+	public static final String BASE_URI = "http://the-qa-company.com/qendpoint/#";
+	/**
 	 * disable the optimizer
 	 */
 	public static final String QUERY_CONFIG_NO_OPTIMIZER = "no_optimizer";
