@@ -18,7 +18,6 @@ import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
-import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -66,6 +65,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class EndpointStore extends AbstractNotifyingSail {
+	/**
+	 * base uri
+	 */
+	public static final String BASE_URI = "http://the-qa-company.com/qendpoint/#";
 	/**
 	 * disable the optimizer
 	 */
