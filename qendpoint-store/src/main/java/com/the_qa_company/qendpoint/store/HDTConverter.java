@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.model.HDTLazyStatement;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
@@ -143,6 +144,10 @@ public class HDTConverter {
 		} else {
 			return valueFactory.createIRI(HDT_URI + "O" + id);
 		}
+	}
+
+	public Statement createLazyStatement(long s, long p, long o) {
+		return new HDTLazyStatement(s, p, o, this);
 	}
 
 	public Resource rdf4jToHdtIDsubject(Resource subj) {

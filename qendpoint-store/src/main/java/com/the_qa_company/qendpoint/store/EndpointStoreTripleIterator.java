@@ -58,13 +58,8 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			BitArrayDisk dbm = endpoint.getDeleteBitMap(order);
 			if (endpoint.isDeleteDisabled() || dbm.getMaxNumBits() == 0
 					|| !dbm.access(iterator.getLastTriplePosition())) {
-				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
-				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
-				Value object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());
-				if (logger.isTraceEnabled()) {
-					logger.trace("From HDT   {} {} {} ", subject, predicate, object);
-				}
-				next = endpointTripleSource.getValueFactory().createStatement(subject, predicate, object);
+				next = endpoint.getHdtConverter().createLazyStatement(tripleID.getSubject(), tripleID.getPredicate(),
+						tripleID.getObject());
 				return true;
 			}
 		}
@@ -76,9 +71,6 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			Value newObject = endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
 			next = endpointTripleSource.getValueFactory().createStatement(newSubj, newPred, newObject,
 					stm.getContext());
-			if (logger.isTraceEnabled()) {
-				logger.trace("From RDF4j {} {} {}", next.getSubject(), next.getPredicate(), next.getObject());
-			}
 			return true;
 		}
 		return false;
