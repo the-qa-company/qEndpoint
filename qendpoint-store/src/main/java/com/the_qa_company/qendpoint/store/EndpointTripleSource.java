@@ -389,8 +389,8 @@ public class EndpointTripleSource implements TripleSource {
 					.getTripleComponentOrder(t);
 
 			var orders = tripleComponentOrder.stream()
-					.map(o -> getStatementOrder(o, subj != null, pred != null, obj != null))
-					.flatMap(Collection::stream).filter(p -> p != StatementOrder.P)
+					.map(o -> getStatementOrder(o, subj != null, pred != null, obj != null)).flatMap(Collection::stream)
+					.filter(p -> p != StatementOrder.P)
 					// we do not support predicate ordering since it doesn't use
 					// the same IDs as other IRIs
 					.collect(Collectors.toSet());

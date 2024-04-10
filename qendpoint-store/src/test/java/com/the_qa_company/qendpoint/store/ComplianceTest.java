@@ -253,11 +253,10 @@ public class ComplianceTest {
 					// are not
 					// so problematic since we do not support
 					// named graphs anyway
-					"STRDT() TypeErrors",
-					"STRLANG() TypeErrors",
-					"constructwhere02 - CONSTRUCT WHERE", "constructwhere03 - CONSTRUCT WHERE",
-					"constructwhere04 - CONSTRUCT WHERE", "Exists within graph pattern", "(pp07) Path with one graph",
-					"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
+					"STRDT() TypeErrors", "STRLANG() TypeErrors", "constructwhere02 - CONSTRUCT WHERE",
+					"constructwhere03 - CONSTRUCT WHERE", "constructwhere04 - CONSTRUCT WHERE",
+					"Exists within graph pattern", "(pp07) Path with one graph", "(pp35) Named Graph 2",
+					"sq01 - Subquery within graph pattern",
 					"sq02 - Subquery within graph pattern, graph variable is bound",
 					"sq03 - Subquery within graph pattern, graph variable is not bound",
 					"sq04 - Subquery within graph pattern, default graph does not apply",
@@ -496,24 +495,13 @@ public class ComplianceTest {
 	}
 
 	/*
-
-	@TestFactory
-	public Collection<DynamicTest> multiIndexUpdate() {
-		return new EndpointMultIndexSPARQL11UpdateComplianceTest().getTestData();
-	}
-	@TestFactory
-	public Collection<DynamicTest> indexUpdate() {
-		return new EndpointSPARQL11UpdateComplianceTest().getTestData();
-	}
-
-	@TestFactory
-	public Collection<DynamicTest> quadQuery() {
-		return new EndpointQuadSPARQL11QueryComplianceTest().tests();
-	}
-
-	@TestFactory
-	public Collection<DynamicTest> quadUpdate() {
-		return new EndpointQuadSPARQL11UpdateComplianceTest().getTestData();
-	}
-	*/
+	 * @TestFactory public Collection<DynamicTest> multiIndexUpdate() { return
+	 * new EndpointMultIndexSPARQL11UpdateComplianceTest().getTestData(); }
+	 * @TestFactory public Collection<DynamicTest> indexUpdate() { return new
+	 * EndpointSPARQL11UpdateComplianceTest().getTestData(); }
+	 * @TestFactory public Collection<DynamicTest> quadQuery() { return new
+	 * EndpointQuadSPARQL11QueryComplianceTest().tests(); }
+	 * @TestFactory public Collection<DynamicTest> quadUpdate() { return new
+	 * EndpointQuadSPARQL11UpdateComplianceTest().getTestData(); }
+	 */
 }

@@ -32,12 +32,9 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 	public ExperimentalQEndpointSPARQL11ComplianceQueryTest() {
 
 		if (DISABLE_GRAPH_TESTS) {
-			this.setIgnoredTests(new ArrayList<>(List.of(
-					"STRDT() TypeErrors",
-					"STRLANG() TypeErrors",
-					"constructwhere04 - CONSTRUCT WHERE",
-					"Exists within graph pattern", "(pp07) Path with one graph", "(pp34) Named Graph 1",
-					"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
+			this.setIgnoredTests(new ArrayList<>(List.of("STRDT() TypeErrors", "STRLANG() TypeErrors",
+					"constructwhere04 - CONSTRUCT WHERE", "Exists within graph pattern", "(pp07) Path with one graph",
+					"(pp34) Named Graph 1", "(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
 					"sq02 - Subquery within graph pattern, graph variable is bound",
 					"sq03 - Subquery within graph pattern, graph variable is not bound",
 					"sq04 - Subquery within graph pattern, default graph does not apply",
