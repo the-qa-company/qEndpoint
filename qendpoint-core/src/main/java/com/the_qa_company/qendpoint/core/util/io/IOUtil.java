@@ -68,6 +68,30 @@ public class IOUtil {
 	private IOUtil() {
 	}
 
+
+	/**
+	 * Get a unique file name inside a path, the name will follow the pattern:
+	 * <pre>
+	 *     prefix suffix
+	 *     prefix_1 suffix
+	 *     prefix_2 suffix
+	 *     prefix_3 suffix
+	 *     ...
+	 * </pre>
+	 * @param parent parent path
+	 * @param prefix start of the name
+	 * @param suffix end of the name
+	 * @return unique path
+	 */
+	public static Path getUniqueNamePath(Path parent, String prefix, String suffix) {
+		long id = 0;
+
+		Path resolve;
+		while (Files.exists(resolve = parent.resolve(prefix + (id == 0 ? "" : ("_" + id)) + suffix))) {
+			id++;
+		}
+		return resolve;
+	}
 	/**
 	 * print a path in the standard output
 	 *

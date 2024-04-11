@@ -64,54 +64,54 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doLoadHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doLoadHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.loadFromHDT(hdtFileName, listener);
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	@Override
-	protected HDT doMapHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+	protected HDTResult doMapHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.mapFromHDT(new File(hdtFileName), 0, listener);
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	@Override
-	public HDT doLoadHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doLoadHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec) throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.loadFromHDT(hdtFile, listener);
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	@Override
-	public HDT doLoadIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doLoadIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.loadFromHDT(hdtFileName, listener);
 		hdt.loadOrCreateIndex(listener, spec);
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	@Override
-	public HDT doMapIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doMapIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.mapFromHDT(new File(hdtFileName), 0, listener);
 		hdt.loadOrCreateIndex(listener, spec);
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	@Override
-	public HDT doLoadIndexedHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doLoadIndexedHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec) throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.loadFromHDT(hdtFile, listener);
 		hdt.loadOrCreateIndex(listener, spec);
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	@Override
-	public HDT doIndexedHDT(HDT hdt, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doIndexedHDT(HDT hdt, ProgressListener listener, HDTOptions spec) throws IOException {
 		((HDTPrivate) hdt).loadOrCreateIndex(listener, HDTOptions.ofNullable(spec));
-		return hdt;
+		return HDTResult.of(hdt);
 	}
 
 	private RDFFluxStop readFluxStopOrSizeLimit(HDTOptions spec) {
@@ -145,7 +145,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doGenerateHDT(String rdfFileName, String baseURI, RDFNotation rdfNotation, HDTOptions spec,
+	public HDTResult doGenerateHDT(String rdfFileName, String baseURI, RDFNotation rdfNotation, HDTOptions spec,
 			ProgressListener listener) throws IOException, ParserException {
 		// choose the importer
 		String loaderType = spec.get(HDTOptionsKeys.LOADER_TYPE_KEY);
@@ -193,12 +193,12 @@ public class HDTManagerImpl extends HDTManager {
 				// ignore
 			}
 
-			return hdt;
+			return HDTResult.of(hdt);
 		}
 	}
 
 	@Override
-	public HDT doGenerateHDT(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
+	public HDTResult doGenerateHDT(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener) throws IOException {
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
@@ -212,7 +212,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doGenerateHDT(Iterator<TripleString> triples, String baseURI, HDTOptions spec, ProgressListener listener)
+	public HDTResult doGenerateHDT(Iterator<TripleString> triples, String baseURI, HDTOptions spec, ProgressListener listener)
 			throws IOException {
 		// choose the importer
 		String loaderType = spec.get(HDTOptionsKeys.LOADER_TYPE_KEY);
@@ -260,7 +260,7 @@ public class HDTManagerImpl extends HDTManager {
 				} catch (NotFoundException e) {
 					// ignore
 				}
-				return hdt;
+				return HDTResult.of(hdt);
 			} catch (Throwable t) {
 				try {
 					hdt.close();
@@ -273,7 +273,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doGenerateHDTDisk(String rdfFileName, String baseURI, RDFNotation rdfNotation,
+	public HDTResult doGenerateHDTDisk(String rdfFileName, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		if (compressionType == CompressionType.NONE) {
@@ -289,7 +289,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doGenerateHDTDisk(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
+	public HDTResult doGenerateHDTDisk(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		// uncompress the stream if required
@@ -328,21 +328,21 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doGenerateHDTDisk(Iterator<TripleString> iterator, String baseURI, HDTOptions hdtFormat,
+	public HDTResult doGenerateHDTDisk(Iterator<TripleString> iterator, String baseURI, HDTOptions hdtFormat,
 			ProgressListener progressListener) throws IOException, ParserException {
 		return doGenerateHDTDisk0(iterator, hdtFormat.getBoolean(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY),
 				baseURI, hdtFormat, progressListener);
 	}
 
-	private HDT doGenerateHDTDisk0(Iterator<TripleString> iterator, boolean copyIterator, String baseURI,
+	private HDTResult doGenerateHDTDisk0(Iterator<TripleString> iterator, boolean copyIterator, String baseURI,
 			HDTOptions hdtFormat, ProgressListener progressListener) throws IOException, ParserException {
 		try (HDTDiskImporter hdtDiskImporter = new HDTDiskImporter(hdtFormat, progressListener, baseURI)) {
 			if (copyIterator) {
-				return hdtDiskImporter.runAllSteps(iterator);
+				return HDTResult.of(hdtDiskImporter.runAllSteps(iterator));
 			} else {
 				// create a copy of the triple at loading time to avoid weird
 				// behaviors
-				return hdtDiskImporter.runAllSteps(new MapIterator<>(iterator, TripleString::tripleToString));
+				return HDTResult.of(hdtDiskImporter.runAllSteps(new MapIterator<>(iterator, TripleString::tripleToString)));
 			}
 		}
 	}
@@ -358,7 +358,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDT doHDTCat(String location, String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat,
+	public HDTResult doHDTCat(String location, String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException {
 		if (!hdtFormat.getBoolean(HDTOptionsKeys.HDTCAT_LEGACY, false)) {
 			HDTOptions hdtOptions = hdtFormat.pushTop();
@@ -381,12 +381,12 @@ public class HDTManagerImpl extends HDTManager {
 					profiler.writeProfiling();
 				}
 			}
-			return hdt;
+			return HDTResult.of(hdt);
 		}
 	}
 
 	@Override
-	public HDT doHDTDiff(String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat, ProgressListener listener)
+	public HDTResult doHDTDiff(String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException {
 		try (HDT hdt1 = loadOrMapHDT(hdtFileName1, listener, hdtFormat);
 				HDT hdt2 = loadOrMapHDT(hdtFileName2, listener, hdtFormat)) {
@@ -394,12 +394,12 @@ public class HDTManagerImpl extends HDTManager {
 			try (Profiler profiler = Profiler.createOrLoadSubSection("hdtDiff", hdtFormat, true)) {
 				hdt.diff(hdt1, hdt2, listener, profiler);
 			}
-			return hdt;
+			return HDTResult.of(hdt);
 		}
 	}
 
 	@Override
-	protected HDT doHDTDiffBit(String location, String hdtFileName, Bitmap deleteBitmap, HDTOptions hdtFormat,
+	protected HDTResult doHDTDiffBit(String location, String hdtFileName, Bitmap deleteBitmap, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException {
 		if (!hdtFormat.getBoolean(HDTOptionsKeys.HDTCAT_LEGACY, false)) {
 			HDTOptions hdtOptions = hdtFormat.pushTop();
@@ -417,12 +417,12 @@ public class HDTManagerImpl extends HDTManager {
 					hdt.close();
 				}
 			}
-			return hdt;
+			return HDTResult.of(hdt);
 		}
 	}
 
 	@Override
-	protected HDT doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, String filename, String baseURI,
+	protected HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, String filename, String baseURI,
 			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
@@ -433,7 +433,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	protected HDT doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream stream, String baseURI,
+	protected HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream stream, String baseURI,
 			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
@@ -444,7 +444,7 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	protected HDT doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator,
+	protected HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator,
 			String baseURI, HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		try (CatTreeImpl tree = new CatTreeImpl(hdtFormat)) {
 			return tree.doGeneration(fluxStop, supplier, iterator, baseURI, listener);
@@ -452,25 +452,25 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	protected HDT doHDTCat(List<String> hdtFileNames, HDTOptions hdtFormat, ProgressListener listener)
+	protected HDTResult doHDTCat(List<String> hdtFileNames, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException {
 		if (hdtFileNames.isEmpty()) {
-			return HDTFactory.createHDT(hdtFormat);
+			return HDTResult.of(HDTFactory.createHDT(hdtFormat));
 		}
 		if (hdtFileNames.size() == 1) {
-			return loadOrMapHDT(hdtFileNames.get(0), listener, hdtFormat);
+			return HDTResult.of(loadOrMapHDT(hdtFileNames.get(0), listener, hdtFormat));
 		}
 
 		try (KCatImpl kCat = KCatImpl.of(hdtFileNames, hdtFormat, listener)) {
-			return kCat.cat();
+			return HDTResult.of(kCat.cat());
 		}
 	}
 
 	@Override
-	protected HDT doHDTDiffBitCat(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
+	protected HDTResult doHDTDiffBitCat(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException {
 		if (hdtFileNames.isEmpty()) {
-			return HDTFactory.createHDT(hdtFormat);
+			return HDTResult.of(HDTFactory.createHDT(hdtFormat));
 		}
 
 		if (hdtFileNames.size() != deleteBitmaps.size()) {
@@ -478,15 +478,15 @@ public class HDTManagerImpl extends HDTManager {
 		}
 
 		try (KCatImpl kCat = KCatImpl.of(hdtFileNames, deleteBitmaps, hdtFormat, listener)) {
-			return kCat.cat();
+			return HDTResult.of(kCat.cat());
 		}
 	}
 
 	@Override
-	protected HDT doHDTDiffBitCatObject(List<HDT> hdtFileNames, List<? extends Bitmap> deleteBitmaps,
+	protected HDTResult doHDTDiffBitCatObject(List<HDT> hdtFileNames, List<? extends Bitmap> deleteBitmaps,
 			HDTOptions hdtFormat, ProgressListener listener, boolean closeHDTs) throws IOException {
 		if (hdtFileNames.isEmpty()) {
-			return HDTFactory.createHDT(hdtFormat);
+			return HDTResult.of(HDTFactory.createHDT(hdtFormat));
 		}
 
 		if (hdtFileNames.size() != deleteBitmaps.size()) {
@@ -494,7 +494,7 @@ public class HDTManagerImpl extends HDTManager {
 		}
 
 		try (KCatImpl kCat = KCatImpl.of(hdtFileNames, deleteBitmaps, hdtFormat, listener, closeHDTs)) {
-			return kCat.cat();
+			return HDTResult.of(kCat.cat());
 		}
 	}
 
