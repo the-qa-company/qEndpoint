@@ -14,6 +14,7 @@ import java.util.List;
 public class HDTResult implements Closeable {
 	/**
 	 * Create result from one HDT
+	 *
 	 * @param hdt hdt
 	 * @return result
 	 */
@@ -23,6 +24,7 @@ public class HDTResult implements Closeable {
 
 	/**
 	 * Create result from HDTs list
+	 *
 	 * @param hdts hdts
 	 * @return results
 	 */
@@ -49,6 +51,7 @@ public class HDTResult implements Closeable {
 	public HDT getHdtSinge() {
 		return getHdtSinge(false);
 	}
+
 	public HDT getHdtSinge(boolean closeOnError) {
 		if (getHdtCount() != 1) {
 			IllegalArgumentException ex = new IllegalArgumentException("Trying to use hdt result with multiple HDTs");

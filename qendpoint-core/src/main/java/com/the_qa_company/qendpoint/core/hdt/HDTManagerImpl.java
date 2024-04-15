@@ -85,7 +85,8 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDTResult doLoadIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doLoadIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec)
+			throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.loadFromHDT(hdtFileName, listener);
 		hdt.loadOrCreateIndex(listener, spec);
@@ -93,7 +94,8 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDTResult doMapIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doMapIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec)
+			throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.mapFromHDT(new File(hdtFileName), 0, listener);
 		hdt.loadOrCreateIndex(listener, spec);
@@ -101,7 +103,8 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDTResult doLoadIndexedHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec) throws IOException {
+	public HDTResult doLoadIndexedHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec)
+			throws IOException {
 		HDTPrivate hdt = new HDTImpl(spec);
 		hdt.loadFromHDT(hdtFile, listener);
 		hdt.loadOrCreateIndex(listener, spec);
@@ -212,8 +215,8 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDTResult doGenerateHDT(Iterator<TripleString> triples, String baseURI, HDTOptions spec, ProgressListener listener)
-			throws IOException {
+	public HDTResult doGenerateHDT(Iterator<TripleString> triples, String baseURI, HDTOptions spec,
+			ProgressListener listener) throws IOException {
 		// choose the importer
 		String loaderType = spec.get(HDTOptionsKeys.LOADER_TYPE_KEY);
 		TempHDTImporterOnePass loader;
@@ -342,7 +345,8 @@ public class HDTManagerImpl extends HDTManager {
 			} else {
 				// create a copy of the triple at loading time to avoid weird
 				// behaviors
-				return HDTResult.of(hdtDiskImporter.runAllSteps(new MapIterator<>(iterator, TripleString::tripleToString)));
+				return HDTResult
+						.of(hdtDiskImporter.runAllSteps(new MapIterator<>(iterator, TripleString::tripleToString)));
 			}
 		}
 	}
@@ -386,8 +390,8 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	public HDTResult doHDTDiff(String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat, ProgressListener listener)
-			throws IOException {
+	public HDTResult doHDTDiff(String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat,
+			ProgressListener listener) throws IOException {
 		try (HDT hdt1 = loadOrMapHDT(hdtFileName1, listener, hdtFormat);
 				HDT hdt2 = loadOrMapHDT(hdtFileName2, listener, hdtFormat)) {
 			HDTImpl hdt = new HDTImpl(hdtFormat);
@@ -467,8 +471,8 @@ public class HDTManagerImpl extends HDTManager {
 	}
 
 	@Override
-	protected HDTResult doHDTDiffBitCat(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps, HDTOptions hdtFormat,
-			ProgressListener listener) throws IOException {
+	protected HDTResult doHDTDiffBitCat(List<String> hdtFileNames, List<? extends Bitmap> deleteBitmaps,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException {
 		if (hdtFileNames.isEmpty()) {
 			return HDTResult.of(HDTFactory.createHDT(hdtFormat));
 		}

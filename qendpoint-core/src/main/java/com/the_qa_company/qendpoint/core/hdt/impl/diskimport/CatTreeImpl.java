@@ -131,42 +131,67 @@ public class CatTreeImpl implements Closeable {
 	 * @param nextFile if we can create a new HDT after this one
 	 * @param files    hdt files to merge
 	 * @param current  current created HDT
-	 * @param maxFiles max file to merge
-	 * @return list of HDT to merge with current, mi
+	 * @return list of HDT to merge with current
 	 */
-	private List<HDTFile> getNextHDTs(boolean nextFile, List<HDTFile> files, HDTFile current, int maxFiles, int minFile) {
-		assert minFile <= maxFiles;
+	private List<HDTFile> getNextHDTs(boolean nextFile, List<HDTFile> files, HDTFile current) {
+		assert maxHDTCat <= kHDTCat;
 		if (files.isEmpty()) {
 			return List.of();
 		}
 		List<HDTFile> next = new ArrayList<>();
-		if (nextFile || files.size() > maxFiles) {
-			for (int i = 1; i < maxFiles && i <= files.size(); i++) {
+
+		if (nextFile) {
+			// we are still indexing after than
+
+			for (int i = 1; i < kHDTCat && i <= files.size(); i++) {
 				HDTFile old = files.get(files.size() - i);
 
 				// check if the chunks are matching
-				if (nextFile && old.chunks() > current.chunks()) {
+				if (old.chunks() > current.chunks()) {
 					break;
 				}
 
 				next.add(old);
 			}
-			if (nextFile) {
-				if (next.size() != maxFiles - 1) {
-					return List.of();
-				}
-			} else if (next.size() <= minFile) {
-				return List.of(); // not enough end file
+			if (next.size() != kHDTCat - 1) {
+				return List.of(); // not enough file, we can wait until we have
+									// what to merge
 			}
+
 			// we have all the elements, or we have enough file
 			// we remove the elements from the files
 			for (int i = 0; i < next.size(); i++) {
 				files.remove(files.size() - 1);
 			}
-		} else {
-			next.addAll(files);
-			files.clear();
+
+			next.add(current);
+			return next;
 		}
+
+		// no next file
+		if (files.size() > kHDTCat) {
+			// we merge kHDTCat - 1 element with the current one
+			for (int i = 1; i < kHDTCat; i++) {
+				next.add(files.remove(files.size() - 1));
+			}
+
+			next.add(current);
+			return next;
+		}
+
+		// we are under the maximum amount, we need to merge to reach the
+		// minimum
+
+		if (files.size() < maxHDTCat) {
+			return List.of(); // acceptable amount of files
+		}
+
+		int count = files.size() - (maxHDTCat - 1);
+
+		for (int i = 0; i < count; i++) {
+			next.add(files.remove(files.size() - 1));
+		}
+
 		next.add(current);
 		return next;
 	}
@@ -183,8 +208,8 @@ public class CatTreeImpl implements Closeable {
 	 * @throws IOException     io exception
 	 * @throws ParserException parsing exception returned by the hdt supplier
 	 */
-	public HDTResult doGeneration(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator, String baseURI,
-	                              ProgressListener listener) throws IOException, ParserException {
+	public HDTResult doGeneration(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator,
+			String baseURI, ProgressListener listener) throws IOException, ParserException {
 		if (async && kHDTCat > 1 && maxHDTCat == 1) {
 			return HDTResult.of(doGenerationAsync(fluxStop, supplier, iterator, baseURI, listener));
 		} else {
@@ -258,15 +283,14 @@ public class CatTreeImpl implements Closeable {
 
 			// merge the generated hdt with each block with enough size
 			if (kHDTCat == 1) { // default impl
-				while (!files.isEmpty()
-						&& (!nextFile || (files.get(files.size() - 1)).chunks() <= hdtFile.chunks())) {
+				while (!files.isEmpty() && (!nextFile || (files.get(files.size() - 1)).chunks() <= hdtFile.chunks())) {
 					HDTFile lastHDTFile = files.remove(files.size() - 1);
 					cat++;
 					profiler.pushSection("catHDT #" + cat);
 					PrefixListener ilc = PrefixListener.of("cat#" + cat, listener);
 					Path hdtCatFileLocation = hdtStore.resolve("hdtcat-" + cat + ".hdt");
-					try (HDT abcat = HDTManager.catHDT(hdtCatLocationPath, lastHDTFile.hdtFile(),
-							hdtFile.hdtFile(), hdtFormat, ilc)) {
+					try (HDT abcat = HDTManager.catHDT(hdtCatLocationPath, lastHDTFile.hdtFile(), hdtFile.hdtFile(),
+							hdtFormat, ilc)) {
 						abcat.saveToHDT(hdtCatFileLocation, ilc);
 					}
 					ilc.clearThreads();
@@ -281,7 +305,7 @@ public class CatTreeImpl implements Closeable {
 			} else { // kcat
 				List<HDTFile> nextHDTs;
 
-				while (!(nextHDTs = getNextHDTs(nextFile, files, hdtFile, kHDTCat, maxHDTCat)).isEmpty()) {
+				while (!(nextHDTs = getNextHDTs(nextFile, files, hdtFile)).isEmpty()) {
 					// merge all the files
 					cat++;
 					profiler.pushSection("catHDT #" + cat);
@@ -296,8 +320,8 @@ public class CatTreeImpl implements Closeable {
 							hdtCatFileLocation.toAbsolutePath());
 
 					try (HDT abcat = HDTManager.catHDT(nextHDTs.stream()
-							.map(f -> f.hdtFile().toAbsolutePath().toString()).collect(Collectors.toList()),
-							hdtFormat, ilc)) {
+							.map(f -> f.hdtFile().toAbsolutePath().toString()).collect(Collectors.toList()), hdtFormat,
+							ilc)) {
 						abcat.saveToHDT(hdtCatFileLocation.toAbsolutePath().toString(), ilc);
 					}
 
@@ -316,7 +340,8 @@ public class CatTreeImpl implements Closeable {
 					profiler.popSection();
 				}
 			}
-			assert nextFile || files.isEmpty() : "no data remaining, but contains files";
+			assert nextFile || files.size() < maxHDTCat
+					: "no data remaining, but contains files " + nextFile + " " + files.size() + " " + maxHDTCat;
 			files.add(hdtFile);
 		} while (nextFile);
 
@@ -325,13 +350,14 @@ public class CatTreeImpl implements Closeable {
 		assert files.size() > 0 && files.size() <= maxHDTCat : "more than " + maxHDTCat + " file: " + files;
 
 		assert cat < gen : "more cat than gen";
-		assert files.get(files.size() - 1).chunks() == gen
+		assert files.stream().mapToLong(HDTFile::chunks).sum() == gen
 				: "gen size isn't the same as excepted: " + files.get(files.size() - 1).chunks() + " != " + gen;
 
 		try {
 			if (files.size() == 1) {
 				Path hdtFile = files.get(0).hdtFile;
-				// if a future HDT location has been asked, move to it and map the
+				// if a future HDT location has been asked, move to it and map
+				// the
 				// HDT
 				if (futureHDTLocation != null) {
 					Files.createDirectories(futureHDTLocation.toAbsolutePath().getParent());
@@ -339,7 +365,8 @@ public class CatTreeImpl implements Closeable {
 					return HDTResult.of(new MapOnCallHDT(futureHDTLocation));
 				}
 
-				// if no future location has been asked, load the HDT and delete it
+				// if no future location has been asked, load the HDT and delete
+				// it
 				// after
 				return HDTResult.of(HDTManager.loadHDT(hdtFile.toAbsolutePath().toString()));
 			} else {
@@ -411,7 +438,7 @@ public class CatTreeImpl implements Closeable {
 
 		@Override
 		public String toString() {
-				return "HDTFile{" + "hdtFile=" + hdtFile + ", chunks=" + chunks + '}';
-			}
+			return "HDTFile{" + "hdtFile=" + hdtFile + ", chunks=" + chunks + '}';
 		}
+	}
 }

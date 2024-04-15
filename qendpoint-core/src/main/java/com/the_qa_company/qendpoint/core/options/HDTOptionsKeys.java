@@ -180,7 +180,8 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.NUMBER, desc = "Number of HDT to merge at the same time with K-HDTCat, by default it use the default HDTCat implementation")
 	public static final String LOADER_CATTREE_KCAT = "loader.cattree.kcat";
 	/**
-	 * Key for the k-merge HDTCat for the {@link HDTManager} catTree default to 1
+	 * Key for the k-merge HDTCat for the {@link HDTManager} catTree default to
+	 * 1
 	 */
 	@Key(type = Key.Type.NUMBER, desc = "Maximum files generated after the cats")
 	public static final String LOADER_CATTREE_MAX_FILES = "loader.cattree.maxfiles";

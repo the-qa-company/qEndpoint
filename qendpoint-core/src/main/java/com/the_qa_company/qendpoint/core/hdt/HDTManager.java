@@ -95,8 +95,9 @@ public abstract class HDTManager {
 	 * @throws IOException when the file cannot be found
 	 */
 	public static HDT loadHDT(String hdtFileName, ProgressListener listener, HDTOptions hdtFormat) throws IOException {
-		return HDTManager.getInstance().doLoadHDT(hdtFileName, ProgressListener.ofNullable(listener),
-				HDTOptions.ofNullable(hdtFormat)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doLoadHDT(hdtFileName, ProgressListener.ofNullable(listener), HDTOptions.ofNullable(hdtFormat))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -190,8 +191,9 @@ public abstract class HDTManager {
 	 * @throws IOException when the file cannot be found
 	 */
 	public static HDT mapHDT(String hdtFileName, ProgressListener listener, HDTOptions hdtFormat) throws IOException {
-		return HDTManager.getInstance().doMapHDT(hdtFileName, ProgressListener.ofNullable(listener),
-				HDTOptions.ofNullable(hdtFormat)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doMapHDT(hdtFileName, ProgressListener.ofNullable(listener), HDTOptions.ofNullable(hdtFormat))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -272,8 +274,9 @@ public abstract class HDTManager {
 	 * @throws IOException when the file cannot be found
 	 */
 	public static HDT loadHDT(InputStream hdtFile, ProgressListener listener, HDTOptions hdtFormat) throws IOException {
-		return HDTManager.getInstance().doLoadHDT(hdtFile, ProgressListener.ofNullable(listener),
-				HDTOptions.ofNullable(hdtFormat)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doLoadHDT(hdtFile, ProgressListener.ofNullable(listener), HDTOptions.ofNullable(hdtFormat))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -361,8 +364,9 @@ public abstract class HDTManager {
 	 */
 	public static HDT loadIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions hdtFormat)
 			throws IOException {
-		return HDTManager.getInstance().doLoadIndexedHDT(hdtFileName, ProgressListener.ofNullable(listener),
-				HDTOptions.ofNullable(hdtFormat)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doLoadIndexedHDT(hdtFileName, ProgressListener.ofNullable(listener), HDTOptions.ofNullable(hdtFormat))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -446,8 +450,9 @@ public abstract class HDTManager {
 	 * @throws IOException when the file cannot be found
 	 */
 	public static HDT mapIndexedHDT(String hdtFileName, HDTOptions spec, ProgressListener listener) throws IOException {
-		return HDTManager.getInstance().doMapIndexedHDT(hdtFileName, ProgressListener.ofNullable(listener),
-				HDTOptions.ofNullable(spec)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doMapIndexedHDT(hdtFileName, ProgressListener.ofNullable(listener), HDTOptions.ofNullable(spec))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -514,8 +519,9 @@ public abstract class HDTManager {
 	 */
 	public static HDT loadIndexedHDT(InputStream hdtFileName, ProgressListener listener, HDTOptions hdtFormat)
 			throws IOException {
-		return HDTManager.getInstance().doLoadIndexedHDT(hdtFileName, ProgressListener.ofNullable(listener),
-				HDTOptions.ofNullable(hdtFormat)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doLoadIndexedHDT(hdtFileName, ProgressListener.ofNullable(listener), HDTOptions.ofNullable(hdtFormat))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -543,7 +549,8 @@ public abstract class HDTManager {
 	 * @throws IOException when the file cannot be found
 	 */
 	public static HDT indexedHDT(HDT hdt, ProgressListener listener, HDTOptions options) throws IOException {
-		return HDTManager.getInstance().doIndexedHDT(hdt, ProgressListener.ofNullable(listener), options).getHdtSinge(true);
+		return HDTManager.getInstance().doIndexedHDT(hdt, ProgressListener.ofNullable(listener), options)
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -620,9 +627,10 @@ public abstract class HDTManager {
 	 */
 	public static HDT generateHDT(InputStream fileStream, String baseURI, String filename, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException, ParserException {
-		return HDTManager.getInstance().doGenerateHDT(fileStream, baseURI, RDFNotation.guess(filename),
-				CompressionType.guess(filename), HDTOptions.ofNullable(hdtFormat),
-				ProgressListener.ofNullable(listener)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doGenerateHDT(fileStream, baseURI, RDFNotation.guess(filename), CompressionType.guess(filename),
+						HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -681,8 +689,8 @@ public abstract class HDTManager {
 	 * @throws IOException     when the file cannot be found
 	 * @throws ParserException when the file cannot be parsed
 	 */
-	public static HDTResult generateHDTMultiple(Path rdfFileName, String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat,
-	                              ProgressListener listener) throws IOException, ParserException {
+	public static HDTResult generateHDTMultiple(Path rdfFileName, String baseURI, RDFNotation rdfNotation,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		return generateHDTMultiple(rdfFileName.toAbsolutePath().toString(), baseURI, rdfNotation, hdtFormat, listener);
 	}
 
@@ -700,8 +708,8 @@ public abstract class HDTManager {
 	 * @throws IOException     when the file cannot be found
 	 * @throws ParserException when the file cannot be parsed
 	 */
-	public static HDTResult generateHDTMultiple(String rdfFileName, String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat,
-	                              ProgressListener listener) throws IOException, ParserException {
+	public static HDTResult generateHDTMultiple(String rdfFileName, String baseURI, RDFNotation rdfNotation,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		return HDTManager.getInstance().doGenerateHDT(rdfFileName, baseURI, rdfNotation,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
 	}
@@ -720,7 +728,7 @@ public abstract class HDTManager {
 	 * @throws ParserException when the file cannot be parsed
 	 */
 	public static HDTResult generateHDTMultiple(Iterator<TripleString> iterator, String baseURI, HDTOptions hdtFormat,
-	                              ProgressListener listener) throws IOException, ParserException {
+			ProgressListener listener) throws IOException, ParserException {
 		return HDTManager.getInstance().doGenerateHDT(iterator, baseURI, HDTOptions.ofNullable(hdtFormat),
 				ProgressListener.ofNullable(listener));
 	}
@@ -739,8 +747,8 @@ public abstract class HDTManager {
 	 * @throws IOException     when the stream cannot be used
 	 * @throws ParserException when the RDF stream can't be parsed
 	 */
-	public static HDTResult generateHDTMultiple(InputStream fileStream, String baseURI, String filename, HDTOptions hdtFormat,
-	                              ProgressListener listener) throws IOException, ParserException {
+	public static HDTResult generateHDTMultiple(InputStream fileStream, String baseURI, String filename,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		return HDTManager.getInstance().doGenerateHDT(fileStream, baseURI, RDFNotation.guess(filename),
 				CompressionType.guess(filename), HDTOptions.ofNullable(hdtFormat),
 				ProgressListener.ofNullable(listener));
@@ -762,7 +770,7 @@ public abstract class HDTManager {
 	 * @throws ParserException when the RDF stream can't be parsed
 	 */
 	public static HDTResult generateHDTMultiple(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
-	                              CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
+			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		return HDTManager.getInstance().doGenerateHDT(fileStream, baseURI, rdfNotation, compressionType,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
@@ -782,8 +790,8 @@ public abstract class HDTManager {
 	 * @throws IOException     when the stream cannot be used
 	 * @throws ParserException when the RDF stream can't be parsed
 	 */
-	public static HDTResult generateHDTMultiple(InputStream fileStream, String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat,
-	                              ProgressListener listener) throws IOException, ParserException {
+	public static HDTResult generateHDTMultiple(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		return HDTManager.getInstance().doGenerateHDT(fileStream, baseURI, rdfNotation, CompressionType.NONE,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
 	}
@@ -848,9 +856,11 @@ public abstract class HDTManager {
 	 */
 	public static HDT generateHDTDisk(String rdfFileName, String baseURI, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException, ParserException {
-		return HDTManager.getInstance().doGenerateHDTDisk(rdfFileName, baseURI, RDFNotation.guess(rdfFileName),
-				CompressionType.guess(rdfFileName), HDTOptions.ofNullable(hdtFormat),
-				ProgressListener.ofNullable(listener)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doGenerateHDTDisk(rdfFileName, baseURI, RDFNotation.guess(rdfFileName),
+						CompressionType.guess(rdfFileName), HDTOptions.ofNullable(hdtFormat),
+						ProgressListener.ofNullable(listener))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -870,9 +880,10 @@ public abstract class HDTManager {
 	 */
 	public static HDT generateHDTDisk(InputStream fileStream, String baseURI, String filename, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException, ParserException {
-		return HDTManager.getInstance().doGenerateHDTDisk(fileStream, baseURI, RDFNotation.guess(filename),
-				CompressionType.guess(filename), HDTOptions.ofNullable(hdtFormat),
-				ProgressListener.ofNullable(listener)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doGenerateHDTDisk(fileStream, baseURI, RDFNotation.guess(filename), CompressionType.guess(filename),
+						HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -1012,8 +1023,9 @@ public abstract class HDTManager {
 	 */
 	public static HDT catHDT(List<String> hdtFileNames, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException {
-		return HDTManager.getInstance().doHDTCat(hdtFileNames, HDTOptions.ofNullable(hdtFormat),
-				ProgressListener.ofNullable(listener)).getHdtSinge(true);
+		return HDTManager.getInstance()
+				.doHDTCat(hdtFileNames, HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener))
+				.getHdtSinge(true);
 	}
 
 	/**
@@ -1185,7 +1197,7 @@ public abstract class HDTManager {
 	 * @throws ParserException when the file cannot be parsed
 	 */
 	public static HDT catTree(RDFFluxStop fluxStop, HDTSupplier supplier, Path rdfFileName, String baseURI,
-	                          RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		return catTree(fluxStop, supplier, rdfFileName.toAbsolutePath().toString(), baseURI, rdfNotation, hdtFormat,
 				listener);
@@ -1209,7 +1221,7 @@ public abstract class HDTManager {
 	 * @throws ParserException when the file cannot be parsed
 	 */
 	public static HDT catTree(RDFFluxStop fluxStop, HDTSupplier supplier, String rdfFileName, String baseURI,
-	                          RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		return HDTManager.getInstance().doHDTCatTree(fluxStop, supplier, rdfFileName, baseURI, rdfNotation,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener)).getHdtSinge(true);
@@ -1233,7 +1245,7 @@ public abstract class HDTManager {
 	 * @throws ParserException when the file cannot be parsed
 	 */
 	public static HDT catTree(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream rdfStream, String baseURI,
-	                          RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		return HDTManager.getInstance().doHDTCatTree(fluxStop, supplier, rdfStream, baseURI, rdfNotation,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener)).getHdtSinge(true);
@@ -1256,15 +1268,14 @@ public abstract class HDTManager {
 	 * @throws ParserException when the file cannot be parsed
 	 */
 	public static HDT catTree(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator,
-	                          String baseURI, HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
+			String baseURI, HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		return HDTManager.getInstance().doHDTCatTree(fluxStop, supplier, iterator, baseURI,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener)).getHdtSinge(true);
 	}
 
-
 	/**
-	 * Create HDT files from an RDF file in a tree, stop the chunk creation
-	 * with the fluxStop
+	 * Create HDT files from an RDF file in a tree, stop the chunk creation with
+	 * the fluxStop
 	 *
 	 * @param fluxStop    Flux stopper
 	 * @param supplier    HDT supplier to create initial HDT before cat
@@ -1279,16 +1290,16 @@ public abstract class HDTManager {
 	 * @throws IOException     when the file cannot be found
 	 * @throws ParserException when the file cannot be parsed
 	 */
-	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, Path rdfFileName, String baseURI,
-	                          RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, Path rdfFileName,
+			String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
-		return catTreeMultiple(fluxStop, supplier, rdfFileName.toAbsolutePath().toString(), baseURI, rdfNotation, hdtFormat,
-				listener);
+		return catTreeMultiple(fluxStop, supplier, rdfFileName.toAbsolutePath().toString(), baseURI, rdfNotation,
+				hdtFormat, listener);
 	}
 
 	/**
-	 * Create HDT files from an RDF file in a tree, stop the chunk creation
-	 * with the fluxStop
+	 * Create HDT files from an RDF file in a tree, stop the chunk creation with
+	 * the fluxStop
 	 *
 	 * @param fluxStop    Flux stopper
 	 * @param supplier    HDT supplier to create initial HDT before cat
@@ -1303,8 +1314,8 @@ public abstract class HDTManager {
 	 * @throws IOException     when the file cannot be found
 	 * @throws ParserException when the file cannot be parsed
 	 */
-	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, String rdfFileName, String baseURI,
-	                          RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, String rdfFileName,
+			String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		return HDTManager.getInstance().doHDTCatTree(fluxStop, supplier, rdfFileName, baseURI, rdfNotation,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
@@ -1327,8 +1338,8 @@ public abstract class HDTManager {
 	 * @throws IOException     when the file cannot be found
 	 * @throws ParserException when the file cannot be parsed
 	 */
-	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream rdfStream, String baseURI,
-	                          RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream rdfStream,
+			String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		return HDTManager.getInstance().doHDTCatTree(fluxStop, supplier, rdfStream, baseURI, rdfNotation,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
@@ -1351,7 +1362,7 @@ public abstract class HDTManager {
 	 * @throws ParserException when the file cannot be parsed
 	 */
 	public static HDTResult catTreeMultiple(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator,
-	                          String baseURI, HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
+			String baseURI, HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException {
 		return HDTManager.getInstance().doHDTCatTree(fluxStop, supplier, iterator, baseURI,
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
 	}
@@ -1359,12 +1370,14 @@ public abstract class HDTManager {
 	// Abstract methods for the current implementation
 	protected abstract HDTOptions doReadOptions(String file) throws IOException;
 
-	protected abstract HDTResult doLoadHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException;
+	protected abstract HDTResult doLoadHDT(String hdtFileName, ProgressListener listener, HDTOptions spec)
+			throws IOException;
 
 	protected abstract HDTResult doLoadHDT(InputStream hdtFile, ProgressListener listener, HDTOptions spec)
 			throws IOException;
 
-	protected abstract HDTResult doMapHDT(String hdtFileName, ProgressListener listener, HDTOptions spec) throws IOException;
+	protected abstract HDTResult doMapHDT(String hdtFileName, ProgressListener listener, HDTOptions spec)
+			throws IOException;
 
 	protected abstract HDTResult doLoadIndexedHDT(String hdtFileName, ProgressListener listener, HDTOptions spec)
 			throws IOException;
@@ -1395,8 +1408,8 @@ public abstract class HDTManager {
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException;
 
-	protected abstract HDTResult doGenerateHDTDisk(Iterator<TripleString> iterator, String baseURI, HDTOptions hdtFormat,
-			ProgressListener listener) throws IOException, ParserException;
+	protected abstract HDTResult doGenerateHDTDisk(Iterator<TripleString> iterator, String baseURI,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException;
 
 	protected abstract TripleWriter doGetHDTWriter(OutputStream out, String baseURI, HDTOptions hdtFormat)
 			throws IOException;
@@ -1404,8 +1417,8 @@ public abstract class HDTManager {
 	protected abstract TripleWriter doGetHDTWriter(String outFile, String baseURI, HDTOptions hdtFormat)
 			throws IOException;
 
-	protected abstract HDTResult doHDTCat(String location, String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat,
-			ProgressListener listener) throws IOException;
+	protected abstract HDTResult doHDTCat(String location, String hdtFileName1, String hdtFileName2,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException;
 
 	protected abstract HDTResult doHDTCat(List<String> hdtFileNames, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException;
@@ -1419,18 +1432,19 @@ public abstract class HDTManager {
 	protected abstract HDTResult doHDTDiff(String hdtFileName1, String hdtFileName2, HDTOptions hdtFormat,
 			ProgressListener listener) throws IOException;
 
-	protected abstract HDTResult doHDTDiffBit(String location, String hdtFileName, Bitmap deleteBitmap, HDTOptions hdtFormat,
-			ProgressListener listener) throws IOException;
+	protected abstract HDTResult doHDTDiffBit(String location, String hdtFileName, Bitmap deleteBitmap,
+			HDTOptions hdtFormat, ProgressListener listener) throws IOException;
 
-	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, String filename, String baseURI,
-			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, String filename,
+			String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException;
 
-	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream stream, String baseURI,
-			RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
+	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, InputStream stream,
+			String baseURI, RDFNotation rdfNotation, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException;
 
-	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier, Iterator<TripleString> iterator,
-			String baseURI, HDTOptions hdtFormat, ProgressListener listener) throws IOException, ParserException;
+	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier,
+			Iterator<TripleString> iterator, String baseURI, HDTOptions hdtFormat, ProgressListener listener)
+			throws IOException, ParserException;
 
 }

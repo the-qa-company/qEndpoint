@@ -40,7 +40,6 @@ import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -148,9 +147,7 @@ public class HDTManagerTest {
 		public static HDT combineHDTResult(HDTResult result, Path tempDir) throws IOException {
 			Path work = tempDir.resolve("work");
 
-			HDTOptions spec = HDTOptions.of(
-					HDTOptionsKeys.HDTCAT_LOCATION, work
-			);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.HDTCAT_LOCATION, work);
 
 			Path results = tempDir.resolve("hdts-res");
 
@@ -747,8 +744,8 @@ public class HDTManagerTest {
 					HDTOptions spec = this.spec.pushTop();
 					spec.set(HDTOptionsKeys.LOADER_CATTREE_MAX_FILES, maxFileCount);
 					spec.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, maxFileCount);
-					actual = HDTManager.catTreeMultiple(RDFFluxStop.sizeLimit(maxSize / maxFileCount * 3 / 5), HDTSupplier.memory(),
-							genActual.getStream(), HDTTestUtils.BASE_URI,
+					actual = HDTManager.catTreeMultiple(RDFFluxStop.sizeLimit(maxSize / maxFileCount * 3 / 5),
+							HDTSupplier.memory(), genActual.getStream(), HDTTestUtils.BASE_URI,
 							quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec, quiet ? null : this);
 				} finally {
 					if (actual == null) {
@@ -767,11 +764,12 @@ public class HDTManagerTest {
 				assertNotNull(expected);
 				assertNotNull(actual);
 
-				assertTrue("not enough HDTs",actual.getHdtCount() > 1);
+				assertTrue("not enough HDTs", actual.getHdtCount() >= 1);
 				assertTrue("too much HDTs", actual.getHdtCount() <= maxFileCount);
 
 				try (HDT actualHDT = combineHDTResult(actual, tempDir.newFolder().toPath())) {
-					assertEqualsHDT(expected, actualHDT); // -1 for the original size
+					assertEqualsHDT(expected, actualHDT); // -1 for the original
+															// size
 				}
 				// ignored by hdtcat
 			} finally {

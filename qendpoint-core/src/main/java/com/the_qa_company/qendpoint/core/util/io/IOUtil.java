@@ -68,9 +68,9 @@ public class IOUtil {
 	private IOUtil() {
 	}
 
-
 	/**
 	 * Get a unique file name inside a path, the name will follow the pattern:
+	 *
 	 * <pre>
 	 *     prefix suffix
 	 *     prefix_1 suffix
@@ -78,6 +78,7 @@ public class IOUtil {
 	 *     prefix_3 suffix
 	 *     ...
 	 * </pre>
+	 *
 	 * @param parent parent path
 	 * @param prefix start of the name
 	 * @param suffix end of the name
@@ -92,6 +93,7 @@ public class IOUtil {
 		}
 		return resolve;
 	}
+
 	/**
 	 * print a path in the standard output
 	 *
