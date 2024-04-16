@@ -84,7 +84,7 @@ public class IOUtil {
 	 * @param suffix end of the name
 	 * @return unique path
 	 */
-	public static Path getUniqueNamePath(Path parent, String prefix, String suffix) {
+	public static synchronized Path getUniqueNamePath(Path parent, String prefix, String suffix) {
 		long id = 0;
 
 		Path resolve;
