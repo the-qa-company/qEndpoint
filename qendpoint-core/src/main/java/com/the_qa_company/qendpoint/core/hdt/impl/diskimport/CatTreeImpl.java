@@ -378,7 +378,7 @@ public class CatTreeImpl implements Closeable {
 
 						int idx = 0;
 						for (HDTFile file : files) {
-							Path target = futureHDTLocation.resolveSibling(futureHDTLocation.getFileName() + "." + idx);
+							Path target = futureHDTLocation.resolveSibling(futureHDTLocation.getFileName() + "." + idx + ".hdt");
 							Files.move(file.hdtFile, target, StandardCopyOption.REPLACE_EXISTING);
 							results.add(new MapOnCallHDT(target));
 							idx++;

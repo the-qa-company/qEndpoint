@@ -33,8 +33,6 @@ import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
-import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
-import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
@@ -155,14 +153,14 @@ public class HDTManagerTest {
 
 			List<Path> paths = new ArrayList<>();
 			for (HDT hdt : result.getHdts()) {
-				CloseSuppressPath name = CloseSuppressPath.of(IOUtil.getUniqueNamePath(results, "hdtresult", ".hdt"));
+				Path name = IOUtil.getUniqueNamePath(results, "hdtresult", ".hdt");
 				hdt.saveToHDT(name);
 				paths.add(name);
 			}
 
 			HDT hdt = HDTManager.catHDTPath(paths, spec, ProgressListener.ignore());
 			try {
-				Closer.closeSingle(paths);
+				IOUtil.deleteDirRecurse(tempDir);
 			} catch (IOException e) {
 				try {
 					hdt.close();
@@ -768,8 +766,7 @@ public class HDTManagerTest {
 				assertTrue("too much HDTs", actual.getHdtCount() <= maxFileCount);
 
 				try (HDT actualHDT = combineHDTResult(actual, tempDir.newFolder().toPath())) {
-					assertEqualsHDT(expected, actualHDT); // -1 for the original
-															// size
+					assertEqualsHDT(expected, actualHDT);
 				}
 				// ignored by hdtcat
 			} finally {
