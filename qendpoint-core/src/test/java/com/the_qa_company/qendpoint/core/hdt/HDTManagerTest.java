@@ -57,6 +57,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -162,6 +163,8 @@ public class HDTManagerTest {
 			HDT hdtret = HDTManager.catHDTPath(paths, spec, ProgressListener.ignore());
 			try {
 				PathUtils.deleteDirectory(tempDir);
+			} catch (AccessDeniedException e) {
+				e.printStackTrace(); // wtf?
 			} catch (Throwable e) {
 				try {
 					hdtret.close();
