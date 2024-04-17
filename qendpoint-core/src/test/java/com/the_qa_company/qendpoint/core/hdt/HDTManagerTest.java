@@ -142,7 +142,8 @@ public class HDTManagerTest {
 			// System.out.println("[" + level + "] " + message);
 		}
 
-		public static HDT combineHDTResult(HDTResult result, Path tempDir) throws IOException {
+		public static HDT combineHDTResult(HDTResult result, Path root) throws IOException {
+			Path tempDir = root.resolve("tempdir");
 			Path work = tempDir.resolve("work");
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.HDTCAT_LOCATION, work);
@@ -158,18 +159,18 @@ public class HDTManagerTest {
 				paths.add(name);
 			}
 
-			HDT hdt = HDTManager.catHDTPath(paths, spec, ProgressListener.ignore());
+			HDT hdtret = HDTManager.catHDTPath(paths, spec, ProgressListener.ignore());
 			try {
-				IOUtil.deleteDirRecurse(tempDir);
-			} catch (IOException e) {
+				PathUtils.deleteDirectory(tempDir);
+			} catch (Throwable e) {
 				try {
-					hdt.close();
-				} catch (Throwable t2) {
-					e.addSuppressed(t2);
+					hdtret.close();
+				} catch (Throwable t) {
+					e.addSuppressed(t);
 				}
 				throw e;
 			}
-			return hdt;
+			return hdtret;
 		}
 
 		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
@@ -737,11 +738,13 @@ public class HDTManagerTest {
 			HDTResult actual = null;
 			HDT expected = null;
 			final int maxFileCount = 10;
+			Path root = tempDir.newFolder().toPath();
 			try {
 				try {
 					HDTOptions spec = this.spec.pushTop();
 					spec.set(HDTOptionsKeys.LOADER_CATTREE_MAX_FILES, maxFileCount);
 					spec.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, maxFileCount);
+					spec.set(HDTOptionsKeys.HDTCAT_LOCATION, root);
 					actual = HDTManager.catTreeMultiple(RDFFluxStop.sizeLimit(maxSize / maxFileCount * 3 / 5),
 							HDTSupplier.memory(), genActual.getStream(), HDTTestUtils.BASE_URI,
 							quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec, quiet ? null : this);
@@ -765,7 +768,7 @@ public class HDTManagerTest {
 				assertTrue("not enough HDTs", actual.getHdtCount() >= 1);
 				assertTrue("too much HDTs", actual.getHdtCount() <= maxFileCount);
 
-				try (HDT actualHDT = combineHDTResult(actual, tempDir.newFolder().toPath())) {
+				try (HDT actualHDT = combineHDTResult(actual, root)) {
 					assertEqualsHDT(expected, actualHDT);
 				}
 				// ignored by hdtcat
