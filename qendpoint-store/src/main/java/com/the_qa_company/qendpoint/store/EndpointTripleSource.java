@@ -102,44 +102,66 @@ public class EndpointTripleSource implements TripleSource {
 		boolean graph = endpoint.getHdt().getDictionary().supportGraphs();
 
 		// convert uris into ids if needed
-		Resource newSubj;
-		IRI newPred;
-		Value newObj;
-		Resource[] newContextes;
+
 		long subjectID = this.endpoint.getHdtConverter().subjectToID(subj);
 		long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
 		long objectID = this.endpoint.getHdtConverter().objectToID(obj);
 		long[] graphID;
 
-		if (subjectID == 0 || subjectID == -1) {
-			newSubj = subj;
-		} else {
-			newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
-		}
-		if (predicateID == 0 || predicateID == -1) {
-			newPred = pred;
-		} else {
-			newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
-		}
-		if (objectID == 0 || objectID == -1) {
-			newObj = obj;
-		} else {
-			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
-		}
-
 		if (graph) {
 			graphID = new long[contexts.length];
-			newContextes = this.endpoint.getHdtConverter().graphIdToIRI(contexts, graphID);
 		} else {
 			graphID = null;
-			newContextes = contexts;
 		}
 
 		// logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
 		// check if we need to search over the delta and if yes, search
-		CloseableIteration<? extends Statement> repositoryResult;
+		CloseableIteration<? extends Statement> repositoryResult = innerGetStatementsDelta(statementOrder, subj, pred,
+				obj, contexts, subjectID, predicateID, objectID, graph, graphID);
+
+		// iterate over the HDT file
+		IteratorTripleID iterator = innerGetStatementsHDT(statementOrder, subj, pred, obj, contexts, subjectID,
+				predicateID, objectID, graph, graphID);
+
+		// iterate over hdt result, delete the triples marked as deleted and add
+		// the triples from the delta
+		return new EndpointStoreTripleIterator(endpointStoreConnection, this, iterator, repositoryResult, subjectID,
+				predicateID, objectID, graph, graphID);
+	}
+
+	private CloseableIteration<? extends Statement> innerGetStatementsDelta(StatementOrder statementOrder,
+			Resource subj, IRI pred, Value obj, Resource[] contexts, long subjectID, long predicateID, long objectID,
+			boolean graph, long[] graphID) {
+		CloseableIteration<? extends Statement> repositoryResult11;
 		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
+
+			Resource newSubj;
+			IRI newPred;
+			Value newObj;
+			Resource[] newContextes;
+			if (subjectID == 0 || subjectID == -1) {
+				newSubj = subj;
+			} else {
+				newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
+			}
+			if (predicateID == 0 || predicateID == -1) {
+				newPred = pred;
+			} else {
+				newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
+			}
+			if (objectID == 0 || objectID == -1) {
+				newObj = obj;
+			} else {
+				newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
+			}
+
+			if (graph) {
+				newContextes = this.endpoint.getHdtConverter().graphIdToIRI(contexts, graphID);
+			} else {
+				newContextes = contexts;
+			}
+
 			if (statementOrder != null) {
 				throw new UnsupportedOperationException(
 						"Statement ordering is not supported when searching over the native store");
@@ -153,19 +175,23 @@ public class EndpointTripleSource implements TripleSource {
 						.getStatements(newSubj, newPred, newObj, false, newContextes);
 				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection.getConnB_read()
 						.getStatements(newSubj, newPred, newObj, false, newContextes);
-				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
+				repositoryResult11 = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
 
 			} else {
 				logger.debug("Query only one RDF4j stores!");
-				repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
+				repositoryResult11 = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
 						newPred, newObj, false, newContextes);
 			}
 		} else {
 			logger.debug("Not searching over native store");
-			repositoryResult = new EmptyIteration<>();
+			repositoryResult11 = new EmptyIteration<>();
 		}
+		CloseableIteration<? extends Statement> repositoryResult = repositoryResult11;
+		return repositoryResult;
+	}
 
-		// iterate over the HDT file
+	private IteratorTripleID innerGetStatementsHDT(StatementOrder statementOrder, Resource subj, IRI pred, Value obj,
+			Resource[] contexts, long subjectID, long predicateID, long objectID, boolean graph, long[] graphID) {
 		IteratorTripleID iterator;
 		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
 			// logger.debug("Searching over HDT {} {} {}", subjectID,
@@ -173,19 +199,7 @@ public class EndpointTripleSource implements TripleSource {
 			TripleID t = new TripleID(subjectID, predicateID, objectID);
 
 			if (graph && contexts.length > 1) {
-				if (statementOrder != null) {
-					int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred,
-							obj, t);
-
-					// search with the ID to check if the triples has been
-					// deleted
-					iterator = new GraphFilteringTripleId(
-							this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder), graphID);
-				} else {
-					// search with the ID to check if the triples has been
-					// deleted
-					iterator = new GraphFilteringTripleId(this.endpoint.getHdt().getTriples().search(t), graphID);
-				}
+				iterator = innerGetStatementsMultipleContexts(statementOrder, subj, pred, obj, t, graphID);
 			} else {
 				if (graph && contexts.length == 1) {
 					t.setGraph(graphID[0]);
@@ -207,10 +221,26 @@ public class EndpointTripleSource implements TripleSource {
 		} else {// no need to search over hdt
 			iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
 		}
+		return iterator;
+	}
 
-		// iterate over hdt result, delete the triples marked as deleted and add
-		// the triples from the delta
-		return new EndpointStoreTripleIterator(endpointStoreConnection, this, iterator, repositoryResult);
+	private @NotNull IteratorTripleID innerGetStatementsMultipleContexts(StatementOrder statementOrder, Resource subj,
+			IRI pred, Value obj, TripleID t, long[] graphID) {
+		IteratorTripleID iterator;
+		if (statementOrder != null) {
+			int indexMaskMatchingStatementOrder = getIndexMaskMatchingStatementOrder(statementOrder, subj, pred, obj,
+					t);
+
+			// search with the ID to check if the triples has been
+			// deleted
+			iterator = new GraphFilteringTripleId(
+					this.endpoint.getHdt().getTriples().search(t, indexMaskMatchingStatementOrder), graphID);
+		} else {
+			// search with the ID to check if the triples has been
+			// deleted
+			iterator = new GraphFilteringTripleId(this.endpoint.getHdt().getTriples().search(t), graphID);
+		}
+		return iterator;
 	}
 
 	// this function determines if a triple pattern should be searched over the
