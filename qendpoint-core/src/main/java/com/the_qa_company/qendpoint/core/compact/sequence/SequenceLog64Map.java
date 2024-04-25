@@ -53,7 +53,10 @@ import java.util.Iterator;
  */
 public class SequenceLog64Map implements Sequence, Closeable {
 	private static final byte W = 64;
-	private static final long LONGS_PER_BUFFER = 128 * 1024 * 1024; // 128*8 =
+	public static final int W_LEFT_SHIFT = (W << 1);
+	private static final int LONGS_PER_BUFFER = 128 * 1024 * 1024; // 128*8 =
+	private static final int LOG2_LONGS_PER_BUFFER = Long.numberOfTrailingZeros(LONGS_PER_BUFFER);
+
 	// 1Gb per
 	// chunk.
 	private CloseMappedByteBuffer[] buffers;
@@ -62,6 +65,8 @@ public class SequenceLog64Map implements Sequence, Closeable {
 	private final long numentries;
 	private long lastword;
 	private final long numwords;
+	private final int W_numbits;
+	private final int W_LEFT_SHIFT_MINUS_NUMBITS;
 
 	public SequenceLog64Map(File f) throws IOException {
 		// Read from the beginning of the file
@@ -80,6 +85,8 @@ public class SequenceLog64Map implements Sequence, Closeable {
 			throw new IllegalFormatException("Trying to read a LogArray but the data is not LogArray");
 		}
 		numbits = crcin.read();
+		W_numbits = W - numbits;
+		W_LEFT_SHIFT_MINUS_NUMBITS = W_LEFT_SHIFT - numbits;
 		numentries = VByte.decode(crcin);
 
 		if (!crcin.readCRCAndCheck()) {
@@ -111,6 +118,8 @@ public class SequenceLog64Map implements Sequence, Closeable {
 
 	public SequenceLog64Map(int numbits, long numentries, File f) throws IOException {
 		this.numbits = numbits;
+		this.W_numbits = W - numbits;
+		this.W_LEFT_SHIFT_MINUS_NUMBITS = W_LEFT_SHIFT - numbits;
 		this.numentries = numentries;
 		this.numwords = SequenceLog64.numWordsFor(numbits, numentries);
 
@@ -178,13 +187,15 @@ public class SequenceLog64Map implements Sequence, Closeable {
 			return lastword;
 		}
 
-		return buffers[(int) (w / LONGS_PER_BUFFER)].getLong((int) ((w % LONGS_PER_BUFFER) * 8));
+		return buffers[(int) (w >> LOG2_LONGS_PER_BUFFER)].getLong((int) ((w & (LONGS_PER_BUFFER - 1)) << 3));
+//		return buffers[(int) (w / LONGS_PER_BUFFER)].getLong((int) ((w % LONGS_PER_BUFFER) * 8));
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * @see hdt.triples.array.Stream#get(long)
 	 */
+
 	@Override
 	public long get(long index) {
 		if (index < 0 || index >= numentries) {
