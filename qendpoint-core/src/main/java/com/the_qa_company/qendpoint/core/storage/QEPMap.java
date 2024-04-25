@@ -282,10 +282,12 @@ public class QEPMap implements Closeable {
 
 						for (int i = 0; i < index1Size.length; i++) {
 							index1Size[i] = header.getLong(shift);
+							index1Location[i] = shift;
 							shift += Long.BYTES;
 						}
 						for (int i = 0; i < index2Size.length; i++) {
 							index2Size[i] = header.getLong(shift);
+							index2Location[i] = shift;
 							shift += Long.BYTES;
 						}
 
@@ -721,6 +723,7 @@ public class QEPMap implements Closeable {
 	 * @throws IOException file state error
 	 */
 	private boolean checkRegen(TripleComponentRole role, boolean created) throws IOException {
+		// predicate doesn't have 2 maps
 		Path map1OriginPath = getMap1OriginPath(role);
 		Path map1DestinationPath = getMap1DestinationPath(role);
 		Path map2OriginPath = getMap2OriginPath(role);
@@ -728,12 +731,14 @@ public class QEPMap implements Closeable {
 		if (created) {
 			checkNotExists(map1OriginPath);
 			checkNotExists(map1DestinationPath);
-			checkNotExists(map2OriginPath);
-			checkNotExists(map2DestinationPath);
+			if (role != PREDICATE) {
+				checkNotExists(map2OriginPath);
+				checkNotExists(map2DestinationPath);
+			}
 			return true;
 		} else {
 			boolean regen = !(Files.exists(map1OriginPath) && Files.exists(map1DestinationPath)
-					&& Files.exists(map2OriginPath) && Files.exists(map2DestinationPath));
+					&& (role == PREDICATE || (Files.exists(map2OriginPath) && Files.exists(map2DestinationPath))));
 			if (regen) {
 				boolean warn = false;
 				if (Files.exists(map1OriginPath)) {
@@ -746,15 +751,17 @@ public class QEPMap implements Closeable {
 							map1DestinationPath);
 					warn = true;
 				}
-				if (Files.exists(map2OriginPath)) {
-					logger.warn("{}: map2OriginPath[{}] is present, it will be removed! {}", this, role,
-							map2OriginPath);
-					warn = true;
-				}
-				if (Files.exists(map2DestinationPath)) {
-					logger.warn("{}: map2DestinationPath[{}] is present, it will be removed! {}", this, role,
-							map2DestinationPath);
-					warn = true;
+				if (role != PREDICATE) {
+					if (Files.exists(map2OriginPath)) {
+						logger.warn("{}: map2OriginPath[{}] is present, it will be removed! {}", this, role,
+								map2OriginPath);
+						warn = true;
+					}
+					if (Files.exists(map2DestinationPath)) {
+						logger.warn("{}: map2DestinationPath[{}] is present, it will be removed! {}", this, role,
+								map2DestinationPath);
+						warn = true;
+					}
 				}
 				if (warn) {
 					logger.warn("{}: has a missing file from the grid", this);
