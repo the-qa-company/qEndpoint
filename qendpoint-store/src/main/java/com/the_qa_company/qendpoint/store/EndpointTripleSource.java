@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.sail.SailException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.OPS;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.OSP;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.POS;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.PSO;
+import static com.the_qa_company.qendpoint.core.enums.TripleComponentOrder.SOP;
 
 // this is the main class telling how, given a triple pattern, to find the results in HDT and the current stores
 public class EndpointTripleSource implements TripleSource {
@@ -275,15 +282,40 @@ public class EndpointTripleSource implements TripleSource {
 			}
 		}
 
-		Optional<TripleComponentOrder> first = tripleComponentOrder.stream()
+		List<TripleComponentOrder> list = tripleComponentOrder.stream()
 				.filter(o -> getStatementOrder(o, subj != null, pred != null, obj != null).contains(statementOrder))
-				.findFirst();
+				.toList();
 
-		if (first.isEmpty()) {
+		System.out.println("getIndexMaskMatchingStatementOrder: " + Arrays.toString(list.toArray()));
+
+		if (list.contains(SOP)) {
+			System.out.println(statementOrder + " " + "SOP");
+			return SOP.mask;
+		}
+		if (list.contains(POS)) {
+			System.out.println(statementOrder + " " + "POS");
+			return POS.mask;
+		}
+		if (list.contains(OPS)) {
+			System.out.println(statementOrder + " " + "OPS");
+			return OPS.mask;
+		}
+		if (list.contains(OSP)) {
+			System.out.println(statementOrder + " " + "OSP");
+			return OSP.mask;
+		}
+
+		if (list.contains(PSO)) {
+			System.out.println(statementOrder + " " + "PSO");
+			return PSO.mask;
+		}
+
+		if (list.isEmpty()) {
 			throw new AssertionError(
 					"Statement order " + statementOrder + " not supported for triple pattern " + t.getPatternString());
 		}
-		return first.get().mask;
+
+		return list.get(0).mask;
 	}
 
 	public static Set<StatementOrder> getStatementOrder(TripleComponentOrder tripleComponentOrder, boolean subject,

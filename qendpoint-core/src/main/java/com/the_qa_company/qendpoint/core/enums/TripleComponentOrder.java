@@ -107,11 +107,34 @@ public enum TripleComponentOrder {
 	 * @return find value, null for no matching value
 	 */
 	public static <T> T fetchBestForCfg(int flags, Map<? extends TripleComponentOrder, T> map) {
+		List<? extends TripleComponentOrder> tripleComponentOrders = fetchAllBestForCfg(flags, map);
+//		tripleComponentOrders.sort(Comparator.comparingInt((TripleComponentOrder o) -> o.ordinal).reversed());
+//		 tripleComponentOrders = Collections.reve
+
+//		System.out.println(Arrays.toString(tripleComponentOrders.toArray()));
+
+		if (tripleComponentOrders.contains(SOP)) {
+			return map.get(SOP);
+		}
+		if (tripleComponentOrders.contains(OPS)) {
+			return map.get(OPS);
+		}
+		if (tripleComponentOrders.contains(OSP)) {
+			return map.get(OSP);
+		}
+		if (tripleComponentOrders.contains(POS)) {
+			return map.get(POS);
+		}
+		if (tripleComponentOrders.contains(PSO)) {
+			return map.get(PSO);
+		}
+
 		for (Map.Entry<? extends TripleComponentOrder, T> e : map.entrySet()) {
 			if ((e.getKey().mask & flags) != 0) {
 				return e.getValue();
 			}
 		}
+
 		return null;
 	}
 
