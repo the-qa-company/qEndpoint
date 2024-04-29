@@ -187,6 +187,7 @@ public class QEPMap implements Closeable {
 	 */
 	public void sync() throws IOException {
 		Path mapHeaderPath = getMapHeaderPath();
+		logger.info("Sync QEPMap {}", uid);
 		try {
 			close();
 			// the CRC used to check the header

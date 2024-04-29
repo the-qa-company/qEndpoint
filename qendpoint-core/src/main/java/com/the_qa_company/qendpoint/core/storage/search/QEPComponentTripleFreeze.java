@@ -42,11 +42,6 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 	}
 
 	@Override
-	public long getId() {
-		return wrapper.getId();
-	}
-
-	@Override
 	public int getDatasetId() {
 		return wrapper.getDatasetId();
 	}
@@ -70,11 +65,6 @@ public class QEPComponentTripleFreeze implements QEPComponentTriple {
 		if (this.object == null) {
 			wrapper.setObject(object);
 		}
-	}
-
-	@Override
-	public void setId(long id) {
-		wrapper.setId(id);
 	}
 
 	@Override

@@ -31,4 +31,9 @@ public interface QEPDatasetContext extends AutoCloseableGeneric<QEPCoreException
 
 	@Override
 	void close();
+
+	/**
+	 * @return if the context has a deletion
+	 */
+	boolean hasDeletions();
 }
