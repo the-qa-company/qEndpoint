@@ -98,6 +98,8 @@ public enum TripleComponentOrder {
 		return ret;
 	}
 
+	public static TripleComponentOrder preference;
+
 	/**
 	 * Search for an acceptable value in a map of orders
 	 *
@@ -112,6 +114,13 @@ public enum TripleComponentOrder {
 //		 tripleComponentOrders = Collections.reve
 
 //		System.out.println(Arrays.toString(tripleComponentOrders.toArray()));
+
+		if (preference != null) {
+			if (tripleComponentOrders.contains(preference)) {
+				return map.get(preference);
+			}
+			throw new IllegalStateException("Preference not found in the list of acceptable orders");
+		}
 
 		if (tripleComponentOrders.contains(SOP)) {
 			return map.get(SOP);

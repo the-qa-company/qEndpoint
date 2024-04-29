@@ -93,6 +93,7 @@ import java.util.stream.Collectors;
  */
 public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 	private static final Logger log = LoggerFactory.getLogger(BitmapTriples.class);
+	public static boolean useDefaultOrder = true;
 
 	protected TripleComponentOrder order;
 
@@ -317,7 +318,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 		TripleOrderConvert.swapComponentOrder(reorderedPat, TripleComponentOrder.SPO, order);
 		int flags = reorderedPat.getPatternOrderFlags();
 
-		if ((flags & searchMask & this.order.mask) != 0) {
+		if (useDefaultOrder && (flags & searchMask & this.order.mask) != 0) {
 			// we can use the default order, so we use it
 			return new BitmapTriplesIterator(this, pattern);
 		}

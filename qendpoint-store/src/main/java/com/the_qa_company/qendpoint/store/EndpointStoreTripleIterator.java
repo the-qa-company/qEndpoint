@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class EndpointStoreTripleIterator implements CloseableIteration<Statement>, IndexReportingIterator {
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStoreTripleIterator.class);
 
+	public static boolean cache = true;
+
 	private final AtomicBoolean closed = new AtomicBoolean();
 	private final EndpointStore endpoint;
 	private final EndpointStoreConnection connection;
@@ -74,6 +76,8 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		} else {
 			object = null;
 		}
+
+		System.out.println(getIndexName());
 
 	}
 
@@ -169,12 +173,14 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		Value object;
 		if (this.object != null) {
 			object = this.object;
-		} else if (tripleID.getObject() == objectID_cache) {
+		} else if (cache && tripleID.getObject() == objectID_cache) {
 			object = objectCache;
 		} else {
 			object = endpoint.getHdtConverter().idToObjectHDTResource(tripleID.getObject());
-			this.objectID_cache = tripleID.getObject();
-			this.objectCache = object;
+			if (cache) {
+				this.objectID_cache = tripleID.getObject();
+				this.objectCache = object;
+			}
 		}
 		return object;
 	}

@@ -319,24 +319,18 @@ public class EndpointTripleSource implements TripleSource {
 		System.out.println("getIndexMaskMatchingStatementOrder: " + Arrays.toString(list.toArray()));
 
 		if (list.contains(SOP)) {
-			System.out.println(statementOrder + " " + "SOP");
 			return SOP.mask;
 		}
-		if (list.contains(POS)) {
-			System.out.println(statementOrder + " " + "POS");
-			return POS.mask;
-		}
 		if (list.contains(OPS)) {
-			System.out.println(statementOrder + " " + "OPS");
 			return OPS.mask;
 		}
 		if (list.contains(OSP)) {
-			System.out.println(statementOrder + " " + "OSP");
 			return OSP.mask;
 		}
-
+		if (list.contains(POS)) {
+			return POS.mask;
+		}
 		if (list.contains(PSO)) {
-			System.out.println(statementOrder + " " + "PSO");
 			return PSO.mask;
 		}
 
