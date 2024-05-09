@@ -30,13 +30,13 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 3)
+@Warmup(iterations = 10)
 @BenchmarkMode({ Mode.AverageTime })
-@Fork(value = 1, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:+EnableDynamicAgentLoading" })
+@Fork(value = 3, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:+EnableDynamicAgentLoading" })
 //@Fork(value = 1, jvmArgs = { "-Xms32G", "-Xmx32G", "-XX:+EnableDynamicAgentLoading" })
 //@Fork(value = 1, jvmArgs = { "-Xms96G", "-Xmx96G", "-XX:+UnlockExperimentalVMOptions","-XX:+UseEpsilonGC", "-XX:+AlwaysPreTouch" })
 //@Fork(value = 1, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:StartFlightRecording=delay=15s,duration=120s,filename=recording.jfr,settings=profile", "-XX:FlightRecorderOptions=samplethreads=true,stackdepth=2048", "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints"})
-@Measurement(iterations = 3)
+@Measurement(iterations = 10)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class WikiDataDifferentIndexesBenchmark {
 

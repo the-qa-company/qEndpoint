@@ -145,12 +145,12 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		Resource subject;
 		if (this.subject != null) {
 			subject = this.subject;
-//		} else if (tripleID.getSubject() == subjectID_cache) {
-//			subject = subjectCache;
+		} else if (tripleID.getSubject() == subjectID_cache) {
+			subject = subjectCache;
 		} else {
 			subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
-//			this.subjectID_cache = tripleID.getSubject();
-//			this.subjectCache = subject;
+			this.subjectID_cache = tripleID.getSubject();
+			this.subjectCache = subject;
 		}
 		return subject;
 	}

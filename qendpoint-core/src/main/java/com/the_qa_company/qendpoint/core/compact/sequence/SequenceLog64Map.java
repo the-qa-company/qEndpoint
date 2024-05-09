@@ -201,20 +201,27 @@ public class SequenceLog64Map implements Sequence, Closeable {
 		if (index < 0 || index >= numentries) {
 			throw new IndexOutOfBoundsException(index + " < 0 || " + index + ">= " + numentries);
 		}
-		if (numbits == 0)
+		if (numbits == 0) {
 			return 0;
+		}
 
 		long bitPos = index * numbits;
-		long i = bitPos / W;
 		int j = (int) (bitPos % W);
-		long result;
 		if (j + numbits <= W) {
-			result = (getWord(i) << (W - j - numbits)) >>> (W - numbits);
+			return extracted1(bitPos, j);
 		} else {
-			result = getWord(i) >>> j;
-			result = result | (getWord(i + 1) << ((W << 1) - j - numbits)) >>> (W - numbits);
+			return extracted(bitPos, j);
 		}
-		return result;
+	}
+
+	private long extracted(long bitPos, int j) {
+		long i = bitPos / W;
+		return getWord(i) >>> j | (getWord(i + 1) << (W_LEFT_SHIFT_MINUS_NUMBITS - j)) >>> W_numbits;
+	}
+
+	private long extracted1(long bitPos, int j) {
+		long i = bitPos / W;
+		return (getWord(i) << (W_numbits - j)) >>> (W_numbits);
 	}
 
 	/*
