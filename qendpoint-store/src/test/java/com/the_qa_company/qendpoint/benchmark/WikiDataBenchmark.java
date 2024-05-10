@@ -34,15 +34,16 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 10)
+@Warmup(iterations = 0)
 @BenchmarkMode({ Mode.AverageTime })
 //@Fork(value = 1, jvmArgs = { "-Xms96G", "-Xmx96G", "-XX:+UnlockExperimentalVMOptions","-XX:+UseEpsilonGC", "-XX:+AlwaysPreTouch" })
-//@Fork(value = 1, jvmArgs = { "-Xms32G", "-Xmx32G", "-XX:+AlwaysPreTouch" })
-@Fork(value = 1, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:+AlwaysPreTouch" })
+@Fork(value = 1, jvmArgs = { "-Xms32G", "-Xmx32G", "-XX:+AlwaysPreTouch" })
+//@Fork(value = 1, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:+AlwaysPreTouch" })
 //@Fork(value = 3, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:+AlwaysPreTouch", "-XX:+PrintCompilation","-XX:+UnlockDiagnosticVMOptions","-XX:+PrintInlining" })
 //@Fork(value = 3, jvmArgs = { "-Xms4G", "-Xmx4G", "-XX:+EnableDynamicAgentLoading", "-XX:+AlwaysPreTouch", "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints", "-XX:FlightRecorderOptions=stackdepth=2048" })
 //@Fork(value = 1, jvmArgs = { "-Xms32G", "-Xmx32G", "-XX:+EnableDynamicAgentLoading", "-XX:+AlwaysPreTouch","-XX:StartFlightRecording=delay=15s,dumponexit=true,filename=recording.jfr,method-profiling=max","-XX:FlightRecorderOptions=stackdepth=2048", "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints" })
-@Measurement(iterations = 120, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+//@Measurement(iterations = 1, time = 3, timeUnit = TimeUnit.MINUTES)
+@Measurement(iterations = 10)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class WikiDataBenchmark {
 
@@ -76,24 +77,24 @@ public class WikiDataBenchmark {
 		endpointStore = null;
 	}
 
-    public static void main(String[] args) throws IOException {
-        Path dir = Path.of("/Users/havardottestad/Documents/Programming/qEndpoint2/qendpoint-store/wdbench-indexes");
-        System.out.println("Loading from: " + dir);
+	public static void main(String[] args) throws IOException {
+		Path dir = Path.of("/Users/havardottestad/Documents/Programming/qEndpoint2/qendpoint-store/wdbench-indexes");
+		System.out.println("Loading from: " + dir);
 
-        WikiDataBenchmark wikiDataBypassRDF4JBenchmark = new WikiDataBenchmark();
-        HDTOptions options = HDTOptions.of(
-                // disable the default index (to use the custom indexes)
-                HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true,
-                // set the custom indexes we want
-                HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "sop,ops,osp,pso,pos");
+		WikiDataBenchmark wikiDataBypassRDF4JBenchmark = new WikiDataBenchmark();
+		HDTOptions options = HDTOptions.of(
+				// disable the default index (to use the custom indexes)
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true,
+				// set the custom indexes we want
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "sop,ops,osp,pso,pos");
 
-        wikiDataBypassRDF4JBenchmark.endpointStore = new SailRepository(new EndpointStore(new EndpointFiles(dir, "wdbench.hdt"), options));
-        wikiDataBypassRDF4JBenchmark.endpointStore.init();
+		wikiDataBypassRDF4JBenchmark.endpointStore = new SailRepository(
+				new EndpointStore(new EndpointFiles(dir, "wdbench.hdt"), options));
+		wikiDataBypassRDF4JBenchmark.endpointStore.init();
 
-
-        wikiDataBypassRDF4JBenchmark.testCountSimpleJoin2();
-        wikiDataBypassRDF4JBenchmark.tearDown();
-    }
+		wikiDataBypassRDF4JBenchmark.testCountSimpleJoin2();
+		wikiDataBypassRDF4JBenchmark.tearDown();
+	}
 
 	@Benchmark
 	public long testCountSimpleJoin() {
