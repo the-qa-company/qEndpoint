@@ -14,11 +14,10 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11UpdateComplianceTest;
-import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +32,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public class ComplianceTest {
 	private static final Logger logger = LoggerFactory.getLogger(ComplianceTest.class);
+
+	@TempDir
+	static Path tempDir;
 
 	public static class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 
@@ -69,9 +72,6 @@ public class ComplianceTest {
 			this.setIgnoredTests(testToIgnore);
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		EndpointStore endpoint;
 		File nativeStore;
 		File hdtStore;
@@ -88,15 +88,20 @@ public class ComplianceTest {
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			nativeStore = tempDir.newFolder();
-			hdtStore = tempDir.newFolder();
+			Path localTemp = tempDir.resolve(UUID.randomUUID().toString());
+			Files.createDirectories(localTemp);
+
+			nativeStore = localTemp.resolve("native").toFile();
+			Files.createDirectories(nativeStore.toPath());
+			hdtStore = localTemp.resolve("hdt").toFile();
+			Files.createDirectories(hdtStore.toPath());
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS,
 					EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
 			Path fileName = Path.of(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
 			if (this.hdt == null) {
-				hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+				hdt = Utility.createTempHdtIndex(localTemp, true, false, spec);
 			}
 			assert hdt != null;
 
@@ -179,18 +184,22 @@ public class ComplianceTest {
 			this.setIgnoredTests(testToIgnore);
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		@Override
 		protected Repository newRepository() throws Exception {
-			File nativeStore = tempDir.newFolder();
-			File hdtStore = tempDir.newFolder();
+
+			Path localTemp = tempDir.resolve(UUID.randomUUID().toString());
+			Files.createDirectories(localTemp);
+
+			File nativeStore = localTemp.resolve("native").toFile();
+			Files.createDirectories(nativeStore.toPath());
+			File hdtStore = localTemp.resolve("hdt").toFile();
+			Files.createDirectories(hdtStore.toPath());
+
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS, HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS,
 					EnumSet.of(TripleComponentOrder.SPO, TripleComponentOrder.OPS, TripleComponentOrder.PSO));
 			Path fileName = Path.of(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME);
-			try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			try (HDT hdt = Utility.createTempHdtIndex(localTemp, true, false, spec)) {
 				assert hdt != null;
 				hdt.saveToHDT(fileName, null);
 			}
@@ -266,22 +275,24 @@ public class ComplianceTest {
 			}
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		EndpointStore endpoint;
 		File nativeStore;
 		File hdtStore;
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			nativeStore = tempDir.newFolder();
-			hdtStore = tempDir.newFolder();
+			Path localTemp = tempDir.resolve(UUID.randomUUID().toString());
+			Files.createDirectories(localTemp);
+
+			nativeStore = localTemp.resolve("native").toFile();
+			Files.createDirectories(nativeStore.toPath());
+			hdtStore = localTemp.resolve("hdt").toFile();
+			Files.createDirectories(hdtStore.toPath());
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
 			if (this.hdt == null) {
-				hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+				hdt = Utility.createTempHdtIndex(localTemp, true, false, spec);
 			}
 			assert hdt != null;
 
@@ -342,16 +353,19 @@ public class ComplianceTest {
 			this.setIgnoredTests(testToIgnore);
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		@Override
 		protected Repository newRepository() throws Exception {
-			File nativeStore = tempDir.newFolder();
-			File hdtStore = tempDir.newFolder();
+			Path localTemp = tempDir.resolve(UUID.randomUUID().toString());
+			Files.createDirectories(localTemp);
+
+			File nativeStore = localTemp.resolve("native").toFile();
+			Files.createDirectories(nativeStore.toPath());
+			File hdtStore = localTemp.resolve("hdt").toFile();
+			Files.createDirectories(hdtStore.toPath());
+
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
-			try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			try (HDT hdt = Utility.createTempHdtIndex(localTemp, true, false, spec)) {
 				assert hdt != null;
 				hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 			}
@@ -380,22 +394,24 @@ public class ComplianceTest {
 			}
 		}
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		EndpointStore endpoint;
 		File nativeStore;
 		File hdtStore;
 
 		@Override
 		protected Repository newRepository() throws Exception {
-			nativeStore = tempDir.newFolder();
-			hdtStore = tempDir.newFolder();
+			Path localTemp = tempDir.resolve(UUID.randomUUID().toString());
+			Files.createDirectories(localTemp);
+
+			nativeStore = localTemp.resolve("native").toFile();
+			Files.createDirectories(nativeStore.toPath());
+			hdtStore = localTemp.resolve("hdt").toFile();
+			Files.createDirectories(hdtStore.toPath());
 
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
 			if (this.hdt == null) {
-				hdt = Utility.createTempHdtIndex(tempDir, true, false, spec);
+				hdt = Utility.createTempHdtIndex(localTemp, true, false, spec);
 			}
 			assert hdt != null;
 
@@ -440,16 +456,19 @@ public class ComplianceTest {
 
 	public static class EndpointQuadSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
-		@Rule
-		public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
-
 		@Override
 		protected Repository newRepository() throws Exception {
-			File nativeStore = tempDir.newFolder();
-			File hdtStore = tempDir.newFolder();
+			Path localTemp = tempDir.resolve(UUID.randomUUID().toString());
+			Files.createDirectories(localTemp);
+
+			File nativeStore = localTemp.resolve("native").toFile();
+			Files.createDirectories(nativeStore.toPath());
+			File hdtStore = localTemp.resolve("hdt").toFile();
+			Files.createDirectories(hdtStore.toPath());
+
 			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD);
-			try (HDT hdt = Utility.createTempHdtIndex(tempDir, true, false, spec)) {
+			try (HDT hdt = Utility.createTempHdtIndex(localTemp, true, false, spec)) {
 				assert hdt != null;
 				hdt.saveToHDT(hdtStore.getAbsolutePath() + "/" + EndpointStoreTest.HDT_INDEX_NAME, null);
 			}

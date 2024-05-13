@@ -42,7 +42,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.UUID;
 
 public class Utility {
 
@@ -59,6 +62,11 @@ public class Utility {
 	public static HDT createTempHdtIndex(TemporaryFolder fileName, boolean empty, boolean isBig, HDTOptions spec)
 			throws IOException {
 		return createTempHdtIndex(new File(fileName.newFile() + ".nt").getAbsolutePath(), empty, isBig, spec);
+	}
+
+	public static HDT createTempHdtIndex(Path path, boolean empty, boolean isBig, HDTOptions spec) throws IOException {
+		File file = new File(path.toString() + "/" + UUID.randomUUID() + ".nt");
+		return createTempHdtIndex(file.getAbsolutePath(), empty, isBig, spec);
 	}
 
 	/**
