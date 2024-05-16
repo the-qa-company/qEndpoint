@@ -9,9 +9,11 @@ import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11QueryComplianceTest {
 	/*
@@ -45,9 +47,13 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 
 	@Override
 	protected Repository newRepository() throws Exception {
+
+		Path resolve = tempDir.resolve(UUID.randomUUID().toString());
+		Files.createDirectories(resolve);
+
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
-		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(tempDir, spec);
+		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(resolve, spec);
 
 		if (PRINT_CALLS) {
 			return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(sail)));

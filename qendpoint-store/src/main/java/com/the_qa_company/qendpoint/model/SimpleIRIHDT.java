@@ -1,17 +1,16 @@
 package com.the_qa_company.qendpoint.model;
 
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
-import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.base.AbstractIRI;
-import org.eclipse.rdf4j.model.util.URIUtil;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.io.Serial;
 
-public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
+public class SimpleIRIHDT implements HDTValue, IRI {
 
 	@Serial
 	private static final long serialVersionUID = -3220264926968931192L;
@@ -31,31 +30,19 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 		};
 	}
 
-	private final HDT hdt;
-	private int postion;
+	private final Dictionary dict;
+	private final int position;
 	private long id;
-	private String iriString;
-	// An index indicating the first character of the local name in the IRI
-	// string, -1 if not yet set.
-	private int localNameIdx;
-	private boolean delegate;
 
-	public SimpleIRIHDT(HDT hdt, int position, long id) {
-		if (!(id > 0 && position >= SUBJECT_POS && position <= SHARED_POS)) {
-			throw new IllegalArgumentException("Bad argument %d > 0 / pos = %d".formatted(id, position));
-		}
-		this.hdt = hdt;
-		this.postion = position;
+	private IRI delegate;
+
+	public SimpleIRIHDT(Dictionary dict, int position, long id) {
+		this.dict = dict;
+		this.position = position;
 		this.id = id;
-		this.localNameIdx = -1;
-	}
-
-	public SimpleIRIHDT(HDT hdt, String iriString) {
-		assert iriString != null;
-		this.hdt = hdt;
-		this.iriString = iriString;
-		this.id = -1;
-		this.localNameIdx = -1;
+		// if (!(id > 0 && position >= SUBJECT_POS && position <= SHARED_POS)) {
+//			throw new IllegalArgumentException("Bad argument %d > 0 / pos = %d".formatted(id, position));
+//		}
 	}
 
 	@Override
@@ -65,67 +52,56 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 
 	@Override
 	public int getHDTPosition() {
-		return postion;
+		return position;
 	}
 
 	public long getId() {
 		return id;
 	}
 
-	public int getPostion() {
-		return postion;
-	}
-
-	@Override
-	public String toString() {
-		if (iriString == null) {
-			iriString = stringValue();
-		}
-		return iriString;
-	}
-
-	@Override
-	public String stringValue() {
-		if (this.iriString != null) {
-			return this.iriString;
-		} else {
+	private IRI getIRI() {
+		if (delegate == null) {
 			CharSequence charSequence;
-			if (this.postion == SHARED_POS || this.postion == SUBJECT_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.SUBJECT);
-			} else if (this.postion == OBJECT_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.OBJECT);
-			} else if (this.postion == PREDICATE_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.PREDICATE);
-			} else if (this.postion == GRAPH_POS) {
-				charSequence = hdt.getDictionary().idToString(this.id, TripleComponentRole.GRAPH);
+			if (this.position == SHARED_POS || this.position == SUBJECT_POS) {
+				charSequence = dict.idToString(this.id, TripleComponentRole.SUBJECT);
+			} else if (this.position == OBJECT_POS) {
+				charSequence = dict.idToString(this.id, TripleComponentRole.OBJECT);
+			} else if (this.position == PREDICATE_POS) {
+				charSequence = dict.idToString(this.id, TripleComponentRole.PREDICATE);
+			} else if (this.position == GRAPH_POS) {
+				charSequence = dict.idToString(this.id, TripleComponentRole.GRAPH);
 			} else {
-				throw new EndpointStoreException("bad postion value: " + postion);
+				throw new EndpointStoreException("bad postion value: " + position);
 			}
 
 			if (charSequence == null) {
 				throw new EndpointStoreException("Can't find HDT ID: " + id);
 			}
 
-			return charSequence.toString();
+			delegate = SimpleValueFactory.getInstance().createIRI(charSequence.toString());
 		}
+		return delegate;
+	}
+
+	@Override
+	public String toString() {
+		return getIRI().toString();
+	}
+
+	@Override
+	public String stringValue() {
+		return getIRI().stringValue();
+
 	}
 
 	public String getNamespace() {
-		if (iriString == null) {
-			iriString = stringValue();
-		}
-		if (localNameIdx < 0) {
-			localNameIdx = URIUtil.getLocalNameIndex(iriString);
-		}
-		return iriString.substring(0, localNameIdx);
+		return getIRI().getNamespace();
+
 	}
 
 	public String getLocalName() {
-		if (localNameIdx < 0) {
-			localNameIdx = URIUtil.getLocalNameIndex(iriString);
-		}
+		return getIRI().getLocalName();
 
-		return iriString.substring(localNameIdx);
 	}
 
 	@Override
@@ -149,50 +125,24 @@ public class SimpleIRIHDT extends AbstractIRI implements HDTValue {
 
 	@Override
 	public int hashCode() {
-		if (id != -1 && !delegate) {
-			String prefix = "http://hdt.org/";
-			if (this.postion == SHARED_POS) {
-				prefix += "SO";
-			} else if (this.postion == SUBJECT_POS) {
-				prefix += "S";
-			} else if (this.postion == PREDICATE_POS) {
-				prefix += "P";
-			} else if (this.postion == OBJECT_POS) {
-				prefix += "O";
-			} else if (this.postion == GRAPH_POS) {
-				prefix += "G";
-			} else {
-				if (iriString != null) {
-					prefix = iriString;
-				}
-				return prefix.hashCode();
-			}
-			prefix += id;
-			return prefix.hashCode();
-		} else {
-			return toString().hashCode();
-		}
-	}
-
-	public String getIriString() {
-		return iriString;
+		return getIRI().hashCode();
 	}
 
 	public void convertToNonHDTIRI() {
-		if (iriString == null) {
-			iriString = stringValue();
-		}
+
 		this.id = -1;
 	}
 
 	@Override
 	public void setDelegate(boolean delegate) {
-		this.delegate = delegate;
+		if (delegate) {
+			getIRI();
+		}
 	}
 
 	@Override
 	public boolean isDelegate() {
-		return delegate;
+		return delegate != null;
 	}
 
 }
