@@ -312,34 +312,34 @@ public class EndpointTripleSource implements TripleSource {
 			}
 		}
 
-		List<TripleComponentOrder> list = tripleComponentOrder.stream()
+		EnumSet<TripleComponentOrder> tripleOrders = EnumSet.noneOf(TripleComponentOrder.class);
+
+		tripleComponentOrder.stream()
 				.filter(o -> getStatementOrder(o, subj != null, pred != null, obj != null).contains(statementOrder))
-				.toList();
+				.forEach(tripleOrders::add);
 
-		System.out.println("getIndexMaskMatchingStatementOrder: " + Arrays.toString(list.toArray()));
-
-		if (list.contains(SOP)) {
+		if (tripleOrders.contains(SOP)) {
 			return SOP.mask;
 		}
-		if (list.contains(OPS)) {
+		if (tripleOrders.contains(OPS)) {
 			return OPS.mask;
 		}
-		if (list.contains(OSP)) {
+		if (tripleOrders.contains(OSP)) {
 			return OSP.mask;
 		}
-		if (list.contains(POS)) {
+		if (tripleOrders.contains(POS)) {
 			return POS.mask;
 		}
-		if (list.contains(PSO)) {
+		if (tripleOrders.contains(PSO)) {
 			return PSO.mask;
 		}
 
-		if (list.isEmpty()) {
+		if (tripleOrders.isEmpty()) {
 			throw new AssertionError(
 					"Statement order " + statementOrder + " not supported for triple pattern " + t.getPatternString());
 		}
 
-		return list.get(0).mask;
+		return tripleOrders.iterator().next().mask;
 	}
 
 	public static Set<StatementOrder> getStatementOrder(TripleComponentOrder tripleComponentOrder, boolean subject,

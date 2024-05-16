@@ -20,6 +20,7 @@
 package com.the_qa_company.qendpoint.core.enums;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -109,11 +110,18 @@ public enum TripleComponentOrder {
 	 * @return find value, null for no matching value
 	 */
 	public static <T> T fetchBestForCfg(int flags, Map<? extends TripleComponentOrder, T> map) {
-		List<? extends TripleComponentOrder> tripleComponentOrders = fetchAllBestForCfg(flags, map);
-//		tripleComponentOrders.sort(Comparator.comparingInt((TripleComponentOrder o) -> o.ordinal).reversed());
-//		 tripleComponentOrders = Collections.reve
 
-//		System.out.println(Arrays.toString(tripleComponentOrders.toArray()));
+		var tripleComponentOrders = EnumSet.noneOf(TripleComponentOrder.class);
+
+		for (Map.Entry<? extends TripleComponentOrder, T> e : map.entrySet()) {
+			if ((e.getKey().mask & flags) != 0) {
+				tripleComponentOrders.add(e.getKey());
+			}
+		}
+
+		if (tripleComponentOrders.isEmpty()) {
+			return null;
+		}
 
 		if (preference != null) {
 			if (tripleComponentOrders.contains(preference)) {
@@ -138,13 +146,7 @@ public enum TripleComponentOrder {
 			return map.get(PSO);
 		}
 
-		for (Map.Entry<? extends TripleComponentOrder, T> e : map.entrySet()) {
-			if ((e.getKey().mask & flags) != 0) {
-				return e.getValue();
-			}
-		}
-
-		return null;
+		return map.get(tripleComponentOrders.iterator().next());
 	}
 
 	/**

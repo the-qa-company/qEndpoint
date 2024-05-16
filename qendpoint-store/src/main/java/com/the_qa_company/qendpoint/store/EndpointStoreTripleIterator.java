@@ -58,26 +58,21 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 
 		if (subjectID > 0) {
 			subject = endpoint.getHdtConverter().idToSubjectHDTResource(subjectID);
-//			System.out.println("PRE_CALC: "+subject);
 		} else {
 			subject = null;
 		}
 
 		if (predicateID > 0) {
 			predicate = endpoint.getHdtConverter().idToPredicateHDTResource(predicateID);
-//			System.out.println("PRE_CALC: "+predicate);
 		} else {
 			predicate = null;
 		}
 
 		if (objectID > 0) {
 			object = endpoint.getHdtConverter().idToObjectHDTResource(objectID);
-//			System.out.println("PRE_CALC: "+object);
 		} else {
 			object = null;
 		}
-
-		System.out.println(getIndexName());
 
 	}
 
@@ -142,17 +137,10 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 	}
 
 	private Resource getSubject(TripleID tripleID) {
-		Resource subject;
 		if (this.subject != null) {
-			subject = this.subject;
-		} else if (tripleID.getSubject() == subjectID_cache) {
-			subject = subjectCache;
-		} else {
-			subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
-			this.subjectID_cache = tripleID.getSubject();
-			this.subjectCache = subject;
+			return this.subject;
 		}
-		return subject;
+		return endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 	}
 
 	private IRI getPredicate(TripleID tripleID) {
