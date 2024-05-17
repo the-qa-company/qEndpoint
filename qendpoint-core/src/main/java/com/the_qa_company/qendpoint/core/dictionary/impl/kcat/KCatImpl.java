@@ -265,10 +265,11 @@ public class KCatImpl implements Closeable {
 						TripleID tripleID = searchAll.next();
 
 						if (c % 10000 == 0) {
-							iListener.notifyProgress((float) (c++ * 10000 / numberOfElements) / 100f,
+							iListener.notifyProgress((float) (c * 10000 / numberOfElements) / 100f,
 									"building diff bitmaps " + c + "/" + numberOfElements + " (hdt " + index + "/"
 											+ hdts.length + ")");
 						}
+						c++;
 
 						long g = quad ? (tripleID.getGraph() - 1) : 0;
 

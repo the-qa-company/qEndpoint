@@ -12,7 +12,6 @@ import com.the_qa_company.qendpoint.core.storage.search.QEPComponentTriple;
 import com.the_qa_company.qendpoint.core.storage.search.QEPDatasetIterator;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 import java.io.Closeable;
 import java.io.IOException;

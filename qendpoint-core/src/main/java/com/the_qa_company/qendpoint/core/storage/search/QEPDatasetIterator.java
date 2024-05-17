@@ -1,7 +1,6 @@
 package com.the_qa_company.qendpoint.core.storage.search;
 
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
-import com.the_qa_company.qendpoint.core.storage.QEPCore;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
 import com.the_qa_company.qendpoint.core.storage.QEPDataset;
 import com.the_qa_company.qendpoint.core.storage.QEPDatasetContext;
