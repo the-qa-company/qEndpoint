@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.storage;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.AddSnapshotBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.EmptyBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.enums.DictionarySectionRole;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
@@ -105,6 +106,11 @@ public class QEPDataset implements Closeable {
 		return uid;
 	}
 
+	public boolean hasDeletions() {
+		// TODO: check the current state of the bitmap?
+		return core.hasDeletions();
+	}
+
 	public ComponentFind find(CharSequence seq) {
 		long pid = Math.max(0, dataset.getDictionary().stringToId(seq, TripleComponentRole.PREDICATE));
 
@@ -133,6 +139,9 @@ public class QEPDataset implements Closeable {
 	 * @see #isTripleDeleted(long)
 	 */
 	public void deleteTriple(long tripleID) {
+		if (!core.hasDeletions()) {
+			throw new IllegalArgumentException("deletions disabled");
+		}
 		if (tripleID < 0 || tripleID > dataset.getTriples().getNumberOfElements()) {
 			throw new IllegalArgumentException("bad triple id: " + tripleID);
 		}
@@ -143,19 +152,28 @@ public class QEPDataset implements Closeable {
 	 * @return a new context where no elements from this dataset will be deleted
 	 */
 	public QEPDatasetContext createContext() {
-		final AddSnapshotBitmap.AddSnapshotDeltaBitmap bm = deleteBitmap.createSnapshot();
+		final AddSnapshotBitmap.AddSnapshotDeltaBitmap bm = core.hasDeletions() ? deleteBitmap.createSnapshot() : null;
 		return new QEPDatasetContext() {
 			@Override
 			public boolean isTripleDeleted(long tripleID) {
+				if (!core.hasDeletions()) {
+					return false;
+				}
 				if (tripleID < 0 || tripleID > dataset.getTriples().getNumberOfElements()) {
 					throw new IllegalArgumentException("bad triple id: " + tripleID);
 				}
+				assert bm != null;
 				return bm.access(tripleID);
 			}
 
 			@Override
+			public boolean hasDeletions() {
+				return QEPDataset.this.hasDeletions();
+			}
+
+			@Override
 			public Bitmap deleteBitmap() {
-				return bm;
+				return bm == null ? bm : EmptyBitmap.of(0);
 			}
 
 			@Override
@@ -165,7 +183,9 @@ public class QEPDataset implements Closeable {
 
 			@Override
 			public void close() {
-				bm.close();
+				if (bm != null) {
+					bm.close();
+				}
 			}
 		};
 	}
@@ -178,6 +198,9 @@ public class QEPDataset implements Closeable {
 	 * @see #deleteTriple(long)
 	 */
 	public boolean isTripleDeleted(long tripleID) {
+		if (core.hasDeletions()) {
+			return false;
+		}
 		if (tripleID < 0 || tripleID > dataset.getTriples().getNumberOfElements()) {
 			throw new IllegalArgumentException("bad triple id: " + tripleID);
 		}

@@ -231,11 +231,11 @@ public class QEPCoreTest {
 					// convert to a triple string to search over the main HDT
 					count++;
 					// search the ts
-					try (CloseableIterator<? extends QEPComponentTriple, QEPCoreException> searchIt = core.search(ts)) {
+					try (QueryCloseableIterator searchIt = core.search(ts)) {
 						assertTrue("missing triple for " + ts + " in core", searchIt.hasNext());
 
 						QEPComponentTriple qts = searchIt.next();
-						long position = qts.getId();
+						long position = searchIt.lastId();
 						int datasetId = qts.getDatasetId();
 						Bitmap64Big bitmap = bitmaps.get(datasetId);
 

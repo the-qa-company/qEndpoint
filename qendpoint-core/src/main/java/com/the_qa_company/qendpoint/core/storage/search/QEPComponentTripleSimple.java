@@ -5,23 +5,16 @@ import com.the_qa_company.qendpoint.core.storage.QEPComponent;
 import java.util.Objects;
 
 public class QEPComponentTripleSimple implements QEPComponentTriple {
-	private long id;
 	private int datasetId;
 	private QEPComponent subject;
 	private QEPComponent predicate;
 	private QEPComponent object;
 
-	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id,
-			int datasetId) {
+	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, int datasetId) {
 		this.subject = subject;
 		this.predicate = predicate;
 		this.object = object;
-		this.id = id;
 		this.datasetId = datasetId;
-	}
-
-	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id) {
-		this(subject, predicate, object, id, 0);
 	}
 
 	public QEPComponentTripleSimple(QEPComponent subject, QEPComponent predicate, QEPComponent object) {
@@ -48,11 +41,6 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 	}
 
 	@Override
-	public long getId() {
-		return id;
-	}
-
-	@Override
 	public int getDatasetId() {
 		return datasetId;
 	}
@@ -70,11 +58,6 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 	@Override
 	public void setObject(QEPComponent object) {
 		this.object = object;
-	}
-
-	@Override
-	public void setId(long id) {
-		this.id = id;
 	}
 
 	@Override
@@ -107,6 +90,6 @@ public class QEPComponentTripleSimple implements QEPComponentTriple {
 		QEPComponent s = subject != null ? subject.clone() : null;
 		QEPComponent p = predicate != null ? predicate.clone() : null;
 		QEPComponent o = object != null ? object.clone() : null;
-		return new QEPComponentTripleSimple(s, p, o, id, datasetId);
+		return new QEPComponentTripleSimple(s, p, o, datasetId);
 	}
 }

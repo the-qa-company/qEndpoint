@@ -140,7 +140,7 @@ public class AsyncCatTreeWorker implements Closeable {
 				break; // end read
 			}
 
-			List<Path> gen = lst.stream().map(CatTreeImpl.HDTFile::getHdtFile).collect(Collectors.toList());
+			List<Path> gen = lst.stream().map(CatTreeImpl.HDTFile::hdtFile).collect(Collectors.toList());
 
 			cat++;
 			profiler.pushSection("catHDT #" + cat);
@@ -161,10 +161,10 @@ public class AsyncCatTreeWorker implements Closeable {
 
 			// delete previous chunks
 			for (CatTreeImpl.HDTFile nextHDT : lst) {
-				Files.delete(nextHDT.getHdtFile());
+				Files.delete(nextHDT.hdtFile());
 			}
 			// note the new hdt file and the number of chunks
-			int chunks = (int) lst.stream().mapToLong(CatTreeImpl.HDTFile::getChunks).max().orElseThrow() + 1;
+			int chunks = (int) lst.stream().mapToLong(CatTreeImpl.HDTFile::chunks).max().orElseThrow() + 1;
 			synchronized (tree) {
 				tree.addElement(new CatTreeImpl.HDTFile(hdtCatFileLocation, chunks), chunks);
 			}
@@ -176,7 +176,7 @@ public class AsyncCatTreeWorker implements Closeable {
 		while (tree.size() > 1) {
 			List<CatTreeImpl.HDTFile> lst = tree.getAll(kcat);
 
-			List<String> gen = lst.stream().map(CatTreeImpl.HDTFile::getHdtFile).map(Path::toAbsolutePath)
+			List<String> gen = lst.stream().map(CatTreeImpl.HDTFile::hdtFile).map(Path::toAbsolutePath)
 					.map(Path::toString).collect(Collectors.toList());
 
 			cat++;
@@ -198,10 +198,10 @@ public class AsyncCatTreeWorker implements Closeable {
 
 			// delete previous chunks
 			for (CatTreeImpl.HDTFile nextHDT : lst) {
-				Files.delete(nextHDT.getHdtFile());
+				Files.delete(nextHDT.hdtFile());
 			}
 			// note the new hdt file and the number of chunks
-			int chunks = (int) lst.stream().mapToLong(CatTreeImpl.HDTFile::getChunks).max().orElseThrow() + 1;
+			int chunks = (int) lst.stream().mapToLong(CatTreeImpl.HDTFile::chunks).max().orElseThrow() + 1;
 			tree.addElement(new CatTreeImpl.HDTFile(hdtCatFileLocation, chunks), chunks);
 		}
 
@@ -212,7 +212,7 @@ public class AsyncCatTreeWorker implements Closeable {
 			List<CatTreeImpl.HDTFile> hdts = tree.getAll(1);
 			assert hdts.size() == 1;
 
-			Path hdtFile = hdts.get(0).getHdtFile();
+			Path hdtFile = hdts.get(0).hdtFile();
 
 			try {
 				// if a future HDT location has been asked, move to it and map
