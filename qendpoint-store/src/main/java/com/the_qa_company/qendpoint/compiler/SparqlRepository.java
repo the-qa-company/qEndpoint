@@ -29,6 +29,7 @@ import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.helpers.SailConnectionWrapper;
+import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,19 @@ public class SparqlRepository {
 	 */
 	public void reindexLuceneSails() {
 		compiledSail.reindexLuceneSails();
+	}
+
+	/**
+	 * reindex a lucene sail of this repository
+	 *
+	 * @param index index id
+	 */
+	public void reindexLuceneSail(String index) {
+		compiledSail.reindexLuceneSail(index);
+	}
+
+	public Set<LuceneSail> getLuceneSails() {
+		return compiledSail.getLuceneSails();
 	}
 
 	/**

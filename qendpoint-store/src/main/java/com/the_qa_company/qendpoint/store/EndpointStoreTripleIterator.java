@@ -98,8 +98,7 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 		if (!hasNext()) {
 			return null;
 		}
-		Statement stm = endpointTripleSource.getValueFactory().createStatement(next.getSubject(), next.getPredicate(),
-				next.getObject(), next.getContext());
+		Statement stm = next;
 		next = null;
 		return stm;
 	}

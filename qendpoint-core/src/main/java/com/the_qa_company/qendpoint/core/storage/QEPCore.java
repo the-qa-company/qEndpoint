@@ -101,6 +101,14 @@ public class QEPCore implements AutoCloseable {
 	 */
 	public static final String OPTION_NO_CO_INDEX = "qep.dataset.no_co_index";
 	/**
+	 * do not use deletions
+	 */
+	public static final String OPTION_NO_DELETIONS = "qep.dataset.no_deletions";
+	/**
+	 * recreate a map on fail during sync, default false
+	 */
+	public static final String OPTION_RECREATE_MAP_ON_FAIL_SYNC = "qep.map.recreate_on_fail_sync";
+	/**
 	 * prefix of the datasets in the {@link #FILE_DATASET_STORE} directory
 	 */
 	public static final String FILE_DATASET_PREFIX = "index_";
@@ -133,6 +141,8 @@ public class QEPCore implements AutoCloseable {
 	private final HDTOptions options;
 	private final boolean memoryDataset;
 	private final boolean noCoIndex;
+	private final boolean useDeletions;
+	private final boolean recreateMapOnFailSync;
 	private final Path location;
 	private ProgressListener listener = ProgressListener.ignore();
 	private long maxId;
@@ -143,6 +153,8 @@ public class QEPCore implements AutoCloseable {
 		options = HDTOptions.of();
 		memoryDataset = false;
 		noCoIndex = false;
+		useDeletions = true;
+		recreateMapOnFailSync = false;
 		location = Path.of("tests");
 		mergeThread = new QEPCoreMergeThread(this, options);
 		namespaceData = new NamespaceData(getNamespaceDataLocation());
@@ -219,7 +231,7 @@ public class QEPCore implements AutoCloseable {
 				// with the disk sequence
 				BITMAPTRIPLES_SEQUENCE_DISK, true,
 				// sub index
-				BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, true,
+				BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, false,
 				// indexing work location
 				BITMAPTRIPLES_SEQUENCE_DISK_LOCATION, workDir,
 
@@ -249,6 +261,8 @@ public class QEPCore implements AutoCloseable {
 
 		memoryDataset = this.options.getBoolean(OPTION_IN_MEMORY_DATASET, false);
 		noCoIndex = this.options.getBoolean(OPTION_NO_CO_INDEX, false);
+		useDeletions = this.options.getBoolean(OPTION_NO_DELETIONS, true);
+		recreateMapOnFailSync = this.options.getBoolean(OPTION_RECREATE_MAP_ON_FAIL_SYNC, false);
 
 		mergeThread = new QEPCoreMergeThread(this, options);
 
@@ -527,7 +541,7 @@ public class QEPCore implements AutoCloseable {
 
 		if (old == null) {
 			// it was added, meaning we need to sync it
-			qepMap.sync();
+			qepMap.sync(recreateMapOnFailSync);
 		}
 	}
 
@@ -1385,5 +1399,12 @@ public class QEPCore implements AutoCloseable {
 	 */
 	public QEPDataset getDatasetByUid(int uid) {
 		return datasetByUid.get(uid);
+	}
+
+	/**
+	 * @return if the core is using deletions
+	 */
+	public boolean hasDeletions() {
+		return useDeletions;
 	}
 }

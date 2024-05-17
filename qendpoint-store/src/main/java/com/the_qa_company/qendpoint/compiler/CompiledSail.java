@@ -237,6 +237,31 @@ public class CompiledSail extends SailWrapper {
 	}
 
 	/**
+	 * reindex all the compiled lucene sails
+	 *
+	 * @param index index id
+	 * @throws SailException see
+	 *                       {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
+	 */
+	public void reindexLuceneSail(String index) throws SailException {
+		Objects.requireNonNull(index, "index can't be null!");
+		for (LuceneSail sail : luceneSails) {
+			if (!index.equals(sail.getParameter(LuceneSail.INDEX_ID))) {
+				continue; // ignore
+			}
+			// bypass filtering system to use the source
+			NotifyingSail oldSail = sail.getBaseSail();
+			try {
+				sail.setBaseSail(source);
+				sail.reindex();
+			} finally {
+				sail.setBaseSail(oldSail);
+			}
+
+		}
+	}
+
+	/**
 	 * @return if the sail has a least one lucene sail connected to it
 	 */
 	public boolean hasLuceneSail() {

@@ -66,4 +66,12 @@ public class CatQueryCloseable extends FetcherCloseableIterator<QEPComponentTrip
 	public long estimateCardinality() {
 		return iterators.stream().mapToLong(QueryCloseableIterator::estimateCardinality).sum();
 	}
+
+	@Override
+	public long lastId() {
+		if (iterators.size() == index) {
+			return 0;
+		}
+		return iterators.get(index).lastId();
+	}
 }

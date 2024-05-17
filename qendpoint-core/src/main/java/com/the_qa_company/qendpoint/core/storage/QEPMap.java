@@ -186,13 +186,26 @@ public class QEPMap implements Closeable {
 	 * @throws IOException error while syncing
 	 */
 	public void sync() throws IOException {
+		sync(false);
+	}
+
+	/**
+	 * Sync the linker object
+	 *
+	 * @param recreateMapOnFailSync recreate the map if the sync of the error
+	 *                              fails
+	 * @throws IOException error while syncing
+	 */
+	public void sync(boolean recreateMapOnFailSync) throws IOException {
 		Path mapHeaderPath = getMapHeaderPath();
+		logger.info("Sync QEPMap {} '{}'/'{}'", uid, dataset1.id(), dataset2.id());
 		try {
 			close();
 			// the CRC used to check the header
 			CRC crc = new CRC16();
 			// create the sync path
 			Files.createDirectories(path);
+			boolean forceCreate = false;
 			boolean created = !Files.exists(mapHeaderPath);
 			// race condition
 			// we open the header file to see if it's actually the right map
@@ -211,9 +224,74 @@ public class QEPMap implements Closeable {
 				int[] index2Location = new int[index2Size.length];
 				// header creation
 				{
-					int shift = 0;
+
+					if (!created) {
+						try {
+
+							int shift = 0;
+							// we check the magic
+							for (; shift < MAGIC.length; shift++) {
+								byte cc = header.get(shift);
+								if (cc != MAGIC[shift]) {
+									throw new QEPMapSyncIOException(
+											"Can't read magic number of dataset linker " + getMapId() + "!");
+								}
+							}
+							byte coreVersion = header.get(shift++);
+
+							if (coreVersion != CORE_VERSION) {
+								syncOld(coreVersion);
+								return;
+							}
+
+							String aid1 = IOUtil.readCString(header, shift, QEPCore.MAX_ID_SIZE + 1);
+							shift += QEPCore.MAX_ID_SIZE + 1;
+							if (!aid1.equals(dataset1.id())) {
+								throw new QEPMapSyncIOException(
+										"read dataset id1=" + aid1 + " but use " + dataset1.id());
+							}
+
+							String aid2 = IOUtil.readCString(header, shift, QEPCore.MAX_ID_SIZE + 1);
+							shift += QEPCore.MAX_ID_SIZE + 1;
+							if (!aid2.equals(dataset2.id())) {
+								throw new QEPMapSyncIOException(
+										"read dataset id2=" + aid2 + " but use " + dataset2.id());
+							}
+
+							checkHeader(header, shift, "1", this.dataset1);
+							shift += Long.BYTES * 4;
+							checkHeader(header, shift, "2", this.dataset2);
+							shift += Long.BYTES * 4;
+
+							for (int i = 0; i < index1Size.length; i++) {
+								index1Size[i] = header.getLong(shift);
+								index1Location[i] = shift;
+								shift += Long.BYTES;
+							}
+							for (int i = 0; i < index2Size.length; i++) {
+								index2Size[i] = header.getLong(shift);
+								index2Location[i] = shift;
+								shift += Long.BYTES;
+							}
+
+							crc.update(header, 0, HEADER_SIZE);
+							if (!crc.readAndCheck(crcBuffer, 0)) {
+								throw new QEPMapSyncIOException(
+										new CRCException("CRC Error while reading QEPMap header."));
+							}
+							assert shift == HEADER_SIZE : shift + "!=" + HEADER_SIZE;
+						} catch (QEPMapSyncIOException e) {
+							if (!recreateMapOnFailSync) {
+								throw e;
+							}
+							logger.warn("Can't sync map, recreating it", e);
+							created = true;
+							forceCreate = true;
+						}
+					}
 
 					if (created) {
+						int shift = 0;
 						// we write the header
 						// write magic
 						for (; shift < MAGIC.length; shift++) {
@@ -248,53 +326,8 @@ public class QEPMap implements Closeable {
 							index2Location[i] = shift;
 							shift += Long.BYTES;
 						}
-					} else {
-						// we check the magic
-						for (; shift < MAGIC.length; shift++) {
-							byte cc = header.get(shift);
-							if (cc != MAGIC[shift]) {
-								throw new IOException("Can't read magic number of dataset linker " + getMapId() + "!");
-							}
-						}
-						byte coreVersion = header.get(shift++);
-
-						if (coreVersion != CORE_VERSION) {
-							syncOld(coreVersion);
-							return;
-						}
-
-						String aid1 = IOUtil.readCString(header, shift, QEPCore.MAX_ID_SIZE + 1);
-						shift += QEPCore.MAX_ID_SIZE + 1;
-						if (!aid1.equals(dataset1.id())) {
-							throw new IOException("read dataset id1=" + aid1 + " but use " + dataset1.id());
-						}
-
-						String aid2 = IOUtil.readCString(header, shift, QEPCore.MAX_ID_SIZE + 1);
-						shift += QEPCore.MAX_ID_SIZE + 1;
-						if (!aid2.equals(dataset2.id())) {
-							throw new IOException("read dataset id2=" + aid2 + " but use " + dataset2.id());
-						}
-
-						checkHeader(header, shift, "1", this.dataset1);
-						shift += Long.BYTES * 4;
-						checkHeader(header, shift, "2", this.dataset2);
-						shift += Long.BYTES * 4;
-
-						for (int i = 0; i < index1Size.length; i++) {
-							index1Size[i] = header.getLong(shift);
-							shift += Long.BYTES;
-						}
-						for (int i = 0; i < index2Size.length; i++) {
-							index2Size[i] = header.getLong(shift);
-							shift += Long.BYTES;
-						}
-
-						crc.update(header, 0, HEADER_SIZE);
-						if (!crc.readAndCheck(crcBuffer, 0)) {
-							throw new CRCException("CRC Error while reading QEPMap header.");
-						}
+						assert shift == HEADER_SIZE : shift + "!=" + HEADER_SIZE;
 					}
-					assert shift == HEADER_SIZE : shift + "!=" + HEADER_SIZE;
 				}
 
 				boolean dataset1Base = isMapDataset1Smaller();
@@ -317,7 +350,7 @@ public class QEPMap implements Closeable {
 					Path map1OriginPath = getMap1OriginPath(PREDICATE);
 					Path map1DestinationPath = getMap1DestinationPath(PREDICATE);
 
-					boolean regen = checkRegen(PREDICATE, created);
+					boolean regen = checkRegen(PREDICATE, created, forceCreate);
 
 					DynamicSequence idSequence1 = null;
 					DynamicSequence mapSequence1 = null;
@@ -401,8 +434,8 @@ public class QEPMap implements Closeable {
 					Path objectMap2OriginPath = getMap2OriginPath(OBJECT);
 					Path objectMap2DestinationPath = getMap2DestinationPath(OBJECT);
 
-					boolean regen1 = checkRegen(SUBJECT, created);
-					boolean regen2 = checkRegen(OBJECT, created);
+					boolean regen1 = checkRegen(SUBJECT, created, forceCreate);
+					boolean regen2 = checkRegen(OBJECT, created, forceCreate);
 					boolean regen = regen1 || regen2;
 
 					DynamicSequence subjectIdSequence1 = null;
@@ -715,25 +748,29 @@ public class QEPMap implements Closeable {
 	 * check if the permutations for a role should be regenerated, will check
 	 * the file and throw error/warning if it is in an unstable state
 	 *
-	 * @param role    role
-	 * @param created if the map was created
+	 * @param role        role
+	 * @param created     if the map was created
+	 * @param forceCreate if the map is force created
 	 * @return if the permutation should be regenerated
 	 * @throws IOException file state error
 	 */
-	private boolean checkRegen(TripleComponentRole role, boolean created) throws IOException {
+	private boolean checkRegen(TripleComponentRole role, boolean created, boolean forceCreate) throws IOException {
+		// predicate doesn't have 2 maps
 		Path map1OriginPath = getMap1OriginPath(role);
 		Path map1DestinationPath = getMap1DestinationPath(role);
 		Path map2OriginPath = getMap2OriginPath(role);
 		Path map2DestinationPath = getMap2DestinationPath(role);
 		if (created) {
-			checkNotExists(map1OriginPath);
-			checkNotExists(map1DestinationPath);
-			checkNotExists(map2OriginPath);
-			checkNotExists(map2DestinationPath);
+			checkNotExists(map1OriginPath, forceCreate);
+			checkNotExists(map1DestinationPath, forceCreate);
+			if (role != PREDICATE) {
+				checkNotExists(map2OriginPath, forceCreate);
+				checkNotExists(map2DestinationPath, forceCreate);
+			}
 			return true;
 		} else {
 			boolean regen = !(Files.exists(map1OriginPath) && Files.exists(map1DestinationPath)
-					&& Files.exists(map2OriginPath) && Files.exists(map2DestinationPath));
+					&& (role == PREDICATE || (Files.exists(map2OriginPath) && Files.exists(map2DestinationPath))));
 			if (regen) {
 				boolean warn = false;
 				if (Files.exists(map1OriginPath)) {
@@ -746,15 +783,17 @@ public class QEPMap implements Closeable {
 							map1DestinationPath);
 					warn = true;
 				}
-				if (Files.exists(map2OriginPath)) {
-					logger.warn("{}: map2OriginPath[{}] is present, it will be removed! {}", this, role,
-							map2OriginPath);
-					warn = true;
-				}
-				if (Files.exists(map2DestinationPath)) {
-					logger.warn("{}: map2DestinationPath[{}] is present, it will be removed! {}", this, role,
-							map2DestinationPath);
-					warn = true;
+				if (role != PREDICATE) {
+					if (Files.exists(map2OriginPath)) {
+						logger.warn("{}: map2OriginPath[{}] is present, it will be removed! {}", this, role,
+								map2OriginPath);
+						warn = true;
+					}
+					if (Files.exists(map2DestinationPath)) {
+						logger.warn("{}: map2DestinationPath[{}] is present, it will be removed! {}", this, role,
+								map2DestinationPath);
+						warn = true;
+					}
 				}
 				if (warn) {
 					logger.warn("{}: has a missing file from the grid", this);
@@ -764,9 +803,12 @@ public class QEPMap implements Closeable {
 		}
 	}
 
-	private void checkNotExists(Path path) throws IOException {
+	private void checkNotExists(Path path, boolean force) throws IOException {
 		if (Files.exists(path)) {
-			throw new IOException("The file " + path + " already exists!");
+			if (!force) {
+				throw new IOException("The file " + path + " already exists!");
+			}
+			logger.warn("The file {} already exists!", path);
 		}
 	}
 

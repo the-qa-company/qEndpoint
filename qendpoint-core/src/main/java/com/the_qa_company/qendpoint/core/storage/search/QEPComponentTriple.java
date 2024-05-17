@@ -36,19 +36,6 @@ public interface QEPComponentTriple {
 	}
 
 	/**
-	 * create a mutable triple
-	 *
-	 * @param s  subject
-	 * @param p  predicate
-	 * @param o  object
-	 * @param id triple id
-	 * @return triple
-	 */
-	static QEPComponentTriple of(QEPComponent s, QEPComponent p, QEPComponent o, long id) {
-		return new QEPComponentTripleSimple(s, p, o, id);
-	}
-
-	/**
 	 * @return the subject
 	 */
 	QEPComponent getSubject();
@@ -62,11 +49,6 @@ public interface QEPComponentTriple {
 	 * @return the object
 	 */
 	QEPComponent getObject();
-
-	/**
-	 * @return get the triple id (if available)
-	 */
-	long getId();
 
 	/**
 	 * @return the dataset id
@@ -95,13 +77,6 @@ public interface QEPComponentTriple {
 	void setObject(QEPComponent object);
 
 	/**
-	 * set the id
-	 *
-	 * @param id id
-	 */
-	void setId(long id);
-
-	/**
 	 * set the dataset id
 	 *
 	 * @param id id
@@ -127,13 +102,11 @@ public interface QEPComponentTriple {
 	 * @param subject   subject
 	 * @param predicate predicate
 	 * @param object    object
-	 * @param id        triple id
 	 */
-	default void setAll(QEPComponent subject, QEPComponent predicate, QEPComponent object, long id, int datasetId) {
+	default void setAll(QEPComponent subject, QEPComponent predicate, QEPComponent object, int datasetId) {
 		setSubject(subject);
 		setPredicate(predicate);
 		setObject(object);
-		setId(id);
 		setDatasetId(datasetId);
 	}
 

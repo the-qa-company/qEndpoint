@@ -12,7 +12,6 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,7 +92,9 @@ public class MapOnCallHDT implements HDTPrivate {
 
 	@Override
 	public void close() throws IOException {
-		IOUtil.closeAll(hdt);
+		if (hdt != null) {
+			hdt.close();
+		}
 		hdt = null;
 	}
 

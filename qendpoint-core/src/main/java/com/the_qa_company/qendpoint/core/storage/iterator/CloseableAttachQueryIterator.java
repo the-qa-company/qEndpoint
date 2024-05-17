@@ -68,6 +68,11 @@ public class CloseableAttachQueryIterator implements QueryCloseableIterator {
 	}
 
 	@Override
+	public long lastId() {
+		return handle.lastId();
+	}
+
+	@Override
 	public QueryCloseableIterator attach(AutoCloseableGeneric<? extends RuntimeException> closeable) {
 		closeables.add(closeable);
 		return this;

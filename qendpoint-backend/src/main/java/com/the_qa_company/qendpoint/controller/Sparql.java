@@ -1,6 +1,5 @@
 package com.the_qa_company.qendpoint.controller;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.the_qa_company.qendpoint.client.QEndpointClient;
 import com.the_qa_company.qendpoint.client.SplitStream;
 import com.the_qa_company.qendpoint.compiler.CompiledSail;
@@ -12,7 +11,6 @@ import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
-import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -29,6 +27,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +52,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -62,138 +62,19 @@ import java.util.stream.Collectors;
 public class Sparql {
 	private static boolean redirectDone;
 
-	public static class NamespaceData {
-		private String prefix;
-		private String name;
+	public record MergeRequestResult(boolean completed) {}
 
-		public NamespaceData(String prefix, String name) {
-			this.prefix = prefix;
-			this.name = name;
-		}
+	public record LuceneIndexRequestResult(boolean completed) {}
 
-		public NamespaceData() {
-		}
+	public record LuceneIndexListResult(List<String> indexes) {}
 
-		public NamespaceData(Namespace ns) {
-			this(ns.getPrefix(), ns.getName());
-		}
+	public record HasLuceneIndexResult(boolean hasLuceneIndex) {}
 
-		public String getPrefix() {
-			return prefix;
-		}
+	public record IsMergingResult(boolean merging) {}
 
-		public String getName() {
-			return name;
-		}
+	public record IsDumpingResult(boolean dumping) {}
 
-		public void setPrefix(String prefix) {
-			this.prefix = prefix;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		@JsonIgnore
-		public Namespace asRDF4J() {
-			return Values.namespace(getPrefix(), getName());
-		}
-	}
-
-	public static class NamespaceDataResult {
-		private Map<String, String> prefixes;
-
-		public NamespaceDataResult(Map<String, String> prefixes) {
-			this.prefixes = prefixes;
-		}
-
-		public NamespaceDataResult() {
-		}
-
-		public Map<String, String> getPrefixes() {
-			return prefixes;
-		}
-
-		public void setPrefixes(Map<String, String> prefixes) {
-			this.prefixes = prefixes;
-		}
-	}
-
-	public static class MergeRequestResult {
-		private final boolean completed;
-
-		public MergeRequestResult(boolean completed) {
-			this.completed = completed;
-		}
-
-		public boolean isCompleted() {
-			return completed;
-		}
-	}
-
-	public static class LuceneIndexRequestResult {
-		private final boolean completed;
-
-		public LuceneIndexRequestResult(boolean completed) {
-			this.completed = completed;
-		}
-
-		public boolean isCompleted() {
-			return completed;
-		}
-	}
-
-	public static class HasLuceneIndexResult {
-		private final boolean hasLuceneIndex;
-
-		public HasLuceneIndexResult(boolean hasLuceneIndex) {
-			this.hasLuceneIndex = hasLuceneIndex;
-		}
-
-		public boolean isHasLuceneIndex() {
-			return hasLuceneIndex;
-		}
-	}
-
-	public static class IsMergingResult {
-		private final boolean merging;
-
-		public IsMergingResult(boolean merging) {
-			this.merging = merging;
-		}
-
-		public boolean isMerging() {
-			return merging;
-		}
-	}
-
-	public static class IsDumpingResult {
-		private final boolean dumping;
-
-		public IsDumpingResult(boolean dumping) {
-			this.dumping = dumping;
-		}
-
-		public boolean isDumping() {
-			return dumping;
-		}
-	}
-
-	public static class LoadFileResult {
-		private boolean loaded;
-
-		public LoadFileResult(boolean loaded) {
-			this.loaded = loaded;
-		}
-
-		public boolean isLoaded() {
-			return loaded;
-		}
-
-		public void setLoaded(boolean loaded) {
-			this.loaded = loaded;
-		}
-	}
+	public record LoadFileResult(boolean loaded) {}
 
 	private static final Logger logger = LoggerFactory.getLogger(Sparql.class);
 	private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMdd-HHmmss");
@@ -524,6 +405,17 @@ public class Sparql {
 		initializeEndpointStore(true);
 		sparqlRepository.reindexLuceneSails();
 		return new LuceneIndexRequestResult(true);
+	}
+
+	public LuceneIndexRequestResult reindexLucene(String index) throws Exception {
+		initializeEndpointStore(true);
+		sparqlRepository.reindexLuceneSail(index);
+		return new LuceneIndexRequestResult(true);
+	}
+
+	public LuceneIndexListResult lucenes() {
+		return new LuceneIndexListResult(
+				sparqlRepository.getLuceneSails().stream().map(lc -> lc.getParameter(LuceneSail.INDEX_ID)).toList());
 	}
 
 	/**
