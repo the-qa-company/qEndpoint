@@ -93,6 +93,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * disable delete bitmaps, default false
 	 */
 	public static final String OPTION_QENDPOINT_DELETE_DISABLE = "qendpoint.delete.disable";
+	/**
+	 * disable updates, default false
+	 */
+	public static final String OPTION_QENDPOINT_UPDATE_DISABLE = "qendpoint.update.disable";
 	private static final AtomicLong ENDPOINT_DEBUG_ID_GEN = new AtomicLong();
 	private static final Logger logger = LoggerFactory.getLogger(EndpointStore.class);
 	private final long debugId;
@@ -122,6 +126,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	private final boolean inMemDeletes;
 	private final boolean loadIntoMemory;
 	private final boolean deleteDisabled;
+	private final boolean updateDisabled;
 
 	// bitmaps used to mark if the subject, predicate, object elements in HDT
 	// are used in the rdf4j delta store
@@ -184,7 +189,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 			throws IOException {
 		// load HDT file
 		this.spec = (spec = HDTOptions.ofNullable(spec));
-		deleteDisabled = spec.getBoolean(OPTION_QENDPOINT_DELETE_DISABLE, false);
+
+		updateDisabled = spec.getBoolean(OPTION_QENDPOINT_UPDATE_DISABLE, false);
+		deleteDisabled = updateDisabled || spec.getBoolean(OPTION_QENDPOINT_DELETE_DISABLE, false);
 		validOrders = getHDTSpec().getEnumSet(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, TripleComponentOrder.class);
 		validOrders.add(TripleComponentOrder.SPO); // we need at least SPO
 
@@ -1229,6 +1236,10 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public boolean isDeleteDisabled() {
 		return deleteDisabled;
+	}
+
+	public boolean isUpdateDisabled() {
+		return updateDisabled;
 	}
 
 	public long getGraphsCount() {

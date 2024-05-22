@@ -1354,6 +1354,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 					continue; // not asked by the user, we can ignore
 				}
 				// generate the file
+				log.info("generating sub other index {}", order);
 				BitmapTriplesIndexFile.generateIndex(this, subIndexPath, order, spec, mListener);
 				try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
 					// load from the path...
