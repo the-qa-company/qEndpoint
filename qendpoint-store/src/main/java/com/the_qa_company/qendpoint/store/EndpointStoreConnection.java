@@ -229,7 +229,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 
 	@Override
 	public boolean allowUpdate() {
-		return true;
+		return !endpoint.isUpdateDisabled();
 	}
 
 	@Override
@@ -240,8 +240,12 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	@Override
 	public void addStatement(UpdateContext op, Resource subj, IRI pred, Value obj, Resource... contexts)
 			throws SailException {
-		if (MergeRunnableStopPoint.disableRequest)
+		if (MergeRunnableStopPoint.disableRequest) {
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
+		}
+		if (endpoint.isUpdateDisabled()) {
+			throw new SailException("This sail doesn't support updates");
+		}
 
 		isWriteConnection = true;
 
@@ -454,7 +458,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 			throw new MergeRunnableStopPoint.MergeRunnableException("connections request disabled");
 
 		if (endpoint.isDeleteDisabled()) {
-			throw new SailException("This sail doesn't support deletion");
+			throw new SailException("This sail doesn't support updates");
 		}
 
 		isWriteConnection = true;
