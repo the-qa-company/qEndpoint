@@ -1,5 +1,14 @@
 package com.the_qa_company.qendpoint.core.unsafe;
 
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.util.disk.LongArray;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -8,7 +17,7 @@ import java.util.Objects;
  *
  * @author Antoine Willerval
  */
-public class UnsafeLongArray {
+public class UnsafeLongArray implements LongArray {
 	private static final int SIZE_OF = Long.BYTES;
 
 	/**
@@ -153,6 +162,7 @@ public class UnsafeLongArray {
 	/**
 	 * clear the array
 	 */
+	@Override
 	public void clear() {
 		if (javaArray == null) {
 			MemoryUtils.memset(pointer, size * sizeOf(), (byte) 0);
@@ -167,6 +177,7 @@ public class UnsafeLongArray {
 	 * @param index index
 	 * @return value
 	 */
+	@Override
 	public long get(long index) {
 		if (javaArray != null) {
 			return javaArray[(int) index];
@@ -181,6 +192,7 @@ public class UnsafeLongArray {
 	 * @param index index
 	 * @param value value
 	 */
+	@Override
 	public void set(long index, long value) {
 		if (javaArray != null) {
 			javaArray[(int) index] = value;
@@ -204,6 +216,7 @@ public class UnsafeLongArray {
 	/**
 	 * @return size of the array
 	 */
+	@Override
 	public long length() {
 		return size;
 	}
@@ -211,7 +224,46 @@ public class UnsafeLongArray {
 	/**
 	 * @return the size of an element in the array
 	 */
+	@Override
 	public int sizeOf() {
 		return 8;
+	}
+
+	@Override
+	public void resize(long newSize) {
+		throw new NotImplementedException("Can't resize UnsafeLongArray");
+	}
+
+	/**
+	 * read a certain amount of elements inside this array
+	 * @param input input stream
+	 * @param size element to read
+	 * @param offset array offset
+	 * @throws IOException reading issues
+	 */
+	public void read(InputStream input, long size, long offset) throws IOException {
+		if (offset + size > this.size) {
+			throw new IndexOutOfBoundsException("Can't read more bytes than the array size");
+		}
+
+		for (long i = 0; i < size; i++) {
+			set(offset + i, IOUtil.readLong(input));
+		}
+	}
+	/**
+	 * write a certain amount of elements from this array to a strea
+	 * @param output output stream
+	 * @param size element to write
+	 * @param offset array offset
+	 * @throws IOException writing issues
+	 */
+	public void write(OutputStream output, long size, long offset) throws IOException {
+		if (offset + size > this.size) {
+			throw new IndexOutOfBoundsException("Can't write more bytes than the array size");
+		}
+
+		for (long i = 0; i < size; i++) {
+			IOUtil.writeLong(output, get(offset + i));
+		}
 	}
 }

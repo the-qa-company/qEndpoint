@@ -99,12 +99,13 @@ public class SequenceLog64Big implements DynamicSequence {
 	 * @param data      Array
 	 * @param bitsField Length in bits of each field
 	 * @param index     Position to be retrieved
+	 * @param bitStart  Start offset
 	 */
-	private static long getField(UnsafeLongArray data, int bitsField, long index) {
+	public static long getField(UnsafeLongArray data, int bitsField, long index, long bitStart) {
 		if (bitsField == 0)
 			return 0;
 
-		long bitPos = index * bitsField;
+		long bitPos = index * bitsField + bitStart;
 		long i = bitPos / W;
 		long j = bitPos % W;
 		long result;
@@ -125,12 +126,13 @@ public class SequenceLog64Big implements DynamicSequence {
 	 * @param bitsField Length in bits of each field
 	 * @param index     Position to store in
 	 * @param value     Value to be stored
+	 * @param bitStart  Start offset
 	 */
-	private static void setField(UnsafeLongArray data, int bitsField, long index, long value) {
+	public static void setField(UnsafeLongArray data, int bitsField, long index, long value, long bitStart) {
 		if (bitsField == 0)
 			return;
 
-		long bitPos = index * bitsField;
+		long bitPos = index * bitsField + bitStart;
 		long i = bitPos / W;
 		long j = bitPos % W;
 
@@ -182,7 +184,7 @@ public class SequenceLog64Big implements DynamicSequence {
 		while (elements.hasNext()) {
 			long element = elements.next();
 			assert element <= maxvalue;
-			setField(data, numbits, count, element);
+			setField(data, numbits, count, element, 0);
 			count++;
 		}
 	}
@@ -198,7 +200,7 @@ public class SequenceLog64Big implements DynamicSequence {
 		// throw new IndexOutOfBoundsException();
 //		}
 
-		return getField(data, numbits, position);
+		return getField(data, numbits, position, 0);
 	}
 
 	@Override
@@ -207,7 +209,7 @@ public class SequenceLog64Big implements DynamicSequence {
 			throw new IllegalArgumentException(
 					"Value exceeds the maximum for this data structure " + value + " > " + maxvalue);
 		}
-		setField(data, numbits, position, value);
+		setField(data, numbits, position, value, 0);
 	}
 
 	@Override
@@ -251,8 +253,8 @@ public class SequenceLog64Big implements DynamicSequence {
 		// System.out.println("newbits"+newbits);
 		if (newbits != numbits) {
 			for (long i = 0; i < numentries; i++) {
-				long value = getField(data, numbits, i);
-				setField(data, newbits, i, value);
+				long value = getField(data, numbits, i, 0);
+				setField(data, newbits, i, value, 0);
 			}
 			numbits = newbits;
 			maxvalue = BitUtil.maxVal(numbits);

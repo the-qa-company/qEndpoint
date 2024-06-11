@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
+import java.math.BigDecimal;
+
 /**
  * ByteString char sequence, can't be compared with string, faster than string
  * with IO
@@ -21,6 +23,10 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 */
 	static ByteString of(CharSequence sec) {
 		return ByteStringUtil.asByteString(sec);
+	}
+
+	static ByteString of(long number) {
+		return new IntCompactString(number);
 	}
 
 	/**
@@ -157,5 +163,17 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			}
 		}
 		return true;
+	}
+
+	default long longValue() {
+		return Long.parseLong(this, 0, length(), 10);
+	}
+
+	default double doubleValue() {
+		return Double.parseDouble(toString());
+	}
+
+	default BigDecimal decimalValue() {
+		return new BigDecimal(toString());
 	}
 }
