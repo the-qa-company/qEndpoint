@@ -186,6 +186,16 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	/**
+	 * Create a view of this LongArray, the view is valid until the size isn't changed
+	 * @param start start
+	 * @param length length
+	 * @return view
+	 */
+	default LongArray view(long start, long length) {
+		return new LongArrayView(this, start, length);
+	}
+
+	/**
 	 * @return stream of the array
 	 */
 	default LongStream stream() {
