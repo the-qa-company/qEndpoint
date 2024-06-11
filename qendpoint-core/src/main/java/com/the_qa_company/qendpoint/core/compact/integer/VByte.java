@@ -214,6 +214,44 @@ public class VByte {
 		return i;
 	}
 
+	public static void encodeInv(OutputStream out, long value) throws IOException {
+		if (value < 0) {
+			throw new IllegalArgumentException("Only can encode VByte of positive values");
+		}
+
+		if (value <= 0x7F) {
+			out.write((int)value);
+			return; // trivial case
+		}
+
+		int shift = 56;
+
+		while ((value >> shift) == 0) {
+			shift -= 7; // we know value >= 0x80
+		}
+		// window is pointing to the first 7 bits to write
+		out.write((int)((value >> shift) | 0x80));
+
+		while (shift > 0) {
+			shift -= 7;
+			out.write((int)((value >> shift) & 0x7F));
+		}
+	}
+
+	public static long decodeInv(byte[] data, int offset) {
+		long out = 0;
+		int i = 0;
+		int shift = 0;
+		while ((0x80 & data[offset - i]) == 0) {
+			assert shift < 50 : "Read more bytes than required to load the max long";
+			out |= (data[offset - i] & 0x7FL) << shift;
+			i++;
+			shift += 7;
+		}
+		out |= (data[offset - i] & 0x7FL) << shift;
+		return out;
+	}
+
 	public static void show(byte[] data, int len) {
 		for (int i = 0; i < len; i++) {
 			System.out.print(Long.toHexString(data[i] & 0xFF) + " ");
