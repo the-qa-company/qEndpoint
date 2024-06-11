@@ -46,4 +46,29 @@ public class VByteTest {
 		System.out.println("VAL: " + val);
 		fail("Exception not thrown");
 	}
+
+	@Test
+	public void testInvVB() throws IOException {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		ByteArrayOutputStream os2 = new ByteArrayOutputStream();
+
+		final long val = 0x642707;
+
+		VByte.encodeInv(os, val);
+		VByte.encode(os2, val);
+
+		byte[] ba = os.toByteArray();
+		byte[] ba2 = os2.toByteArray();
+
+		// the inv va is the reversed, so ba = reverse(ba2)
+		assertEquals(ba.length, ba2.length);
+		for (int i = 0; i < ba.length; i++) {
+			assertEquals("bad index: " + i, ba[i], ba2[ba2.length - 1 - i]);
+		}
+
+		long vald1 = VByte.decodeInv(ba, ba.length - 1);
+		long vald2 = VByte.decode(new ByteArrayInputStream(ba2));
+		assertEquals("invalid decode", vald1, val);
+		assertEquals("invalid inv decode", vald1, vald2);
+	}
 }
