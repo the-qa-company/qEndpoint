@@ -90,10 +90,16 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 		boolean signed = (flags & BLOCK_FLAGS_SIGNED_FLAG) != 0;
 
 		long start = 0;
-		long end = blockid == ((numstrings - 1) / blocksize + 1) ? numstrings % blocksize : blocksize;
+		long end;
+
+		if (blockid == blocks.getNumberOfElements() - 2) {
+			end = (numstrings - 1) % blocksize;
+		} else {
+			end = blocksize - 1;
+		}
 		long startOffset = (blockStart << 3) + BLOCK_FLAGS_SIZE;
 
-		while (start < end) {
+		while (start <= end) {
 			long mid = (start + end) >>> 1;
 
 			long value = SequenceLog64Big.getField(data, bits, mid, startOffset);
@@ -103,7 +109,6 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 					value = (~0L << bits) | value;
 				}
 			}
-			System.out.println(value);
 
 			int cmp = Long.compare(val, value);
 
@@ -115,6 +120,8 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 				return mid;
 			}
 		}
+		if (val == 547366082903L)
+			System.out.printf("no find for %d\n", val);
 
 		return 0;
 	}
@@ -322,6 +329,8 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 						}
 					}
 				}
+				// end
+				blocks.append(blockStart);
 
 				blocks.aggressiveTrimToSize();
 
