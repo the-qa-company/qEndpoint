@@ -218,4 +218,62 @@ public interface LongArray extends Iterable<Long> {
 			}
 		};
 	}
+
+	/**
+	 * get a value from the array as a double, it is reinterpreted, not casted
+	 * @param index index
+	 * @return double
+	 */
+	default double getDouble(long index) {
+		return Double.longBitsToDouble(get(index));
+	}
+
+	/**
+	 * set a value in the array as a double, it is reinterpreted, not casted
+	 * @param index index
+	 * @param value value
+	 */
+	default void set(long index, double value) {
+		set(index, Double.doubleToLongBits(value));
+	}
+
+	/**
+	 * run a binary search over this array as double, the array should be sorted!
+	 *
+	 * @param value the value to search
+	 * @return index of the value, -1 if it doesn't appear in the array
+	 * @see #linearSearch(long)
+	 */
+	default long binarySearch(double value) {
+		return binarySearch(value, 0, length());
+	}
+
+	/**
+	 * run a binary search over this array as double, the array should be sorted!
+	 *
+	 * @param value      the value to search
+	 * @param startIndex start index (inclusive)
+	 * @param endIndex   end index (exclusive)
+	 * @return index of the value, -1 if it doesn't appear in the array
+	 * @see #linearSearch(long)
+	 */
+	default long binarySearch(double value, long startIndex, long endIndex) {
+		long min = startIndex;
+		long max = endIndex;
+
+		while (min < max) {
+			long mid = (min + max) / 2;
+
+			double mappedValue = getDouble(mid);
+			if (mappedValue == value) {
+				return mid;
+			} else if (mappedValue < value) {
+				min = mid + 1;
+			} else { // mappedValue > value
+				max = mid;
+			}
+		}
+
+		return -1;
+	}
 }

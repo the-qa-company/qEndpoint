@@ -29,6 +29,14 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		return new IntCompactString(number);
 	}
 
+	static ByteString of(double number) {
+		return new DoubleCompactString(number);
+	}
+
+	static ByteString of(BigDecimal number) {
+		return new DecimalCompactString(number);
+	}
+
 	/**
 	 * copy a CharSequence into a new byte string
 	 *
