@@ -121,11 +121,11 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param bitsField Length in bits of each field
 	 * @param index     Position to be retrieved
 	 */
-	private static long getField(LongArray data, int bitsField, long index) {
+	public static long getField(LongArray data, int bitsField, long index, long startBit) {
 		if (bitsField == 0)
 			return 0;
 
-		long bitPos = index * bitsField;
+		long bitPos = index * bitsField + startBit;
 		long i = bitPos / W;
 		long j = bitPos % W;
 		long result;
@@ -147,7 +147,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param index     Position to store in
 	 * @param value     Value to be stored
 	 */
-	private static void setField(LongArray data, int bitsField, long index, long value) {
+	public static void setField(LongArray data, int bitsField, long index, long value) {
 		if (bitsField == 0)
 			return;
 		long bitPos = index * bitsField;
@@ -193,7 +193,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 					position + " < 0 || " + position + " > " + data.length() * 64 / numbits);
 		}
 
-		return getField(data, numbits, position);
+		return getField(data, numbits, position, 0);
 	}
 
 	@Override
@@ -250,7 +250,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		// System.out.println("newbits"+newbits);
 		if (newbits != numbits) {
 			for (long i = 0; i < numentries; i++) {
-				long value = getField(data, numbits, i);
+				long value = getField(data, numbits, i, 0);
 				setField(data, newbits, i, value);
 			}
 			numbits = newbits;

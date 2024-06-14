@@ -607,6 +607,61 @@ public class IOUtil {
 					+ ((readBuffer[1] & 255) << 8) + ((readBuffer[0] & 255));
 		}
 	}
+	public static long readLong(long location, BigMappedByteBuffer buffer, byte[] readBuffer, int offset) throws IOException {
+		buffer.get(readBuffer, location, offset, 8);
+
+		return ((long) readBuffer[offset + 7] << 56) + ((long) (readBuffer[offset + 6] & 255) << 48)
+		       + ((long) (readBuffer[offset + 5] & 255) << 40) + ((long) (readBuffer[offset + 4] & 255) << 32)
+		       + ((long) (readBuffer[offset + 3] & 255) << 24) + ((readBuffer[offset + 2] & 255) << 16)
+		       + ((readBuffer[offset + 1] & 255) << 8) + ((readBuffer[offset] & 255));
+	}
+	public static double readLongDouble(long location, BigMappedByteBuffer buffer, byte[] readBuffer, int offset) throws IOException {
+		return Double.longBitsToDouble(readLong(location, buffer, readBuffer, offset));
+	}
+
+	public static long readLong(long location, BigMappedByteBuffer buffer) throws IOException {
+		byte[] readBuffer = new byte[8];
+		buffer.get(readBuffer, location, 0, readBuffer.length);
+
+		return ((long) readBuffer[7] << 56) + ((long) (readBuffer[6] & 255) << 48)
+		       + ((long) (readBuffer[5] & 255) << 40) + ((long) (readBuffer[4] & 255) << 32)
+		       + ((long) (readBuffer[3] & 255) << 24) + ((readBuffer[2] & 255) << 16)
+		       + ((readBuffer[1] & 255) << 8) + ((readBuffer[0] & 255));
+	}
+	public static double readLongDouble(long location, BigMappedByteBuffer buffer) throws IOException {
+		return Double.longBitsToDouble(readLong(location, buffer));
+	}
+
+	/**
+	 * run a binary search over this array as double, the array should be sorted!
+	 *
+	 * @param buffer     the buffer to search
+	 * @param value      the value to search
+	 * @param startIndex start index (inclusive)
+	 * @param endIndex   end index (exclusive)
+	 * @return index of the value, -1 if it doesn't appear in the array
+	 */
+	public static long binarySearch(BigMappedByteBuffer buffer, double value, long startIndex, long endIndex) throws IOException {
+		byte[] tmplg = new byte[8];
+		long min = startIndex;
+		long max = endIndex;
+
+		while (min < max) {
+			long mid = (min + max) / 2;
+
+			double mappedValue = readLongDouble(mid * 8, buffer, tmplg, 0);
+			if (mappedValue == value) {
+				return mid;
+			} else if (mappedValue < value) {
+				min = mid + 1;
+			} else { // mappedValue > value
+				max = mid;
+			}
+		}
+
+		return -1;
+	}
+
 
 	/**
 	 * Write int, little endian
