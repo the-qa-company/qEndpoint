@@ -335,6 +335,7 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 				try (InputStream is = new BufferedInputStream(Files.newInputStream(file))) {
 					data = UnsafeLongArray.allocate(size);
 					data.read(is, size, 0);
+					this.size = size;
 				}
 
 				Files.delete(file);

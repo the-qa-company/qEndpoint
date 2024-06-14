@@ -182,6 +182,18 @@ public class BigMappedByteBuffer {
 	/**
 	 * read a particular number of bytes in the buffer
 	 *
+	 * @param dst      the destination array
+	 * @param position the position in the buffer
+	 * @param offset   the offset in the destination
+	 * @param length   the length to read
+	 */
+	public void get(byte[] dst, long position, int offset, int length) {
+		position(position);
+		get(dst, offset, length);
+	}
+	/**
+	 * read a particular number of bytes in the buffer
+	 *
 	 * @param dst    the destination array
 	 * @param offset the offset in the offset
 	 * @param length the length to read
