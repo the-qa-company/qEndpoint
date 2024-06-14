@@ -23,25 +23,11 @@ import java.util.Iterator;
 
 public class FloatDictionarySection implements DictionarySectionPrivate {
 	public static final int TYPE_INDEX = 4;
-	public static final double EPSILON = Double.MIN_NORMAL * 10;
 
 	UnsafeLongArray data;
 	protected long size;
 
 	public FloatDictionarySection(HDTOptions spec) {
-	}
-
-
-	public static int compareDoubleDelta(double d1, double d2) {
-		double v = d1 - d2;
-
-		if (v < -EPSILON) {
-			return -1;
-		}
-		if (v > EPSILON) {
-			return 1;
-		}
-		return 0;
 	}
 
 	@Override
