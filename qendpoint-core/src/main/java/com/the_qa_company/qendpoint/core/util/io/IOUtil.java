@@ -648,6 +648,15 @@ public class IOUtil {
 		return readBuffer(input, (int) size, listener);
 	}
 
+	public static int readSizedBuffer(InputStream input, byte[] buffer, ProgressListener listener) throws IOException {
+		long size = VByte.decode(input);
+		if (size > Integer.MAX_VALUE - 5 || size < 0) {
+			throw new IOException("Read bad sized buffer: " + size);
+		}
+		readBuffer(input, buffer, (int) size, listener);
+		return (int)size;
+	}
+
 	/**
 	 * @param input    din
 	 * @param length   bytes
@@ -668,6 +677,20 @@ public class IOUtil {
 		}
 
 		return data;
+	}
+	public static void readBuffer(InputStream input, byte[] buffer, int length, ProgressListener listener) throws IOException {
+		int nRead;
+		int pos = 0;
+		assert length <= buffer.length;
+		listener = ProgressListener.ofNullable(listener);
+		while ((nRead = input.read(buffer, pos, length - pos)) > 0) {
+			listener.notifyProgress(100 * pos / (float) length, "reading buffer");
+			pos += nRead;
+		}
+
+		if (pos != length) {
+			throw new EOFException("EOF while reading array from InputStream");
+		}
 	}
 
 	public static void printBitsln(long val, int bits) {

@@ -78,6 +78,18 @@ public class VByte {
 			return ~(decode >>> 1);
 		}
 	}
+	public static int decodeSigned(BigByteBuffer data, long offset, Mutable<Long> value) {
+		int shift = decode(data, offset, value);
+		long decode = value.getValue();
+		if ((decode & 1) == 0) {
+			// +
+			value.setValue(decode >>> 1);
+		} else {
+			// -
+			value.setValue(~(decode >>> 1));
+		}
+		return shift;
+	}
 
 	public static void encode(OutputStream out, long value) throws IOException {
 		if (value < 0) {
