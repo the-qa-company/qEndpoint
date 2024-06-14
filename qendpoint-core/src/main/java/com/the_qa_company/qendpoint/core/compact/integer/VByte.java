@@ -78,7 +78,21 @@ public class VByte {
 			return ~(decode >>> 1);
 		}
 	}
+
 	public static int decodeSigned(BigByteBuffer data, long offset, Mutable<Long> value) {
+		int shift = decode(data, offset, value);
+		long decode = value.getValue();
+		if ((decode & 1) == 0) {
+			// +
+			value.setValue(decode >>> 1);
+		} else {
+			// -
+			value.setValue(~(decode >>> 1));
+		}
+		return shift;
+	}
+
+	public static int decodeSigned(BigMappedByteBuffer data, long offset, Mutable<Long> value) {
 		int shift = decode(data, offset, value);
 		long decode = value.getValue();
 		if ((decode & 1) == 0) {
@@ -211,6 +225,22 @@ public class VByte {
 	}
 
 	public static int decode(BigByteBuffer data, long offset, Mutable<Long> value) {
+		long out = 0;
+		int i = 0;
+		int shift = 0;
+		while ((0x80 & data.get(offset + i)) == 0) {
+			assert shift < 50 : "Read more bytes than required to load the max long";
+			out |= (data.get(offset + i) & 127L) << shift;
+			i++;
+			shift += 7;
+		}
+		out |= (data.get(offset + i) & 127L) << shift;
+		i++;
+		value.setValue(out);
+		return i;
+	}
+
+	public static int decode(BigMappedByteBuffer data, long offset, Mutable<Long> value) {
 		long out = 0;
 		int i = 0;
 		int shift = 0;

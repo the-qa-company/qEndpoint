@@ -5,11 +5,13 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -152,11 +154,75 @@ public class FloatDictionarySectionTest {
 					} catch (IOException e) {
 						t.addSuppressed(e);
 					}
+					throw t;
 				}
-				IOUtil.deleteDirRecurse(root);
 			}
 
 		}
+		IOUtil.deleteDirRecurse(root);
+	}
+
+
+	@Test
+	@Ignore("test")
+	public void saveLenDeltaTest() throws IOException {
+		Path root = tempDir.newFolder().toPath();
+		Random rnd = new Random(456789);
+		// iterations
+		for (int z = 0; z < 4; z++) {
+			// 50 to avoid reaching long limit
+			for (int i = 2; i < 50; i++) {
+				try (
+						DictionarySectionPrivate sec = new FloatDictionarySection(HDTOptions.empty());
+						DictionarySectionPrivate sec2 = new PFCDictionarySectionBig(HDTOptions.empty())
+				){
+					int count = rnd.nextInt(0x2000); // 2^14
+
+					long bound = 1L << i;
+
+					double curr = bound * (rnd.nextDouble() - 0.5);
+					List<ByteString> strings = new ArrayList<>(count);
+					strings.add(ByteString.of(curr));
+					for (int j = 0; j < count; j++) {
+						double vl = rnd.nextDouble() * bound;
+						double prev = curr;
+						curr += vl;
+						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev)) continue;
+
+						strings.add(ByteString.of(curr));
+					}
+
+					sec.load(
+							strings.iterator(),
+							strings.size(),
+							ProgressListener.ignore()
+					);
+					sec2.load(
+							strings.iterator(),
+							strings.size(),
+							ProgressListener.ignore()
+					);
+
+					Path idx = root.resolve("idx.bin");
+					Path idx2 = root.resolve("idx2.bin");
+					sec.save(idx, ProgressListener.ignore());
+					sec2.save(idx2, ProgressListener.ignore());
+
+					long l1 = Files.size(idx);
+					long l2 = Files.size(idx2);
+					System.out.println(l1 + " / " + l2 + " / " + (l1 * 10000 / l2) / 100.0);
+				} catch (Throwable t) {
+					try {
+						IOUtil.deleteDirRecurse(root);
+					} catch (IOException e) {
+						t.addSuppressed(e);
+					}
+					throw t;
+				}
+			}
+
+		}
+		IOUtil.deleteDirRecurse(root);
 	}
 
 }
