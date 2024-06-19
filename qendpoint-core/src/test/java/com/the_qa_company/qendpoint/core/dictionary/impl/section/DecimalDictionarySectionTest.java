@@ -27,6 +27,7 @@ public class DecimalDictionarySectionTest {
 
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+
 	@Test
 	public void loadTest() throws IOException {
 		Random rnd = new Random(456789);
@@ -47,16 +48,13 @@ public class DecimalDictionarySectionTest {
 					double vl = rnd.nextDouble() * bound;
 					double prev = curr;
 					curr += vl;
-					if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev)) continue;
+					if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev))
+						continue;
 
 					strings.add(ByteString.of(BigDecimal.valueOf(curr)));
 				}
 
-				sec.load(
-						strings.iterator(),
-						strings.size(),
-						ProgressListener.ignore()
-				);
+				sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 
 				{ // test str
 					Iterator<? extends CharSequence> it = sec.getSortedEntries();
@@ -91,13 +89,11 @@ public class DecimalDictionarySectionTest {
 					}
 				}
 
-
 				sec.close();
 			}
 
 		}
 	}
-
 
 	@Test
 	public void saveTest() throws IOException {
@@ -107,10 +103,8 @@ public class DecimalDictionarySectionTest {
 		for (int z = 0; z < 4; z++) {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
-				try (
-						DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty());
-						DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())
-				){
+				try (DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty());
+						DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
 
 					int count = rnd.nextInt(0x2000); // 2^14
 
@@ -123,15 +117,12 @@ public class DecimalDictionarySectionTest {
 						double vl = rnd.nextDouble() * bound;
 						double prev = curr;
 						curr += vl;
-						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev)) continue;
+						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev))
+							continue;
 
 						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
 					}
-					sec.load(
-							strings.iterator(),
-							strings.size(),
-							ProgressListener.ignore()
-					);
+					sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 
 					Path idx = root.resolve("idx.bin");
 					sec.save(idx, ProgressListener.ignore());
@@ -175,10 +166,8 @@ public class DecimalDictionarySectionTest {
 		for (int z = 0; z < 4; z++) {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
-				try (
-						DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty());
-						DictionarySectionPrivate secEx = new PFCDictionarySectionBig(HDTOptions.empty())
-				){
+				try (DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty());
+						DictionarySectionPrivate secEx = new PFCDictionarySectionBig(HDTOptions.empty())) {
 
 					int count = rnd.nextInt(0x2000); // 2^14
 
@@ -191,20 +180,13 @@ public class DecimalDictionarySectionTest {
 						double vl = rnd.nextDouble() * bound;
 						double prev = curr;
 						curr += vl;
-						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev)) continue;
+						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev))
+							continue;
 
 						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
 					}
-					sec.load(
-							strings.iterator(),
-							strings.size(),
-							ProgressListener.ignore()
-					);
-					secEx.load(
-							strings.iterator(),
-							strings.size(),
-							ProgressListener.ignore()
-					);
+					sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
+					secEx.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 
 					Path idx = root.resolve("idx.bin");
 					Path idx2 = root.resolve("idx2.bin");
@@ -236,7 +218,7 @@ public class DecimalDictionarySectionTest {
 		for (int z = 0; z < 4; z++) {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
-				try (DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty())){
+				try (DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty())) {
 
 					int count = rnd.nextInt(0x2000); // 2^14
 
@@ -249,23 +231,18 @@ public class DecimalDictionarySectionTest {
 						double vl = rnd.nextDouble() * bound;
 						double prev = curr;
 						curr += vl;
-						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev)) continue;
+						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev))
+							continue;
 
 						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
 					}
-					sec.load(
-							strings.iterator(),
-							strings.size(),
-							ProgressListener.ignore()
-					);
+					sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 
 					Path idx = root.resolve("idx.bin");
 					sec.save(idx, ProgressListener.ignore());
 
-					try (
-							CountInputStream is = new CountInputStream(new BufferedInputStream(Files.newInputStream(idx)));
-							DecimalDictionarySectionMap sec2 = new DecimalDictionarySectionMap(is, idx.toFile())
-					) {
+					try (CountInputStream is = new CountInputStream(new BufferedInputStream(Files.newInputStream(idx)));
+							DecimalDictionarySectionMap sec2 = new DecimalDictionarySectionMap(is, idx.toFile())) {
 						{
 
 							Iterator<? extends CharSequence> itex = sec.getSortedEntries();
@@ -283,7 +260,6 @@ public class DecimalDictionarySectionTest {
 							}
 							assertFalse("too many elements", itac.hasNext());
 						}
-
 
 						{ // test str
 							Iterator<? extends CharSequence> it = sec2.getSortedEntries();

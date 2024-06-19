@@ -11,12 +11,12 @@ public class BigBufferLongArray implements LongArray, Closeable {
 	public static LongArray of(BigMappedByteBuffer buffer) {
 		return new BigBufferLongArray(buffer);
 	}
+
 	private final BigMappedByteBuffer array;
 
 	private BigBufferLongArray(BigMappedByteBuffer array) {
 		this.array = array;
 	}
-
 
 	@Override
 	public long get(long index) {

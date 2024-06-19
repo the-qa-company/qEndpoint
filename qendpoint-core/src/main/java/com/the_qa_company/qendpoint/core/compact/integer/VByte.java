@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Mutable;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
@@ -77,6 +78,28 @@ public class VByte {
 			// -
 			return ~(decode >>> 1);
 		}
+	}
+
+	public static int encodeSigned(byte[] data, int offset, long value) {
+		if (value < 0) {
+			// set the 1st bit to 1
+			return encode(data, offset, ~(value << 1));
+		} else {
+			return encode(data, offset, value << 1);
+		}
+	}
+
+	public static int decodeSigned(byte[] data, int offset, Mutable<Long> value) {
+		int res = decode(data, offset, value);
+		long decode = value.getValue();
+		if ((decode & 1) == 0) {
+			// +
+			value.setValue(decode >>> 1);
+		} else {
+			// -
+			value.setValue(~(decode >>> 1));
+		}
+		return res;
 	}
 
 	public static int decodeSigned(BigByteBuffer data, long offset, Mutable<Long> value) {
@@ -192,7 +215,7 @@ public class VByte {
 		return out;
 	}
 
-	public static int encode(byte[] data, int offset, int value) {
+	public static int encode(byte[] data, int offset, long value) {
 		if (value < 0) {
 			throw new IllegalArgumentException("Only can encode VByte of positive values");
 		}
@@ -262,7 +285,7 @@ public class VByte {
 		}
 
 		if (value <= 0x7F) {
-			out.write((int)value);
+			out.write((int) value);
 			return; // trivial case
 		}
 
@@ -272,11 +295,11 @@ public class VByte {
 			shift -= 7; // we know value >= 0x80
 		}
 		// window is pointing to the first 7 bits to write
-		out.write((int)((value >> shift) | 0x80));
+		out.write((int) ((value >> shift) | 0x80));
 
 		while (shift > 0) {
 			shift -= 7;
-			out.write((int)((value >> shift) & 0x7F));
+			out.write((int) ((value >> shift) & 0x7F));
 		}
 	}
 
@@ -292,6 +315,27 @@ public class VByte {
 		}
 		out |= (data[offset - i] & 0x7FL) << shift;
 		return out;
+	}
+
+	/**
+	 * @param value value
+	 * @return get the amount of bytes required to write this value
+	 */
+	public static int len(long value) {
+		return (BitUtil.log2(value) - 1) / 7 + 1;
+	}
+
+	/**
+	 * @param value value
+	 * @return get the amount of bytes required to write this signed value
+	 */
+	public static int lenSigned(long value) {
+		if (value < 0) {
+			// set the 1st bit to 1
+			return len(~(value << 1));
+		} else {
+			return len(value << 1);
+		}
 	}
 
 	public static void show(byte[] data, int len) {

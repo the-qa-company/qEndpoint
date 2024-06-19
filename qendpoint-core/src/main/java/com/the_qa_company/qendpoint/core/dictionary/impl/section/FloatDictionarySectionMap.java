@@ -65,7 +65,8 @@ public class FloatDictionarySectionMap implements DictionarySectionPrivate {
 
 		// Read packed data
 		ch = FileChannel.open(Paths.get(f.toString()));
-		data = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base, size * 8);
+		data = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base,
+				size * 8);
 	}
 
 	@Override

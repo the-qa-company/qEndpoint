@@ -234,8 +234,9 @@ public class UnsafeLongArray implements LongArray {
 
 	/**
 	 * read a certain amount of elements inside this array
-	 * @param input input stream
-	 * @param size element to read
+	 *
+	 * @param input  input stream
+	 * @param size   element to read
 	 * @param offset array offset
 	 * @throws IOException reading issues
 	 */
@@ -248,10 +249,12 @@ public class UnsafeLongArray implements LongArray {
 			set(offset + i, IOUtil.readLong(input));
 		}
 	}
+
 	/**
 	 * write a certain amount of elements from this array to a strea
+	 *
 	 * @param output output stream
-	 * @param size element to write
+	 * @param size   element to write
 	 * @param offset array offset
 	 * @throws IOException writing issues
 	 */

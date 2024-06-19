@@ -32,7 +32,8 @@ import java.util.Iterator;
 public class IntDictionarySection implements DictionarySectionPrivate {
 	public static final int BLOCK_FLAGS_BITS_MASK = 63;
 	public static final int BLOCK_FLAGS_SIGNED_FLAG = 64;
-	public static final int BLOCK_FLAGS_SIZE = 7; // (64 - 1) max(6) + signed bit
+	public static final int BLOCK_FLAGS_SIZE = 7; // (64 - 1) max(6) + signed
+													// bit
 	public static final int INT_PER_BLOCK = 1024;
 	public static final int TYPE_INDEX = 3;
 
@@ -268,8 +269,10 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 						do {
 							long val = ByteString.of(it.next()).longValue();
 							buffer[allocated++] = val;
-							if (min > val) min = val;
-							if (max < val) max = val;
+							if (min > val)
+								min = val;
+							if (max < val)
+								max = val;
 						} while (allocated < blocksize && it.hasNext());
 
 						int flags = 0;
@@ -292,14 +295,12 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 
 						long mask = ~((~0L >>> bits) << bits);
 
-
 						flags |= bits - 1;
 
 						blocks.append(blockStart);
 
 						long bitsRequired = BLOCK_FLAGS_SIZE + ((long) bits * allocated);
 						long alignedSize = ((bitsRequired - 1) / 64 + 1) << 3;
-
 
 						blockStart += alignedSize;
 

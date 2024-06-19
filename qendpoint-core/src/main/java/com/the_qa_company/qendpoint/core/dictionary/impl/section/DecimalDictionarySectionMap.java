@@ -186,7 +186,7 @@ public class DecimalDictionarySectionMap implements DictionarySectionPrivate {
 		long offset = blockStart + VByte.decode(data, blockStart, value);
 		byte[] tmpBuffer = new byte[value.getValue().intValue()];
 
-		for (; ; ) {
+		for (;;) {
 			// Decode scale
 			offset += VByte.decodeSigned(data, offset, value);
 			int scale = value.getValue().intValue();

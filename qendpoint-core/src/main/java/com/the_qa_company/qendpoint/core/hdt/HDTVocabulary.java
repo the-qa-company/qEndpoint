@@ -81,6 +81,7 @@ public class HDTVocabulary {
 	public static final String DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD = HDT_DICTIONARY_BASE + "MultLangQuad>";
 
 	public static final String DICTIONARY_TYPE_FOUR_PSFC_SECTION = HDT_DICTIONARY_BASE + "FourPsfc>";
+	public static final String DICTIONARY_TYPE_RAW = HDT_DICTIONARY_BASE + "Raw>";
 
 	// Triples
 	public static final String TRIPLES_TYPE = DUBLIN_CORE + "format>";

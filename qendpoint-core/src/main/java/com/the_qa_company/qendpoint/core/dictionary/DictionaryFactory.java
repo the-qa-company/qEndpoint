@@ -30,6 +30,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictiona
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.dictionary.impl.PSFCFourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.PSFCTempDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.RawDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteFourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionaryLang;
@@ -40,6 +41,7 @@ import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionLangSectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionSectionCompressor;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.RawSectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.SectionCompressor;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -152,6 +154,7 @@ public class DictionaryFactory {
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> new MultipleSectionDictionaryLang(spec);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultipleSectionDictionaryLang(spec, true);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW -> new RawDictionary(spec);
 		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
 		};
 	}
@@ -214,6 +217,8 @@ public class DictionaryFactory {
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultiSectionLangSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
 					debugSleepKwayDict, quad);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW -> new RawSectionCompressor(baseFileName, source, listener,
+				bufferSize, chunkSize, k, debugSleepKwayDict, quad);
 		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
 		};
 	}

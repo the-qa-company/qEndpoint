@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -51,6 +53,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final int k;
 	private final boolean debugSleepKwayDict;
 	private final boolean quads;
+	private Comparator<IndexedNode> comparator = IndexedNode::compareTo;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
@@ -63,6 +66,10 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		this.k = k;
 		this.debugSleepKwayDict = debugSleepKwayDict;
 		this.quads = quads;
+	}
+
+	public void setComparator(Comparator<IndexedNode> comparator) {
+		this.comparator = Objects.requireNonNull(comparator, "comparator can't be null!");
 	}
 
 	/*
@@ -271,7 +278,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.setPrefix("creating subjects section " + sections.root.getFileName() + ": ");
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWSubject()) {
-					subjects.parallelSort(IndexedNode::compareTo);
+					subjects.parallelSort(comparator);
 					CompressUtil.writeCompressedSection(subjects, stream, il);
 				}
 				il.setRange(range, range + split);
@@ -279,7 +286,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.setPrefix("creating predicates section " + sections.root.getFileName() + ": ");
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWPredicate()) {
-					predicates.parallelSort(IndexedNode::compareTo);
+					predicates.parallelSort(comparator);
 					CompressUtil.writeCompressedSection(predicates, stream, il);
 				}
 				il.setRange(range, range + split);
@@ -287,7 +294,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.setPrefix("creating objects section " + sections.root.getFileName() + ": ");
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWObject()) {
-					objects.parallelSort(IndexedNode::compareTo);
+					objects.parallelSort(comparator);
 					CompressUtil.writeCompressedSection(objects, stream, il);
 				}
 				if (graph != null) {
@@ -295,7 +302,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 					il.setPrefix("creating graph section " + sections.root.getFileName() + ": ");
 					il.notifyProgress(0, "sorting");
 					try (OutputStream stream = sections.openWGraph()) {
-						graph.parallelSort(IndexedNode::compareTo);
+						graph.parallelSort(comparator);
 						CompressUtil.writeCompressedSection(graph, stream, il);
 					}
 				}
@@ -543,8 +550,8 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 
 				// section
 				try (OutputStream output = openW.get()) { // IndexNodeDeltaMergeExceptionIterator
-					CompressUtil.writeCompressedSection(CompressNodeMergeIterator.buildOfTree(readers), size, output,
-							il);
+					CompressUtil.writeCompressedSection(CompressNodeMergeIterator.buildOfTree(readers, comparator),
+							size, output, il);
 				}
 			} finally {
 				if (async) {

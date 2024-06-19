@@ -2,7 +2,7 @@ package com.the_qa_company.qendpoint.core.util.string;
 
 import java.math.BigDecimal;
 
-public class DecimalCompactString implements ByteString {
+public class DecimalCompactString implements NumberByteString {
 	BigDecimal value;
 	byte[] buffer = null;
 	private int hash = 0;
@@ -34,6 +34,7 @@ public class DecimalCompactString implements ByteString {
 		computeBuffer();
 		return new String(buffer, ByteStringUtil.STRING_ENCODING);
 	}
+
 	@Override
 	public int hashCode() {
 		// FNV Hash function: http://isthe.com/chongo/tech/comp/fnv/
@@ -51,10 +52,14 @@ public class DecimalCompactString implements ByteString {
 
 	@Override
 	public int compareTo(ByteString other) {
-		if (other instanceof DecimalCompactString ics) {
-			return value.compareTo(ics.value); // maybe use an epsilon???
+		if (other instanceof NumberByteString ics) {
+			if (numberPriority().isBetter(ics.numberPriority())) {
+				return ics.compareTo(this);
+			}
+			return value.compareTo(ics.decimalValue()); // maybe use an
+														// epsilon???
 		}
-		return ByteString.super.compareTo(other);
+		return NumberByteString.super.compareTo(other);
 	}
 
 	@Override
@@ -72,7 +77,7 @@ public class DecimalCompactString implements ByteString {
 	@Override
 	public char charAt(int index) {
 		computeBuffer();
-		return (char)(buffer[index] & 0xff);
+		return (char) (buffer[index] & 0xff);
 	}
 
 	@Override
@@ -88,8 +93,11 @@ public class DecimalCompactString implements ByteString {
 		if (this == obj) {
 			return true;
 		}
-		if (bs instanceof DecimalCompactString ics) {
-			return value.compareTo(ics.value) == 0;
+		if (bs instanceof NumberByteString ics) {
+			if (numberPriority().isBetter(ics.numberPriority())) {
+				return ics.isSameNumber(this);
+			}
+			return isSameNumber(ics);
 		}
 
 		if (length() != bs.length()) {
@@ -123,5 +131,15 @@ public class DecimalCompactString implements ByteString {
 	@Override
 	public double doubleValue() {
 		return value.doubleValue();
+	}
+
+	@Override
+	public boolean isSameNumber(NumberByteString other) {
+		return value.compareTo(other.decimalValue()) == 0;
+	}
+
+	@Override
+	public NumberPriority numberPriority() {
+		return NumberPriority.DECIMAL;
 	}
 }
