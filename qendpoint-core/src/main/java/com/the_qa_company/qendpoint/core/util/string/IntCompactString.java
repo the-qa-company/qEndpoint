@@ -2,7 +2,7 @@ package com.the_qa_company.qendpoint.core.util.string;
 
 import java.math.BigDecimal;
 
-public class IntCompactString implements ByteString {
+public class IntCompactString implements NumberByteString {
 	private long value;
 	byte[] buffer = null;
 	private int hash = 0;
@@ -34,6 +34,7 @@ public class IntCompactString implements ByteString {
 		computeBuffer();
 		return new String(buffer, ByteStringUtil.STRING_ENCODING);
 	}
+
 	@Override
 	public int hashCode() {
 		// FNV Hash function: http://isthe.com/chongo/tech/comp/fnv/
@@ -51,10 +52,13 @@ public class IntCompactString implements ByteString {
 
 	@Override
 	public int compareTo(ByteString other) {
-		if (other instanceof IntCompactString ics) {
-			return Long.compare(value, ics.value);
+		if (other instanceof NumberByteString ics) {
+			if (numberPriority().isBetter(ics.numberPriority())) {
+				return ics.compareTo(this);
+			}
+			return Long.compare(value, ics.longValue());
 		}
-		return ByteString.super.compareTo(other);
+		return NumberByteString.super.compareTo(other);
 	}
 
 	@Override
@@ -72,7 +76,7 @@ public class IntCompactString implements ByteString {
 	@Override
 	public char charAt(int index) {
 		computeBuffer();
-		return (char)(buffer[index] & 0xff);
+		return (char) (buffer[index] & 0xff);
 	}
 
 	@Override
@@ -88,8 +92,11 @@ public class IntCompactString implements ByteString {
 		if (this == obj) {
 			return true;
 		}
-		if (bs instanceof IntCompactString ics) {
-			return value == ics.value;
+		if (bs instanceof NumberByteString ics) {
+			if (numberPriority().isBetter(ics.numberPriority())) {
+				return ics.isSameNumber(this);
+			}
+			return isSameNumber(ics);
 		}
 
 		if (length() != bs.length()) {
@@ -123,5 +130,15 @@ public class IntCompactString implements ByteString {
 	@Override
 	public double doubleValue() {
 		return value;
+	}
+
+	@Override
+	public boolean isSameNumber(NumberByteString other) {
+		return other.longValue() == value;
+	}
+
+	@Override
+	public NumberPriority numberPriority() {
+		return NumberPriority.LONG;
 	}
 }

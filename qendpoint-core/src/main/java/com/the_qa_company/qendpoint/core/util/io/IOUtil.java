@@ -515,6 +515,24 @@ public class IOUtil {
 	 * Write long, little endian
 	 *
 	 * @param output os
+	 * @param offset offset
+	 * @param value  long
+	 */
+	public static void writeLong(byte[] output, int offset, long value) {
+		output[offset + 7] = (byte) (value >>> 56);
+		output[offset + 6] = (byte) (value >>> 48);
+		output[offset + 5] = (byte) (value >>> 40);
+		output[offset + 4] = (byte) (value >>> 32);
+		output[offset + 3] = (byte) (value >>> 24);
+		output[offset + 2] = (byte) (value >>> 16);
+		output[offset + 1] = (byte) (value >>> 8);
+		output[offset] = (byte) (value);
+	}
+
+	/**
+	 * Write long, little endian
+	 *
+	 * @param output os
 	 * @param value  long
 	 * @throws IOException io exception
 	 */
@@ -549,6 +567,18 @@ public class IOUtil {
 		writeBuffer[1] = (byte) (value >>> 8);
 		writeBuffer[0] = (byte) (value);
 		output.put(idx, writeBuffer, 0, 8);
+	}
+
+	/**
+	 * Read long, little endian.
+	 *
+	 * @param data data
+	 */
+	public static long readLong(byte[] data, int offset) {
+		return ((long) data[offset + 7] << 56) + ((long) (data[offset + 6] & 255) << 48)
+				+ ((long) (data[offset + 5] & 255) << 40) + ((long) (data[offset + 4] & 255) << 32)
+				+ ((long) (data[offset + 3] & 255) << 24) + ((data[offset + 2] & 255) << 16)
+				+ ((data[offset + 1] & 255) << 8) + ((data[offset] & 255));
 	}
 
 	/**
@@ -607,15 +637,19 @@ public class IOUtil {
 					+ ((readBuffer[1] & 255) << 8) + ((readBuffer[0] & 255));
 		}
 	}
-	public static long readLong(long location, BigMappedByteBuffer buffer, byte[] readBuffer, int offset) throws IOException {
+
+	public static long readLong(long location, BigMappedByteBuffer buffer, byte[] readBuffer, int offset)
+			throws IOException {
 		buffer.get(readBuffer, location, offset, 8);
 
 		return ((long) readBuffer[offset + 7] << 56) + ((long) (readBuffer[offset + 6] & 255) << 48)
-		       + ((long) (readBuffer[offset + 5] & 255) << 40) + ((long) (readBuffer[offset + 4] & 255) << 32)
-		       + ((long) (readBuffer[offset + 3] & 255) << 24) + ((readBuffer[offset + 2] & 255) << 16)
-		       + ((readBuffer[offset + 1] & 255) << 8) + ((readBuffer[offset] & 255));
+				+ ((long) (readBuffer[offset + 5] & 255) << 40) + ((long) (readBuffer[offset + 4] & 255) << 32)
+				+ ((long) (readBuffer[offset + 3] & 255) << 24) + ((readBuffer[offset + 2] & 255) << 16)
+				+ ((readBuffer[offset + 1] & 255) << 8) + ((readBuffer[offset] & 255));
 	}
-	public static double readLongDouble(long location, BigMappedByteBuffer buffer, byte[] readBuffer, int offset) throws IOException {
+
+	public static double readLongDouble(long location, BigMappedByteBuffer buffer, byte[] readBuffer, int offset)
+			throws IOException {
 		return Double.longBitsToDouble(readLong(location, buffer, readBuffer, offset));
 	}
 
@@ -624,16 +658,18 @@ public class IOUtil {
 		buffer.get(readBuffer, location, 0, readBuffer.length);
 
 		return ((long) readBuffer[7] << 56) + ((long) (readBuffer[6] & 255) << 48)
-		       + ((long) (readBuffer[5] & 255) << 40) + ((long) (readBuffer[4] & 255) << 32)
-		       + ((long) (readBuffer[3] & 255) << 24) + ((readBuffer[2] & 255) << 16)
-		       + ((readBuffer[1] & 255) << 8) + ((readBuffer[0] & 255));
+				+ ((long) (readBuffer[5] & 255) << 40) + ((long) (readBuffer[4] & 255) << 32)
+				+ ((long) (readBuffer[3] & 255) << 24) + ((readBuffer[2] & 255) << 16) + ((readBuffer[1] & 255) << 8)
+				+ ((readBuffer[0] & 255));
 	}
+
 	public static double readLongDouble(long location, BigMappedByteBuffer buffer) throws IOException {
 		return Double.longBitsToDouble(readLong(location, buffer));
 	}
 
 	/**
-	 * run a binary search over this array as double, the array should be sorted!
+	 * run a binary search over this array as double, the array should be
+	 * sorted!
 	 *
 	 * @param buffer     the buffer to search
 	 * @param value      the value to search
@@ -641,7 +677,8 @@ public class IOUtil {
 	 * @param endIndex   end index (exclusive)
 	 * @return index of the value, -1 if it doesn't appear in the array
 	 */
-	public static long binarySearch(BigMappedByteBuffer buffer, double value, long startIndex, long endIndex) throws IOException {
+	public static long binarySearch(BigMappedByteBuffer buffer, double value, long startIndex, long endIndex)
+			throws IOException {
 		byte[] tmplg = new byte[8];
 		long min = startIndex;
 		long max = endIndex;
@@ -661,7 +698,6 @@ public class IOUtil {
 
 		return -1;
 	}
-
 
 	/**
 	 * Write int, little endian
@@ -738,7 +774,7 @@ public class IOUtil {
 			throw new IOException("Read bad sized buffer: " + size);
 		}
 		readBuffer(input, buffer, (int) size, listener);
-		return (int)size;
+		return (int) size;
 	}
 
 	/**
@@ -762,7 +798,9 @@ public class IOUtil {
 
 		return data;
 	}
-	public static void readBuffer(InputStream input, byte[] buffer, int length, ProgressListener listener) throws IOException {
+
+	public static void readBuffer(InputStream input, byte[] buffer, int length, ProgressListener listener)
+			throws IOException {
 		int nRead;
 		int pos = 0;
 		assert length <= buffer.length;

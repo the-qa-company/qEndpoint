@@ -61,7 +61,8 @@ public class LongArrayView implements LongArray {
 	@Override
 	public LongArray view(long start, long length) {
 		if (parent instanceof LongArrayView lgv) {
-			// we need to check this part here to be sure we're not writing inside the parent
+			// we need to check this part here to be sure we're not writing
+			// inside the parent
 			if (start + length > parent.length()) {
 				throw new IndexOutOfBoundsException("start + length > parent size");
 			}

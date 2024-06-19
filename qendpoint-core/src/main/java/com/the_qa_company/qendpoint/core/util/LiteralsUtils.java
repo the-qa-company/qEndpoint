@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
+import com.the_qa_company.qendpoint.core.util.string.TypedLiteralCompactString;
 
 import java.util.ConcurrentModificationException;
 import java.util.Optional;
@@ -165,6 +166,9 @@ public class LiteralsUtils {
 	 *                                                   while reading
 	 */
 	public static CharSequence getType(CharSequence str) {
+		if (str instanceof TypedLiteralCompactString tlcs) {
+			return tlcs.getType();
+		}
 		if (containsLanguage(str)) {
 			return LITERAL_LANG_TYPE;
 		}

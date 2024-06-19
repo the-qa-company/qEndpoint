@@ -8,7 +8,7 @@ public class IntCompactStringTest {
 	@Test
 	public void intCompactTest() {
 		IntCompactString cs = new IntCompactString(0);
-		for (int vl : new int[] {42, 806, 23456789, -2345678, -1, 0}) {
+		for (int vl : new int[] { 42, 806, 23456789, -2345678, -1, 0 }) {
 			// test set
 			cs.setValue(vl);
 			assertNull("buffer init", cs.buffer);

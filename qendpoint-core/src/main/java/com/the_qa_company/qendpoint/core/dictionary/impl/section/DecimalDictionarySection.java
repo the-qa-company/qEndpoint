@@ -229,7 +229,8 @@ public class DecimalDictionarySection implements DictionarySectionPrivate {
 			file = File.createTempFile("hdt-rpl-ids", ".bin").toPath();
 			long blockStart = 0;
 			try {
-				try (CountOutputStream os = new CountOutputStream(new BufferedOutputStream(Files.newOutputStream(file)))) {
+				try (CountOutputStream os = new CountOutputStream(
+						new BufferedOutputStream(Files.newOutputStream(file)))) {
 					byte[][] buffer = new byte[blocksize][];
 					int[] bufferScales = new int[blocksize];
 
@@ -243,14 +244,16 @@ public class DecimalDictionarySection implements DictionarySectionPrivate {
 							bufferScales[allocated] = dec.scale();
 							byte[] d = dec.unscaledValue().toByteArray();
 							buffer[allocated++] = d;
-							if (maxSize < d.length) maxSize = d.length;
+							if (maxSize < d.length)
+								maxSize = d.length;
 						} while (allocated < blocksize && it.hasNext());
 						blocks.append(blockStart);
 
 						VByte.encode(os, maxSize); // max buffer size
 						for (int i = 0; i < allocated; i++) {
 							VByte.encodeSigned(os, bufferScales[i]); // scale
-							IOUtil.writeSizedBuffer(os, buffer[i], listener); // unscaled value
+							IOUtil.writeSizedBuffer(os, buffer[i], listener); // unscaled
+																				// value
 						}
 
 						blockStart = os.getTotalBytes();

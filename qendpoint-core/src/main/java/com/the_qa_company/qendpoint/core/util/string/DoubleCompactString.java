@@ -2,7 +2,7 @@ package com.the_qa_company.qendpoint.core.util.string;
 
 import java.math.BigDecimal;
 
-public class DoubleCompactString implements ByteString {
+public class DoubleCompactString implements NumberByteString {
 	private double value;
 	byte[] buffer = null;
 	private int hash = 0;
@@ -34,6 +34,7 @@ public class DoubleCompactString implements ByteString {
 		computeBuffer();
 		return new String(buffer, ByteStringUtil.STRING_ENCODING);
 	}
+
 	@Override
 	public int hashCode() {
 		// FNV Hash function: http://isthe.com/chongo/tech/comp/fnv/
@@ -51,10 +52,14 @@ public class DoubleCompactString implements ByteString {
 
 	@Override
 	public int compareTo(ByteString other) {
-		if (other instanceof DoubleCompactString ics) {
-			return Double.compare(value, ics.value); // maybe use an epsilon???
+		if (other instanceof NumberByteString ics) {
+			if (numberPriority().isBetter(ics.numberPriority())) {
+				return ics.compareTo(this);
+			}
+			return Double.compare(value, ics.doubleValue()); // maybe use an
+																// epsilon???
 		}
-		return ByteString.super.compareTo(other);
+		return NumberByteString.super.compareTo(other);
 	}
 
 	@Override
@@ -72,7 +77,7 @@ public class DoubleCompactString implements ByteString {
 	@Override
 	public char charAt(int index) {
 		computeBuffer();
-		return (char)(buffer[index] & 0xff);
+		return (char) (buffer[index] & 0xff);
 	}
 
 	@Override
@@ -88,8 +93,11 @@ public class DoubleCompactString implements ByteString {
 		if (this == obj) {
 			return true;
 		}
-		if (bs instanceof DoubleCompactString ics) {
-			return value == ics.value;
+		if (bs instanceof NumberByteString ics) {
+			if (numberPriority().isBetter(ics.numberPriority())) {
+				return ics.isSameNumber(this);
+			}
+			return isSameNumber(ics);
 		}
 
 		if (length() != bs.length()) {
@@ -112,7 +120,7 @@ public class DoubleCompactString implements ByteString {
 
 	@Override
 	public long longValue() {
-		return (long)value;
+		return (long) value;
 	}
 
 	@Override
@@ -123,5 +131,15 @@ public class DoubleCompactString implements ByteString {
 	@Override
 	public double doubleValue() {
 		return value;
+	}
+
+	@Override
+	public boolean isSameNumber(NumberByteString other) {
+		return value == other.doubleValue();
+	}
+
+	@Override
+	public NumberPriority numberPriority() {
+		return NumberPriority.DOUBLE;
 	}
 }

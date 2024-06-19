@@ -186,8 +186,10 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	/**
-	 * Create a view of this LongArray, the view is valid until the size isn't changed
-	 * @param start start
+	 * Create a view of this LongArray, the view is valid until the size isn't
+	 * changed
+	 *
+	 * @param start  start
 	 * @param length length
 	 * @return view
 	 */
@@ -221,6 +223,7 @@ public interface LongArray extends Iterable<Long> {
 
 	/**
 	 * get a value from the array as a double, it is reinterpreted, not casted
+	 *
 	 * @param index index
 	 * @return double
 	 */
@@ -230,6 +233,7 @@ public interface LongArray extends Iterable<Long> {
 
 	/**
 	 * set a value in the array as a double, it is reinterpreted, not casted
+	 *
 	 * @param index index
 	 * @param value value
 	 */
@@ -238,7 +242,8 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	/**
-	 * run a binary search over this array as double, the array should be sorted!
+	 * run a binary search over this array as double, the array should be
+	 * sorted!
 	 *
 	 * @param value the value to search
 	 * @return index of the value, -1 if it doesn't appear in the array
@@ -249,7 +254,8 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	/**
-	 * run a binary search over this array as double, the array should be sorted!
+	 * run a binary search over this array as double, the array should be
+	 * sorted!
 	 *
 	 * @param value      the value to search
 	 * @param startIndex start index (inclusive)

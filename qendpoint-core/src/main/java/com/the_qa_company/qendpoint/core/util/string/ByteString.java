@@ -161,11 +161,23 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 * @return true if this string starts with prefix
 	 */
 	default boolean startsWith(ByteString prefix, int start) {
-		if (start + length() < prefix.length()) {
+		return startsWith(prefix, start, 0);
+	}
+
+	/**
+	 * test if this ByteString starts with another one
+	 *
+	 * @param prefix prefix
+	 * @param start  start location in this string
+	 * @param offset offset inside the prefix
+	 * @return true if this string starts with prefix
+	 */
+	default boolean startsWith(ByteString prefix, int start, int offset) {
+		if (start + length() < prefix.length() - offset) {
 			return false; // too long
 		}
 
-		for (int i = 0; i < prefix.length(); i++) {
+		for (int i = offset; i < prefix.length(); i++) {
 			if (charAt(i + start) != prefix.charAt(i)) {
 				return false;
 			}

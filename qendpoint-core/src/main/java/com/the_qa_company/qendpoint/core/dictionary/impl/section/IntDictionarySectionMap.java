@@ -34,7 +34,8 @@ import java.util.Iterator;
 public class IntDictionarySectionMap implements DictionarySectionPrivate {
 	public static final int BLOCK_FLAGS_BITS_MASK = 63;
 	public static final int BLOCK_FLAGS_SIGNED_FLAG = 64;
-	public static final int BLOCK_FLAGS_SIZE = 7; // (64 - 1) max(6) + signed bit
+	public static final int BLOCK_FLAGS_SIZE = 7; // (64 - 1) max(6) + signed
+													// bit
 	protected FileChannel ch;
 
 	private final File f;
@@ -79,7 +80,8 @@ public class IntDictionarySectionMap implements DictionarySectionPrivate {
 
 		// Read packed data
 		ch = FileChannel.open(Paths.get(f.toString()));
-		data = BigBufferLongArray.of(BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base, size * 8));
+		data = BigBufferLongArray.of(BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch,
+				FileChannel.MapMode.READ_ONLY, base, size * 8));
 	}
 
 	public long getBlockFlags(long blockStart) {
