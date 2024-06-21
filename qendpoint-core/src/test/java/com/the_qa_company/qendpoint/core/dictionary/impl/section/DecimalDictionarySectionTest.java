@@ -104,7 +104,7 @@ public class DecimalDictionarySectionTest {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
 				try (DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty());
-						DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
+				     DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
 
 					int count = rnd.nextInt(0x2000); // 2^14
 
@@ -158,11 +158,138 @@ public class DecimalDictionarySectionTest {
 	}
 
 	@Test
+	public void saveWriteTest() throws IOException {
+		Path root = tempDir.newFolder().toPath();
+		Random rnd = new Random(456789);
+		// iterations
+		for (int z = 0; z < 4; z++) {
+			// 50 to avoid reaching long limit
+			for (int i = 2; i < 50; i++) {
+				try (DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
+
+					int count = rnd.nextInt(0x2000); // 2^14
+
+					long bound = 1L << i;
+
+					double curr = bound * (rnd.nextDouble() - 0.5);
+					List<ByteString> strings = new ArrayList<>(count);
+					strings.add(ByteString.of(BigDecimal.valueOf(curr)));
+					for (int j = 0; j < count; j++) {
+						double vl = rnd.nextDouble() * bound;
+						double prev = curr;
+						curr += vl;
+						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev))
+							continue;
+
+						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
+					}
+					Path idx = root.resolve("idx.bin");
+					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx, 4096)) {
+						sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
+						sec.save(idx, ProgressListener.ignore());
+					}
+
+					sec2.load(idx, ProgressListener.ignore());
+
+					Iterator<? extends CharSequence> itex = strings.iterator();
+					Iterator<? extends CharSequence> itac = sec2.getSortedEntries();
+
+					assertEquals("bad size", strings.size(), sec2.getNumberOfElements());
+
+					while (itex.hasNext()) {
+						assertTrue("not enough elements", itac.hasNext());
+						CharSequence excepted = itex.next();
+						CharSequence actual = itac.next();
+
+						assertEquals("invalid element", excepted, actual);
+					}
+					assertFalse("too many elements", itac.hasNext());
+				} catch (Throwable t) {
+					try {
+						IOUtil.deleteDirRecurse(root);
+					} catch (IOException e) {
+						t.addSuppressed(e);
+					}
+					throw t;
+				}
+			}
+
+		}
+		IOUtil.deleteDirRecurse(root);
+	}
+
+	@Test
+	public void saveWriteAppTest() throws IOException {
+		Path root = tempDir.newFolder().toPath();
+		Random rnd = new Random(456789);
+		// iterations
+		for (int z = 0; z < 4; z++) {
+			// 50 to avoid reaching long limit
+			for (int i = 2; i < 50; i++) {
+				try (DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
+
+					int count = rnd.nextInt(0x2000); // 2^14
+
+					long bound = 1L << i;
+
+					double curr = bound * (rnd.nextDouble() - 0.5);
+					List<ByteString> strings = new ArrayList<>(count);
+					strings.add(ByteString.of(BigDecimal.valueOf(curr)));
+					for (int j = 0; j < count; j++) {
+						double vl = rnd.nextDouble() * bound;
+						double prev = curr;
+						curr += vl;
+						if (Double.doubleToLongBits(curr) == Double.doubleToLongBits(prev))
+							continue;
+
+						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
+					}
+					Path idx = root.resolve("idx.bin");
+					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx, 4096)) {
+						try (WriteDecimalDictionarySection.WriteDictionarySectionAppender app = sec.createAppender(strings.size(), ProgressListener.ignore())) {
+							for (ByteString string : strings) {
+								app.append(string);
+							}
+						}
+						sec.save(idx, ProgressListener.ignore());
+					}
+
+					sec2.load(idx, ProgressListener.ignore());
+
+					Iterator<? extends CharSequence> itex = strings.iterator();
+					Iterator<? extends CharSequence> itac = sec2.getSortedEntries();
+
+					assertEquals("bad size", strings.size(), sec2.getNumberOfElements());
+
+					while (itex.hasNext()) {
+						assertTrue("not enough elements", itac.hasNext());
+						CharSequence excepted = itex.next();
+						CharSequence actual = itac.next();
+
+						assertEquals("invalid element", excepted, actual);
+					}
+					assertFalse("too many elements", itac.hasNext());
+				} catch (Throwable t) {
+					try {
+						IOUtil.deleteDirRecurse(root);
+					} catch (IOException e) {
+						t.addSuppressed(e);
+					}
+					throw t;
+				}
+			}
+
+		}
+		IOUtil.deleteDirRecurse(root);
+	}
+
+	@Test
 	@Ignore("test")
 	public void saveLenDeltaTest() throws IOException {
 		Path root = tempDir.newFolder().toPath();
 		Random rnd = new Random(456789);
 		// iterations
+		System.out.println("len,bound,l1,l2,perc");
 		for (int z = 0; z < 4; z++) {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
@@ -195,7 +322,7 @@ public class DecimalDictionarySectionTest {
 
 					long l1 = Files.size(idx);
 					long l2 = Files.size(idx2);
-					System.out.println(l1 + " / " + l2 + " / " + (l1 * 10000 / l2) / 100.0);
+					System.out.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
 				} catch (Throwable t) {
 					try {
 						IOUtil.deleteDirRecurse(root);

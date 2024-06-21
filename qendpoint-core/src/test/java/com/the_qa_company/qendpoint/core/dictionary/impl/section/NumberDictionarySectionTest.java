@@ -25,14 +25,14 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("speed things")
 public class NumberDictionarySectionTest {
-
+	private static final int COUNT = 10_000_000;
 	@Test
 	public void speedIntegerTest() throws IOException {
 		Random rnd = new Random(34567);
-		final int count = 10_000_000;
+		;
 		List<? extends NumberByteString> valuesInt =
-				LongStream.range(0, count)
-						.map(i -> rnd.nextInt(count * 10))
+				LongStream.range(0, COUNT)
+						.map(i -> rnd.nextInt(COUNT * 10))
 						.sorted()
 						.distinct()
 						.mapToObj(IntCompactString::new)
@@ -99,9 +99,8 @@ public class NumberDictionarySectionTest {
 	@Test
 	public void speedDoubleTest() throws IOException {
 		Random rnd = new Random(34567);
-		final int count = 10_000_000;
 		List<? extends NumberByteString> valuesInt =
-				LongStream.range(0, count)
+				LongStream.range(0, COUNT)
 						.mapToDouble(i -> rnd.nextDouble())
 						.sorted()
 						.distinct()
@@ -169,9 +168,8 @@ public class NumberDictionarySectionTest {
 	@Test
 	public void speedDecimalTest() throws IOException {
 		Random rnd = new Random(34567);
-		final int count = 10_000_000;
 		List<? extends NumberByteString> valuesInt =
-				LongStream.range(0, count)
+				LongStream.range(0, COUNT)
 						.mapToObj(i -> BigDecimal.valueOf(rnd.nextDouble()))
 						.sorted()
 						.distinct()
