@@ -24,11 +24,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 
-public class WriteIntDictionarySection implements DictionarySectionPrivate {
+public class WriteDecimalDictionarySection implements DictionarySectionPrivate {
 	private final CloseSuppressPath tempFilename;
 	private final CloseSuppressPath blockTempFilename;
 	private SequenceLog64BigDisk blocks;
@@ -39,14 +40,14 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 	private long size;
 	private boolean created;
 
-	public WriteIntDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
+	public WriteDecimalDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
 		this.bufferSize = bufferSize;
 		String fn = filename.getFileName().toString();
 		tempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_temp"));
 		blockTempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_tempblock"));
-		blocksize = (int) spec.getInt("rpl.intsec.blocksize", IntDictionarySection.INT_PER_BLOCK);
+		blocksize = (int) spec.getInt("rpl.decsec.blocksize", DecimalDictionarySection.NUMBER_PER_BLOCK);
 		if (blocksize <= 0) {
-			throw new IllegalArgumentException("rpl.intsec.blocksize should be at least 1");
+			throw new IllegalArgumentException("rpl.decsec.blocksize should be at least 1");
 		}
 		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, 1);
 	}
@@ -74,90 +75,40 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 			throw new RuntimeException(e);
 		}
 		blocks = new SequenceLog64BigDisk(blockTempFilename, 64, count / blocksize);
+		long blockStart = 0;
 
 		listener.notifyProgress(0, "Filling section");
 		try (CountOutputStream out = new CountOutputStream(tempFilename.openOutputStream(bufferSize))) {
 			CRCOutputStream crcout = new CRCOutputStream(out, new CRC32());
-			long size = 0;
-			long blockStart = 0;
+			byte[][] buffer = new byte[blocksize][];
+			int[] bufferScales = new int[blocksize];
+
 			while (it.hasNext()) {
-				UnsafeLongArray unalignedBuffer = UnsafeLongArray.wrapper(new long[2]);
-				long[] buffer = new long[blocksize];
+				// read all the strings
+				int allocated = 0;
+				int maxSize = 0;
+				do {
+					BigDecimal dec = ByteString.of(it.next()).decimalValue();
 
-				while (it.hasNext()) {
-					// read all the strings
-					int allocated = 0;
-					long min = Long.MAX_VALUE;
-					long max = Long.MIN_VALUE;
-					do {
-						long val = ByteString.of(it.next()).longValue();
-						buffer[allocated++] = val;
-						if (min > val)
-							min = val;
-						if (max < val)
-							max = val;
-					} while (allocated < blocksize && it.hasNext());
+					bufferScales[allocated] = dec.scale();
+					byte[] d = dec.unscaledValue().toByteArray();
+					buffer[allocated++] = d;
+					if (maxSize < d.length)
+						maxSize = d.length;
+				} while (allocated < blocksize && it.hasNext());
+				blocks.append(blockStart);
 
-					int flags = 0;
-					int bits;
-					if (min < 0) {
-						flags |= IntDictionarySection.BLOCK_FLAGS_SIGNED_FLAG;
-						if (max < 0) {
-							// we need to add 1 for the sign
-							bits = BitUtil.log2(~min) + 1;
-						} else {
-							bits = Math.max(BitUtil.log2(~min), BitUtil.log2(max)) + 1;
-						}
-					} else {
-						bits = BitUtil.log2(max);
-					}
-
-					if (bits == 0) {
-						bits = 1; // wtf?
-					}
-
-					long mask = ~((~0L >>> bits) << bits);
-
-					flags |= bits - 1;
-
-					blocks.append(blockStart);
-
-					long bitsRequired = IntDictionarySection.BLOCK_FLAGS_SIZE + ((long) bits * allocated);
-					long alignedSize = ((bitsRequired - 1) / 64 + 1) << 3;
-
-					blockStart += alignedSize;
-
-					// write the block flags
-					SequenceLog64Big.setField(unalignedBuffer, 7, 0, flags, 0);
-
-					int currentDelta = 7;
-					// write the allocated fields
-
-					for (int i = 0; i < allocated; i++) {
-						SequenceLog64Big.setField(unalignedBuffer, bits, 0, buffer[i] & mask, currentDelta);
-						currentDelta += bits;
-
-						if (currentDelta >= 64) {
-							size++;
-							IOUtil.writeLong(crcout, unalignedBuffer.get(0));
-							currentDelta -= 64;
-							// swap the value
-							unalignedBuffer.set(0, unalignedBuffer.get(1));
-						}
-					}
-					if (currentDelta > 0) {
-						size++;
-						IOUtil.writeLong(crcout, unalignedBuffer.get(0));
-					}
-
-					numberElements += allocated;
+				VByte.encode(crcout, maxSize); // max buffer size
+				for (int i = 0; i < allocated; i++) {
+					VByte.encodeSigned(crcout, bufferScales[i]); // scale
+					IOUtil.writeSizedBuffer(crcout, buffer[i], listener); // unscaled
+					// value
 				}
-				if (size % block == 0) {
-					listener.notifyProgress((float) (size * 100 / count), "Filling section");
-				}
-				this.size = size;
+
+				numberElements += allocated;
+				blockStart = out.getTotalBytes();
 			}
-
+			size = blockStart;
 			byteoutSize = out.getTotalBytes();
 			crcout.writeCRC();
 		} catch (IOException e) {
@@ -174,7 +125,7 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 	public void save(OutputStream output, ProgressListener listener) throws IOException {
 		CRCOutputStream out = new CRCOutputStream(output, new CRC8());
 
-		out.write(IntDictionarySection.TYPE_INDEX);
+		out.write(DecimalDictionarySection.TYPE_INDEX);
 		VByte.encode(out, numberElements);
 		VByte.encode(out, size);
 		VByte.encode(out, blocksize);
@@ -234,7 +185,6 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 	}
 
 	public class WriteDictionarySectionAppender implements Closeable {
-		private final UnsafeLongArray unalignedBuffer = UnsafeLongArray.wrapper(new long[2]);
 		private final ProgressListener listener;
 		private final long count;
 
@@ -244,9 +194,11 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 		long currentCount = 0;
 		CRCOutputStream crcout;
 		int allocated = 0;
+		int maxSize = 0;
 		long min = Long.MAX_VALUE;
 		long max = Long.MIN_VALUE;
-		long[] buffer = new long[blocksize];
+		byte[][] buffer = new byte[blocksize][];
+		int[] bufferScales = new int[blocksize];
 
 		public WriteDictionarySectionAppender(long count, ProgressListener listener) throws IOException {
 			this.listener = ProgressListener.ofNullable(listener);
@@ -261,16 +213,17 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 			allocated = 0;
 			min = Long.MAX_VALUE;
 			max = Long.MIN_VALUE;
+			maxSize = 0;
 		}
 
 		public void append(ByteString str) throws IOException {
-			assert str != null;
-			long val = str.longValue();
-			buffer[allocated++] = val;
-			if (min > val)
-				min = val;
-			if (max < val)
-				max = val;
+			BigDecimal dec = ByteString.of(str).decimalValue();
+
+			bufferScales[allocated] = dec.scale();
+			byte[] d = dec.unscaledValue().toByteArray();
+			buffer[allocated++] = d;
+			if (maxSize < d.length)
+				maxSize = d.length;
 			if (allocated < blocksize) {
 				return; // no need to complete block
 			}
@@ -283,58 +236,16 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 				return;
 			}
 
-			int flags = 0;
-			int bits;
-			if (min < 0) {
-				flags |= IntDictionarySection.BLOCK_FLAGS_SIGNED_FLAG;
-				if (max < 0) {
-					// we need to add 1 for the sign
-					bits = BitUtil.log2(~min) + 1;
-				} else {
-					bits = Math.max(BitUtil.log2(~min), BitUtil.log2(max)) + 1;
-				}
-			} else {
-				bits = BitUtil.log2(max);
-			}
-
-			if (bits == 0) {
-				bits = 1; // wtf?
-			}
-
-			long mask = ~((~0L >>> bits) << bits);
-
-			flags |= bits - 1;
-
 			blocks.append(blockStart);
 
-			long bitsRequired = IntDictionarySection.BLOCK_FLAGS_SIZE + ((long) bits * allocated);
-			long alignedSize = ((bitsRequired - 1) / 64 + 1) << 3;
-
-			blockStart += alignedSize;
-
-			// write the block flags
-			SequenceLog64Big.setField(unalignedBuffer, 7, 0, flags, 0);
-
-			int currentDelta = 7;
-			// write the allocated fields
-
+			VByte.encode(crcout, maxSize); // max buffer size
 			for (int i = 0; i < allocated; i++) {
-				SequenceLog64Big.setField(unalignedBuffer, bits, 0, buffer[i] & mask, currentDelta);
-				currentDelta += bits;
-
-				if (currentDelta >= 64) {
-					size++;
-					IOUtil.writeLong(crcout, unalignedBuffer.get(0));
-					currentDelta -= 64;
-					// swap the value
-					unalignedBuffer.set(0, unalignedBuffer.get(1));
-				}
-			}
-			if (currentDelta > 0) {
-				size++;
-				IOUtil.writeLong(crcout, unalignedBuffer.get(0));
+				VByte.encodeSigned(crcout, bufferScales[i]); // scale
+				IOUtil.writeSizedBuffer(crcout, buffer[i], listener); // unscaled
+				// value
 			}
 
+			blockStart = out.getTotalBytes();
 			numberElements += allocated;
 
 			listener.notifyProgress((float) (numberElements * 100 / count), "Filling section");
@@ -353,6 +264,7 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 				byteoutSize = out.getTotalBytes();
 				crcout.writeCRC();
 				blocks.append(byteoutSize);
+				size = byteoutSize;
 				// Trim text/blocks
 				blocks.aggressiveTrimToSize();
 				listener.notifyProgress(100, "Completed section filling");
