@@ -47,7 +47,7 @@ public class CloseMappedByteBuffer implements Closeable {
 		this.buffer = buffer;
 		if (mapTest && !duplicated) {
 			synchronized (MAP_TEST_MAP) {
-				MAP_TEST_MAP.put(id, new Throwable("MAP " + filename + "#" + id + "|" + buffer));
+				MAP_TEST_MAP.put(id, new Throwable("MAP " + filename + "#" + id + "|" + buffer + " " + this));
 			}
 		}
 	}

@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -119,6 +120,11 @@ public class WriteFloatDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		IOUtil.closeAll(tempFilename);
+	}
+
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.FLOAT;
 	}
 
 	public class WriteDictionarySectionAppender implements Closeable {

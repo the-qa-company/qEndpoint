@@ -51,13 +51,14 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final int bufferSize;
 	private final long chunkSize;
 	private final int k;
+	private final boolean stringLiterals;
 	private final boolean debugSleepKwayDict;
 	private final boolean quads;
 	private Comparator<IndexedNode> comparator = IndexedNode::compareTo;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
-			boolean quads) {
+			boolean quads, boolean stringLiterals) {
 		this.source = source;
 		this.listener = listener;
 		this.baseFileName = baseFileName;
@@ -66,6 +67,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		this.k = k;
 		this.debugSleepKwayDict = debugSleepKwayDict;
 		this.quads = quads;
+		this.stringLiterals = stringLiterals;
 	}
 
 	public void setComparator(Comparator<IndexedNode> comparator) {
@@ -143,7 +145,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			return new CompressionResultEmpty();
 		}
 		return new CompressionResultFile(triples.get(), ntRawSize.get(), new TripleFile(sections.get(), false),
-				supportsGraph());
+				supportsGraph(), stringLiterals);
 	}
 
 	/**
@@ -177,7 +179,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				}
 			}
 		}
-		return new CompressionResultPartial(files, triples.get(), ntRawSize.get(), supportsGraph());
+		return new CompressionResultPartial(files, triples.get(), ntRawSize.get(), supportsGraph(), stringLiterals);
 	}
 
 	/**
@@ -279,7 +281,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWSubject()) {
 					subjects.parallelSort(comparator);
-					CompressUtil.writeCompressedSection(subjects, stream, il);
+					CompressUtil.writeCompressedSection(subjects, stream, il, true);
 				}
 				il.setRange(range, range + split);
 				range += split;
@@ -287,7 +289,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWPredicate()) {
 					predicates.parallelSort(comparator);
-					CompressUtil.writeCompressedSection(predicates, stream, il);
+					CompressUtil.writeCompressedSection(predicates, stream, il, true);
 				}
 				il.setRange(range, range + split);
 				range += split;
@@ -295,7 +297,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWObject()) {
 					objects.parallelSort(comparator);
-					CompressUtil.writeCompressedSection(objects, stream, il);
+					CompressUtil.writeCompressedSection(objects, stream, il, stringLiterals);
 				}
 				if (graph != null) {
 					il.setRange(range, range + split);
@@ -303,7 +305,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 					il.notifyProgress(0, "sorting");
 					try (OutputStream stream = sections.openWGraph()) {
 						graph.parallelSort(comparator);
-						CompressUtil.writeCompressedSection(graph, stream, il);
+						CompressUtil.writeCompressedSection(graph, stream, il, true);
 					}
 				}
 			} finally {
@@ -327,7 +329,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			for (CloseSuppressPath in : inputs) {
 				tripleFiles.add(new TripleFile(in, false));
 			}
-			sections.compute(tripleFiles, false);
+			sections.compute(tripleFiles, false, stringLiterals);
 			listener.notifyProgress(100, "sections merged " + sections.root.getFileName());
 			// delete old sections
 			IOUtil.closeAll(inputs);
@@ -480,22 +482,23 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @param triples triples files container
 		 * @param async   if the method should load all the files asynchronously
 		 *                or not
+		 * @param stringLiterals use raw literals
 		 * @throws IOException          io exception while reading/writing
 		 * @throws InterruptedException interruption while waiting for the async
 		 *                              thread
 		 */
-		public void compute(List<TripleFile> triples, boolean async) throws IOException, InterruptedException {
+		public void compute(List<TripleFile> triples, boolean async, boolean stringLiterals) throws IOException, InterruptedException {
 			if (!async) {
 				computeSubject(triples, false);
 				computePredicate(triples, false);
-				computeObject(triples, false);
+				computeObject(triples, false, stringLiterals);
 				if (supportsGraph()) {
 					computeGraph(triples, false);
 				}
 			} else {
 
 				ExceptionThread.async("SectionMerger" + root.getFileName(), () -> computeSubject(triples, true),
-						() -> computePredicate(triples, true), () -> computeObject(triples, true), () -> {
+						() -> computePredicate(triples, true), () -> computeObject(triples, true, stringLiterals), () -> {
 							if (supportsGraph()) {
 								computeGraph(triples, true);
 							}
@@ -505,28 +508,28 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 
 		private void computeSubject(List<TripleFile> triples, boolean async) throws IOException {
 			computeSection(triples, "subject", 0, 33, this::openWSubject, TripleFile::openRSubject,
-					TripleFile::getSubjectPath, async);
+					TripleFile::getSubjectPath, async, true);
 		}
 
 		private void computePredicate(List<TripleFile> triples, boolean async) throws IOException {
 			computeSection(triples, "predicate", 33, 66, this::openWPredicate, TripleFile::openRPredicate,
-					TripleFile::getPredicatePath, async);
+					TripleFile::getPredicatePath, async, true);
 		}
 
-		private void computeObject(List<TripleFile> triples, boolean async) throws IOException {
+		private void computeObject(List<TripleFile> triples, boolean async, boolean stringLiterals) throws IOException {
 			computeSection(triples, "object", 66, 100, this::openWObject, TripleFile::openRObject,
-					TripleFile::getObjectPath, async);
+					TripleFile::getObjectPath, async, stringLiterals);
 		}
 
 		private void computeGraph(List<TripleFile> triples, boolean async) throws IOException {
 			computeSection(triples, "graph", 66, 100, this::openWGraph, TripleFile::openRGraph,
-					TripleFile::getGraphPath, async);
+					TripleFile::getGraphPath, async, true);
 		}
 
 		private void computeSection(List<TripleFile> triples, String section, int start, int end,
 				ExceptionSupplier<OutputStream, IOException> openW,
 				ExceptionFunction<TripleFile, InputStream, IOException> openR,
-				Function<TripleFile, Closeable> fileDelete, boolean async) throws IOException {
+				Function<TripleFile, Closeable> fileDelete, boolean async, boolean stringLiterals) throws IOException {
 			IntermediateListener il = new IntermediateListener(listener);
 			if (async) {
 				listener.registerThread(Thread.currentThread().getName());
@@ -542,7 +545,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			try {
 				long size = 0L;
 				for (int i = 0; i < triples.size(); i++) {
-					CompressNodeReader reader = new CompressNodeReader(openR.apply(triples.get(i)));
+					CompressNodeReader reader = new CompressNodeReader(openR.apply(triples.get(i)), stringLiterals);
 					size += reader.getSize();
 					readers[i] = reader;
 					fileDeletes[i] = fileDelete.apply(triples.get(i));
@@ -551,7 +554,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				// section
 				try (OutputStream output = openW.get()) { // IndexNodeDeltaMergeExceptionIterator
 					CompressUtil.writeCompressedSection(CompressNodeMergeIterator.buildOfTree(readers, comparator),
-							size, output, il);
+							size, output, il, stringLiterals);
 				}
 			} finally {
 				if (async) {

@@ -1,10 +1,12 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
@@ -21,12 +23,14 @@ import java.io.OutputStream;
 public class CompressNodeWriter implements Closeable {
 	private final CRCOutputStream out;
 	private final ReplazableString previousStr = new ReplazableString();
+	private final boolean stringLiterals;
 
-	public CompressNodeWriter(OutputStream stream, long size) throws IOException {
+	public CompressNodeWriter(OutputStream stream, long size, boolean stringLiterals) throws IOException {
 		this.out = new CRCOutputStream(stream, new CRC8());
 		VByte.encode(this.out, size);
 		this.out.writeCRC();
 		this.out.setCRC(new CRC32());
+		this.stringLiterals = stringLiterals;
 	}
 
 	public void appendNode(IndexedNode node) throws IOException {
@@ -35,13 +39,17 @@ public class CompressNodeWriter implements Closeable {
 
 		// Find common part.
 		int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+		previousStr.replace(str);
 		// Write Delta in VByte
 		VByte.encode(out, delta);
-		// Write remaining
-		ByteStringUtil.append(out, str, delta);
-		out.write(0); // End of string
+		if (stringLiterals) {
+			ByteStringUtil.append(out, str, delta);
+			out.write(0); // End of string
+		} else {
+			VByte.encode(out, str.length() - delta);
+			IOUtil.writeBuffer(out, str.getBuffer(), delta, str.length() - delta, ProgressListener.ignore());
+		}
 		VByte.encode(out, index); // index of the node
-		previousStr.replace(str);
 	}
 
 	public void writeCRC() throws IOException {

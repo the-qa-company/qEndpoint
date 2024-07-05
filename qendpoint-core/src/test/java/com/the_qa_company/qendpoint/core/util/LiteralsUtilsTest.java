@@ -155,4 +155,15 @@ public class LiteralsUtilsTest {
 		assertEqualsCompact("fr-fr", LiteralsUtils.getLanguage("\"test\"@fr-fr").orElseThrow(cantFind));
 		assertEqualsCompact("en", LiteralsUtils.getLanguage("\"test\"@en").orElseThrow(cantFind));
 	}
+
+	@Test
+	public void removeTest() {
+		assertEqualsCompact("\"hello\"", LiteralsUtils.removeTypeAndLang("\"hello\""));
+		assertEqualsCompact("\"hello\"", LiteralsUtils.removeTypeAndLang("\"hello\"@fr"));
+		assertEqualsCompact("\"hello\"", LiteralsUtils.removeTypeAndLang("\"hello\"^^<http://example.org/#>"));
+
+		assertEqualsCompact("hello", LiteralsUtils.removeQuotesTypeAndLang("\"hello\""));
+		assertEqualsCompact("hello", LiteralsUtils.removeQuotesTypeAndLang("\"hello\"@fr"));
+		assertEqualsCompact("hello", LiteralsUtils.removeQuotesTypeAndLang("\"hello\"^^<http://example.org/#>"));
+	}
 }

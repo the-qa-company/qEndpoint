@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -20,6 +21,7 @@ import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.DecimalCompactString;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -268,11 +270,16 @@ public class DecimalDictionarySectionMap implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		try {
-			Closer.closeAll(blocks, data, ch);
+			Closer.closeAll(blocks, (Closeable)data::clean, ch);
 		} finally {
 			blocks = null;
 			data = null;
 			ch = null;
 		}
+	}
+
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.DEC;
 	}
 }

@@ -458,7 +458,7 @@ public class QEPMapTest extends AbstractMapMemoryTest {
 	public void linkReloadTest() throws IOException, ParserException {
 		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 				.createSupplierWithMaxTriples(10_000, 34).withMaxElementSplit(50).withMaxLiteralSize(100)
-				.withUnicode(true);
+				.withUnicode(true).withNumbers(false);
 
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.LOADER_TYPE_KEY,
 				HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gen"));
@@ -492,7 +492,7 @@ public class QEPMapTest extends AbstractMapMemoryTest {
 	public void linkReloadErrTest() throws IOException, ParserException {
 		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 				.createSupplierWithMaxTriples(10_000, 34).withMaxElementSplit(50).withMaxLiteralSize(100)
-				.withUnicode(true);
+				.withUnicode(true).withNumbers(false);
 
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.LOADER_TYPE_KEY,
 				HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gen"));

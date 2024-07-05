@@ -414,7 +414,6 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 	 */
 	@Override
 	public void save(OutputStream output, ProgressListener listener) throws IOException {
-
 		CRCOutputStream out = new CRCOutputStream(output, new CRC8());
 		out.write(TYPE_INDEX);
 		VByte.encode(out, numstrings);

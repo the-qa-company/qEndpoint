@@ -65,4 +65,8 @@ public interface DictionarySection extends Closeable {
 	 */
 	Iterator<? extends CharSequence> getSortedEntries();
 
+
+	default DictionarySectionType getSectionType() {
+		return DictionarySectionType.PFC;
+	}
 }

@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -231,6 +232,11 @@ public class WriteIntDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		IOUtil.closeAll(blocks, tempFilename, blockTempFilename);
+	}
+
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.INT;
 	}
 
 	public class WriteDictionarySectionAppender implements Closeable {

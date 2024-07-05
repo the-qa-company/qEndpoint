@@ -205,7 +205,7 @@ public class HDTDiskImporter implements Closeable {
 				compressionResult.supportsGraph(),
 				compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
 		try (CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(compressionResult,
-				mapper, listener, debugHDTBuilding, compressionResult.supportsGraph())) {
+				mapper, listener, debugHDTBuilding, compressionResult.supportsGraph(), compressionResult.hasOnlyBaseLiterals())) {
 			dictionary.loadAsync(modifiableDictionary, listener);
 		} catch (InterruptedException e) {
 			throw new ParserException(e);

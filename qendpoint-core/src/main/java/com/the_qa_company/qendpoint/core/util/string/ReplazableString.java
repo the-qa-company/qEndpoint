@@ -178,6 +178,24 @@ public final class ReplazableString implements CharSequence, ByteString {
 		}
 	}
 
+	public void replaceLen(InputStream in, int pos, int len) throws IOException {
+		ensureSize(pos + len);
+		used = pos;
+
+		int toread = len;
+
+		while (toread > 0) {
+			int r = in.read(buffer, used, toread);
+
+			if (r < 0) {
+				throw new IOException("Was reading a string but stream ended before finding the null terminator");
+			}
+
+			toread -= r;
+			used += r;
+		}
+	}
+
 	private static final int READ_AHEAD = 1024;
 
 	public void replace(InputStream in, int pos) throws IOException {

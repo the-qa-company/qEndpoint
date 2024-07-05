@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -12,7 +13,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -125,9 +129,15 @@ public class DecimalDictionarySectionTest {
 					sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 
 					Path idx = root.resolve("idx.bin");
-					sec.save(idx, ProgressListener.ignore());
+					try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(idx))) {
+						sec.save(out, ProgressListener.ignore());
+						VByte.encode(out, 1234567890);
+					}
 
-					sec2.load(idx, ProgressListener.ignore());
+					try (InputStream in = new BufferedInputStream(Files.newInputStream(idx))) {
+						sec2.load(in, ProgressListener.ignore());
+						assertEquals(1234567890, VByte.decode(in));
+					}
 
 					Iterator<? extends CharSequence> itex = sec.getSortedEntries();
 					Iterator<? extends CharSequence> itac = sec2.getSortedEntries();
@@ -186,10 +196,16 @@ public class DecimalDictionarySectionTest {
 					Path idx = root.resolve("idx.bin");
 					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx, 4096)) {
 						sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
-						sec.save(idx, ProgressListener.ignore());
+						try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(idx))) {
+							sec.save(out, ProgressListener.ignore());
+							VByte.encode(out, 1234567890);
+						}
 					}
 
-					sec2.load(idx, ProgressListener.ignore());
+					try (InputStream in = new BufferedInputStream(Files.newInputStream(idx))) {
+						sec2.load(in, ProgressListener.ignore());
+						assertEquals(1234567890, VByte.decode(in));
+					}
 
 					Iterator<? extends CharSequence> itex = strings.iterator();
 					Iterator<? extends CharSequence> itac = sec2.getSortedEntries();

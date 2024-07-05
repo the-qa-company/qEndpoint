@@ -32,7 +32,9 @@ public class CompressNodeReader implements ExceptionIterator<IndexedNode, IOExce
 	private final ReplazableString tempString;
 	private final Consumer<IndexedNode> consumer;
 
-	public CompressNodeReader(InputStream stream) throws IOException {
+	private final boolean stringsLiterals;
+
+	public CompressNodeReader(InputStream stream, boolean stringLiterals) throws IOException {
 		this.stream = new CRCInputStream(stream, new CRC8());
 		this.size = VByte.decode(this.stream);
 		if (!this.stream.readCRCAndCheck()) {
@@ -41,7 +43,8 @@ public class CompressNodeReader implements ExceptionIterator<IndexedNode, IOExce
 		this.stream.setCRC(new CRC32());
 		this.tempString = new ReplazableString();
 		this.last = new IndexedNode(tempString, -1);
-		consumer = DebugOrderNodeIterator.of("stream", true);
+		this.stringsLiterals = stringLiterals;
+		consumer = stringLiterals ? DebugOrderNodeIterator.of("stream", true) : (s) -> {};
 	}
 
 	@Override
@@ -64,7 +67,12 @@ public class CompressNodeReader implements ExceptionIterator<IndexedNode, IOExce
 			return last;
 		}
 		delta = (int) VByte.decode(stream);
-		tempString.replace2(stream, delta);
+		if (stringsLiterals) {
+			tempString.replace2(stream, delta);
+		} else {
+			int len = (int) VByte.decode(stream);
+			tempString.replaceLen(stream, delta, len);
+		}
 		long index = VByte.decode(stream);
 		last.setIndex(index);
 		consumer.accept(last);

@@ -32,7 +32,6 @@ import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
 /**
  * @author mario.arias
@@ -189,7 +188,7 @@ public class HashDictionarySection implements TempDictionarySection {
 
 	@Override
 	public Map<ByteString, Long> getLiteralsCounts() {
-		if (!genType.countTypes()) {
+		if (!genType.countTypes() && !genType.raw()) {
 			throw new NotImplementedException("Literals count isn't implemented for non MSD generation!");
 		}
 		return literalsCounts;

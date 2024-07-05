@@ -17,6 +17,11 @@ public class CompressionResultEmpty implements CompressionResult {
 	}
 
 	@Override
+	public boolean hasOnlyBaseLiterals() {
+		return true;
+	}
+
+	@Override
 	public ExceptionIterator<IndexedNode, IOException> getSubjects() {
 		return ExceptionIterator.empty();
 	}
