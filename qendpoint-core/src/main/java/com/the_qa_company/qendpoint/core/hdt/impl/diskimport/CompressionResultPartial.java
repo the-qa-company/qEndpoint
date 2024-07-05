@@ -26,14 +26,17 @@ public class CompressionResultPartial implements CompressionResult {
 	private final ExceptionIterator<IndexedNode, IOException> object;
 	private final ExceptionIterator<IndexedNode, IOException> graph;
 
+	private final boolean stringLiterals;
+
 	public CompressionResultPartial(List<SectionCompressor.TripleFile> files, long triplesCount, long ntSize,
-			boolean graph) throws IOException {
+			boolean graph, boolean stringLiterals) throws IOException {
 		this.files = new ArrayList<>(files.size());
 		this.ntSize = ntSize;
 		for (SectionCompressor.TripleFile file : files) {
-			this.files.add(new CompressNodeReaderTriple(file, graph));
+			this.files.add(new CompressNodeReaderTriple(file, graph, stringLiterals));
 		}
 		this.triplesCount = triplesCount;
+		this.stringLiterals = stringLiterals;
 
 		// building iterator trees
 		this.subject = createBTree(0, files.size(), CompressNodeReaderTriple::getS);
@@ -69,6 +72,11 @@ public class CompressionResultPartial implements CompressionResult {
 	@Override
 	public boolean supportsGraph() {
 		return graph != null;
+	}
+
+	@Override
+	public boolean hasOnlyBaseLiterals() {
+		return stringLiterals;
 	}
 
 	@Override
@@ -138,12 +146,12 @@ public class CompressionResultPartial implements CompressionResult {
 		final CompressNodeReader s, p, o, g;
 		final SectionCompressor.TripleFile file;
 
-		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph) throws IOException {
-			this.s = new CompressNodeReader(file.openRSubject());
-			this.p = new CompressNodeReader(file.openRPredicate());
-			this.o = new CompressNodeReader(file.openRObject());
+		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph, boolean literalNaturalOrder) throws IOException {
+			this.s = new CompressNodeReader(file.openRSubject(), true);
+			this.p = new CompressNodeReader(file.openRPredicate(), true);
+			this.o = new CompressNodeReader(file.openRObject(), literalNaturalOrder);
 			if (graph) {
-				this.g = new CompressNodeReader(file.openRGraph());
+				this.g = new CompressNodeReader(file.openRGraph(), true);
 			} else {
 				this.g = null;
 			}

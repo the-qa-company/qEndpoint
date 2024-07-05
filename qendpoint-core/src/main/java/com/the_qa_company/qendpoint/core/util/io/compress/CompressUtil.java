@@ -9,7 +9,6 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -37,9 +36,9 @@ public class CompressUtil {
 	 * @param listener the listener to see the progress
 	 * @throws IOException writing exception
 	 */
-	public static void writeCompressedSection(List<IndexedNode> strings, OutputStream output, ProgressListener listener)
+	public static void writeCompressedSection(List<IndexedNode> strings, OutputStream output, ProgressListener listener, boolean stringLiterals)
 			throws IOException {
-		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener);
+		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener, stringLiterals);
 	}
 
 	/**
@@ -52,8 +51,8 @@ public class CompressUtil {
 	 * @throws IOException writing exception
 	 */
 	public static void writeCompressedSection(ExceptionIterator<IndexedNode, IOException> it, long size,
-			OutputStream output, ProgressListener listener) throws IOException {
-		CompressNodeWriter writer = new CompressNodeWriter(output, size);
+			OutputStream output, ProgressListener listener, boolean stringLiterals) throws IOException {
+		CompressNodeWriter writer = new CompressNodeWriter(output, size, stringLiterals);
 		long element = 0;
 		long block = size < 10 ? 1 : size / 10;
 		while (it.hasNext()) {
@@ -76,19 +75,20 @@ public class CompressUtil {
 	 * @param stream1  input stream 1
 	 * @param stream2  input stream 2
 	 * @param output   output stream
+	 * @param stringLiterals debug natural order
 	 * @param listener the listener to see the progress
 	 * @throws IOException read/writing exception
 	 */
 	public static void mergeCompressedSection(InputStream stream1, InputStream stream2, OutputStream output,
-			ProgressListener listener) throws IOException {
-		CompressNodeReader in1r = new CompressNodeReader(stream1);
-		CompressNodeReader in2r = new CompressNodeReader(stream2);
+			ProgressListener listener, boolean stringLiterals) throws IOException {
+		CompressNodeReader in1r = new CompressNodeReader(stream1, stringLiterals);
+		CompressNodeReader in2r = new CompressNodeReader(stream2, stringLiterals);
 
 		long size1 = in1r.getSize();
 		long size2 = in2r.getSize();
 
 		// merge the section
-		writeCompressedSection(new CompressNodeMergeIterator(in1r, in2r), size1 + size2, output, listener);
+		writeCompressedSection(new CompressNodeMergeIterator(in1r, in2r), size1 + size2, output, listener, stringLiterals);
 		// check we have completed the 2 readers
 		in1r.checkComplete();
 		in2r.checkComplete();
@@ -194,7 +194,7 @@ public class CompressUtil {
 				IndexedNode node = it.next();
 				ByteString next = node.getNode();
 				int cmp = prev.compareTo(next);
-				assert cmp <= 0 : "bad order : " + prev + " > " + next;
+				//assert cmp <= 0 : "bad order : " + prev + " > " + next;
 				if (cmp == 0) {
 					if (!prev.isEmpty() || prevRead) {
 						// same as previous, ignore

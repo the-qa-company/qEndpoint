@@ -36,6 +36,8 @@ public interface CompressionResult extends Closeable {
 	 */
 	boolean supportsGraph();
 
+	boolean hasOnlyBaseLiterals();
+
 	/**
 	 * @return a sorted iterator of subject
 	 */

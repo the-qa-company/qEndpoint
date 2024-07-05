@@ -15,7 +15,7 @@ public class MultiSectionSectionCompressor extends SectionCompressor {
 	public MultiSectionSectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
 			boolean quad) {
-		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
+		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, true);
 	}
 
 	@Override

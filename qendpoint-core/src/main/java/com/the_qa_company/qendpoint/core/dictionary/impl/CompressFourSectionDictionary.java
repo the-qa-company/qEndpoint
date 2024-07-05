@@ -46,10 +46,10 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	}
 
 	public CompressFourSectionDictionary(CompressionResult compressionResult, NodeConsumer nodeConsumer,
-			ProgressListener listener, boolean debugOrder, boolean quad) {
+			ProgressListener listener, boolean debugOrder, boolean quad, boolean stringLiterals) {
 		long splits = Math.max(20, compressionResult.getTripleCount() / 10_000);
 		Consumer<IndexedNode> debugOrderCheckerS = DebugOrderNodeIterator.of(debugOrder, "Subject");
-		Consumer<IndexedNode> debugOrderCheckerO = DebugOrderNodeIterator.of(debugOrder, "Object");
+		Consumer<IndexedNode> debugOrderCheckerO = DebugOrderNodeIterator.of(debugOrder && stringLiterals, "Object");
 		// send duplicate to the consumer while reading the nodes
 		CompressUtil.DuplicatedIterator sortedSubject = CompressUtil.asNoDupeCharSequenceIterator(
 				new NotificationExceptionIterator<>(compressionResult.getSubjects(), compressionResult.getTripleCount(),

@@ -10,6 +10,7 @@ import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import com.the_qa_company.qendpoint.core.util.string.RawStringUtils;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
@@ -138,6 +139,8 @@ public class LargeFakeDataSetStreamSupplier {
 	private boolean useBlankNode = true;
 	private boolean useIRI = true;
 	private boolean useLiteral = true;
+
+	private boolean useNumbers = true;
 
 	private LargeFakeDataSetStreamSupplier(long maxSize, long maxTriples, long seed) {
 		this.maxSize = maxSize;
@@ -320,6 +323,21 @@ public class LargeFakeDataSetStreamSupplier {
 		if (!useLiteral || random.nextBoolean()) {
 			return createResource();
 		}
+		if (useNumbers) {
+			int litTypeNb = random.nextInt(10);
+			if (litTypeNb == 0) {
+				// int
+				int intVal = random.nextInt() - (Integer.MAX_VALUE >> 1);
+				return  "\"" + intVal + "\"^^" + RawStringUtils.XSD_INTEGER_DT;
+			} else if (litTypeNb == 1) {
+				// decimal
+				return "\"" + random.nextDouble() + "\"^^" + RawStringUtils.XSD_DECIMAL_DT;
+			} else if (litTypeNb == 2) {
+				// double
+				return "\"" + random.nextDouble() + "\"^^" + RawStringUtils.XSD_DOUBLE_DT;
+			}
+			// default
+		}
 		int size = random.nextInt(maxLiteralSize);
 		StringBuilder litText = new StringBuilder();
 		for (int i = 0; i < size; i++) {
@@ -436,6 +454,17 @@ public class LargeFakeDataSetStreamSupplier {
 		this.maxSize = maxSize;
 		return this;
 	}
+
+	/**
+	 * set usage of numbers
+	 * @param useNumbers numbers
+	 * @return this
+	 */
+	public LargeFakeDataSetStreamSupplier withNumbers(boolean useNumbers) {
+		this.useNumbers = useNumbers;
+		return this;
+	}
+
 
 	/**
 	 * set the max triples count

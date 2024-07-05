@@ -30,7 +30,7 @@ public final class CharSequenceDTLComparator implements Comparator<CharSequence>
 
 	private static final Comparator<CharSequence> instance = new CharSequenceDTLComparator();
 
-	private static final ByteString DTL_DTN = ByteString.of("!NDT");
+	public static final ByteString DTL_DTN = ByteString.of("!NDT");
 
 	public static CharSequence getDTLType(CharSequence s) {
 		CharSequence type = LiteralsUtils.getType(s);

@@ -75,6 +75,20 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		return length() - other.length();
 	}
 
+	default int compareTo(ByteString other, int start) {
+		int n = Math.min(length(), other.length());
+		int k = start;
+		while (k < n) {
+			char c1 = charAt(k);
+			char c2 = other.charAt(k);
+			if (c1 != c2) {
+				return c1 - c2;
+			}
+			k++;
+		}
+		return length() - other.length();
+	}
+
 	@Override
 	ByteString subSequence(int start, int end);
 
@@ -178,7 +192,7 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		}
 
 		for (int i = offset; i < prefix.length(); i++) {
-			if (charAt(i + start) != prefix.charAt(i)) {
+			if (charAt(i - offset + start) != prefix.charAt(i)) {
 				return false;
 			}
 		}

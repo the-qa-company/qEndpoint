@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceDTComparator;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceDTLComparator;
+import com.the_qa_company.qendpoint.core.util.string.CharSequenceRawComparator;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -15,15 +16,17 @@ public enum DictionaryType {
 	/**
 	 * Four section dict generation
 	 */
-	FSD(false, false, CharSequenceComparator.getInstance()),
+	FSD(false, false, false, CharSequenceComparator.getInstance()),
 	/**
 	 * Multi sections dict generation
 	 */
-	MSD(true, false, CharSequenceDTComparator.getInstance()),
+	MSD(true, false, false, CharSequenceDTComparator.getInstance()),
 	/**
 	 * Multi sections lang dict generation
 	 */
-	MSDL(true, true, CharSequenceDTLComparator.getInstance());
+	MSDL(true, true, false, CharSequenceDTLComparator.getInstance()),
+
+	RAW(true, true, true, CharSequenceRawComparator.getInstance());
 
 	public static DictionaryType fromDictionaryType(HDTOptions options) {
 		return fromDictionaryType(HDTOptions.ofNullable(options).get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, ""));
@@ -41,22 +44,29 @@ public enum DictionaryType {
 				HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			MSDL;
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW, HDTVocabulary.DICTIONARY_TYPE_RAW -> RAW;
 		default -> throw new NotImplementedException("Can't find type for name: " + dictType);
 		};
 	}
 
 	private final boolean countTypes;
 	private final boolean countLangs;
+	private final boolean raw;
 	private final Comparator<CharSequence> comparator;
 
-	DictionaryType(boolean countTypes, boolean countLangs, Comparator<CharSequence> comparator) {
+	DictionaryType(boolean countTypes, boolean countLangs, boolean raw, Comparator<CharSequence> comparator) {
 		this.countTypes = countTypes;
 		this.countLangs = countLangs;
+		this.raw = raw;
 		this.comparator = comparator;
 	}
 
 	public boolean countTypes() {
 		return countTypes;
+	}
+
+	public boolean raw() {
+		return raw;
 	}
 
 	public boolean countLangs() {

@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -248,7 +249,7 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void load(Iterator<? extends CharSequence> it, long numentries, ProgressListener listener) {
 		this.blocks = new SequenceLog64Big(64, (numentries - 1) / blocksize + 1);
-		this.numstrings = numentries;
+		numstrings = 0;
 
 		Path file;
 
@@ -326,6 +327,8 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 							size++;
 							IOUtil.writeLong(os, unalignedBuffer.get(0));
 						}
+
+						numstrings += allocated;
 					}
 				}
 				// end
@@ -407,5 +410,10 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		Closer.closeAll(blocks, data);
+	}
+
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.FLOAT;
 	}
 }

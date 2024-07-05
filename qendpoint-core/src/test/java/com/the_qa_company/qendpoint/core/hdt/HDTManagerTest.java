@@ -5,10 +5,11 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
-import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
+import com.the_qa_company.qendpoint.core.dictionary.impl.RawDictionary;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -37,6 +38,9 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.util.string.DecimalCompactString;
+import com.the_qa_company.qendpoint.core.util.string.DoubleCompactString;
+import com.the_qa_company.qendpoint.core.util.string.IntCompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -87,7 +91,8 @@ import static org.junit.Assert.fail;
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class })
+		HDTManagerTest.MSDLangQuadTest.class,
+		HDTManagerTest.RawTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -193,11 +198,11 @@ public class HDTManagerTest {
 			Dictionary ad = actual.getDictionary();
 			assertEqualsHDT("Subjects", ed.getSubjects(), ad.getSubjects());
 			assertEqualsHDT("Predicates", ed.getPredicates(), ad.getPredicates());
-			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang) {
+			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleLangBaseDictionary) {
 				if (ed instanceof MultipleBaseDictionary) {
 					assertTrue("ad not a MSD" + ad.getClass(), ad instanceof MultipleBaseDictionary);
 				} else {
-					assertTrue("ad not a MSDL" + ad.getClass(), ad instanceof MultipleSectionDictionaryLang);
+					assertTrue("ad not a MSDL" + ad.getClass(), ad instanceof MultipleLangBaseDictionary);
 				}
 				Map<? extends CharSequence, DictionarySection> keysE = ed.getAllObjects();
 				Map<? extends CharSequence, DictionarySection> keysA = ad.getAllObjects();
@@ -233,7 +238,9 @@ public class HDTManagerTest {
 
 				long location = expectedIt.getLastTriplePosition();
 				assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
-				assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+				if (!Objects.equals(expectedTriple, actualTriple)) {
+					fail(format("The tripleID #%d doesn't match\nExcepted :%s (%s)\nActual   :%s (%s)", location, expectedTriple, expected.getDictionary().toTripleString(expectedTriple), actualTriple, expected.getDictionary().toTripleString(actualTriple)));
+				}
 			}
 			assertFalse(actualIt.hasNext());
 
@@ -269,51 +276,144 @@ public class HDTManagerTest {
 				map.put("Graph", dict.getGraphs());
 			}
 
-			ReplazableString prev = new ReplazableString();
 			Comparator<CharSequence> cmp = CharSequenceComparator.getInstance();
 			map.forEach((name, section) -> {
-				prev.clear();
-				String prev2 = "";
-				Iterator<? extends CharSequence> it = section.getSortedEntries();
-				if (it.hasNext()) {
-					prev.replace(it.next());
-				}
-
-				while (it.hasNext()) {
-					CharSequence next = ByteString.of(it.next());
-
-					int cmpV = cmp.compare(prev, next);
-					if (cmpV >= 0) {
-						System.out.print("Prev: ");
-						printHex(prev);
-						System.out.print("Next: ");
-						printHex(next);
-						System.out.print("Prev: ");
-						printBin(prev);
-						System.out.print("Next: ");
-						printBin(next);
-
-						if (cmpV == 0) {
-							fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next);
+				DictionarySectionType type = section.getSectionType();
+				switch (type) {
+					case PFC -> {
+						ReplazableString prev = new ReplazableString();
+						prev.clear();
+						String prev2 = "";
+						Iterator<? extends CharSequence> it = section.getSortedEntries();
+						if (it.hasNext()) {
+							prev.replace(it.next());
 						}
-						fail("[" + name + "] (BS) Bad order! " + prev + " > " + next);
+
+						while (it.hasNext()) {
+							CharSequence next = ByteString.of(it.next());
+
+							int cmpV = cmp.compare(prev, next);
+							if (cmpV >= 0) {
+								System.out.print("Prev: ");
+								printHex(prev);
+								System.out.print("Next: ");
+								printHex(next);
+								System.out.print("Prev: ");
+								printBin(prev);
+								System.out.print("Next: ");
+								printBin(next);
+
+								if (cmpV == 0) {
+									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
+								}
+								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+							}
+
+							if (ALLOW_STRING_CONSISTENCY_TEST) {
+								String nextStr = next.toString();
+								int cmpV2 = cmp.compare(prev2, nextStr);
+								if (cmpV2 == 0) {
+									fail("[" + name + "] (Str) Duplicated elements! " + prev2 + " = " + next + " (" + type + "-" + section.getClass() + ")");
+								}
+								if (cmpV2 > 0) {
+									fail("[" + name + "] (Str) Bad order! " + prev2 + " > " + next + " (" + type + "-" + section.getClass() + ")");
+								}
+
+								assertEquals("str and byteStr compare aren't returning the same results", Math.signum(cmpV2),
+										Math.signum(cmpV), 0.01);
+								prev2 = nextStr;
+							}
+							prev.replace(next);
+						}
 					}
-
-					if (ALLOW_STRING_CONSISTENCY_TEST) {
-						String nextStr = next.toString();
-						int cmpV2 = cmp.compare(prev2, nextStr);
-						if (cmpV2 == 0) {
-							fail("[" + name + "] (Str) Duplicated elements! " + prev2 + " = " + next);
+					case INT -> {
+						Iterator<? extends CharSequence> it = section.getSortedEntries();
+						if (!it.hasNext()) {
+							return;
 						}
-						if (cmpV2 > 0) {
-							fail("[" + name + "] (Str) Bad order! " + prev2 + " > " + next);
-						}
+						IntCompactString prev = new IntCompactString(ByteString.of(it.next()).longValue());
 
-						assertEquals("str and byteStr compare aren't returning the same results", Math.signum(cmpV2),
-								Math.signum(cmpV), 0.01);
-						prev2 = nextStr;
+						while (it.hasNext()) {
+							CharSequence next = ByteString.of(it.next());
+
+							int cmpV = cmp.compare(prev, next);
+							if (cmpV >= 0) {
+								System.out.print("Prev: ");
+								printHex(prev);
+								System.out.print("Next: ");
+								printHex(next);
+								System.out.print("Prev: ");
+								printBin(prev);
+								System.out.print("Next: ");
+								printBin(next);
+
+								if (cmpV == 0) {
+									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
+								}
+								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+							}
+							prev.setValue(ByteString.of(next).longValue());
+						}
 					}
-					prev.replace(next);
+					case FLOAT -> {
+						Iterator<? extends CharSequence> it = section.getSortedEntries();
+						if (!it.hasNext()) {
+							return;
+						}
+						DoubleCompactString prev = new DoubleCompactString(ByteString.of(it.next()).doubleValue());
+
+						while (it.hasNext()) {
+							CharSequence next = ByteString.of(it.next());
+
+							int cmpV = cmp.compare(prev, next);
+							if (cmpV >= 0) {
+								System.out.print("Prev: ");
+								printHex(prev);
+								System.out.print("Next: ");
+								printHex(next);
+								System.out.print("Prev: ");
+								printBin(prev);
+								System.out.print("Next: ");
+								printBin(next);
+
+								if (cmpV == 0) {
+									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
+								}
+								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+							}
+							prev.setValue(ByteString.of(next).doubleValue());
+						}
+					}
+					case DEC -> {
+						Iterator<? extends CharSequence> it = section.getSortedEntries();
+						if (!it.hasNext()) {
+							return;
+						}
+						DecimalCompactString prev = new DecimalCompactString(ByteString.of(it.next()).decimalValue());
+
+						while (it.hasNext()) {
+							CharSequence next = ByteString.of(it.next());
+
+							int cmpV = cmp.compare(prev, next);
+							if (cmpV >= 0) {
+								System.out.print("Prev: ");
+								printHex(prev);
+								System.out.print("Next: ");
+								printHex(next);
+								System.out.print("Prev: ");
+								printBin(prev);
+								System.out.print("Next: ");
+								printBin(next);
+
+								if (cmpV == 0) {
+									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
+								}
+								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+							}
+							prev.setValue(ByteString.of(next).decimalValue());
+						}
+					}
+					default -> throw new AssertionError("section type not defined : " + type);
 				}
 			});
 			IteratorTripleID tripleIt = hdt.getTriples().searchAll();
@@ -2147,4 +2247,322 @@ public class HDTManagerTest {
 			}
 		}
 	}
+
+	public static class RawTest extends HDTManagerTestBase {
+		@Test
+		public void rawTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path ntFile = tempDir.newFile().toPath();
+			try {
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
+
+				HDTOptions specFSD = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION);
+
+				try (HDT hdt = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdl = hdt.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, msdl.getType());
+					assertTrue("not a rawd", msdl instanceof RawDictionary);
+					checkHDTConsistency(hdt);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtFSD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specFSD, ProgressListener.ignore())) {
+						Dictionary fsd = hdtFSD.getDictionary();
+
+						assertTrue("not a fsd", fsd instanceof BaseDictionary);
+						assertEquals("not the same number of triples", hdtFSD.getTriples().getNumberOfElements(),
+								hdt.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", fsd.getNshared(), msdl.getNshared());
+						assertEquals("Not the same number of SUBJECTS", fsd.getNsubjects(), msdl.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", fsd.getNpredicates(), msdl.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", fsd.getNobjects(), msdl.getNobjects());
+
+						IteratorTripleString itMSDAT = hdt.search("", "", "");
+
+						while (itMSDAT.hasNext()) {
+							TripleString actual = itMSDAT.next();
+							if (!hdt.search(actual).hasNext()) {
+								fail(format("Can't find back triple %s in", actual));
+							}
+						}
+
+						IteratorTripleString itE = hdtFSD.search("", "", "");
+
+						while (itE.hasNext()) {
+							TripleString excepted = itE.next();
+							IteratorTripleString itA = hdt.search(excepted.getSubject(), excepted.getPredicate(),
+									excepted.getObject());
+							if (!itA.hasNext()) {
+								long sid = msdl.stringToId(excepted.getSubject(), SUBJECT);
+								assertNotEquals("can't find SUB in MSDL: " + excepted.getSubject(), -1, sid);
+								long pid = msdl.stringToId(excepted.getPredicate(), TripleComponentRole.PREDICATE);
+								assertNotEquals("can't find PRE in MSDL: " + excepted.getPredicate(), -1, pid);
+								long oid = msdl.stringToId(excepted.getObject(), OBJECT);
+								assertNotEquals("can't find OBJ in MSDL: " + excepted.getObject(), -1, oid);
+
+								assertEquals(excepted.getSubject().toString(),
+										msdl.idToString(sid, SUBJECT).toString());
+								assertEquals(excepted.getPredicate().toString(),
+										msdl.idToString(pid, TripleComponentRole.PREDICATE).toString());
+								assertEquals(excepted.getObject().toString(), msdl.idToString(oid, OBJECT).toString());
+
+								TripleID tid = new TripleID(sid, pid, oid);
+								IteratorTripleID itA2 = hdt.getTriples().search(tid);
+								if (itA2.hasNext()) {
+									fail(format("can't find triple %s by string in MSDL HDT", excepted));
+								} else {
+									fail(format("can't find triple %s by string or id in MSDL HDT (%s)", excepted,
+											tid));
+								}
+
+							}
+							TripleString actual = itA.next();
+							assertComponentsNotNull("an element is null", actual);
+							assertEquals(excepted, actual);
+						}
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = tempDir.newFile().toPath();
+					try {
+						hdt.saveToHDT(tempHDT, ProgressListener.ignore());
+						try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
+									hdtMap.getDictionary().getType());
+							assertEqualsHDT(hdt, hdtMap);
+							try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+								assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
+										hdtLoad.getDictionary().getType());
+								assertEqualsHDT(hdt, hdtLoad);
+								assertEqualsHDT(hdtLoad, hdtMap);
+							}
+						}
+					} finally {
+						Files.deleteIfExists(tempHDT);
+					}
+				}
+			} finally {
+				Files.deleteIfExists(ntFile);
+			}
+		}
+
+		@Test
+		public void diskMsdLangMemTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path ntFile = rootDir.resolve("ds.nt");
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"));
+
+				HDTOptions specMem = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
+
+				try (HDT hdtGD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdlGD = hdtGD.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, msdlGD.getType());
+					assertTrue("not a msdl", msdlGD instanceof RawDictionary);
+					checkHDTConsistency(hdtGD);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtMem = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specMem, ProgressListener.ignore())) {
+						Dictionary msdlMem = hdtMem.getDictionary();
+
+						assertTrue("not a msdl", msdlMem instanceof RawDictionary);
+						assertEquals("Not the same number of SHARED", msdlMem.getNshared(), msdlGD.getNshared());
+						assertEquals("Not the same number of SUBJECTS", msdlMem.getNsubjects(), msdlGD.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", msdlMem.getNpredicates(),
+								msdlGD.getNpredicates());
+						Map<? extends CharSequence, DictionarySection> allObjects = msdlMem.getAllObjects();
+						msdlGD.getAllObjects().forEach((k, s) -> {
+							DictionarySection secmem = allObjects.get(k);
+							assertNotNull("missing section " + k, secmem);
+							assertEquals("not the same number of triples in section " + k + " (" + secmem.getClass() + " / " + s.getClass() + ")", secmem.getNumberOfElements(), s.getNumberOfElements());
+						});
+						assertEquals("not the same number of triples", hdtMem.getTriples().getNumberOfElements(),
+								hdtGD.getTriples().getNumberOfElements());
+
+						assertEqualsHDT(hdtMem, hdtGD);
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = rootDir.resolve("testmsdl.hdt");
+
+					hdtGD.saveToHDT(tempHDT, ProgressListener.ignore());
+					try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+						assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtMap.getDictionary().getType());
+						assertEqualsHDT(hdtGD, hdtMap);
+						try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
+									hdtLoad.getDictionary().getType());
+							assertEqualsHDT(hdtGD, hdtLoad);
+							assertEqualsHDT(hdtLoad, hdtMap);
+						}
+					}
+				}
+			} finally {
+				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+
+		@Test
+		public void diskRawMapTest() throws IOException, ParserException, NotFoundException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
+					34);
+			Path rootDir = tempDir.newFolder().toPath();
+			try {
+				Path ntFile = rootDir.resolve("ds.nt");
+
+				supplier.createNTFile(ntFile);
+
+				HDTOptions spec = HDTOptions.of(
+						// use msdl
+						HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW,
+						// use GD
+						HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, rootDir.resolve("gd"),
+
+						HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, rootDir.resolve("future.hdt"));
+
+				HDTOptions specMem = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
+
+				try (HDT hdtGD = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+						ProgressListener.ignore())) {
+					Dictionary msdlGD = hdtGD.getDictionary();
+					assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, msdlGD.getType());
+					assertTrue("not a raw", msdlGD instanceof RawDictionary);
+					checkHDTConsistency(hdtGD);
+
+					// the HDT is fine, does it contain all the triples?
+
+					try (HDT hdtMem = HDTManager.generateHDT(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							specMem, ProgressListener.ignore())) {
+						Dictionary msdlMem = hdtMem.getDictionary();
+
+						assertTrue("not a msdl", msdlMem instanceof RawDictionary);
+						assertEquals("not the same number of triples", hdtMem.getTriples().getNumberOfElements(),
+								hdtGD.getTriples().getNumberOfElements());
+						assertEquals("Not the same number of SHARED", msdlMem.getNshared(), msdlGD.getNshared());
+						assertEquals("Not the same number of SUBJECTS", msdlMem.getNsubjects(), msdlGD.getNsubjects());
+						assertEquals("Not the same number of PREDICATES", msdlMem.getNpredicates(),
+								msdlGD.getNpredicates());
+						assertEquals("Not the same number of OBJECTS", msdlMem.getNobjects(), msdlGD.getNobjects());
+
+						assertEqualsHDT(hdtMem, hdtGD);
+					}
+
+					// try to load/map the HDT
+
+					Path tempHDT = rootDir.resolve("testmsdl.hdt");
+
+					hdtGD.saveToHDT(tempHDT, ProgressListener.ignore());
+					try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
+						assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtMap.getDictionary().getType());
+						assertEqualsHDT(hdtGD, hdtMap);
+						try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
+									hdtLoad.getDictionary().getType());
+							assertEqualsHDT(hdtGD, hdtLoad);
+							assertEqualsHDT(hdtLoad, hdtMap);
+						}
+					}
+				}
+				PathUtils.deleteDirectory(rootDir);
+			} catch (Throwable t) {
+				try {
+					PathUtils.deleteDirectory(rootDir);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+		}
+
+		@Test
+		@Ignore("not implemented")
+		public void rawCatTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+			try {
+				final int sub = 3;
+				final long count = 2500;
+
+				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(count, 34);
+				LargeFakeDataSetStreamSupplier supplier2 = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(count * sub, 34);
+				String base = "sub";
+
+				Path ng = root.resolve("ng.nt");
+				Path hdtg = root.resolve("hg.hdt");
+
+				List<Path> ngs = new ArrayList<>();
+
+				supplier2.createNTFile(ng);
+
+				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
+
+				for (int i = 0; i < sub + 1; i++) {
+					Path in;
+					Path out;
+					if (i == 0) {
+						in = ng;
+						out = hdtg;
+					} else {
+						in = root.resolve(base + i + ".nt");
+						out = root.resolve(base + i + ".hdt");
+						ngs.add(out);
+						supplier.createNTFile(in);
+					}
+					try (HDT h = HDTManager.generateHDT(in, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
+							ProgressListener.ignore())) {
+						h.saveToHDT(out);
+					}
+				}
+
+				// ngs contains the list of the HDT to cat
+
+				HDTOptions specCat = spec.pushTop();
+
+				specCat.setOptions(HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("khc"),
+
+						HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("khc.hdt"));
+
+				try (HDT catOut = HDTManager.catHDTPath(ngs, specCat, ProgressListener.ignore())) {
+					try (HDT excepted = HDTManager.mapHDT(hdtg)) {
+						assertEqualsHDT(excepted, catOut);
+					}
+				}
+
+			} finally {
+				PathUtils.deleteDirectory(root);
+			}
+		}
+	}
+
 }

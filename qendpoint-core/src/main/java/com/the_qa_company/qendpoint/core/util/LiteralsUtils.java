@@ -245,6 +245,34 @@ public class LiteralsUtils {
 	}
 
 	/**
+	 * remove the node quotes and type/lang if the node is a typed/lang literal, this
+	 * method return the char sequence or a subSequence of this char sequence
+	 *
+	 * @param str the node
+	 * @return node or the typed literal
+	 * @throws java.util.ConcurrentModificationException if the node is updated
+	 *                                                   while reading
+	 */
+	public static CharSequence removeQuotesTypeAndLang(CharSequence str) {
+		if (str.isEmpty() || str.charAt(0) != '"') {
+			return str;
+		}
+		int index = getTypeIndex(str);
+
+		if (index != -1 && index < str.length()) {
+			return str.subSequence(1, index - 3);
+		}
+
+		int lindex = getLangIndex(str);
+
+		if (lindex != -1 && lindex < str.length()) {
+			return str.subSequence(1, lindex - 2);
+		}
+
+		return str.subSequence(1, str.length() - 1);
+	}
+
+	/**
 	 * remove the node lang if the node is a lang literal, this method return
 	 * the char sequence or a subSequence of this char sequence
 	 *
@@ -608,11 +636,21 @@ public class LiteralsUtils {
 	 *
 	 * @param a a
 	 * @param b b
-	 * @return a + b
+	 * @param c c
+	 * @return a + b + c
 	 */
 	public static ByteString cat(CharSequence a, CharSequence b, CharSequence c) {
 		ByteString bsa = ByteString.of(a);
 		ByteString bsb = ByteString.of(b);
-		return bsa.copyAppend(bsb);
+		ByteString bsc = ByteString.of(c);
+
+		byte[] buffer = new byte[bsa.length() + bsb.length() + bsc.length()];
+		int len = bsa.length();
+		System.arraycopy(bsa.getBuffer(), 0, buffer, 0, len);
+		System.arraycopy(bsb.getBuffer(), 0, buffer, len, bsb.length());
+		len += bsb.length();
+		System.arraycopy(bsc.getBuffer(), 0, buffer, len, bsc.length());
+
+		return new CompactString(buffer);
 	}
 }

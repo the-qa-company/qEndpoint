@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -91,6 +92,11 @@ public class FloatDictionarySection implements DictionarySectionPrivate {
 		data = UnsafeLongArray.allocate(numentries);
 
 		while (it.hasNext()) {
+			if (data.size() == size) {
+				UnsafeLongArray d2 = UnsafeLongArray.allocate(Math.max(size, 16) * 2);
+				UnsafeLongArray.arraycopy(data, 0, d2, 0, size);
+				data = d2;
+			}
 			data.set(size++, ByteString.of(it.next()).doubleValue());
 		}
 	}
@@ -100,7 +106,7 @@ public class FloatDictionarySection implements DictionarySectionPrivate {
 		CRCOutputStream out = new CRCOutputStream(output, new CRC8());
 
 		out.write(TYPE_INDEX);
-		VByte.encode(out, data.length());
+		VByte.encode(out, size);
 
 		out.writeCRC();
 
@@ -138,5 +144,10 @@ public class FloatDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		Closer.closeAll(data);
+	}
+
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.FLOAT;
 	}
 }

@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
@@ -298,5 +299,10 @@ public class IntDictionarySectionMap implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		Closer.closeAll(blocks, data);
+	}
+
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.FLOAT;
 	}
 }

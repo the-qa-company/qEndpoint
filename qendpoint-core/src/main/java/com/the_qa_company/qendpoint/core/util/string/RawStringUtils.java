@@ -8,6 +8,7 @@ import org.apache.jena.vocabulary.XSD;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Optional;
 
 public final class RawStringUtils {
@@ -15,7 +16,7 @@ public final class RawStringUtils {
 	}
 
 	public static final byte RAW_TYPE_RAW = '#';
-	public static final byte RAW_TYPE_LIT_NDT = 'N';
+	public static final byte RAW_TYPE_LIT_NDT = '$';
 	public static final byte RAW_TYPE_LIT_DT = '^';
 	public static final byte RAW_TYPE_LIT_DT_INT = 'I';
 	public static final byte RAW_TYPE_LIT_DT_FLOAT = 'F';
@@ -161,6 +162,30 @@ public final class RawStringUtils {
 		return -1;
 	}
 
+	public static ByteString getRawLang(CharSequence cs) {
+		ByteString bs = ByteString.of(cs);
+		byte[] buffer = bs.getBuffer();
+		int length = bs.length();
+
+		if (length == 0) {
+			throw new IllegalArgumentException("Empty raw string " + bs);
+		}
+
+		if (buffer[0] != RAW_TYPE_LIT_LG) {
+			return null;
+		}
+
+
+		int split = findSplit(buffer, length);
+		if (split == -1) {
+			throw new IllegalArgumentException("No split for lang literal " + bs);
+		}
+
+		byte[] data = new byte[split - 1];
+		System.arraycopy(buffer, 1, data, 0, split - 1);
+		return new CompactString(data);
+	}
+
 	public static ByteString convertFromRawStringSec(CharSequence cs) {
 		ByteString bs = ByteString.of(cs);
 		byte[] buffer = bs.getBuffer();
@@ -174,7 +199,7 @@ public final class RawStringUtils {
 			case RAW_TYPE_LIT_DT -> {
 				int split = findSplit(buffer, length);
 				if (split == -1) {
-					throw new IllegalArgumentException("No split for datatype literal");
+					throw new IllegalArgumentException("No split for datatype literal " + bs);
 				}
 
 				byte[] data = new byte[length - 2 + 2];
@@ -188,7 +213,7 @@ public final class RawStringUtils {
 			case RAW_TYPE_LIT_LG -> {
 				int split = findSplit(buffer, length);
 				if (split == -1) {
-					throw new IllegalArgumentException("No split for lang literal");
+					throw new IllegalArgumentException("No split for lang literal " + bs);
 				}
 				byte[] data = new byte[length - 2 + 1];
 				System.arraycopy(buffer, split + 1, data, 0, length - split - 1);
@@ -203,7 +228,7 @@ public final class RawStringUtils {
 			}
 			case RAW_TYPE_LIT_DT_FLOAT -> {
 				if (length != 9) {
-					throw new IllegalArgumentException("Invalid float type, 9 bytes required " + length);
+					throw new IllegalArgumentException("Invalid float type, 9 bytes required " + length + " / " + bs);
 				}
 
 				return new DoubleCompactString(Double.longBitsToDouble(IOUtil.readLong(buffer, 1)));
@@ -230,7 +255,7 @@ public final class RawStringUtils {
 
 				return new IntCompactString(value.getValue());
 			}
-			default -> throw new IllegalArgumentException("Invalid raw string type " + (char) buffer[0]);
+			default -> throw new IllegalArgumentException("Invalid raw string type " + (char) buffer[0] + " / " + bs);
 		}
 	}
 
@@ -307,22 +332,89 @@ public final class RawStringUtils {
 		}
 	}
 
+	public static ByteString convertFromRawStringLitOnly(CharSequence cs) {
+		ByteString bs = ByteString.of(cs);
+		byte[] buffer = bs.getBuffer();
+		int length = bs.length();
+
+		if (length == 0) {
+			throw new IllegalArgumentException("Empty raw string");
+		}
+
+		switch (buffer[0]) {
+			case RAW_TYPE_LIT_DT -> {
+				int split = findSplit(buffer, length);
+				if (split == -1) {
+					throw new IllegalArgumentException("No split for datatype literal");
+				}
+
+				byte[] data = new byte[length - split - 1];
+				System.arraycopy(buffer, split + 1, data, 0, data.length);
+				return new CompactString(data);
+			}
+			case RAW_TYPE_LIT_LG -> {
+				int split = findSplit(buffer, length);
+				if (split == -1) {
+					throw new IllegalArgumentException("No split for lang literal");
+				}
+				byte[] data = new byte[length - split - 1];
+				System.arraycopy(buffer, split + 1, data, 0, data.length);
+
+				return new CompactString(data);
+			}
+			// no datatype
+			case RAW_TYPE_LIT_NDT, RAW_TYPE_RAW -> { // raw type
+				return bs.subSequence(1, length);
+			}
+			case RAW_TYPE_LIT_DT_FLOAT -> {
+				if (length != 9) {
+					throw new IllegalArgumentException("Invalid float type, 9 bytes required " + length);
+				}
+
+				return ByteString.of(Double.longBitsToDouble(IOUtil.readLong(buffer, 1)));
+			}
+			case RAW_TYPE_LIT_DT_DEC -> {
+				Mutable<Long> value = new Mutable<>(0L);
+
+				int idx = 1 + VByte.decodeSigned(buffer, 1, value);
+
+				int scale = value.getValue().intValue();
+
+				idx += VByte.decode(buffer, idx, value);
+
+				int buffSize = value.getValue().intValue();
+
+				BigInteger unscale = new BigInteger(buffer, idx, buffSize);
+
+				return ByteString.of(new BigDecimal(unscale, scale));
+			}
+			case RAW_TYPE_LIT_DT_INT -> {
+				Mutable<Long> value = new Mutable<>(0L);
+
+				VByte.decodeSigned(buffer, 1, value);
+
+				return ByteString.of(value.getValue());
+			}
+			default -> throw new IllegalArgumentException("Invalid raw string type " + (char) buffer[0]);
+		}
+	}
+
 	public static int compareRawString(CharSequence s1, CharSequence s2) {
 		ByteString b1 = ByteString.of(s1);
 		ByteString b2 = ByteString.of(s2);
 
-		char t1 = b1.charAt(0);
-		char t2 = b2.charAt(0);
+		ByteString t1 = rawDTLType(b1);
+		ByteString t2 = rawDTLType(b2);
 
-		int c = Character.compare(t1, t2);
+		int x = t1.compareTo(t2);
 
-		if (c != 0) {
-			return c; // useless to compare
+		if (x != 0) {
+			return x;
 		}
 
-		switch (t1) {
+		switch (b1.charAt(0)) {
 		case RAW_TYPE_RAW, RAW_TYPE_LIT_NDT, RAW_TYPE_LIT_DT, RAW_TYPE_LIT_LG -> {
-			return b1.compareTo(b2); // maybe ignore first?
+			return b1.compareTo(b2, 1);
 		}
 		case RAW_TYPE_LIT_DT_INT -> {
 			byte[] bb1 = b1.getBuffer();
@@ -343,10 +435,10 @@ public final class RawStringUtils {
 			int bl2 = b2.length();
 
 			if (bl1 != 9) {
-				throw new IllegalArgumentException("Invalid float len " + bl1);
+				throw new IllegalArgumentException("Invalid float len " + bl1 + " : " + b1 + " " + Arrays.toString(bb1));
 			}
 			if (bl2 != 9) {
-				throw new IllegalArgumentException("Invalid float len " + bl2);
+				throw new IllegalArgumentException("Invalid float len " + bl2 + " : " + b2 + " " + Arrays.toString(bb2));
 			}
 
 			double d1 = Double.longBitsToDouble(IOUtil.readLong(bb1, 1));
@@ -418,7 +510,20 @@ public final class RawStringUtils {
 			case RAW_TYPE_LIT_LG -> {
 				return LiteralsUtils.LITERAL_LANG_TYPE;
 			}
-			default -> throw new IllegalArgumentException("Invalid raw string type: " + b0);
+			default -> throw new IllegalArgumentException("Invalid raw string type: " + b0 + " for " + rs);
 		}
+	}
+
+	public static ByteString rawDTLType(ByteString bs) {
+		ByteString rt = rawType(bs);
+		if (LiteralsUtils.LITERAL_LANG_TYPE == rt) {
+			ByteString lg = getRawLang(bs);
+			assert lg != null;
+			return LiteralsUtils.LANG_OPERATOR.copyAppend(lg);
+		}
+		if (LiteralsUtils.NO_DATATYPE == rt) {
+			return CharSequenceDTLComparator.DTL_DTN;
+		}
+		return rt;
 	}
 }

@@ -14,13 +14,28 @@ public class RawSectionCompressor extends SectionCompressor implements Comparato
 	public RawSectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
 			boolean quads) {
-		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quads);
+		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quads, false);
 		setComparator(this);
 	}
 
 	@Override
 	public int compare(IndexedNode o1, IndexedNode o2) {
 		return RawStringUtils.compareRawString(o1.getNode(), o2.getNode());
+	}
+
+	@Override
+	protected ByteString convertSubject(CharSequence seq) {
+		return RawStringUtils.convertToRawString(seq);
+	}
+
+	@Override
+	protected ByteString convertPredicate(CharSequence seq) {
+		return RawStringUtils.convertToRawString(seq);
+	}
+
+	@Override
+	protected ByteString convertGraph(CharSequence seq) {
+		return RawStringUtils.convertToRawString(seq);
 	}
 
 	@Override

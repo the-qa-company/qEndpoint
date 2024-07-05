@@ -4,13 +4,12 @@ import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
-import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -184,11 +183,15 @@ public class WriteDecimalDictionarySection implements DictionarySectionPrivate {
 		IOUtil.closeAll(blocks, tempFilename, blockTempFilename);
 	}
 
+	@Override
+	public DictionarySectionType getSectionType() {
+		return DictionarySectionType.DEC;
+	}
+
 	public class WriteDictionarySectionAppender implements Closeable {
 		private final ProgressListener listener;
 		private final long count;
 
-		private final long block;
 		private long blockStart;
 		private final CountOutputStream out;
 		long currentCount = 0;
@@ -203,7 +206,6 @@ public class WriteDecimalDictionarySection implements DictionarySectionPrivate {
 		public WriteDictionarySectionAppender(long count, ProgressListener listener) throws IOException {
 			this.listener = ProgressListener.ofNullable(listener);
 			this.count = count;
-			this.block = count < 10 ? 1 : count / 10;
 			out = new CountOutputStream(tempFilename.openOutputStream(bufferSize));
 			crcout = new CRCOutputStream(out, new CRC32());
 			resetCounter();

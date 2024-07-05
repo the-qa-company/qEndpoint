@@ -21,17 +21,19 @@ public class CompressionResultFile implements CompressionResult {
 	private final CompressNodeReader graph;
 	private final SectionCompressor.TripleFile sections;
 	private final boolean supportsGraph;
+	private final boolean stringLiterals;
 
 	public CompressionResultFile(long tripleCount, long ntRawSize, SectionCompressor.TripleFile sections,
-			boolean supportsGraph) throws IOException {
+			boolean supportsGraph, boolean stringLiterals) throws IOException {
 		this.tripleCount = tripleCount;
 		this.ntRawSize = ntRawSize;
-		this.subjects = new CompressNodeReader(sections.openRSubject());
-		this.predicates = new CompressNodeReader(sections.openRPredicate());
-		this.objects = new CompressNodeReader(sections.openRObject());
+		this.subjects = new CompressNodeReader(sections.openRSubject(), true);
+		this.predicates = new CompressNodeReader(sections.openRPredicate(), true);
+		this.objects = new CompressNodeReader(sections.openRObject(), stringLiterals);
 		this.supportsGraph = supportsGraph;
+		this.stringLiterals = stringLiterals;
 		if (supportsGraph) {
-			this.graph = new CompressNodeReader(sections.openRGraph());
+			this.graph = new CompressNodeReader(sections.openRGraph(), true);
 		} else {
 			this.graph = null;
 		}
@@ -46,6 +48,11 @@ public class CompressionResultFile implements CompressionResult {
 	@Override
 	public boolean supportsGraph() {
 		return supportsGraph;
+	}
+
+	@Override
+	public boolean hasOnlyBaseLiterals() {
+		return stringLiterals;
 	}
 
 	@Override
