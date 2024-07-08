@@ -2527,7 +2527,6 @@ public class HDTManagerTest {
 		}
 
 		@Test
-		@Ignore("cat not implemented")
 		public void rawCatTest() throws IOException, ParserException, NotFoundException {
 			Path root = tempDir.newFolder().toPath();
 			try {
