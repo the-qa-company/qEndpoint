@@ -303,6 +303,6 @@ public class IntDictionarySectionMap implements DictionarySectionPrivate {
 
 	@Override
 	public DictionarySectionType getSectionType() {
-		return DictionarySectionType.FLOAT;
+		return DictionarySectionType.INT;
 	}
 }

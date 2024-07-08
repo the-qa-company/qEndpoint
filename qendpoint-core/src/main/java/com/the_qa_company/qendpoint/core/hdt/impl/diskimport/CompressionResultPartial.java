@@ -146,7 +146,8 @@ public class CompressionResultPartial implements CompressionResult {
 		final CompressNodeReader s, p, o, g;
 		final SectionCompressor.TripleFile file;
 
-		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph, boolean literalNaturalOrder) throws IOException {
+		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph, boolean literalNaturalOrder)
+				throws IOException {
 			this.s = new CompressNodeReader(file.openRSubject(), true);
 			this.p = new CompressNodeReader(file.openRPredicate(), true);
 			this.o = new CompressNodeReader(file.openRObject(), literalNaturalOrder);

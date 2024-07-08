@@ -46,7 +46,8 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	}
 
 	public CompressFourSectionDictionary(CompressionResult compressionResult, NodeConsumer nodeConsumer,
-			ProgressListener listener, boolean debugOrder, boolean quad, boolean stringLiterals) {
+			ProgressListener listener, boolean debugOrder, boolean quad, boolean stringLiterals,
+			Comparator<IndexedNode> comparator) {
 		long splits = Math.max(20, compressionResult.getTripleCount() / 10_000);
 		Consumer<IndexedNode> debugOrderCheckerS = DebugOrderNodeIterator.of(debugOrder, "Subject");
 		Consumer<IndexedNode> debugOrderCheckerO = DebugOrderNodeIterator.of(debugOrder && stringLiterals, "Object");
@@ -82,7 +83,6 @@ public class CompressFourSectionDictionary implements TempDictionary {
 		PipedCopyIterator<CharSequence> subject = new PipedCopyIterator<>();
 		PipedCopyIterator<CharSequence> object = new PipedCopyIterator<>();
 		PipedCopyIterator<CharSequence> shared = new PipedCopyIterator<>();
-		Comparator<CharSequence> comparator = CharSequenceComparator.getInstance();
 		cfsdThread = new ExceptionThread(() -> {
 			try {
 				long sharedId = 1;
@@ -95,7 +95,7 @@ public class CompressFourSectionDictionary implements TempDictionary {
 					IndexedNode newObject = sortedObject.next();
 					debugOrderCheckerS.accept(newSubject);
 					debugOrderCheckerO.accept(newObject);
-					int comp = comparator.compare(newSubject.getNode(), newObject.getNode());
+					int comp = comparator.compare(newSubject, newObject);
 					while (comp != 0) {
 						if (comp < 0) {
 							sendPiped(newSubject, CompressUtil.getHeaderId(subjectId++), subject, sortedSubject,
@@ -122,7 +122,7 @@ public class CompressFourSectionDictionary implements TempDictionary {
 							newObject = sortedObject.next();
 							debugOrderCheckerO.accept(newObject);
 						}
-						comp = comparator.compare(newSubject.getNode(), newObject.getNode());
+						comp = comparator.compare(newSubject, newObject);
 					}
 					// shared element
 					long shid = CompressUtil.asShared(sharedId++);

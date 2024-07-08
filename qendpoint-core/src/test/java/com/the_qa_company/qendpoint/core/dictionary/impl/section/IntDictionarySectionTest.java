@@ -94,7 +94,7 @@ public class IntDictionarySectionTest {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
 				try (DictionarySectionPrivate sec = new IntDictionarySection(HDTOptions.empty());
-				     DictionarySectionPrivate sec2 = new IntDictionarySection(HDTOptions.empty())) {
+						DictionarySectionPrivate sec2 = new IntDictionarySection(HDTOptions.empty())) {
 					int count = rnd.nextInt(0x2000); // 2^14
 
 					long bound = 1L << i;
@@ -172,15 +172,14 @@ public class IntDictionarySectionTest {
 
 					strings.add(ByteString.of(curr));
 				}
-				try (WriteIntDictionarySection secw = new WriteIntDictionarySection(HDTOptions.empty(), p, IntDictionarySection.INT_PER_BLOCK)) {
+				try (WriteIntDictionarySection secw = new WriteIntDictionarySection(HDTOptions.empty(), p,
+						IntDictionarySection.INT_PER_BLOCK)) {
 					secw.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 					secw.save(ps, ProgressListener.ignore());
 				}
 
-				try (
-						CountInputStream cis = new CountInputStream(new BufferedInputStream(Files.newInputStream(ps)));
-						IntDictionarySectionMap sec = new IntDictionarySectionMap(cis, ps.toFile())
-				) {
+				try (CountInputStream cis = new CountInputStream(new BufferedInputStream(Files.newInputStream(ps)));
+						IntDictionarySectionMap sec = new IntDictionarySectionMap(cis, ps.toFile())) {
 
 					assertEquals("not enough elements", strings.size(), sec.getNumberOfElements());
 
@@ -238,8 +237,10 @@ public class IntDictionarySectionTest {
 
 					strings.add(ByteString.of(curr));
 				}
-				try (WriteIntDictionarySection secw = new WriteIntDictionarySection(HDTOptions.empty(), p, IntDictionarySection.INT_PER_BLOCK)) {
-					try (WriteIntDictionarySection.WriteDictionarySectionAppender app = secw.createAppender(strings.size(), ProgressListener.ignore())) {
+				try (WriteIntDictionarySection secw = new WriteIntDictionarySection(HDTOptions.empty(), p,
+						IntDictionarySection.INT_PER_BLOCK)) {
+					try (WriteIntDictionarySection.WriteDictionarySectionAppender app = secw
+							.createAppender(strings.size(), ProgressListener.ignore())) {
 						for (ByteString string : strings) {
 							app.append(string);
 						}
@@ -247,10 +248,8 @@ public class IntDictionarySectionTest {
 					secw.save(ps, ProgressListener.ignore());
 				}
 
-				try (
-						CountInputStream cis = new CountInputStream(new BufferedInputStream(Files.newInputStream(ps)));
-						IntDictionarySectionMap sec = new IntDictionarySectionMap(cis, ps.toFile())
-				) {
+				try (CountInputStream cis = new CountInputStream(new BufferedInputStream(Files.newInputStream(ps)));
+						IntDictionarySectionMap sec = new IntDictionarySectionMap(cis, ps.toFile())) {
 
 					assertEquals("not enough elements", strings.size(), sec.getNumberOfElements());
 
@@ -282,7 +281,6 @@ public class IntDictionarySectionTest {
 		}
 	}
 
-
 	@Test
 	@Ignore("test")
 	public void saveLenDeltaTest() throws IOException {
@@ -294,7 +292,7 @@ public class IntDictionarySectionTest {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 40; i++) {
 				try (DictionarySectionPrivate sec = new IntDictionarySection(HDTOptions.empty());
-				     DictionarySectionPrivate sec2 = new PFCDictionarySectionBig(HDTOptions.empty())) {
+						DictionarySectionPrivate sec2 = new PFCDictionarySectionBig(HDTOptions.empty())) {
 					int count = 0x10000; // 2^14
 
 					long bound = 1L << i;
@@ -321,7 +319,8 @@ public class IntDictionarySectionTest {
 
 					long l1 = Files.size(idx);
 					long l2 = Files.size(idx2);
-					System.out.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
+					System.out
+							.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
 				} catch (Throwable t) {
 					try {
 						IOUtil.deleteDirRecurse(root);
@@ -367,7 +366,7 @@ public class IntDictionarySectionTest {
 					sec.save(idx, ProgressListener.ignore());
 
 					try (CountInputStream is = new CountInputStream(new BufferedInputStream(Files.newInputStream(idx)));
-					     IntDictionarySectionMap sec2 = new IntDictionarySectionMap(is, idx.toFile())) {
+							IntDictionarySectionMap sec2 = new IntDictionarySectionMap(is, idx.toFile())) {
 						{
 
 							Iterator<? extends CharSequence> itex = sec.getSortedEntries();

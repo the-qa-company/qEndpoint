@@ -245,8 +245,9 @@ public class LiteralsUtils {
 	}
 
 	/**
-	 * remove the node quotes and type/lang if the node is a typed/lang literal, this
-	 * method return the char sequence or a subSequence of this char sequence
+	 * remove the node quotes and type/lang if the node is a typed/lang literal,
+	 * this method return the char sequence or a subSequence of this char
+	 * sequence
 	 *
 	 * @param str the node
 	 * @return node or the typed literal

@@ -12,9 +12,11 @@ public class RawStringUtilsTest {
 	public static void assertSameSign(String message, int excepted, int actual) {
 		assertEquals(message, Integer.signum(excepted), Integer.signum(actual));
 	}
+
 	public static void assertSameSign(int excepted, int actual) {
 		assertEquals(Integer.signum(excepted), Integer.signum(actual));
 	}
+
 	@Test
 	public void serialTest() {
 		String s1 = "\"test\"";
@@ -54,7 +56,6 @@ public class RawStringUtilsTest {
 		assertEquals(ByteString.of(v3), RawStringUtils.convertFromRawString(RawStringUtils.convertToRawString(v3)));
 		assertEquals(ByteString.of(v4), RawStringUtils.convertFromRawString(RawStringUtils.convertToRawString(v4)));
 	}
-
 
 	@Test
 	public void compareTest() {
@@ -99,30 +100,41 @@ public class RawStringUtilsTest {
 
 	@Test
 	public void rawTypeTest() {
-		assertSame(RawStringUtils.XSD_DECIMAL_DT, RawStringUtils.rawType(RawStringUtils.convertToRawString(RawStringUtils.decimalLiteral(new BigDecimal(34566)))));
-		assertSame(RawStringUtils.XSD_DOUBLE_DT, RawStringUtils.rawType(RawStringUtils.convertToRawString(RawStringUtils.floatLiteral(34566.0232))));
-		assertSame(RawStringUtils.XSD_INTEGER_DT, RawStringUtils.rawType(RawStringUtils.convertToRawString(RawStringUtils.integerLiteral(34566))));
+		assertSame(RawStringUtils.XSD_DECIMAL_DT, RawStringUtils
+				.rawType(RawStringUtils.convertToRawString(RawStringUtils.decimalLiteral(new BigDecimal(34566)))));
+		assertSame(RawStringUtils.XSD_DOUBLE_DT,
+				RawStringUtils.rawType(RawStringUtils.convertToRawString(RawStringUtils.floatLiteral(34566.0232))));
+		assertSame(RawStringUtils.XSD_INTEGER_DT,
+				RawStringUtils.rawType(RawStringUtils.convertToRawString(RawStringUtils.integerLiteral(34566))));
 		ByteString type = ByteString.of("<http://example.org/#type>");
-		assertEquals(type, RawStringUtils.rawType(RawStringUtils.convertToRawString(new TypedLiteralCompactString(ByteString.of("azerty"), type))));
-		assertSame(LiteralsUtils.NO_DATATYPE, RawStringUtils.rawType(RawStringUtils.convertToRawString(ByteString.of("http://example.org/#test"))));
-		assertSame(LiteralsUtils.LITERAL_LANG_TYPE, RawStringUtils.rawType(RawStringUtils.convertToRawString(ByteString.of("\"zqdzqd\"@fr"))));
+		assertEquals(type, RawStringUtils.rawType(
+				RawStringUtils.convertToRawString(new TypedLiteralCompactString(ByteString.of("azerty"), type))));
+		assertSame(LiteralsUtils.NO_DATATYPE,
+				RawStringUtils.rawType(RawStringUtils.convertToRawString(ByteString.of("http://example.org/#test"))));
+		assertSame(LiteralsUtils.LITERAL_LANG_TYPE,
+				RawStringUtils.rawType(RawStringUtils.convertToRawString(ByteString.of("\"zqdzqd\"@fr"))));
 	}
 
 	@Test
 	public void langTest() {
-		assertSame(LiteralsUtils.LITERAL_LANG_TYPE, RawStringUtils.rawType(RawStringUtils.convertToRawString(ByteString.of("\"zqdzqd\"@fr"))));
-		assertEquals(ByteString.of("fr"), RawStringUtils.getRawLang(RawStringUtils.convertToRawString(ByteString.of("\"zqdzqd\"@fr"))));
-		assertNull(RawStringUtils.getRawLang(RawStringUtils.convertToRawString(ByteString.of("http://example.org/#test"))));
+		assertSame(LiteralsUtils.LITERAL_LANG_TYPE,
+				RawStringUtils.rawType(RawStringUtils.convertToRawString(ByteString.of("\"zqdzqd\"@fr"))));
+		assertEquals(ByteString.of("fr"),
+				RawStringUtils.getRawLang(RawStringUtils.convertToRawString(ByteString.of("\"zqdzqd\"@fr"))));
+		assertNull(RawStringUtils
+				.getRawLang(RawStringUtils.convertToRawString(ByteString.of("http://example.org/#test"))));
 
 	}
 
 	@Test
 	public void rawLitTest() {
 
-		assertEquals(ByteString.of("\"test\""), RawStringUtils.convertFromRawStringLitOnly(RawStringUtils.convertToRawString("\"test\"")));
-		assertEquals(ByteString.of("\"test\""), RawStringUtils.convertFromRawStringLitOnly(RawStringUtils.convertToRawString("\"test\"@fr")));
-		assertEquals(ByteString.of("\"test\""), RawStringUtils.convertFromRawStringLitOnly(RawStringUtils.convertToRawString("\"test\"^^<h://t.o/>")));
-
+		assertEquals(ByteString.of("\"test\""),
+				RawStringUtils.convertFromRawStringLitOnly(RawStringUtils.convertToRawString("\"test\"")));
+		assertEquals(ByteString.of("\"test\""),
+				RawStringUtils.convertFromRawStringLitOnly(RawStringUtils.convertToRawString("\"test\"@fr")));
+		assertEquals(ByteString.of("\"test\""),
+				RawStringUtils.convertFromRawStringLitOnly(RawStringUtils.convertToRawString("\"test\"^^<h://t.o/>")));
 
 	}
 }

@@ -38,9 +38,7 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
-import com.the_qa_company.qendpoint.core.util.string.DecimalCompactString;
-import com.the_qa_company.qendpoint.core.util.string.DoubleCompactString;
-import com.the_qa_company.qendpoint.core.util.string.IntCompactString;
+import com.the_qa_company.qendpoint.core.util.string.RawStringUtils;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -61,6 +59,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,6 +83,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -91,8 +91,7 @@ import static org.junit.Assert.fail;
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class,
-		HDTManagerTest.RawTest.class })
+		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.RawTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -102,7 +101,7 @@ public class HDTManagerTest {
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
 		}
 
 		protected static List<String> diskDictCat() {
@@ -239,7 +238,9 @@ public class HDTManagerTest {
 				long location = expectedIt.getLastTriplePosition();
 				assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
 				if (!Objects.equals(expectedTriple, actualTriple)) {
-					fail(format("The tripleID #%d doesn't match\nExcepted :%s (%s)\nActual   :%s (%s)", location, expectedTriple, expected.getDictionary().toTripleString(expectedTriple), actualTriple, expected.getDictionary().toTripleString(actualTriple)));
+					fail(format("The tripleID #%d doesn't match\nExcepted :%s (%s)\nActual   :%s (%s)", location,
+							expectedTriple, expected.getDictionary().toTripleString(expectedTriple), actualTriple,
+							expected.getDictionary().toTripleString(actualTriple)));
 				}
 			}
 			assertFalse(actualIt.hasNext());
@@ -265,6 +266,23 @@ public class HDTManagerTest {
 			map = new HashMap<>();
 			if (dict instanceof MultipleBaseDictionary || dict instanceof MultipleLangBaseDictionary) {
 				map.putAll(dict.getAllObjects());
+				if (dict instanceof RawDictionary) {
+					DictionarySection dec = map.get(RawStringUtils.XSD_DECIMAL_DT);
+					if (dec != null) {
+						assertSame("invalid section " + dec.getClass(), DictionarySectionType.DEC,
+								dec.getSectionType());
+					}
+					DictionarySection dit = map.get(RawStringUtils.XSD_INTEGER_DT);
+					if (dit != null) {
+						assertSame("invalid section " + dit.getClass(), DictionarySectionType.INT,
+								dit.getSectionType());
+					}
+					DictionarySection dob = map.get(RawStringUtils.XSD_DOUBLE_DT);
+					if (dob != null) {
+						assertSame("invalid section " + dob.getClass(), DictionarySectionType.FLOAT,
+								dob.getSectionType());
+					}
+				}
 			} else {
 				map.put("Objects", dict.getObjects());
 			}
@@ -280,140 +298,133 @@ public class HDTManagerTest {
 			map.forEach((name, section) -> {
 				DictionarySectionType type = section.getSectionType();
 				switch (type) {
-					case PFC -> {
-						ReplazableString prev = new ReplazableString();
-						prev.clear();
-						String prev2 = "";
-						Iterator<? extends CharSequence> it = section.getSortedEntries();
-						if (it.hasNext()) {
-							prev.replace(it.next());
-						}
-
-						while (it.hasNext()) {
-							CharSequence next = ByteString.of(it.next());
-
-							int cmpV = cmp.compare(prev, next);
-							if (cmpV >= 0) {
-								System.out.print("Prev: ");
-								printHex(prev);
-								System.out.print("Next: ");
-								printHex(next);
-								System.out.print("Prev: ");
-								printBin(prev);
-								System.out.print("Next: ");
-								printBin(next);
-
-								if (cmpV == 0) {
-									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
-								}
-								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
-							}
-
-							if (ALLOW_STRING_CONSISTENCY_TEST) {
-								String nextStr = next.toString();
-								int cmpV2 = cmp.compare(prev2, nextStr);
-								if (cmpV2 == 0) {
-									fail("[" + name + "] (Str) Duplicated elements! " + prev2 + " = " + next + " (" + type + "-" + section.getClass() + ")");
-								}
-								if (cmpV2 > 0) {
-									fail("[" + name + "] (Str) Bad order! " + prev2 + " > " + next + " (" + type + "-" + section.getClass() + ")");
-								}
-
-								assertEquals("str and byteStr compare aren't returning the same results", Math.signum(cmpV2),
-										Math.signum(cmpV), 0.01);
-								prev2 = nextStr;
-							}
-							prev.replace(next);
-						}
+				case PFC -> {
+					ReplazableString prev = new ReplazableString();
+					prev.clear();
+					String prev2 = "";
+					Iterator<? extends CharSequence> it = section.getSortedEntries();
+					if (it.hasNext()) {
+						prev.replace(it.next());
 					}
-					case INT -> {
-						Iterator<? extends CharSequence> it = section.getSortedEntries();
-						if (!it.hasNext()) {
-							return;
-						}
-						IntCompactString prev = new IntCompactString(ByteString.of(it.next()).longValue());
 
-						while (it.hasNext()) {
-							CharSequence next = ByteString.of(it.next());
+					while (it.hasNext()) {
+						CharSequence next = ByteString.of(it.next());
 
-							int cmpV = cmp.compare(prev, next);
-							if (cmpV >= 0) {
-								System.out.print("Prev: ");
-								printHex(prev);
-								System.out.print("Next: ");
-								printHex(next);
-								System.out.print("Prev: ");
-								printBin(prev);
-								System.out.print("Next: ");
-								printBin(next);
+						int cmpV = cmp.compare(prev, next);
+						if (cmpV >= 0) {
+							System.out.print("Prev: ");
+							printHex(prev);
+							System.out.print("Next: ");
+							printHex(next);
+							System.out.print("Prev: ");
+							printBin(prev);
+							System.out.print("Next: ");
+							printBin(next);
 
-								if (cmpV == 0) {
-									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
-								}
-								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+							if (cmpV == 0) {
+								fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type
+										+ "-" + section.getClass() + ")");
 							}
-							prev.setValue(ByteString.of(next).longValue());
+							fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-"
+									+ section.getClass() + ")");
 						}
-					}
-					case FLOAT -> {
-						Iterator<? extends CharSequence> it = section.getSortedEntries();
-						if (!it.hasNext()) {
-							return;
-						}
-						DoubleCompactString prev = new DoubleCompactString(ByteString.of(it.next()).doubleValue());
 
-						while (it.hasNext()) {
-							CharSequence next = ByteString.of(it.next());
-
-							int cmpV = cmp.compare(prev, next);
-							if (cmpV >= 0) {
-								System.out.print("Prev: ");
-								printHex(prev);
-								System.out.print("Next: ");
-								printHex(next);
-								System.out.print("Prev: ");
-								printBin(prev);
-								System.out.print("Next: ");
-								printBin(next);
-
-								if (cmpV == 0) {
-									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
-								}
-								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+						if (ALLOW_STRING_CONSISTENCY_TEST) {
+							String nextStr = next.toString();
+							int cmpV2 = cmp.compare(prev2, nextStr);
+							if (cmpV2 == 0) {
+								fail("[" + name + "] (Str) Duplicated elements! " + prev2 + " = " + next + " (" + type
+										+ "-" + section.getClass() + ")");
 							}
-							prev.setValue(ByteString.of(next).doubleValue());
-						}
-					}
-					case DEC -> {
-						Iterator<? extends CharSequence> it = section.getSortedEntries();
-						if (!it.hasNext()) {
-							return;
-						}
-						DecimalCompactString prev = new DecimalCompactString(ByteString.of(it.next()).decimalValue());
-
-						while (it.hasNext()) {
-							CharSequence next = ByteString.of(it.next());
-
-							int cmpV = cmp.compare(prev, next);
-							if (cmpV >= 0) {
-								System.out.print("Prev: ");
-								printHex(prev);
-								System.out.print("Next: ");
-								printHex(next);
-								System.out.print("Prev: ");
-								printBin(prev);
-								System.out.print("Next: ");
-								printBin(next);
-
-								if (cmpV == 0) {
-									fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type + "-" + section.getClass() + ")");
-								}
-								fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-" + section.getClass() + ")");
+							if (cmpV2 > 0) {
+								fail("[" + name + "] (Str) Bad order! " + prev2 + " > " + next + " (" + type + "-"
+										+ section.getClass() + ")");
 							}
-							prev.setValue(ByteString.of(next).decimalValue());
+
+							assertEquals("str and byteStr compare aren't returning the same results",
+									Math.signum(cmpV2), Math.signum(cmpV), 0.01);
+							prev2 = nextStr;
 						}
+						prev.replace(next);
 					}
-					default -> throw new AssertionError("section type not defined : " + type);
+				}
+				case INT -> {
+					Iterator<? extends CharSequence> it = section.getSortedEntries();
+					if (!it.hasNext()) {
+						return;
+					}
+					long prev = ByteString.of(it.next()).longValue();
+
+					while (it.hasNext()) {
+						ByteString next = ByteString.of(it.next());
+
+						long lv = next.longValue();
+
+						if (prev >= lv) {
+							System.out.printf("Prev: %d\n", prev);
+							System.out.printf("Next: %d\n", lv);
+							if (lv == prev) {
+								fail("[" + name + "] (INT) Duplicated elements! " + prev + " = " + next + " (" + type
+										+ "-" + section.getClass() + ")");
+							}
+							fail("[" + name + "] (INT) Bad order! " + prev + " > " + next + " (" + type + "-"
+									+ section.getClass() + ")");
+						}
+						prev = lv;
+					}
+				}
+				case FLOAT -> {
+					Iterator<? extends CharSequence> it = section.getSortedEntries();
+					if (!it.hasNext()) {
+						return;
+					}
+					double prev = ByteString.of(it.next()).doubleValue();
+
+					while (it.hasNext()) {
+						ByteString next = ByteString.of(it.next());
+						double dv = next.doubleValue();
+
+						if (prev >= dv) {
+							System.out.printf("Prev: %f\n", prev);
+							System.out.printf("Next: %f\n", dv);
+
+							if (prev == dv) {
+								fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type
+										+ "-" + section.getClass() + ")");
+							}
+							fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-"
+									+ section.getClass() + ")");
+						}
+						prev = dv;
+					}
+				}
+				case DEC -> {
+					Iterator<? extends CharSequence> it = section.getSortedEntries();
+					if (!it.hasNext()) {
+						return;
+					}
+					BigDecimal prev = ByteString.of(it.next()).decimalValue();
+
+					while (it.hasNext()) {
+						ByteString next = ByteString.of(it.next());
+						BigDecimal dv = next.decimalValue();
+
+						int cmpV = prev.compareTo(dv);
+						if (cmpV >= 0) {
+							System.out.print("Prev: " + prev);
+							System.out.print("Next: " + dv);
+
+							if (cmpV == 0) {
+								fail("[" + name + "] (BS) Duplicated elements! " + prev + " = " + next + " (" + type
+										+ "-" + section.getClass() + ")");
+							}
+							fail("[" + name + "] (BS) Bad order! " + prev + " > " + next + " (" + type + "-"
+									+ section.getClass() + ")");
+						}
+						prev = dv;
+					}
+				}
+				default -> throw new AssertionError("section type not defined : " + type);
 				}
 			});
 			IteratorTripleID tripleIt = hdt.getTriples().searchAll();
@@ -428,6 +439,19 @@ public class HDTManagerTest {
 				last.setAll(tid.getSubject(), tid.getPredicate(), tid.getObject());
 			}
 			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
+			if (dict instanceof RawDictionary) {
+				// test shared
+				DictionarySection subj = dict.getSubjects();
+
+				Iterator<? extends CharSequence> it = subj.getSortedEntries();
+				while (it.hasNext()) {
+					CharSequence csc = it.next();
+					if (dict.stringToId(csc, OBJECT) > 0) {
+						fail(format("%s isn't shared", csc));
+					}
+				}
+
+			}
 		}
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
@@ -2251,8 +2275,8 @@ public class HDTManagerTest {
 	public static class RawTest extends HDTManagerTestBase {
 		@Test
 		public void rawTest() throws IOException, ParserException, NotFoundException {
-			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
-					34);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withNumbers(true);
 			Path ntFile = tempDir.newFile().toPath();
 			try {
 
@@ -2337,12 +2361,10 @@ public class HDTManagerTest {
 					try {
 						hdt.saveToHDT(tempHDT, ProgressListener.ignore());
 						try (HDT hdtMap = HDTManager.mapHDT(tempHDT)) {
-							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
-									hdtMap.getDictionary().getType());
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtMap.getDictionary().getType());
 							assertEqualsHDT(hdt, hdtMap);
 							try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
-								assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
-										hdtLoad.getDictionary().getType());
+								assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtLoad.getDictionary().getType());
 								assertEqualsHDT(hdt, hdtLoad);
 								assertEqualsHDT(hdtLoad, hdtMap);
 							}
@@ -2358,8 +2380,8 @@ public class HDTManagerTest {
 
 		@Test
 		public void diskMsdLangMemTest() throws IOException, ParserException, NotFoundException {
-			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
-					34);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withNumbers(true);
 			Path rootDir = tempDir.newFolder().toPath();
 			try {
 				Path ntFile = rootDir.resolve("ds.nt");
@@ -2399,7 +2421,10 @@ public class HDTManagerTest {
 						msdlGD.getAllObjects().forEach((k, s) -> {
 							DictionarySection secmem = allObjects.get(k);
 							assertNotNull("missing section " + k, secmem);
-							assertEquals("not the same number of triples in section " + k + " (" + secmem.getClass() + " / " + s.getClass() + ")", secmem.getNumberOfElements(), s.getNumberOfElements());
+							assertEquals(
+									"not the same number of triples in section " + k + " (" + secmem.getClass() + " / "
+											+ s.getClass() + ")",
+									secmem.getNumberOfElements(), s.getNumberOfElements());
 						});
 						assertEquals("not the same number of triples", hdtMem.getTriples().getNumberOfElements(),
 								hdtGD.getTriples().getNumberOfElements());
@@ -2416,8 +2441,7 @@ public class HDTManagerTest {
 						assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtMap.getDictionary().getType());
 						assertEqualsHDT(hdtGD, hdtMap);
 						try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
-							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
-									hdtLoad.getDictionary().getType());
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtLoad.getDictionary().getType());
 							assertEqualsHDT(hdtGD, hdtLoad);
 							assertEqualsHDT(hdtLoad, hdtMap);
 						}
@@ -2430,8 +2454,8 @@ public class HDTManagerTest {
 
 		@Test
 		public void diskRawMapTest() throws IOException, ParserException, NotFoundException {
-			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(5000,
-					34);
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(5000, 34).withNumbers(true);
 			Path rootDir = tempDir.newFolder().toPath();
 			try {
 				Path ntFile = rootDir.resolve("ds.nt");
@@ -2485,8 +2509,7 @@ public class HDTManagerTest {
 						assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtMap.getDictionary().getType());
 						assertEqualsHDT(hdtGD, hdtMap);
 						try (HDT hdtLoad = HDTManager.loadHDT(tempHDT)) {
-							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW,
-									hdtLoad.getDictionary().getType());
+							assertEquals(HDTVocabulary.DICTIONARY_TYPE_RAW, hdtLoad.getDictionary().getType());
 							assertEqualsHDT(hdtGD, hdtLoad);
 							assertEqualsHDT(hdtLoad, hdtMap);
 						}
@@ -2504,7 +2527,7 @@ public class HDTManagerTest {
 		}
 
 		@Test
-		@Ignore("not implemented")
+		@Ignore("cat not implemented")
 		public void rawCatTest() throws IOException, ParserException, NotFoundException {
 			Path root = tempDir.newFolder().toPath();
 			try {
@@ -2512,9 +2535,9 @@ public class HDTManagerTest {
 				final long count = 2500;
 
 				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-						.createSupplierWithMaxTriples(count, 34);
+						.createSupplierWithMaxTriples(count, 34).withNumbers(true);
 				LargeFakeDataSetStreamSupplier supplier2 = LargeFakeDataSetStreamSupplier
-						.createSupplierWithMaxTriples(count * sub, 34);
+						.createSupplierWithMaxTriples(count * sub, 34).withNumbers(true);
 				String base = "sub";
 
 				Path ng = root.resolve("ng.nt");
@@ -2554,7 +2577,13 @@ public class HDTManagerTest {
 						HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("khc.hdt"));
 
 				try (HDT catOut = HDTManager.catHDTPath(ngs, specCat, ProgressListener.ignore())) {
+					checkHDTConsistency(catOut);
 					try (HDT excepted = HDTManager.mapHDT(hdtg)) {
+						checkHDTConsistency(excepted);
+						assertTrue("excepted isn't a raw dict: " + excepted.getDictionary().getClass(),
+								excepted.getDictionary() instanceof RawDictionary);
+						assertTrue("catOut isn't a raw dict: " + catOut.getDictionary().getClass(),
+								catOut.getDictionary() instanceof RawDictionary);
 						assertEqualsHDT(excepted, catOut);
 					}
 				}
@@ -2562,6 +2591,53 @@ public class HDTManagerTest {
 			} finally {
 				PathUtils.deleteDirectory(root);
 			}
+		}
+
+		@Test
+		public void rawDictTest() throws IOException, NotFoundException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+			try {
+				Path ds = root.resolve("ds.nt");
+				LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 42).withMaxElementSplit(20)
+						.withMaxLiteralSize(50).withNumbers(true).createNTFile(ds);
+
+				Path dsmem = root.resolve("ds.hdt");
+				Path dsgd = root.resolve("ds1.hdt");
+				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
+				HDTOptions spec2 = spec.pushTop();
+				spec2.setOptions(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("workgd"));
+				try (HDT hdtmem = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI,
+						RDFNotation.NTRIPLES, spec, ProgressListener.ignore());
+						HDT hdtgd = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI,
+								RDFNotation.NTRIPLES, spec2, ProgressListener.ignore())) {
+					hdtmem.saveToHDT(dsmem);
+					hdtgd.saveToHDT(dsgd);
+					checkHDTConsistency(hdtmem);
+					checkHDTConsistency(hdtgd);
+					try (HDT hdtmemmap = HDTManager.mapHDT(dsmem); HDT hdtgdmap = HDTManager.mapHDT(dsgd)) {
+						checkHDTConsistency(hdtmemmap);
+						checkHDTConsistency(hdtgdmap);
+						// same serial/deserial
+						assertEqualsHDT(hdtmem, hdtmemmap);
+						assertEqualsHDT(hdtgd, hdtgdmap);
+						// same mem/gd
+						assertEqualsHDT(hdtmem, hdtgd);
+						// same mem/gd serial/deserial
+						assertEqualsHDT(hdtmemmap, hdtgdmap);
+					}
+				}
+
+			} catch (Throwable t) {
+				try {
+					PathUtils.deleteDirectory(root);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+			PathUtils.deleteDirectory(root);
 		}
 	}
 

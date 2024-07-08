@@ -44,40 +44,41 @@ public class DictionarySectionFactory {
 		input.mark(64);
 		int dictType = input.read();
 		input.reset();
-		input.mark(64); // To allow children to reset() and try another instance.
+		input.mark(64); // To allow children to reset() and try another
+						// instance.
 
 		DictionarySectionPrivate section = null;
 
 		switch (dictType) {
-			case PFCDictionarySection.TYPE_INDEX -> {
-				try {
-					// First try load using the standard PFC
-					section = new PFCDictionarySection(new HDTSpecification());
-					section.load(input, listener);
-				} catch (IllegalArgumentException e) {
-					// The PFC Could not load the file because it is too big, use
-					// PFCBig
-					section = new PFCDictionarySectionBig(new HDTSpecification());
-					section.load(input, listener);
-				}
-				return section;
-			}
-			case DecimalDictionarySection.TYPE_INDEX -> {
-				section = new DecimalDictionarySection(new HDTSpecification());
+		case PFCDictionarySection.TYPE_INDEX -> {
+			try {
+				// First try load using the standard PFC
+				section = new PFCDictionarySection(new HDTSpecification());
 				section.load(input, listener);
-				return section;
-			}
-			case FloatDictionarySection.TYPE_INDEX -> {
-				section = new FloatDictionarySection(new HDTSpecification());
+			} catch (IllegalArgumentException e) {
+				// The PFC Could not load the file because it is too big, use
+				// PFCBig
+				section = new PFCDictionarySectionBig(new HDTSpecification());
 				section.load(input, listener);
-				return section;
 			}
-			case IntDictionarySection.TYPE_INDEX -> {
-				section = new IntDictionarySection(new HDTSpecification());
-				section.load(input, listener);
-				return section;
-			}
-			default -> throw new IOException("DictionarySection implementation not available for id " + dictType);
+			return section;
+		}
+		case DecimalDictionarySection.TYPE_INDEX -> {
+			section = new DecimalDictionarySection(new HDTSpecification());
+			section.load(input, listener);
+			return section;
+		}
+		case FloatDictionarySection.TYPE_INDEX -> {
+			section = new FloatDictionarySection(new HDTSpecification());
+			section.load(input, listener);
+			return section;
+		}
+		case IntDictionarySection.TYPE_INDEX -> {
+			section = new IntDictionarySection(new HDTSpecification());
+			section.load(input, listener);
+			return section;
+		}
+		default -> throw new IOException("DictionarySection implementation not available for id " + dictType);
 		}
 	}
 
@@ -86,16 +87,17 @@ public class DictionarySectionFactory {
 		input.mark(64);
 		int dictType = input.read();
 		input.reset();
-		input.mark(64); // To allow children to reset() and try another instance.
+		input.mark(64); // To allow children to reset() and try another
+						// instance.
 
 		return switch (dictType) {
-			case PFCDictionarySection.TYPE_INDEX ->
-				// First try load using the standard PFC
-					new PFCDictionarySectionMap(input, f);
-			case DecimalDictionarySection.TYPE_INDEX -> new DecimalDictionarySectionMap(input, f);
-			case FloatDictionarySection.TYPE_INDEX -> new FloatDictionarySectionMap(input, f);
-			case IntDictionarySection.TYPE_INDEX -> new IntDictionarySectionMap(input, f);
-			default -> throw new IOException("DictionarySection implementation not available for id " + dictType);
+		case PFCDictionarySection.TYPE_INDEX ->
+			// First try load using the standard PFC
+			new PFCDictionarySectionMap(input, f);
+		case DecimalDictionarySection.TYPE_INDEX -> new DecimalDictionarySectionMap(input, f);
+		case FloatDictionarySection.TYPE_INDEX -> new FloatDictionarySectionMap(input, f);
+		case IntDictionarySection.TYPE_INDEX -> new IntDictionarySectionMap(input, f);
+		default -> throw new IOException("DictionarySection implementation not available for id " + dictType);
 		};
 	}
 }

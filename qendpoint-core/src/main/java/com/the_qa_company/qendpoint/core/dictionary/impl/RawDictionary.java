@@ -200,58 +200,65 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 	}
 
 	private TempDictionarySection extractStrings(TempDictionarySection sec) {
-		return new OneReadDictionarySection(MapIterator.of(sec.getSortedEntries(), RawStringUtils::convertFromRawString), sec.getNumberOfElements());
+		return new OneReadDictionarySection(
+				MapIterator.of(sec.getSortedEntries(), RawStringUtils::convertFromRawString),
+				sec.getNumberOfElements());
 	}
+
 	@Override
 	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
 		IntermediateListener iListener = new IntermediateListener(null);
-		new ExceptionThread(() -> predicates.load(extractStrings(other.getPredicates()), iListener), "MultiSecSAsyncReaderP").attach(
-				new ExceptionThread(() -> subjects.load(extractStrings(other.getSubjects()), iListener), "MultiSecSAsyncReaderS"),
-				new ExceptionThread(() -> shared.load(extractStrings(other.getShared()), iListener), "MultiSecSAsyncReaderSh"),
-				new ExceptionThread(() -> {
-					if (supportGraphs()) {
-						graph.load(extractStrings(other.getGraphs()), iListener);
-					}
-				}, "MultiSecSAsyncReaderG"), new ExceptionThread(() -> {
-					RawStopPredicate<CharSequence> pred = new RawStopPredicate<>();
-					PeekIterator<? extends CharSequence> it = new com.the_qa_company.qendpoint.core.iterator.utils.StopIterator<>(
-							other.getObjects().getSortedEntries(),
-							pred);
+		new ExceptionThread(() -> predicates.load(extractStrings(other.getPredicates()), iListener),
+				"MultiSecSAsyncReaderP")
+				.attach(new ExceptionThread(() -> subjects.load(extractStrings(other.getSubjects()), iListener),
+						"MultiSecSAsyncReaderS"),
+						new ExceptionThread(() -> shared.load(extractStrings(other.getShared()), iListener),
+								"MultiSecSAsyncReaderSh"),
+						new ExceptionThread(() -> {
+							if (supportGraphs()) {
+								graph.load(extractStrings(other.getGraphs()), iListener);
+							}
+						}, "MultiSecSAsyncReaderG"), new ExceptionThread(() -> {
+							RawStopPredicate<CharSequence> pred = new RawStopPredicate<>();
+							PeekIterator<? extends CharSequence> it = new com.the_qa_company.qendpoint.core.iterator.utils.StopIterator<>(
+									other.getObjects().getSortedEntries(), pred);
 
-					while (it.hasNext()) {
-						ByteString peek = ByteString.of(it.peek());
+							while (it.hasNext()) {
+								ByteString peek = ByteString.of(it.peek());
 
-						ByteString type = RawStringUtils.rawType(peek);
-						if (LiteralsUtils.NO_DATATYPE == type) {
-							long count = other.getObjects().getNumberOfElements() - shared.getNumberOfElements();
-							nonTyped.load(it.map(RawStringUtils::convertFromRawStringLitOnly), count, listener);
-							pred.reset();
-							continue;
-						}
+								ByteString type = RawStringUtils.rawType(peek);
+								if (LiteralsUtils.NO_DATATYPE == type) {
+									long count = other.getObjects().getNumberOfElements()
+											- shared.getNumberOfElements();
+									nonTyped.load(it.map(RawStringUtils::convertFromRawStringLitOnly), count, listener);
+									pred.reset();
+									continue;
+								}
 
-						if (LiteralsUtils.LITERAL_LANG_TYPE == type) {
-							DictionarySectionPrivate section = new PFCDictionarySectionBig(spec);
-							section.load(it.map(RawStringUtils::convertFromRawStringLitOnly), 1, listener);
-							pred.reset();
-							languages.put(RawStringUtils.getRawLang(peek), section);
-							continue;
-						}
+								if (LiteralsUtils.LITERAL_LANG_TYPE == type) {
+									DictionarySectionPrivate section = new PFCDictionarySectionBig(spec);
+									section.load(it.map(RawStringUtils::convertFromRawStringLitOnly), 1, listener);
+									pred.reset();
+									languages.put(RawStringUtils.getRawLang(peek), section);
+									continue;
+								}
 
-						DictionarySectionPrivate section;
-						if (type == RawStringUtils.XSD_DECIMAL_DT) {
-							section = new DecimalDictionarySection(spec);
-						} else if (type == RawStringUtils.XSD_DOUBLE_DT) {
-							section = new FloatDictionarySection(spec);
-						} else if (type == RawStringUtils.XSD_INTEGER_DT) {
-							section = new IntDictionarySection(spec);
-						} else {
-							section = new PFCDictionarySectionBig(spec);
-						}
-						section.load(it.map(RawStringUtils::convertFromRawStringLitOnly), 1, listener);
-						pred.reset();
-						typed.put(type, section);
-					}
-				}, "MultiSecSAsyncReaderO")).startAll().joinAndCrashIfRequired();
+								DictionarySectionPrivate section;
+								if (type == RawStringUtils.XSD_DECIMAL_DT) {
+									section = new DecimalDictionarySection(spec);
+								} else if (type == RawStringUtils.XSD_DOUBLE_DT) {
+									section = new FloatDictionarySection(spec);
+								} else if (type == RawStringUtils.XSD_INTEGER_DT) {
+									section = new IntDictionarySection(spec);
+								} else {
+									section = new PFCDictionarySectionBig(spec);
+								}
+								section.load(it.map(RawStringUtils::convertFromRawStringLitOnly), 1, listener);
+								pred.reset();
+								typed.put(type, section);
+							}
+						}, "MultiSecSAsyncReaderO"))
+				.startAll().joinAndCrashIfRequired();
 		syncLocations();
 	}
 
@@ -337,48 +344,47 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 		syncLocations();
 	}
 
-
 	@Override
 	public CharSequence idToString(long id, TripleComponentRole position) {
 		switch (position) {
-			case PREDICATE -> {
-				return predicates.extract(id);
+		case PREDICATE -> {
+			return predicates.extract(id);
+		}
+		case SUBJECT -> {
+			if (id <= shared.getNumberOfElements()) {
+				return shared.extract(id);
+			} else {
+				return subjects.extract(id - shared.getNumberOfElements());
 			}
-			case SUBJECT -> {
-				if (id <= shared.getNumberOfElements()) {
-					return shared.extract(id);
-				} else {
-					return subjects.extract(id - shared.getNumberOfElements());
+		}
+		case OBJECT -> {
+			ObjectIdLocationData data = idToObjectSection(id);
+
+			@SuppressWarnings("resource")
+			DictionarySectionPrivate sec = data.section();
+			CharSequence out = sec.extract(id - data.location());
+			if (out != null) {
+				ByteString obs = ByteString.of(out);
+				if (sec.getSectionType().hasQuotes()) {
+					return data.suffix().copyPreAppend(obs);
 				}
+				ByteString suffix = data.suffix();
+				byte[] buffer = new byte[suffix.length() + obs.length() + 2];
+
+				buffer[0] = '"';
+				System.arraycopy(obs.getBuffer(), 0, buffer, 1, obs.length());
+				buffer[obs.length() + 1] = '"';
+				System.arraycopy(suffix.getBuffer(), 0, buffer, obs.length() + 2, suffix.length());
+
+				return new CompactString(buffer);
 			}
-			case OBJECT -> {
-				ObjectIdLocationData data = idToObjectSection(id);
 
-				@SuppressWarnings("resource")
-				DictionarySectionPrivate sec = data.section();
-				CharSequence out = sec.extract(id - data.location());
-				if (out != null) {
-					ByteString obs = ByteString.of(out);
-					if (sec.getSectionType().hasQuotes()) {
-						return data.suffix().copyPreAppend(obs);
-					}
-					ByteString suffix = data.suffix();
-					byte[] buffer = new byte[suffix.length() + obs.length() + 2];
-
-					buffer[0] = '"';
-					System.arraycopy(obs.getBuffer(), 0, buffer, 1, obs.length());
-					buffer[obs.length() + 1] = '"';
-					System.arraycopy(suffix.getBuffer(), 0, buffer, obs.length() + 2, suffix.length());
-
-					return new CompactString(buffer);
-				}
-
-				return null;
-			}
-			case GRAPH -> {
-				return graph.extract(id);
-			}
-			default -> throw new NotImplementedException();
+			return null;
+		}
+		case GRAPH -> {
+			return graph.extract(id);
+		}
+		default -> throw new NotImplementedException();
 		}
 	}
 
@@ -390,73 +396,74 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 		ByteString str = ByteString.of(sstr);
 
 		switch (position) {
-			case PREDICATE -> {
-				long id = predicates.locate(str);
-				return id > 0 ? id : -1;
+		case PREDICATE -> {
+			long id = predicates.locate(str);
+			return id > 0 ? id : -1;
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
 			}
-			case GRAPH -> {
-				if (!supportGraphs()) {
-					throw new IllegalArgumentException("This dictionary doesn't support graphs!");
-				}
-				long id = graph.locate(str);
-				return id > 0 ? id : -1;
+			long id = graph.locate(str);
+			return id > 0 ? id : -1;
+		}
+		case SUBJECT -> {
+			long sid = shared.locate(str);
+			if (sid != 0) {
+				return sid;
 			}
-			case SUBJECT -> {
+
+			long ssid = subjects.locate(str);
+			if (ssid != 0) {
+				return ssid + shared.getNumberOfElements();
+			}
+		}
+		case OBJECT -> {
+			CharSequence t = LiteralsUtils.getType(str);
+
+			if (LiteralsUtils.NO_DATATYPE == t) {
 				long sid = shared.locate(str);
 				if (sid != 0) {
 					return sid;
 				}
-
-				long ssid = subjects.locate(str);
-				if (ssid != 0) {
-					return ssid + shared.getNumberOfElements();
-				}
 			}
-			case OBJECT -> {
-				CharSequence t = LiteralsUtils.getType(str);
 
-				if (LiteralsUtils.NO_DATATYPE == t) {
-					long sid = shared.locate(str);
-					if (sid != 0) {
-						return sid;
+			if (LiteralsUtils.LITERAL_LANG_TYPE == t) {
+				// lang type
+				ByteString lang = ByteString.of(LiteralsUtils.getLanguage(str)
+						.orElseThrow(() -> new IllegalArgumentException("Malformed language literal " + str)));
+
+				ObjectIdLocationData sec = languagesLocations.get(lang);
+				if (sec != null) {
+					CharSequence nl = LiteralsUtils.removeLang(str);
+
+					@SuppressWarnings("resource")
+					long s = sec.section().locate(nl);
+					if (s != 0) {
+						return sec.location() + s;
 					}
 				}
-
-				if (LiteralsUtils.LITERAL_LANG_TYPE == t) {
-					// lang type
-					ByteString lang = ByteString.of(LiteralsUtils.getLanguage(str)
-							.orElseThrow(() -> new IllegalArgumentException("Malformed language literal " + str)));
-
-					ObjectIdLocationData sec = languagesLocations.get(lang);
-					if (sec != null) {
-						CharSequence nl = LiteralsUtils.removeLang(str);
-
-						@SuppressWarnings("resource")
-						long s = sec.section().locate(nl);
-						if (s != 0) {
-							return sec.location() + s;
-						}
-					}
-					return -1;
-				}
-
-				ObjectIdLocationData sec = objectsLocations.get((ByteString) t);
-
-				if (sec == null) {
-					return -1;
-				}
-
-				@SuppressWarnings("resource")
-				DictionarySectionPrivate section = sec.section();
-				long s = section.locate(section.getSectionType().hasQuotes() ?  LiteralsUtils.removeType(str) :  LiteralsUtils.removeQuotesTypeAndLang(str));
-
-				if (s == 0) {
-					return -1;
-				}
-				return sec.location() + s;
-
+				return -1;
 			}
-			default -> throw new NotImplementedException();
+
+			ObjectIdLocationData sec = objectsLocations.get((ByteString) t);
+
+			if (sec == null) {
+				return -1;
+			}
+
+			@SuppressWarnings("resource")
+			DictionarySectionPrivate section = sec.section();
+			long s = section.locate(section.getSectionType().hasQuotes() ? LiteralsUtils.removeType(str)
+					: LiteralsUtils.removeQuotesTypeAndLang(str));
+
+			if (s == 0) {
+				return -1;
+			}
+			return sec.location() + s;
+
+		}
+		default -> throw new NotImplementedException();
 		}
 		return -1;
 	}
@@ -464,38 +471,37 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 	@Override
 	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
 		switch (role) {
-			case SUBJECT -> {
-				if (!includeShared) {
-					return getSubjects().getSortedEntries();
-				}
+		case SUBJECT -> {
+			if (!includeShared) {
+				return getSubjects().getSortedEntries();
+			}
 
-				return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
-			}
-			case PREDICATE -> {
-				return getPredicates().getSortedEntries();
-			}
-			case OBJECT -> {
-				return CatIterator.of(Arrays.stream(objectIdLocationsSec).skip(includeShared ? 0 : 1).map(data -> {
-					ByteString suffix = data.suffix();
-					@SuppressWarnings("resource")
-					DictionarySectionPrivate sec = data.section();
-					if (sec.getSectionType().hasQuotes()) {
-						return StringSuffixIterator.of(sec.getSortedEntries(), suffix);
-					} else {
-						return StringQuotesSuffixIterator.of(sec.getSortedEntries(), suffix);
-					}
-				}).toList());
-			}
-			case GRAPH -> {
-				if (!supportGraphs()) {
-					throw new IllegalArgumentException("This dictionary doesn't support graphs!");
+			return CatIterator.of(getShared().getSortedEntries(), getSubjects().getSortedEntries());
+		}
+		case PREDICATE -> {
+			return getPredicates().getSortedEntries();
+		}
+		case OBJECT -> {
+			return CatIterator.of(Arrays.stream(objectIdLocationsSec).skip(includeShared ? 0 : 1).map(data -> {
+				ByteString suffix = data.suffix();
+				@SuppressWarnings("resource")
+				DictionarySectionPrivate sec = data.section();
+				if (sec.getSectionType().hasQuotes()) {
+					return StringSuffixIterator.of(sec.getSortedEntries(), suffix);
+				} else {
+					return StringQuotesSuffixIterator.of(sec.getSortedEntries(), suffix);
 				}
-				return getGraphs().getSortedEntries();
+			}).toList());
+		}
+		case GRAPH -> {
+			if (!supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
 			}
-			default -> throw new IllegalArgumentException("Unknown role: " + role);
+			return getGraphs().getSortedEntries();
+		}
+		default -> throw new IllegalArgumentException("Unknown role: " + role);
 		}
 	}
-
 
 	protected static class RawStopPredicate<T extends CharSequence> implements Predicate<T> {
 		private CharSequence type;

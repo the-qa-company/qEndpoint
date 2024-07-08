@@ -5,7 +5,7 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 
 import java.util.Iterator;
 
-public class StringQuotesSuffixIterator  extends FetcherIterator<ByteString> {
+public class StringQuotesSuffixIterator extends FetcherIterator<ByteString> {
 	public static Iterator<? extends CharSequence> of(Iterator<? extends CharSequence> it, ByteString suffix) {
 		if (suffix.isEmpty()) {
 			return it;

@@ -269,17 +269,13 @@ public interface Dictionary extends Closeable {
 
 	default TripleString toTripleString(TripleID tid) {
 		if (tid.isQuad()) {
-			return new QuadString(
-					idToString(tid.getSubject(), TripleComponentRole.SUBJECT),
+			return new QuadString(idToString(tid.getSubject(), TripleComponentRole.SUBJECT),
 					idToString(tid.getPredicate(), TripleComponentRole.PREDICATE),
 					idToString(tid.getObject(), TripleComponentRole.OBJECT),
-					idToString(tid.getGraph(), TripleComponentRole.GRAPH)
-			);
+					idToString(tid.getGraph(), TripleComponentRole.GRAPH));
 		}
-		return new TripleString(
-				idToString(tid.getSubject(), TripleComponentRole.SUBJECT),
+		return new TripleString(idToString(tid.getSubject(), TripleComponentRole.SUBJECT),
 				idToString(tid.getPredicate(), TripleComponentRole.PREDICATE),
-				idToString(tid.getObject(), TripleComponentRole.OBJECT)
-		);
+				idToString(tid.getObject(), TripleComponentRole.OBJECT));
 	}
 }

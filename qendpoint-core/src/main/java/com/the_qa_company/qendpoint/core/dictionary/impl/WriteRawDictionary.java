@@ -69,15 +69,14 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 		}
 	}
 
-	public WriteRawDictionary(HDTOptions spec, DictionarySectionPrivate subjects,
-	                          DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-	                          TreeMap<ByteString, DictionarySectionPrivate> objects) {
+	public WriteRawDictionary(HDTOptions spec, DictionarySectionPrivate subjects, DictionarySectionPrivate predicates,
+			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> objects) {
 		this(spec, subjects, predicates, shared, objects, null);
 	}
 
-	public WriteRawDictionary(HDTOptions spec, DictionarySectionPrivate subjects,
-	                          DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-	                          TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph) {
+	public WriteRawDictionary(HDTOptions spec, DictionarySectionPrivate subjects, DictionarySectionPrivate predicates,
+			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> objects,
+			DictionarySectionPrivate graph) {
 		super(spec);
 		// useless
 		this.filename = null;
@@ -108,7 +107,7 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 	}
 
 	private ExceptionThread fillSection(Iterator<? extends CharSequence> objects, long count,
-	                                    ProgressListener listener) {
+			ProgressListener listener) {
 		@SuppressWarnings("resource")
 		PipedCopyIterator<TypedByteString> datatypeIterator = new PipedCopyIterator<>();
 		String name = filename.getFileName().toString();
@@ -138,8 +137,7 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 
 					if (oldType != null) {
 						if (oldType.equals(type) && lang == oldTypeLang) {
-							datatypeIterator.addElement(new TypedByteString(oldType,
-									lit, oldTypeLang));
+							datatypeIterator.addElement(new TypedByteString(oldType, lit, oldTypeLang));
 							continue;
 						} else {
 							datatypeIterator.closePipe();
@@ -190,24 +188,24 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 				if (type == LiteralsUtils.NO_DATATYPE && !typedBS.lang) {
 					section = nonTyped;
 				} else if (typedBS.lang) {
-					section = new WriteDictionarySection(spec,
-							filename.resolveSibling(name + "lang" + sidNew), bufferSize);
+					section = new WriteDictionarySection(spec, filename.resolveSibling(name + "lang" + sidNew),
+							bufferSize);
 					theLanguages.put(type, section);
 				} else {
 					ByteString rtype = RawStringUtils.rawKnownDataType(type);
 
 					if (rtype == RawStringUtils.XSD_INTEGER_DT) {
-						section = new WriteIntDictionarySection(spec,
-								filename.resolveSibling(name + "type" + sidNew), bufferSize);
+						section = new WriteIntDictionarySection(spec, filename.resolveSibling(name + "type" + sidNew),
+								bufferSize);
 					} else if (rtype == RawStringUtils.XSD_DOUBLE_DT) {
-						section = new WriteFloatDictionarySection(spec,
-								filename.resolveSibling(name + "type" + sidNew), bufferSize);
+						section = new WriteFloatDictionarySection(spec, filename.resolveSibling(name + "type" + sidNew),
+								bufferSize);
 					} else if (rtype == RawStringUtils.XSD_DECIMAL_DT) {
 						section = new WriteDecimalDictionarySection(spec,
 								filename.resolveSibling(name + "type" + sidNew), bufferSize);
 					} else {
-						section = new WriteDictionarySection(spec,
-								filename.resolveSibling(name + "type" + sidNew), bufferSize);
+						section = new WriteDictionarySection(spec, filename.resolveSibling(name + "type" + sidNew),
+								bufferSize);
 					}
 
 					theTyped.put(type, section);
@@ -221,7 +219,9 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 	}
 
 	private TempDictionarySection extractStrings(TempDictionarySection sec) {
-		return new OneReadDictionarySection(MapIterator.of(sec.getSortedEntries(), RawStringUtils::convertFromRawString), sec.getNumberOfElements());
+		return new OneReadDictionarySection(
+				MapIterator.of(sec.getSortedEntries(), RawStringUtils::convertFromRawString),
+				sec.getNumberOfElements());
 	}
 
 	// RawStringUtils
@@ -229,13 +229,14 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 	public void loadAsync(TempDictionary other, ProgressListener listener) throws InterruptedException {
 		MultiThreadListener ml = ListenerUtil.multiThreadListener(listener);
 		ml.unregisterAllThreads();
-		ExceptionThread.async("MultiSecSAsyncReader",
-						() -> predicates.load(extractStrings(other.getPredicates()), new IntermediateListener(ml, "Predicate: ")), () -> {
-							if (supportGraphs()) {
-								graph.load(extractStrings(other.getGraphs()), new IntermediateListener(ml, "Graph:      "));
-							}
-						}, () -> subjects.load(extractStrings(other.getSubjects()), new IntermediateListener(ml, "Subjects:  ")),
-						() -> shared.load(extractStrings(other.getShared()), new IntermediateListener(ml, "Shared:    ")))
+		ExceptionThread.async("MultiSecSAsyncReader", () -> predicates.load(extractStrings(other.getPredicates()),
+				new IntermediateListener(ml, "Predicate: ")), () -> {
+					if (supportGraphs()) {
+						graph.load(extractStrings(other.getGraphs()), new IntermediateListener(ml, "Graph:      "));
+					}
+				},
+				() -> subjects.load(extractStrings(other.getSubjects()), new IntermediateListener(ml, "Subjects:  ")),
+				() -> shared.load(extractStrings(other.getShared()), new IntermediateListener(ml, "Shared:    ")))
 				.attach(fillSection(other.getObjects().getEntries(), other.getObjects().getNumberOfElements(),
 						new IntermediateListener(ml, "Objects:   ")))
 				.startAll().joinAndCrashIfRequired();
@@ -315,8 +316,7 @@ public class WriteRawDictionary extends MultipleLangBaseDictionary {
 		throw new NotImplementedException();
 	}
 
-	private record TypedByteString(ByteString type, ByteString node, boolean lang) {
-	}
+	private record TypedByteString(ByteString type, ByteString node, boolean lang) {}
 
 	@Override
 	public String getType() {

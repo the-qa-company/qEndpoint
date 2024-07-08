@@ -108,7 +108,7 @@ public class DecimalDictionarySectionTest {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
 				try (DictionarySectionPrivate sec = new DecimalDictionarySection(HDTOptions.empty());
-				     DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
+						DictionarySectionPrivate sec2 = new DecimalDictionarySection(HDTOptions.empty())) {
 
 					int count = rnd.nextInt(0x2000); // 2^14
 
@@ -194,7 +194,8 @@ public class DecimalDictionarySectionTest {
 						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
 					}
 					Path idx = root.resolve("idx.bin");
-					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx, 4096)) {
+					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx,
+							4096)) {
 						sec.load(strings.iterator(), strings.size(), ProgressListener.ignore());
 						try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(idx))) {
 							sec.save(out, ProgressListener.ignore());
@@ -261,8 +262,10 @@ public class DecimalDictionarySectionTest {
 						strings.add(ByteString.of(BigDecimal.valueOf(curr)));
 					}
 					Path idx = root.resolve("idx.bin");
-					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx, 4096)) {
-						try (WriteDecimalDictionarySection.WriteDictionarySectionAppender app = sec.createAppender(strings.size(), ProgressListener.ignore())) {
+					try (WriteDecimalDictionarySection sec = new WriteDecimalDictionarySection(HDTOptions.empty(), idx,
+							4096)) {
+						try (WriteDecimalDictionarySection.WriteDictionarySectionAppender app = sec
+								.createAppender(strings.size(), ProgressListener.ignore())) {
 							for (ByteString string : strings) {
 								app.append(string);
 							}
@@ -338,7 +341,8 @@ public class DecimalDictionarySectionTest {
 
 					long l1 = Files.size(idx);
 					long l2 = Files.size(idx2);
-					System.out.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
+					System.out
+							.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
 				} catch (Throwable t) {
 					try {
 						IOUtil.deleteDirRecurse(root);
