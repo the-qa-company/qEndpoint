@@ -36,9 +36,10 @@ public class CompressUtil {
 	 * @param listener the listener to see the progress
 	 * @throws IOException writing exception
 	 */
-	public static void writeCompressedSection(List<IndexedNode> strings, OutputStream output, ProgressListener listener, boolean stringLiterals)
-			throws IOException {
-		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener, stringLiterals);
+	public static void writeCompressedSection(List<IndexedNode> strings, OutputStream output, ProgressListener listener,
+			boolean stringLiterals) throws IOException {
+		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener,
+				stringLiterals);
 	}
 
 	/**
@@ -72,11 +73,11 @@ public class CompressUtil {
 	/**
 	 * merge two stream together into an output stream
 	 *
-	 * @param stream1  input stream 1
-	 * @param stream2  input stream 2
-	 * @param output   output stream
+	 * @param stream1        input stream 1
+	 * @param stream2        input stream 2
+	 * @param output         output stream
 	 * @param stringLiterals debug natural order
-	 * @param listener the listener to see the progress
+	 * @param listener       the listener to see the progress
 	 * @throws IOException read/writing exception
 	 */
 	public static void mergeCompressedSection(InputStream stream1, InputStream stream2, OutputStream output,
@@ -88,7 +89,8 @@ public class CompressUtil {
 		long size2 = in2r.getSize();
 
 		// merge the section
-		writeCompressedSection(new CompressNodeMergeIterator(in1r, in2r), size1 + size2, output, listener, stringLiterals);
+		writeCompressedSection(new CompressNodeMergeIterator(in1r, in2r), size1 + size2, output, listener,
+				stringLiterals);
 		// check we have completed the 2 readers
 		in1r.checkComplete();
 		in2r.checkComplete();
@@ -194,7 +196,7 @@ public class CompressUtil {
 				IndexedNode node = it.next();
 				ByteString next = node.getNode();
 				int cmp = prev.compareTo(next);
-				//assert cmp <= 0 : "bad order : " + prev + " > " + next;
+				// assert cmp <= 0 : "bad order : " + prev + " > " + next;
 				if (cmp == 0) {
 					if (!prev.isEmpty() || prevRead) {
 						// same as previous, ignore

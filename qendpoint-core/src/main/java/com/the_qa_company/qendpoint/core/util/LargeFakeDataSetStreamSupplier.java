@@ -328,7 +328,7 @@ public class LargeFakeDataSetStreamSupplier {
 			if (litTypeNb == 0) {
 				// int
 				int intVal = random.nextInt() - (Integer.MAX_VALUE >> 1);
-				return  "\"" + intVal + "\"^^" + RawStringUtils.XSD_INTEGER_DT;
+				return "\"" + intVal + "\"^^" + RawStringUtils.XSD_INTEGER_DT;
 			} else if (litTypeNb == 1) {
 				// decimal
 				return "\"" + random.nextDouble() + "\"^^" + RawStringUtils.XSD_DECIMAL_DT;
@@ -457,6 +457,7 @@ public class LargeFakeDataSetStreamSupplier {
 
 	/**
 	 * set usage of numbers
+	 *
 	 * @param useNumbers numbers
 	 * @return this
 	 */
@@ -464,7 +465,6 @@ public class LargeFakeDataSetStreamSupplier {
 		this.useNumbers = useNumbers;
 		return this;
 	}
-
 
 	/**
 	 * set the max triples count

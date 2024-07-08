@@ -270,7 +270,7 @@ public class DecimalDictionarySectionMap implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		try {
-			Closer.closeAll(blocks, (Closeable)data::clean, ch);
+			Closer.closeAll(blocks, (Closeable) data::clean, ch);
 		} finally {
 			blocks = null;
 			data = null;

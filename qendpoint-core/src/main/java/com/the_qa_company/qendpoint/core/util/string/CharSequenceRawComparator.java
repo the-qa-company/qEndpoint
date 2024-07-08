@@ -10,7 +10,7 @@ public class CharSequenceRawComparator implements Comparator<CharSequence> {
 	private static final Comparator<CharSequence> instance = new CharSequenceRawComparator();
 
 	public static ByteString getDTLType(ByteString s) {
-		ByteString type = (ByteString)LiteralsUtils.getType(s);
+		ByteString type = (ByteString) LiteralsUtils.getType(s);
 		if (LiteralsUtils.LITERAL_LANG_TYPE == type) {
 			return LiteralsUtils.LANG_OPERATOR.copyAppend(LiteralsUtils.getLanguage(s).orElseThrow());
 		}

@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -19,6 +20,7 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -78,71 +80,203 @@ public class HDTVerify {
 
 	public static boolean checkDictionarySectionOrder(boolean binary, boolean unicode, ColorTool colorTool, String name,
 			DictionarySection section, MultiThreadListenerConsole console) {
-		Iterator<? extends CharSequence> it = section.getSortedEntries();
-		long size = section.getNumberOfElements();
-		IntermediateListener il = new IntermediateListener(console);
-		il.setPrefix(name + ": ");
-		ReplazableString prev = new ReplazableString();
-		String lastStr = "";
-		boolean error = false;
-		long count = 0;
-		while (it.hasNext()) {
-			ByteString charSeq = ByteString.of(it.next());
-			String str = charSeq.toString();
-			count++;
+		DictionarySectionType type = section.getSectionType();
+		switch (type) {
+		case PFC -> {
+			Iterator<? extends CharSequence> it = section.getSortedEntries();
+			long size = section.getNumberOfElements();
+			IntermediateListener il = new IntermediateListener(console);
+			il.setPrefix(name + ": ");
+			ReplazableString prev = new ReplazableString();
+			String lastStr = "";
+			boolean error = false;
+			long count = 0;
+			while (it.hasNext()) {
+				ByteString charSeq = ByteString.of(it.next());
+				String str = charSeq.toString();
+				count++;
 
-			int cmp = prev.compareTo(charSeq);
+				int cmp = prev.compareTo(charSeq);
 
-			if (cmp >= 0) {
-				error = true;
-				if (cmp == 0) {
-					colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
-				} else {
-					colorTool.error("Bad order(bs)", prev + " > " + charSeq);
-				}
-			}
-
-			if (!unicode) {
-				int cmp2 = lastStr.compareTo(str);
-
-				if (cmp2 >= 0) {
+				if (cmp >= 0) {
 					error = true;
 					if (cmp == 0) {
-						colorTool.error("Duplicated(str)", lastStr + " == " + str);
+						colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
 					} else {
-						colorTool.error("Bad order(str)", lastStr + " > " + str);
+						colorTool.error("Bad order(bs)", prev + " > " + charSeq);
 					}
 				}
 
-				if (Math.signum(cmp) != Math.signum(cmp2)) {
-					error = true;
-					colorTool.error("Not equal", cmp + " != " + cmp2 + " for " + lastStr + " / " + str);
-					if (binary) {
-						print(prev);
-						print(charSeq);
-						print(lastStr);
-						print(str);
+				if (!unicode) {
+					int cmp2 = lastStr.compareTo(str);
+
+					if (cmp2 >= 0) {
+						error = true;
+						if (cmp == 0) {
+							colorTool.error("Duplicated(str)", lastStr + " == " + str);
+						} else {
+							colorTool.error("Bad order(str)", lastStr + " > " + str);
+						}
 					}
+
+					if (Math.signum(cmp) != Math.signum(cmp2)) {
+						error = true;
+						colorTool.error("Not equal", cmp + " != " + cmp2 + " for " + lastStr + " / " + str);
+						if (binary) {
+							print(prev);
+							print(charSeq);
+							print(lastStr);
+							print(str);
+						}
+					}
+
+					lastStr = str;
 				}
 
-				lastStr = str;
+				if (count % 10_000 == 0) {
+					il.notifyProgress(100f * count / size, "Verify (" + count + "/" + size + "): "
+							+ colorTool.color(3, 3, 3) + (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
+				}
+
+				prev.replace(charSeq);
 			}
+			il.notifyProgress(100f, "Verify...");
 
-			if (count % 10_000 == 0) {
-				il.notifyProgress(100f * count / size, "Verify (" + count + "/" + size + "): "
-						+ colorTool.color(3, 3, 3) + (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
+			if (error) {
+				colorTool.warn("Not valid section");
+			} else {
+				colorTool.log("valid section");
 			}
-
-			prev.replace(charSeq);
+			return error;
 		}
-		il.notifyProgress(100f, "Verify...");
+		case INT -> {
+			boolean error = false;
+			Iterator<? extends CharSequence> it = section.getSortedEntries();
+			long size = section.getNumberOfElements();
+			IntermediateListener il = new IntermediateListener(console);
+			il.setPrefix(name + ": ");
+			if (it.hasNext()) {
+				long prev = ByteString.of(it.next()).longValue();
+				long count = 0;
+				while (it.hasNext()) {
+					ByteString charSeq = ByteString.of(it.next());
+					count++;
 
-		if (error) {
-			colorTool.warn("Not valid section");
-		} else {
-			colorTool.log("valid section");
+					long lv = charSeq.longValue();
+					int cmp = Long.compare(prev, lv);
+
+					if (cmp >= 0) {
+						error = true;
+						if (cmp == 0) {
+							colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
+						} else {
+							colorTool.error("Bad order(bs)", prev + " > " + charSeq);
+						}
+					}
+
+					if (count % 10_000 == 0) {
+						il.notifyProgress(100f * count / size,
+								"Verify (" + count + "/" + size + "): " + colorTool.color(3, 3, 3) + lv);
+					}
+
+					prev = lv;
+				}
+			}
+			il.notifyProgress(100f, "Verify...");
+
+			if (error) {
+				colorTool.warn("Not valid section");
+			} else {
+				colorTool.log("valid section");
+			}
+			return error;
 		}
-		return error;
+		case FLOAT -> {
+			boolean error = false;
+			Iterator<? extends CharSequence> it = section.getSortedEntries();
+			long size = section.getNumberOfElements();
+			IntermediateListener il = new IntermediateListener(console);
+			il.setPrefix(name + ": ");
+			if (it.hasNext()) {
+				double prev = ByteString.of(it.next()).doubleValue();
+				long count = 0;
+				while (it.hasNext()) {
+					ByteString charSeq = ByteString.of(it.next());
+					count++;
+
+					double lv = charSeq.doubleValue();
+					int cmp = Double.compare(prev, lv);
+
+					if (cmp >= 0) {
+						error = true;
+						if (cmp == 0) {
+							colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
+						} else {
+							colorTool.error("Bad order(bs)", prev + " > " + charSeq);
+						}
+					}
+
+					if (count % 10_000 == 0) {
+						il.notifyProgress(100f * count / size,
+								"Verify (" + count + "/" + size + "): " + colorTool.color(3, 3, 3) + lv);
+					}
+
+					prev = lv;
+				}
+			}
+			il.notifyProgress(100f, "Verify...");
+
+			if (error) {
+				colorTool.warn("Not valid section");
+			} else {
+				colorTool.log("valid section");
+			}
+			return error;
+		}
+		case DEC -> {
+			boolean error = false;
+			Iterator<? extends CharSequence> it = section.getSortedEntries();
+			long size = section.getNumberOfElements();
+			IntermediateListener il = new IntermediateListener(console);
+			il.setPrefix(name + ": ");
+			if (it.hasNext()) {
+				BigDecimal prev = ByteString.of(it.next()).decimalValue();
+				long count = 0;
+				while (it.hasNext()) {
+					ByteString charSeq = ByteString.of(it.next());
+					count++;
+
+					BigDecimal lv = charSeq.decimalValue();
+					int cmp = prev.compareTo(lv);
+
+					if (cmp >= 0) {
+						error = true;
+						if (cmp == 0) {
+							colorTool.error("Duplicated(bs)", prev + " == " + charSeq);
+						} else {
+							colorTool.error("Bad order(bs)", prev + " > " + charSeq);
+						}
+					}
+
+					if (count % 10_000 == 0) {
+						il.notifyProgress(100f * count / size,
+								"Verify (" + count + "/" + size + "): " + colorTool.color(3, 3, 3) + lv);
+					}
+
+					prev = lv;
+				}
+			}
+			il.notifyProgress(100f, "Verify...");
+
+			if (error) {
+				colorTool.warn("Not valid section");
+			} else {
+				colorTool.log("valid section");
+			}
+			return error;
+		}
+		default -> throw new IllegalArgumentException("section type not implemented: " + type);
+		}
 	}
 
 	public boolean assertHdtEquals(HDT hdt1, HDT hdt2, MultiThreadListenerConsole console, String desc) {
@@ -237,11 +371,13 @@ public class HDTVerify {
 						boolean error;
 						long count = 0;
 						if (hdt.getDictionary().isMultiSectionDictionary()) {
-							colorTool.log("Checking subject entries");
+							colorTool.log("Checking subject entries" + " - "
+									+ hdt.getDictionary().getSubjects().getNumberOfElements());
 							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
 									hdt.getDictionary().getSubjects(), console);
 							count += hdt.getDictionary().getSubjects().getNumberOfElements();
-							colorTool.log("Checking predicate entries");
+							colorTool.log("Checking predicate entries" + " - "
+									+ hdt.getDictionary().getPredicates().getNumberOfElements());
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "predicate",
 									hdt.getDictionary().getPredicates(), console);
 							count += hdt.getDictionary().getPredicates().getNumberOfElements();
@@ -251,12 +387,15 @@ public class HDTVerify {
 							for (Map.Entry<? extends CharSequence, DictionarySection> entry : allObjects.entrySet()) {
 								CharSequence sectionName = entry.getKey();
 								DictionarySection section = entry.getValue();
-								colorTool.log("Checking object section " + sectionName);
+								colorTool.log("Checking object section " + sectionName + " - "
+										+ section.getNumberOfElements() + "/" + section.getSectionType() + "/"
+										+ section.getClass().getCanonicalName());
 								error |= checkDictionarySectionOrder(binary, unicode, colorTool, "sectionName", section,
 										console);
 								count += section.getNumberOfElements();
 							}
-							colorTool.log("Checking shared entries");
+							colorTool.log("Checking shared entries" + " - "
+									+ hdt.getDictionary().getShared().getNumberOfElements());
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
 									hdt.getDictionary().getShared(), console);
 							count += hdt.getDictionary().getShared().getNumberOfElements();

@@ -107,7 +107,7 @@ public class FloatDictionarySectionTest {
 			// 50 to avoid reaching long limit
 			for (int i = 2; i < 50; i++) {
 				try (DictionarySectionPrivate sec = new FloatDictionarySection(HDTOptions.empty());
-				     DictionarySectionPrivate sec2 = new FloatDictionarySection(HDTOptions.empty())) {
+						DictionarySectionPrivate sec2 = new FloatDictionarySection(HDTOptions.empty())) {
 					int count = rnd.nextInt(0x2000); // 2^14
 
 					long bound = 1L << i;
@@ -176,7 +176,7 @@ public class FloatDictionarySectionTest {
 			for (int i = 2; i < 50; i++) {
 				Path idx = root.resolve("idx.bin");
 				try (DictionarySectionPrivate sec = new WriteFloatDictionarySection(HDTOptions.empty(), idx, 4096);
-				     DictionarySectionPrivate sec2 = new FloatDictionarySection(HDTOptions.empty())) {
+						DictionarySectionPrivate sec2 = new FloatDictionarySection(HDTOptions.empty())) {
 					int count = rnd.nextInt(0x2000); // 2^14
 
 					long bound = 1L << i;
@@ -243,7 +243,7 @@ public class FloatDictionarySectionTest {
 			for (int i = 2; i < 50; i++) {
 				Path idx = root.resolve("idx.bin");
 				try (WriteFloatDictionarySection sec = new WriteFloatDictionarySection(HDTOptions.empty(), idx, 4096);
-				     DictionarySectionPrivate sec2 = new FloatDictionarySection(HDTOptions.empty())) {
+						DictionarySectionPrivate sec2 = new FloatDictionarySection(HDTOptions.empty())) {
 					int count = rnd.nextInt(0x2000); // 2^14
 
 					long bound = 1L << i;
@@ -261,7 +261,8 @@ public class FloatDictionarySectionTest {
 						strings.add(ByteString.of(curr));
 					}
 
-					try (WriteFloatDictionarySection.WriteDictionarySectionAppender app = sec.createAppender(strings.size(), ProgressListener.ignore())){
+					try (WriteFloatDictionarySection.WriteDictionarySectionAppender app = sec
+							.createAppender(strings.size(), ProgressListener.ignore())) {
 						for (ByteString string : strings) {
 							app.append(string);
 						}
@@ -337,7 +338,8 @@ public class FloatDictionarySectionTest {
 
 					long l1 = Files.size(idx);
 					long l2 = Files.size(idx2);
-					System.out.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
+					System.out
+							.println(strings.size() + "," + i + "," + l1 + "," + l2 + "," + (l1 * 10000 / l2) / 100.0);
 				} catch (Throwable t) {
 					try {
 						IOUtil.deleteDirRecurse(root);

@@ -10,6 +10,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressTripleMapper;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.SectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResult;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
@@ -17,6 +18,7 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
@@ -34,6 +36,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Iterator;
 
 /**
@@ -185,11 +188,13 @@ public class HDTDiskImporter implements Closeable {
 
 		profiler.pushSection("section compression");
 		CompressionResult compressionResult;
+		Comparator<IndexedNode> comparator;
 		try {
-			compressionResult = DictionaryFactory
-					.createSectionCompressor(hdtFormat, basePath.resolve("sectionCompression"), source, listener,
-							bufferSize, chunkSize, 1 << ways, hdtFormat.getBoolean("debug.disk.slow.stream2"))
-					.compress(workers, compressMode);
+			SectionCompressor sectionCompressor = DictionaryFactory.createSectionCompressor(hdtFormat,
+					basePath.resolve("sectionCompression"), source, listener, bufferSize, chunkSize, 1 << ways,
+					hdtFormat.getBoolean("debug.disk.slow.stream2"));
+			compressionResult = sectionCompressor.compress(workers, compressMode);
+			comparator = sectionCompressor.getComparator();
 		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);
 		}
@@ -205,7 +210,8 @@ public class HDTDiskImporter implements Closeable {
 				compressionResult.supportsGraph(),
 				compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
 		try (CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(compressionResult,
-				mapper, listener, debugHDTBuilding, compressionResult.supportsGraph(), compressionResult.hasOnlyBaseLiterals())) {
+				mapper, listener, debugHDTBuilding, compressionResult.supportsGraph(),
+				compressionResult.hasOnlyBaseLiterals(), comparator)) {
 			dictionary.loadAsync(modifiableDictionary, listener);
 		} catch (InterruptedException e) {
 			throw new ParserException(e);

@@ -414,6 +414,6 @@ public class IntDictionarySection implements DictionarySectionPrivate {
 
 	@Override
 	public DictionarySectionType getSectionType() {
-		return DictionarySectionType.FLOAT;
+		return DictionarySectionType.INT;
 	}
 }

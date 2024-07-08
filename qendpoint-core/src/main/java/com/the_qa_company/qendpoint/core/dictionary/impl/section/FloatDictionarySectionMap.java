@@ -154,7 +154,7 @@ public class FloatDictionarySectionMap implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		try {
-			Closer.closeAll((Closeable)data::clean, ch);
+			Closer.closeAll((Closeable) data::clean, ch);
 		} finally {
 			data = null;
 			ch = null;

@@ -350,6 +350,10 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		return quads;
 	}
 
+	public Comparator<IndexedNode> getComparator() {
+		return comparator;
+	}
+
 	/**
 	 * A triple directory, contains 3 files, subject, predicate and object
 	 *
@@ -479,15 +483,16 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		/**
 		 * compute this triple file from multiple triples files
 		 *
-		 * @param triples triples files container
-		 * @param async   if the method should load all the files asynchronously
-		 *                or not
+		 * @param triples        triples files container
+		 * @param async          if the method should load all the files
+		 *                       asynchronously or not
 		 * @param stringLiterals use raw literals
 		 * @throws IOException          io exception while reading/writing
 		 * @throws InterruptedException interruption while waiting for the async
 		 *                              thread
 		 */
-		public void compute(List<TripleFile> triples, boolean async, boolean stringLiterals) throws IOException, InterruptedException {
+		public void compute(List<TripleFile> triples, boolean async, boolean stringLiterals)
+				throws IOException, InterruptedException {
 			if (!async) {
 				computeSubject(triples, false);
 				computePredicate(triples, false);
@@ -498,7 +503,8 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			} else {
 
 				ExceptionThread.async("SectionMerger" + root.getFileName(), () -> computeSubject(triples, true),
-						() -> computePredicate(triples, true), () -> computeObject(triples, true, stringLiterals), () -> {
+						() -> computePredicate(triples, true), () -> computeObject(triples, true, stringLiterals),
+						() -> {
 							if (supportsGraph()) {
 								computeGraph(triples, true);
 							}
