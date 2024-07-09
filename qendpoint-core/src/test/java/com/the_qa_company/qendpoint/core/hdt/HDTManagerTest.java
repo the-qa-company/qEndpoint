@@ -72,6 +72,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -83,6 +84,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -2541,6 +2543,71 @@ public class HDTManagerTest {
 						assertEqualsHDT(hdtmem, hdtgd);
 						// same mem/gd serial/deserial
 						assertEqualsHDT(hdtmemmap, hdtgdmap);
+					}
+				}
+
+			} catch (Throwable t) {
+				try {
+					PathUtils.deleteDirectory(root);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+			PathUtils.deleteDirectory(root);
+		}
+
+		@Test
+		public void datatypeTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+			try {
+				Path ds = root.resolve("ds.nt");
+				LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 42).withMaxElementSplit(20)
+						.withMaxLiteralSize(50).withNumbers(true).createNTFile(ds);
+
+				Path dsgd = root.resolve("ds1.hdt");
+				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW);
+				HDTOptions spec2 = spec.pushTop();
+				spec2.setOptions(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("workgd"));
+				try (HDT hdtgd = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI,
+							 RDFNotation.NTRIPLES, spec2, ProgressListener.ignore())) {
+					hdtgd.saveToHDT(dsgd);
+				}
+
+				try (HDT hdt = HDTManager.mapHDT(dsgd)) {
+
+					Dictionary dict = hdt.getDictionary();
+					{
+						Iterator<? extends CharSequence> it = dict.stringIterator(OBJECT);
+
+						long c = 1;
+						while (it.hasNext()) {
+							CharSequence next = it.next();
+
+							CharSequence lang = dict.languageOfId(c);
+							CharSequence dt = dict.dataTypeOfId(c++);
+
+							ByteString dte = ByteString.of(LiteralsUtils.getType(next));
+
+							Optional<CharSequence> lge = LiteralsUtils.getLanguage(next);
+							if (lge.isPresent()) {
+								assertEquals(lge.get(), lang);
+							} else {
+								assertNull(lang);
+							}
+
+							assertEquals("invalid datatype for object #" + c + " " + next, dte, dt);
+
+							ByteString kdt = RawStringUtils.rawKnownDataType(dte);
+
+							if (kdt != dte) {
+								assertSame(kdt, dt);
+							}
+
+
+						}
 					}
 				}
 
