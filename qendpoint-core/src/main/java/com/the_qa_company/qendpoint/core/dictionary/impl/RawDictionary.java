@@ -312,7 +312,7 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 			case SECTION_TYPE_LANG -> languages;
 			default -> throw new IOException(format("Find bad literal section type %x", type));
 			};
-			ByteString uriKey = new CompactString(IOUtil.readSizedBuffer(input, listener));
+			ByteString uriKey = RawStringUtils.rawKnownDataType(new CompactString(IOUtil.readSizedBuffer(input, listener)));
 			DictionarySectionPrivate old = location.put(uriKey, DictionarySectionFactory.loadFrom(input, listener));
 
 			if (old != null) {
@@ -333,7 +333,7 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 			case SECTION_TYPE_LANG -> languages;
 			default -> throw new IOException(format("Find bad literal section type %x", type));
 			};
-			ByteString uriKey = new CompactString(IOUtil.readSizedBuffer(input, listener));
+			ByteString uriKey = RawStringUtils.rawKnownDataType(new CompactString(IOUtil.readSizedBuffer(input, listener)));
 			DictionarySectionPrivate old = location.put(uriKey, DictionarySectionFactory.loadFrom(input, f, listener));
 
 			if (old != null) {
