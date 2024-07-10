@@ -21,12 +21,14 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.sail.NotifyingSail;
+import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -416,5 +418,22 @@ public class HandTest {
 	public void geoSparqlTest() throws IOException {
 		geoSparqlTest(true);
 		geoSparqlTest(false);
+	}
+
+	@Test
+	public void optimizerTest() {
+		SailRepository ms = new SailRepository(new MemoryStore());
+		Repositories.consume(ms, conn -> {
+			TupleQuery query = conn.prepareTupleQuery("""
+					SELECT * {
+						?s ?p ?o .
+						FILTER (?o > 42)
+					}
+					""");
+
+			System.out.println(query.explain(Explanation.Level.Unoptimized));
+		});
+
+
 	}
 }
