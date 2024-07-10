@@ -522,6 +522,11 @@ public class RawDictionary extends MultipleLangBaseDictionary {
 	}
 
 	@Override
+	public OptimizedExtractor createOptimizedMapExtractor() {
+		return new RawDictionaryPFCOptimizedExtractor(this);
+	}
+
+	@Override
 	public String getType() {
 		return HDTVocabulary.DICTIONARY_TYPE_RAW;
 	}

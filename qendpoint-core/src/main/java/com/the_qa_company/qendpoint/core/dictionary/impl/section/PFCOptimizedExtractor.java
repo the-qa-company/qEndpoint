@@ -15,7 +15,7 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
  * @author Mario Arias
  */
 
-public class PFCOptimizedExtractor {
+public class PFCOptimizedExtractor implements SecOptimizedExtractor {
 	PFCDictionarySectionMap pfc;
 	long numstrings;
 	int blocksize;
@@ -51,6 +51,7 @@ public class PFCOptimizedExtractor {
 		}
 	}
 
+	@Override
 	public CharSequence extract(long target) {
 		if (target < 1 || target > numstrings) {
 			throw new IndexOutOfBoundsException(
@@ -114,6 +115,7 @@ public class PFCOptimizedExtractor {
 		}
 	}
 
+	@Override
 	public long getNumStrings() {
 		return numstrings;
 	}
