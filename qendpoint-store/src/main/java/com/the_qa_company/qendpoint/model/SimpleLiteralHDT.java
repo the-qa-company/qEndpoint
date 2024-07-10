@@ -303,17 +303,22 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 
 	@Override
 	public byte byteValue() {
-		return XMLDatatypeUtil.parseByte(getLabel());
+		return (byte) longValue();
 	}
 
 	@Override
 	public short shortValue() {
-		return XMLDatatypeUtil.parseShort(getLabel());
+		return (short) longValue();
 	}
 
 	@Override
 	public int intValue() {
-		return XMLDatatypeUtil.parseInt(getLabel());
+		return (int) longValue();
+	}
+
+	@Override
+	public float floatValue() {
+		return (float) doubleValue();
 	}
 
 	@Override
@@ -322,23 +327,18 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	}
 
 	@Override
-	public float floatValue() {
-		return XMLDatatypeUtil.parseFloat(getLabel());
-	}
-
-	@Override
 	public double doubleValue() {
 		return XMLDatatypeUtil.parseDouble(getLabel());
 	}
 
 	@Override
-	public BigInteger integerValue() {
-		return XMLDatatypeUtil.parseInteger(getLabel());
+	public BigDecimal decimalValue() {
+		return XMLDatatypeUtil.parseDecimal(getLabel());
 	}
 
 	@Override
-	public BigDecimal decimalValue() {
-		return XMLDatatypeUtil.parseDecimal(getLabel());
+	public BigInteger integerValue() {
+		return XMLDatatypeUtil.parseInteger(getLabel());
 	}
 
 	@Override
