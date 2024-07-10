@@ -1,7 +1,9 @@
 package com.the_qa_company.qendpoint.core.hdt;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.bitmap.BitmapFactory;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
+import com.the_qa_company.qendpoint.core.compact.bitmap.NegBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
@@ -2627,6 +2629,80 @@ public class HDTManagerTest {
 						assertEqualsHDT(hdtmem, hdtgd);
 						// same mem/gd serial/deserial
 						assertEqualsHDT(hdtmemmap, hdtgdmap);
+					}
+				}
+
+			} catch (Throwable t) {
+				try {
+					PathUtils.deleteDirectory(root);
+				} catch (IOException e) {
+					t.addSuppressed(e);
+				}
+				throw t;
+			}
+			PathUtils.deleteDirectory(root);
+		}
+
+		@Test
+		public void diffCatTest() throws IOException, NotFoundException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+			try {
+				Path ds1 = root.resolve("ds1.nt");
+				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 42).withMaxElementSplit(20)
+						.withMaxLiteralSize(50).withNumbers(true);
+				supplier.createNTFile(ds1);
+
+				Path hdf1 = root.resolve("ds1.hdt");
+				Path hdf2 = root.resolve("ds2.hdt");
+				Path hdf3 = root.resolve("ds3.hdt");
+
+				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW, HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("workgd"));
+				try (HDT hdt1 = HDTManager.generateHDT(ds1, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+					checkHDTConsistency(hdt1);
+					hdt1.saveToHDT(hdf1);
+				}
+				long count;
+				try (HDT hdt = HDTManager.mapHDT(hdf1)) {
+					count = hdt.getTriples().getNumberOfElements();
+				}
+				try (Bitmap64Big bm = Bitmap64Big.memory(count)) {
+					for (long i = 0; i < count / 2; i++) {
+						bm.set(i, true);
+					}
+
+
+					try (
+							HDT diff = HDTManager.diffBitCatHDTPath(List.of(hdf1), List.of(bm), spec, ProgressListener.ignore());
+							HDT diff2 = HDTManager.diffBitCatHDTPath(List.of(hdf1), List.of(NegBitmap.of(bm)), spec, ProgressListener.ignore())
+					) {
+						checkHDTConsistency(diff);
+						checkHDTConsistency(diff2);
+						diff.saveToHDT(hdf2);
+						diff2.saveToHDT(hdf3);
+					}
+
+					try (
+							HDT hdt1 = HDTManager.mapHDT(hdf1);
+							HDT hdt2 = HDTManager.mapHDT(hdf2);
+							HDT hdt3 = HDTManager.mapHDT(hdf3)
+							) {
+						checkHDTConsistency(hdt1);
+						checkHDTConsistency(hdt2);
+						checkHDTConsistency(hdt3);
+
+						IteratorTripleString itall = hdt1.searchAll();
+						while (itall.hasNext()) {
+							TripleString ts = itall.next();
+							long id = itall.getLastTriplePosition();
+
+							boolean s2 = hdt2.search(ts).hasNext();
+							boolean s3 = hdt3.search(ts).hasNext();
+
+							assertNotEquals("#" + id + " find triple in both HDT " + ts, s2, s3);
+
+						}
 					}
 				}
 
