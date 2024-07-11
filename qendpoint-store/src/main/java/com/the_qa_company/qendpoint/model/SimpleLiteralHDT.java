@@ -10,6 +10,8 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -62,7 +64,8 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	/**
 	 * The literal's label.
 	 */
-	private String label;
+	private String labelStr;
+	private ByteString label;
 
 	/**
 	 * The literal's language tag.
@@ -132,15 +135,6 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 		}
 	}
 
-	private static int lastIndexOfQuote(CharSequence seq) {
-		for (int i = seq.length() - 1; i >= 0; --i) {
-			if (seq.charAt(i) == '"') {
-				return i;
-			}
-		}
-		return -1;
-	}
-
 	static int indexOf(CharSequence seq, CharSequence s, int start) {
 		int n = seq.length() - s.length() + 1;
 		loop:
@@ -166,42 +160,21 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 
 	protected void parseLiteral() {
 		if (label == null) {
-			try {
-				CharSequence literal = hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT);
-				if (literal.length() > 0 && literal.charAt(0) == '"') {
-					int endLabelIdx = lastIndexOfQuote(literal);
-					if (endLabelIdx != -1) {
-						int startLangIdx = indexOf(literal, '@', endLabelIdx + 1);
-						int startDtIdx = indexOf(literal, "^^", endLabelIdx + 1);
-						if (startLangIdx != -1 && startDtIdx != -1) {
-							throw new IllegalArgumentException("Literals can not have both a language and a datatype");
-						}
+			ByteString literal = ByteString.of(hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT));
+			label = (ByteString)LiteralsUtils.removeQuotesTypeAndLang(literal);
+			Optional<CharSequence> lang = LiteralsUtils.getLanguage(literal);
 
-						label = literal.subSequence(1, endLabelIdx).toString();
-						// label = unescapeString(label);
-						if (startLangIdx != -1) {
-							datatype = CoreDatatype.RDF.LANGSTRING.getIri();
-							language = Optional.of(literal.subSequence(startLangIdx + 1, literal.length()).toString());
-						} else if (startDtIdx != -1) {
-							if (datatype == null) {
-								datatype = parseURI(literal.subSequence(startDtIdx + 2, literal.length()).toString(),
-										valueFactory);
-							}
-							language = Optional.empty();
-						} else {
-							language = Optional.empty();
-							datatype = XSD.STRING;
-						}
-					}
+			if (lang.isPresent()) {
+				language = Optional.of(lang.get().toString());
+				datatype = CoreDatatype.RDF.LANGSTRING.getIri();
+			} else {
+				CharSequence dt = LiteralsUtils.getType(literal);
+				if (dt != LiteralsUtils.NO_DATATYPE) {
+					datatype = parseURI(dt.toString(), valueFactory);
+				} else {
+					datatype = XSD.STRING;
 				}
-			} catch (IllegalArgumentException e) {
-				// @todo: this should be fixed, it is for example happening for
-				// Select ?o where {
-				// <http://www.wikidata.org/entity/Q29709019> ?p ?o} over
-				// wikidata
-				label = "";
 				language = Optional.empty();
-				datatype = XSD.STRING;
 			}
 		}
 	}
@@ -209,7 +182,10 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	@Override
 	public String getLabel() {
 		parseLiteral();
-		return label;
+		if (labelStr == null) {
+			labelStr = label.toString();
+		}
+		return labelStr;
 	}
 
 	@Override
@@ -227,7 +203,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	// Overrides Object.equals(Object), implements Literal.equals(Object)
 	@Override
 	public boolean equals(Object o) {
-		// TODO: This can be probably done more efficielnty
+		// TODO: This can be probably done more efficiently
 		if (this == o) {
 			return true;
 		}
@@ -323,17 +299,20 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 
 	@Override
 	public long longValue() {
-		return XMLDatatypeUtil.parseLong(getLabel());
+		parseLiteral();
+		return ByteStringUtil.getLong(label);
 	}
 
 	@Override
 	public double doubleValue() {
-		return XMLDatatypeUtil.parseDouble(getLabel());
+		parseLiteral();
+		return ByteStringUtil.getDouble(label);
 	}
 
 	@Override
 	public BigDecimal decimalValue() {
-		return XMLDatatypeUtil.parseDecimal(getLabel());
+		parseLiteral();
+		return ByteStringUtil.getDecimal(label);
 	}
 
 	@Override

@@ -21,10 +21,12 @@ package com.the_qa_company.qendpoint.core.util.string;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 
@@ -59,6 +61,64 @@ public class ByteStringUtil {
 			i++;
 		}
 		return new String(arr, STRING_ENCODING);
+	}
+
+	public static long getLong(CharSequence sec) {
+		if (sec instanceof TypedLiteralCompactString tlc) {
+			ByteString val = tlc.getValue();
+
+			return val.longValue();
+		}
+		if (sec instanceof ByteString bs) {
+			return bs.longValue();
+		}
+		sec = DelayedString.unwrap(sec);
+
+		if (sec.isEmpty() || sec.charAt(0) != '"') {
+			throw new IllegalArgumentException("not a valid literal");
+		}
+
+		sec = LiteralsUtils.removeQuotesTypeAndLang(sec);
+		return Long.parseLong(sec, 0, sec.length(), 10);
+	}
+
+	public static double getDouble(CharSequence sec) {
+		if (sec instanceof TypedLiteralCompactString tlc) {
+			ByteString val = tlc.getValue();
+
+			return val.doubleValue();
+		}
+		if (sec instanceof ByteString bs) {
+			return bs.doubleValue();
+		}
+		sec = DelayedString.unwrap(sec);
+
+		if (sec.isEmpty() || sec.charAt(0) != '"') {
+			throw new IllegalArgumentException("not a valid literal");
+		}
+
+		sec = LiteralsUtils.removeQuotesTypeAndLang(sec);
+		return Double.parseDouble(sec.toString());
+	}
+
+
+	public static BigDecimal getDecimal(CharSequence sec) {
+		if (sec instanceof TypedLiteralCompactString tlc) {
+			ByteString val = tlc.getValue();
+
+			return val.decimalValue();
+		}
+		if (sec instanceof ByteString bs) {
+			return bs.decimalValue();
+		}
+		sec = DelayedString.unwrap(sec);
+
+		if (sec.isEmpty() || sec.charAt(0) != '"') {
+			throw new IllegalArgumentException("not a valid literal");
+		}
+
+		sec = LiteralsUtils.removeQuotesTypeAndLang(sec);
+		return new BigDecimal(sec.toString());
 	}
 
 	/**
