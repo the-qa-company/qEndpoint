@@ -21,7 +21,7 @@ public class SimpleLiteralHDTTest {
 	public void indexOfCharSeqTest() {
 		String object = "0123456789abcdefghijklmnopqrstuvwxyz";
 		for (int i = 0; i < object.length() - 1; i++) {
-			String s = object.charAt(i) + "" + object.charAt(i + 1);
+			String s = object.charAt(i) + String.valueOf(object.charAt(i + 1));
 			for (int j = 0; j <= i; j++) {
 				Assert.assertEquals(i, SimpleLiteralHDT.indexOf(object, s, j));
 			}

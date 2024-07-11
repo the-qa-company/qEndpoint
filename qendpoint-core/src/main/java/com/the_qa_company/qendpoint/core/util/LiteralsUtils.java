@@ -255,6 +255,9 @@ public class LiteralsUtils {
 	 *                                                   while reading
 	 */
 	public static CharSequence removeQuotesTypeAndLang(CharSequence str) {
+		if (str instanceof TypedLiteralCompactString typed) {
+			return typed.getValue();
+		}
 		if (str.isEmpty() || str.charAt(0) != '"') {
 			return str;
 		}
