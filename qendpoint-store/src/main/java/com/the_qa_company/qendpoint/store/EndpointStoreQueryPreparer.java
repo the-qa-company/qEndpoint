@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
+import com.the_qa_company.qendpoint.core.dictionary.impl.RawDictionary;
 import com.the_qa_company.qendpoint.federation.SPARQLServiceWikibaseLabelResolver;
 import com.the_qa_company.qendpoint.federation.ServiceClauseOptimizer;
 import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
@@ -19,6 +20,7 @@ import org.eclipse.rdf4j.query.algebra.UpdateExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.AbstractQueryPreparer;
 import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryEvaluationStep;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.ExtendedEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.BindingAssignerOptimizer;
@@ -105,7 +107,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		if (!(tupleExpr instanceof QueryRoot)) {
 			tupleExpr = new QueryRoot(tupleExpr);
 		}
-		EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
+		EvaluationStrategy strategy = new DefaultEvaluationStrategy(getTripleSource(), dataset,
 				new SPARQLServiceWikibaseLabelResolver(tripleSource,
 						conn.getConfig(EndpointStore.QUERY_CONFIG_USER_LOCALES)),
 				0L, evaluationStatistics);
@@ -132,6 +134,10 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
 			new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 			new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+			if (endpoint.getHdt().getDictionary() instanceof RawDictionary rd) {
+				new RawHDTOptimizer(rd).optimize(tupleExpr, dataset, bindings);
+			}
+
 		}
 
 		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);

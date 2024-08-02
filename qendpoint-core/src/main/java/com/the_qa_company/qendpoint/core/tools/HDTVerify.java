@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionType;
+import com.the_qa_company.qendpoint.core.dictionary.impl.RawDictionary;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -17,6 +18,7 @@ import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.util.string.RawStringUtils;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.IOException;
@@ -333,6 +335,22 @@ public class HDTVerify {
 		return tripleError == 0;
 	}
 
+	private boolean checkSectionType(Map<? extends CharSequence, DictionarySection> allObjects, CharSequence elem,
+			DictionarySectionType type) {
+		DictionarySection sec = allObjects.get(elem);
+		if (sec == null) {
+			colorTool.log("No section to check for raw datatype " + elem);
+			return false; // no section
+		}
+
+		if (sec.getSectionType() != type) {
+			colorTool.error("Invalid section type " + sec.getSectionType() + " != " + type + " for datatype " + elem);
+			return true;
+		}
+		colorTool.log("Valid raw type " + sec.getSectionType() + " for datatype " + elem);
+		return false;
+	}
+
 	public void exec() throws Throwable {
 		MultiThreadListenerConsole console = progress ? new MultiThreadListenerConsole(color) : null;
 		colorTool.setConsole(console);
@@ -399,6 +417,16 @@ public class HDTVerify {
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
 									hdt.getDictionary().getShared(), console);
 							count += hdt.getDictionary().getShared().getNumberOfElements();
+
+							if (hdt.getDictionary() instanceof RawDictionary) {
+								colorTool.log("Checking raw sections types");
+								error |= checkSectionType(allObjects, RawStringUtils.XSD_DECIMAL_DT,
+										DictionarySectionType.DEC);
+								error |= checkSectionType(allObjects, RawStringUtils.XSD_INTEGER_DT,
+										DictionarySectionType.INT);
+								error |= checkSectionType(allObjects, RawStringUtils.XSD_DOUBLE_DT,
+										DictionarySectionType.FLOAT);
+							}
 						} else {
 							colorTool.log("Checking subject entries");
 							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",

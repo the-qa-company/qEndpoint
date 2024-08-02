@@ -9,7 +9,6 @@ public class SectionOptimizedExtractor implements SecOptimizedExtractor {
 		this.sec = sec;
 	}
 
-
 	@Override
 	public CharSequence extract(long target) {
 		return sec.extract(target);

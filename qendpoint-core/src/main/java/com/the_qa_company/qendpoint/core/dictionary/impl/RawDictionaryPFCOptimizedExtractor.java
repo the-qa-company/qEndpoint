@@ -9,7 +9,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.SecOptimizedExt
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.SectionOptimizedExtractor;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 
-public class RawDictionaryPFCOptimizedExtractor  implements OptimizedExtractor {
+public class RawDictionaryPFCOptimizedExtractor implements OptimizedExtractor {
 	private final SecOptimizedExtractor shared, subjects, predicates, graph;
 	private final SecOptimizedExtractor[] objects;
 	private final MultipleLangBaseDictionary dict;
@@ -44,31 +44,31 @@ public class RawDictionaryPFCOptimizedExtractor  implements OptimizedExtractor {
 	@Override
 	public CharSequence idToString(long id, TripleComponentRole role) {
 		switch (role) {
-			case SUBJECT -> {
-				if (id <= nshared) {
-					return shared.extract(id);
-				} else {
-					return subjects.extract(id - nshared);
-				}
+		case SUBJECT -> {
+			if (id <= nshared) {
+				return shared.extract(id);
+			} else {
+				return subjects.extract(id - nshared);
 			}
-			case PREDICATE -> {
-				return predicates.extract(id);
+		}
+		case PREDICATE -> {
+			return predicates.extract(id);
+		}
+		case OBJECT -> {
+			MultipleLangBaseDictionary.ObjectIdLocationData data = dict.idToObjectSection(id);
+			CharSequence str = objects[data.uid()].extract(id - data.location());
+			if (str == null) {
+				return null;
 			}
-			case OBJECT -> {
-				MultipleLangBaseDictionary.ObjectIdLocationData data = dict.idToObjectSection(id);
-				CharSequence str = objects[data.uid()].extract(id - data.location());
-				if (str == null) {
-					return null;
-				}
-				return data.suffix().copyPreAppend(str);
+			return data.suffix().copyPreAppend(str);
+		}
+		case GRAPH -> {
+			if (!dict.supportGraphs()) {
+				throw new IllegalArgumentException("This dictionary doesn't support graphs!");
 			}
-			case GRAPH -> {
-				if (!dict.supportGraphs()) {
-					throw new IllegalArgumentException("This dictionary doesn't support graphs!");
-				}
-				return graph.extract(id);
-			}
-			default -> throw new IllegalArgumentException("Bad role: " + role);
+			return graph.extract(id);
+		}
+		default -> throw new IllegalArgumentException("Bad role: " + role);
 		}
 	}
 }

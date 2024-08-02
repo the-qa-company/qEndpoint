@@ -18,17 +18,41 @@ import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.Dataset;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.explanation.Explanation;
+import org.eclipse.rdf4j.query.algebra.BinaryValueOperator;
+import org.eclipse.rdf4j.query.algebra.Compare;
+import org.eclipse.rdf4j.query.algebra.QueryModelVisitor;
+import org.eclipse.rdf4j.query.algebra.QueryRoot;
+import org.eclipse.rdf4j.query.algebra.SingletonSet;
+import org.eclipse.rdf4j.query.algebra.Slice;
+import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
+import org.eclipse.rdf4j.query.algebra.evaluation.QueryEvaluationStep;
+import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizerPipeline;
+import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategy;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategyFactory;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryEvaluationContext;
+import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailTupleQuery;
 import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
+import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
+import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
+import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.junit.jupiter.api.Disabled;
@@ -39,8 +63,12 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Disabled
 public class HandTest {
@@ -304,18 +332,82 @@ public class HandTest {
 
 	@Test
 	public void optimizerTest() {
-		SailRepository ms = new SailRepository(new MemoryStore());
-		Repositories.consume(ms, conn -> {
-			TupleQuery query = conn.prepareTupleQuery("""
+		MemoryStore ms = new MemoryStore();
+		ms.setEvaluationStrategyFactory(new DefaultEvaluationStrategyFactory(ms.getFederatedServiceResolver()) {
+			@Override
+			public EvaluationStrategy createEvaluationStrategy(Dataset dataset, TripleSource tripleSource, EvaluationStatistics evaluationStatistics) {
+				DefaultEvaluationStrategy strategy = new DefaultEvaluationStrategy(tripleSource, dataset, getFederatedServiceResolver(), this.getQuerySolutionCacheThreshold(), evaluationStatistics, this.isTrackResultSize()) {
+					@Override
+					protected QueryEvaluationStep prepare(Slice node, QueryEvaluationContext context) throws QueryEvaluationException {
+						return super.prepare(node, context);
+					}
+				};
+				Optional<QueryOptimizerPipeline> pipeline = this.getOptimizerPipeline();
+				Objects.requireNonNull(strategy);
+				pipeline.ifPresent(strategy::setOptimizerPipeline);
+				strategy.setCollectionFactory(ms.getCollectionFactory());
+				return strategy;
+			}
+		});
+		SailRepository repo = new SailRepository(new NotifyingSailWrapper(ms) {
+			@Override
+			public NotifyingSailConnection getConnection() throws SailException {
+				return new NotifyingSailConnectionWrapper(super.getConnection()) {
+					@Override
+					public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+
+						tupleExpr = tupleExpr.clone();
+						TestModelVisitor visitor = new TestModelVisitor();
+
+						QueryRoot root = tupleExpr instanceof QueryRoot qr ? qr : new QueryRoot(tupleExpr);
+						System.out.println(root);
+						System.out.println();
+						visitor.meet(root);
+						System.out.println(root);
+						System.out.println();
+
+						return super.evaluate(tupleExpr, dataset, bindings, includeInferred);
+					}
+				};
+			}
+		});
+		Repositories.consume(repo, conn -> {
+			SailTupleQuery query = (SailTupleQuery)conn.prepareTupleQuery("""
 					SELECT * {
-						?s ?p ?o .
-						FILTER (?o > 42)
+						<http://example.org/#s1> <http://example.org/#p2> ?o2 .
+						<http://example.org/#s1> <http://example.org/#p1> ?o .
+						FILTER (?o > 42 && ?o2 < 24 || ?o2 = 25)
 					}
 					""");
 
-			System.out.println(query.explain(Explanation.Level.Unoptimized));
+
+
 		});
+	}
 
+	private static class TestModelVisitor extends AbstractQueryModelVisitor<RuntimeException> {
+		@Override
+		public void meet(Compare node) {
+			node.replaceWith(new HDTCompareOp(node));
+			super.meet(node);
+		}
+	}
 
+	private static class HDTCompareOp extends BinaryValueOperator {
+		private final Compare.CompareOp op;
+
+		private HDTCompareOp(Compare base) {
+			super(base.getLeftArg().clone(), base.getRightArg().clone());
+			this.op = base.getOperator();
+		}
+
+		@Override
+		public <X extends Exception> void visit(QueryModelVisitor<X> visitor) throws X {
+			visitor.meetOther(this);
+		}
+
+		public Compare.CompareOp getOp() {
+			return op;
+		}
 	}
 }
