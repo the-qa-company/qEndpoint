@@ -101,7 +101,6 @@ public class ByteStringUtil {
 		return Double.parseDouble(sec.toString());
 	}
 
-
 	public static BigDecimal getDecimal(CharSequence sec) {
 		if (sec instanceof TypedLiteralCompactString tlc) {
 			ByteString val = tlc.getValue();

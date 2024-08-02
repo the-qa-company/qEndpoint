@@ -161,7 +161,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	protected void parseLiteral() {
 		if (label == null) {
 			ByteString literal = ByteString.of(hdt.getDictionary().idToString(hdtID, TripleComponentRole.OBJECT));
-			label = (ByteString)LiteralsUtils.removeQuotesTypeAndLang(literal);
+			label = (ByteString) LiteralsUtils.removeQuotesTypeAndLang(literal);
 			Optional<CharSequence> lang = LiteralsUtils.getLanguage(literal);
 
 			if (lang.isPresent()) {

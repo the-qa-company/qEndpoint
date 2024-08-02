@@ -2648,8 +2648,9 @@ public class HDTManagerTest {
 			Path root = tempDir.newFolder().toPath();
 			try {
 				Path ds1 = root.resolve("ds1.nt");
-				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 42).withMaxElementSplit(20)
-						.withMaxLiteralSize(50).withNumbers(true);
+				LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+						.createSupplierWithMaxTriples(10000, 42).withMaxElementSplit(20).withMaxLiteralSize(50)
+						.withNumbers(true);
 				supplier.createNTFile(ds1);
 
 				Path hdf1 = root.resolve("ds1.hdt");
@@ -2657,9 +2658,11 @@ public class HDTManagerTest {
 				Path hdf3 = root.resolve("ds3.hdt");
 
 				HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
-						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW, HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("workgd"));
-				try (HDT hdt1 = HDTManager.generateHDT(ds1, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+						HDTOptionsKeys.DICTIONARY_TYPE_VALUE_RAW, HDTOptionsKeys.LOADER_TYPE_KEY,
+						HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY,
+						root.resolve("workgd"));
+				try (HDT hdt1 = HDTManager.generateHDT(ds1, LargeFakeDataSetStreamSupplier.BASE_URI,
+						RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
 					checkHDTConsistency(hdt1);
 					hdt1.saveToHDT(hdf1);
 				}
@@ -2672,22 +2675,19 @@ public class HDTManagerTest {
 						bm.set(i, true);
 					}
 
-
-					try (
-							HDT diff = HDTManager.diffBitCatHDTPath(List.of(hdf1), List.of(bm), spec, ProgressListener.ignore());
-							HDT diff2 = HDTManager.diffBitCatHDTPath(List.of(hdf1), List.of(NegBitmap.of(bm)), spec, ProgressListener.ignore())
-					) {
+					try (HDT diff = HDTManager.diffBitCatHDTPath(List.of(hdf1), List.of(bm), spec,
+							ProgressListener.ignore());
+							HDT diff2 = HDTManager.diffBitCatHDTPath(List.of(hdf1), List.of(NegBitmap.of(bm)), spec,
+									ProgressListener.ignore())) {
 						checkHDTConsistency(diff);
 						checkHDTConsistency(diff2);
 						diff.saveToHDT(hdf2);
 						diff2.saveToHDT(hdf3);
 					}
 
-					try (
-							HDT hdt1 = HDTManager.mapHDT(hdf1);
+					try (HDT hdt1 = HDTManager.mapHDT(hdf1);
 							HDT hdt2 = HDTManager.mapHDT(hdf2);
-							HDT hdt3 = HDTManager.mapHDT(hdf3)
-							) {
+							HDT hdt3 = HDTManager.mapHDT(hdf3)) {
 						checkHDTConsistency(hdt1);
 						checkHDTConsistency(hdt2);
 						checkHDTConsistency(hdt3);
@@ -2732,7 +2732,7 @@ public class HDTManagerTest {
 				spec2.setOptions(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
 						HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("workgd"));
 				try (HDT hdtgd = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI,
-							 RDFNotation.NTRIPLES, spec2, ProgressListener.ignore())) {
+						RDFNotation.NTRIPLES, spec2, ProgressListener.ignore())) {
 					hdtgd.saveToHDT(dsgd);
 				}
 
@@ -2765,7 +2765,6 @@ public class HDTManagerTest {
 							if (kdt != dte) {
 								assertSame(kdt, dt);
 							}
-
 
 						}
 					}
