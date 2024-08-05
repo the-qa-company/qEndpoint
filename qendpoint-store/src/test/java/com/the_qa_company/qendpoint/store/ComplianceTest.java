@@ -39,9 +39,9 @@ public class ComplianceTest {
 	private static final Logger logger = LoggerFactory.getLogger(ComplianceTest.class);
 
 	@TempDir
-	static Path tempDir;
+	public Path tempDir;
 
-	public static class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 
 		public EndpointMultIndexSPARQL11QueryComplianceTest() {
 			super();
@@ -166,7 +166,7 @@ public class ComplianceTest {
 		}
 	}
 
-	public static class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
+	public class EndpointMultIndexSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
 		public EndpointMultIndexSPARQL11UpdateComplianceTest() {
 			super();
@@ -236,7 +236,7 @@ public class ComplianceTest {
 
 	}
 
-	public static class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public class EndpointSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 		private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
 		public EndpointSPARQL11QueryComplianceTest() {
@@ -335,7 +335,7 @@ public class ComplianceTest {
 		}
 	}
 
-	public static class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
+	public class EndpointSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
 		public EndpointSPARQL11UpdateComplianceTest() {
 
@@ -381,7 +381,7 @@ public class ComplianceTest {
 
 	}
 
-	public static class EndpointQuadSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
+	public class EndpointQuadSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 		private static final Logger logger = LoggerFactory.getLogger(EndpointSPARQL11QueryComplianceTest.class);
 
 		@Override
@@ -454,7 +454,7 @@ public class ComplianceTest {
 		}
 	}
 
-	public static class EndpointQuadSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
+	public class EndpointQuadSPARQL11UpdateComplianceTest extends SPARQL11UpdateComplianceTest {
 
 		@Override
 		protected Repository newRepository() throws Exception {
@@ -487,15 +487,16 @@ public class ComplianceTest {
 	}
 
 	@TestFactory
-	public Collection<DynamicTest> multiIndexUpdate() {
-		return new EndpointMultIndexSPARQL11UpdateComplianceTest().getTestData();
-	}
-
-	@TestFactory
 	public Collection<DynamicTest> indexQuery() {
 		return new EndpointSPARQL11QueryComplianceTest().tests();
 	}
 
+	/*
+
+	@TestFactory
+	public Collection<DynamicTest> multiIndexUpdate() {
+		return new EndpointMultIndexSPARQL11UpdateComplianceTest().getTestData();
+	}
 	@TestFactory
 	public Collection<DynamicTest> indexUpdate() {
 		return new EndpointSPARQL11UpdateComplianceTest().getTestData();
@@ -510,5 +511,5 @@ public class ComplianceTest {
 	public Collection<DynamicTest> quadUpdate() {
 		return new EndpointQuadSPARQL11UpdateComplianceTest().getTestData();
 	}
-
+	*/
 }

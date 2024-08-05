@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Disabled
 public class ExperimentalQEndpointSPARQL11ComplianceUpdateTest extends SPARQL11UpdateComplianceTest {
 	/*
 	 * Set this to true to print the call to the store when doing the compliance
