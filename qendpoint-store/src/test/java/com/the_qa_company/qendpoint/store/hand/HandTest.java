@@ -10,6 +10,8 @@ import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
@@ -19,6 +21,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.common.transaction.QueryEvaluationMode;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.BooleanLiteral;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -28,19 +34,20 @@ import org.eclipse.rdf4j.query.algebra.BinaryValueOperator;
 import org.eclipse.rdf4j.query.algebra.Compare;
 import org.eclipse.rdf4j.query.algebra.QueryModelVisitor;
 import org.eclipse.rdf4j.query.algebra.QueryRoot;
-import org.eclipse.rdf4j.query.algebra.SingletonSet;
-import org.eclipse.rdf4j.query.algebra.Slice;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.query.algebra.ValueExpr;
 import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
-import org.eclipse.rdf4j.query.algebra.evaluation.QueryEvaluationStep;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizerPipeline;
+import org.eclipse.rdf4j.query.algebra.evaluation.QueryValueEvaluationStep;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryEvaluationContext;
+import org.eclipse.rdf4j.query.algebra.evaluation.util.QueryEvaluationUtil;
 import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
@@ -49,7 +56,6 @@ import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailException;
-import org.eclipse.rdf4j.sail.base.SailStore;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
@@ -57,6 +63,7 @@ import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -64,7 +71,7 @@ import java.util.Objects;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
@@ -72,6 +79,9 @@ import java.util.Optional;
 
 @Disabled
 public class HandTest {
+
+	@TempDir
+	public Path tempDir;
 	@Test
 	public void largeTest() throws IOException {
 		Path root = Path.of("C:\\Users\\wilat\\workspace\\qEndpoint\\qendpoint\\hdt-store\\wdbench-qep");
@@ -332,15 +342,43 @@ public class HandTest {
 
 	@Test
 	public void optimizerTest() {
+		final String exp = "http://example.org/#";
 		MemoryStore ms = new MemoryStore();
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+		try (NotifyingSailConnection conn = ms.getConnection()) {
+			conn.begin();
+			conn.addStatement(vf.createIRI(exp + "test42"), vf.createIRI(exp + "p"), vf.createLiteral(42));
+			conn.addStatement(vf.createIRI(exp + "test42"), vf.createIRI(exp + "id"), vf.createLiteral("hello 42"));
+			conn.addStatement(vf.createIRI(exp + "test34"), vf.createIRI(exp + "p"), vf.createLiteral(34));
+			conn.addStatement(vf.createIRI(exp + "test34"), vf.createIRI(exp + "id"), vf.createLiteral("hello 34"));
+			conn.addStatement(vf.createIRI(exp + "test12"), vf.createIRI(exp + "p"), vf.createLiteral(12));
+			conn.addStatement(vf.createIRI(exp + "test12"), vf.createIRI(exp + "id"), vf.createLiteral("hello 12"));
+			conn.addStatement(vf.createIRI(exp + "test20"), vf.createIRI(exp + "p"), vf.createLiteral(20));
+			conn.addStatement(vf.createIRI(exp + "test20"), vf.createIRI(exp + "id"), vf.createLiteral("hello 20"));
+			conn.addStatement(vf.createIRI(exp + "test30"), vf.createIRI(exp + "p"), vf.createLiteral(30));
+			conn.addStatement(vf.createIRI(exp + "test30"), vf.createIRI(exp + "id"), vf.createLiteral("hello 30"));
+			conn.addStatement(vf.createIRI(exp + "test-12"), vf.createIRI(exp + "p"), vf.createLiteral(-12));
+			conn.addStatement(vf.createIRI(exp + "test-12"), vf.createIRI(exp + "id"), vf.createLiteral("hello -12"));
+			conn.commit();
+		}
 		ms.setEvaluationStrategyFactory(new DefaultEvaluationStrategyFactory(ms.getFederatedServiceResolver()) {
 			@Override
 			public EvaluationStrategy createEvaluationStrategy(Dataset dataset, TripleSource tripleSource, EvaluationStatistics evaluationStatistics) {
 				DefaultEvaluationStrategy strategy = new DefaultEvaluationStrategy(tripleSource, dataset, getFederatedServiceResolver(), this.getQuerySolutionCacheThreshold(), evaluationStatistics, this.isTrackResultSize()) {
+
 					@Override
-					protected QueryEvaluationStep prepare(Slice node, QueryEvaluationContext context) throws QueryEvaluationException {
-						return super.prepare(node, context);
+					public QueryValueEvaluationStep precompile(ValueExpr expr, QueryEvaluationContext context) throws QueryEvaluationException {
+						if (expr instanceof HDTCompareOp hcop) {
+							boolean strict = QueryEvaluationMode.STRICT == getQueryEvaluationMode();
+							return supplyBinaryValueEvaluation(hcop, (Value leftVal, Value rightVal) -> {
+								System.out.println("compare: " + leftVal + "(" + leftVal.getClass().getSimpleName() + ")" + "/" + rightVal + "(" + rightVal.getClass().getSimpleName() + ")" );
+								return BooleanLiteral
+										.valueOf(QueryEvaluationUtil.compare(leftVal, rightVal, hcop.getOp(), strict));
+							}, context);
+						}
+						return super.precompile(expr, context);
 					}
+
 				};
 				Optional<QueryOptimizerPipeline> pipeline = this.getOptimizerPipeline();
 				Objects.requireNonNull(strategy);
@@ -359,6 +397,7 @@ public class HandTest {
 						tupleExpr = tupleExpr.clone();
 						TestModelVisitor visitor = new TestModelVisitor();
 
+						// https://github.com/eclipse-rdf4j/rdf4j/discussions/5085#discussioncomment-10140747
 						QueryRoot root = tupleExpr instanceof QueryRoot qr ? qr : new QueryRoot(tupleExpr);
 						System.out.println(root);
 						System.out.println();
@@ -373,13 +412,15 @@ public class HandTest {
 		});
 		Repositories.consume(repo, conn -> {
 			SailTupleQuery query = (SailTupleQuery)conn.prepareTupleQuery("""
-					SELECT * {
-						<http://example.org/#s1> <http://example.org/#p2> ?o2 .
-						<http://example.org/#s1> <http://example.org/#p1> ?o .
-						FILTER (?o > 42 && ?o2 < 24 || ?o2 = 25)
+                    PREFIX ex: <http://example.org/#>
+					SELECT ?id {
+						?s ex:p ?o.
+						?s ex:id ?id .
+						FILTER (?o > 14)
 					}
 					""");
 
+			query.evaluate(new SPARQLResultsCSVWriter(System.out));
 
 
 		});
@@ -409,5 +450,66 @@ public class HandTest {
 		public Compare.CompareOp getOp() {
 			return op;
 		}
+	}
+
+	@Test
+	public void dumpCfg() throws IOException {
+		String path = "";
+		HDTOptions specs = HDTOptions.of();
+		specs.setOptions(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+
+		// generating 2 indexes, important for breath search
+		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "SPO");
+		// using cat to merge bigger dumps
+		specs.setOptions("loader.type=cat;");
+		// use k-way merge cat
+		specs.setOptions("loader.cattree.kcat=20;");
+		// use disk implementation of HDT
+		specs.setOptions("loader.cattree.loadertype=disk;");
+		// NFS BUG: do not delete cat directory at the end
+		// specs.setOptions("hdtcat.deleteLocation=false");
+		// directory with the HDT sub chunks
+		Path tmp_cat_tree = new File(path + "tmp_cat_tree/").toPath();
+		specs.setOptions("loader.cattree.location="+tmp_cat_tree.toAbsolutePath()+";");
+		// directory with the recursive hdt cats
+		Path tmp_hdt = new File(path + "tmp_hdt/").toPath();
+		specs.setOptions("hdtcat.location.future="+tmp_hdt.toAbsolutePath()+";");
+		// directory where HDT cat is running
+		Path tmp_cat = new File(path + "tmp_cat/").toPath();
+		specs.setOptions("hdtcat.location="+tmp_cat.toAbsolutePath()+";");
+		// directory where HDT gen disk is running
+		Path tmp_gen_disk = new File(path + "tmp_gen_disk/").toPath();
+		specs.setOptions("loader.disk.location="+tmp_gen_disk.toAbsolutePath()+";");
+		specs.setOptions(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, tmp_gen_disk.toAbsolutePath()+";");
+		//specify the end location of the HDT file
+		Path p = new File(path + "pageRankRDF.hdt").toPath();
+		specs.setOptions("loader.cattree.futureHDTLocation="+p.toAbsolutePath()+";");
+		// generated co-index on disk
+		specs.setOptions("bitmaptriples.indexmethod=disk;");
+		// use disk sequences instead of in-memory
+		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK, true);
+		// directory where the bitmaps for the co-index is stored
+		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,tmp_gen_disk.toAbsolutePath());
+		// can be escaped if there is enough memory
+		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX,true);
+		PrintWriter pw = new PrintWriter(System.out);
+		specs.write(pw, false);
+		pw.flush();
+		/*
+bitmaptriples.index.others=SPO
+bitmaptriples.indexmethod=disk
+bitmaptriples.sequence.disk=true
+bitmaptriples.sequence.disk.location=tmp_gen_disk
+bitmaptriples.sequence.disk.subindex=true
+dictionary.type=dictionaryMultiObjLang
+hdtcat.location=tmp_cat
+hdtcat.location.future=tmp_hdt
+loader.cattree.futureHDTLocation=pageRankRDF.hdt
+loader.cattree.kcat=20
+loader.cattree.loadertype=disk
+loader.cattree.location=tmp_cat_tree
+loader.disk.location=tmp_gen_disk
+loader.type=cat
+		 */
 	}
 }
