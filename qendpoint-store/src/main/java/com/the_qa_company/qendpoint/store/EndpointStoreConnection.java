@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategyFactory;
 import org.eclipse.rdf4j.query.explanation.Explanation;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
@@ -62,7 +63,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	private final Map<String, String> config = new HashMap<>();
 
 	public EndpointStoreConnection(EndpointStore endpoint) throws InterruptedException {
-		super(endpoint, endpoint.getCurrentSaliStore(), new StrictEvaluationStrategyFactory());
+		super(endpoint, endpoint.getCurrentSaliStore(), endpoint.getEvaluationStategy());
 		this.debugId = DEBUG_ID_STORE.getAndIncrement();
 		this.endpoint = endpoint;
 		EndpointStoreUtils.openConnection(this);

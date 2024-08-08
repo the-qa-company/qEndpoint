@@ -29,6 +29,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategyFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -144,6 +145,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	private int threshold;
 
 	EndpointStoreValueFactory valueFactory;
+	private final EndpointStoreEvaluationStrategyFactory evaluationStrategyFactory;
 
 	private NTriplesWriter rdfWriterTempTriples;
 
@@ -240,6 +242,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 		checkWhichStore();
 		resetHDT(hdt, false);
 		this.valueFactory = new EndpointStoreValueFactory(hdt);
+		this.evaluationStrategyFactory = new EndpointStoreEvaluationStrategyFactory(this);
 		this.threshold = 100000;
 
 		this.inMemDeletes = inMemDeletes;
@@ -1165,5 +1168,9 @@ public class EndpointStore extends AbstractNotifyingSail {
 
 	public long getGraphsCount() {
 		return getGraphsCount(this.hdt);
+	}
+
+	public EndpointStoreEvaluationStrategyFactory getEvaluationStategy() {
+		return evaluationStrategyFactory;
 	}
 }

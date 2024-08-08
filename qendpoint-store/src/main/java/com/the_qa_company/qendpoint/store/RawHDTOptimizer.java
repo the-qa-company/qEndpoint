@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.dictionary.impl.RawDictionary;
+import com.the_qa_company.qendpoint.model.HDTCompareOp;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.base.CoreDatatype;
@@ -21,32 +22,14 @@ public class RawHDTOptimizer implements QueryOptimizer {
 
 	@Override
 	public void optimize(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings) {
-
-
+		tupleExpr.visit(new RawVisitor());
 	}
 
 	private class RawVisitor extends AbstractQueryModelVisitor<RuntimeException> {
-		@Override
-		public void meet(Var node) throws RuntimeException {
-			Value val = node.getValue();
-			if (val != null && val.isLiteral()) {
-				Literal lit = (Literal) val;
-
-				CoreDatatype cdt = lit.getCoreDatatype();
-				if (cdt != null && cdt.isXSDDatatype() && cdt.asXSDDatatype().orElseThrow().isNumericDatatype()) {
-					// number, place custom node
-
-
-				}
-			}
-			super.meet(node);
-		}
 
 		@Override
 		public void meet(Compare node) throws RuntimeException {
-
-
-
+			HDTCompareOp.replaceIfRequired(node, rd);
 			super.meet(node);
 		}
 	}
