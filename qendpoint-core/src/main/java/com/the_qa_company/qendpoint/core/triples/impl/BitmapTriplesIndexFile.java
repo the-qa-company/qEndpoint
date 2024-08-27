@@ -11,7 +11,6 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
-import com.the_qa_company.qendpoint.core.exceptions.SignatureIOException;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
@@ -34,7 +33,6 @@ import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -61,30 +59,19 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 		return hdt.resolveSibling(hdt.getFileName() + "." + order.name().toLowerCase() + ".idx");
 	}
 
-	/**
-	 * Compute triples signature
-	 *
-	 * @param triples triples
-	 * @return signature
-	 */
-	public static long signature(BitmapTriples triples) {
-		return 0x484454802020L ^ triples.getNumberOfElements();
-	}
-
-	public static final byte[] MAGIC = "$HDTIDX1".getBytes(StandardCharsets.US_ASCII);
+	public static final byte[] MAGIC = "$HDTIDX0".getBytes(StandardCharsets.US_ASCII);
 
 	/**
 	 * Map a file from a file
 	 *
 	 * @param file    file
 	 * @param channel channel
-	 * @param triples triples
 	 * @return index
 	 * @throws IOException io
 	 */
-	public static BitmapTriplesIndex map(Path file, FileChannel channel, BitmapTriples triples) throws IOException {
+	public static BitmapTriplesIndex map(Path file, FileChannel channel) throws IOException {
 		try (CloseMappedByteBuffer header = IOUtil.mapChannel(file, channel, FileChannel.MapMode.READ_ONLY, 0,
-				MAGIC.length + 8)) {
+				MAGIC.length)) {
 			byte[] magicRead = new byte[MAGIC.length];
 
 			header.get(magicRead);
@@ -92,18 +79,10 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 			if (!Arrays.equals(magicRead, MAGIC)) {
 				throw new IOException(format("Can't read %s magic", file));
 			}
-
-			long signature = header.order(ByteOrder.LITTLE_ENDIAN).getLong(magicRead.length);
-
-			long currentSignature = signature(triples);
-			if (signature != currentSignature) {
-				throw new SignatureIOException(
-						format("Wrong signature for file 0x%x != 0x%x", signature, currentSignature));
-			}
 		}
 
 		CountInputStream stream = new CountInputStream(new BufferedInputStream(Channels.newInputStream(channel)));
-		stream.skipNBytes(MAGIC.length + 8);
+		stream.skipNBytes(MAGIC.length);
 
 		String orderCfg = IOUtil.readSizedString(stream, ProgressListener.ignore());
 
@@ -289,7 +268,6 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 				// saving the index
 				try (BufferedOutputStream output = new BufferedOutputStream(Files.newOutputStream(destination))) {
 					output.write(MAGIC);
-					IOUtil.writeLong(output, signature(triples));
 
 					IOUtil.writeSizedString(output, order.name(), listener);
 

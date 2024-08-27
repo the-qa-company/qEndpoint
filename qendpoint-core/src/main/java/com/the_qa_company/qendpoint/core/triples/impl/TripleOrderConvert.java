@@ -67,24 +67,33 @@ public class TripleOrderConvert {
 		if (from == TripleComponentOrder.Unknown || to == TripleComponentOrder.Unknown) {
 			throw new IllegalArgumentException("Cannot swap Unknown Orders");
 		}
-		boolean swap1 = swap1tab[from.ordinal() - 1][to.ordinal() - 1];
-		boolean swap2 = swap2tab[from.ordinal() - 1][to.ordinal() - 1];
-		boolean swap3 = swap3tab[from.ordinal() - 1][to.ordinal() - 1];
 
-		if (swap1) {
-			long tmp = triple.getSubject();
-			triple.setSubject(triple.getPredicate());
-			triple.setPredicate(tmp);
+		swap1(triple, from, to);
+		swap2(triple, from, to);
+		swap3(triple, from, to);
+	}
+
+	private static void swap3(TripleID triple, TripleComponentOrder from, TripleComponentOrder to) {
+		if (swap3tab[from.ordinal() - 1][to.ordinal() - 1]) {
+			long tmp = triple.getPredicate();
+			triple.setPredicate(triple.getObject());
+			triple.setObject(tmp);
 		}
-		if (swap2) {
+	}
+
+	private static void swap2(TripleID triple, TripleComponentOrder from, TripleComponentOrder to) {
+		if (swap2tab[from.ordinal() - 1][to.ordinal() - 1]) {
 			long tmp = triple.getSubject();
 			triple.setSubject(triple.getObject());
 			triple.setObject(tmp);
 		}
-		if (swap3) {
-			long tmp = triple.getPredicate();
-			triple.setPredicate(triple.getObject());
-			triple.setObject(tmp);
+	}
+
+	private static void swap1(TripleID triple, TripleComponentOrder from, TripleComponentOrder to) {
+		if (swap1tab[from.ordinal() - 1][to.ordinal() - 1]) {
+			long tmp = triple.getSubject();
+			triple.setSubject(triple.getPredicate());
+			triple.setPredicate(tmp);
 		}
 	}
 }

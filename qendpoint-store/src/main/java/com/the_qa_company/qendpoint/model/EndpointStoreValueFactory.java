@@ -99,7 +99,7 @@ public class EndpointStoreValueFactory extends AbstractValueFactory {
 			}
 		}
 		if (id != -1) {
-			return new SimpleIRIHDT(hdt, position, id);
+			return new SimpleIRIHDT(hdt.getDictionary(), position, id);
 		} else {
 			return super.createIRI(iri);
 		}
