@@ -22,8 +22,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.transaction.QueryEvaluationMode;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.BooleanLiteral;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
@@ -46,6 +48,8 @@ import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryEvaluationContext;
 import org.eclipse.rdf4j.query.algebra.evaluation.util.QueryEvaluationUtil;
 import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
+import org.eclipse.rdf4j.query.parser.QueryPrologLexer;
+import org.eclipse.rdf4j.query.parser.sparql.SPARQLQueries;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -61,6 +65,8 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -68,14 +74,22 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
 public class HandTest {
@@ -511,5 +525,179 @@ loader.cattree.location=tmp_cat_tree
 loader.disk.location=tmp_gen_disk
 loader.type=cat
 		 */
+	}
+
+	private static class HeadInputStream extends InputStream {
+		private final byte[] headBuffer;
+		private int headBufferLocation;
+		private long read;
+		private final InputStream is;
+
+		private HeadInputStream(InputStream is, int size) {
+			this.is = is;
+			headBuffer = new byte[size];
+		}
+
+		@Override
+		public int read() throws IOException {
+			int r = is.read();
+			if (r >= 0) {
+				headBuffer[headBufferLocation] = (byte)r;
+				headBufferLocation = (headBufferLocation + 1) % headBuffer.length;
+				read++;
+			}
+			return r;
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			int r = is.read(b, off, len);
+
+			if (r > 0) {
+				if (r >= headBuffer.length) {
+					System.arraycopy(b, off + r - headBuffer.length, headBuffer, 0, headBuffer.length);
+					headBufferLocation = 0;
+				} else {
+					if (headBufferLocation + r > headBuffer.length) {
+						// we need to write 2 chunks
+
+						int bp = headBuffer.length - headBufferLocation;
+						System.arraycopy(b, off, headBuffer, headBufferLocation, bp);
+						System.arraycopy(b, off + bp, headBuffer, 0, r - bp);
+						headBufferLocation = r - bp;
+					} else {
+						// full write
+						System.arraycopy(b, off, headBuffer, headBufferLocation, r);
+						headBufferLocation = (headBufferLocation + r) % headBuffer.length;
+					}
+				}
+				read += r;
+			}
+
+			return r;
+		}
+		@Override
+		public void close() throws IOException {
+			is.close();
+		}
+
+		public byte[] getHeader() {
+			if (read <= headBuffer.length) {
+				return Arrays.copyOf(headBuffer, (int)read); // not enough to care
+			}
+			if (headBufferLocation == 0) {
+				return Arrays.copyOf(headBuffer, headBuffer.length); // only one full copy
+			}
+			// double copy
+			byte[] nb = new byte[headBuffer.length];
+			System.arraycopy(headBuffer, headBufferLocation, nb, 0, headBuffer.length - headBufferLocation);
+			System.arraycopy(headBuffer, 0, nb, headBuffer.length - headBufferLocation, headBufferLocation);
+			return nb;
+		}
+	}
+
+	private String mergePrefixes(String query) {
+		StringBuilder b = new StringBuilder();
+		String lastPrefix = null;
+		Set<Namespace> namespaces = new HashSet<>();
+		for (QueryPrologLexer.Token token : QueryPrologLexer.lex(query)) {
+			switch (token.getType()) {
+				case PREFIX_KEYWORD -> {} // nothing to do
+				case PREFIX -> lastPrefix = token.getStringValue();
+				case IRI -> {
+					if (lastPrefix != null) {
+						namespaces.add(new SimpleNamespace(lastPrefix, token.getStringValue()));
+					} else {
+						b.append(token.getStringValue());
+					}
+				}
+				case LBRACKET -> {
+					if (lastPrefix == null) {
+						b.append(token.getStringValue());
+					}
+				}
+				case RBRACKET -> {
+					if (lastPrefix == null) {
+						b.append(token.getStringValue()).append(' ');
+					} else {
+						lastPrefix = null;
+					}
+
+				}
+				case COMMENT -> b.append(token.getStringValue()).append(' ');
+				default -> b.append(token.getStringValue());
+			}
+		}
+		return SPARQLQueries.getPrefixClauses(namespaces) + b;
+	}
+
+	@Test
+	public void headerTest() throws IOException {
+		byte[] bytes = """
+				Lorem ipsum odor amet, consectetuer adipiscing elit. Integer justo ornare fames fermentum magnis nostra. Cursus phasellus hendrerit porta non molestie. Fusce blandit mauris lacus efficitur ac vehicula integer. Proin sodales duis semper accumsan scelerisque. Elit primis vivamus amet quisque porttitor enim luctus egestas at. Nam ex primis natoque, himenaeos quis est fermentum quam.
+				    
+				Penatibus sodales leo nisi cubilia dui; praesent aenean bibendum. Enim donec arcu vehicula amet netus. Dictum hendrerit maximus vehicula cursus interdum auctor hendrerit. Dui ex ultrices sit; in vehicula congue purus. Vitae sapien quam proin nascetur venenatis quisque nisl faucibus. Ornare nullam scelerisque ornare sapien lobortis auctor hendrerit. Semper leo quis nibh volutpat praesent pretium curabitur.
+				    
+				Facilisi nisl taciti cras, praesent per mauris vitae ultrices. Purus mattis eget in euismod laoreet congue sociosqu dui ad. Vel tellus luctus himenaeos enim vehicula tellus quis risus. Lobortis curae viverra convallis sodales class accumsan himenaeos sem. Cursus integer lacus; cursus habitasse nunc vitae. Accumsan nec efficitur; integer curabitur pretium cursus porta. Volutpat praesent egestas eleifend diam eget eu vitae.
+				    
+				Proin fames pretium congue orci cras odio condimentum. Senectus quam ornare justo condimentum sapien proin gravida. Velit suspendisse dignissim quam arcu urna. Ex diam orci vestibulum venenatis fames diam ex in. Purus eu imperdiet pretium cras nec nunc nunc mauris. Montes conubia nostra consectetur taciti quisque odio tempor ante nam. Tristique dui quis nascetur sollicitudin magna massa sed lorem efficitur. Aliquam auctor nisl sodales commodo litora lectus lectus platea. Vivamus suscipit per; fermentum vel integer donec.
+				    
+				Quis nullam duis lacinia pulvinar rutrum; risus quisque tristique. Aaliquet efficitur primis felis senectus primis. Auctor inceptos purus dui fusce aenean at sociosqu massa ipsum. Euismod vulputate lorem venenatis odio ligula. Ultrices fames aenean sapien ac euismod tincidunt maximus semper. Facilisis egestas eros netus interdum integer; gravida cubilia non. Vehicula purus euismod sapien senectus suspendisse. Ridiculus euismod justo conubia elementum mauris vestibulum suspendisse quisque. Faucibus ipsum hendrerit amet amet lectus class pretium.
+				""".getBytes(StandardCharsets.UTF_8);
+		ByteArrayInputStream is = new ByteArrayInputStream(bytes);
+
+		HeadInputStream his = new HeadInputStream(is, 128);
+
+		{
+			String s1 = new String(his.readNBytes(64));
+			String s2 = new String(his.getHeader());
+			assertEquals(s1, s2);
+		}
+		{
+			String s1 = new String(his.readNBytes(128));
+			String s2 = new String(his.getHeader());
+			assertEquals(s1, s2);
+			String s3 = s2.substring(64) + new String(his.readNBytes(24))+ new String(his.readNBytes(40));
+			String s4 = new String(his.getHeader());
+			assertEquals(s3, s4);
+		}
+		{
+			String s1 = new String(his.readNBytes(128));
+			String s2 = new String(his.getHeader());
+			assertEquals(s1, s2);
+		}
+	}
+
+	@Test
+	public void cleanupBadPrefixes() {
+
+		System.out.println(mergePrefixes("""
+			# test comment
+			PREFIX ex: <http://example.org/#>
+			PREFIX ex: <http://example.org/#>
+			PREFIX ex: <http://example.org/#>
+			
+			BASE  <http://example2.org/#>
+							
+			SELECT * {?s ?p ?o }
+			"""));
+		System.out.println("***************");
+		System.out.println(mergePrefixes("""
+			# test comment
+			PREFIX ex: <http://example.org/#>
+			PREFIX ex: <http://example2.org/#>
+			PREFIX ex: <http://example3.org/#>
+			
+			BASE  <http://example2.org/#>
+							
+			SELECT * {?s ?p ?o }
+			"""));
+
+		//List<Namespace> namespaces = defaultPrefixes.entrySet().stream()
+		//		.filter(e -> !prefixes.contains(e.getKey())).map(Map.Entry::getValue)
+		//		.collect(Collectors.toList());
+//
+		//return SPARQLQueries.getPrefixClauses(namespaces) + " " + sparqlQuery;
+
 	}
 }
