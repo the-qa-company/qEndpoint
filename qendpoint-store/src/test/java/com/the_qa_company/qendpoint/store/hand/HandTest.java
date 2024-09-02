@@ -7,9 +7,11 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
@@ -813,6 +815,28 @@ loader.type=cat
 		//		.collect(Collectors.toList());
 //
 		//return SPARQLQueries.getPrefixClauses(namespaces) + " " + sparqlQuery;
+
+	}
+
+	@Test
+	public void badDs() throws Exception {
+		Path ds = Path.of("C:\\Users\\wilat\\Downloads\\error_skip3.nt");
+
+		Path work = ds.resolveSibling("work");
+		HDTOptions spec = HDTOptions.of(
+				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, work.resolve("disk"),
+				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, work.resolve("test.hdt"),
+				"debug.msdl.write", work.resolve("error.txt")
+
+		);
+		try (HDT hdt = HDTManager.generateHDT(ds, "fqzddzq", RDFNotation.NTRIPLES, spec, ProgressListener.sout())) {
+
+
+			hdt.saveToHDT(ds.resolveSibling("errror.hdt"));
+		}
+
 
 	}
 }
