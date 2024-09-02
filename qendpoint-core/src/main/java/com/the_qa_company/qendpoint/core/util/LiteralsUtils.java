@@ -68,7 +68,7 @@ public class LiteralsUtils {
 			char c = str.charAt(i);
 
 			// https://www.w3.org/TR/n-triples/#n-triples-grammar
-			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-') {
+			if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c == '-') {
 				// lang tag, ignore
 				continue;
 			}

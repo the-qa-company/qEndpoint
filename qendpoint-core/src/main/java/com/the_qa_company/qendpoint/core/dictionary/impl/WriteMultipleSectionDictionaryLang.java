@@ -20,10 +20,12 @@ import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -164,43 +166,60 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 			Map<ByteString, Long> sectionIds = new HashMap<>();
 
 			// check that we have at least one element to read
-			while (dataTypePeekIt.hasNext()) {
-				TypedByteString typedBS = dataTypePeekIt.peek();
-				ByteString type = typedBS.type();
-				ByteString utype;
-				if (typedBS.lang) {
-					utype = LiteralsUtils.LANG_OPERATOR.copyAppend(type);
-				} else {
-					utype = type;
-				}
-				Long sid = sectionIds.get(utype);
-				if (sid != null) {
-					// check that the section wasn't already defined
-					throw new IllegalArgumentException("type " + utype + " is already defined");
-				}
-				// create a new id
-				long sidNew = 1L + sectionIds.size();
-				sectionIds.put(type, sidNew);
 
-				// create the new section
+			BufferedWriter debugWriter = null;
 
-				DictionarySectionPrivate section;
-				if (type == LiteralsUtils.NO_DATATYPE && !typedBS.lang) {
-					section = nonTyped;
-				} else {
-					section = new WriteDictionarySection(spec,
-							filename.resolveSibling(name + (typedBS.lang ? "lang" : "type") + sidNew), bufferSize);
+			Path writePath = spec.getPath("debug.msdl.write");
+			if (writePath != null) {
+				debugWriter = Files.newBufferedWriter(writePath);
+			}
 
+			try {
+				while (dataTypePeekIt.hasNext()) {
+					TypedByteString typedBS = dataTypePeekIt.peek();
+					ByteString type = typedBS.type();
+					ByteString utype;
 					if (typedBS.lang) {
-						theLanguages.put(type, section);
+						utype = LiteralsUtils.LANG_OPERATOR.copyAppend(type);
 					} else {
-						theTyped.put(type, section);
+						utype = type;
 					}
-				}
-				section.load(dataTypePeekIt.map(TypedByteString::node), count, null);
+					Long sid = sectionIds.get(utype);
+					if (debugWriter != null) {
+						debugWriter.append(utype).append(" -> ").append(typedBS.node).append("\n");
+						debugWriter.flush();
+					}
+					if (sid != null) {
+						// check that the section wasn't already defined
+						throw new IllegalArgumentException("type " + utype + " is already defined");
+					}
+					// create a new id
+					long sidNew = 1L + sectionIds.size();
+					sectionIds.put(type, sidNew);
 
-				// reset the pipe to allow reading more elements
-				((PipedCopyIterator<?>) dataTypePeekIt.getWrappedIterator()).reset();
+					// create the new section
+
+					DictionarySectionPrivate section;
+					if (type == LiteralsUtils.NO_DATATYPE && !typedBS.lang) {
+						section = nonTyped;
+					} else {
+						section = new WriteDictionarySection(spec,
+								filename.resolveSibling(name + (typedBS.lang ? "lang" : "type") + sidNew), bufferSize);
+
+						if (typedBS.lang) {
+							theLanguages.put(type, section);
+						} else {
+							theTyped.put(type, section);
+						}
+					}
+					section.load(dataTypePeekIt.map(TypedByteString::node), count, null);
+
+					// reset the pipe to allow reading more elements
+					((PipedCopyIterator<?>) dataTypePeekIt.getWrappedIterator()).reset();
+				}
+			} catch (Throwable t) {
+				IOUtil.closeQuietly(debugWriter);
+				throw t;
 			}
 		}, "MultiSecSAsyncObjectDatatypeWriter"));
 	}
