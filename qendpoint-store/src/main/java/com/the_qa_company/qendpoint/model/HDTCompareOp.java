@@ -1,6 +1,10 @@
 package com.the_qa_company.qendpoint.model;
 
 import com.the_qa_company.qendpoint.core.dictionary.impl.RawDictionary;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.query.algebra.BinaryValueOperator;
 import org.eclipse.rdf4j.query.algebra.Compare;
 import org.eclipse.rdf4j.query.algebra.QueryModelVisitor;
@@ -37,10 +41,30 @@ public class HDTCompareOp  extends BinaryValueOperator {
 
 		if (vcr) {
 			// cst OP ?r
-			cmp.replaceWith(new HDTCompareOp(right, left, inverse(op)));
+			ValueExpr left2 = RawNumberIfRequired((ValueConstant) left);
+			if (left2 != null) {
+				cmp.replaceWith(new HDTCompareOp(right, left2, inverse(op)));
+			}
 		} else {
-			cmp.replaceWith(new HDTCompareOp(left, right, op));
+			ValueExpr right2 = RawNumberIfRequired((ValueConstant) right);
+			if (right2 != null) {
+				cmp.replaceWith(new HDTCompareOp(left, right2, op));
+			}
 		}
+	}
+
+	private static ValueExpr RawNumberIfRequired(ValueConstant vc) {
+		Value val = vc.getValue();
+		if (!val.isLiteral()) return null;
+
+		Literal lit = (Literal) val;
+		CoreDatatype cdt = lit.getCoreDatatype();
+
+		if (!cdt.isXSDDatatype() || !cdt.asXSDDatatype().orElseThrow().isNumericDatatype()) {
+			return null;
+		}
+
+		throw new NotImplementedException(); // TODO: do
 	}
 	private final Compare.CompareOp op;
 
