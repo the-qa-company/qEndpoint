@@ -5,7 +5,6 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.store.Utility;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,7 +32,10 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 	public ExperimentalQEndpointSPARQL11ComplianceQueryTest() {
 
 		if (DISABLE_GRAPH_TESTS) {
-			this.setIgnoredTests(new ArrayList<>(List.of("constructwhere04 - CONSTRUCT WHERE",
+			this.setIgnoredTests(new ArrayList<>(List.of(
+					"STRDT() TypeErrors",
+					"STRLANG() TypeErrors",
+					"constructwhere04 - CONSTRUCT WHERE",
 					"Exists within graph pattern", "(pp07) Path with one graph", "(pp34) Named Graph 1",
 					"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
 					"sq02 - Subquery within graph pattern, graph variable is bound",

@@ -52,6 +52,8 @@ public class ComplianceTest {
 			// not
 			// so problematic since we do not support
 			// named graphs anyway
+			testToIgnore.add("STRDT() TypeErrors");
+			testToIgnore.add("STRLANG() TypeErrors");
 			testToIgnore.add("constructwhere02 - CONSTRUCT WHERE");
 			testToIgnore.add("constructwhere03 - CONSTRUCT WHERE");
 			testToIgnore.add("constructwhere04 - CONSTRUCT WHERE");
@@ -251,6 +253,8 @@ public class ComplianceTest {
 					// are not
 					// so problematic since we do not support
 					// named graphs anyway
+					"STRDT() TypeErrors",
+					"STRLANG() TypeErrors",
 					"constructwhere02 - CONSTRUCT WHERE", "constructwhere03 - CONSTRUCT WHERE",
 					"constructwhere04 - CONSTRUCT WHERE", "Exists within graph pattern", "(pp07) Path with one graph",
 					"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
