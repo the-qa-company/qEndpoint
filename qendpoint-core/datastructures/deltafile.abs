@@ -1,0 +1,28 @@
+// delta file structure version 0, com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser
+
+WikidataChangesFlavor : byte {
+    DUMP = 0x63,
+    SIMPLE = 0x64,
+    FULL = 0x65
+}
+
+DeltaFile {
+    struct {
+        string magic = "$DltF0\n\r";
+        long count;
+        long start;
+        long end;
+        WikidataChangesFlavor flavor;
+        byte __pad[3];
+        crc8 crc;
+    } header;
+    struct {
+        vlong sizeName;
+        byte buff[sizeName];
+        vlong sizeBuff;
+        byte buff[sizeBuff];
+    } elements[header.count];
+    crc32 crc;
+}
+
+file(DeltaFile, ".*\\.df");

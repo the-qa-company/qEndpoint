@@ -23,6 +23,7 @@ import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.util.Profiler;
+import com.the_qa_company.qendpoint.core.util.UnicodeEscape;
 
 import java.io.File;
 import java.io.IOException;
@@ -656,7 +657,7 @@ public interface HDTOptions {
 					w.write("# " + opt.getKeyInfo().desc() + "\n# Type: " + opt.getKeyInfo().type().getTitle() + "\n");
 				}
 			}
-			w.write(key + "=" + value + "\n");
+			w.write(key + "=" + UnicodeEscape.escapeString(value) + "\n");
 		}
 	}
 

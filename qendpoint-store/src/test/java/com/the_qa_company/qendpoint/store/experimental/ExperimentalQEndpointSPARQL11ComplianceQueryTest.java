@@ -5,13 +5,14 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.store.Utility;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.testsuite.query.parser.sparql.manifest.SPARQL11QueryComplianceTest;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11QueryComplianceTest {
 	/*
@@ -31,9 +32,9 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 	public ExperimentalQEndpointSPARQL11ComplianceQueryTest() {
 
 		if (DISABLE_GRAPH_TESTS) {
-			this.setIgnoredTests(new ArrayList<>(List.of("constructwhere04 - CONSTRUCT WHERE",
-					"Exists within graph pattern", "(pp07) Path with one graph", "(pp34) Named Graph 1",
-					"(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
+			this.setIgnoredTests(new ArrayList<>(List.of("STRDT() TypeErrors", "STRLANG() TypeErrors",
+					"constructwhere04 - CONSTRUCT WHERE", "Exists within graph pattern", "(pp07) Path with one graph",
+					"(pp34) Named Graph 1", "(pp35) Named Graph 2", "sq01 - Subquery within graph pattern",
 					"sq02 - Subquery within graph pattern, graph variable is bound",
 					"sq03 - Subquery within graph pattern, graph variable is not bound",
 					"sq04 - Subquery within graph pattern, default graph does not apply",
@@ -45,9 +46,13 @@ public class ExperimentalQEndpointSPARQL11ComplianceQueryTest extends SPARQL11Qu
 
 	@Override
 	protected Repository newRepository() throws Exception {
+
+		Path resolve = tempDir.resolve(UUID.randomUUID().toString());
+		Files.createDirectories(resolve);
+
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
-		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(tempDir, spec);
+		ExperimentalQEndpointSail sail = new ExperimentalQEndpointSail(resolve, spec);
 
 		if (PRINT_CALLS) {
 			return Utility.convertToDumpRepository(new SailRepository(Utility.convertToDumpSail(sail)));

@@ -49,7 +49,7 @@ public class EndpointTripleSource implements TripleSource {
 		this.endpoint = endpoint;
 		this.numberOfCurrentTriples = endpoint.getHdt().getTriples().getNumberOfElements();
 		this.endpointStoreConnection = endpointStoreConnection;
-		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean(EndpointStore.OPTION_QENDPOINT_MERGE_JOIN, true);
+		this.enableMergeJoin = endpoint.getHDTSpec().getBoolean(EndpointStore.OPTION_QENDPOINT_MERGE_JOIN, false);
 	}
 
 	private void initHDTIndex() {
@@ -382,7 +382,6 @@ public class EndpointTripleSource implements TripleSource {
 		}
 
 		// iterate over the HDT file
-		IteratorTripleID iterator;
 		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
 			TripleID t = new TripleID(subjectID, predicateID, objectID);
 			// search with the ID to check if the triples has been deleted
@@ -390,8 +389,8 @@ public class EndpointTripleSource implements TripleSource {
 					.getTripleComponentOrder(t);
 
 			var orders = tripleComponentOrder.stream()
-					.map(o -> getStatementOrder(o, subj != null, pred != null, obj != null)).filter(Objects::nonNull)
-					.flatMap(Collection::stream).filter(p -> p != StatementOrder.P)
+					.map(o -> getStatementOrder(o, subj != null, pred != null, obj != null)).flatMap(Collection::stream)
+					.filter(p -> p != StatementOrder.P)
 					// we do not support predicate ordering since it doesn't use
 					// the same IDs as other IRIs
 					.collect(Collectors.toSet());

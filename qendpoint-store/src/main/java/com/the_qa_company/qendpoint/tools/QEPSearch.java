@@ -16,6 +16,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser;
 import com.the_qa_company.qendpoint.core.tools.HDTVerify;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -32,6 +33,7 @@ import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.model.SimpleLiteralHDT;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.HDTConverter;
+import com.the_qa_company.qendpoint.utils.FormatUtils;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -46,18 +48,25 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -91,6 +100,9 @@ public class QEPSearch {
 	@Parameter(names = "-rdf4jindex", description = "RDF4J indexes, default spoc,posc,cosp")
 	public String rdf4jindex;
 
+	@Parameter(names = "-csv", description = "Dump with a CSV form if available")
+	public String csvDump;
+
 	@Parameter(names = "-version", description = "Prints the HDT version number")
 	public static boolean showVersion;
 
@@ -98,6 +110,8 @@ public class QEPSearch {
 	public String searchCfg;
 	@Parameter(names = "-binindex", description = "Prints bin index if implemented")
 	public boolean showBinIndex;
+	@Parameter(names = "-nocrc", description = "Avoid CRC checks")
+	public boolean noCRC;
 
 	public String input;
 
@@ -709,19 +723,13 @@ public class QEPSearch {
 					}
 
 					switch (opt) {
-					case "delta" -> {
-						integrityTest(ep);
-					}
-					case "hdt" -> {
-						integrityTest(ep.getHdt());
-					}
+					case "delta" -> integrityTest(ep);
+					case "hdt" -> integrityTest(ep.getHdt());
 					case "all" -> {
 						integrityTest(ep);
 						integrityTest(ep.getHdt());
 					}
-					default -> {
-						colorTool.print(colorTool.red() + "integrity (delta|hdt|all)");
-					}
+					default -> colorTool.print(colorTool.red() + "integrity (delta|hdt|all)");
 					}
 					continue;
 
@@ -907,7 +915,13 @@ public class QEPSearch {
 			} else if (path.getFileName().toString().endsWith(".prof")) {
 				type = "profiler";
 			} else {
-				throw new IllegalArgumentException("Can't guess type for store " + path + "!");
+				byte[] cookie = FormatUtils.readCookie(path, 8);
+				// search for the right magic
+				if (Arrays.equals(cookie, "$DltF0\n\r".getBytes(UTF_8))) {
+					type = "deltafile";
+				} else {
+					throw new IllegalArgumentException("Can't guess type for store " + path + "!");
+				}
 			}
 		} else {
 			type = this.type.toLowerCase();
@@ -919,14 +933,122 @@ public class QEPSearch {
 		case "hdt" -> executeHDT();
 		case "reader" -> executeReader();
 		case "profiler" -> executeProfiler();
+		case "deltafile" -> executeDeltaFile();
 		default -> throw new IllegalArgumentException("Can't understand store of type " + this.type + "!");
 		}
+	}
+
+	private static int findProfilerMaxDepth(Profiler.Section sec, int currentDepth) {
+		return sec.getSubSections().stream().mapToInt(sub -> findProfilerMaxDepth(sub, currentDepth + 1)).max()
+				.orElse(currentDepth);
+	}
+
+	private static int findProfilerMaxDepth(Profiler p) {
+		return findProfilerMaxDepth(p.getMainSection(), 0);
+	}
+
+	record NamedSection(String name, Profiler.Section sec) {}
+
+	private static void findProfilerPatterns(Profiler.Section prof, Map<String, List<NamedSection>> patterns, int depth,
+			String name) {
+		String kname = name.isEmpty() ? prof.getName() : (name + "/" + prof.getName());
+		List<Profiler.Section> subs = prof.getSubSections();
+
+		if (subs.isEmpty()) {
+			return; // we hit a leaf, useless
+		}
+
+		if (depth == 0) {
+			String key = subs.stream().map(Profiler.Section::getName).sorted().collect(Collectors.joining(","));
+
+			patterns.computeIfAbsent(key, k -> new ArrayList<>()).add(new NamedSection(kname, prof));
+			return;
+		}
+
+		subs.forEach(ss -> findProfilerPatterns(ss, patterns, depth - 1, kname));
 	}
 
 	private void executeProfiler() throws IOException {
 		try (Profiler p = Profiler.readFromDisk(Path.of(input))) {
 			p.setDisabled(false);
-			p.writeProfiling();
+			if (csvDump == null) {
+				p.writeProfiling();
+				return;
+			}
+			int maxDepth = findProfilerMaxDepth(p);
+
+			Path csvDir = Path.of(csvDump);
+			Files.createDirectories(csvDir);
+
+			Map<String, List<NamedSection>> patterns = new HashMap<>();
+			for (int layer = 0; layer < maxDepth; layer++) {
+				patterns.clear();
+				findProfilerPatterns(p.getMainSection(), patterns, layer, "");
+
+				Path loc = csvDir.resolve("depth-" + layer);
+
+				Files.createDirectories(loc);
+
+				int id = 0;
+				for (List<NamedSection> secs : patterns.values()) {
+					if (secs.isEmpty()) {
+						System.err.println("Find empty pattern, bad code?");
+						continue; // what?
+					}
+					Path profCsv = loc.resolve("prof-" + (id++) + ".csv");
+					try (BufferedWriter writer = Files.newBufferedWriter(profCsv)) {
+						NamedSection sec = secs.get(0);
+
+						List<Profiler.Section> subs = sec.sec().getSubSections();
+
+						writer.write(subs.stream().map(Profiler.Section::getName).sorted()
+								.collect(Collectors.joining(",", "name,", "")));
+
+						for (NamedSection ns : secs) {
+							writer.write("\n");
+							writer.write(ns.name());
+
+							writer.write(ns.sec.getSubSections().stream()
+									.sorted(Comparator.comparing(Profiler.Section::getName))
+									.map(nss -> "," + nss.getMillis()).collect(Collectors.joining()));
+						}
+						writer.flush();
+					}
+					System.out.println("Generated " + profCsv);
+				}
+			}
+		}
+	}
+
+	private void executeDeltaFile() throws IOException {
+		Path file = Path.of(input);
+		MultiThreadListenerConsole console = colorTool.getConsole();
+
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.PARSER_DELTAFILE_NO_CRC, noCRC,
+				HDTOptionsKeys.PARSER_DELTAFILE_NO_EXCEPTION, true);
+
+		try (RDFDeltaFileParser.DeltaFileReader reader = new RDFDeltaFileParser.DeltaFileReader(
+				new BufferedInputStream(Files.newInputStream(file)), spec)) {
+
+			console.printLine(console.color(5, 5, 1) + "files .. " + console.colorReset() + reader.getSize());
+			console.printLine(console.color(5, 5, 1) + "start .. " + console.colorReset() + reader.getStart());
+			console.printLine(console.color(5, 5, 1) + "end .... " + console.colorReset() + reader.getEnd());
+			console.printLine(console.color(5, 5, 1) + "flavor . " + console.colorReset() + reader.getFlavor());
+
+			long i = 0;
+			long size = reader.getSize();
+			while (reader.hasNext()) {
+				i++;
+				RDFDeltaFileParser.DeltaFileComponent comp = reader.next();
+
+				console.notifyProgress((float) (i * 1000 / size) / 10, "reading files " + i + "/" + size + ": "
+						+ console.color(2, 2, 2) + comp.fileName() + console.colorReset());
+			}
+			if (i != size) {
+				console.printLine(console.color(5, 1, 1) + "Error, not everything was read: " + i + " != " + size + " "
+						+ (100 * i / size) + "%");
+			}
+			console.notifyProgress(100, "done");
 		}
 	}
 
@@ -956,9 +1078,7 @@ public class QEPSearch {
 						colorTool.log("bye.");
 						return;
 					}
-					case "pwd" -> {
-						System.out.println(pwd);
-					}
+					case "pwd" -> System.out.println(pwd);
 					case "ls" -> {
 						try (Stream<Path> list = Files.list(pwd)) {
 							System.out.println("File for " + pwd);
@@ -1051,10 +1171,8 @@ public class QEPSearch {
 						case "?" -> {
 							if (obj instanceof LongArray la) {
 								colorTool.log(format("[array$%d] %s [close]|[id]", la.sizeOf(), args[0]));
-								continue;
 							} else if (obj instanceof Bitmap) {
 								colorTool.log(format("[bitmap] %s [close]|[id]", args[0]));
-								continue;
 							} else {
 								colorTool.error("unknown type: " + obj.getClass());
 							}

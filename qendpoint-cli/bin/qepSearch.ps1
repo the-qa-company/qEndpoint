@@ -5,6 +5,8 @@ param(
     $config,
     [String]
     $searchCfg,
+    [String]
+    $csv,
     [Switch]
     $color,
     [Parameter()]
@@ -22,6 +24,8 @@ param(
     [Parameter()]
     [Switch]
     $memory,
+    [Switch]
+    $nocrc,
     [Parameter(ValueFromRemainingArguments, Position = 0)]
     [string[]]
     $OtherParams

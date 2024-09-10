@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>qendpoint-backend</artifactId>
-    <version>1.15.6</version>
+    <version>1.16.1</version>
 
     <packaging>jar</packaging>
 
@@ -15,7 +15,7 @@
     <parent>
         <groupId>com.the-qa-company</groupId>
         <artifactId>qendpoint-parent</artifactId>
-        <version>1.15.6</version>
+        <version>1.16.1</version>
     </parent>
 
     <licenses>
@@ -43,7 +43,7 @@
         <json_simple.version>1.1.1</json_simple.version>
         <junit.version>4.13.2</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
-        <rdf4j.version>5.0.0-SNAPSHOT</rdf4j.version>
+        <rdf4j.version>5.0.2</rdf4j.version>
         <spring.version>3.0.2</spring.version>
         <logback.version>1.4.5</logback.version>
 
