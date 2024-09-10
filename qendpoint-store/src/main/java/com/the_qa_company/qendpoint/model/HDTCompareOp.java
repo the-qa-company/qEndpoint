@@ -11,29 +11,29 @@ import org.eclipse.rdf4j.query.algebra.QueryModelVisitor;
 import org.eclipse.rdf4j.query.algebra.ValueConstant;
 import org.eclipse.rdf4j.query.algebra.ValueExpr;
 
-public class HDTCompareOp  extends BinaryValueOperator {
+public class HDTCompareOp extends BinaryValueOperator {
 	private static Compare.CompareOp inverse(Compare.CompareOp op) {
 		return switch (op) {
-			case EQ, NE -> op;
-			case LT -> Compare.CompareOp.GE;
-			case LE -> Compare.CompareOp.GT;
-			case GE -> Compare.CompareOp.LT;
-			case GT -> Compare.CompareOp.LE;
+		case EQ, NE -> op;
+		case LT -> Compare.CompareOp.GE;
+		case LE -> Compare.CompareOp.GT;
+		case GE -> Compare.CompareOp.LT;
+		case GT -> Compare.CompareOp.LE;
 		};
 	}
+
 	public static void replaceIfRequired(Compare cmp, RawDictionary rd) {
 		Compare.CompareOp op = cmp.getOperator();
 		switch (op) {
-			case EQ, NE -> {
-				return;
-			}
+		case EQ, NE -> {
+			return;
+		}
 		}
 		ValueExpr left = cmp.getLeftArg();
 		ValueExpr right = cmp.getRightArg();
 
 		boolean vcl = left instanceof ValueConstant;
 		boolean vcr = right instanceof ValueConstant;
-
 
 		if (vcl && vcr) {
 			return; // waste of time
@@ -55,7 +55,8 @@ public class HDTCompareOp  extends BinaryValueOperator {
 
 	private static ValueExpr RawNumberIfRequired(ValueConstant vc) {
 		Value val = vc.getValue();
-		if (!val.isLiteral()) return null;
+		if (!val.isLiteral())
+			return null;
 
 		Literal lit = (Literal) val;
 		CoreDatatype cdt = lit.getCoreDatatype();
@@ -66,6 +67,7 @@ public class HDTCompareOp  extends BinaryValueOperator {
 
 		throw new NotImplementedException(); // TODO: do
 	}
+
 	private final Compare.CompareOp op;
 
 	public HDTCompareOp(ValueExpr base, ValueExpr cst, Compare.CompareOp op) {

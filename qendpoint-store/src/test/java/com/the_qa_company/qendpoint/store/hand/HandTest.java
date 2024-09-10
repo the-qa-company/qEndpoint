@@ -52,7 +52,6 @@ import org.eclipse.rdf4j.query.algebra.evaluation.util.QueryEvaluationUtil;
 import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.eclipse.rdf4j.query.parser.QueryPrologLexer;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLQueries;
-import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -67,17 +66,11 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.junit.Assert;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Objects;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,6 +91,7 @@ public class HandTest {
 
 	@TempDir
 	public Path tempDir;
+
 	@Test
 	public void largeTest() throws IOException {
 		Path root = Path.of("C:\\Users\\wilat\\workspace\\qEndpoint\\qendpoint\\hdt-store\\wdbench-qep");
@@ -379,15 +373,20 @@ public class HandTest {
 		}
 		ms.setEvaluationStrategyFactory(new DefaultEvaluationStrategyFactory(ms.getFederatedServiceResolver()) {
 			@Override
-			public EvaluationStrategy createEvaluationStrategy(Dataset dataset, TripleSource tripleSource, EvaluationStatistics evaluationStatistics) {
-				DefaultEvaluationStrategy strategy = new DefaultEvaluationStrategy(tripleSource, dataset, getFederatedServiceResolver(), this.getQuerySolutionCacheThreshold(), evaluationStatistics, this.isTrackResultSize()) {
+			public EvaluationStrategy createEvaluationStrategy(Dataset dataset, TripleSource tripleSource,
+					EvaluationStatistics evaluationStatistics) {
+				DefaultEvaluationStrategy strategy = new DefaultEvaluationStrategy(tripleSource, dataset,
+						getFederatedServiceResolver(), this.getQuerySolutionCacheThreshold(), evaluationStatistics,
+						this.isTrackResultSize()) {
 
 					@Override
-					public QueryValueEvaluationStep precompile(ValueExpr expr, QueryEvaluationContext context) throws QueryEvaluationException {
+					public QueryValueEvaluationStep precompile(ValueExpr expr, QueryEvaluationContext context)
+							throws QueryEvaluationException {
 						if (expr instanceof HDTCompareOp hcop) {
 							boolean strict = QueryEvaluationMode.STRICT == getQueryEvaluationMode();
 							return supplyBinaryValueEvaluation(hcop, (Value leftVal, Value rightVal) -> {
-								System.out.println("compare: " + leftVal + "(" + leftVal.getClass().getSimpleName() + ")" + "/" + rightVal + "(" + rightVal.getClass().getSimpleName() + ")" );
+								System.out.println("compare: " + leftVal + "(" + leftVal.getClass().getSimpleName()
+										+ ")" + "/" + rightVal + "(" + rightVal.getClass().getSimpleName() + ")");
 								return BooleanLiteral
 										.valueOf(QueryEvaluationUtil.compare(leftVal, rightVal, hcop.getOp(), strict));
 							}, context);
@@ -408,7 +407,8 @@ public class HandTest {
 			public NotifyingSailConnection getConnection() throws SailException {
 				return new NotifyingSailConnectionWrapper(super.getConnection()) {
 					@Override
-					public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr, Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+					public CloseableIteration<? extends BindingSet> evaluate(TupleExpr tupleExpr, Dataset dataset,
+							BindingSet bindings, boolean includeInferred) throws SailException {
 
 						tupleExpr = tupleExpr.clone();
 						TestModelVisitor visitor = new TestModelVisitor();
@@ -427,8 +427,8 @@ public class HandTest {
 			}
 		});
 		Repositories.consume(repo, conn -> {
-			SailTupleQuery query = (SailTupleQuery)conn.prepareTupleQuery("""
-                    PREFIX ex: <http://example.org/#>
+			SailTupleQuery query = (SailTupleQuery) conn.prepareTupleQuery("""
+					               PREFIX ex: <http://example.org/#>
 					SELECT ?id {
 						?s ex:p ?o.
 						?s ex:id ?id .
@@ -437,7 +437,6 @@ public class HandTest {
 					""");
 
 			query.evaluate(new SPARQLResultsCSVWriter(System.out));
-
 
 		});
 	}
@@ -486,46 +485,42 @@ public class HandTest {
 		// specs.setOptions("hdtcat.deleteLocation=false");
 		// directory with the HDT sub chunks
 		Path tmp_cat_tree = new File(path + "tmp_cat_tree/").toPath();
-		specs.setOptions("loader.cattree.location="+tmp_cat_tree.toAbsolutePath()+";");
+		specs.setOptions("loader.cattree.location=" + tmp_cat_tree.toAbsolutePath() + ";");
 		// directory with the recursive hdt cats
 		Path tmp_hdt = new File(path + "tmp_hdt/").toPath();
-		specs.setOptions("hdtcat.location.future="+tmp_hdt.toAbsolutePath()+";");
+		specs.setOptions("hdtcat.location.future=" + tmp_hdt.toAbsolutePath() + ";");
 		// directory where HDT cat is running
 		Path tmp_cat = new File(path + "tmp_cat/").toPath();
-		specs.setOptions("hdtcat.location="+tmp_cat.toAbsolutePath()+";");
+		specs.setOptions("hdtcat.location=" + tmp_cat.toAbsolutePath() + ";");
 		// directory where HDT gen disk is running
 		Path tmp_gen_disk = new File(path + "tmp_gen_disk/").toPath();
-		specs.setOptions("loader.disk.location="+tmp_gen_disk.toAbsolutePath()+";");
-		specs.setOptions(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, tmp_gen_disk.toAbsolutePath()+";");
-		//specify the end location of the HDT file
+		specs.setOptions("loader.disk.location=" + tmp_gen_disk.toAbsolutePath() + ";");
+		specs.setOptions(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, tmp_gen_disk.toAbsolutePath() + ";");
+		// specify the end location of the HDT file
 		Path p = new File(path + "pageRankRDF.hdt").toPath();
-		specs.setOptions("loader.cattree.futureHDTLocation="+p.toAbsolutePath()+";");
+		specs.setOptions("loader.cattree.futureHDTLocation=" + p.toAbsolutePath() + ";");
 		// generated co-index on disk
 		specs.setOptions("bitmaptriples.indexmethod=disk;");
 		// use disk sequences instead of in-memory
 		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK, true);
 		// directory where the bitmaps for the co-index is stored
-		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION,tmp_gen_disk.toAbsolutePath());
+		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION, tmp_gen_disk.toAbsolutePath());
 		// can be escaped if there is enough memory
-		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX,true);
+		specs.setOptions(HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_SUBINDEX, true);
 		PrintWriter pw = new PrintWriter(System.out);
 		specs.write(pw, false);
 		pw.flush();
 		/*
-bitmaptriples.index.others=SPO
-bitmaptriples.indexmethod=disk
-bitmaptriples.sequence.disk=true
-bitmaptriples.sequence.disk.location=tmp_gen_disk
-bitmaptriples.sequence.disk.subindex=true
-dictionary.type=dictionaryMultiObjLang
-hdtcat.location=tmp_cat
-hdtcat.location.future=tmp_hdt
-loader.cattree.futureHDTLocation=pageRankRDF.hdt
-loader.cattree.kcat=20
-loader.cattree.loadertype=disk
-loader.cattree.location=tmp_cat_tree
-loader.disk.location=tmp_gen_disk
-loader.type=cat
+		 * bitmaptriples.index.others=SPO bitmaptriples.indexmethod=disk
+		 * bitmaptriples.sequence.disk=true
+		 * bitmaptriples.sequence.disk.location=tmp_gen_disk
+		 * bitmaptriples.sequence.disk.subindex=true
+		 * dictionary.type=dictionaryMultiObjLang hdtcat.location=tmp_cat
+		 * hdtcat.location.future=tmp_hdt
+		 * loader.cattree.futureHDTLocation=pageRankRDF.hdt
+		 * loader.cattree.kcat=20 loader.cattree.loadertype=disk
+		 * loader.cattree.location=tmp_cat_tree
+		 * loader.disk.location=tmp_gen_disk loader.type=cat
 		 */
 	}
 
@@ -544,7 +539,7 @@ loader.type=cat
 		public int read() throws IOException {
 			int r = is.read();
 			if (r >= 0) {
-				headBuffer[headBufferLocation] = (byte)r;
+				headBuffer[headBufferLocation] = (byte) r;
 				headBufferLocation = (headBufferLocation + 1) % headBuffer.length;
 				read++;
 			}
@@ -578,6 +573,7 @@ loader.type=cat
 
 			return r;
 		}
+
 		@Override
 		public void close() throws IOException {
 			is.close();
@@ -585,10 +581,13 @@ loader.type=cat
 
 		public byte[] getHeader() {
 			if (read <= headBuffer.length) {
-				return Arrays.copyOf(headBuffer, (int)read); // not enough to care
+				return Arrays.copyOf(headBuffer, (int) read); // not enough to
+				// care
 			}
 			if (headBufferLocation == 0) {
-				return Arrays.copyOf(headBuffer, headBuffer.length); // only one full copy
+				return Arrays.copyOf(headBuffer, headBuffer.length); // only one
+				// full
+				// copy
 			}
 			// double copy
 			byte[] nb = new byte[headBuffer.length];
@@ -604,30 +603,31 @@ loader.type=cat
 		Set<Namespace> namespaces = new HashSet<>();
 		for (QueryPrologLexer.Token token : QueryPrologLexer.lex(query)) {
 			switch (token.getType()) {
-				case PREFIX_KEYWORD -> {} // nothing to do
-				case PREFIX -> lastPrefix = token.getStringValue();
-				case IRI -> {
-					if (lastPrefix != null) {
-						namespaces.add(new SimpleNamespace(lastPrefix, token.getStringValue()));
-					} else {
-						b.append(token.getStringValue());
-					}
+			case PREFIX_KEYWORD -> {
+			} // nothing to do
+			case PREFIX -> lastPrefix = token.getStringValue();
+			case IRI -> {
+				if (lastPrefix != null) {
+					namespaces.add(new SimpleNamespace(lastPrefix, token.getStringValue()));
+				} else {
+					b.append(token.getStringValue());
 				}
-				case LBRACKET -> {
-					if (lastPrefix == null) {
-						b.append(token.getStringValue());
-					}
+			}
+			case LBRACKET -> {
+				if (lastPrefix == null) {
+					b.append(token.getStringValue());
 				}
-				case RBRACKET -> {
-					if (lastPrefix == null) {
-						b.append(token.getStringValue()).append(' ');
-					} else {
-						lastPrefix = null;
-					}
+			}
+			case RBRACKET -> {
+				if (lastPrefix == null) {
+					b.append(token.getStringValue()).append(' ');
+				} else {
+					lastPrefix = null;
+				}
 
-				}
-				case COMMENT -> b.append(token.getStringValue()).append(' ');
-				default -> b.append(token.getStringValue());
+			}
+			case COMMENT -> b.append(token.getStringValue()).append(' ');
+			default -> b.append(token.getStringValue());
 			}
 		}
 		return SPARQLQueries.getPrefixClauses(namespaces) + b;
@@ -637,15 +637,16 @@ loader.type=cat
 	public void headerTest() throws IOException {
 		byte[] bytes = """
 				Lorem ipsum odor amet, consectetuer adipiscing elit. Integer justo ornare fames fermentum magnis nostra. Cursus phasellus hendrerit porta non molestie. Fusce blandit mauris lacus efficitur ac vehicula integer. Proin sodales duis semper accumsan scelerisque. Elit primis vivamus amet quisque porttitor enim luctus egestas at. Nam ex primis natoque, himenaeos quis est fermentum quam.
-				    
+
 				Penatibus sodales leo nisi cubilia dui; praesent aenean bibendum. Enim donec arcu vehicula amet netus. Dictum hendrerit maximus vehicula cursus interdum auctor hendrerit. Dui ex ultrices sit; in vehicula congue purus. Vitae sapien quam proin nascetur venenatis quisque nisl faucibus. Ornare nullam scelerisque ornare sapien lobortis auctor hendrerit. Semper leo quis nibh volutpat praesent pretium curabitur.
-				    
+
 				Facilisi nisl taciti cras, praesent per mauris vitae ultrices. Purus mattis eget in euismod laoreet congue sociosqu dui ad. Vel tellus luctus himenaeos enim vehicula tellus quis risus. Lobortis curae viverra convallis sodales class accumsan himenaeos sem. Cursus integer lacus; cursus habitasse nunc vitae. Accumsan nec efficitur; integer curabitur pretium cursus porta. Volutpat praesent egestas eleifend diam eget eu vitae.
-				    
+
 				Proin fames pretium congue orci cras odio condimentum. Senectus quam ornare justo condimentum sapien proin gravida. Velit suspendisse dignissim quam arcu urna. Ex diam orci vestibulum venenatis fames diam ex in. Purus eu imperdiet pretium cras nec nunc nunc mauris. Montes conubia nostra consectetur taciti quisque odio tempor ante nam. Tristique dui quis nascetur sollicitudin magna massa sed lorem efficitur. Aliquam auctor nisl sodales commodo litora lectus lectus platea. Vivamus suscipit per; fermentum vel integer donec.
-				    
+
 				Quis nullam duis lacinia pulvinar rutrum; risus quisque tristique. Aaliquet efficitur primis felis senectus primis. Auctor inceptos purus dui fusce aenean at sociosqu massa ipsum. Euismod vulputate lorem venenatis odio ligula. Ultrices fames aenean sapien ac euismod tincidunt maximus semper. Facilisis egestas eros netus interdum integer; gravida cubilia non. Vehicula purus euismod sapien senectus suspendisse. Ridiculus euismod justo conubia elementum mauris vestibulum suspendisse quisque. Faucibus ipsum hendrerit amet amet lectus class pretium.
-				""".getBytes(StandardCharsets.UTF_8);
+				"""
+				.getBytes(StandardCharsets.UTF_8);
 		ByteArrayInputStream is = new ByteArrayInputStream(bytes);
 
 		HeadInputStream his = new HeadInputStream(is, 128);
@@ -659,7 +660,7 @@ loader.type=cat
 			String s1 = new String(his.readNBytes(128));
 			String s2 = new String(his.getHeader());
 			assertEquals(s1, s2);
-			String s3 = s2.substring(64) + new String(his.readNBytes(24))+ new String(his.readNBytes(40));
+			String s3 = s2.substring(64) + new String(his.readNBytes(24)) + new String(his.readNBytes(40));
 			String s4 = new String(his.getHeader());
 			assertEquals(s3, s4);
 		}
@@ -674,32 +675,33 @@ loader.type=cat
 	public void cleanupBadPrefixes() {
 
 		System.out.println(mergePrefixes("""
-			# test comment
-			PREFIX ex: <http://example.org/#>
-			PREFIX ex: <http://example.org/#>
-			PREFIX ex: <http://example.org/#>
-			
-			BASE  <http://example2.org/#>
-							
-			SELECT * {?s ?p ?o }
-			"""));
+				# test comment
+				PREFIX ex: <http://example.org/#>
+				PREFIX ex: <http://example.org/#>
+				PREFIX ex: <http://example.org/#>
+
+				BASE  <http://example2.org/#>
+
+				SELECT * {?s ?p ?o }
+				"""));
 		System.out.println("***************");
 		System.out.println(mergePrefixes("""
-			# test comment
-			PREFIX ex: <http://example.org/#>
-			PREFIX ex: <http://example2.org/#>
-			PREFIX ex: <http://example3.org/#>
-			
-			BASE  <http://example2.org/#>
-							
-			SELECT * {?s ?p ?o }
-			"""));
+				# test comment
+				PREFIX ex: <http://example.org/#>
+				PREFIX ex: <http://example2.org/#>
+				PREFIX ex: <http://example3.org/#>
 
-		//List<Namespace> namespaces = defaultPrefixes.entrySet().stream()
-		//		.filter(e -> !prefixes.contains(e.getKey())).map(Map.Entry::getValue)
-		//		.collect(Collectors.toList());
+				BASE  <http://example2.org/#>
+
+				SELECT * {?s ?p ?o }
+				"""));
+
+		// List<Namespace> namespaces = defaultPrefixes.entrySet().stream()
+		// .filter(e -> !prefixes.contains(e.getKey())).map(Map.Entry::getValue)
+		// .collect(Collectors.toList());
 //
-		//return SPARQLQueries.getPrefixClauses(namespaces) + " " + sparqlQuery;
+		// return SPARQLQueries.getPrefixClauses(namespaces) + " " +
+		// sparqlQuery;
 
 	}
 
@@ -708,20 +710,17 @@ loader.type=cat
 		Path ds = Path.of("C:\\Users\\wilat\\Downloads\\error_skip3.nt");
 
 		Path work = ds.resolveSibling("work");
-		HDTOptions spec = HDTOptions.of(
-				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
-				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, work.resolve("disk"),
-				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, work.resolve("test.hdt"),
-				"debug.msdl.write", work.resolve("error.txt")
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG, HDTOptionsKeys.LOADER_TYPE_KEY,
+				HDTOptionsKeys.LOADER_TYPE_VALUE_DISK, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, work.resolve("disk"),
+				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, work.resolve("test.hdt"), "debug.msdl.write",
+				work.resolve("error.txt")
 
 		);
 		try (HDT hdt = HDTManager.generateHDT(ds, "fqzddzq", RDFNotation.NTRIPLES, spec, ProgressListener.sout())) {
 
-
 			hdt.saveToHDT(ds.resolveSibling("errror.hdt"));
 		}
-
 
 	}
 }
