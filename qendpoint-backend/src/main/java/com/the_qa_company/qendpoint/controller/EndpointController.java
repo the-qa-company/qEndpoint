@@ -190,8 +190,15 @@ public class EndpointController {
 	}
 
 	@GetMapping("/reindex")
-	public ResponseEntity<Sparql.LuceneIndexRequestResult> reindex() throws Exception {
-		return ResponseEntity.status(HttpStatus.OK).body(sparql.reindexLucene());
+	public ResponseEntity<Sparql.LuceneIndexRequestResult> reindex(
+			@RequestParam(value = "index", defaultValue = "all") final String index) throws Exception {
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(index == null || index.equals("all") ? sparql.reindexLucene() : sparql.reindexLucene(index));
+	}
+
+	@GetMapping("/lucenes")
+	public ResponseEntity<Sparql.LuceneIndexListResult> lucenes() {
+		return ResponseEntity.status(HttpStatus.OK).body(sparql.lucenes());
 	}
 
 	@GetMapping("/has_index")

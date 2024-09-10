@@ -30,6 +30,11 @@ public interface QueryCloseableIterator extends CloseableIterator<QEPComponentTr
 			public QEPComponentTriple next() {
 				return null;
 			}
+
+			@Override
+			public long lastId() {
+				return 0;
+			}
 		};
 	}
 
@@ -37,6 +42,11 @@ public interface QueryCloseableIterator extends CloseableIterator<QEPComponentTr
 	 * @return an estimation of the cardinality of the search
 	 */
 	long estimateCardinality();
+
+	/**
+	 * @return get last id
+	 */
+	long lastId();
 
 	@Override
 	default QueryCloseableIterator attach(AutoCloseableGeneric<? extends RuntimeException> closeable) {

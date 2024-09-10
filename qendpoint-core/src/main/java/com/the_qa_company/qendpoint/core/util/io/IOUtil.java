@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
@@ -66,6 +67,34 @@ import java.util.zip.GZIPInputStream;
  */
 public class IOUtil {
 	private IOUtil() {
+	}
+
+	private static final AtomicLong UNIQUE_NAME_ID = new AtomicLong();
+
+	/**
+	 * Get a unique file name inside a path, the name will follow the pattern:
+	 *
+	 * <pre>
+	 *     prefix suffix
+	 *     prefix_1 suffix
+	 *     prefix_2 suffix
+	 *     prefix_3 suffix
+	 *     ...
+	 * </pre>
+	 *
+	 * @param parent parent path
+	 * @param prefix start of the name
+	 * @param suffix end of the name
+	 * @return unique path
+	 */
+	public static synchronized Path getUniqueNamePath(Path parent, String prefix, String suffix) {
+		long id = UNIQUE_NAME_ID.getAndIncrement();
+
+		Path resolve;
+		while (Files.exists(resolve = parent.resolve(prefix + (id == 0 ? "" : ("_" + id)) + suffix))) {
+			id = UNIQUE_NAME_ID.getAndIncrement();
+		}
+		return resolve;
 	}
 
 	/**

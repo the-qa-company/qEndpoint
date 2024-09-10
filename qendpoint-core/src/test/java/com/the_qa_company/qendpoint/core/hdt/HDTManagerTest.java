@@ -57,6 +57,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -140,6 +141,39 @@ public class HDTManagerTest {
 		@Override
 		public void notifyProgress(float level, String message) {
 			// System.out.println("[" + level + "] " + message);
+		}
+
+		public static HDT combineHDTResult(HDTResult result, Path root) throws IOException {
+			Path tempDir = root.resolve("tempdir");
+			Path work = tempDir.resolve("work");
+
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.HDTCAT_LOCATION, work);
+
+			Path results = tempDir.resolve("hdts-res");
+
+			Files.createDirectories(results);
+
+			List<Path> paths = new ArrayList<>();
+			for (HDT hdt : result.getHdts()) {
+				Path name = IOUtil.getUniqueNamePath(results, "hdtresult", ".hdt");
+				hdt.saveToHDT(name);
+				paths.add(name);
+			}
+
+			HDT hdtret = HDTManager.catHDTPath(paths, spec, ProgressListener.ignore());
+			try {
+				PathUtils.deleteDirectory(tempDir);
+			} catch (AccessDeniedException e) {
+				e.printStackTrace(); // wtf?
+			} catch (Throwable e) {
+				try {
+					hdtret.close();
+				} catch (Throwable t) {
+					e.addSuppressed(t);
+				}
+				throw e;
+			}
+			return hdtret;
 		}
 
 		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
@@ -689,6 +723,57 @@ public class HDTManagerTest {
 				assertNotNull(expected);
 				assertNotNull(actual);
 				assertEqualsHDT(expected, actual); // -1 for the original size
+				// ignored by hdtcat
+			} finally {
+				IOUtil.closeAll(expected, actual);
+			}
+		}
+
+		@Test
+		public void catTreeMultipleTest() throws IOException, ParserException, NotFoundException, InterruptedException {
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxSize(maxSize, SEED).withMaxElementSplit(maxElementSplit)
+					.withMaxLiteralSize(maxLiteralSize).withUnicode(true).withQuads(quadDict);
+
+			// create DISK HDT
+			LargeFakeDataSetStreamSupplier.ThreadedStream genActual = supplier
+					.createNTInputStream(CompressionType.NONE);
+			HDTResult actual = null;
+			HDT expected = null;
+			final int maxFileCount = 10;
+			Path root = tempDir.newFolder().toPath();
+			try {
+				try {
+					HDTOptions spec = this.spec.pushTop();
+					spec.set(HDTOptionsKeys.LOADER_CATTREE_MAX_FILES, maxFileCount);
+					spec.set(HDTOptionsKeys.LOADER_CATTREE_KCAT, maxFileCount);
+					spec.set(HDTOptionsKeys.HDTCAT_LOCATION, root);
+					actual = HDTManager.catTreeMultiple(RDFFluxStop.sizeLimit(maxSize / maxFileCount * 3 / 5),
+							HDTSupplier.memory(), genActual.getStream(), HDTTestUtils.BASE_URI,
+							quadDict ? RDFNotation.NQUAD : RDFNotation.NTRIPLES, spec, quiet ? null : this);
+				} finally {
+					if (actual == null) {
+						genActual.getThread().interrupt();
+					}
+				}
+				genActual.getThread().joinAndCrashIfRequired();
+
+				supplier.reset();
+
+				Iterator<TripleString> genExpected = supplier.createTripleStringStream();
+				// create MEMORY HDT
+				expected = HDTManager.generateHDT(genExpected, HDTTestUtils.BASE_URI, spec, null);
+
+				// happy compiler, should throw before
+				assertNotNull(expected);
+				assertNotNull(actual);
+
+				assertTrue("not enough HDTs", actual.getHdtCount() >= 1);
+				assertTrue("too much HDTs", actual.getHdtCount() <= maxFileCount);
+
+				try (HDT actualHDT = combineHDTResult(actual, root)) {
+					assertEqualsHDT(expected, actualHDT);
+				}
 				// ignored by hdtcat
 			} finally {
 				IOUtil.closeAll(expected, actual);

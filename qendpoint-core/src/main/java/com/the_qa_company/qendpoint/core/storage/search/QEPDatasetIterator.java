@@ -19,8 +19,6 @@ public class QEPDatasetIterator implements QueryCloseableIterator {
 	private final QEPComponentTriple triple;
 	private boolean next;
 
-	private long lastId = -1;
-
 	public QEPDatasetIterator(QEPDatasetContext ctx, IteratorTripleID iterator, QEPComponentTriple triple) {
 		this.ctx = ctx;
 		this.iterator = iterator;
@@ -32,20 +30,23 @@ public class QEPDatasetIterator implements QueryCloseableIterator {
 		if (next) {
 			return true;
 		}
+		QEPDataset ds = ctx.dataset();
 		while (iterator.hasNext()) {
 			TripleID tid = iterator.next();
-			long position = iterator.getLastTriplePosition();
 
-			if (ctx.isTripleDeleted(position)) {
-				// the triple is deleted, we can ignore it
-				continue;
+			if (ctx.hasDeletions()) {
+				long position = iterator.getLastTriplePosition();
+
+				if (ctx.isTripleDeleted(position)) {
+					// the triple is deleted, we can ignore it
+					continue;
+				}
 			}
 
 			// small overhead with the frozen components, but negligible (?)
-			QEPDataset ds = ctx.dataset();
 			triple.setAll(ds.component(tid.getSubject(), TripleComponentRole.SUBJECT),
 					ds.component(tid.getPredicate(), TripleComponentRole.PREDICATE),
-					ds.component(tid.getObject(), TripleComponentRole.OBJECT), position, ds.uid());
+					ds.component(tid.getObject(), TripleComponentRole.OBJECT), ds.uid());
 			next = true;
 
 			return true;
@@ -56,10 +57,7 @@ public class QEPDatasetIterator implements QueryCloseableIterator {
 
 	@Override
 	public void remove() {
-		if (lastId == -1) {
-			throw new IllegalArgumentException("Called remove without calling next first!");
-		}
-		ctx.dataset().deleteTriple(lastId);
+		ctx.dataset().deleteTriple(lastId());
 	}
 
 	@Override
@@ -68,11 +66,15 @@ public class QEPDatasetIterator implements QueryCloseableIterator {
 			return null;
 		}
 		try {
-			lastId = triple.getId();
 			return triple;
 		} finally {
 			next = false;
 		}
+	}
+
+	@Override
+	public long lastId() {
+		return iterator.getLastTriplePosition();
 	}
 
 	@Override
