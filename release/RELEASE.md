@@ -1,4 +1,4 @@
-- delta file support (#462)
-- add log sparql function (#464)
-- better csv generation from profiler (#460)
-- add logging of delta bitmap usage in store
+- reimplement #470 (#477)
+- fix literal parsing for msdl (#474)
+- update to rdf4j 5
+
