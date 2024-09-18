@@ -1,3 +1,9 @@
+## Version 2.0.0
+        
+- reimplement #470 (#477)
+- fix literal parsing for msdl (#474)
+- update to rdf4j 5
+
 ## Version 1.16.1
         
 - delta file support (#462)
