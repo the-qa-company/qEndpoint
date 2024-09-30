@@ -531,6 +531,18 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "No FoQ index generation default false")
 	public static final String BITMAPTRIPLES_INDEX_NO_FOQ = "bitmaptriples.index.noFoQ";
 
+	@Key(type = Key.Type.BOOLEAN, desc = "Predownload url")
+	public static final String LOADER_PREDOWNLOAD_URL = "loader.predownloadURL";
+
+	@Key(type = Key.Type.PATH, desc = "Predownload url temp file name")
+	public static final String LOADER_PREDOWNLOAD_URL_FILE = "loader.predownloadURL.file";
+
+	@Key(type = Key.Type.BOOLEAN, desc = "Predownload url temp file no delete, default to false")
+	public static final String LOADER_PREDOWNLOAD_URL_NO_DELETE = "loader.predownloadURL.noDelete";
+
+	@Key(type = Key.Type.NUMBER, desc = "Predownload url retry count, 0 for infinite, default to 1")
+	public static final String LOADER_PREDOWNLOAD_URL_RETRY = "loader.predownloadURL.retry";
+
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();
 

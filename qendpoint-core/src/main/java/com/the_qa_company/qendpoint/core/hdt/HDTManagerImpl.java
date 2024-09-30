@@ -31,10 +31,12 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
@@ -163,40 +165,84 @@ public class HDTManagerImpl extends HDTManager {
 			}
 		}
 
-		if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(loaderType)) {
-			return doGenerateHDTDisk(rdfFileName, baseURI, rdfNotation, CompressionType.guess(rdfFileName), spec,
-					listener);
-		} else if (HDTOptionsKeys.LOADER_TYPE_VALUE_CAT.equals(loaderType)) {
-			return doHDTCatTree(readFluxStopOrSizeLimit(spec), HDTSupplier.fromSpec(spec), rdfFileName, baseURI,
-					rdfNotation, spec, listener);
-		} else if (HDTOptionsKeys.LOADER_TYPE_VALUE_TWO_PASS.equals(loaderType)) {
-			loader = new TempHDTImporterTwoPass(spec);
-		} else {
-			if (loaderType != null && !HDTOptionsKeys.LOADER_TYPE_VALUE_ONE_PASS.equals(loaderType)) {
-				logger.warn("Used the option {} with value {}, which isn't recognize, using default value {}",
-						HDTOptionsKeys.LOADER_TYPE_KEY, loaderType, HDTOptionsKeys.LOADER_TYPE_VALUE_ONE_PASS);
+		Path preDownload = null;
+
+		try {
+			if (spec.getBoolean(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL) && IOUtil.isRemoteURL(rdfFileName)) {
+				long retry = spec.getInt(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL_RETRY, 1);
+
+				final String rdfFileName2 = rdfFileName;
+				preDownload = spec.getPath(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL_FILE, () -> {
+					try {
+						return Files.createTempFile("hdtPreDlUrl", IOUtil.getSuffix(rdfFileName2));
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				});
+
+				long tryCount = 1;
+				while (true) {
+					listener.notifyProgress(0,
+							"predownload " + rdfFileName + " into " + preDownload + " try #" + tryCount);
+					try (InputStream is = IOUtil.getFileInputStream(rdfFileName, false);
+							OutputStream os = new BufferedOutputStream(Files.newOutputStream(preDownload))) {
+						IOUtil.copy(is, os, listener, 10_000_000);
+						break;
+					} catch (IOException e) {
+						if (tryCount == retry) {
+							throw new IOException("Can't predownload " + rdfFileName + " into " + preDownload
+									+ " after " + tryCount + " tries");
+						}
+						tryCount++;
+						logger.error("Exception when predownloading {}", rdfFileName, e);
+					}
+				}
+				rdfFileName = preDownload.toAbsolutePath().toString();
 			}
-			loader = new TempHDTImporterOnePass(spec);
-		}
 
-		// Create TempHDT
-		try (TempHDT modHdt = loader.loadFromRDF(spec, rdfFileName, baseURI, rdfNotation, listener)) {
+			if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(loaderType)) {
+				return doGenerateHDTDisk(rdfFileName, baseURI, rdfNotation, CompressionType.guess(rdfFileName), spec,
+						listener);
+			} else if (HDTOptionsKeys.LOADER_TYPE_VALUE_CAT.equals(loaderType)) {
+				return doHDTCatTree(readFluxStopOrSizeLimit(spec), HDTSupplier.fromSpec(spec), rdfFileName, baseURI,
+						rdfNotation, spec, listener);
+			} else if (HDTOptionsKeys.LOADER_TYPE_VALUE_TWO_PASS.equals(loaderType)) {
+				loader = new TempHDTImporterTwoPass(spec);
+			} else {
+				if (loaderType != null && !HDTOptionsKeys.LOADER_TYPE_VALUE_ONE_PASS.equals(loaderType)) {
+					logger.warn("Used the option {} with value {}, which isn't recognize, using default value {}",
+							HDTOptionsKeys.LOADER_TYPE_KEY, loaderType, HDTOptionsKeys.LOADER_TYPE_VALUE_ONE_PASS);
+				}
+				loader = new TempHDTImporterOnePass(spec);
+			}
 
-			// Convert to HDT
-			HDTImpl hdt = new HDTImpl(spec);
-			hdt.loadFromModifiableHDT(modHdt, listener);
-			hdt.populateHeaderStructure(modHdt.getBaseURI());
+			// Create TempHDT
+			try (TempHDT modHdt = loader.loadFromRDF(spec, rdfFileName, baseURI, rdfNotation, listener)) {
 
-			// Add file size to Header
+				// Convert to HDT
+				HDTImpl hdt = new HDTImpl(spec);
+				hdt.loadFromModifiableHDT(modHdt, listener);
+				hdt.populateHeaderStructure(modHdt.getBaseURI());
+
+				// Add file size to Header
+				try {
+					long originalSize = HeaderUtil.getPropertyLong(modHdt.getHeader(), "_:statistics",
+							HDTVocabulary.ORIGINAL_SIZE);
+					hdt.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
+				} catch (NotFoundException e) {
+					// ignore
+				}
+
+				return HDTResult.of(hdt);
+			}
+		} finally {
 			try {
-				long originalSize = HeaderUtil.getPropertyLong(modHdt.getHeader(), "_:statistics",
-						HDTVocabulary.ORIGINAL_SIZE);
-				hdt.getHeader().insert("_:statistics", HDTVocabulary.ORIGINAL_SIZE, originalSize);
-			} catch (NotFoundException e) {
-				// ignore
+				if (preDownload != null && !spec.getBoolean(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL_NO_DELETE, false)) {
+					Files.deleteIfExists(preDownload);
+				}
+			} catch (IOException e) {
+				logger.error("Can't delete predownload temp file", e);
 			}
-
-			return HDTResult.of(hdt);
 		}
 	}
 
