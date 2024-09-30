@@ -27,6 +27,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
+import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
@@ -43,6 +44,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
@@ -345,6 +348,23 @@ public class IOUtil {
 		throw new RuntimeException(t);
 	}
 
+	public static boolean isRemoteURL(String fileName) {
+		String name = fileName.toLowerCase();
+		return name.startsWith("http:/") || name.startsWith("https:/") || name.startsWith("ftp:/");
+	}
+
+	public static String getSuffix(String fileName) {
+		String name = fileName.toLowerCase();
+		int pathIdx = StringUtil.lastIndexOf("/\\:", fileName);
+
+		int splitIdx = name.indexOf('.', pathIdx + 1);
+
+		if (splitIdx == -1) {
+			splitIdx = pathIdx + 1;
+		}
+		return fileName.substring(splitIdx);
+	}
+
 	public static InputStream getFileInputStream(String fileName) throws IOException {
 		return getFileInputStream(fileName, true);
 	}
@@ -352,8 +372,13 @@ public class IOUtil {
 	public static InputStream getFileInputStream(String fileName, boolean uncompress) throws IOException {
 		InputStream input;
 		String name = fileName.toLowerCase();
-		if (name.startsWith("http:/") || name.startsWith("https:/") || name.startsWith("ftp:/")) {
-			URL url = new URL(fileName);
+		if (isRemoteURL(fileName)) {
+			URL url;
+			try {
+				url = new URI(fileName).toURL();
+			} catch (URISyntaxException e) {
+				throw new IOException("Invalid URI", e);
+			}
 			URLConnection con = url.openConnection();
 			con.connect();
 			input = con.getInputStream();
@@ -483,6 +508,31 @@ public class IOUtil {
 			total += len;
 			len = (int) (total + buffer.length > n ? n - total : buffer.length);
 		}
+	}
+
+	public static void copy(InputStream is, OutputStream os, ProgressListener pl, long split) throws IOException {
+		byte[] buffer = new byte[0x1000];
+
+		long total = 0;
+		long tmp = 0;
+		pl.notifyProgress(0, "start copy");
+		while (true) {
+			int r = is.read(buffer, 0, buffer.length);
+
+			if (r < 0) {
+				pl.notifyProgress(100, "completed copy of " + StringUtil.humanReadableByteCount(total, true) + "B");
+				return; // done
+			}
+
+			os.write(buffer, 0, r);
+			total += r;
+			tmp += r;
+			if (tmp > split) {
+				pl.notifyProgress(25, "copy of " + StringUtil.humanReadableByteCount(total, true) + "B");
+				tmp = 0;
+			}
+		}
+
 	}
 
 	public static void decompressGzip(File src, File trgt) throws IOException {

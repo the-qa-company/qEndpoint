@@ -54,7 +54,7 @@ public class StringUtil {
 	}
 
 	public static String humanReadableByteCount(long bytes, boolean si) {
-		return humanReadableByteCount(Locale.getDefault(Locale.Category.FORMAT), bytes, true);
+		return humanReadableByteCount(Locale.getDefault(Locale.Category.FORMAT), bytes, si);
 	}
 
 	public static String humanReadableByteCount(Locale locale, long bytes, boolean si) {
@@ -64,5 +64,24 @@ public class StringUtil {
 		int exp = (int) (Math.log(bytes) / Math.log(unit));
 		char pre = "KMGTPE".charAt(exp - 1);
 		return String.format(locale, "%.1f%c", bytes / Math.pow(unit, exp), pre);
+	}
+
+	/**
+	 * max last index of the different characters
+	 *
+	 * @param chars  the different characters to try
+	 * @param string the string
+	 * @return index or -1 if none
+	 */
+	public static int lastIndexOf(String chars, String string) {
+		int max = -1;
+		for (int i = 0; i < chars.length(); i++) {
+			int idx = string.lastIndexOf(chars.charAt(i), max + 1);
+
+			if (idx != -1) {
+				max = idx;
+			}
+		}
+		return max;
 	}
 }

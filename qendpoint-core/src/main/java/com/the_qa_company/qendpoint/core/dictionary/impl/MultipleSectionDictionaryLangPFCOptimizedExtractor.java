@@ -42,6 +42,9 @@ public class MultipleSectionDictionaryLangPFCOptimizedExtractor implements Optim
 		}
 		case OBJECT -> {
 			MultipleLangBaseDictionary.ObjectIdLocationData data = dict.idToObjectSection(id);
+			if (data == null) {
+				return null; // invalid id
+			}
 			CharSequence str = objects[data.uid()].extract(id - data.location());
 			if (str == null) {
 				return null;
