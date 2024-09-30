@@ -1,4 +1,1 @@
-- delta file support (#462)
-- add log sparql function (#464)
-- better csv generation from profiler (#460)
-- add logging of delta bitmap usage in store
+- deploy fixes

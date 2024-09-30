@@ -1,3 +1,15 @@
+## Version 2.0.0
+        
+- reimplement #470 (#477)
+- fix literal parsing for msdl (#474)
+- update to rdf4j 5
+
+## Version 1.16.1
+        
+- delta file support (#462)
+- add log sparql function (#464)
+- better csv generation from profiler (#460)
+- add logging of delta bitmap usage in store
 ## Version 1.16.0
         
 - rollback to rdf4j 4.3
