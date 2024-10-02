@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.exceptions.SameChecksumException;
 import com.the_qa_company.qendpoint.core.hdt.impl.HDTDiskImporter;
 import com.the_qa_company.qendpoint.core.hdt.impl.HDTImpl;
 import com.the_qa_company.qendpoint.core.hdt.impl.TempHDTImporterOnePass;
@@ -27,6 +28,8 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.KCatImpl;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CatTreeImpl;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
+import com.the_qa_company.qendpoint.core.util.crc.CRC32;
+import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
@@ -149,6 +153,24 @@ public class HDTManagerImpl extends HDTManager {
 		});
 	}
 
+	private HDTResult generateChecksumAfter(long checksum, Path checksumPath, HDTOptions spec, HDTResult res)
+			throws IOException {
+		try {
+			if (checksumPath != null) {
+				// save the current checksum in a file
+				Files.writeString(checksumPath, String.valueOf(checksum));
+			}
+		} catch (Throwable t) {
+			try {
+				res.close();
+			} catch (Throwable t2) {
+				t.addSuppressed(t2);
+			}
+			throw t;
+		}
+		return res;
+	}
+
 	@Override
 	public HDTResult doGenerateHDT(String rdfFileName, String baseURI, RDFNotation rdfNotation, HDTOptions spec,
 			ProgressListener listener) throws IOException, ParserException {
@@ -166,7 +188,8 @@ public class HDTManagerImpl extends HDTManager {
 		}
 
 		Path preDownload = null;
-
+		Path checksumPath = null;
+		long checksum = 0;
 		try {
 			if (spec.getBoolean(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL) && IOUtil.isRemoteURL(rdfFileName)) {
 				long retry = spec.getInt(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL_RETRY, 1);
@@ -181,31 +204,48 @@ public class HDTManagerImpl extends HDTManager {
 				});
 
 				long tryCount = 1;
+				checksumPath = spec.getPath(HDTOptionsKeys.LOADER_PREDOWNLOAD_CHECKSUM_PATH);
 				while (true) {
 					listener.notifyProgress(0,
 							"predownload " + rdfFileName + " into " + preDownload + " try #" + tryCount);
-					try (InputStream is = IOUtil.getFileInputStream(rdfFileName, false);
+					InputStream readIs = IOUtil.getFileInputStream(rdfFileName, false);
+					try (InputStream is = checksumPath != null ? new CRCInputStream(readIs, new CRC32()) : readIs;
 							OutputStream os = new BufferedOutputStream(Files.newOutputStream(preDownload))) {
 						IOUtil.copy(is, os, listener, 10_000_000);
+						if (is instanceof CRCInputStream crcIs) {
+							checksum = crcIs.getCRC().getValue();
+						}
 						break;
 					} catch (IOException e) {
 						if (tryCount == retry) {
 							throw new IOException("Can't predownload " + rdfFileName + " into " + preDownload
-									+ " after " + tryCount + " tries");
+									+ " after " + tryCount + " tries", e);
 						}
 						tryCount++;
 						logger.error("Exception when predownloading {}", rdfFileName, e);
 					}
 				}
 				rdfFileName = preDownload.toAbsolutePath().toString();
+
+				if (checksumPath != null) {
+					if (spec.getBoolean(HDTOptionsKeys.LOADER_PREDOWNLOAD_CHECKSUM_FAIL_SAME, false)) {
+						// check the previous checksum compared with the old one
+						try {
+							if (Long.parseLong(Files.readString(checksumPath)) == checksum) {
+								throw new SameChecksumException();
+							}
+						} catch (NoSuchFileException | NumberFormatException ignore) {
+						}
+					}
+				}
 			}
 
 			if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(loaderType)) {
-				return doGenerateHDTDisk(rdfFileName, baseURI, rdfNotation, CompressionType.guess(rdfFileName), spec,
-						listener);
+				return generateChecksumAfter(checksum, checksumPath, spec, doGenerateHDTDisk(rdfFileName, baseURI,
+						rdfNotation, CompressionType.guess(rdfFileName), spec, listener));
 			} else if (HDTOptionsKeys.LOADER_TYPE_VALUE_CAT.equals(loaderType)) {
-				return doHDTCatTree(readFluxStopOrSizeLimit(spec), HDTSupplier.fromSpec(spec), rdfFileName, baseURI,
-						rdfNotation, spec, listener);
+				return generateChecksumAfter(checksum, checksumPath, spec, doHDTCatTree(readFluxStopOrSizeLimit(spec),
+						HDTSupplier.fromSpec(spec), rdfFileName, baseURI, rdfNotation, spec, listener));
 			} else if (HDTOptionsKeys.LOADER_TYPE_VALUE_TWO_PASS.equals(loaderType)) {
 				loader = new TempHDTImporterTwoPass(spec);
 			} else {
@@ -233,7 +273,7 @@ public class HDTManagerImpl extends HDTManager {
 					// ignore
 				}
 
-				return HDTResult.of(hdt);
+				return generateChecksumAfter(checksum, checksumPath, spec, HDTResult.of(hdt));
 			}
 		} finally {
 			try {

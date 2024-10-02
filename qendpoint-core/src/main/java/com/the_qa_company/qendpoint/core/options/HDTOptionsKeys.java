@@ -543,6 +543,21 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.NUMBER, desc = "Predownload url retry count, 0 for infinite, default to 1")
 	public static final String LOADER_PREDOWNLOAD_URL_RETRY = "loader.predownloadURL.retry";
 
+	@Key(type = Key.Type.PATH, desc = "Predownload url checksum location, defalt none")
+	public static final String LOADER_PREDOWNLOAD_CHECKSUM_PATH = "loader.predownloadURL.checksum.path";
+
+	@Key(type = Key.Type.BOOLEAN, desc = "fail if the checksum is set and is the same as the previous one using SameChecksumException")
+	public static final String LOADER_PREDOWNLOAD_CHECKSUM_FAIL_SAME = "loader.predownloadURL.checksum.failSame";
+
+	@Key(type = Key.Type.NUMBER, desc = "describe the amount of time between each generation in ms, default 10000")
+	public static final String AUTOINDEXER_SLEEP_TIME_MILLIS = "autoIndexer.sleepTimeMillis";
+
+	@Key(type = Key.Type.STRING, desc = "describe the name of the index, default: index_dev")
+	public static final String AUTOINDEXER_INDEX_NAME = "autoIndexer.indexName";
+
+	@Key(type = Key.Type.BOOLEAN, desc = "only run the remote path in the autoexec, default: true")
+	public static final String AUTOINDEXER_RUN_ONLY_REMOTE = "autoIndexer.runOnlyRemove";
+
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();
 

@@ -76,9 +76,9 @@ public class StringUtil {
 	public static int lastIndexOf(String chars, String string) {
 		int max = -1;
 		for (int i = 0; i < chars.length(); i++) {
-			int idx = string.lastIndexOf(chars.charAt(i), max + 1);
+			int idx = string.lastIndexOf(chars.charAt(i));
 
-			if (idx != -1) {
+			if (idx > max) {
 				max = idx;
 			}
 		}
