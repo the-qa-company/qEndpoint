@@ -8,8 +8,12 @@ import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
@@ -18,6 +22,7 @@ import com.the_qa_company.qendpoint.utils.rdf.ClosableResult;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
@@ -29,18 +34,28 @@ import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.evaluation.TupleFunctionEvaluationMode;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Disabled
 public class HandTest {
+	@TempDir
+	public Path tempDir;
+
 	@Test
 	public void largeTest() throws IOException {
 		Path root = Path.of("C:\\Users\\wilat\\workspace\\qEndpoint\\qendpoint\\hdt-store\\wdbench-qep");
@@ -297,5 +312,51 @@ public class HandTest {
 	public void geoSparqlTest() throws IOException {
 		geoSparqlTest(true);
 		geoSparqlTest(false);
+	}
+
+	private void queryLitTestQuery(SparqlRepository sparql, String query, String expected) {
+		try (ClosableResult<TupleQueryResult> res = sparql.executeTupleQuery(query, -1)) {
+			TupleQueryResult r = res.getResult();
+			assertTrue(r.hasNext());
+			assertEquals(r.next().getValue("s"), Values.iri(expected));
+		}
+	}
+
+	@Test
+	public void queryLitTest() throws IOException, ParserException {
+		String dataset = """
+				<http://example.org/#test> <http://example.org/#pred> ""^^<http://www.w3.org/2001/XMLSchema#string> .
+				<http://example.org/#test> <http://example.org/#pred> "" .
+				<http://example.org/#test> <http://example.org/#pred> "65"^^<http://www.w3.org/2001/XMLSchema#string> .
+				<http://example.org/#test> <http://example.org/#pred> "12" .
+				<http://example.org/#test> <http://example.org/#pred> "42"^^<http://www.w3.org/2001/XMLSchema#integer> .
+				<http://example.org/#test> <http://example.org/#pred> "hola muchachos"@es .
+				<http://example.org/#test> <http://example.org/#pred> <http://example.org/#test2> .
+				""";
+
+		Path root = tempDir.resolve("qep");
+		Files.createDirectories(root);
+		EndpointFiles files = new EndpointFiles(root);
+
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+		try (HDT hdt = HDTManager.generateHDT(new ByteArrayInputStream(dataset.getBytes(StandardCharsets.UTF_8)),
+				"file:///test.ttl", "test.ttl", spec, ProgressListener.sout())) {
+			Path path = files.getHDTIndexPath();
+			Files.createDirectories(path.getParent());
+			hdt.saveToHDT(path);
+		}
+
+		SparqlRepository sparql = CompiledSail.compiler().withEndpointFiles(files).compileToSparqlRepository();
+
+		try {
+			queryLitTestQuery(sparql, "SELECT ?s { ?s <http://example.org/#pred> '' . }", "http://example.org/#test");
+			queryLitTestQuery(sparql, "SELECT ?s { ?s <http://example.org/#pred> '65' . }", "http://example.org/#test");
+			queryLitTestQuery(sparql, "SELECT ?s { ?s <http://example.org/#pred> '12' . }", "http://example.org/#test");
+			queryLitTestQuery(sparql, "SELECT ?s { ?s <http://example.org/#pred> 'hola muchachos'@es . }",
+					"http://example.org/#test");
+		} finally {
+			sparql.shutDown();
+		}
 	}
 }
