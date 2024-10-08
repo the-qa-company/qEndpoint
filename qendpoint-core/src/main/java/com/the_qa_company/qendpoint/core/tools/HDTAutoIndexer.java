@@ -11,6 +11,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
+import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 
 import java.io.IOException;
 import java.net.URI;
@@ -71,8 +72,10 @@ public class HDTAutoIndexer {
 		}
 
 		boolean one = !IOUtil.isRemoteURL(path) && cfg.getBoolean(HDTOptionsKeys.AUTOINDEXER_RUN_ONLY_REMOTE, true);
-		colorTool.warn("The path is local, only one iteration will be performed, use "
-				+ HDTOptionsKeys.AUTOINDEXER_RUN_ONLY_REMOTE + "=false to index it");
+		if (one) {
+			colorTool.warn("The path is local, only one iteration will be performed, use "
+					+ HDTOptionsKeys.AUTOINDEXER_RUN_ONLY_REMOTE + "=false to index it");
+		}
 
 		HDTOptions spec = cfg.pushBottom();
 		Path outTmpDir = output.resolve("tmp_output");
@@ -92,6 +95,8 @@ public class HDTAutoIndexer {
 		Path endIndex = output.resolve(hdtName);
 		Path tmpIndex = outTmpDir.resolve(hdtName);
 		Files.createDirectories(output);
+		MultiThreadListenerConsole console = !quiet ? new MultiThreadListenerConsole(color) : null;
+		colorTool.setConsole(console);
 
 		long currentId = 0;
 		while (true) {
