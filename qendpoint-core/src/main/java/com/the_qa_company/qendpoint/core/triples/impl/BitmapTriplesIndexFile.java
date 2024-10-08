@@ -28,6 +28,8 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -50,6 +52,9 @@ import static java.lang.String.format;
  * @author Antoine Willerval
  */
 public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
+
+	private static final Logger logger = LoggerFactory.getLogger(BitmapTriplesIndexFile.class);
+
 	/**
 	 * Get the path for an order for a hdt file
 	 *
@@ -71,39 +76,61 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 		return 0x484454802020L ^ triples.getNumberOfElements();
 	}
 
-	public static final byte[] MAGIC = "$HDTIDX1".getBytes(StandardCharsets.US_ASCII);
+	public static final String MAGIC_STR = "$HDTIDX1";
+	public static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
+	public static final byte[] MAGIC_V0 = "$HDTIDX0".getBytes(StandardCharsets.US_ASCII);
 
 	/**
 	 * Map a file from a file
 	 *
-	 * @param file    file
-	 * @param channel channel
-	 * @param triples triples
+	 * @param file     file
+	 * @param channel  channel
+	 * @param triples  triples
+	 * @param allowOld allow old files
 	 * @return index
 	 * @throws IOException io
 	 */
-	public static BitmapTriplesIndex map(Path file, FileChannel channel, BitmapTriples triples) throws IOException {
+	public static BitmapTriplesIndex map(Path file, FileChannel channel, BitmapTriples triples, boolean allowOld)
+			throws IOException {
+
+		long headerSize = MAGIC.length;
 		try (CloseMappedByteBuffer header = IOUtil.mapChannel(file, channel, FileChannel.MapMode.READ_ONLY, 0,
 				MAGIC.length + 8)) {
 			byte[] magicRead = new byte[MAGIC.length];
 
 			header.get(magicRead);
 
-			if (!Arrays.equals(magicRead, MAGIC)) {
-				throw new IOException(format("Can't read %s magic", file));
-			}
+			if (Arrays.equals(magicRead, MAGIC)) {
+				headerSize += 8; // signature
 
-			long signature = header.order(ByteOrder.LITTLE_ENDIAN).getLong(magicRead.length);
+				long signature = header.order(ByteOrder.LITTLE_ENDIAN).getLong(magicRead.length);
 
-			long currentSignature = signature(triples);
-			if (signature != currentSignature) {
-				throw new SignatureIOException(
-						format("Wrong signature for file 0x%x != 0x%x", signature, currentSignature));
+				long currentSignature = signature(triples);
+				if (signature != currentSignature) {
+					throw new SignatureIOException(
+							format("Wrong signature for file 0x%x != 0x%x", signature, currentSignature));
+				}
+
+			} else {
+				if (!allowOld) {
+					throw new IOException(
+							format("Invalid magic for %s: %s", file, new String(magicRead, StandardCharsets.US_ASCII)));
+				}
+				logger.warn("Reading {} with {}!={} magic", file, new String(magicRead, StandardCharsets.US_ASCII),
+						MAGIC_STR);
+
+				if (Arrays.equals(magicRead, MAGIC_V0)) {
+					// reading v0
+					logger.debug("Use v0 magic for {}", file);
+				} else {
+					throw new IOException(
+							format("Unknown magic for %s: %s", file, new String(magicRead, StandardCharsets.US_ASCII)));
+				}
 			}
 		}
 
 		CountInputStream stream = new CountInputStream(new BufferedInputStream(Channels.newInputStream(channel)));
-		stream.skipNBytes(MAGIC.length + 8);
+		stream.skipNBytes(headerSize);
 
 		String orderCfg = IOUtil.readSizedString(stream, ProgressListener.ignore());
 

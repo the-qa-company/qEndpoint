@@ -1316,6 +1316,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 		}
 
 		String otherIdxs = spec.get(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "");
+		boolean allowOldOthers = spec.getBoolean(HDTOptionsKeys.BITMAPTRIPLES_INDEX_ALLOW_OLD_OTHERS, false);
 
 		Set<TripleComponentOrder> askedOrders = Arrays.stream(otherIdxs.toUpperCase().split(",")).map(e -> {
 			if (e.isEmpty() || e.equalsIgnoreCase(TripleComponentOrder.Unknown.name())) {
@@ -1340,7 +1341,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 			try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
 				// load from the path...
 
-				BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel, this);
+				BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel, this, allowOldOthers);
 				BitmapTriplesIndex old = indexes.put(order, idx);
 				indexesMask |= idx.getOrder().mask;
 				if (old != null) {
@@ -1357,7 +1358,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 				BitmapTriplesIndexFile.generateIndex(this, subIndexPath, order, spec, mListener);
 				try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
 					// load from the path...
-					BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel, this);
+					BitmapTriplesIndex idx = BitmapTriplesIndexFile.map(subIndexPath, channel, this, allowOldOthers);
 					BitmapTriplesIndex old = indexes.put(order, idx);
 					indexesMask |= order.mask;
 					if (old != null) {

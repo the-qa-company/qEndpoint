@@ -528,6 +528,9 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.STRING, desc = "Create other indexes in bitmaptriples pattern values (spo, ops, etc.), default none")
 	public static final String BITMAPTRIPLES_INDEX_OTHERS = "bitmaptriples.index.others";
 
+	@Key(type = Key.Type.BOOLEAN, desc = "Allow old other indexes, default false")
+	public static final String BITMAPTRIPLES_INDEX_ALLOW_OLD_OTHERS = "bitmaptriples.index.allowOldOthers";
+
 	@Key(type = Key.Type.BOOLEAN, desc = "No FoQ index generation default false")
 	public static final String BITMAPTRIPLES_INDEX_NO_FOQ = "bitmaptriples.index.noFoQ";
 
