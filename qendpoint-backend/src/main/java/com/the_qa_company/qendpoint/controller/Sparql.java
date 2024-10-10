@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.compiler.CompiledSail;
 import com.the_qa_company.qendpoint.compiler.CompiledSailOptions;
 import com.the_qa_company.qendpoint.compiler.SailCompilerSchema;
 import com.the_qa_company.qendpoint.compiler.SparqlRepository;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
@@ -499,6 +500,14 @@ public class Sparql {
 					}
 
 					Files.move(endHDT, endIndex);
+
+					// delete the old bitmap
+					Files.deleteIfExists(Path.of(files.getHDTBitX()));
+					Files.deleteIfExists(Path.of(files.getHDTBitY()));
+					Files.deleteIfExists(Path.of(files.getHDTBitZ()));
+					for (TripleComponentOrder order : TripleComponentOrder.values()) {
+						Files.deleteIfExists(Path.of(files.getTripleDeleteArr(order)));
+					}
 				} finally {
 					if (Files.exists(endIndex)) {
 						// everything worked
