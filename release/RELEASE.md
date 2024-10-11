@@ -1,3 +1,3 @@
-- add indexhdtrepo command (#482)
-- allow predownload file (#480)
-
+- fix issue with auto indexer (#482)
+- fix issue with the reset of a dataset (#489)
+- add option to read v0 "other" indexes (#486)
