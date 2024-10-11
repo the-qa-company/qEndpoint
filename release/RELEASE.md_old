@@ -1,3 +1,8 @@
+## Version 2.1.0
+        
+- add indexhdtrepo command (#482)
+- allow predownload file (#480)
+
 ## Version 2.0.1
         
 - deploy fixes
