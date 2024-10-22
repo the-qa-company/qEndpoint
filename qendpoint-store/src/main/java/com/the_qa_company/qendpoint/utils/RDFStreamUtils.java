@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
@@ -9,6 +11,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
@@ -17,6 +20,9 @@ import org.eclipse.rdf4j.rio.Rio;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
@@ -61,6 +67,22 @@ public class RDFStreamUtils {
 	 */
 	public static void readRDFStream(InputStream stream, RDFFormat format, boolean keepBNode,
 			Consumer<Statement> statementConsumer) throws IOException {
+		if (format == RDFFormat.HDT) {
+			// write HDT into a temp file, map it and iterate over it
+			Path path = Files.createTempFile(RDFStreamUtils.class.getName(), ".hdt");
+			try {
+				Files.copy(stream, path, StandardCopyOption.REPLACE_EXISTING);
+				try (HDT hdt = HDTManager.mapHDT(path)) {
+					for (TripleString ts : hdt) {
+						SimpleValueFactory vf = SimpleValueFactory.getInstance();
+						statementConsumer.accept(convertStatement(vf, ts));
+					}
+				}
+			} finally {
+				Files.deleteIfExists(path);
+			}
+			return;
+		}
 		RDFParser parser = Rio.createParser(format);
 		parser.setPreserveBNodeIDs(keepBNode);
 		parser.setRDFHandler(new RDFHandler() {

@@ -1,6 +1,12 @@
 package com.the_qa_company.qendpoint.controller;
 
 import com.the_qa_company.qendpoint.Application;
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
+import com.the_qa_company.qendpoint.core.hdt.HDT;
+import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.utils.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
@@ -60,7 +66,9 @@ public class FileUploadTest {
 
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<Object> params() {
-		return new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+		ArrayList<Object> list = new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+		list.add(RDFFormat.HDT);
+		return list;
 	}
 
 	@Autowired
@@ -69,7 +77,7 @@ public class FileUploadTest {
 	private final String fileName;
 	private final RDFFormat format;
 
-	public FileUploadTest(RDFFormat format) throws IOException {
+	public FileUploadTest(RDFFormat format) throws IOException, ParserException {
 		this.format = format;
 		RDFFormat originalFormat = Rio.getParserFormatForFileName(COKTAILS_NT).orElseThrow();
 
@@ -79,9 +87,16 @@ public class FileUploadTest {
 		Path RDFFile = testDir.resolve(COKTAILS_NT + "." + format.getDefaultFileExtension());
 		if (!Files.exists(RDFFile)) {
 			try (OutputStream os = new FileOutputStream(RDFFile.toFile()); InputStream is = stream(COKTAILS_NT)) {
-				RDFWriter writer = Rio.createWriter(format, os);
-				parser.setRDFHandler(noBNode(writer));
-				parser.parse(is);
+				if (format == RDFFormat.HDT) {
+					try (HDT hdt = HDTManager.generateHDT(is, "http://example.org/#", RDFNotation.TURTLE,
+							HDTOptions.empty(), ProgressListener.ignore())) {
+						hdt.saveToHDT(os);
+					}
+				} else {
+					RDFWriter writer = Rio.createWriter(format, os);
+					parser.setRDFHandler(noBNode(writer));
+					parser.parse(is);
+				}
 			}
 		}
 
@@ -125,18 +140,6 @@ public class FileUploadTest {
 
 	private InputStream streamOut(String file) throws FileNotFoundException {
 		return new FileInputStream(file);
-	}
-
-	private long fileSize(String file) throws IOException {
-		InputStream testNt = streamOut(file);
-		byte[] buff = new byte[1024];
-
-		long r;
-		long size = 0;
-		while ((r = testNt.read(buff)) != -1) {
-			size += r;
-		}
-		return size;
 	}
 
 	private String clearSpaces(String text) {
@@ -222,6 +225,8 @@ public class FileUploadTest {
 	@Test
 	@Ignore("large test")
 	public void loadLargeTest() throws IOException {
+		if (format == RDFFormat.HDT)
+			return;
 		long size = Sparql.getMaxChunkSize() * 10;
 		LargeFakeDataSetStreamSupplier supplier = new LargeFakeDataSetStreamSupplier(size, 42);
 		sparql.loadFile(supplier.createRDFStream(format), "fake." + format.getDefaultFileExtension());

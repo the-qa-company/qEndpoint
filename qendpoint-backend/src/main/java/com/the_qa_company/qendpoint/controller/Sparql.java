@@ -19,7 +19,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -43,7 +42,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -463,8 +461,9 @@ public class Sparql {
 			if (sparqlRepository.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				shutdown();
 
-				RDFFormat format = Rio.getParserFormatForFileName(filename)
-						.orElseThrow(() -> new ServerWebInputException("file format not supported " + filename));
+				RDFFormat format = filename.toLowerCase().endsWith(".hdt") ? RDFFormat.HDT
+						: Rio.getParserFormatForFileName(filename).orElseThrow(
+								() -> new ServerWebInputException("file format not supported " + filename));
 
 				EndpointStore endpoint = (EndpointStore) compiledSail.getSource();
 				EndpointFiles files = endpoint.getEndpointFiles();
@@ -524,7 +523,7 @@ public class Sparql {
 			} else {
 				shutdown();
 				initializeEndpointStore(false);
-				sendUpdates(input, baseURI, filename);
+				sendUpdates(input, filename);
 			}
 			try {
 				sparqlRepository.reindexLuceneSails();
@@ -575,7 +574,7 @@ public class Sparql {
 		return prefixes;
 	}
 
-	private void sendUpdates(InputStream inputStream, String baseURI, String filename) throws IOException {
+	private void sendUpdates(InputStream inputStream, String filename) throws IOException {
 		StopWatch timeWatch = new StopWatch();
 
 		// uncompress the file if required
@@ -611,43 +610,6 @@ public class Sparql {
 		logger.info("loaded {} triples (+{})", total, triples);
 
 		logger.info("NT file loaded in {}", timeWatch.stopAndShow());
-	}
-
-	private void generateHDT(Iterator<TripleString> it, String baseURI, HDTOptions spec, String hdtOutput)
-			throws IOException {
-		if (sparqlRepository.getOptions().getPassMode().equals(SailCompilerSchema.HDT_TWO_PASS_MODE)) {
-			// dump the file to the disk to allow 2 passes
-			Path tempNTFile = Paths.get(hdtOutput + "-tmp.nt");
-			logger.info("Create TEMP NT file '{}'", tempNTFile);
-			try {
-				try (PrintWriter stream = new PrintWriter(tempNTFile.toFile())) {
-					while (it.hasNext()) {
-						TripleString ts = it.next();
-						ts.dumpNtriple(stream);
-					}
-				}
-				logger.info("NT file created, generating HDT...");
-				try {
-					HDT hdtDump = HDTManager.generateHDT(tempNTFile.toFile().getAbsolutePath(), baseURI,
-							RDFNotation.NTRIPLES, spec, null);
-					hdtDump.saveToHDT(hdtOutput, null);
-					hdtDump.close();
-				} catch (ParserException e) {
-					throw new IOException("Can't generate HDT", e);
-				}
-			} finally {
-				Files.deleteIfExists(tempNTFile);
-			}
-		} else {
-			// directly use the TripleString stream to generate the HDT
-			try {
-				HDT hdtDump = HDTManager.generateHDT(it, baseURI, spec, null);
-				hdtDump.saveToHDT(hdtOutput, null);
-				hdtDump.close();
-			} catch (ParserException e) {
-				throw new IOException("Can't generate HDT", e);
-			}
-		}
 	}
 
 	public int getPort() {
