@@ -13,6 +13,7 @@ import com.the_qa_company.qendpoint.core.hdt.writer.TripleWriterHDT;
 import com.the_qa_company.qendpoint.core.header.HeaderUtil;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsFile;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
@@ -192,6 +193,10 @@ public class HDTManagerImpl extends HDTManager {
 		long checksum = 0;
 		try {
 			if (spec.getBoolean(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL) && IOUtil.isRemoteURL(rdfFileName)) {
+				spec = spec.pushTop();
+				spec.set(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL, false); // disable
+																		// for
+																		// cattree
 				long retry = spec.getInt(HDTOptionsKeys.LOADER_PREDOWNLOAD_URL_RETRY, 1);
 
 				final String rdfFileName2 = rdfFileName;
@@ -202,14 +207,42 @@ public class HDTManagerImpl extends HDTManager {
 						throw new RuntimeException(e);
 					}
 				});
+				Path dlFile = preDownload.resolveSibling(preDownload.getFileName() + ".download");
+				HDTOptionsFile opFile = new HDTOptionsFile(dlFile);
 
 				long tryCount = 1;
 				checksumPath = spec.getPath(HDTOptionsKeys.LOADER_PREDOWNLOAD_CHECKSUM_PATH);
 				while (true) {
-					listener.notifyProgress(0,
-							"predownload " + rdfFileName + " into " + preDownload + " try #" + tryCount);
-					InputStream readIs = IOUtil.getFileInputStream(rdfFileName, false);
-					try (InputStream is = checksumPath != null ? new CRCInputStream(readIs, new CRC32()) : readIs;
+					opFile.sync();
+					long trueSize = IOUtil.getContentLengthLong(rdfFileName);
+					long lastLength = opFile.getOptions().getInt("last-length", 0);
+					long preSize;
+
+					if (lastLength != trueSize) {
+						preSize = 0;
+					} else {
+						try {
+							preSize = Files.size(preDownload);
+						} catch (IOException ignore) {
+							preSize = 0;
+						}
+					}
+					opFile.getOptions().set("last-length", trueSize);
+					opFile.save();
+
+					listener.notifyProgress(0, "predownload " + rdfFileName + " into " + preDownload + " try #"
+							+ tryCount + " / preSize " + preSize);
+
+					IOUtil.HTTPData readIs = IOUtil.getFileInputStreamData(rdfFileName, false, preSize);
+					long trueCurrSize = readIs.conn().getContentLengthLong();
+					if (trueCurrSize > 0 && trueSize != trueCurrSize) {
+						logger.error("Find bad file sizes compared to the previous calls, {} != {}", trueCurrSize,
+								trueSize);
+						continue; // try again, can it create an infinite loop
+									// is the server is bad?
+					}
+					InputStream stream = readIs.is();
+					try (InputStream is = checksumPath != null ? new CRCInputStream(stream, new CRC32()) : stream;
 							OutputStream os = new BufferedOutputStream(Files.newOutputStream(preDownload))) {
 						IOUtil.copy(is, os, listener, 10_000_000);
 						if (is instanceof CRCInputStream crcIs) {
