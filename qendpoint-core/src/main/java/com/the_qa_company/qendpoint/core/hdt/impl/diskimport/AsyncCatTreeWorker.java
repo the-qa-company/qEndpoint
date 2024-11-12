@@ -5,13 +5,14 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTFactory;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.hdt.HDTSupplier;
+import com.the_qa_company.qendpoint.core.iterator.utils.FluxStopTripleStringIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.FluxStopTripleStringIteratorImpl;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HideHDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.Profiler;
-import com.the_qa_company.qendpoint.core.iterator.utils.FluxStopTripleStringIterator;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.concurrent.HeightTree;
 import com.the_qa_company.qendpoint.core.util.listener.PrefixListener;
@@ -46,7 +47,8 @@ public class AsyncCatTreeWorker implements Closeable {
 			Iterator<TripleString> iterator, String baseURI, ProgressListener listener) throws IOException {
 		this.impl = impl;
 		kcat = impl.getkHDTCat();
-		this.it = new FluxStopTripleStringIterator(iterator, fluxStop);
+		this.it = FluxStopTripleStringIteratorImpl.newInstance(iterator, fluxStop,
+				impl.getHdtFormat().getBoolean(HDTOptionsKeys.LOADER_CATTREE_SUPPORT_COUNT, false), true);
 		this.supplier = supplier;
 		this.baseURI = baseURI;
 		this.listener = listener;
@@ -103,12 +105,14 @@ public class AsyncCatTreeWorker implements Closeable {
 			Path hdtLocation = hdtStore.resolve("hdt-" + gen + ".hdt");
 			// help memory flooding algorithm
 			System.gc();
+			long start = it.getTotalCount();
 			supplier.doGenerateHDT(it, baseURI, impl.getHdtFormat(), il, hdtLocation);
+			long end = it.getTotalCount();
 			il.clearThreads();
 
 			nextFile = it.hasNextFlux();
 			synchronized (tree) {
-				tree.addElement(new CatTreeImpl.HDTFile(hdtLocation, 1), 1);
+				tree.addElement(new CatTreeImpl.HDTFile(hdtLocation, 1, start, end), 1);
 				endread = !nextFile;
 				tree.notifyAll();
 			}
@@ -165,8 +169,10 @@ public class AsyncCatTreeWorker implements Closeable {
 			}
 			// note the new hdt file and the number of chunks
 			int chunks = (int) lst.stream().mapToLong(CatTreeImpl.HDTFile::chunks).max().orElseThrow() + 1;
+			long start = lst.stream().mapToLong(CatTreeImpl.HDTFile::start).min().orElseThrow();
+			long end = lst.stream().mapToLong(CatTreeImpl.HDTFile::end).max().orElseThrow();
 			synchronized (tree) {
-				tree.addElement(new CatTreeImpl.HDTFile(hdtCatFileLocation, chunks), chunks);
+				tree.addElement(new CatTreeImpl.HDTFile(hdtCatFileLocation, chunks, start, end), chunks);
 			}
 
 			profiler.popSection();
@@ -202,7 +208,9 @@ public class AsyncCatTreeWorker implements Closeable {
 			}
 			// note the new hdt file and the number of chunks
 			int chunks = (int) lst.stream().mapToLong(CatTreeImpl.HDTFile::chunks).max().orElseThrow() + 1;
-			tree.addElement(new CatTreeImpl.HDTFile(hdtCatFileLocation, chunks), chunks);
+			long start = lst.stream().mapToLong(CatTreeImpl.HDTFile::start).min().orElseThrow();
+			long end = lst.stream().mapToLong(CatTreeImpl.HDTFile::end).max().orElseThrow();
+			tree.addElement(new CatTreeImpl.HDTFile(hdtCatFileLocation, chunks, start, end), chunks);
 		}
 
 		if (tree.size() == 0) {
