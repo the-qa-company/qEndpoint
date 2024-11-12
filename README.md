@@ -412,10 +412,10 @@ _For more information and to report security issues, please refer to our [securi
 
 ## Publications
 
-- Willerval Antoine, Dennis Diefenbach, and Pierre Maret. "Easily setting up a local Wikidata SPARQL endpoint using the qEndpoint." Workshop ISWC (2022). [PDF](https://www.researchgate.net/publication/364321138_Easily_setting_up_a_local_Wikidata_SPARQL_endpoint_using_the_qEndpoint)
-- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Wikidata SPARQL endpoint on commodity hardware" Demo at The Web Conference (2023).  [PDF](https://www.researchgate.net/publication/369693531_qEndpoint_A_Wikidata_SPARQL_endpoint_on_commodity_hardware)
-- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Novel Triple Store Architecture for Large RDF Graphs" Semantic Web Journal (2024). [PDF](https://www.researchgate.net/publication/379507680_qEndpoint_A_Novel_Triple_Store_Architecture_for_Large_RDF_Graphs)
-- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "Generate and Update Large HDT RDF Knowledge Graphs on Commodity Hardware" ESWC (2024). [PDF](https://www.researchgate.net/publication/379507028_Generate_and_Update_Large_HDT_RDF_Knowledge_Graphs_on_Commodity_Hardware)
+- Willerval Antoine, Dennis Diefenbach, and Pierre Maret. "Easily setting up a local Wikidata SPARQL endpoint using the qEndpoint." Workshop ISWC (2022). [PDF](https://ceur-ws.org/Vol-3262/paper10.pdf))
+- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Wikidata SPARQL endpoint on commodity hardware" Demo at The Web Conference (2023).  [PDF](https://hal.science/hal-04370881v1/document)
+- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "qEndpoint: A Novel Triple Store Architecture for Large RDF Graphs" Semantic Web Journal (2024). [PDF](https://hal.science/hal-04769164v1/document)
+- Willerval Antoine, Dennis Diefenbach, Angela Bonifati. "Generate and Update Large HDT RDF Knowledge Graphs on Commodity Hardware" ESWC (2024). [PDF](https://hal.science/hal-04769139v1/document)
 
 ---
 
