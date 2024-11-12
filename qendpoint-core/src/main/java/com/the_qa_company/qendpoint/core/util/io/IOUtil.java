@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -370,8 +371,14 @@ public class IOUtil {
 	}
 
 	public static InputStream getFileInputStream(String fileName, boolean uncompress) throws IOException {
+		return getFileInputStream(fileName, uncompress, -1);
+	}
+
+	public static InputStream getFileInputStream(String fileName, boolean uncompress, long startLen)
+			throws IOException {
 		InputStream input;
 		String name = fileName.toLowerCase();
+		boolean skipHandled = startLen <= 0;
 		if (isRemoteURL(fileName)) {
 			URL url;
 			try {
@@ -380,12 +387,19 @@ public class IOUtil {
 				throw new IOException("Invalid URI", e);
 			}
 			URLConnection con = url.openConnection();
+			if (startLen > 0 && con instanceof HttpURLConnection http) {
+				http.setRequestProperty("Range", "bytes=" + startLen + "-");
+				skipHandled = true;
+			}
 			con.connect();
 			input = con.getInputStream();
 		} else if (name.equals("-")) {
 			input = new BufferedInputStream(System.in);
 		} else {
 			input = new BufferedInputStream(new FileInputStream(fileName));
+		}
+		if (!skipHandled) {
+			input.skipNBytes(startLen);
 		}
 
 		if (uncompress) {
@@ -398,6 +412,71 @@ public class IOUtil {
 			}
 		}
 		return input;
+	}
+
+	public record HTTPData(InputStream is, HttpURLConnection conn) implements Closeable {
+		@Override
+		public void close() throws IOException {
+			is.close();
+		}
+	}
+
+	public static HTTPData getFileInputStreamData(String fileName, boolean uncompress, long startLen)
+			throws IOException {
+		InputStream input;
+		String name = fileName.toLowerCase();
+		if (!isRemoteURL(fileName)) {
+			throw new IOException("Not a http connection");
+		}
+		URL url;
+		try {
+			url = new URI(fileName).toURL();
+		} catch (URISyntaxException e) {
+			throw new IOException("Invalid URI", e);
+		}
+
+		if (!url.getProtocol().equalsIgnoreCase("http") && !url.getProtocol().equalsIgnoreCase("https")) {
+			throw new IOException("Not a http connection");
+		}
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		if (startLen > 0) {
+			con.setRequestProperty("Range", "bytes=" + startLen + "-");
+		}
+		con.connect();
+		input = con.getInputStream();
+
+		if (uncompress) {
+			if (name.endsWith(".gz") || name.endsWith(".tgz")) {
+				input = new GZIPInputStream(input);
+			} else if (name.endsWith("bz2") || name.endsWith("bz")) {
+				input = new BZip2CompressorInputStream(input, true);
+			} else if (name.endsWith("xz")) {
+				input = new XZCompressorInputStream(input, true);
+			}
+		}
+		return new HTTPData(input, con);
+	}
+
+	public static long getContentLengthLong(String filename) throws IOException {
+		if (!isRemoteURL(filename)) {
+			return Files.size(Path.of(filename));
+		}
+		if (filename.equals("-")) {
+			return 0;
+		}
+		URL url;
+		try {
+			url = new URI(filename).toURL();
+		} catch (URISyntaxException e) {
+			throw new IOException("Invalid URI", e);
+		}
+		if (!url.getProtocol().equalsIgnoreCase("https") && !url.getProtocol().equalsIgnoreCase("http")) {
+			return 0;
+		}
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setRequestMethod("HEAD");
+		con.connect();
+		return con.getContentLengthLong();
 	}
 
 	public static BufferedReader getFileReader(String fileName) throws IOException {

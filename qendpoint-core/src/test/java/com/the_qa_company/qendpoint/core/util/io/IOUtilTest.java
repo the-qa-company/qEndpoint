@@ -1,17 +1,22 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -66,16 +71,16 @@ public class IOUtilTest {
 
 			ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
 
-			long a = IOUtil.readInt(bin);
+			int a = IOUtil.readInt(bin);
 			assertEquals(a, 3);
 
-			long b = IOUtil.readInt(bin);
+			int b = IOUtil.readInt(bin);
 			assertEquals(b, 4);
 
-			long c = IOUtil.readInt(bin);
+			int c = IOUtil.readInt(bin);
 			assertEquals(c, 0xFF0000AA);
 
-			long d = IOUtil.readInt(bin);
+			int d = IOUtil.readInt(bin);
 			assertEquals(d, 0xAABBCCDD);
 
 		} catch (IOException e) {
@@ -136,5 +141,49 @@ public class IOUtilTest {
 		}
 		Assert.assertFalse(Files.exists(p2));
 
+	}
+
+	@Ignore("Hand test")
+	@Test
+	public void urlTest() throws IOException {
+		final String url = "https://dumps.wikimedia.org/wikidatawiki/entities/latest-all.ttl.bz2";
+
+		long len = IOUtil.getContentLengthLong(url);
+
+		assertTrue("bad len: " + len, len > 0);
+
+		System.out.println(len);
+
+		byte[] read;
+		final int toRead = 0x1000;
+		try (InputStream is = IOUtil.getFileInputStream(url, false)) {
+			read = is.readNBytes(toRead);
+		}
+
+		assertEquals(toRead, read.length);
+
+		byte[] read2;
+		try (InputStream is = IOUtil.getFileInputStream(url, false)) {
+			read2 = is.readNBytes(toRead);
+		}
+
+		assertArrayEquals(read, read2);
+
+		byte[] read3;
+		int midRead = 0x500;
+		try (InputStream is = IOUtil.getFileInputStream(url, false)) {
+			is.skipNBytes(midRead);
+			read3 = is.readNBytes(midRead);
+		}
+		byte[] read4;
+		try (InputStream is = IOUtil.getFileInputStream(url, false, midRead)) {
+			read4 = is.readNBytes(midRead);
+		}
+
+		assertArrayEquals(read3, read4);
+
+		byte[] read5 = Arrays.copyOfRange(read, midRead, midRead + midRead);
+
+		assertArrayEquals(read3, read5);
 	}
 }
