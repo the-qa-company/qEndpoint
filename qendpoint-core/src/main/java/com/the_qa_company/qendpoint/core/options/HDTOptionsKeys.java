@@ -155,6 +155,12 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "Use async version")
 	public static final String LOADER_CATTREE_ASYNC_KEY = "loader.cattree.async";
 	/**
+	 * Key to add the support for count in the cattree loaded, by default the
+	 * value is false, boolean value
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Debug using count")
+	public static final String LOADER_CATTREE_SUPPORT_COUNT = "loader.cattree.supportCount";
+	/**
 	 * Same as {@link #LOADER_TYPE_KEY} for loader in the CATTREE method
 	 */
 	@Key(desc = "Loader of the hdt generation")
