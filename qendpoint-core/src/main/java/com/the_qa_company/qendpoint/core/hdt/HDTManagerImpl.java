@@ -43,6 +43,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.List;
 
@@ -227,6 +228,15 @@ public class HDTManagerImpl extends HDTManager {
 							preSize = 0;
 						}
 					}
+
+					StandardOpenOption[] openOptions;
+					if (preSize <= 0) {
+						openOptions = new StandardOpenOption[] { StandardOpenOption.CREATE,
+								StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE };
+					} else {
+						openOptions = new StandardOpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.APPEND,
+								StandardOpenOption.WRITE };
+					}
 					opFile.getOptions().set("last-length", trueSize);
 					opFile.save();
 
@@ -242,8 +252,10 @@ public class HDTManagerImpl extends HDTManager {
 									// is the server is bad?
 					}
 					InputStream stream = readIs.is();
+
 					try (InputStream is = checksumPath != null ? new CRCInputStream(stream, new CRC32()) : stream;
-							OutputStream os = new BufferedOutputStream(Files.newOutputStream(preDownload))) {
+							OutputStream os = new BufferedOutputStream(
+									Files.newOutputStream(preDownload, openOptions))) {
 						IOUtil.copy(is, os, listener, 10_000_000);
 						if (is instanceof CRCInputStream crcIs) {
 							checksum = crcIs.getCRC().getValue();
