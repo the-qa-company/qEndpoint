@@ -49,33 +49,41 @@ public class VariableToIdSubstitution implements QueryOptimizer {
 			Var subjectVar = node.getSubjectVar();
 			if (subjectVar != null && subjectVar.isAnonymous() && subjectVar.hasValue()) {
 				long id = converter.subjectToID(((Resource) subjectVar.getValue()));
-				Var var1 = new Var(subjectVar.getName(), converter.idToSubjectHDTResource(id), true,
-						subjectVar.isConstant());
-				node.replaceChildNode(subjectVar, var1);
+				if (id != -1) {
+					Var var1 = new Var(subjectVar.getName(), converter.idToSubjectHDTResource(id), true,
+							subjectVar.isConstant());
+					node.replaceChildNode(subjectVar, var1);
+				}
 			}
 
 			Var predicateVar = node.getPredicateVar();
 			if (predicateVar != null && predicateVar.isAnonymous() && predicateVar.hasValue()) {
 				long id = converter.predicateToID(((IRI) predicateVar.getValue()));
-				Var var1 = new Var(predicateVar.getName(), converter.idToPredicateHDTResource(id), true,
-						predicateVar.isConstant());
-				node.replaceChildNode(predicateVar, var1);
+				if (id != -1) {
+					Var var1 = new Var(predicateVar.getName(), converter.idToPredicateHDTResource(id), true,
+							predicateVar.isConstant());
+					node.replaceChildNode(predicateVar, var1);
+				}
 			}
 
 			Var objectVar = node.getObjectVar();
 			if (objectVar != null && objectVar.isAnonymous() && objectVar.hasValue()) {
 				long id = converter.objectToID((objectVar.getValue()));
-				Var var1 = new Var(objectVar.getName(), converter.idToObjectHDTResource(id), true,
-						objectVar.isConstant());
-				node.replaceChildNode(objectVar, var1);
+				if (id != -1) {
+					Var var1 = new Var(objectVar.getName(), converter.idToObjectHDTResource(id), true,
+							objectVar.isConstant());
+					node.replaceChildNode(objectVar, var1);
+				}
 			}
 
 			Var contextVar = node.getContextVar();
 			if (contextVar != null && contextVar.isAnonymous() && contextVar.hasValue()) {
 				long id = converter.contextToID((((Resource) contextVar.getValue())));
-				Var var1 = new Var(contextVar.getName(), converter.idToGraphHDTResource(id), true,
-						contextVar.isConstant());
-				node.replaceChildNode(contextVar, var1);
+				if (id != -1) {
+					Var var1 = new Var(contextVar.getName(), converter.idToGraphHDTResource(id), true,
+							contextVar.isConstant());
+					node.replaceChildNode(contextVar, var1);
+				}
 			}
 
 		}
