@@ -184,7 +184,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 			throws IOException {
 		// load HDT file
 		this.spec = (spec = HDTOptions.ofNullable(spec));
-		deleteDisabled = spec.getBoolean(OPTION_QENDPOINT_DELETE_DISABLE, false);
+		deleteDisabled = spec.getBoolean(OPTION_QENDPOINT_DELETE_DISABLE, true);
 		validOrders = getHDTSpec().getEnumSet(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, TripleComponentOrder.class);
 		validOrders.add(TripleComponentOrder.SPO); // we need at least SPO
 

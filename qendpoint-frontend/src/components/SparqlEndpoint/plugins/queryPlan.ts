@@ -48,8 +48,10 @@ export default class QueryPlanPlugin {
       const plan = json.plan
       const plnEl = buildPlan(plan)
       console.log(plnEl)
-      const container = document.createElement('ul')
-      container.appendChild(plnEl)
+      const container =  document.createElement("pre")
+
+     container.innerText = JSON.stringify(plan, null, 2)
+
       this.yasr.resultsEl.appendChild(container)
     }
   }
