@@ -443,8 +443,9 @@ public class SparqlRepository {
 	private void writeExplanation(com.fasterxml.jackson.core.JsonGenerator jg, Explanation explanation)
 			throws IOException {
 		jg.writeFieldName("plan");
-		GenericPlanNode plan = explanation.toGenericPlanNode();
-		writeDeep(jg, plan);
+		jg.writeRawValue(explanation.toJson());
+//		GenericPlanNode plan = explanation.toGenericPlanNode();
+//		writeDeep(jg, plan);
 	}
 
 	private void writeExplanationError(com.fasterxml.jackson.core.JsonGenerator jg, String message) throws IOException {
