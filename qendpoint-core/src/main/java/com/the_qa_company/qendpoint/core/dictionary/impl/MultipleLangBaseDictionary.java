@@ -119,11 +119,19 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 		return predicates.getNumberOfElements();
 	}
 
+	long cachedNobjects = -1;
+
 	@Override
 	public long getNobjects() {
-		return getNshared() + nonTyped.getNumberOfElements()
+		if (cachedNobjects != -1) {
+			return cachedNobjects;
+		}
+
+		long l = getNshared() + nonTyped.getNumberOfElements()
 				+ languages.values().stream().mapToLong(DictionarySection::getNumberOfElements).sum()
 				+ typed.values().stream().mapToLong(DictionarySection::getNumberOfElements).sum();
+		cachedNobjects = l;
+		return l;
 	}
 
 	@Override

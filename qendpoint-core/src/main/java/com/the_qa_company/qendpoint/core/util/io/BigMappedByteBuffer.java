@@ -76,8 +76,17 @@ public class BigMappedByteBuffer {
 	/**
 	 * @return the capacity of the big buffer
 	 */
+
+	long capacity = -1;
+
 	public long capacity() {
-		return buffers.stream().mapToLong(CloseMappedByteBuffer::capacity).sum();
+		if (capacity != -1) {
+			return capacity;
+		}
+
+		long sum = buffers.stream().mapToLong(CloseMappedByteBuffer::capacity).sum();
+		capacity = sum;
+		return sum;
 	}
 
 	private int getBufferOffset(long index) {
