@@ -50,22 +50,18 @@ public class HDTMergeJoinIteratorTest {
 		Path root = tempDir.newFolder().toPath();
 
 		Path hdtPath = root.resolve("test.hdt");
-		HDTOptions spec = HDTOptions.of(
-				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, hdtPath,
-				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"),
-				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
-				HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY, HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK,
-				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, hdtPath, HDTOptionsKeys.LOADER_DISK_LOCATION_KEY,
+				root.resolve("gd"), HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG, HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_KEY,
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_METHOD_VALUE_DISK, HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true,
 				// all indexes
-				HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, Arrays.stream(TripleComponentOrder.values()).map(TripleComponentOrder::name).collect(Collectors.joining(","))
-		);
+				HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, Arrays.stream(TripleComponentOrder.values())
+						.map(TripleComponentOrder::name).collect(Collectors.joining(",")));
 		ProgressListener listener = ProgressListener.ignore();
 		String ns = "http://example.org/#";
-		try (
-				InputStream is = getStream("/merge_ds.ttl");
-				HDT hdt = HDTManager.generateHDT(is, ns, RDFNotation.TURTLE, spec, listener)
-		) {
+		try (InputStream is = getStream("/merge_ds.ttl");
+				HDT hdt = HDTManager.generateHDT(is, ns, RDFNotation.TURTLE, spec, listener)) {
 			hdt.saveToHDT(hdtPath);
 		}
 
@@ -75,22 +71,15 @@ public class HDTMergeJoinIteratorTest {
 			assertTrue(Files.exists(BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.POS)));
 			assertTrue(Files.exists(BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.PSO)));
 
-
 			/*
-			  The query is ~that:
-			  SELECT * {
-			      ?s ex:relative ?o
-			      ?o rdfs:name ?n
-			      ?o ex:id ?id
-			  }
-
+			 * The query is ~that: SELECT * { ?s ex:relative ?o ?o rdfs:name ?n
+			 * ?o ex:id ?id }
 			 */
 
 			Dictionary dict = hdt.getDictionary();
 			long exRelative = dict.stringToId(ns + "relative", TripleComponentRole.PREDICATE);
 			long rdfsName = dict.stringToId("http://www.w3.org/2000/01/rdf-schema#name", TripleComponentRole.PREDICATE);
 			long exId = dict.stringToId(ns + "id", TripleComponentRole.PREDICATE);
-
 
 			TripleID p1 = new TripleID(0, exRelative, 0);
 			TripleID p2 = new TripleID(0, rdfsName, 0);
@@ -108,14 +97,15 @@ public class HDTMergeJoinIteratorTest {
 			assertSame("invalid order ", TripleComponentOrder.PSO, it2.getOrder());
 			assertSame("invalid order ", TripleComponentOrder.PSO, it3.getOrder());
 
-			HDTMergeJoinIterator it = new HDTMergeJoinIterator(List.of(
-					new HDTMergeJoinIterator.MergeIteratorData(it1, TripleComponentRole.OBJECT),
-					new HDTMergeJoinIterator.MergeIteratorData(it2, TripleComponentRole.SUBJECT),
-					new HDTMergeJoinIterator.MergeIteratorData(it3, TripleComponentRole.SUBJECT)
-			));
+			HDTMergeJoinIterator it = new HDTMergeJoinIterator(
+					List.of(new HDTMergeJoinIterator.MergeIteratorData(it1, TripleComponentRole.OBJECT),
+							new HDTMergeJoinIterator.MergeIteratorData(it2, TripleComponentRole.SUBJECT),
+							new HDTMergeJoinIterator.MergeIteratorData(it3, TripleComponentRole.SUBJECT)));
 
 			System.out.println(it.hasNext());
-			it.forEachRemaining(lst -> System.out.println(lst.stream().map(d -> dict.toTripleString(Objects.requireNonNull(d.peek())).toString()).collect(Collectors.joining(" - "))));
+			it.forEachRemaining(lst -> System.out
+					.println(lst.stream().map(d -> dict.toTripleString(Objects.requireNonNull(d.peek())).toString())
+							.collect(Collectors.joining(" - "))));
 		}
 
 	}

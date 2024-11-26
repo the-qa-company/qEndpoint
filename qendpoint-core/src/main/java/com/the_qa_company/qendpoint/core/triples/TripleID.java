@@ -242,22 +242,24 @@ public final class TripleID implements Comparable<TripleID>, Serializable, Clone
 
 	/**
 	 * get a component value from its role
+	 *
 	 * @param role role
 	 * @return component value
 	 */
 	public long get(TripleComponentRole role) {
 		return switch (role) {
-			case SUBJECT -> getSubject();
-			case PREDICATE -> getPredicate();
-			case OBJECT -> getObject();
-			case GRAPH -> getGraph();
+		case SUBJECT -> getSubject();
+		case PREDICATE -> getPredicate();
+		case OBJECT -> getObject();
+		case GRAPH -> getGraph();
 		};
 	}
 
 	/**
 	 * compare this triple id with another triple id using order remap
-	 * @param other other triple id
-	 * @param orderThis order of this triple id
+	 *
+	 * @param other      other triple id
+	 * @param orderThis  order of this triple id
 	 * @param orderOther order of the other triple id
 	 * @return compare result
 	 */

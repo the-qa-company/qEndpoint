@@ -77,7 +77,6 @@ public class MergeJoinOptimizer implements QueryOptimizer {
 				return;
 			}
 
-
 			for (StatementPattern p : patterns) {
 				// TODO: we can replace the patterns
 				p.getObjectVar().hasValue();

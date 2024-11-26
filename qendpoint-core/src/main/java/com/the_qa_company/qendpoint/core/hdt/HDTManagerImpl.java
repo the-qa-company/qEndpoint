@@ -232,6 +232,9 @@ public class HDTManagerImpl extends HDTManager {
 					} else {
 						try {
 							preSize = Files.size(preDownload);
+							if (preSize == trueSize) {
+								break;
+							}
 						} catch (IOException ignore) {
 							preSize = 0;
 						}

@@ -22,15 +22,16 @@ public class HDTMergeJoinIterator extends FetcherIterator<List<HDTMergeJoinItera
 
 		public long getSeekLayer(TripleID id) {
 			return switch (role) {
-				case OBJECT -> id.getObject();
-				case PREDICATE -> id.getPredicate();
-				case SUBJECT -> id.getSubject();
-				case GRAPH -> id.getGraph();
+			case OBJECT -> id.getObject();
+			case PREDICATE -> id.getPredicate();
+			case SUBJECT -> id.getSubject();
+			case GRAPH -> id.getGraph();
 			};
 		}
 
 		/**
 		 * goto a layer
+		 *
 		 * @param id layer
 		 * @return if we reach the end
 		 */
@@ -58,9 +59,11 @@ public class HDTMergeJoinIterator extends FetcherIterator<List<HDTMergeJoinItera
 		}
 
 		public TripleID peek() {
-			if (hasNext()) return last;
+			if (hasNext())
+				return last;
 			return null;
 		}
+
 		public TripleID next() {
 			if (hasNext()) {
 				loaded = false;
@@ -140,11 +143,11 @@ public class HDTMergeJoinIterator extends FetcherIterator<List<HDTMergeJoinItera
 	@Override
 	protected List<MergeIteratorData> getNext() {
 		moveNext();
-		if (!seekAll()) return null;
+		if (!seekAll())
+			return null;
 
 		// all the iterators are peeked with the same layer, we can read
 		return iterators;
 	}
-
 
 }

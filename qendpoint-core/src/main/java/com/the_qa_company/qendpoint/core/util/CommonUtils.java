@@ -16,6 +16,7 @@ public class CommonUtils {
 
 		return minIdx;
 	}
+
 	public static int maxArg(int[] array) {
 		if (array.length < 2) {
 			return 0;
@@ -31,6 +32,7 @@ public class CommonUtils {
 
 		return maxIdx;
 	}
+
 	private CommonUtils() {
 		throw new RuntimeException();
 	};
