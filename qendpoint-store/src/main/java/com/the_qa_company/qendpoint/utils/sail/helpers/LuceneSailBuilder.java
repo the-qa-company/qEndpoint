@@ -50,6 +50,17 @@ public class LuceneSailBuilder {
 	}
 
 	/**
+	 * add a particular parameter
+	 *
+	 * @param key   parameter key
+	 * @param value parameter value
+	 * @return this
+	 */
+	public LuceneSailBuilder withParameter(String key, Object value) {
+		return withParameter(key, String.valueOf(value));
+	}
+
+	/**
 	 * set the id of the sail
 	 *
 	 * @param id the id of the store
@@ -77,6 +88,26 @@ public class LuceneSailBuilder {
 	 */
 	public LuceneSailBuilder withDir(String dir) {
 		return withParameter(LuceneSail.LUCENE_DIR_KEY, dir);
+	}
+
+	/**
+	 * set the max documents in a query
+	 *
+	 * @param count count
+	 * @return this
+	 */
+	public LuceneSailBuilder withMaxDocs(int count) {
+		return withParameter(LuceneSail.MAX_DOCUMENTS_KEY, count);
+	}
+
+	/**
+	 * set the default number of documents in a query
+	 *
+	 * @param count count
+	 * @return this
+	 */
+	public LuceneSailBuilder withDefaultNumDocs(int count) {
+		return withParameter(LuceneSail.DEFAULT_NUM_DOCS_KEY, count);
 	}
 
 	/**

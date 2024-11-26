@@ -313,6 +313,18 @@ public class SailCompilerTest {
 	}
 
 	@Test
+	public void loadModel6Test() throws IOException, SailCompiler.SailCompilerException {
+		LoadData data = loadFile("model/model_example6.ttl");
+
+		assertLuceneSail(data.sail, SailTest.NAMESPACE + "luceneIndex1",
+				data.compiler.parseDir("${locationNative}lucene1"), null);
+
+		LuceneSail lc = (LuceneSail) data.sail;
+		Assert.assertEquals("1000000", lc.getParameter(LuceneSail.MAX_DOCUMENTS_KEY));
+		Assert.assertEquals("5000", lc.getParameter(LuceneSail.DEFAULT_NUM_DOCS_KEY));
+	}
+
+	@Test
 	public void dirCompileTest() throws SailCompiler.SailCompilerException {
 		SailCompiler compiler = new SailCompiler();
 		compiler.registerDirString("myKey", "my cat");

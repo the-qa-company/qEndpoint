@@ -439,6 +439,22 @@ public class SailCompiler {
 		}
 
 		/**
+		 * search for an optional property value in the graph
+		 *
+		 * @param subject  the subject to read
+		 * @param property the property to read and check values
+		 * @return the value or the default property value if no value was found
+		 * @throws SailCompilerException if the value isn't a valid value for
+		 *                               this property
+		 */
+		public <T> Optional<T> searchPropertyValueOpt(Resource subject,
+				SailCompilerSchema.Property<T, ? extends SailCompilerSchema.ValueHandler<T>> property)
+				throws SailCompilerException {
+			return searchOneOpt(subject, property.getIri())
+					.map(v -> property.throwIfNotValidValue(v, getSailCompiler()));
+		}
+
+		/**
 		 * search for a property value in the graph
 		 *
 		 * @param subject  the subject to read
@@ -450,9 +466,7 @@ public class SailCompiler {
 		public <T> T searchPropertyValue(Resource subject,
 				SailCompilerSchema.Property<T, ? extends SailCompilerSchema.ValueHandler<T>> property)
 				throws SailCompilerException {
-			return searchOneOpt(subject, property.getIri())
-					.map(v -> property.throwIfNotValidValue(v, getSailCompiler()))
-					.orElseGet(property.getHandler()::defaultValue);
+			return searchPropertyValueOpt(subject, property).orElseGet(property.getHandler()::defaultValue);
 		}
 
 		/**
