@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.compiler.ConfigSailConnection;
+import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.exception.EndpointTimeoutException;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -594,12 +595,11 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 				return false;
 			}
 			long index = iter.getLastTriplePosition();
-			return this.endpoint
-					.getDeleteBitMap(
-							iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO)
-					.access(endpoint.getHdt().getDictionary().supportGraphs()
-							? (tid.isQuad() ? tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1
-							: 0, index);
+			MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper dbm = this.endpoint.getDeleteBitMap(
+					iter.isLastTriplePositionBoundToOrder() ? iter.getOrder() : TripleComponentOrder.SPO);
+			return dbm != null && dbm.access(endpoint.getHdt().getDictionary().supportGraphs()
+					? (tid.isQuad() ? tid.getGraph() : endpoint.getHdtProps().getDefaultGraph()) - 1
+					: 0, index);
 		}
 		return true;
 	}

@@ -57,7 +57,7 @@ public class EndpointStoreTripleIterator implements CloseableIteration<Statement
 			TripleComponentOrder order = iterator.isLastTriplePositionBoundToOrder() ? iterator.getOrder()
 					: TripleComponentOrder.SPO;
 			MultiLayerBitmapWrapper.MultiLayerModBitmapWrapper dbm = endpoint.getDeleteBitMap(order);
-			if (endpoint.isDeleteDisabled() || dbm.<BitArrayDisk>getHandle().getMaxNumBits() == 0
+			if (endpoint.isDeleteDisabled() || dbm == null || dbm.<BitArrayDisk>getHandle().getMaxNumBits() == 0
 					|| !dbm.access(tripleID.isQuad() ? tripleID.getGraph() - 1 : 0, iterator.getLastTriplePosition())) {
 				Resource subject = endpoint.getHdtConverter().idToSubjectHDTResource(tripleID.getSubject());
 				IRI predicate = endpoint.getHdtConverter().idToPredicateHDTResource(tripleID.getPredicate());
