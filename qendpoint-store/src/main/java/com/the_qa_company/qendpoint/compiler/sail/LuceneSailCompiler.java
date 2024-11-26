@@ -58,6 +58,11 @@ public class LuceneSailCompiler extends LinkedSailCompiler {
 		reader.searchOneOpt(rnode, SailCompilerSchema.DIR_LOCATION).map(reader.getSailCompiler()::asLitStringPath)
 				.ifPresent(builder::withDir);
 
+		reader.searchPropertyValueOpt(rnode, SailCompilerSchema.LUCENE_MAX_DOCUMENTS_PROPERTY)
+				.ifPresent(builder::withMaxDocs);
+		reader.searchPropertyValueOpt(rnode, SailCompilerSchema.LUCENE_NUM_RESULTS_PROPERTY)
+				.ifPresent(builder::withDefaultNumDocs);
+
 		reader.searchOneOpt(rnode, SailCompilerSchema.LUCENE_TYPE_REINDEX_QUERY)
 				.map(reader.getSailCompiler()::asLitString).ifPresent(builder::withReindexQuery);
 

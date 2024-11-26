@@ -4,7 +4,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.io.FileOutputStream;
@@ -166,6 +165,16 @@ public class SailCompilerSchema {
 	 */
 	public static final IRI DIR_LOCATION = iri("dirLocation", "Describe a directory");
 	/**
+	 * mdlc:luceneMaxDocs
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> LUCENE_MAX_DOCUMENTS_PROPERTY = propertyInt(
+			"luceneMaxDocs", "Describe the maximum amount of documents Lucene can retrieve");
+	/**
+	 * mdlc:luceneNumResults
+	 */
+	public static final Property<Integer, NumberTypeValueHandler> LUCENE_NUM_RESULTS_PROPERTY = propertyInt(
+			"luceneNumResults", "Describe the default amount of documents Lucene will retrieve");
+	/**
 	 * mdlc:storageMode
 	 */
 	public static final Property<IRI, IRITypeValueHandler> STORAGE_MODE_PROPERTY = propertyIri("storageMode",
@@ -323,6 +332,10 @@ public class SailCompilerSchema {
 
 	private static Property<String, StringTypeValueHandler> propertyStr(String name, String desc, String defaultValue) {
 		return property(name, desc, new StringTypeValueHandler(defaultValue));
+	}
+
+	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc) {
+		return propertyInt(name, desc, 0);
 	}
 
 	private static Property<Integer, NumberTypeValueHandler> propertyInt(String name, String desc, int defaultValue) {
