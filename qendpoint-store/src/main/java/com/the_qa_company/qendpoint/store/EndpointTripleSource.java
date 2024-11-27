@@ -206,6 +206,77 @@ public class EndpointTripleSource implements TripleSource {
 		return new EndpointStoreTripleIterator(endpointStoreConnection, this, iterator, repositoryResult);
 	}
 
+	public CloseableIteration<TripleID> prototypeGetStatements(StatementOrder statementOrder, long subj, long pred,
+			long obj, long... contexts) throws SailException {
+
+		if (statementOrder != null && logger.isDebugEnabled()) {
+			logger.debug("getStatements(StatementOrder {}, Subject {}, Predicate {}, Object {}, Contexts... {})",
+					statementOrder, subj, pred, obj, contexts);
+		}
+
+		if (EndpointStoreConnection.debugWaittime != 0) {
+			try {
+				Thread.sleep(EndpointStoreConnection.debugWaittime);
+			} catch (InterruptedException e) {
+				throw new AssertionError("no interruption during sleep", e);
+			}
+		}
+
+		if (endpointStoreConnection.isTimeout()) {
+			throw new EndpointTimeoutException();
+		}
+
+		// @todo: should we not move this to the EndpointStore in the resetHDT
+		// function?
+		// check if the index changed, then refresh it
+		if (this.numberOfCurrentTriples != this.endpoint.getHdt().getTriples().getNumberOfElements()) {
+			initHDTIndex();
+		}
+
+		boolean graph = endpoint.getHdt().getDictionary().supportGraphs();
+
+		// convert uris into ids if needed
+
+		long subjectID = subj;
+		long predicateID = pred;
+		long objectID = obj;
+		long[] graphID = contexts;
+
+		// logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
+
+		// iterate over the HDT file
+		IteratorTripleID iterator;
+		if (subjectID != -1 && predicateID != -1 && objectID != -1) {
+			// logger.debug("Searching over HDT {} {} {}", subjectID,
+			// predicateID, objectID);
+			TripleID t = new TripleID(subjectID, predicateID, objectID);
+
+			if (graph && contexts.length > 1) {
+
+				// search with the ID to check if the triples has been
+				// deleted
+				iterator = new GraphFilteringTripleId(this.endpoint.getHdt().getTriples().search(t), graphID);
+
+			} else {
+				if (graph && contexts.length == 1) {
+					t.setGraph(graphID[0]);
+				}
+
+				// search with the ID to check if the triples has been
+				// deleted
+				iterator = this.endpoint.getHdt().getTriples().search(t);
+
+			}
+
+		} else {// no need to search over hdt
+			iterator = new EmptyTriplesIterator(TripleComponentOrder.SPO);
+		}
+
+		// iterate over hdt result, delete the triples marked as deleted and add
+		// the triples from the delta
+		return new PrototypeEndpointStoreTripleIterator(endpointStoreConnection, this, iterator);
+	}
+
 	// this function determines if a triple pattern should be searched over the
 	// native store. This is only
 	// the case if the subject, predicate and object were marked as used in the
