@@ -16,15 +16,6 @@ public class GraphFilteringTripleId implements IteratorTripleID {
 		this.graphIds = graphIds;
 	}
 
-	@Override
-	public boolean hasPrevious() {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	public TripleID previous() {
-		throw new NotImplementedException();
-	}
 
 	@Override
 	public void goToStart() {

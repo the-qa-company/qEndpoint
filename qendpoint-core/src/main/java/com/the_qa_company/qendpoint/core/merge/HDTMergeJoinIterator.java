@@ -59,8 +59,9 @@ public class HDTMergeJoinIterator extends FetcherIterator<List<HDTMergeJoinItera
 		}
 
 		public TripleID peek() {
-			if (hasNext())
+			if (hasNext()) {
 				return last;
+			}
 			return null;
 		}
 

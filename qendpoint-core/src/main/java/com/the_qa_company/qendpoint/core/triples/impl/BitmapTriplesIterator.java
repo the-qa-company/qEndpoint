@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.triples.impl;
 
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -171,37 +172,6 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 	/*
 	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#hasPrevious()
-	 */
-	@Override
-	public boolean hasPrevious() {
-		return posZ > minZ;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#previous()
-	 */
-	@Override
-	public TripleID previous() {
-		posZ--;
-
-		posY = adjZ.findListIndex(posZ);
-
-		z = adjZ.get(posZ);
-		y = adjY.get(posY);
-		x = adjY.findListIndex(posY) + 1;
-
-		nextY = adjY.last(x - 1) + 1;
-		nextZ = adjZ.last(posY) + 1;
-
-		updateOutput();
-
-		return returnTriple;
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see hdt.iterator.IteratorTripleID#goToStart()
 	 */
 	@Override
@@ -299,4 +269,52 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	public boolean isLastTriplePositionBoundToOrder() {
 		return true;
 	}
+
+
+	private boolean gotoOrder(long id, TripleComponentRole role) {
+		switch (role) {
+			case SUBJECT -> {
+
+				return false;
+			}
+			case PREDICATE -> {
+
+				return false;
+			}
+			case OBJECT -> {
+
+				return false;
+			}
+			default -> throw new NotImplementedException("goto " + role);
+		}
+	}
+
+	@Override
+	public boolean gotoSubject(long id) {
+		return gotoOrder(id, idx.getOrder().getSubjectMapping());
+	}
+
+
+	@Override
+	public boolean gotoPredicate(long id) {
+		return gotoOrder(id, idx.getOrder().getPredicateMapping());
+	}
+	@Override
+	public boolean gotoObject(long id) {
+		return gotoOrder(id, idx.getOrder().getObjectMapping());
+	}
+
+	@Override
+	public boolean canGoToSubject() {
+		return true;
+	}
+	@Override
+	public boolean canGoToPredicate() {
+		return true;
+	}
+	@Override
+	public boolean canGoToObject() {
+		return true;
+	}
+
 }

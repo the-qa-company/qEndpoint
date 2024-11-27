@@ -46,16 +46,6 @@ public class BitmapTriplesIteratorMapDiff implements IteratorTripleID {
 	}
 
 	@Override
-	public boolean hasPrevious() {
-		return false;
-	}
-
-	@Override
-	public TripleID previous() {
-		return null;
-	}
-
-	@Override
 	public void goToStart() {
 
 	}
