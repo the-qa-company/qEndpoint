@@ -3,7 +3,7 @@ package com.the_qa_company.qendpoint.core.util.disk;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class SimpleLongArray implements LongArray {
+public class SimpleLongArray extends AbstractLongArray {
 
 	public static LongArray of(int size) {
 		return wrapper(new long[size]);
@@ -28,7 +28,7 @@ public class SimpleLongArray implements LongArray {
 	}
 
 	@Override
-	public void set(long index, long value) {
+	protected void innerSet(long index, long value) {
 		if (index < 0 || index >= array.length) {
 			throw new IndexOutOfBoundsException(index + " < 0 || " + index + " > " + array.length);
 		}
@@ -60,4 +60,5 @@ public class SimpleLongArray implements LongArray {
 	public void clear() {
 		Arrays.fill(array, 0);
 	}
+
 }

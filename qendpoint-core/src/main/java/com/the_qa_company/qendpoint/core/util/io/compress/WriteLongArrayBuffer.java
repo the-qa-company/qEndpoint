@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
 import com.the_qa_company.qendpoint.core.util.BitUtil;
+import com.the_qa_company.qendpoint.core.util.disk.AbstractLongArray;
 import com.the_qa_company.qendpoint.core.util.disk.LongArray;
 
 import java.io.Closeable;
@@ -13,7 +14,7 @@ import java.util.Arrays;
  *
  * @author Antoine Willerval
  */
-public class WriteLongArrayBuffer implements LongArray, Closeable {
+public class WriteLongArrayBuffer extends AbstractLongArray implements Closeable {
 	// debug field
 	private static final boolean DISABLE_BUFFER = true;
 	private final LongArray array;
@@ -132,7 +133,7 @@ public class WriteLongArrayBuffer implements LongArray, Closeable {
 	 * @param value the value to set
 	 */
 	@Override
-	public void set(long index, long value) {
+	protected void innerSet(long index, long value) {
 		if (DISABLE_BUFFER) {
 			array.set(index, value);
 			return;
