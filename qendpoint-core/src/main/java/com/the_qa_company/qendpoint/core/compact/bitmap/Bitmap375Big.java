@@ -189,8 +189,9 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public boolean access(long bitIndex) {
-		if (bitIndex < 0)
+		if (bitIndex < 0) {
 			throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
+		}
 
 		long wordIndex = wordIndex(bitIndex);
 		if (wordIndex >= words.length()) {
@@ -324,7 +325,7 @@ public class Bitmap375Big extends Bitmap64Big {
 			return 0;
 		}
 		// Search superblock (binary Search)
-		long superBlockIndex = binarySearch(superBlocks, x);
+		long superBlockIndex = binarySearchNew(superBlocks, x);
 
 		// If there is a run of many zeros, two correlative superblocks may have
 		// the same value,
@@ -332,7 +333,6 @@ public class Bitmap375Big extends Bitmap64Big {
 
 		while (superBlockIndex > 0 && (superBlocks.get(superBlockIndex) >= x)) {
 			superBlockIndex--;
-
 		}
 
 		long countdown = x - superBlocks.get(superBlockIndex);
@@ -444,6 +444,7 @@ public class Bitmap375Big extends Bitmap64Big {
 	 * @param val val
 	 * @return index
 	 */
+
 	public static long binarySearch(LongArray arr, long val) {
 		long min = 0, max = arr.length(), mid;
 
@@ -460,11 +461,67 @@ public class Bitmap375Big extends Bitmap64Big {
 		return min;
 	}
 
+	public static long binarySearchNew(LongArray arr, long val) {
+		long min = 0;
+		long max = arr.length();
+		long mid;
+
+		long[] prevFound = arr.getPrevFound();
+
+		int index = (int) (val / 65536 + 1);
+
+		if (index > prevFound.length) {
+			throw new IllegalArgumentException("Index out of bounds: " + index);
+		}
+
+		if (index + 1 < prevFound.length) {
+			long t = prevFound[index + 1];
+			if (t > 0) {
+				max = Math.min(max, t);
+			}
+		}
+
+		if (index - 1 >= 0) {
+			long t = prevFound[index - 1];
+			if (t > 0) {
+				min = t;
+			}
+		}
+
+		long t = prevFound[index];
+		if (t > min && t < max) {
+			mid = t;
+		} else {
+			mid = (min + max) / 2;
+		}
+
+		while (min + 1 < max) {
+
+			long l = arr.get(mid);
+
+			if (l >= val) {
+				max = mid;
+			} else {
+				min = mid;
+			}
+			mid = (min + max) / 2;
+		}
+
+		prevFound[index] = min;
+
+		return min;
+	}
+
 	public CloseSuppressPath getBlocksPath() {
 		return blocksPath;
 	}
 
 	public CloseSuppressPath getSuperBlocksPath() {
 		return superBlocksPath;
+	}
+
+	@Override
+	public String toString() {
+		return "Bitmap375Big{}";
 	}
 }

@@ -208,4 +208,6 @@ public interface LongArray extends Iterable<Long> {
 			}
 		};
 	}
+
+	long[] getPrevFound();
 }

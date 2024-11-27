@@ -21,6 +21,7 @@ public class WriteLongArrayBuffer implements LongArray, Closeable {
 	private ArrayElementInt[] bufferInt;
 	private int index = 0;
 	private boolean lastOrder;
+	private final long[] prevFound = new long[16384];
 
 	/**
 	 * create the buffer
@@ -52,6 +53,11 @@ public class WriteLongArrayBuffer implements LongArray, Closeable {
 	@Override
 	public void clear() {
 		index = 0;
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 
 	public void free() {

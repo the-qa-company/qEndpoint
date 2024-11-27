@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class SimpleLongArray implements LongArray {
+	private final long[] prevFound = new long[16384];
 
 	public static LongArray of(int size) {
 		return wrapper(new long[size]);
@@ -59,5 +60,10 @@ public class SimpleLongArray implements LongArray {
 	@Override
 	public void clear() {
 		Arrays.fill(array, 0);
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 }

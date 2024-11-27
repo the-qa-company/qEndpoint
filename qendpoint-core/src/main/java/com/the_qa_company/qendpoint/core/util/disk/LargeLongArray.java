@@ -12,6 +12,7 @@ import java.io.IOException;
  */
 public class LargeLongArray implements LongArray {
 	private UnsafeLongArray array;
+	private final long[] prevFound = new long[16384];
 
 	/**
 	 * @param array large array
@@ -54,5 +55,10 @@ public class LargeLongArray implements LongArray {
 	@Override
 	public void clear() {
 		array.clear();
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 }

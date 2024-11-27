@@ -40,6 +40,8 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	private long numentries;
 	private long maxvalue;
 
+	private final long[] prevFound = new long[16384];
+
 	public SequenceLog64BigDisk(String location) {
 		this(location, W);
 	}
@@ -290,6 +292,11 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	@Override
 	public void clear() {
 		data.clear();
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 
 	/*
