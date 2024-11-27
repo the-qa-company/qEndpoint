@@ -29,7 +29,7 @@ public class CustomEvaluationStrategyFactory extends DefaultEvaluationStrategyFa
 
 	@Override
 	public EvaluationStrategy createEvaluationStrategy(Dataset dataset, TripleSource tripleSource,
-													   EvaluationStatistics evaluationStatistics) {
+			EvaluationStatistics evaluationStatistics) {
 		var strategy = new CustomEvaluationStrategy(tripleSource, dataset, getFederatedServiceResolver(),
 				getQuerySolutionCacheThreshold(), evaluationStatistics, isTrackResultSize());
 		getOptimizerPipeline().ifPresent(strategy::setOptimizerPipeline);

@@ -33,10 +33,9 @@ public class ProtoypeJoinIterator extends LookAheadIteration<BindingSet> {
 	private Set<String> name;
 	private List<String> name1;
 
-	public ProtoypeJoinIterator(CloseableIteration<TripleID> statements,
-								SimpleIRIHDT rightPredicate, HDTValue rightObject, HDTValue rightContext,
-								EndpointTripleSource endpointTripleSource,
-								StatementPattern left, StatementPattern right) {
+	public ProtoypeJoinIterator(CloseableIteration<TripleID> statements, SimpleIRIHDT rightPredicate,
+			HDTValue rightObject, HDTValue rightContext, EndpointTripleSource endpointTripleSource,
+			StatementPattern left, StatementPattern right) {
 		leftIter = statements;
 		this.rightPredicate = rightPredicate;
 		this.rightObject = rightObject;
@@ -89,7 +88,7 @@ public class ProtoypeJoinIterator extends LookAheadIteration<BindingSet> {
 			object = right.getObject();
 		}
 
-		PrototypeBindingSet bindings = new PrototypeBindingSet(name, name1, new long[]{left.getSubject(), object},
+		PrototypeBindingSet bindings = new PrototypeBindingSet(name, name1, new long[] { left.getSubject(), object },
 				endpointTripleSource.getEndpointStore().getHdtConverter());
 
 		return bindings;
@@ -107,7 +106,7 @@ public class ProtoypeJoinIterator extends LookAheadIteration<BindingSet> {
 		private int cachedHashCode = 0;
 
 		public PrototypeBindingSet(Set<String> bindingNamesSet, List<String> varNamesList, long[] values,
-								   HDTConverter hdtConverter) {
+				HDTConverter hdtConverter) {
 			this.hdtConverter = hdtConverter;
 			assert varNamesList.size() == values.length;
 			assert !varNamesList.isEmpty();

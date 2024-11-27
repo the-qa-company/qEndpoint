@@ -26,7 +26,7 @@ public class PrototypeEndpointStoreTripleIterator implements CloseableIteration<
 	private TripleID next;
 
 	public PrototypeEndpointStoreTripleIterator(EndpointStoreConnection connection,
-												EndpointTripleSource endpointTripleSource, IteratorTripleID iter) {
+			EndpointTripleSource endpointTripleSource, IteratorTripleID iter) {
 		this.connection = Objects.requireNonNull(connection, "connection can't be null!");
 		this.endpoint = Objects.requireNonNull(connection.getEndpoint(), "endpoint can't be null!");
 		this.endpointTripleSource = Objects.requireNonNull(endpointTripleSource, "endpointTripleSource can't be null!");

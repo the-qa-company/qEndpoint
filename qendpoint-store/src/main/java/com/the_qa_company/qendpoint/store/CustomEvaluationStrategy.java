@@ -31,27 +31,27 @@ public class CustomEvaluationStrategy extends DefaultEvaluationStrategy {
 	}
 
 	public CustomEvaluationStrategy(TripleSource tripleSource, Dataset dataset,
-									FederatedServiceResolver serviceResolver) {
+			FederatedServiceResolver serviceResolver) {
 		super(tripleSource, dataset, serviceResolver);
 	}
 
 	public CustomEvaluationStrategy(TripleSource tripleSource, Dataset dataset,
-									FederatedServiceResolver serviceResolver, long iterationCacheSyncTreshold,
-									EvaluationStatistics evaluationStatistics) {
+			FederatedServiceResolver serviceResolver, long iterationCacheSyncTreshold,
+			EvaluationStatistics evaluationStatistics) {
 		super(tripleSource, dataset, serviceResolver, iterationCacheSyncTreshold, evaluationStatistics);
 	}
 
 	public CustomEvaluationStrategy(TripleSource tripleSource, Dataset dataset,
-									FederatedServiceResolver serviceResolver, long iterationCacheSyncTreshold,
-									EvaluationStatistics evaluationStatistics, boolean trackResultSize) {
+			FederatedServiceResolver serviceResolver, long iterationCacheSyncTreshold,
+			EvaluationStatistics evaluationStatistics, boolean trackResultSize) {
 		super(tripleSource, dataset, serviceResolver, iterationCacheSyncTreshold, evaluationStatistics,
 				trackResultSize);
 	}
 
 	public CustomEvaluationStrategy(TripleSource tripleSource, Dataset dataset,
-									FederatedServiceResolver serviceResolver, long iterationCacheSyncTreshold,
-									EvaluationStatistics evaluationStatistics, boolean trackResultSize,
-									TupleFunctionRegistry tupleFunctionRegistry) {
+			FederatedServiceResolver serviceResolver, long iterationCacheSyncTreshold,
+			EvaluationStatistics evaluationStatistics, boolean trackResultSize,
+			TupleFunctionRegistry tupleFunctionRegistry) {
 		super(tripleSource, dataset, serviceResolver, iterationCacheSyncTreshold, evaluationStatistics, trackResultSize,
 				tupleFunctionRegistry);
 	}
@@ -161,8 +161,7 @@ public class CustomEvaluationStrategy extends DefaultEvaluationStrategy {
 							leftContext != null ? leftContext.getHDTId() : 0);
 
 					return new ProtoypeJoinIterator(statements, rightPredicate, rightObject, rightContext,
-							endpointTripleSource,
-							(StatementPattern) leftArg, (StatementPattern) rightArg);
+							endpointTripleSource, (StatementPattern) leftArg, (StatementPattern) rightArg);
 
 				}
 			};
