@@ -270,20 +270,124 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 		return true;
 	}
 
-
 	private boolean gotoOrder(long id, TripleComponentRole role) {
 		switch (role) {
 			case SUBJECT -> {
+				if (patX != 0) {
+					return id == patX; // can't jump or already on the right element
+				}
 
-				return false;
+				patX = id;
+				findRange();
+				patX = 0;
+
+				return true; // we know x exists because we are using
 			}
 			case PREDICATE -> {
+				if (patY != 0) {
+					return id == patY; // can't jump or already on the right element
+				}
 
-				return false;
+				if (posY == nextY) {
+					return false; // no next element
+				}
+
+				long curr = this.adjY.get(posY);
+
+				if (curr >= id) {
+					return curr == id;
+				}
+				if (posY + 1 == nextY) {
+					return false; // no next element
+				}
+
+				long last = this.adjY.get(nextY - 1);
+
+
+				boolean res;
+
+				if (last > id) {
+					// binary search between curr <-> last id
+					long loc = this.adjY.searchLoc(id, posY + 1, nextY - 2);
+
+					if (loc > 0) {
+						res = true;
+						posY = loc;
+						y = id;
+					} else {
+						res = false;
+						posY = -loc - 1;
+						y = adjY.get(posY);
+					}
+				} else if (last != id) {
+					// last < id - GOTO end + 1
+					posY = nextY;
+					res = false;
+				} else {
+					// last == id - GOTO last
+					posY = nextY - 1;
+					y = adjY.get(posY);
+					res = true;
+				}
+
+				nextY = adjY.findNext(posY) + 1;
+
+				// down to z/posZ/nextZ?
+				posZ = adjZ.find(posY, patZ);
+				nextZ = adjZ.findNext(posZ) + 1;
+
+				return res;
 			}
 			case OBJECT -> {
+				if (patZ != 0) {
+					return id == patZ; // can't jump or already on the right element
+				}
 
-				return false;
+				if (posZ == nextZ) {
+					return false; // no next element
+				}
+
+				long curr = this.adjZ.get(posZ);
+
+				if (curr >= id) {
+					return curr == id;
+				}
+				if (posZ + 1 == nextZ) {
+					return false; // no next element
+				}
+
+				long last = this.adjZ.get(nextZ - 1);
+
+
+				boolean res;
+
+				if (last > id) {
+					// binary search between curr <-> last id
+					long loc = this.adjZ.searchLoc(id, posZ + 1, nextZ - 2);
+
+					if (loc >= 0) { //match
+						res = true;
+						posZ = loc;
+						//z = id; // no need to compute the z, it is only used in next()
+					} else {
+						res = false;
+						posZ = -loc - 1;
+						//z = adjZ.get(posZ);
+					}
+				} else if (last != id) {
+					// last < id - GOTO end
+					posZ = nextZ;
+					res = false;
+				} else {
+					// last == id - GOTO last
+					posZ = nextZ - 1;
+					//z = adjZ.get(posZ);
+					res = true;
+				}
+
+				nextZ = adjZ.findNext(posZ) + 1;
+
+				return res;
 			}
 			default -> throw new NotImplementedException("goto " + role);
 		}
@@ -293,7 +397,6 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	public boolean gotoSubject(long id) {
 		return gotoOrder(id, idx.getOrder().getSubjectMapping());
 	}
-
 
 	@Override
 	public boolean gotoPredicate(long id) {
