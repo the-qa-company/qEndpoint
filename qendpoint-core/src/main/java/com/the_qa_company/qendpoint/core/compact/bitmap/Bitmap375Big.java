@@ -189,8 +189,9 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public boolean access(long bitIndex) {
-		if (bitIndex < 0)
+		if (bitIndex < 0) {
 			throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
+		}
 
 		long wordIndex = wordIndex(bitIndex);
 		if (wordIndex >= words.length()) {
@@ -324,34 +325,25 @@ public class Bitmap375Big extends Bitmap64Big {
 			return 0;
 		}
 		// Search superblock (binary Search)
-		long superBlockIndex = binarySearch(superBlocks, x);
+		long superBlockIndex = binarySearchNew(superBlocks, x);
 
 		// If there is a run of many zeros, two correlative superblocks may have
 		// the same value,
 		// We need to position at the first of them.
 
-		while (superBlockIndex > 0 && (superBlocks.get(superBlockIndex) >= x)) {
-			superBlockIndex--;
+//		long oldSuperBlockIndex = superBlockIndex;
+		superBlockIndex = temp1(x, superBlockIndex);
 
-		}
+//		if(oldSuperBlockIndex != superBlockIndex){
+//			long binarySearch = binarySearch(superBlocks, x);
+//			long binarySearchNew = binarySearchNew(superBlocks, x);
+//			System.out.println();
+//		}
 
 		long countdown = x - superBlocks.get(superBlockIndex);
 
-		long blockIdx = superBlockIndex * BLOCKS_PER_SUPER;
-
 		// Search block
-		while (true) {
-			if (blockIdx >= (superBlockIndex + 1) * BLOCKS_PER_SUPER || blockIdx >= blocks.length()) {
-				blockIdx--;
-				break;
-			}
-			if ((0xFF & blocks.get(blockIdx)) >= countdown) {
-				// We found it!
-				blockIdx--;
-				break;
-			}
-			blockIdx++;
-		}
+		long blockIdx = searchBlock(superBlockIndex * BLOCKS_PER_SUPER, superBlockIndex, countdown);
 		if (blockIdx < 0) {
 			blockIdx = 0;
 		}
@@ -361,6 +353,25 @@ public class Bitmap375Big extends Bitmap64Big {
 		int bitpos = BitUtil.select1(words.get(blockIdx), (int) countdown);
 
 		return blockIdx * W + bitpos - 1;
+	}
+
+	private long temp1(long x, long superBlockIndex) {
+		while (superBlockIndex > 0 && (superBlocks.get(superBlockIndex) >= x)) {
+			superBlockIndex--;
+		}
+		return superBlockIndex;
+	}
+
+	private long searchBlock(long blockIdx, long superBlockIndex, long countdown) {
+		long limit = (superBlockIndex + 1) * BLOCKS_PER_SUPER;
+		long blocksLength = blocks.length();
+		while (blockIdx < limit && blockIdx < blocksLength) {
+			if ((blocks.get(blockIdx) & 0xFF) >= countdown) {
+				return blockIdx - 1;
+			}
+			blockIdx++;
+		}
+		return blockIdx - 1;
 	}
 
 	/*
@@ -444,6 +455,7 @@ public class Bitmap375Big extends Bitmap64Big {
 	 * @param val val
 	 * @return index
 	 */
+
 	public static long binarySearch(LongArray arr, long val) {
 		long min = 0, max = arr.length(), mid;
 
@@ -460,11 +472,67 @@ public class Bitmap375Big extends Bitmap64Big {
 		return min;
 	}
 
+	public static long binarySearchNew(LongArray arr, long val) {
+		long min = 0;
+		long max = arr.length();
+		long mid;
+
+		long[] prevFound = arr.getPrevFound();
+
+		int index = (int) (val / 65536 + 1);
+
+		if (index > prevFound.length) {
+			throw new IllegalArgumentException("Index out of bounds: " + index);
+		}
+
+		if (index + 1 < prevFound.length) {
+			long t = prevFound[index + 1];
+			if (t > 0) {
+				max = Math.min(max, t);
+			}
+		}
+
+		if (index - 1 >= 0) {
+			long t = prevFound[index - 1];
+			if (t > 0) {
+				min = t;
+			}
+		}
+
+		long t = prevFound[index];
+		if (t > min && t < max) {
+			mid = t;
+		} else {
+			mid = (min + max) / 2;
+		}
+
+		while (min + 1 < max) {
+
+			long l = arr.get(mid);
+
+			if (l >= val) {
+				max = mid;
+			} else {
+				min = mid;
+			}
+			mid = (min + max) / 2;
+		}
+
+		prevFound[index] = min;
+
+		return min;
+	}
+
 	public CloseSuppressPath getBlocksPath() {
 		return blocksPath;
 	}
 
 	public CloseSuppressPath getSuperBlocksPath() {
 		return superBlocksPath;
+	}
+
+	@Override
+	public String toString() {
+		return "Bitmap375Big{}";
 	}
 }
