@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.jena.base.Sys;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -21,6 +22,8 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
@@ -43,6 +46,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -737,6 +743,123 @@ public class EndpointStoreTest {
 					assertTrue(result.hasNext());
 					result.next();
 					assertFalse(result.hasNext());
+				}
+			}
+		} finally {
+			endpointStore.shutDown();
+			Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+			Files.deleteIfExists(Paths.get(HDT_INDEX_NAME + ".index.v1-1"));
+			Files.deleteIfExists(Paths.get("index.nt"));
+		}
+	}
+
+	@Test
+	public void sparqlJoinTest2() throws IOException, NotFoundException {
+		System.setProperty("prototypejoin", "true");
+
+		File nativeStore = tempDir.newFolder("native-store");
+		File hdtStore = tempDir.newFolder("hdt-store");
+		HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
+		assert hdt != null;
+		hdt.saveToHDT(hdtStore.getAbsolutePath() + File.separatorChar + HDT_INDEX_NAME, null);
+		printHDT(hdt);
+		EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + File.separatorChar, HDT_INDEX_NAME, spec,
+				nativeStore.getAbsolutePath() + File.separatorChar, false);
+		store.setThreshold(2);
+		SailRepository endpointStore = new SailRepository(store);
+
+		try {
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
+				connection.begin();
+				ValueFactory vf = connection.getValueFactory();
+
+				for (int i = 0; i < 10; i++) {
+					String ex = "http://example.com/";
+					IRI ali = vf.createIRI(ex, "Ali" + i);
+					IRI guo = vf.createIRI(ex, "Guo" + i);
+					IRI steve = vf.createIRI(ex, "Steve" + i);
+					IRI pete = vf.createIRI(ex, "Pete" + i);
+					IRI has = vf.createIRI(ex, "has");
+
+					connection.add(ali, RDF.TYPE, FOAF.PERSON);
+					connection.add(guo, RDF.TYPE, FOAF.PERSON);
+					connection.add(steve, RDF.TYPE, FOAF.PERSON);
+
+					connection.add(ali, has, vf.createLiteral("account"));
+					connection.add(pete, has, vf.createLiteral("account"));
+					connection.add(guo, has, vf.createLiteral("account1-" + i));
+					connection.add(guo, has, vf.createLiteral("account2-" + i));
+					connection.add(guo, has, vf.createLiteral("account3-" + i));
+
+				}
+				connection.commit();
+			}
+
+			// force merge so that we can use merge join later
+			store.mergeStore();
+			while (store.isMergeTriggered || store.isMerging()) {
+				Thread.onSpinWait();
+			}
+
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
+
+				TupleQuery tupleQuery = connection.prepareTupleQuery(
+						String.join("\n", "", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+								"PREFIX foaf: <http://xmlns.com/foaf/0.1/>", "PREFIX ex: <http://example.com/>",
+								"select * where {", "	?s rdf:type foaf:Person .", "	?s ex:has ?o .", "}"));
+
+				try (TupleQueryResult result = tupleQuery.evaluate()) {
+					List<BindingSet> list = new ArrayList<>(QueryResults.asList(result));
+					list.sort(Comparator.comparing(BindingSet::toString));
+
+					assertEquals(40, list.size());
+					for (BindingSet bindings : list) {
+						System.out.println(bindings);
+					}
+
+					String string = Arrays.toString(list.toArray()).replace("], [", "],\n[").replace("[[", "[")
+							.replace("]]", "]");
+					assertEquals("""
+							[s=http://example.com/Ali0;o="account"],
+							[s=http://example.com/Ali1;o="account"],
+							[s=http://example.com/Ali2;o="account"],
+							[s=http://example.com/Ali3;o="account"],
+							[s=http://example.com/Ali4;o="account"],
+							[s=http://example.com/Ali5;o="account"],
+							[s=http://example.com/Ali6;o="account"],
+							[s=http://example.com/Ali7;o="account"],
+							[s=http://example.com/Ali8;o="account"],
+							[s=http://example.com/Ali9;o="account"],
+							[s=http://example.com/Guo0;o="account1-0"],
+							[s=http://example.com/Guo0;o="account2-0"],
+							[s=http://example.com/Guo0;o="account3-0"],
+							[s=http://example.com/Guo1;o="account1-1"],
+							[s=http://example.com/Guo1;o="account2-1"],
+							[s=http://example.com/Guo1;o="account3-1"],
+							[s=http://example.com/Guo2;o="account1-2"],
+							[s=http://example.com/Guo2;o="account2-2"],
+							[s=http://example.com/Guo2;o="account3-2"],
+							[s=http://example.com/Guo3;o="account1-3"],
+							[s=http://example.com/Guo3;o="account2-3"],
+							[s=http://example.com/Guo3;o="account3-3"],
+							[s=http://example.com/Guo4;o="account1-4"],
+							[s=http://example.com/Guo4;o="account2-4"],
+							[s=http://example.com/Guo4;o="account3-4"],
+							[s=http://example.com/Guo5;o="account1-5"],
+							[s=http://example.com/Guo5;o="account2-5"],
+							[s=http://example.com/Guo5;o="account3-5"],
+							[s=http://example.com/Guo6;o="account1-6"],
+							[s=http://example.com/Guo6;o="account2-6"],
+							[s=http://example.com/Guo6;o="account3-6"],
+							[s=http://example.com/Guo7;o="account1-7"],
+							[s=http://example.com/Guo7;o="account2-7"],
+							[s=http://example.com/Guo7;o="account3-7"],
+							[s=http://example.com/Guo8;o="account1-8"],
+							[s=http://example.com/Guo8;o="account2-8"],
+							[s=http://example.com/Guo8;o="account3-8"],
+							[s=http://example.com/Guo9;o="account1-9"],
+							[s=http://example.com/Guo9;o="account2-9"],
+							[s=http://example.com/Guo9;o="account3-9"]""", string);
 				}
 			}
 		} finally {

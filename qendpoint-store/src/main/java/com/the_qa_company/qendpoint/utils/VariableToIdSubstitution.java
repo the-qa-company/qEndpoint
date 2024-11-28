@@ -3,9 +3,12 @@ package com.the_qa_company.qendpoint.utils;
 import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.HDTConverter;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.algebra.BindingSetAssignment;
+import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
 import org.eclipse.rdf4j.query.algebra.Var;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizer;
@@ -40,6 +43,50 @@ public class VariableToIdSubstitution implements QueryOptimizer {
 	}
 
 	protected class Substituor extends AbstractQueryModelVisitor<RuntimeException> {
+
+		@Override
+		public void meet(StatementPattern node) throws RuntimeException {
+			Var subjectVar = node.getSubjectVar();
+			if (subjectVar != null && subjectVar.isAnonymous() && subjectVar.hasValue()) {
+				long id = converter.subjectToID(((Resource) subjectVar.getValue()));
+				if (id != -1) {
+					Var var1 = new Var(subjectVar.getName(), converter.idToSubjectHDTResource(id), true,
+							subjectVar.isConstant());
+					node.replaceChildNode(subjectVar, var1);
+				}
+			}
+
+			Var predicateVar = node.getPredicateVar();
+			if (predicateVar != null && predicateVar.isAnonymous() && predicateVar.hasValue()) {
+				long id = converter.predicateToID(((IRI) predicateVar.getValue()));
+				if (id != -1) {
+					Var var1 = new Var(predicateVar.getName(), converter.idToPredicateHDTResource(id), true,
+							predicateVar.isConstant());
+					node.replaceChildNode(predicateVar, var1);
+				}
+			}
+
+			Var objectVar = node.getObjectVar();
+			if (objectVar != null && objectVar.isAnonymous() && objectVar.hasValue()) {
+				long id = converter.objectToID((objectVar.getValue()));
+				if (id != -1) {
+					Var var1 = new Var(objectVar.getName(), converter.idToObjectHDTResource(id), true,
+							objectVar.isConstant());
+					node.replaceChildNode(objectVar, var1);
+				}
+			}
+
+			Var contextVar = node.getContextVar();
+			if (contextVar != null && contextVar.isAnonymous() && contextVar.hasValue()) {
+				long id = converter.contextToID((((Resource) contextVar.getValue())));
+				if (id != -1) {
+					Var var1 = new Var(contextVar.getName(), converter.idToGraphHDTResource(id), true,
+							contextVar.isConstant());
+					node.replaceChildNode(contextVar, var1);
+				}
+			}
+
+		}
 
 		@Override
 		public void meet(Var var) {

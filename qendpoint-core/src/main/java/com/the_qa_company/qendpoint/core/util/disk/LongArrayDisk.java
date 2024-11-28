@@ -41,6 +41,7 @@ public class LongArrayDisk implements Closeable, LongArray {
 	private long size;
 	private final long startByte;
 	private final Path location;
+	private final long[] prevFound = new long[16384];
 
 	public LongArrayDisk(String location, long size) {
 		this(location, size, true);
@@ -287,6 +288,11 @@ public class LongArrayDisk implements Closeable, LongArray {
 	@Override
 	public void clear() {
 		set0(0, length());
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 
 	/**

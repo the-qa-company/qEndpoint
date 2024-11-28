@@ -19,11 +19,11 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.iterator.SuppliableIteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
-import com.the_qa_company.qendpoint.core.compact.bitmap.AdjacencyList;
 
 /**
  * @author mario.arias
@@ -32,6 +32,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 	protected final BitmapTriplesIndex idx;
 	protected final TripleID pattern, returnTriple;
+	private final boolean swap;
 	protected long lastPosition;
 	protected long patX, patY, patZ;
 
@@ -42,6 +43,11 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 	protected BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern, boolean search) {
 		this.idx = idx;
+		if (idx.getOrder() != TripleComponentOrder.SPO) {
+			this.swap = true;
+		} else {
+			this.swap = false;
+		}
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
 		if (search) {
@@ -55,6 +61,11 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 
 	public BitmapTriplesIterator(BitmapTriplesIndex idx, long minZ, long maxZ) {
 		this.idx = idx;
+		if (idx.getOrder() != TripleComponentOrder.SPO) {
+			this.swap = true;
+		} else {
+			this.swap = false;
+		}
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
 		adjY = idx.getAdjacencyListY();
@@ -87,7 +98,9 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	protected void updateOutput() {
 		lastPosition = posZ;
 		returnTriple.setAll(x, y, z);
-		TripleOrderConvert.swapComponentOrder(returnTriple, idx.getOrder(), TripleComponentOrder.SPO);
+		if (swap) {
+			TripleOrderConvert.swapComponentOrder(returnTriple, idx.getOrder(), TripleComponentOrder.SPO);
+		}
 	}
 
 	private void findRange() {

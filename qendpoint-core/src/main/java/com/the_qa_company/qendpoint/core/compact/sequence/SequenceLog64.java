@@ -49,6 +49,7 @@ public class SequenceLog64 implements DynamicSequence {
 	protected int numbits;
 	protected long numentries;
 	protected long maxvalue;
+	private final long[] prevFound = new long[16384];
 
 	public SequenceLog64() {
 		this(W);
@@ -302,6 +303,11 @@ public class SequenceLog64 implements DynamicSequence {
 	@Override
 	public void clear() {
 		Arrays.fill(data, 0);
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 
 	/*

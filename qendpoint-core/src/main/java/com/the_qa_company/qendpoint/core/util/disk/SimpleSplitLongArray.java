@@ -16,6 +16,7 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 	private final long max;
 	private final int indexMask;
 	private final int numbits;
+	private final long[] prevFound = new long[16384];
 
 	private long size;
 
@@ -111,6 +112,11 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 	@Override
 	public void clear() {
 		array.clear();
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 
 	@Override

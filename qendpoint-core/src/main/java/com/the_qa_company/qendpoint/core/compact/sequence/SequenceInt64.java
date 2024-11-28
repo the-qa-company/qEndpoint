@@ -39,6 +39,7 @@ public class SequenceInt64 implements DynamicSequence {
 	/** The array that holds the objects **/
 	long[] data;
 	long numelements;
+	private final long[] prevFound = new long[16384];
 
 	/**
 	 * Basic constructor
@@ -66,6 +67,11 @@ public class SequenceInt64 implements DynamicSequence {
 	@Override
 	public void clear() {
 		Arrays.fill(data, 0);
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
 	}
 
 	private void resizeArray(int size) {

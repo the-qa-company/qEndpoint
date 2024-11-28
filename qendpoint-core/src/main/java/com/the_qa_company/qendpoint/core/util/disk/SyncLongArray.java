@@ -8,6 +8,9 @@ import java.io.IOException;
  * @author Antoine Willerval
  */
 public class SyncLongArray implements LongArray {
+
+	private final long[] prevFound = new long[16384];
+
 	/**
 	 * Sync a long array
 	 *
@@ -56,5 +59,11 @@ public class SyncLongArray implements LongArray {
 	@Override
 	public synchronized void clear() {
 		array.clear();
+	}
+
+	@Override
+	public long[] getPrevFound() {
+		return prevFound;
+
 	}
 }

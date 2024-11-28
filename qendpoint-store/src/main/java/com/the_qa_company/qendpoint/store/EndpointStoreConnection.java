@@ -61,7 +61,7 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 	private final Map<String, String> config = new HashMap<>();
 
 	public EndpointStoreConnection(EndpointStore endpoint) throws InterruptedException {
-		super(endpoint, endpoint.getCurrentSailStore(), new StrictEvaluationStrategyFactory());
+		super(endpoint, endpoint.getCurrentSailStore(), new CustomEvaluationStrategyFactory());
 		this.debugId = DEBUG_ID_STORE.getAndIncrement();
 		this.endpoint = endpoint;
 		EndpointStoreUtils.openConnection(this);

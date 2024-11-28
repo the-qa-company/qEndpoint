@@ -105,7 +105,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 		if (!(tupleExpr instanceof QueryRoot)) {
 			tupleExpr = new QueryRoot(tupleExpr);
 		}
-		EvaluationStrategy strategy = new ExtendedEvaluationStrategy(getTripleSource(), dataset,
+		EvaluationStrategy strategy = new CustomEvaluationStrategy(getTripleSource(), dataset,
 				new SPARQLServiceWikibaseLabelResolver(tripleSource,
 						conn.getConfig(EndpointStore.QUERY_CONFIG_USER_LOCALES)),
 				0L, evaluationStatistics);
