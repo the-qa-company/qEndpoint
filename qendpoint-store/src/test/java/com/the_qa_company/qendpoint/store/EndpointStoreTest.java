@@ -9,7 +9,9 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.model.SimpleBNodeHDT;
+import com.the_qa_company.qendpoint.model.SimpleIRIHDT;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
+import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.rdf4j.model.BNode;
@@ -24,6 +26,12 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.algebra.Projection;
+import org.eclipse.rdf4j.query.algebra.QueryRoot;
+import org.eclipse.rdf4j.query.algebra.StatementPattern;
+import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.query.impl.AbstractParserQuery;
+import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -32,7 +40,6 @@ import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.memory.model.MemValueFactory;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +47,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -748,6 +756,160 @@ public class EndpointStoreTest {
 	}
 
 	@Test
+	public void sparqlVariableToIdSubstitutionSharedPosition()
+			throws IOException, NotFoundException, NoSuchFieldException, IllegalAccessException {
+		File nativeStore = tempDir.newFolder("native-store");
+		File hdtStore = tempDir.newFolder("hdt-store");
+		HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
+		assert hdt != null;
+		hdt.saveToHDT(hdtStore.getAbsolutePath() + File.separatorChar + HDT_INDEX_NAME, null);
+		printHDT(hdt);
+		EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + File.separatorChar, HDT_INDEX_NAME, spec,
+				nativeStore.getAbsolutePath() + File.separatorChar, false);
+		store.setThreshold(2);
+		SailRepository endpointStore = new SailRepository(store);
+
+		try {
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
+				connection.begin();
+				ValueFactory vf = connection.getValueFactory();
+				String ex = "http://example.com/";
+				IRI ali = vf.createIRI(ex, "Ali");
+				connection.add(ali, RDF.TYPE, FOAF.PERSON, vf.createIRI(ex, "graph1"));
+				connection.add(RDF.TYPE, RDF.TYPE, RDF.TYPE);
+				connection.add(FOAF.PERSON, RDF.TYPE, ali, vf.createIRI(ex, "graph1"));
+
+				IRI guo = vf.createIRI(ex, "Guo");
+				IRI has = vf.createIRI(ex, "has");
+				connection.add(guo, has, FOAF.ACCOUNT);
+				connection.commit();
+			}
+
+			// force merge so that we can use merge join later
+			store.mergeStore();
+			while (store.isMergeTriggered || store.isMerging()) {
+				Thread.onSpinWait();
+			}
+
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
+
+				TupleQuery tupleQuery = connection.prepareTupleQuery("""
+						PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+						PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+						PREFIX ex: <http://example.com/>
+						select * where {
+							graph <http://example.com/graph1> { <http://example.com/Ali> rdf:type foaf:Person . }
+						}
+						""");
+
+				// Access the ParsedTupleQuery object using reflection
+				Field parsedQueryField = AbstractParserQuery.class.getDeclaredField("parsedQuery");
+				parsedQueryField.setAccessible(true);
+				ParsedTupleQuery parsedTupleQuery = (ParsedTupleQuery) parsedQueryField.get(tupleQuery);
+
+// Now you can access the TupleExpr from the ParsedTupleQuery
+				TupleExpr tupleExpr = parsedTupleQuery.getTupleExpr();
+
+				new VariableToIdSubstitution(store).optimize(tupleExpr, tupleQuery.getDataset(),
+						tupleQuery.getBindings());
+
+				SimpleIRIHDT subject = (SimpleIRIHDT) ((StatementPattern) ((Projection) ((QueryRoot) tupleExpr)
+						.getArg()).getArg()).getSubjectVar().getValue();
+
+				assertEquals(SimpleIRIHDT.SHARED_POS, subject.getPostion());
+
+			}
+		} finally {
+			endpointStore.shutDown();
+			Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+			Files.deleteIfExists(Paths.get(HDT_INDEX_NAME + ".index.v1-1"));
+			Files.deleteIfExists(Paths.get("index.nt"));
+		}
+	}
+
+	@Test
+	public void sparqlVariableToIdSubstitution()
+			throws IOException, NotFoundException, NoSuchFieldException, IllegalAccessException {
+		File nativeStore = tempDir.newFolder("native-store");
+		File hdtStore = tempDir.newFolder("hdt-store");
+		HDT hdt = Utility.createTempHdtIndex(tempDir, false, false, spec);
+		assert hdt != null;
+		hdt.saveToHDT(hdtStore.getAbsolutePath() + File.separatorChar + HDT_INDEX_NAME, null);
+		printHDT(hdt);
+		EndpointStore store = new EndpointStore(hdtStore.getAbsolutePath() + File.separatorChar, HDT_INDEX_NAME, spec,
+				nativeStore.getAbsolutePath() + File.separatorChar, false);
+		store.setThreshold(2);
+		SailRepository endpointStore = new SailRepository(store);
+
+		try {
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
+				connection.begin();
+				ValueFactory vf = connection.getValueFactory();
+				String ex = "http://example.com/";
+				IRI ali = vf.createIRI(ex, "Ali");
+				connection.add(ali, RDF.TYPE, FOAF.PERSON, vf.createIRI(ex, "graph1"));
+				connection.add(RDF.TYPE, RDF.TYPE, RDF.TYPE);
+
+				IRI guo = vf.createIRI(ex, "Guo");
+				IRI has = vf.createIRI(ex, "has");
+				connection.add(guo, has, FOAF.ACCOUNT);
+				connection.commit();
+			}
+
+			// force merge so that we can use merge join later
+			store.mergeStore();
+			while (store.isMergeTriggered || store.isMerging()) {
+				Thread.onSpinWait();
+			}
+
+			try (RepositoryConnection connection = endpointStore.getConnection()) {
+
+				TupleQuery tupleQuery = connection.prepareTupleQuery("""
+						PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+						PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+						PREFIX ex: <http://example.com/>
+						select * where {
+							graph <http://example.com/graph1> { <http://example.com/Ali> rdf:type foaf:Person . }
+						}
+						""");
+
+				// Access the ParsedTupleQuery object using reflection
+				Field parsedQueryField = AbstractParserQuery.class.getDeclaredField("parsedQuery");
+				parsedQueryField.setAccessible(true);
+				ParsedTupleQuery parsedTupleQuery = (ParsedTupleQuery) parsedQueryField.get(tupleQuery);
+
+// Now you can access the TupleExpr from the ParsedTupleQuery
+				TupleExpr tupleExpr = parsedTupleQuery.getTupleExpr();
+
+				new VariableToIdSubstitution(store).optimize(tupleExpr, tupleQuery.getDataset(),
+						tupleQuery.getBindings());
+
+				SimpleIRIHDT subject = (SimpleIRIHDT) ((StatementPattern) ((Projection) ((QueryRoot) tupleExpr)
+						.getArg()).getArg()).getSubjectVar().getValue();
+
+				SimpleIRIHDT predicate = (SimpleIRIHDT) ((StatementPattern) ((Projection) ((QueryRoot) tupleExpr)
+						.getArg()).getArg()).getPredicateVar().getValue();
+
+				SimpleIRIHDT object = (SimpleIRIHDT) ((StatementPattern) ((Projection) ((QueryRoot) tupleExpr).getArg())
+						.getArg()).getObjectVar().getValue();
+
+				IRI context = (IRI) ((StatementPattern) ((Projection) ((QueryRoot) tupleExpr).getArg()).getArg())
+						.getContextVar().getValue();
+
+				assertEquals(SimpleIRIHDT.SUBJECT_POS, subject.getPostion());
+				assertEquals(SimpleIRIHDT.PREDICATE_POS, predicate.getPostion());
+				assertEquals(SimpleIRIHDT.OBJECT_POS, object.getPostion());
+
+			}
+		} finally {
+			endpointStore.shutDown();
+			Files.deleteIfExists(Paths.get(HDT_INDEX_NAME));
+			Files.deleteIfExists(Paths.get(HDT_INDEX_NAME + ".index.v1-1"));
+			Files.deleteIfExists(Paths.get("index.nt"));
+		}
+	}
+
+	@Test
 	public void testAddLargeDataset() throws IOException, NotFoundException {
 		StopWatch stopWatch = StopWatch.createStarted();
 		File nativeStore = tempDir.newFolder("native-store");
@@ -804,11 +966,11 @@ public class EndpointStoreTest {
 		try {
 			HDTConverter converter = store.getHdtConverter();
 			Resource bnode = converter.idToSubjectHDTResource(1L);
-			Assert.assertTrue(bnode instanceof BNode);
-			Assert.assertTrue(bnode instanceof SimpleBNodeHDT);
-			Assert.assertEquals(1L, ((SimpleBNodeHDT) bnode).getHDTId());
-			Assert.assertEquals("aaaa", ((BNode) bnode).getID());
-			Assert.assertEquals("_:aaaa", bnode.toString());
+			assertTrue(bnode instanceof BNode);
+			assertTrue(bnode instanceof SimpleBNodeHDT);
+			assertEquals(1L, ((SimpleBNodeHDT) bnode).getHDTId());
+			assertEquals("aaaa", ((BNode) bnode).getID());
+			assertEquals("_:aaaa", bnode.toString());
 			try (SailRepositoryConnection connection = repo.getConnection()) {
 
 				ValueFactory vf = connection.getValueFactory();
@@ -816,9 +978,9 @@ public class EndpointStoreTest {
 				System.out.println(vf.createIRI(Utility.EXAMPLE_NAMESPACE + "test"));
 				try (RepositoryResult<Statement> result = connection.getStatements(vf.createBNode("aaaa"),
 						vf.createIRI("http://pppp"), vf.createLiteral("aaaa", vf.createIRI("http://type")))) {
-					Assert.assertTrue(result.hasNext());
+					assertTrue(result.hasNext());
 					result.next();
-					Assert.assertFalse(result.hasNext());
+					assertFalse(result.hasNext());
 				}
 			}
 		} finally {
