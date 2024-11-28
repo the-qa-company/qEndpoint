@@ -69,27 +69,11 @@ public class CustomEvaluationStrategy extends DefaultEvaluationStrategy {
 		}
 
 		try {
-			if (leftArg instanceof StatementPattern && rightArg instanceof StatementPattern
-					&& tripleSource instanceof EndpointTripleSource) {
-				StatementPattern left = (StatementPattern) leftArg;
-				StatementPattern right = (StatementPattern) rightArg;
-				EndpointTripleSource endpointTripleSource = (EndpointTripleSource) tripleSource;
+			if (leftArg instanceof StatementPattern left && rightArg instanceof StatementPattern right
+					&& tripleSource instanceof EndpointTripleSource endpointTripleSource) {
 
-				HDTValue leftSubject = left.getSubjectVar() != null ? (HDTValue) left.getSubjectVar().getValue() : null;
-				SimpleIRIHDT leftPredicate = left.getPredicateVar() != null
-						? (SimpleIRIHDT) left.getPredicateVar().getValue()
-						: null;
-				HDTValue leftObject = left.getObjectVar() != null ? (HDTValue) left.getObjectVar().getValue() : null;
-				HDTValue leftContext = left.getContextVar() != null ? (HDTValue) left.getContextVar().getValue() : null;
-
-				HDTValue rightSubject = right.getSubjectVar() != null ? (HDTValue) right.getSubjectVar().getValue()
-						: null;
-				SimpleIRIHDT rightPredicate = right.getPredicateVar() != null
-						? (SimpleIRIHDT) right.getPredicateVar().getValue()
-						: null;
-				HDTValue rightObject = right.getObjectVar() != null ? (HDTValue) right.getObjectVar().getValue() : null;
-				HDTValue rightContext = right.getContextVar() != null ? (HDTValue) right.getContextVar().getValue()
-						: null;
+				HDTValues leftValues = getHdtValues(left);
+				HDTValues rightValues = getHdtValues(right);
 
 				try {
 					if (!left.getSubjectVar().getName().equals(right.getSubjectVar().getName())) {
@@ -145,30 +129,25 @@ public class CustomEvaluationStrategy extends DefaultEvaluationStrategy {
 
 				node.setAlgorithm("ProtoypeJoinIterator");
 
-				QueryEvaluationStep queryEvaluationStep = new QueryEvaluationStep() {
-
-					CloseableIteration<TripleID> left;
-
-					@Override
-					public CloseableIteration<BindingSet> evaluate(BindingSet bindings) {
-						if (!bindings.isEmpty()) {
-							throw new UnsupportedOperationException("Query bindings are not supported");
-						}
-
-						// we will implement a very simple join on the subject
-
-						CloseableIteration<TripleID> statements = endpointTripleSource.prototypeGetStatements(null,
-								leftSubject != null ? leftSubject.getHDTId() : 0,
-								leftPredicate != null ? leftPredicate.getHDTId() : 0,
-								leftObject != null ? leftObject.getHDTId() : 0,
-								leftContext != null ? leftContext.getHDTId() : 0);
-
-						return new ProtoypeJoinIterator(statements, rightPredicate, rightObject, rightContext,
-								endpointTripleSource, (StatementPattern) leftArg, (StatementPattern) rightArg);
-
+				// we will implement a very simple join on the subject
+				return bindings -> {
+					if (!bindings.isEmpty()) {
+						throw new UnsupportedOperationException("Query bindings are not supported");
 					}
+
+					// we will implement a very simple join on the subject
+
+					CloseableIteration<TripleID> statements = endpointTripleSource.prototypeGetStatements(null,
+							leftValues.subject() != null ? leftValues.subject().getHDTId() : 0,
+							leftValues.predicate() != null ? leftValues.predicate().getHDTId() : 0,
+							leftValues.object() != null ? leftValues.object().getHDTId() : 0,
+							leftValues.context() != null ? leftValues.context().getHDTId() : 0);
+
+					return new ProtoypeJoinIterator(statements, rightValues.predicate(), rightValues.object(),
+							rightValues.context(), endpointTripleSource, (StatementPattern) leftArg,
+							(StatementPattern) rightArg);
+
 				};
-				return queryEvaluationStep;
 
 			}
 
@@ -180,4 +159,15 @@ public class CustomEvaluationStrategy extends DefaultEvaluationStrategy {
 
 		return super.prepare(node, context);
 	}
+
+	private static HDTValues getHdtValues(StatementPattern left) {
+		HDTValue leftSubject = left.getSubjectVar() != null ? (HDTValue) left.getSubjectVar().getValue() : null;
+		SimpleIRIHDT leftPredicate = left.getPredicateVar() != null ? (SimpleIRIHDT) left.getPredicateVar().getValue()
+				: null;
+		HDTValue leftObject = left.getObjectVar() != null ? (HDTValue) left.getObjectVar().getValue() : null;
+		HDTValue leftContext = left.getContextVar() != null ? (HDTValue) left.getContextVar().getValue() : null;
+		return new HDTValues(leftSubject, leftPredicate, leftObject, leftContext);
+	}
+
+	private record HDTValues(HDTValue subject, SimpleIRIHDT predicate, HDTValue object, HDTValue context) {}
 }
