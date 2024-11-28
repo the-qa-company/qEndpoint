@@ -68,108 +68,115 @@ public class CustomEvaluationStrategy extends DefaultEvaluationStrategy {
 			return super.prepare(node, context);
 		}
 
-		if (leftArg instanceof StatementPattern && rightArg instanceof StatementPattern
-				&& tripleSource instanceof EndpointTripleSource) {
-			StatementPattern left = (StatementPattern) leftArg;
-			StatementPattern right = (StatementPattern) rightArg;
-			EndpointTripleSource endpointTripleSource = (EndpointTripleSource) tripleSource;
+		try {
+			if (leftArg instanceof StatementPattern && rightArg instanceof StatementPattern
+					&& tripleSource instanceof EndpointTripleSource) {
+				StatementPattern left = (StatementPattern) leftArg;
+				StatementPattern right = (StatementPattern) rightArg;
+				EndpointTripleSource endpointTripleSource = (EndpointTripleSource) tripleSource;
 
-			HDTValue leftSubject = left.getSubjectVar() != null ? (HDTValue) left.getSubjectVar().getValue() : null;
-			SimpleIRIHDT leftPredicate = left.getPredicateVar() != null
-					? (SimpleIRIHDT) left.getPredicateVar().getValue()
-					: null;
-			HDTValue leftObject = left.getObjectVar() != null ? (HDTValue) left.getObjectVar().getValue() : null;
-			HDTValue leftContext = left.getContextVar() != null ? (HDTValue) left.getContextVar().getValue() : null;
+				HDTValue leftSubject = left.getSubjectVar() != null ? (HDTValue) left.getSubjectVar().getValue() : null;
+				SimpleIRIHDT leftPredicate = left.getPredicateVar() != null
+						? (SimpleIRIHDT) left.getPredicateVar().getValue()
+						: null;
+				HDTValue leftObject = left.getObjectVar() != null ? (HDTValue) left.getObjectVar().getValue() : null;
+				HDTValue leftContext = left.getContextVar() != null ? (HDTValue) left.getContextVar().getValue() : null;
 
-			HDTValue rightSubject = right.getSubjectVar() != null ? (HDTValue) right.getSubjectVar().getValue() : null;
-			SimpleIRIHDT rightPredicate = right.getPredicateVar() != null
-					? (SimpleIRIHDT) right.getPredicateVar().getValue()
-					: null;
-			HDTValue rightObject = right.getObjectVar() != null ? (HDTValue) right.getObjectVar().getValue() : null;
-			HDTValue rightContext = right.getContextVar() != null ? (HDTValue) right.getContextVar().getValue() : null;
+				HDTValue rightSubject = right.getSubjectVar() != null ? (HDTValue) right.getSubjectVar().getValue()
+						: null;
+				SimpleIRIHDT rightPredicate = right.getPredicateVar() != null
+						? (SimpleIRIHDT) right.getPredicateVar().getValue()
+						: null;
+				HDTValue rightObject = right.getObjectVar() != null ? (HDTValue) right.getObjectVar().getValue() : null;
+				HDTValue rightContext = right.getContextVar() != null ? (HDTValue) right.getContextVar().getValue()
+						: null;
 
-			try {
-				if (!left.getSubjectVar().getName().equals(right.getSubjectVar().getName())) {
+				try {
+					if (!left.getSubjectVar().getName().equals(right.getSubjectVar().getName())) {
+						log.error("Subject names do not match");
+						return super.prepare(node, context);
+					}
+				} catch (Exception e) {
 					log.error("Subject names do not match");
 					return super.prepare(node, context);
 				}
-			} catch (Exception e) {
-				log.error("Subject names do not match");
-				return super.prepare(node, context);
-			}
 
-			Set<String> bindingNames = left.getAssuredBindingNames();
-			Set<String> bindingNames1 = right.getAssuredBindingNames();
+				Set<String> bindingNames = left.getAssuredBindingNames();
+				Set<String> bindingNames1 = right.getAssuredBindingNames();
 
-			int common = 0;
-			for (String name : bindingNames) {
-				if (bindingNames1.contains(name)) {
-					common++;
-				}
-			}
-
-			if (common != 1) {
-				log.error("Common bindings are not 1");
-				return super.prepare(node, context);
-			}
-
-			if (!left.getPredicateVar().isConstant()) {
-				log.error("Predicate is not constant");
-				return super.prepare(node, context);
-			}
-			if (!right.getPredicateVar().isConstant()) {
-				log.error("Predicate is not constant");
-				return super.prepare(node, context);
-			}
-
-			if (left.getObjectVar().isConstant() && right.getObjectVar().isConstant()) {
-				log.error("Both objects are constant");
-				return super.prepare(node, context);
-			}
-
-			if (left.getContextVar() != null || right.getContextVar() != null) {
-				log.error("we don't support contexts");
-				return super.prepare(node, context);
-			}
-
-			if (!left.getObjectVar().isConstant() && !right.getObjectVar().isConstant()) {
-				log.error("Both objects are variables");
-				return super.prepare(node, context);
-			}
-
-			System.out.println("Left: " + left);
-			System.out.println("Right: " + right);
-
-			node.setAlgorithm("ProtoypeJoinIterator");
-
-			QueryEvaluationStep queryEvaluationStep = new QueryEvaluationStep() {
-
-				CloseableIteration<TripleID> left;
-
-				@Override
-				public CloseableIteration<BindingSet> evaluate(BindingSet bindings) {
-					if (!bindings.isEmpty()) {
-						throw new UnsupportedOperationException("Query bindings are not supported");
+				int common = 0;
+				for (String name : bindingNames) {
+					if (bindingNames1.contains(name)) {
+						common++;
 					}
-
-					// we will implement a very simple join on the subject
-
-					CloseableIteration<TripleID> statements = endpointTripleSource.prototypeGetStatements(null,
-							leftSubject != null ? leftSubject.getHDTId() : 0,
-							leftPredicate != null ? leftPredicate.getHDTId() : 0,
-							leftObject != null ? leftObject.getHDTId() : 0,
-							leftContext != null ? leftContext.getHDTId() : 0);
-
-					return new ProtoypeJoinIterator(statements, rightPredicate, rightObject, rightContext,
-							endpointTripleSource, (StatementPattern) leftArg, (StatementPattern) rightArg);
-
 				}
-			};
-			return queryEvaluationStep;
 
+				if (common != 1) {
+					log.error("Common bindings are not 1");
+					return super.prepare(node, context);
+				}
+
+				if (!left.getPredicateVar().isConstant()) {
+					log.error("Predicate is not constant");
+					return super.prepare(node, context);
+				}
+				if (!right.getPredicateVar().isConstant()) {
+					log.error("Predicate is not constant");
+					return super.prepare(node, context);
+				}
+
+				if (left.getObjectVar().isConstant() && right.getObjectVar().isConstant()) {
+					log.error("Both objects are constant");
+					return super.prepare(node, context);
+				}
+
+				if (left.getContextVar() != null || right.getContextVar() != null) {
+					log.error("we don't support contexts");
+					return super.prepare(node, context);
+				}
+
+				if (!left.getObjectVar().isConstant() && !right.getObjectVar().isConstant()) {
+					log.error("Both objects are variables");
+					return super.prepare(node, context);
+				}
+
+				System.out.println("Left: " + left);
+				System.out.println("Right: " + right);
+
+				node.setAlgorithm("ProtoypeJoinIterator");
+
+				QueryEvaluationStep queryEvaluationStep = new QueryEvaluationStep() {
+
+					CloseableIteration<TripleID> left;
+
+					@Override
+					public CloseableIteration<BindingSet> evaluate(BindingSet bindings) {
+						if (!bindings.isEmpty()) {
+							throw new UnsupportedOperationException("Query bindings are not supported");
+						}
+
+						// we will implement a very simple join on the subject
+
+						CloseableIteration<TripleID> statements = endpointTripleSource.prototypeGetStatements(null,
+								leftSubject != null ? leftSubject.getHDTId() : 0,
+								leftPredicate != null ? leftPredicate.getHDTId() : 0,
+								leftObject != null ? leftObject.getHDTId() : 0,
+								leftContext != null ? leftContext.getHDTId() : 0);
+
+						return new ProtoypeJoinIterator(statements, rightPredicate, rightObject, rightContext,
+								endpointTripleSource, (StatementPattern) leftArg, (StatementPattern) rightArg);
+
+					}
+				};
+				return queryEvaluationStep;
+
+			}
+
+			System.out.println();
+
+		} catch (Exception e) {
+			log.error("Error in prepare for prototype join", e);
 		}
-
-		System.out.println();
 
 		return super.prepare(node, context);
 	}
