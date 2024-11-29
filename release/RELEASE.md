@@ -1,1 +1,5 @@
-- fix HDT loading issues (#494)
+- update rdf4j to 5.1.0
+- add lucene option to set thresholds (#485)
+- fix issue with bitmap not enabled (#506)
+- add reload dl (#499)
+- add bounds to errors (#498)
