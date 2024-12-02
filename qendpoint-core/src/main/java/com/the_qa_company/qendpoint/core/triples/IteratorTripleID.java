@@ -92,9 +92,11 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 
 	/**
 	 * goto the next subject >= id
+	 *
 	 * @param id id
 	 * @return true if the next subject == id
-	 * @see #canGoToSubject() if can goto returns false, this function is not available
+	 * @see #canGoToSubject() if can goto returns false, this function is not
+	 *      available
 	 */
 	default boolean gotoSubject(long id) {
 		return false;
@@ -102,9 +104,11 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 
 	/**
 	 * goto the next predicate >= id
+	 *
 	 * @param id id
 	 * @return true if the next predicate == id
-	 * @see #canGoToPredicate() if can goto returns false, this function is not available
+	 * @see #canGoToPredicate() if can goto returns false, this function is not
+	 *      available
 	 */
 	default boolean gotoPredicate(long id) {
 		return false;
@@ -112,9 +116,11 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 
 	/**
 	 * goto the next object >= id
+	 *
 	 * @param id id
 	 * @return true if the next object == id
-	 * @see #canGoToObject() if can goto returns false, this function is not available
+	 * @see #canGoToObject() if can goto returns false, this function is not
+	 *      available
 	 */
 	default boolean gotoObject(long id) {
 		return false;
@@ -126,12 +132,14 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 	default boolean canGoToSubject() {
 		return false;
 	}
+
 	/**
 	 * @return true if {@link #gotoPredicate(long)} can be used, false otherwise
 	 */
 	default boolean canGoToPredicate() {
 		return false;
 	}
+
 	/**
 	 * @return true if {@link #gotoObject(long)} can be used, false otherwise
 	 */

@@ -34,7 +34,6 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 			private int current;
 			private int lastLoc;
 
-
 			@Override
 			public void goToStart() {
 				current = 0;

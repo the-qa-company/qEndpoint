@@ -448,7 +448,6 @@ public class TriplesList implements TempTriples {
 			return triplesList.arrayOfTriples.get(pos++).asTripleID();
 		}
 
-
 		/*
 		 * (non-Javadoc)
 		 * @see hdt.iterator.IteratorTripleID#goToStart()
