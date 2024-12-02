@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -261,13 +260,10 @@ public class BitmapTriplesIteratorTest {
 
 			supplier.createAndSaveFakeHDT(spec, hdtPath);
 
-			Random rnd = new Random(34567);
-
 			try (HDT hdt = HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore())) {
 				int elements = (int) hdt.getTriples().getNumberOfElements();
 
-				for (int i = 0; i < count; i++) {
-					int idx = rnd.nextInt(elements);
+				for (int idx = 0; idx < elements; idx++) {
 
 					IteratorTripleID it = hdt.getTriples().searchAll();
 
@@ -280,28 +276,28 @@ public class BitmapTriplesIteratorTest {
 
 					for (int member = 0; member < 3; member++) {
 						IteratorTripleID itac = hdt.getTriples().searchAll(TripleComponentOrder.SPO.mask);
-						assertSame("invalid order (" + member + "/" + i + ")", itac.getOrder(),
+						assertSame("invalid order (" + member + "/" + idx + ")", itac.getOrder(),
 								TripleComponentOrder.SPO);
 
 						// test subject
-						assertTrue("Can't jump to subject " + current + " (" + member + "/" + i + ")",
+						assertTrue("Can't jump to subject " + current + " (" + member + "/" + idx + ")",
 								itac.canGoToSubject() && itac.gotoSubject(current.getSubject()));
 
 						if (member >= 1) {
 							// test predicate
-							assertTrue("Can't jump to predicate " + current + " (" + member + "/" + i + ")",
+							assertTrue("Can't jump to predicate " + current + " (" + member + "/" + idx + ")",
 									itac.canGoToPredicate() && itac.gotoPredicate(current.getPredicate()));
 
 							if (member >= 2) {
 								// test object
-								assertTrue("Can't jump to object " + current + " (" + member + "/" + i + ")",
+								assertTrue("Can't jump to object " + current + " (" + member + "/" + idx + ")",
 										itac.canGoToObject() && itac.gotoObject(current.getObject()));
 							}
 						}
 
-						assertTrue("for " + current + " (" + member + "/" + i + ")", itac.hasNext());
+						assertTrue("for " + current + " (" + member + "/" + idx + ")", itac.hasNext());
 						TripleID next = itac.next();
-						String err = "invalid next " + next + " != " + current + " (" + member + "/" + i + ")";
+						String err = "invalid next " + next + " != " + current + " (" + member + "/" + idx + ")";
 						switch (member) {
 						case 2: // object
 							assertEquals("object err " + err, current.getObject(), next.getObject());
@@ -316,35 +312,158 @@ public class BitmapTriplesIteratorTest {
 						}
 						if (member == 2) {
 							assertEquals("idx err " + err, idx, itac.getLastTriplePosition());
-							TripleID newCurrent = itac.next();
-							assertTrue("idx err " + err, idx < itac.getLastTriplePosition());
+							if (itac.hasNext()) {
+								TripleID newCurrent = itac.next();
+								assertTrue("idx err " + err, idx < itac.getLastTriplePosition());
 
-							if (current.getSubject() == newCurrent.getSubject()) {
-								// no jump on X, we should have the sam
-								assertTrue("Can't jump to subject " + current + " (" + member + "/" + i + ")",
-										itac.gotoSubject(current.getSubject()));
+								if (current.getSubject() == newCurrent.getSubject()) {
+									// no jump on X, we should have the sam
+									assertTrue("Can't jump to subject " + current + " (" + member + "/" + idx + ")",
+											itac.gotoSubject(current.getSubject()));
 
-								if (current.getPredicate() == newCurrent.getPredicate()) {
-									// no jump on Y, we should have the same
-									assertTrue("Can't jump to subject " + current + " (" + member + "/" + i + ")",
-											itac.gotoPredicate(current.getPredicate()));
+									if (current.getPredicate() == newCurrent.getPredicate()) {
+										// no jump on Y, we should have the same
+										assertTrue("Can't jump to subject " + current + " (" + member + "/" + idx + ")",
+												itac.gotoPredicate(current.getPredicate()));
 
-									assertFalse("Can't jump to subject " + current + " (" + member + "/" + i + ")",
-											itac.gotoObject(current.getObject()));
+										assertFalse(
+												"Can't jump to subject " + current + " (" + member + "/" + idx + ")",
+												itac.gotoObject(current.getObject()));
+									} else {
+										assertFalse(
+												"Can't jump to subject " + current + " (" + member + "/" + idx + ")",
+												itac.gotoPredicate(current.getPredicate()));
+									}
+
 								} else {
-									assertFalse("Can't jump to subject " + current + " (" + member + "/" + i + ")",
-											itac.gotoPredicate(current.getPredicate()));
+									assertFalse("Can't jump to subject " + current + " (" + member + "/" + idx + ")",
+											itac.gotoSubject(current.getSubject()));
 								}
-
-							} else {
-								assertFalse("Can't jump to subject " + current + " (" + member + "/" + i + ")",
-										itac.gotoSubject(current.getSubject()));
 							}
 
 						} else {
 							assertTrue("idx err " + err, idx >= itac.getLastTriplePosition());
 						}
 					}
+				}
+			}
+		} finally {
+			PathUtils.deleteDirectory(root);
+		}
+	}
+
+	@Test
+	public void jumpXYZNextTest() throws IOException, ParserException {
+		Path root = tempDir.newFolder().toPath();
+
+		try {
+			Path hdtPath = root.resolve("test.hdt");
+
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "spo,sop,pos,pso,ops,osp",
+					HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true);
+			final int count = 10_000;
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(count, 567890987).withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			supplier.createAndSaveFakeHDT(spec, hdtPath);
+
+			try (HDT hdt = HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore())) {
+				int elements = (int) hdt.getTriples().getNumberOfElements();
+				for (int idx = 0; idx < elements; idx++) {
+
+					IteratorTripleID it = hdt.getTriples().searchAll();
+
+					assertTrue(it.canGoTo());
+
+					it.goTo(idx);
+
+					TripleID current = it.next().clone();
+					assertEquals(idx, it.getLastTriplePosition());
+
+					nextCountLoop:
+					for (int nextCount = 0; nextCount < 10; nextCount++) {
+						for (int member = 1; member < 3; member++) {
+							String memberInfo = " (" + member + "/" + idx + "/" + nextCount + ")";
+							IteratorTripleID itac = hdt.getTriples().searchAll(TripleComponentOrder.SPO.mask);
+							assertSame("invalid order" + memberInfo, itac.getOrder(), TripleComponentOrder.SPO);
+
+							// test subject
+							assertTrue("Can't jump to subject " + current + memberInfo,
+									itac.canGoToSubject() && itac.gotoSubject(current.getSubject()));
+
+							for (int j = 0; j < nextCount; j++) {
+								assertTrue(itac.hasNext());
+								TripleID pvid = itac.next();
+
+								if (itac.getLastTriplePosition() == idx) {
+									assertEquals(pvid, current);
+									break nextCountLoop; // we consumed the one
+															// we were searching
+															// for, it can't be
+															// used
+								}
+							}
+
+							// test predicate
+							assertTrue("Can't jump to predicate " + current + memberInfo,
+									itac.canGoToPredicate() && itac.gotoPredicate(current.getPredicate()));
+
+							if (member >= 2) {
+								// test object
+								assertTrue("Can't jump to object " + current + memberInfo,
+										itac.canGoToObject() && itac.gotoObject(current.getObject()));
+							}
+
+							assertTrue("for " + current + memberInfo, itac.hasNext());
+							TripleID next = itac.next();
+							String err = "invalid next " + next + " != " + current + memberInfo;
+							switch (member) {
+							case 2: // object
+								assertEquals("object err " + err, current.getObject(), next.getObject());
+							case 1: // predicate
+								assertEquals("predicate err " + err, current.getPredicate(), next.getPredicate());
+							case 0: // subject only
+								assertEquals("subject err " + err, current.getSubject(), next.getSubject());
+								break;
+							default:
+								fail("bad member: " + member);
+								break;
+							}
+							if (member == 2) {
+								assertEquals("idx err " + err, idx, itac.getLastTriplePosition());
+								if (itac.hasNext()) {
+									TripleID newCurrent = itac.next();
+									assertTrue("idx err " + err, idx < itac.getLastTriplePosition());
+
+									if (current.getSubject() == newCurrent.getSubject()) {
+										// no jump on X, we should have the sam
+										assertTrue("Can't jump to subject " + current + memberInfo + newCurrent,
+												itac.gotoSubject(current.getSubject()));
+
+										if (current.getPredicate() == newCurrent.getPredicate()) {
+											// no jump on Y, we should have the
+											// same
+											assertTrue("Can't jump to subject " + current + memberInfo + newCurrent,
+													itac.gotoPredicate(current.getPredicate()));
+
+											assertFalse("Can't jump to subject " + current + memberInfo + newCurrent,
+													itac.gotoObject(current.getObject()));
+										} else {
+											assertFalse("Can't jump to subject " + current + memberInfo + newCurrent,
+													itac.gotoPredicate(current.getPredicate()));
+										}
+									} else {
+										assertFalse("Can't jump to subject " + current + memberInfo + newCurrent,
+												itac.gotoSubject(current.getSubject()));
+									}
+								}
+
+							} else {
+								assertTrue("idx err " + err, idx >= itac.getLastTriplePosition());
+							}
+						}
+					}
+
 				}
 			}
 		} finally {
