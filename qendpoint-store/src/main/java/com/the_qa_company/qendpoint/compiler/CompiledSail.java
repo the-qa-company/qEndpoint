@@ -253,6 +253,11 @@ public class CompiledSail extends SailWrapper {
 			NotifyingSail oldSail = sail.getBaseSail();
 			try {
 				sail.setBaseSail(source);
+				String indexId = sail.getParameter(LuceneSail.INDEX_ID);
+				if (indexId == null || indexId.isEmpty()) {
+					indexId = "no id";
+				}
+				logger.info("Reindexing sail: " + indexId);
 				sail.reindex();
 			} finally {
 				sail.setBaseSail(oldSail);
