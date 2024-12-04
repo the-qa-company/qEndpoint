@@ -600,7 +600,13 @@ public class SparqlRepository {
 
 			logger.info("Running given sparql query: {}", sparqlQuery);
 
-			ParsedQuery parsedQuery = QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+			ParsedQuery parsedQuery;
+
+			try {
+				parsedQuery = QueryParserUtil.parseQuery(QueryLanguage.SPARQL, sparqlQuery, null);
+			} catch (RuntimeException re) {
+				throw new CantParseQueryException(re);
+			}
 
 			if (compiledSail.getOptions().isDebugShowPlans()) {
 				System.out.println(parsedQuery);
@@ -797,7 +803,13 @@ public class SparqlRepository {
 		try (connectionCloseable) {
 			connection.setParserConfig(new ParserConfig().set(BasicParserSettings.VERIFY_URI_SYNTAX, false));
 
-			Update preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);
+			Update preparedUpdate;
+
+			try {
+				preparedUpdate = connection.prepareUpdate(QueryLanguage.SPARQL, sparqlQuery);
+			} catch (RuntimeException e) {
+				throw new CantParseQueryException(e);
+			}
 
 			if (timeout < 0) {
 				preparedUpdate.setMaxExecutionTime(getOptions().getTimeoutQuery());
