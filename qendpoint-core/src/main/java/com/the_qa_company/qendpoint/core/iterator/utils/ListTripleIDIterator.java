@@ -44,26 +44,6 @@ public class ListTripleIDIterator implements IteratorTripleID {
 
 	/*
 	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#hasPrevious()
-	 */
-	@Override
-	public boolean hasPrevious() {
-		return pos > 0;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#previous()
-	 */
-	@Override
-	public TripleID previous() {
-		TripleID tripleID = triplesList.get(--pos);
-		lastPosition = pos;
-		return tripleID;
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see hdt.iterator.IteratorTripleID#goToStart()
 	 */
 	@Override

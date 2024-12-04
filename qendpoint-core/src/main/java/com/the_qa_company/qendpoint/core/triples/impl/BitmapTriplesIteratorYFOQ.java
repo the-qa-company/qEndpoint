@@ -114,41 +114,6 @@ public class BitmapTriplesIteratorYFOQ implements SuppliableIteratorTripleID {
 
 	/*
 	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#hasPrevious()
-	 */
-	@Override
-	public boolean hasPrevious() {
-		return numOccurrence > 1 || posZ >= prevZ;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#previous()
-	 */
-	@Override
-	public TripleID previous() {
-		if (posZ <= prevZ) {
-			numOccurrence--;
-			posY = triples.predicateIndex.getOccurrence(predBase, numOccurrence);
-
-			prevZ = adjZ.find(posY);
-			posZ = nextZ = adjZ.last(posY);
-
-			x = adjY.findListIndex(posY) + 1;
-			y = adjY.get(posY);
-			z = adjZ.get(posZ);
-		} else {
-			z = adjZ.get(posZ);
-			posZ--;
-		}
-
-		updateOutput();
-
-		return returnTriple;
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see hdt.iterator.IteratorTripleID#goToStart()
 	 */
 	@Override

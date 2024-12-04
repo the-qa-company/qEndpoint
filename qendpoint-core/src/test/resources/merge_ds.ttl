@@ -1,0 +1,27 @@
+
+@prefix ex: <http://example.org/#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:s1 rdfs:name "test" ;
+      ex:relative ex:s2, ex:s3 .
+
+
+ex:s2 rdfs:name "test 2" .
+ex:s3 rdfs:name "test 3" ;
+      ex:relative ex:s4 ;
+      ex:id "id3".
+
+ex:s4 rdfs:name "test 4" ;
+      ex:relative ex:s3 ;
+      ex:id "id42", "id43" .
+
+
+ex:s5 rdfs:name "test 5" ;
+      ex:relative ex:s5 ;
+      ex:id "id51", "id52", "id53".
+
+ex:s6 rdfs:name "test 6" ;
+      ex:relative ex:s5 ;
+      ex:relative ex:s6 ;
+      ex:id "id51".
+

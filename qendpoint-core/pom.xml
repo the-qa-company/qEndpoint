@@ -48,7 +48,7 @@
         <logback.version>1.5.6</logback.version>
         <roaringbitmap.version>0.9.44</roaringbitmap.version>
 
-        <jena.version>4.3.2</jena.version>
+        <jena.version>4.9.0</jena.version>
         <slf4j.version>1.7.30</slf4j.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.21</version>
+            <version>1.26.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>

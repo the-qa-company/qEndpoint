@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.triples;
 
 import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 
 import java.util.Iterator;
 
@@ -28,21 +29,6 @@ import java.util.Iterator;
  * Iterator of TripleID
  */
 public interface IteratorTripleID extends Iterator<TripleID> {
-
-	/**
-	 * Whether the iterator has previous elements.
-	 *
-	 * @return boolean
-	 */
-	boolean hasPrevious();
-
-	/**
-	 * Get the previous element. Call only if hasPrevious() returns true. It
-	 * moves the cursor of the Iterator to the previous entry.
-	 *
-	 * @return TripleID
-	 */
-	TripleID previous();
 
 	/**
 	 * Point the cursor to the first element of the data structure.
@@ -101,6 +87,63 @@ public interface IteratorTripleID extends Iterator<TripleID> {
 	 *         index based on {@link #getOrder()} or the triples order
 	 */
 	default boolean isLastTriplePositionBoundToOrder() {
+		return false;
+	}
+
+	/**
+	 * goto the next subject >= id
+	 *
+	 * @param id id
+	 * @return true if the next subject == id
+	 * @see #canGoToSubject() if can goto returns false, this function is not
+	 *      available
+	 */
+	default boolean gotoSubject(long id) {
+		return false;
+	}
+
+	/**
+	 * goto the next predicate >= id
+	 *
+	 * @param id id
+	 * @return true if the next predicate == id
+	 * @see #canGoToPredicate() if can goto returns false, this function is not
+	 *      available
+	 */
+	default boolean gotoPredicate(long id) {
+		return false;
+	}
+
+	/**
+	 * goto the next object >= id
+	 *
+	 * @param id id
+	 * @return true if the next object == id
+	 * @see #canGoToObject() if can goto returns false, this function is not
+	 *      available
+	 */
+	default boolean gotoObject(long id) {
+		return false;
+	}
+
+	/**
+	 * @return true if {@link #gotoSubject(long)} can be used, false otherwise
+	 */
+	default boolean canGoToSubject() {
+		return false;
+	}
+
+	/**
+	 * @return true if {@link #gotoPredicate(long)} can be used, false otherwise
+	 */
+	default boolean canGoToPredicate() {
+		return false;
+	}
+
+	/**
+	 * @return true if {@link #gotoObject(long)} can be used, false otherwise
+	 */
+	default boolean canGoToObject() {
 		return false;
 	}
 }

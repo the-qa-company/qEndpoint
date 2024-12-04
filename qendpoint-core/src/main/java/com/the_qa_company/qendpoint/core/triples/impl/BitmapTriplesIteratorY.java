@@ -111,37 +111,6 @@ public class BitmapTriplesIteratorY implements SuppliableIteratorTripleID {
 	 * (non-Javadoc)
 	 * @see hdt.iterator.IteratorTripleID#hasPrevious()
 	 */
-	@Override
-	public boolean hasPrevious() {
-		return prevY != -1 || posZ >= prevZ;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#previous()
-	 */
-	@Override
-	public TripleID previous() {
-		if (posZ <= prevZ) {
-			nextY = posY;
-			posY = prevY;
-			prevY = adjY.findPreviousAppearance(prevY - 1, patY);
-
-			posZ = prevZ = adjZ.find(posY);
-			nextZ = adjZ.last(posY);
-
-			x = adjY.findListIndex(posY) + 1;
-			y = adjY.get(posY);
-			z = adjZ.get(posZ);
-		} else {
-			posZ--;
-			z = adjZ.get(posZ);
-		}
-
-		updateOutput();
-
-		return returnTriple;
-	}
 
 	/*
 	 * (non-Javadoc)

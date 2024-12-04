@@ -50,16 +50,6 @@ public class BitmapTriplesIteratorGraphG extends FetcherIterator<TripleID> imple
 	}
 
 	@Override
-	public boolean hasPrevious() {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	public TripleID previous() {
-		throw new NotImplementedException();
-	}
-
-	@Override
 	public void goToStart() {
 		posZ = -1;
 	}

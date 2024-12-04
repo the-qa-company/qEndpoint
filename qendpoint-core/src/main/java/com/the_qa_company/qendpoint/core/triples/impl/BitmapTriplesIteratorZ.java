@@ -96,24 +96,6 @@ public class BitmapTriplesIteratorZ implements SuppliableIteratorTripleID {
 
 	/*
 	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#hasPrevious()
-	 */
-	@Override
-	public boolean hasPrevious() {
-		throw new NotImplementedException();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#previous()
-	 */
-	@Override
-	public TripleID previous() {
-		throw new NotImplementedException();
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see hdt.iterator.IteratorTripleID#goToStart()
 	 */
 	@Override

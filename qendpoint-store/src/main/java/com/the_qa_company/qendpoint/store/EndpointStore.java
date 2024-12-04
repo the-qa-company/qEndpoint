@@ -77,6 +77,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 	 * disable the optimizer
 	 */
 	public static final String QUERY_CONFIG_NO_OPTIMIZER = "no_optimizer";
+	public static final String QUERY_CONFIG_NO_OPTIMIZER_MERGE = "no_optimizer_merge";
 	/**
 	 * get the query plan
 	 */

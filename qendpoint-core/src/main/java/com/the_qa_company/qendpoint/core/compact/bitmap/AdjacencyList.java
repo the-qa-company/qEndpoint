@@ -111,7 +111,7 @@ public class AdjacencyList {
 		return last(x) - find(x) + 1;
 	}
 
-	public long search(long element, long begin, long end) throws NotFoundException {
+	public long search(long element, long begin, long end) {
 		if (end - begin > 10) {
 			return binSearch(element, begin, end);
 		} else {
@@ -134,7 +134,7 @@ public class AdjacencyList {
 		return -1;
 	}
 
-	public long linSearch(long element, long begin, long end) throws NotFoundException {
+	public long linSearch(long element, long begin, long end) {
 		while (begin <= end) {
 			long read = array.get(begin);
 			if (read == element) {
@@ -142,7 +142,41 @@ public class AdjacencyList {
 			}
 			begin++;
 		}
-		throw new NotFoundException();
+		return -1;
+	}
+
+	public long searchLoc(long element, long begin, long end) {
+		if (end - begin > 10) {
+			return binSearchLoc(element, begin, end);
+		} else {
+			return linSearchLoc(element, begin, end);
+		}
+	}
+
+	public long binSearchLoc(long element, long begin, long end) {
+		while (begin <= end) {
+			long mid = (begin + end) / 2;
+			long read = array.get(mid);
+			if (element > read) {
+				begin = mid + 1;
+			} else if (element < read) {
+				end = mid - 1;
+			} else {
+				return mid;
+			}
+		}
+		return -(1 + begin);
+	}
+
+	public long linSearchLoc(long element, long begin, long end) {
+		while (begin <= end) {
+			long read = array.get(begin);
+			if (read == element) {
+				return begin;
+			}
+			begin++;
+		}
+		return -(1 + begin);
 	}
 
 	public final long get(long pos) {
@@ -237,4 +271,11 @@ public class AdjacencyList {
 		System.out.println();
 	}
 
+	public Sequence getArray() {
+		return array;
+	}
+
+	public Bitmap getBitmap() {
+		return bitmap;
+	}
 }

@@ -25,16 +25,6 @@ public class EmptyTriplesIterator implements SuppliableIteratorTripleID {
 	}
 
 	@Override
-	public boolean hasPrevious() {
-		return false;
-	}
-
-	@Override
-	public TripleID previous() {
-		throw new NoSuchElementException();
-	}
-
-	@Override
 	public void goToStart() {
 		// Do nothing
 	}

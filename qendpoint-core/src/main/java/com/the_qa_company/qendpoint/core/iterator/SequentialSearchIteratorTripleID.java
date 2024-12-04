@@ -99,52 +99,6 @@ public class SequentialSearchIteratorTripleID implements SuppliableIteratorTripl
 
 	/*
 	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#hasPrevious()
-	 */
-	@Override
-	public boolean hasPrevious() {
-		return hasPreviousTriples;
-	}
-
-	private void doFetchPrevious() {
-		hasPreviousTriples = false;
-
-		while (iterator.hasPrevious()) {
-			TripleID previous = iterator.previous();
-
-			if (previous.match(pattern)) {
-				hasPreviousTriples = true;
-				hasMoreTriples = true;
-				previousTriple.assign(previous);
-				previousPosition = iterator.getLastTriplePositionSupplier();
-				break;
-			}
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.iterator.IteratorTripleID#previous()
-	 */
-	@Override
-	public TripleID previous() {
-		if (goingUp) {
-			goingUp = false;
-			if (hasMoreTriples) {
-				doFetchPrevious();
-			}
-			doFetchPrevious();
-		}
-		returnTriple.assign(previousTriple);
-		lastPosition = previousPosition;
-
-		doFetchPrevious();
-
-		return returnTriple;
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see hdt.iterator.IteratorTripleID#goToStart()
 	 */
 	@Override

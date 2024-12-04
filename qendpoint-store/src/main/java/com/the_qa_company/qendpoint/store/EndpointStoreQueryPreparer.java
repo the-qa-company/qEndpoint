@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.federation.SPARQLServiceWikibaseLabelResolver;
 import com.the_qa_company.qendpoint.federation.ServiceClauseOptimizer;
+import com.the_qa_company.qendpoint.utils.MergeJoinOptimizer;
 import com.the_qa_company.qendpoint.utils.VariableToIdSubstitution;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -132,6 +133,7 @@ public class EndpointStoreQueryPreparer extends AbstractQueryPreparer {
 			new IterativeEvaluationOptimizer().optimize(tupleExpr, dataset, bindings);
 			new FilterOptimizer().optimize(tupleExpr, dataset, bindings);
 			new OrderLimitOptimizer().optimize(tupleExpr, dataset, bindings);
+			new MergeJoinOptimizer(conn).optimize(tupleExpr, dataset, bindings);
 		}
 
 		new ServiceClauseOptimizer().optimize(tupleExpr, dataset, bindings);

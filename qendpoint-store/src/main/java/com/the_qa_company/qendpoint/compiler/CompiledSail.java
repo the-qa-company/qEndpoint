@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
@@ -216,6 +217,26 @@ public class CompiledSail extends SailWrapper {
 		return source;
 	}
 
+	private void reindexSail(LuceneSail sail) {
+		// bypass filtering system to use the source
+		NotifyingSail oldSail = sail.getBaseSail();
+		try {
+			sail.setBaseSail(source);
+			String indexId = sail.getParameter(LuceneSail.INDEX_ID);
+			if (indexId == null || indexId.isEmpty()) {
+				indexId = "<no id>";
+			}
+			StopWatch sw = new StopWatch();
+			sw.reset();
+			logger.info("Reindexing sail {}", indexId);
+			sail.reindex();
+			sw.stop();
+			logger.info("Sail {} reindexed in {} ({}ms)", indexId, sw, sw.getMeasureMillis());
+		} finally {
+			sail.setBaseSail(oldSail);
+		}
+	}
+
 	/**
 	 * reindex all the compiled lucene sails
 	 *
@@ -225,19 +246,7 @@ public class CompiledSail extends SailWrapper {
 	public void reindexLuceneSails() throws SailException {
 		for (LuceneSail sail : luceneSails) {
 			// bypass filtering system to use the source
-			NotifyingSail oldSail = sail.getBaseSail();
-			try {
-				sail.setBaseSail(source);
-				String indexId = sail.getParameter(LuceneSail.INDEX_ID);
-				if (indexId == null || indexId.isEmpty()) {
-					indexId = "no id";
-				}
-				logger.info("Reindexing sail: {}", indexId);
-				sail.reindex();
-			} finally {
-				sail.setBaseSail(oldSail);
-			}
-
+			reindexSail(sail);
 		}
 	}
 
@@ -254,20 +263,7 @@ public class CompiledSail extends SailWrapper {
 			if (!index.equals(sail.getParameter(LuceneSail.INDEX_ID))) {
 				continue; // ignore
 			}
-			// bypass filtering system to use the source
-			NotifyingSail oldSail = sail.getBaseSail();
-			try {
-				sail.setBaseSail(source);
-				String indexId = sail.getParameter(LuceneSail.INDEX_ID);
-				if (indexId == null || indexId.isEmpty()) {
-					indexId = "no id";
-				}
-				logger.info("Reindexing sail: {}", indexId);
-				sail.reindex();
-			} finally {
-				sail.setBaseSail(oldSail);
-			}
-
+			reindexSail(sail);
 		}
 	}
 

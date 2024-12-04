@@ -825,6 +825,10 @@ public class EndpointStoreConnection extends SailSourceConnection implements Con
 		}
 	}
 
+	public EndpointTripleSource getTripleSource() {
+		return tripleSource;
+	}
+
 	private class EndpointStoreConnectionListener implements SailConnectionListener {
 		private boolean shouldHandle() {
 			return !endpoint.isMerging() || !endpoint.isNotificationsFreeze();
