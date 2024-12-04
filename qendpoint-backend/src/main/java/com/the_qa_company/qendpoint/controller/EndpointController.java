@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.controller;
 
+import com.the_qa_company.qendpoint.compiler.CantParseQueryException;
 import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreInputException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,7 +67,7 @@ public class EndpointController {
 			} else {
 				throw new ServerWebInputException("Query not specified");
 			}
-		} catch (EndpointStoreInputException e) {
+		} catch (EndpointStoreInputException | CantParseQueryException e) {
 			throw new ServerWebInputException(e.getMessage());
 		}
 	}
