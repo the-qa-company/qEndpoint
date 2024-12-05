@@ -70,7 +70,7 @@ public class SequenceInt64 implements DynamicSequence {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 	}
 

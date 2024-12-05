@@ -63,7 +63,7 @@ public class SimpleLongArray implements LongArray {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 	}
 }

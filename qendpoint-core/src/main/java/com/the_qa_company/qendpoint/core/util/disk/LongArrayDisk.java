@@ -291,7 +291,7 @@ public class LongArrayDisk implements Closeable, LongArray {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 	}
 

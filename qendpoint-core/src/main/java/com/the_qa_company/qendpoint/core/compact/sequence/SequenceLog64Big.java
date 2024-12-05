@@ -284,7 +284,7 @@ public class SequenceLog64Big implements DynamicSequence {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 	}
 

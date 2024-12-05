@@ -56,7 +56,7 @@ public class WriteLongArrayBuffer implements LongArray, Closeable {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 	}
 

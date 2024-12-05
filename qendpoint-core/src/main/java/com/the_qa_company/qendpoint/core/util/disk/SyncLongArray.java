@@ -62,7 +62,7 @@ public class SyncLongArray implements LongArray {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 
 	}

@@ -39,6 +39,8 @@ import java.nio.file.Path;
  * @author mario.arias
  */
 public class Bitmap375Big extends Bitmap64Big {
+	private final boolean oldBinarySearch;
+
 	/**
 	 * create disk version bitmap with in memory super index
 	 *
@@ -46,6 +48,19 @@ public class Bitmap375Big extends Bitmap64Big {
 	 * @param nbits    number of bits
 	 * @return bitmap
 	 */
+
+	{
+		// check if the system property "useOldBinarySeearch" is set to true
+		String useOldBinarySearch = System.getProperty("useOldBinarySearch");
+		if (useOldBinarySearch != null && useOldBinarySearch.equalsIgnoreCase("true")) {
+			this.oldBinarySearch = true;
+			System.out.println("Using old binary search");
+		} else {
+			System.out.println("Using new binary search");
+			this.oldBinarySearch = false;
+		}
+
+	}
 
 	public static Bitmap375Big disk(Path location, long nbits) {
 		return disk(location, nbits, false);
@@ -181,6 +196,7 @@ public class Bitmap375Big extends Bitmap64Big {
 		}
 		pop = countSuperBlock + countBlock;
 		indexUpToDate = true;
+		superBlocks.updatePrevFound();
 	}
 
 	/*
@@ -325,7 +341,7 @@ public class Bitmap375Big extends Bitmap64Big {
 			return 0;
 		}
 		// Search superblock (binary Search)
-		long superBlockIndex = binarySearchNew(superBlocks, x);
+		long superBlockIndex = oldBinarySearch ? binarySearch(superBlocks, x) : binarySearchNew(superBlocks, x);
 
 		// If there is a run of many zeros, two correlative superblocks may have
 		// the same value,
@@ -462,52 +478,43 @@ public class Bitmap375Big extends Bitmap64Big {
 	}
 
 	public static long binarySearchNew(LongArray arr, long val) {
-		long min = 0;
-		long max = arr.length();
-		long mid;
 
-		long[] prevFound = arr.getPrevFound();
+		long min = arr.getLowerBound(val);
+		long max = arr.getUpperBound(val);
+		long mid = arr.getEstimatedMidpoint(val, min, max);
 
-		int index = (int) (val / 65536 + 1);
-
-		if (index > prevFound.length) {
-			throw new IllegalArgumentException("Index out of bounds: " + index);
-		}
-
-		if (index + 1 < prevFound.length) {
-			long t = prevFound[index + 1];
-			if (t > 0) {
-				max = Math.min(max, t);
-			}
-		}
-
-		if (index - 1 >= 0) {
-			long t = prevFound[index - 1];
-			if (t > 0) {
-				min = t;
-			}
-		}
-
-		long t = prevFound[index];
-		if (t > min && t < max) {
-			mid = t;
-		} else {
-			mid = (min + max) / 2;
-		}
-
+//		System.out.println("Searching for: " + val);
+		int step = 0;
 		while (min + 1 < max) {
+			step++;
+			// print min, max, mid
+//			System.out.println("min: " + min + " max: " + max + " mid: " + mid);
 
 			long l = arr.get(mid);
 
 			if (l >= val) {
 				max = mid;
+
+				if (min + 1 < max && step > 1 && step < 4) {
+					long l1 = arr.get(min + 1);
+					if (l1 >= val) {
+						max = min + 1;
+					} else {
+						// is this actually correct?
+						min = min + 1;
+					}
+				}
+
 			} else {
 				min = mid;
 			}
 			mid = (min + max) / 2;
 		}
+//		System.out.println("Found after: " + step + " steps");
 
-		prevFound[index] = min;
+		arr.prevFoundMid(val, min);
+
+		// prevFound[index] = min;
 
 		return min;
 	}

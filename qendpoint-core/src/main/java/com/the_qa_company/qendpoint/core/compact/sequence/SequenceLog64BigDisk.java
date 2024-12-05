@@ -295,7 +295,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	}
 
 	@Override
-	public long[] getPrevFound() {
+	public long[] getPrevFoundHigh() {
 		return prevFound;
 	}
 
