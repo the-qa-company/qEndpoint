@@ -1,5 +1,3 @@
-- update rdf4j to 5.1.0
-- add lucene option to set thresholds (#485)
-- fix issue with bitmap not enabled (#506)
-- add reload dl (#499)
-- add bounds to errors (#498)
+- cache constants in query optimiser (#527)
+- update spring to 3.4.0 (#518)
+- remove rdf4j solr from the backend dependencies (#518)
