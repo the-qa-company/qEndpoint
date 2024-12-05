@@ -64,9 +64,10 @@ public class BitUtil {
 	public static int select1(long value, int rank) {
 		int bitpos = 0;
 		while (rank > 0 && value != 0) {
-			rank -= value & 1;
-			bitpos++;
-			value >>>= 1;
+			int trailingZeros = Long.numberOfTrailingZeros(value);
+			bitpos += trailingZeros + 1;
+			value >>>= trailingZeros + 1;
+			rank--;
 		}
 		return bitpos;
 	}
