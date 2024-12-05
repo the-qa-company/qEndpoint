@@ -34,6 +34,7 @@ import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserTar;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserZip;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.InputStream;
 
@@ -110,9 +111,68 @@ public class RDFParserFactory {
 	 * @return iterator
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
-			boolean keepBNode, RDFNotation notation) {
+																 boolean keepBNode, RDFNotation notation) {
 		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
 				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+	}
+
+	/**
+	 * convert a stream to a triple iterator
+	 *
+	 * @param parser   the parser to convert the stream
+	 * @param stream   the stream to parse
+	 * @param baseUri  the base uri to parse
+	 * @param notation the rdf notation to parse
+	 * @return iterator
+	 */
+	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, InputStream stream,
+																 String baseUri, boolean keepBNode, RDFNotation notation, HDTOptions spec) {
+		String prefixes = spec.get(HDTOptionsKeys.LOADER_PREFIXES);
+
+		if (prefixes == null || prefixes.isEmpty()) {
+			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
+					(triple, pos) -> pipe.addElement(triple.tripleToString())));
+		} else {
+			PrefixesStorage st = new PrefixesStorage();
+			st.loadConfig(prefixes);
+
+			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
+					(triple, pos) -> {
+						TripleString ts = triple.tripleToString();
+						st.map(ts);
+						pipe.addElement(ts);
+					}));
+		}
+	}
+
+	/**
+	 * convert a stream to a triple iterator
+	 *
+	 * @param parser   the parser to convert the stream
+	 * @param file     path to the file to parse
+	 * @param baseUri  the base uri to parse
+	 * @param notation the rdf notation to parse
+	 * @param spec  spec
+	 * @return iterator
+	 */
+	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
+																 boolean keepBNode, RDFNotation notation, HDTOptions spec) {
+		String prefixes = spec.get(HDTOptionsKeys.LOADER_PREFIXES);
+
+		if (prefixes == null || prefixes.isEmpty()) {
+			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
+					(triple, pos) -> pipe.addElement(triple.tripleToString())));
+		} else {
+			PrefixesStorage st = new PrefixesStorage();
+			st.loadConfig(prefixes);
+
+			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
+					(triple, pos) -> {
+						TripleString ts = triple.tripleToString();
+						st.map(ts);
+						pipe.addElement(ts);
+					}));
+		}
 	}
 
 }
