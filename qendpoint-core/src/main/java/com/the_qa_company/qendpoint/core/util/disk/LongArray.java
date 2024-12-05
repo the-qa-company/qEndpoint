@@ -208,4 +208,55 @@ public interface LongArray extends Iterable<Long> {
 			}
 		};
 	}
+
+	long[] getPrevFoundHigh();
+
+	default int getPrevFoundBucketSize() {
+		return 65536;
+	}
+
+	default long getLowerBound(long val) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+		if (index - 1 >= 0) {
+			long t = getPrevFoundHigh()[index - 1];
+			if (t > 0) {
+				return t;
+			}
+		}
+		return 0;
+	}
+
+	default long getUpperBound(long val) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+
+		var prevFound = getPrevFoundHigh();
+
+		if (index + 1 < prevFound.length) {
+			long t = prevFound[index + 1];
+			if (t > 0) {
+				return Math.min(length(), t);
+			}
+		}
+
+		return length();
+	}
+
+	default long getEstimatedMidpoint(long val, long min, long max) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+		var prevFound = getPrevFoundHigh();
+		long t = prevFound[index];
+		if (t > min && t < max) {
+			return t;
+		} else {
+			return (min + max) / 2;
+		}
+	}
+
+	default void updatePrevFound() {
+		// no-op
+	}
+
+	default void prevFoundMid(long val, long min) {
+		// no-op
+	}
 }

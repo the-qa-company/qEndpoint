@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 public class EndpointTripleSource implements TripleSource {
 
 	private static final Logger logger = LoggerFactory.getLogger(EndpointTripleSource.class);
+	public static final EmptyIteration<Statement> EMPTY_ITERATION = new EmptyIteration<>();
 	private final EndpointStore endpoint;
 	private long numberOfCurrentTriples;
 	// count the number of times rdf4j is called within a triple pattern..
@@ -95,68 +96,22 @@ public class EndpointTripleSource implements TripleSource {
 		boolean graph = endpoint.getHdt().getDictionary().supportGraphs();
 
 		// convert uris into ids if needed
-		Resource newSubj;
-		IRI newPred;
-		Value newObj;
-		Resource[] newContextes;
+
 		long subjectID = this.endpoint.getHdtConverter().subjectToID(subj);
 		long predicateID = this.endpoint.getHdtConverter().predicateToID(pred);
 		long objectID = this.endpoint.getHdtConverter().objectToID(obj);
 		long[] graphID;
 
-		if (subjectID == 0 || subjectID == -1) {
-			newSubj = subj;
-		} else {
-			newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
-		}
-		if (predicateID == 0 || predicateID == -1) {
-			newPred = pred;
-		} else {
-			newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
-		}
-		if (objectID == 0 || objectID == -1) {
-			newObj = obj;
-		} else {
-			newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
-		}
-
 		if (graph) {
 			graphID = new long[contexts.length];
-			newContextes = this.endpoint.getHdtConverter().graphIdToIRI(contexts, graphID);
 		} else {
 			graphID = null;
-			newContextes = contexts;
 		}
 
 		// logger.debug("SEARCH {} {} {}", newSubj, newPred, newObj);
 
-		// check if we need to search over the delta and if yes, search
-		CloseableIteration<? extends Statement> repositoryResult;
-		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
-			if (statementOrder != null) {
-				throw new UnsupportedOperationException(
-						"Statement ordering is not supported when searching over the native store");
-			}
-			logger.debug("Searching over native store");
-			count++;
-			if (endpoint.isMergeTriggered) {
-				// query both native stores
-				logger.debug("Query both RDF4j stores!");
-				CloseableIteration<? extends Statement> repositoryResult1 = this.endpointStoreConnection.getConnA_read()
-						.getStatements(newSubj, newPred, newObj, false, newContextes);
-				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection.getConnB_read()
-						.getStatements(newSubj, newPred, newObj, false, newContextes);
-				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
-
-			} else {
-				logger.debug("Query only one RDF4j stores!");
-				repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
-						newPred, newObj, false, newContextes);
-			}
-		} else {
-			logger.debug("Not searching over native store");
-			repositoryResult = new EmptyIteration<>();
-		}
+		var nativeStoreRepoResults = getNativeStoreIterator(statementOrder, subj, pred, obj, contexts, subjectID,
+				predicateID, objectID, graph, graphID);
 
 		// iterate over the HDT file
 		IteratorTripleID iterator;
@@ -203,7 +158,66 @@ public class EndpointTripleSource implements TripleSource {
 
 		// iterate over hdt result, delete the triples marked as deleted and add
 		// the triples from the delta
-		return new EndpointStoreTripleIterator(endpointStoreConnection, this, iterator, repositoryResult);
+		return new EndpointStoreTripleIterator(endpointStoreConnection, this, iterator, nativeStoreRepoResults);
+	}
+
+	private CloseableIteration<? extends Statement> getNativeStoreIterator(StatementOrder statementOrder, Resource subj,
+			IRI pred, Value obj, Resource[] contexts, long subjectID, long predicateID, long objectID, boolean graph,
+			long[] graphID) {
+		// check if we need to search over the delta and if yes, search
+		CloseableIteration<? extends Statement> repositoryResult;
+		if (shouldSearchOverNativeStore(subjectID, predicateID, objectID)) {
+			Resource newSubj;
+			IRI newPred;
+			Value newObj;
+			Resource[] newContextes;
+			if (subjectID == 0 || subjectID == -1) {
+				newSubj = subj;
+			} else {
+				newSubj = this.endpoint.getHdtConverter().subjectIdToIRI(subjectID);
+			}
+			if (predicateID == 0 || predicateID == -1) {
+				newPred = pred;
+			} else {
+				newPred = this.endpoint.getHdtConverter().predicateIdToIRI(predicateID);
+			}
+			if (objectID == 0 || objectID == -1) {
+				newObj = obj;
+			} else {
+				newObj = this.endpoint.getHdtConverter().objectIdToIRI(objectID);
+			}
+
+			if (graph) {
+				newContextes = this.endpoint.getHdtConverter().graphIdToIRI(contexts, graphID);
+			} else {
+				newContextes = contexts;
+			}
+
+			if (statementOrder != null) {
+				throw new UnsupportedOperationException(
+						"Statement ordering is not supported when searching over the native store");
+			}
+			logger.debug("Searching over native store");
+			count++;
+			if (endpoint.isMergeTriggered) {
+				// query both native stores
+				logger.debug("Query both RDF4j stores!");
+				CloseableIteration<? extends Statement> repositoryResult1 = this.endpointStoreConnection.getConnA_read()
+						.getStatements(newSubj, newPred, newObj, false, newContextes);
+				CloseableIteration<? extends Statement> repositoryResult2 = this.endpointStoreConnection.getConnB_read()
+						.getStatements(newSubj, newPred, newObj, false, newContextes);
+				repositoryResult = new CombinedNativeStoreResult(repositoryResult1, repositoryResult2);
+
+			} else {
+				logger.debug("Query only one RDF4j stores!");
+				repositoryResult = this.endpointStoreConnection.getCurrentConnectionRead().getStatements(newSubj,
+						newPred, newObj, false, newContextes);
+			}
+		} else {
+			logger.debug("Not searching over native store");
+			repositoryResult = EMPTY_ITERATION;
+		}
+		return repositoryResult;
 	}
 
 	// this function determines if a triple pattern should be searched over the

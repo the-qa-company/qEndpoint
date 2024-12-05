@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.util.disk;
 
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.apache.jena.base.Sys;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -17,7 +18,15 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 	private final int indexMask;
 	private final int numbits;
 
+	private final int PREV_FOUND_SIZE = 1024 * 128;
+
+	// should take about 1MB per array when PREV_FOUND_SIZE is 1024 * 128
+	private final long[] prevFoundHigh = new long[PREV_FOUND_SIZE];
+	private final long[] prevFoundLow = new long[PREV_FOUND_SIZE];
+	private final long[] prevFoundMid = new long[PREV_FOUND_SIZE];
+
 	private long size;
+	private int prevFoundBucketSize;
 
 	private SimpleSplitLongArray(LongArray array, int numbits, long size) {
 		this.size = size;
@@ -30,6 +39,108 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 		max = (~0L) >>> (64 - numbits);
 		indexMask = (1 << shift) - 1;
 		this.numbits = numbits;
+
+	}
+
+	long actualMax = 0;
+
+	@Override
+	public int getPrevFoundBucketSize() {
+		return prevFoundBucketSize;
+	}
+
+	private void updatePrevFoundBucketSize() {
+		int div = (int) (actualMax / PREV_FOUND_SIZE) - 1;
+		// we want to have the next power of 2
+		int next = 1;
+		while (next < div) {
+			next <<= 1;
+		}
+		int min = Math.max(next, 1024);
+		this.prevFoundBucketSize = min;
+	}
+
+	public long getEstimatedMidpoint(long val, long min, long max) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+		if (index >= prevFoundMid.length) {
+			return (min + max) / 2;
+		}
+		long t = prevFoundMid[index];
+		if (t > min && t < max) {
+			return t;
+		} else {
+			return (min + max) / 2;
+		}
+	}
+
+	@Override
+	public void prevFoundMid(long val, long min) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+		if (index >= prevFoundMid.length) {
+			return;
+		}
+		// print index, existing val and new val and the value of min
+//		System.out.println("index: " + index + " existing val: " + prevFoundMid[index] + " new val: " + val + " min: " + min);
+
+		prevFoundMid[index] = min;
+	}
+
+	@Override
+	public long getLowerBound(long val) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+		if (index - 1 >= 0) {
+			long t = prevFoundHigh[index - 1];
+			if (t > 0) {
+				return t;
+			}
+		}
+		return 0;
+	}
+
+	@Override
+	public long getUpperBound(long val) {
+		int index = (int) (val / getPrevFoundBucketSize() + 1);
+
+		var prevFound = prevFoundLow;
+
+		if (index + 1 < prevFound.length) {
+			long t = prevFound[index + 1];
+			if (t > 0) {
+				return Math.min(length(), t);
+			}
+		}
+
+		return length();
+	}
+
+	@Override
+	public void updatePrevFound() {
+		updatePrevFoundBucketSize();
+		int prevFoundBucketSize = getPrevFoundBucketSize();
+		int i = 0;
+		long len = length();
+		while (i < len) {
+			long val = get(i);
+			if (val == 0) {
+				i++;
+				continue;
+			}
+
+			int index = (int) (val / prevFoundBucketSize + 1);
+			prevFoundHigh[index] = Math.max(prevFoundHigh[index], i);
+			if (prevFoundLow[index] == 0) {
+				prevFoundLow[index] = i;
+			} else {
+				prevFoundLow[index] = Math.min(prevFoundLow[index], i);
+			}
+			prevFoundMid[index] = (prevFoundHigh[index] + prevFoundLow[index]) / 2;
+
+			i++;
+			if (i % (1024 * 128) == 0) {
+				System.out.println("i: " + i);
+			}
+		}
+		System.out.println();
 	}
 
 	public static SimpleSplitLongArray int8Array(long size) {
@@ -81,6 +192,8 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 
 	@Override
 	public void set(long index, long value) {
+		actualMax = Math.max(actualMax, value);
+
 		long rindex = index >>> shift;
 		int sindex = (int) (index & indexMask) << (6 - shift);
 
@@ -111,6 +224,11 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 	@Override
 	public void clear() {
 		array.clear();
+	}
+
+	@Override
+	public long[] getPrevFoundHigh() {
+		return prevFoundHigh;
 	}
 
 	@Override

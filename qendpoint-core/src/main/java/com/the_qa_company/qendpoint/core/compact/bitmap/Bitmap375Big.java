@@ -39,6 +39,8 @@ import java.nio.file.Path;
  * @author mario.arias
  */
 public class Bitmap375Big extends Bitmap64Big {
+	private final boolean oldBinarySearch;
+
 	/**
 	 * create disk version bitmap with in memory super index
 	 *
@@ -46,6 +48,19 @@ public class Bitmap375Big extends Bitmap64Big {
 	 * @param nbits    number of bits
 	 * @return bitmap
 	 */
+
+	{
+		// check if the system property "useOldBinarySeearch" is set to true
+		String useOldBinarySearch = System.getProperty("useOldBinarySearch");
+		if (useOldBinarySearch != null && useOldBinarySearch.equalsIgnoreCase("true")) {
+			this.oldBinarySearch = true;
+			System.out.println("Using old binary search");
+		} else {
+			System.out.println("Using new binary search");
+			this.oldBinarySearch = false;
+		}
+
+	}
 
 	public static Bitmap375Big disk(Path location, long nbits) {
 		return disk(location, nbits, false);
@@ -181,6 +196,7 @@ public class Bitmap375Big extends Bitmap64Big {
 		}
 		pop = countSuperBlock + countBlock;
 		indexUpToDate = true;
+		superBlocks.updatePrevFound();
 	}
 
 	/*
@@ -189,8 +205,9 @@ public class Bitmap375Big extends Bitmap64Big {
 	 */
 	@Override
 	public boolean access(long bitIndex) {
-		if (bitIndex < 0)
+		if (bitIndex < 0) {
 			throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
+		}
 
 		long wordIndex = wordIndex(bitIndex);
 		if (wordIndex >= words.length()) {
@@ -324,7 +341,7 @@ public class Bitmap375Big extends Bitmap64Big {
 			return 0;
 		}
 		// Search superblock (binary Search)
-		long superBlockIndex = binarySearch(superBlocks, x);
+		long superBlockIndex = oldBinarySearch ? binarySearch(superBlocks, x) : binarySearchNew(superBlocks, x);
 
 		// If there is a run of many zeros, two correlative superblocks may have
 		// the same value,
@@ -332,7 +349,6 @@ public class Bitmap375Big extends Bitmap64Big {
 
 		while (superBlockIndex > 0 && (superBlocks.get(superBlockIndex) >= x)) {
 			superBlockIndex--;
-
 		}
 
 		long countdown = x - superBlocks.get(superBlockIndex);
@@ -444,6 +460,7 @@ public class Bitmap375Big extends Bitmap64Big {
 	 * @param val val
 	 * @return index
 	 */
+
 	public static long binarySearch(LongArray arr, long val) {
 		long min = 0, max = arr.length(), mid;
 
@@ -460,11 +477,58 @@ public class Bitmap375Big extends Bitmap64Big {
 		return min;
 	}
 
+	public static long binarySearchNew(LongArray arr, long val) {
+
+		long min = arr.getLowerBound(val);
+		long max = arr.getUpperBound(val);
+		long mid = arr.getEstimatedMidpoint(val, min, max);
+
+//		System.out.println("Searching for: " + val);
+		int step = 0;
+		while (min + 1 < max) {
+			step++;
+			// print min, max, mid
+//			System.out.println("min: " + min + " max: " + max + " mid: " + mid);
+
+			long l = arr.get(mid);
+
+			if (l >= val) {
+				max = mid;
+
+				if (min + 1 < max && step > 1 && step < 4) {
+					long l1 = arr.get(min + 1);
+					if (l1 >= val) {
+						max = min + 1;
+					} else {
+						// is this actually correct?
+						min = min + 1;
+					}
+				}
+
+			} else {
+				min = mid;
+			}
+			mid = (min + max) / 2;
+		}
+//		System.out.println("Found after: " + step + " steps");
+
+		arr.prevFoundMid(val, min);
+
+		// prevFound[index] = min;
+
+		return min;
+	}
+
 	public CloseSuppressPath getBlocksPath() {
 		return blocksPath;
 	}
 
 	public CloseSuppressPath getSuperBlocksPath() {
 		return superBlocksPath;
+	}
+
+	@Override
+	public String toString() {
+		return "Bitmap375Big{}";
 	}
 }
