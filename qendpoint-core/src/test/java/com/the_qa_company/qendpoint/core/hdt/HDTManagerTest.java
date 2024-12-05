@@ -377,26 +377,26 @@ public class HDTManagerTest {
 	@RunWith(Parameterized.class)
 	public static class DynamicDiskTest extends HDTManagerTestBase {
 
-		@Parameterized.Parameters(name = "{7} - {0}")
+		@Parameterized.Parameters(name = "{7} - {0} - {10}")
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
 			for (String dict : diskDict()) {
 				params.addAll(List.of(
 						new Object[] { "slow-str1", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream=true" },
+								"debug.disk.slow.stream=true", "" },
 						new Object[] { "slow-str2", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream2=true" },
+								"debug.disk.slow.stream2=true", "" },
 						new Object[] { "slow-cfsd", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.pfsd=true" },
+								"debug.disk.slow.pfsd=true", "" },
 						new Object[] { "slow-kw-d", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.dict=true" },
+								"debug.disk.slow.kway.dict=true", "" },
 						new Object[] { "slow-kw-t", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.triple=true" }));
+								"debug.disk.slow.kway.triple=true", "" }));
 				for (int threads : new int[] {
 						// sync
 						1,
@@ -404,20 +404,57 @@ public class HDTManagerTest {
 						2,
 						// async, large thread count
 						8 }) {
-					List<String> modes;
 					// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
-					modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
+					List<String> modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					for (String mode : modes) {
 						params.addAll(List.of(
 								new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
-										false, dict, SIZE_VALUE, "" },
+										false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
-										mode, false, dict, SIZE_VALUE, "" },
+										mode, false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
-										threads, mode, false, dict, SIZE_VALUE, "" },
+										threads, mode, false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
-										false, dict, SIZE_VALUE, "" }));
+										false, dict, SIZE_VALUE, "", "" }));
 					}
+				}
+			}
+
+			for (int threads : new int[] {
+					// sync
+					1,
+					// async, low thread count
+					2,
+					// async, large thread count
+					8 }) {
+				// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
+				List<String> modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
+				for (String mode : modes) {
+					String prefixes = String.join(";",
+							"http://w1i.test.org/#Obj",
+							"http://w2i.test.org/#Obj",
+							"http://w3i.test.org/#Obj",
+							"http://w4i.test.org/#Obj",
+							"http://w5i.test.org/#Obj",
+							"http://w6i.test.org/#Obj",
+							"http://w7i.test.org/#Obj",
+							"http://w8i.test.org/#Obj",
+							"http://w9i.test.org/#Obj",
+							"http://w10i.test.org/#Obj",
+							"http://w11i.test.org/#Obj",
+							"http://w12i.test.org/#Obj",
+							"http://w13i.test.org/#Obj",
+							"http://w14i.test.org/#Obj",
+							"http://w15i.test.org/#Obj");
+					params.addAll(List.of(
+							new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
+									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes },
+							new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
+									mode, false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes },
+							new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
+									threads, mode, false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes },
+							new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
+									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes}));
 				}
 			}
 
@@ -444,6 +481,8 @@ public class HDTManagerTest {
 		public long size;
 		@Parameterized.Parameter(9)
 		public String addedSpecs;
+		@Parameterized.Parameter(10)
+		public String prefixes;
 		public boolean quadDict;
 
 		@Before
@@ -453,6 +492,7 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_KEY, compressMode);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 			spec.set(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY, true);
+			spec.set(HDTOptionsKeys.LOADER_PREFIXES, prefixes);
 
 			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 		}
