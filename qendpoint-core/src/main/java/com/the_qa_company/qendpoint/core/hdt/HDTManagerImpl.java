@@ -185,6 +185,15 @@ public class HDTManagerImpl extends HDTManager {
 	public HDTResult doGenerateHDT(String rdfFileName, String baseURI, RDFNotation rdfNotation, HDTOptions spec,
 			ProgressListener listener) throws IOException, ParserException {
 		// choose the importer
+		long waitTimeStart = spec.getInt(HDTOptionsKeys.LOADER_WAIT_START, 0);
+		if (waitTimeStart > 0) {
+			logger.info("Waiting {}ms before start...", waitTimeStart);
+			try {
+				Thread.sleep(waitTimeStart);
+			} catch (InterruptedException ignore) {
+			}
+			logger.info("Done waiting");
+		}
 		String loaderType = spec.get(HDTOptionsKeys.LOADER_TYPE_KEY);
 		TempHDTImporter loader;
 		boolean isQuad = rdfNotation == RDFNotation.NQUAD;

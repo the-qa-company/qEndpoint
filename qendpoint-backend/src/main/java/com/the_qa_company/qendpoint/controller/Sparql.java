@@ -10,10 +10,12 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.store.EndpointFiles;
 import com.the_qa_company.qendpoint.store.EndpointStore;
 import com.the_qa_company.qendpoint.store.EndpointStoreUtils;
+import com.the_qa_company.qendpoint.store.HDTProps;
 import com.the_qa_company.qendpoint.utils.FileUtils;
 import com.the_qa_company.qendpoint.utils.RDFStreamUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.apache.lucene.index.IndexReader;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -30,6 +32,8 @@ import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.eclipse.rdf4j.sail.lucene.LuceneSail;
+import org.eclipse.rdf4j.sail.lucene.SearchIndex;
+import org.eclipse.rdf4j.sail.lucene.impl.LuceneIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +57,7 @@ import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -342,6 +347,46 @@ public class Sparql {
 				CompiledSailOptions opt = sparqlRepository.getOptions();
 				port = opt.getPort();
 			}
+
+			if (endpoint != null) {
+				HDTProps props = endpoint.getHdtProps();
+				long bnCount = props.getEndBlankObjects() - props.getStartBlankObjects() // obj
+						+ props.getEndBlankShared() - props.getStartBlankShared() // shared
+						+ props.getEndBlankSubjects() - props.getStartBlankSubjects(); // subj
+				long literals = props.getEndLiteral() - props.getStartLiteral();
+				logger.info("Index props:             Lit:{} bn:{}", literals, bnCount);
+			}
+			Set<LuceneSail> lcs = sparqlRepository.getLuceneSails();
+			if (!lcs.isEmpty()) {
+				logger.info("Lucene sails ({})", lcs.size());
+
+				final int maxCount = 5;
+				Iterator<LuceneSail> it = lcs.iterator();
+				for (int i = 0; i < Math.min(maxCount, lcs.size()); i++) {
+					if (!it.hasNext())
+						break;
+					LuceneSail lc = it.next();
+
+					String id = lc.getParameter(LuceneSail.INDEX_ID);
+					if (id == null || id.isEmpty())
+						id = "<unk>";
+					SearchIndex lcIdx = lc.getLuceneIndex();
+					String infoStr = lcIdx.getClass().getSimpleName();
+					if (lcIdx instanceof LuceneIndex li) {
+						IndexReader reader = li.getIndexReader();
+						int numDocs = reader.numDocs();
+						infoStr += " numDocs*Fields:" + numDocs + "*" + li.getIndexWriter().getFieldNames().size();
+					} else {
+						infoStr += " no data"; // add ES/Solr??
+					}
+					logger.info("{} {}", id, infoStr);
+				}
+				if (lcs.size() > maxCount) {
+					logger.info("...");
+				}
+
+			}
+
 		}
 		if (finishLoading) {
 			completeLoading();

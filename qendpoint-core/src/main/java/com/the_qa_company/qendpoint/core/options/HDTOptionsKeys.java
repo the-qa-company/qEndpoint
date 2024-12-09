@@ -303,6 +303,12 @@ public class HDTOptionsKeys {
 	 */
 	@Key(type = Key.Type.ENUM, desc = "loading type for HDTCat / HDTDiff")
 	public static final String LOAD_HDT_TYPE_KEY = "loader.hdt.type";
+
+	/**
+	 * Add time before starting the indexing, in ms, default 0
+	 */
+	@Key(type = Key.Type.NUMBER, desc = "Add time before starting the indexing, in ms")
+	public static final String LOADER_WAIT_START = "loader.waitStart";
 	/**
 	 * load the HDT file into memory
 	 */
