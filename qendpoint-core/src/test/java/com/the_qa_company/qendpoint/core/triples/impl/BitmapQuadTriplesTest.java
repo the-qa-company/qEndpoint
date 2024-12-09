@@ -35,16 +35,6 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 			private int lastLoc;
 
 			@Override
-			public boolean hasPrevious() {
-				return false;
-			}
-
-			@Override
-			public TripleID previous() {
-				return null;
-			}
-
-			@Override
 			public void goToStart() {
 				current = 0;
 			}

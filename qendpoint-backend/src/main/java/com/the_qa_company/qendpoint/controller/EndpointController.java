@@ -42,7 +42,7 @@ public class EndpointController {
 	@Autowired
 	Sparql sparql;
 
-	@RequestMapping(value = "/sparql")
+	@RequestMapping(value = "/sparql", method = { RequestMethod.GET, RequestMethod.POST })
 	public void sparqlEndpoint(@RequestParam(value = "query", required = false) final String query,
 			@RequestParam(value = "update", required = false) final String updateQuery,
 			@RequestParam(value = "format", defaultValue = "json") final String format,

@@ -114,7 +114,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 	protected boolean isClosed;
 
 	public BitmapTriples() throws IOException {
-		this(new HDTSpecification());
+		this(HDTOptions.empty());
 	}
 
 	public BitmapTriples(HDTOptions spec) throws IOException {

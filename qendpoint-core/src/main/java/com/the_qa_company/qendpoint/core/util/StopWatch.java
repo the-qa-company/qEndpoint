@@ -35,6 +35,10 @@ public class StopWatch {
 		return end - ini;
 	}
 
+	public long getMeasureMillis() {
+		return (end - ini) / 1_000_000;
+	}
+
 	public long stopAndGet() {
 		stop();
 		return getMeasure();

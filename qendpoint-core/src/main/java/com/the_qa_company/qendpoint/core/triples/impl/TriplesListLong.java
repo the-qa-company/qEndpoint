@@ -442,25 +442,6 @@ public class TriplesListLong implements TempTriples {
 
 		/*
 		 * (non-Javadoc)
-		 * @see hdt.iterator.IteratorTripleID#hasPrevious()
-		 */
-		@Override
-		public boolean hasPrevious() {
-			return pos > 0;
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * @see hdt.iterator.IteratorTripleID#previous()
-		 */
-		@Override
-		public TripleID previous() {
-			lastPosition = --pos;
-			return triplesList.arrayOfTriples.get(pos);
-		}
-
-		/*
-		 * (non-Javadoc)
 		 * @see hdt.iterator.IteratorTripleID#goToStart()
 		 */
 		@Override

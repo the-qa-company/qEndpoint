@@ -46,7 +46,7 @@
         <rdf4j.version>5.0.2</rdf4j.version>
         <spring.version>3.4.0</spring.version>
         <logback.version>1.5.6</logback.version>
-
+        <gson.version>2.11.0</gson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -111,6 +111,11 @@
                     <artifactId>rdf4j-sail-solr</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
         </dependency>
         <!-- v1.15 is needed for Jena 3.14+ - copied from org.apache.jena:jena:pom -->
         <dependency>
