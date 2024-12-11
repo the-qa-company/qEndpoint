@@ -10,7 +10,7 @@ import java.io.IOException;
  *
  * @author Antoine Willerval
  */
-public class LargeLongArray extends AbstractLongArray {
+public class LargeLongArray implements LongArray {
 	private UnsafeLongArray array;
 
 	/**
@@ -26,7 +26,7 @@ public class LargeLongArray extends AbstractLongArray {
 	}
 
 	@Override
-	protected void innerSet(long index, long value) {
+	public void set(long index, long value) {
 		array.set(index, value);
 	}
 

@@ -7,9 +7,24 @@ public abstract class AbstractLongArray implements LongArray {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final int ESTIMATED_LOCATION_ARRAY_SIZE = 1024 * 128;
+	private static final int ESTIMATED_LOCATION_ARRAY_SIZE;
 
-	// should take about 1MB per array when PREV_FOUND_SIZE is 1024 * 128
+	static {
+		// get total amount of memory that this java program is allowed to use
+		long maxMemory = Runtime.getRuntime().maxMemory();
+
+		if (maxMemory >= 1024 * 1024 * 512) {
+			ESTIMATED_LOCATION_ARRAY_SIZE = 1024 * 128;
+		} else if (maxMemory >= 1024 * 1024 * 256) {
+			ESTIMATED_LOCATION_ARRAY_SIZE = 1024 * 64;
+		} else if (maxMemory >= 1024 * 1024 * 128) {
+			ESTIMATED_LOCATION_ARRAY_SIZE = 1024 * 32;
+		} else {
+			ESTIMATED_LOCATION_ARRAY_SIZE = 1024 * 16;
+		}
+
+	}
+
 	private final long[] estimatedLocationMax = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
 	private final long[] estimatedLocationMin = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
 	private final long[] estimatedLocation = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
