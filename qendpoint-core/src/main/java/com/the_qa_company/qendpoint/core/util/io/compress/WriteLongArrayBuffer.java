@@ -33,9 +33,9 @@ public class WriteLongArrayBuffer implements LongArray, Closeable {
 		this.array = array;
 		if (!DISABLE_BUFFER) {
 			int bits = BitUtil.log2(maxValue + 2) + CompressUtil.INDEX_SHIFT; // +
-																				// 1
-																				// for
-																				// shared
+			// 1
+			// for
+			// shared
 
 			if (bits > 31) {
 				bufferLong = new ArrayElementLong[maxElement / 3];

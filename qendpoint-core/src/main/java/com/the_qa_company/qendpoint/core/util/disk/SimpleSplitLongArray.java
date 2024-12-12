@@ -10,7 +10,7 @@ import java.nio.file.Path;
 /**
  * Implementation of LongArray for simple int64 splits
  */
-public class SimpleSplitLongArray implements LongArray, Closeable {
+public class SimpleSplitLongArray extends AbstractLongArray implements Closeable {
 	final LongArray array;
 	private final int shift;
 	private final long max;
@@ -30,6 +30,7 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 		max = (~0L) >>> (64 - numbits);
 		indexMask = (1 << shift) - 1;
 		this.numbits = numbits;
+
 	}
 
 	public static SimpleSplitLongArray int8Array(long size) {
@@ -80,7 +81,7 @@ public class SimpleSplitLongArray implements LongArray, Closeable {
 	}
 
 	@Override
-	public void set(long index, long value) {
+	public void innerSet(long index, long value) {
 		long rindex = index >>> shift;
 		int sindex = (int) (index & indexMask) << (6 - shift);
 

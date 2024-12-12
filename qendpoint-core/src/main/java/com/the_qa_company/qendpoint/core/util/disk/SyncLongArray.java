@@ -8,6 +8,7 @@ import java.io.IOException;
  * @author Antoine Willerval
  */
 public class SyncLongArray implements LongArray {
+
 	/**
 	 * Sync a long array
 	 *
@@ -56,5 +57,50 @@ public class SyncLongArray implements LongArray {
 	@Override
 	public synchronized void clear() {
 		array.clear();
+	}
+
+	@Override
+	public void updateEstimatedValueLocation(long val, long min) {
+		array.updateEstimatedValueLocation(val, min);
+	}
+
+	@Override
+	public void recalculateEstimatedValueLocation() {
+		array.recalculateEstimatedValueLocation();
+	}
+
+	@Override
+	public long getEstimatedLocation(long val, long min, long max) {
+		return array.getEstimatedLocation(val, min, max);
+	}
+
+	@Override
+	public long getEstimatedLocationUpperBound(long val) {
+		return array.getEstimatedLocationUpperBound(val);
+	}
+
+	@Override
+	public long getEstimatedLocationLowerBound(long val) {
+		return array.getEstimatedLocationLowerBound(val);
+	}
+
+	@Override
+	public int getEstimatedLocationArrayBucketSize() {
+		return array.getEstimatedLocationArrayBucketSize();
+	}
+
+	@Override
+	public long[] getEstimatedLocationArray() {
+		return array.getEstimatedLocationArray();
+	}
+
+	@Override
+	public long[] getEstimatedLocationArrayMin() {
+		return array.getEstimatedLocationArrayMin();
+	}
+
+	@Override
+	public long[] getEstimatedLocationArrayMax() {
+		return array.getEstimatedLocationArrayMax();
 	}
 }

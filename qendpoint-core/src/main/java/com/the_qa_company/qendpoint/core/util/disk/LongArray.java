@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -10,6 +12,10 @@ import java.util.stream.LongStream;
  * Describe a large array of longs
  */
 public interface LongArray extends Iterable<Long> {
+
+	Logger logger = LoggerFactory.getLogger(LongArray.class);
+	long[] EMPTY_ARRAY = new long[0];
+
 	/**
 	 * create an in memory long array
 	 *
@@ -207,5 +213,85 @@ public interface LongArray extends Iterable<Long> {
 				return get(index++);
 			}
 		};
+	}
+
+	/**
+	 * @return the estimated location array that contains the highest location
+	 *         for a given value
+	 */
+	default long[] getEstimatedLocationArrayMax() {
+		return getEstimatedLocationArray();
+	}
+
+	/**
+	 * @return the estimated location array that contains the lowest location
+	 *         for a given value
+	 */
+	default long[] getEstimatedLocationArrayMin() {
+		return getEstimatedLocationArray();
+	}
+
+	/**
+	 * @return the estimated location array
+	 */
+	default long[] getEstimatedLocationArray() {
+		return EMPTY_ARRAY;
+	}
+
+	default int getEstimatedLocationArrayBucketSize() {
+		return 65536;
+	}
+
+	default long getEstimatedLocationLowerBound(long val) {
+		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		if (index - 1 >= 0) {
+			long t = getEstimatedLocationArrayMax()[index - 1];
+			if (t > 0) {
+				return t;
+			}
+		}
+		return 0;
+	}
+
+	default long getEstimatedLocationUpperBound(long val) {
+		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		long[] estimatedLocationMin = getEstimatedLocationArrayMin();
+		if (index + 1 < estimatedLocationMin.length) {
+			long t = estimatedLocationMin[index + 1];
+			if (t > 0) {
+				return Math.min(length(), t);
+			}
+		}
+
+		return length();
+	}
+
+	default long getEstimatedLocation(long val, long min, long max) {
+		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		var estimatedLocation = getEstimatedLocationArray();
+
+		if (index >= estimatedLocation.length) {
+			return (min + max) / 2;
+		}
+		long t = estimatedLocation[index];
+		if (t > min && t < max) {
+			return t;
+		} else {
+			return (min + max) / 2;
+		}
+	}
+
+	default void recalculateEstimatedValueLocation() {
+		logger.info("Class {} does not support recalculateEstimatedValueLocation()",
+				this.getClass().getCanonicalName());
+	}
+
+	default void updateEstimatedValueLocation(long val, long min) {
+		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		long[] estimatedLocation = getEstimatedLocationArray();
+		if (index >= estimatedLocation.length) {
+			return;
+		}
+		estimatedLocation[index] = min;
 	}
 }
