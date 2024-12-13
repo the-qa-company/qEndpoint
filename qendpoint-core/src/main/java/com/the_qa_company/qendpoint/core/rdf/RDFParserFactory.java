@@ -111,7 +111,7 @@ public class RDFParserFactory {
 	 * @return iterator
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
-																 boolean keepBNode, RDFNotation notation) {
+			boolean keepBNode, RDFNotation notation) {
 		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
 				(triple, pos) -> pipe.addElement(triple.tripleToString())));
 	}
@@ -126,7 +126,7 @@ public class RDFParserFactory {
 	 * @return iterator
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, InputStream stream,
-																 String baseUri, boolean keepBNode, RDFNotation notation, HDTOptions spec) {
+			String baseUri, boolean keepBNode, RDFNotation notation, HDTOptions spec) {
 		String prefixes = spec.get(HDTOptionsKeys.LOADER_PREFIXES);
 
 		if (prefixes == null || prefixes.isEmpty()) {
@@ -136,8 +136,8 @@ public class RDFParserFactory {
 			PrefixesStorage st = new PrefixesStorage();
 			st.loadConfig(prefixes);
 
-			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
-					(triple, pos) -> {
+			return PipedCopyIterator
+					.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode, (triple, pos) -> {
 						TripleString ts = triple.tripleToString();
 						st.map(ts);
 						pipe.addElement(ts);
@@ -152,11 +152,11 @@ public class RDFParserFactory {
 	 * @param file     path to the file to parse
 	 * @param baseUri  the base uri to parse
 	 * @param notation the rdf notation to parse
-	 * @param spec  spec
+	 * @param spec     spec
 	 * @return iterator
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
-																 boolean keepBNode, RDFNotation notation, HDTOptions spec) {
+			boolean keepBNode, RDFNotation notation, HDTOptions spec) {
 		String prefixes = spec.get(HDTOptionsKeys.LOADER_PREFIXES);
 
 		if (prefixes == null || prefixes.isEmpty()) {
@@ -166,8 +166,8 @@ public class RDFParserFactory {
 			PrefixesStorage st = new PrefixesStorage();
 			st.loadConfig(prefixes);
 
-			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
-					(triple, pos) -> {
+			return PipedCopyIterator
+					.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode, (triple, pos) -> {
 						TripleString ts = triple.tripleToString();
 						st.map(ts);
 						pipe.addElement(ts);
