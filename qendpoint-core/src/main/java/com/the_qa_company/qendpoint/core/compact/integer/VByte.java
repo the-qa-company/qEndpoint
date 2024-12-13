@@ -24,9 +24,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Mutable;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 /**
  * Typical implementation of Variable-Byte encoding for integers. <a href=
@@ -88,6 +91,17 @@ public class VByte {
 			value >>>= 7;
 		}
 		out.write((int) (value | 0x80));
+	}
+
+	public static void encodeStr(ReplazableString out, long value) {
+		if (value <= 0) {
+			throw new IllegalArgumentException("Only can encode VByte of positive values to string");
+		}
+		while (value > 0x7F) {
+			out.append((byte) ((value & 0x7F) | 0x80));
+			value >>>= 7;
+		}
+		out.append((byte) (value));
 	}
 
 	public static long decode(InputStream in) throws IOException {
@@ -198,6 +212,22 @@ public class VByte {
 		return i;
 	}
 
+	public static int decodeStr(ByteString data, int offset, Mutable<Long> value) {
+		long out = 0;
+		int i = 0;
+		int shift = 0;
+		while ((0x80 & data.charAt(offset + i)) != 0) {
+			assert shift < 50 : "Read more bytes than required to load the max long";
+			out |= (data.charAt(offset + i) & 0x7FL) << shift;
+			i++;
+			shift += 7;
+		}
+		out |= (data.charAt(offset + i) & 0x7FL) << shift;
+		i++;
+		value.setValue(out);
+		return i;
+	}
+
 	public static int decode(BigByteBuffer data, long offset, Mutable<Long> value) {
 		long out = 0;
 		int i = 0;
@@ -218,5 +248,13 @@ public class VByte {
 		for (int i = 0; i < len; i++) {
 			System.out.print(Long.toHexString(data[i] & 0xFF) + " ");
 		}
+	}
+
+	public static int sizeOf(long number) {
+		return (BitUtil.log2(number) - 1) / 7 + 1;
+	}
+
+	public static int sizeOfSigned(long number) {
+		return (BitUtil.log2(number << 1) - 1) / 7 + 1;
 	}
 }

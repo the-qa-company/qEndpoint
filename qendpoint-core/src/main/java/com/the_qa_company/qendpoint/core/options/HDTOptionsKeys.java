@@ -381,6 +381,11 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD = "dictionaryMultiObjLangQuad";
+	/**
+	 * multi section dictionary lang
+	 */
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language prefixes")
+	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES = "dictionaryMultiObjLangPrefixes";
 
 	/**
 	 * Ignore MSDL RDFTYPE INDEX

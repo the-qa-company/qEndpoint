@@ -430,31 +430,25 @@ public class HDTManagerTest {
 				// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
 				List<String> modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 				for (String mode : modes) {
-					String prefixes = String.join(";",
-							"http://w1i.test.org/#Obj",
-							"http://w2i.test.org/#Obj",
-							"http://w3i.test.org/#Obj",
-							"http://w4i.test.org/#Obj",
-							"http://w5i.test.org/#Obj",
-							"http://w6i.test.org/#Obj",
-							"http://w7i.test.org/#Obj",
-							"http://w8i.test.org/#Obj",
-							"http://w9i.test.org/#Obj",
-							"http://w10i.test.org/#Obj",
-							"http://w11i.test.org/#Obj",
-							"http://w12i.test.org/#Obj",
-							"http://w13i.test.org/#Obj",
-							"http://w14i.test.org/#Obj",
+					String prefixes = String.join(";", "http://w1i.test.org/#Obj", "http://w2i.test.org/#Obj",
+							"http://w3i.test.org/#Obj", "http://w4i.test.org/#Obj", "http://w5i.test.org/#Obj",
+							"http://w6i.test.org/#Obj", "http://w7i.test.org/#Obj", "http://w8i.test.org/#Obj",
+							"http://w9i.test.org/#Obj", "http://w10i.test.org/#Obj", "http://w11i.test.org/#Obj",
+							"http://w12i.test.org/#Obj", "http://w13i.test.org/#Obj", "http://w14i.test.org/#Obj",
 							"http://w15i.test.org/#Obj");
 					params.addAll(List.of(
 							new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
-									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes },
-							new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
-									mode, false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes },
-							new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
-									threads, mode, false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes },
+									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "",
+									prefixes },
+							new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
+									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "",
+									prefixes },
+							new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250, threads,
+									mode, false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "",
+									prefixes },
 							new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
-									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "", prefixes}));
+									false, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION, SIZE_VALUE, "",
+									prefixes }));
 				}
 			}
 
