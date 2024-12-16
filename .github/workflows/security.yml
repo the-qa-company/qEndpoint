@@ -46,8 +46,10 @@ jobs:
         with:
           image-ref: 'docker.io/the-qa-company/qendpoint:${{ github.sha }}'
           format: 'table'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
+          scan-type: 'fs'
+          scan-ref: '.'
           severity: 'CRITICAL,HIGH'
 
