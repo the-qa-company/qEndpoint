@@ -49,7 +49,5 @@ jobs:
           exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
-          scan-type: 'fs'
-          scan-ref: '.'
           severity: 'CRITICAL,HIGH'
 
