@@ -1,0 +1,51 @@
+name: Scan
+
+on: [workflow_dispatch]
+
+concurrency:
+  group: ${{ github.ref }}-push
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'microsoft'
+          java-version: 17
+      - name: Use Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache-dependency-path: qendpoint-frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+        working-directory: qendpoint-frontend
+      - name: Compiling frontend
+        run: npm run build --if-present
+        working-directory: qendpoint-frontend
+      - name: Put frontend in backend
+        run: |
+          mkdir -p qendpoint-backend/src/main/resources/static/
+          cp -r qendpoint-frontend/build/* qendpoint-backend/src/main/resources/static/
+      - name: Compile qendpoint
+        run: mvn install -DskipTests
+      - name: move endpoint
+        run: mv qendpoint-backend/target/qendpoint-*-exec.jar qendpoint.jar
+      - name: Build an image from Dockerfile
+        run: 'docker build -t docker.io/the-qa-company/qendpoint:${{ github.sha }} -f .\scripts\Dockerfile .'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'docker.io/the-qa-company/qendpoint:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
