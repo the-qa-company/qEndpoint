@@ -668,8 +668,24 @@ public class LiteralsUtils {
 	 * @return a + b
 	 */
 	public static ByteString cat(CharSequence a, CharSequence b, CharSequence c) {
+		if (a.isEmpty()) {
+			return cat(b, c);
+		}
+		if (b.isEmpty()) {
+			return cat(a, c);
+		}
+		if (c.isEmpty()) {
+			return cat(a, b);
+		}
 		ByteString bsa = ByteString.of(a);
 		ByteString bsb = ByteString.of(b);
-		return bsa.copyAppend(bsb);
+		ByteString bsc = ByteString.of(c);
+		byte[] buffer = new byte[bsa.length() + bsb.length() + bsc.length()];
+		System.arraycopy(bsa.getBuffer(), 0, buffer, 0, bsa.length());
+		int len = bsa.length();
+		System.arraycopy(bsb.getBuffer(), 0, buffer, len, bsb.length());
+		len += bsb.length();
+		System.arraycopy(bsc.getBuffer(), 0, buffer, len, bsc.length());
+		return new CompactString(buffer);
 	}
 }
