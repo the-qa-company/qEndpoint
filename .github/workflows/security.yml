@@ -40,7 +40,7 @@ jobs:
       - name: move endpoint
         run: mv qendpoint-backend/target/qendpoint-*-exec.jar qendpoint.jar
       - name: Build an image from Dockerfile
-        run: 'docker build -t docker.io/the-qa-company/qendpoint:${{ github.sha }} -f .\scripts\Dockerfile .'
+        run: 'docker build -t docker.io/the-qa-company/qendpoint:${{ github.sha }} -f scripts/Dockerfile .'
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
