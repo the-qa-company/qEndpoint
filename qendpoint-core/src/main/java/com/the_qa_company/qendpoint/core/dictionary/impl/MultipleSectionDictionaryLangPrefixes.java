@@ -234,6 +234,8 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		ci.save(output);
 
 		IntermediateListener iListener = new IntermediateListener(listener);
+		prefixesStorage.save(output, iListener);
+
 		shared.save(output, iListener);
 		subjects.save(output, iListener);
 		predicates.save(output, iListener);
