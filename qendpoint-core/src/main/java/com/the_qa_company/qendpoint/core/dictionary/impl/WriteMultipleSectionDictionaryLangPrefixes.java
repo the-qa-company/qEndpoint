@@ -253,6 +253,8 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 		ci.save(output);
 
 		IntermediateListener iListener = new IntermediateListener(listener);
+		prefixesStorage.save(output, iListener);
+
 		iListener.setRange(0, 20);
 		iListener.setPrefix("Save shared: ");
 		shared.save(output, iListener);
