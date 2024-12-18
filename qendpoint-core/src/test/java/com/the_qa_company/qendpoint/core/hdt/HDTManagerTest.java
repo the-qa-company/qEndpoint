@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -38,6 +39,7 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -194,11 +196,19 @@ public class HDTManagerTest {
 			Dictionary ad = actual.getDictionary();
 			assertEqualsHDT("Subjects", ed.getSubjects(), ad.getSubjects());
 			assertEqualsHDT("Predicates", ed.getPredicates(), ad.getPredicates());
-			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang) {
+
+			PrefixesStorage eps = ed.getPrefixesStorage(false);
+			PrefixesStorage aps = ad.getPrefixesStorage(false);
+
+			assertEquals("prefixes storages aren't the same", eps, aps);
+
+			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang|| ed instanceof MultipleSectionDictionaryLangPrefixes) {
 				if (ed instanceof MultipleBaseDictionary) {
 					assertTrue("ad not a MSD" + ad.getClass(), ad instanceof MultipleBaseDictionary);
-				} else {
+				} else if (ed instanceof MultipleSectionDictionaryLang) {
 					assertTrue("ad not a MSDL" + ad.getClass(), ad instanceof MultipleSectionDictionaryLang);
+				} else {
+					assertTrue("ad not a MSDLP" + ad.getClass(), ad instanceof MultipleSectionDictionaryLangPrefixes);
 				}
 				Map<? extends CharSequence, DictionarySection> keysE = ed.getAllObjects();
 				Map<? extends CharSequence, DictionarySection> keysA = ad.getAllObjects();

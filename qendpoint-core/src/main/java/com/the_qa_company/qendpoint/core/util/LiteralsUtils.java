@@ -395,13 +395,30 @@ public class LiteralsUtils {
 			return new CompactString(str); // base impl
 		}
 
-		int prefix = prefixes.prefixOf(str) + 1; // add +1 to avoid \0 char
-		ByteString removed = prefixes.getPrefix(prefix);
+		int pid = prefixes.prefixOf(str);
+		int prefix = pid + 1; // add +1 to avoid \0 char
+		ByteString removed = prefixes.getPrefix(pid);
 		ReplazableString prefixedValue = new ReplazableString(
 				1 + VByte.sizeOf(prefix) + str.length() - removed.length());
 		prefixedValue.appendNoCompact(DATATYPE_PREFIX_BYTE_BS);
 		VByte.encodeStr(prefixedValue, prefix);
 		prefixedValue.appendNoCompact(str, removed.length(), str.length() - removed.length());
+		return prefixedValue;
+	}
+
+	public static CharSequence cutPrefToRes(CharSequence str, PrefixesStorage prefixes) {
+		if (str.isEmpty() || str.charAt(0) != DATATYPE_PREFIX_BYTE) {
+			return str; // nothing to decrypt
+		}
+		Mutable<Long> val = new Mutable<>(0L);
+		int off = 1 + VByte.decodeStr(str, 1, val);
+
+		int pid = val.getValue().intValue() - 1;
+		ByteString prefixStr = prefixes.getPrefix(pid);
+		ReplazableString prefixedValue = new ReplazableString(
+				str.length() - off + prefixStr.length());
+		prefixedValue.appendNoCompact(prefixStr);
+		prefixedValue.appendNoCompact(str, off, str.length() - off);
 		return prefixedValue;
 	}
 

@@ -27,6 +27,7 @@ import com.the_qa_company.qendpoint.core.util.concurrent.SyncSeq;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -86,6 +87,7 @@ public class KCatMerger implements AutoCloseable {
 	private final WriteDictionarySection sectionPredicate;
 	private final WriteDictionarySection sectionGraph;
 	private final Map<ByteString, WriteDictionarySection> sectionSub;
+	private final PrefixesStorage prefixesStorage;
 	private final Map<ByteString, Integer> typeId = new HashMap<>();
 	private boolean running;
 
@@ -93,6 +95,7 @@ public class KCatMerger implements AutoCloseable {
 	 * Create KCatMerger
 	 *
 	 * @param hdts           the hdts to cat
+	 * @param deletedTriple deleted triples
 	 * @param location       working location
 	 * @param listener       listener to log the state
 	 * @param bufferSize     buffer size
@@ -102,10 +105,29 @@ public class KCatMerger implements AutoCloseable {
 	 * @throws java.io.IOException io exception
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
-			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
+	                  int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
+		this(hdts, deletedTriple, location, listener, bufferSize, dictionaryType, quad, spec, null);
+	}
+	/**
+	 * Create KCatMerger
+	 *
+	 * @param hdts           the hdts to cat
+	 * @param deletedTriple deleted triples
+	 * @param location       working location
+	 * @param listener       listener to log the state
+	 * @param bufferSize     buffer size
+	 * @param dictionaryType dictionary type
+	 * @param quad           quad
+	 * @param spec           spec to config the HDT
+	 * @param prefixesStorage prefixes
+	 * @throws java.io.IOException io exception
+	 */
+	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
+			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec, PrefixesStorage prefixesStorage) throws IOException {
 		this.hdts = hdts;
 		this.listener = listener;
 		this.dictionaryType = dictionaryType;
+		this.prefixesStorage = prefixesStorage;
 
 		DictionaryKCat[] cats = new DictionaryKCat[hdts.length];
 		subjectsMaps = new SyncSeq[hdts.length];
@@ -487,7 +509,7 @@ public class KCatMerger implements AutoCloseable {
 		catMergerThread.joinAndCrashIfRequired();
 
 		return DictionaryFactory.createWriteDictionary(dictionaryType, null, getSectionSubject(), getSectionPredicate(),
-				getSectionObject(), getSectionShared(), getSectionSub(), getSectionGraph());
+				getSectionObject(), getSectionShared(), getSectionSub(), getSectionGraph(), prefixesStorage);
 	}
 
 	private void runSharedCompute() {

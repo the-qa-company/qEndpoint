@@ -6,7 +6,10 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
+import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.iterator.charsequence.StopIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
@@ -42,6 +45,7 @@ import static java.lang.String.format;
 public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDictionary {
 	private static final Logger logger = LoggerFactory.getLogger(MultipleSectionDictionaryLangPrefixes.class);
 	protected final PrefixesStorage prefixesStorage = new PrefixesStorage();
+	protected boolean mapEnd = true;
 
 	public MultipleSectionDictionaryLangPrefixes(HDTOptions spec) {
 		this(spec, false);
@@ -60,7 +64,7 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		if (quad) {
 			graph = new PFCDictionarySectionBig(spec);
 		}
-		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
+		prefixesStorage.loadConfig(this.spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}
 
 	public MultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
@@ -84,7 +88,7 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		this.shared = shared;
 		this.graph = graph;
 		syncLocations();
-		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
+		prefixesStorage.loadConfig(this.spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}
 
 	@Override
@@ -308,5 +312,48 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		}
 
 		syncLocations();
+	}
+
+	@Override
+	public String getType() {
+		if (supportGraphs()) {
+			throw new NotImplementedException();
+		}
+		return HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES;
+	}
+
+	public void setMapEnd(boolean mapEnd) {
+		this.mapEnd = mapEnd;
+	}
+
+	@Override
+	public PrefixesStorage getPrefixesStorage(boolean ignoreMapping) {
+		if (mapEnd && !ignoreMapping) {
+			return null; // no storage if we map after
+		}
+		return prefixesStorage;
+	}
+
+	@Override
+	public void setPrefixMapping(boolean mapping) {
+		mapEnd = mapping;
+	}
+
+	@Override
+	public Iterator<? extends CharSequence> stringIterator(TripleComponentRole role, boolean includeShared) {
+		Iterator<? extends CharSequence> ret = super.stringIterator(role, includeShared);
+		if (mapEnd) {
+			return MapIterator.of(ret, s -> LiteralsUtils.cutPrefToRes(s, prefixesStorage));
+		}
+		return ret;
+	}
+
+	@Override
+	public CharSequence idToString(long id, TripleComponentRole position) {
+		CharSequence ret = super.idToString(id, position);
+		if (mapEnd) {
+			return LiteralsUtils.cutPrefToRes(ret, prefixesStorage);
+		}
+		return ret;
 	}
 }

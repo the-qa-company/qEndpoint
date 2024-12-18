@@ -39,13 +39,28 @@ public class PrefixesStorage {
 			return;
 		}
 
-		int maxVal = prefixes.length * 2 + 1;
+		for (String prefix : prefixes) {
+			addPrefix(prefix);
+		}
+		commitPrefixes();
+	}
 
+	/**
+	 * add a prefix to the storage, the storage should be committed after using {@link #commitPrefixes()} to keep integrity
+	 * @param prefix prefix
+	 */
+	public void addPrefix(CharSequence prefix) {
+		this.prefixes.add(ByteString.copy(prefix));
+	}
+
+	/**
+	 * Commit the added prefixes
+	 */
+	public void commitPrefixes() {
+		int maxVal = (prefixes.size() + 1) * 2 + 1;
 		sizeof = (BitUtil.log2(maxVal) - 1) / 8 + 1;
 
-		for (String prefix : prefixes) {
-			this.prefixes.add(ByteString.of(prefix));
-		}
+		this.prefixes.sort(ByteString::compareTo);
 	}
 
 	public void load(InputStream stream, ProgressListener listener) throws IOException {
@@ -196,6 +211,11 @@ public class PrefixesStorage {
 		return true;
 	}
 
+	public void dump() {
+		System.out.println("prefixes (" + prefixes.size() + ")");
+		prefixes.forEach(p -> System.out.println("- " + p));
+	}
+
 	@Override
 	public String toString() {
 		return "PrefixStorage{" + sizeof + "," + prefixes.size() + "}";
@@ -206,5 +226,11 @@ public class PrefixesStorage {
 			return ByteString.empty();
 		}
 		return prefixes.get(prefix >>> 1);
+	}
+
+	public PrefixesStorage copy() {
+		PrefixesStorage ps = new PrefixesStorage();
+		ps.loadConfig(saveConfig());
+		return ps;
 	}
 }
