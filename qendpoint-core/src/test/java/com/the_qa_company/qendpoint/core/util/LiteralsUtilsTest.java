@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util;
 
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
@@ -154,5 +156,32 @@ public class LiteralsUtilsTest {
 
 		assertEqualsCompact("fr-fr", LiteralsUtils.getLanguage("\"test\"@fr-fr").orElseThrow(cantFind));
 		assertEqualsCompact("en", LiteralsUtils.getLanguage("\"test\"@en").orElseThrow(cantFind));
+	}
+
+	@Test
+	public void prefixesTest() {
+		PrefixesStorage ps = new PrefixesStorage();
+		ps.addPrefix("aa");
+		ps.addPrefix("cc");
+		ps.addPrefix("ee");
+		ps.addPrefix("gg");
+		ps.commitPrefixes();
+
+		String ss1 = "aa1234";
+		String ss2 = "bb1234";
+		String ss3 = "cc1234";
+
+		ByteString cs1 = LiteralsUtils.resToPrefLangCut(ss1, ps);
+		ByteString cs2 = LiteralsUtils.resToPrefLangCut(ss2, ps);
+		ByteString cs3 = LiteralsUtils.resToPrefLangCut(ss3, ps);
+
+		CharSequence su1 = LiteralsUtils.cutPrefToRes(cs1, ps);
+		CharSequence su2 = LiteralsUtils.cutPrefToRes(cs2, ps);
+		CharSequence su3 = LiteralsUtils.cutPrefToRes(cs3, ps);
+
+		assertEqualsCompact(ss1, su1);
+		assertEqualsCompact(ss2, su2);
+		assertEqualsCompact(ss3, su3);
+
 	}
 }
