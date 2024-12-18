@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIteratorImpl;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -40,7 +41,7 @@ import java.util.TreeMap;
  * @author Antoine Willerval
  */
 public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDictionary {
-	protected final PrefixesStorage prefixesStorage = new PrefixesStorage();
+	protected final PrefixesStorage prefixesStorage;
 	private final Path filename;
 	private final int bufferSize;
 
@@ -68,18 +69,24 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 		if (quad) {
 			graph = new WriteDictionarySection(spec, filename.resolveSibling(name + "GR"), bufferSize);
 		}
+		prefixesStorage = new PrefixesStorage();
 		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
+	}
+	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
+	                                                  DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
+	                                                  TreeMap<ByteString, DictionarySectionPrivate> objects, PrefixesStorage prefixesStorage) {
+		this(spec, subjects, predicates, shared, objects, null, prefixesStorage);
 	}
 
 	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
 			TreeMap<ByteString, DictionarySectionPrivate> objects) {
-		this(spec, subjects, predicates, shared, objects, null);
+		this(spec, subjects, predicates, shared, objects, null, null);
 	}
 
 	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph) {
+			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph, PrefixesStorage prefixesStorage) {
 		super(spec);
 		// useless
 		this.filename = null;
@@ -107,7 +114,7 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 				this.nonTyped = sec;
 			}
 		}
-		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
+		this.prefixesStorage = prefixesStorage;
 	}
 
 	private ExceptionThread fillSection(Iterator<? extends CharSequence> objects, long count,
@@ -303,6 +310,19 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 			entry.getValue().save(output, iListener);
 		}
 
+	}
+
+	@Override
+	public String getType() {
+		if (supportGraphs()) {
+			throw new NotImplementedException();
+		}
+		return HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES;
+	}
+
+	@Override
+	public PrefixesStorage getPrefixesStorage(boolean ignoreMapping) {
+		return prefixesStorage;
 	}
 
 	@Override

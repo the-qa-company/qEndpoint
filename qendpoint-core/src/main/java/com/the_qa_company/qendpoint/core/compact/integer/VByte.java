@@ -28,7 +28,6 @@ import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Mutable;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
-import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 /**
@@ -93,6 +92,12 @@ public class VByte {
 		out.write((int) (value | 0x80));
 	}
 
+	/**
+	 * Encode a str vbyte, this vbyte is using the 0x80 bit in between instead of the end to avoid a 0 byte inside
+	 * the data
+	 * @param out string
+	 * @param value value to encode
+	 */
 	public static void encodeStr(ReplazableString out, long value) {
 		if (value <= 0) {
 			throw new IllegalArgumentException("Only can encode VByte of positive values to string");
@@ -212,7 +217,7 @@ public class VByte {
 		return i;
 	}
 
-	public static int decodeStr(ByteString data, int offset, Mutable<Long> value) {
+	public static int decodeStr(CharSequence data, int offset, Mutable<Long> value) {
 		long out = 0;
 		int i = 0;
 		int shift = 0;
@@ -226,6 +231,20 @@ public class VByte {
 		i++;
 		value.setValue(out);
 		return i;
+	}
+
+	public static long decodeStr(CharSequence data, int offset) {
+		long out = 0;
+		int i = 0;
+		int shift = 0;
+		while ((0x80 & data.charAt(offset + i)) != 0) {
+			assert shift < 50 : "Read more bytes than required to load the max long";
+			out |= (data.charAt(offset + i) & 0x7FL) << shift;
+			i++;
+			shift += 7;
+		}
+		out |= (data.charAt(offset + i) & 0x7FL) << shift;
+		return out;
 	}
 
 	public static int decode(BigByteBuffer data, long offset, Mutable<Long> value) {
@@ -255,6 +274,6 @@ public class VByte {
 	}
 
 	public static int sizeOfSigned(long number) {
-		return (BitUtil.log2(number << 1) - 1) / 7 + 1;
+		return (BitUtil.log2(number) - 1) / 7 + 1 + 1;
 	}
 }
