@@ -10,6 +10,7 @@ import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
@@ -600,6 +601,18 @@ public class LargeFakeDataSetStreamSupplier {
 	public LargeFakeDataSetStreamSupplier withNoDefaultGraph(boolean noDefaultGraph) {
 		this.noDefaultGraph = noDefaultGraph;
 		return this;
+	}
+
+	public PrefixesStorage createPrefixStorage() {
+		PrefixesStorage ps = new PrefixesStorage();
+
+		for (int i = 0; i < maxElementSplit; i++) {
+			ps.addPrefix(BASE_URI + i + "i.test.org/");
+		}
+
+		ps.commitPrefixes();
+
+		return ps;
 	}
 
 	/**
