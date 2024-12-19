@@ -157,7 +157,8 @@ public class DictionaryFactory {
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> new MultipleSectionDictionaryLang(spec);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultipleSectionDictionaryLang(spec, true);
-			case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES -> new MultipleSectionDictionaryLangPrefixes(spec);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
+			new MultipleSectionDictionaryLangPrefixes(spec);
 		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
 		};
 	}
@@ -281,27 +282,28 @@ public class DictionaryFactory {
 		case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_QUAD_SECTION ->
 			new FourSectionDictionaryKCat(dictionary);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionaryKCat(dictionary);
-			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
 			new MultipleSectionLangDictionaryKCat(dictionary);
-			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES -> new MultipleSectionLangPrefixesDictionaryKCat(dictionary);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES ->
+			new MultipleSectionLangPrefixesDictionaryKCat(dictionary);
 		default -> throw new IllegalArgumentException("Implementation of DictionaryKCat not found for " + type);
 		};
 	}
 
 	public static DictionaryPrivate createWriteDictionary(String type, HDTOptions spec,
-	                                                      DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
-	                                                      DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub,
-	                                                      DictionarySectionPrivate graph, PrefixesStorage prefixesStorage) {
+			DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
+			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub,
+			DictionarySectionPrivate graph, PrefixesStorage prefixesStorage) {
 		if (graph == null) {
 			return switch (type) {
 			case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
 				new WriteFourSectionDictionary(spec, subject, predicate, object, shared);
 			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION ->
 				new WriteMultipleSectionDictionary(spec, subject, predicate, shared, sub);
-				case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG ->
-						new WriteMultipleSectionDictionaryLang(spec, subject, predicate, shared, sub);
-				case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES ->
-						new WriteMultipleSectionDictionaryLangPrefixes(spec, subject, predicate, shared, sub, prefixesStorage);
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG ->
+				new WriteMultipleSectionDictionaryLang(spec, subject, predicate, shared, sub);
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES ->
+				new WriteMultipleSectionDictionaryLangPrefixes(spec, subject, predicate, shared, sub, prefixesStorage);
 			default -> throw new IllegalArgumentException("Unknown dictionary type " + type);
 			};
 		}

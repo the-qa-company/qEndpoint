@@ -93,9 +93,10 @@ public class VByte {
 	}
 
 	/**
-	 * Encode a str vbyte, this vbyte is using the 0x80 bit in between instead of the end to avoid a 0 byte inside
-	 * the data
-	 * @param out string
+	 * Encode a str vbyte, this vbyte is using the 0x80 bit in between instead
+	 * of the end to avoid a 0 byte inside the data
+	 *
+	 * @param out   string
 	 * @param value value to encode
 	 */
 	public static void encodeStr(ReplazableString out, long value) {
