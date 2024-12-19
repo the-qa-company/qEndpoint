@@ -1,3 +1,4 @@
-- cache constants in query optimiser (#527)
-- update spring to 3.4.0 (#518)
-- remove rdf4j solr from the backend dependencies (#518)
+- show lucene indexes names when loading (#537)
+- send HTTP 400 with bad query (#384)
+- update commons-compress to 1.26.0 and remove protobuf from mvn (#549)
+- cache superblock locations (#528)
