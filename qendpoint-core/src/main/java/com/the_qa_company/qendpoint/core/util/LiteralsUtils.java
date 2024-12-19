@@ -415,8 +415,7 @@ public class LiteralsUtils {
 
 		int pid = val.getValue().intValue() - 1;
 		ByteString prefixStr = prefixes.getPrefix(pid);
-		ReplazableString prefixedValue = new ReplazableString(
-				str.length() - off + prefixStr.length());
+		ReplazableString prefixedValue = new ReplazableString(str.length() - off + prefixStr.length());
 		prefixedValue.appendNoCompact(prefixStr);
 		prefixedValue.appendNoCompact(str, off, str.length() - off);
 		return prefixedValue;

@@ -72,9 +72,10 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 		prefixesStorage = new PrefixesStorage();
 		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}
+
 	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
-	                                                  DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-	                                                  TreeMap<ByteString, DictionarySectionPrivate> objects, PrefixesStorage prefixesStorage) {
+			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
+			TreeMap<ByteString, DictionarySectionPrivate> objects, PrefixesStorage prefixesStorage) {
 		this(spec, subjects, predicates, shared, objects, null, prefixesStorage);
 	}
 
@@ -86,7 +87,8 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 
 	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph, PrefixesStorage prefixesStorage) {
+			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph,
+			PrefixesStorage prefixesStorage) {
 		super(spec);
 		// useless
 		this.filename = null;

@@ -30,51 +30,58 @@ import static org.junit.Assert.*;
 public class MultipleSectionDictionaryLangPrefixesTest {
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
+
 	@Test
 	public void initTest() throws IOException, ParserException, NotFoundException {
 		Path root = tempDir.newFolder().toPath();
 		final int count = 10000;
-		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(count, 42).withMaxLiteralSize(20).withMaxElementSplit(50);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(count, 42)
+				.withMaxLiteralSize(20).withMaxElementSplit(50);
 		Path hdtPath = root.resolve("test.hdt");
 		Path hdtPath2 = root.resolve("test2.hdt");
 		Path hdtPath12 = root.resolve("test12.hdt");
 
 		PrefixesStorage prefixes = supplier.createPrefixStorage();
 		// prefixes.dump();
-		HDTOptions spec = HDTOptions.of(
-				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES,
-				HDTOptionsKeys.LOADER_PREFIXES, prefixes.saveConfig(),
-				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES, HDTOptionsKeys.LOADER_PREFIXES,
+				prefixes.saveConfig(), HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
 				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
 				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
 				"debug.kcatimpl.checkFastCatPref", true
 
 		);
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath);
 		}
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath2);
 		}
 
 		supplier.withMaxTriples(count * 2);
 		supplier.reset();
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath12);
 		}
 		supplier.withMaxTriples(count);
 
 		try (HDT hdt = HDTManager.mapHDT(hdtPath);
-		     HDT hdt2 = HDTManager.mapHDT(hdtPath2);
-		     HDT hdt12 = HDTManager.mapHDT(hdtPath12)) {
+				HDT hdt2 = HDTManager.mapHDT(hdtPath2);
+				HDT hdt12 = HDTManager.mapHDT(hdtPath12)) {
 			Dictionary dict = hdt.getDictionary();
-			assertTrue("bad type: " + dict.getClass().getCanonicalName(), dict instanceof MultipleSectionDictionaryLangPrefixes);
+			assertTrue("bad type: " + dict.getClass().getCanonicalName(),
+					dict instanceof MultipleSectionDictionaryLangPrefixes);
 			HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt);
 			Dictionary dict2 = hdt2.getDictionary();
-			assertTrue("bad type: " + dict2.getClass().getCanonicalName(), dict2 instanceof MultipleSectionDictionaryLangPrefixes);
+			assertTrue("bad type: " + dict2.getClass().getCanonicalName(),
+					dict2 instanceof MultipleSectionDictionaryLangPrefixes);
 			HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt2);
 			Dictionary dict12 = hdt12.getDictionary();
-			assertTrue("bad type: " + dict12.getClass().getCanonicalName(), dict12 instanceof MultipleSectionDictionaryLangPrefixes);
+			assertTrue("bad type: " + dict12.getClass().getCanonicalName(),
+					dict12 instanceof MultipleSectionDictionaryLangPrefixes);
 			HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(hdt12);
 			supplier.reset();
 			{
@@ -85,10 +92,13 @@ public class MultipleSectionDictionaryLangPrefixesTest {
 				while (it.hasNext()) {
 					id++;
 					TripleString ts = it.next();
-					ts.setAll(
-							LiteralsUtils.resToPrefLangCut(ts.getSubject(), prefixes),
+					ts.setAll(LiteralsUtils.resToPrefLangCut(ts.getSubject(), prefixes),
 							LiteralsUtils.resToPrefLangCut(ts.getPredicate(), prefixes),
-							LiteralsUtils.resToPrefLangCut(ts.getObject(), prefixes) // we don't map the literals
+							LiteralsUtils.resToPrefLangCut(ts.getObject(), prefixes) // we
+																						// don't
+																						// map
+																						// the
+																						// literals
 					);
 
 					TripleID tid = dict.toTripleId(ts);
@@ -103,10 +113,13 @@ public class MultipleSectionDictionaryLangPrefixesTest {
 				while (it.hasNext()) {
 					id++;
 					TripleString ts = it.next();
-					ts.setAll(
-							LiteralsUtils.resToPrefLangCut(ts.getSubject(), prefixes),
+					ts.setAll(LiteralsUtils.resToPrefLangCut(ts.getSubject(), prefixes),
 							LiteralsUtils.resToPrefLangCut(ts.getPredicate(), prefixes),
-							LiteralsUtils.resToPrefLangCut(ts.getObject(), prefixes) // we don't map the literals
+							LiteralsUtils.resToPrefLangCut(ts.getObject(), prefixes) // we
+																						// don't
+																						// map
+																						// the
+																						// literals
 					);
 
 					TripleID tid = dict2.toTripleId(ts);
@@ -123,10 +136,13 @@ public class MultipleSectionDictionaryLangPrefixesTest {
 				while (it.hasNext()) {
 					id++;
 					TripleString ts = it.next();
-					ts.setAll(
-							LiteralsUtils.resToPrefLangCut(ts.getSubject(), prefixes),
+					ts.setAll(LiteralsUtils.resToPrefLangCut(ts.getSubject(), prefixes),
 							LiteralsUtils.resToPrefLangCut(ts.getPredicate(), prefixes),
-							LiteralsUtils.resToPrefLangCut(ts.getObject(), prefixes) // we don't map the literals
+							LiteralsUtils.resToPrefLangCut(ts.getObject(), prefixes) // we
+																						// don't
+																						// map
+																						// the
+																						// literals
 					);
 
 					TripleID tid = dict12.toTripleId(ts);
@@ -136,58 +152,58 @@ public class MultipleSectionDictionaryLangPrefixesTest {
 			}
 		}
 
-
 		Path hdtPathCat = root.resolve("cat.hdt");
 		try (HDT hdt = HDTManager.catHDTPath(List.of(hdtPath, hdtPath2), spec, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPathCat);
 		}
-		try (HDT cat = HDTManager.mapHDT(hdtPathCat);
-		     HDT exc = HDTManager.mapHDT(hdtPath12)) {
+		try (HDT cat = HDTManager.mapHDT(hdtPathCat); HDT exc = HDTManager.mapHDT(hdtPath12)) {
 
 			assertEqualsHDT(exc, cat);
 		}
 
 	}
+
 	@Test
 	public void genTests() throws IOException, ParserException {
 		Path root = tempDir.newFolder().toPath();
 		final int count = 10000;
-		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(count, 42).withMaxLiteralSize(20).withMaxElementSplit(50);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(count, 42)
+				.withMaxLiteralSize(20).withMaxElementSplit(50);
 		Path hdtPath = root.resolve("test.hdt");
 		Path hdtPath2 = root.resolve("test2.hdt");
 
 		PrefixesStorage prefixes = supplier.createPrefixStorage();
 		// prefixes.dump();
-		HDTOptions spec = HDTOptions.of(
-				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES,
-				HDTOptionsKeys.LOADER_PREFIXES, prefixes.saveConfig(),
-				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES, HDTOptionsKeys.LOADER_PREFIXES,
+				prefixes.saveConfig(), HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
 				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
 				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
-				"debug.kcatimpl.checkFastCatPref", true
-		);
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
+				"debug.kcatimpl.checkFastCatPref", true);
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath);
 		}
 		supplier.reset();
 		HDTOptions spec2 = spec.pushTop();
 		spec2.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec2, ProgressListener.ignore())) {
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec2, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath2);
 		}
 
-		try (HDT hdt1 = HDTManager.mapHDT(hdtPath);
-		     HDT hdt2 = HDTManager.mapHDT(hdtPath2)) {
+		try (HDT hdt1 = HDTManager.mapHDT(hdtPath); HDT hdt2 = HDTManager.mapHDT(hdtPath2)) {
 			assertEquals(hdt2.getTriples().getNumberOfElements(), hdt1.getTriples().getNumberOfElements());
 
 			Dictionary dict1 = hdt1.getDictionary();
 			Dictionary dict2 = hdt2.getDictionary();
-			assertTrue("bad type: " + dict1.getClass().getCanonicalName(), dict1 instanceof MultipleSectionDictionaryLangPrefixes);
-			assertTrue("bad type: " + dict2.getClass().getCanonicalName(), dict2 instanceof MultipleSectionDictionaryLang);
+			assertTrue("bad type: " + dict1.getClass().getCanonicalName(),
+					dict1 instanceof MultipleSectionDictionaryLangPrefixes);
+			assertTrue("bad type: " + dict2.getClass().getCanonicalName(),
+					dict2 instanceof MultipleSectionDictionaryLang);
 
 			IteratorTripleID it1 = hdt1.getTriples().searchAll();
 			IteratorTripleID it2 = hdt2.getTriples().searchAll();
-
 
 			// the prefixes should change the order
 			while (it1.hasNext()) {
@@ -204,47 +220,49 @@ public class MultipleSectionDictionaryLangPrefixesTest {
 			assertFalse(it2.hasNext());
 		}
 	}
+
 	@Test
 	public void genUncutTests() throws IOException, ParserException {
 		Path root = tempDir.newFolder().toPath();
 		final int count = 10000;
-		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(count, 42).withMaxLiteralSize(20).withMaxElementSplit(50);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(count, 42)
+				.withMaxLiteralSize(20).withMaxElementSplit(50);
 		Path hdtPath = root.resolve("test.hdt");
 		Path hdtPath2 = root.resolve("test2.hdt");
 
 		PrefixesStorage prefixes = supplier.createPrefixStorage();
 		// prefixes.dump();
-		HDTOptions spec = HDTOptions.of(
-				HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES,
-				HDTOptionsKeys.LOADER_PREFIXES, prefixes.saveConfig(),
-				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DICTIONARY_TYPE_KEY,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES, HDTOptionsKeys.LOADER_PREFIXES,
+				prefixes.saveConfig(), HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
 				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
-				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt")
-		);
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
+				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"));
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath);
 		}
 		supplier.reset();
 		HDTOptions spec2 = spec.pushTop();
 		spec2.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
-		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, spec2, ProgressListener.ignore())) {
+		try (HDT hdt = HDTManager.generateHDT(supplier.createTripleStringStream(),
+				LargeFakeDataSetStreamSupplier.BASE_URI, spec2, ProgressListener.ignore())) {
 			hdt.saveToHDT(hdtPath2);
 		}
 
-		try (HDT hdt1 = HDTManager.mapHDT(hdtPath);
-		     HDT hdt2 = HDTManager.mapHDT(hdtPath2)) {
+		try (HDT hdt1 = HDTManager.mapHDT(hdtPath); HDT hdt2 = HDTManager.mapHDT(hdtPath2)) {
 			assertEquals(hdt2.getTriples().getNumberOfElements(), hdt1.getTriples().getNumberOfElements());
 
 			Dictionary dict1 = hdt1.getDictionary();
 			Dictionary dict2 = hdt2.getDictionary();
-			assertTrue("bad type: " + dict1.getClass().getCanonicalName(), dict1 instanceof MultipleSectionDictionaryLangPrefixes);
-			assertTrue("bad type: " + dict2.getClass().getCanonicalName(), dict2 instanceof MultipleSectionDictionaryLang);
+			assertTrue("bad type: " + dict1.getClass().getCanonicalName(),
+					dict1 instanceof MultipleSectionDictionaryLangPrefixes);
+			assertTrue("bad type: " + dict2.getClass().getCanonicalName(),
+					dict2 instanceof MultipleSectionDictionaryLang);
 
-			((MultipleSectionDictionaryLangPrefixes)dict1).setMapEnd(false);
+			((MultipleSectionDictionaryLangPrefixes) dict1).setMapEnd(false);
 
 			IteratorTripleID it1 = hdt1.getTriples().searchAll();
 			IteratorTripleID it2 = hdt2.getTriples().searchAll();
-
 
 			// the prefixes should change the order
 			while (it1.hasNext()) {
@@ -257,11 +275,9 @@ public class MultipleSectionDictionaryLangPrefixesTest {
 				TripleString ts2 = dict2.toTripleString(tid2);
 
 				// we map the MSDL triple because the MSDLP is formatted
-				ts2.setAll(
-						LiteralsUtils.resToPrefLangCut(ts2.getSubject(), prefixes),
+				ts2.setAll(LiteralsUtils.resToPrefLangCut(ts2.getSubject(), prefixes),
 						LiteralsUtils.resToPrefLangCut(ts2.getPredicate(), prefixes),
-						LiteralsUtils.resToPrefLangCut(ts2.getObject(), prefixes)
-				);
+						LiteralsUtils.resToPrefLangCut(ts2.getObject(), prefixes));
 
 				assertEquals(ts1.toString(), ts2.toString());
 			}

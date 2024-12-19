@@ -236,7 +236,8 @@ public class KCatImpl implements Closeable {
 					// we can disable the prefix mapping
 					for (HDT hdt : hdts) {
 						hdt.getDictionary().setPrefixMapping(false);
-						assert !(hdt.getDictionary() instanceof MultipleSectionDictionaryLangPrefixes dpr) || dpr.getPrefixesStorage(false) != null;
+						assert !(hdt.getDictionary() instanceof MultipleSectionDictionaryLangPrefixes dpr)
+								|| dpr.getPrefixesStorage(false) != null;
 					}
 					prefixesStorage = storage.copy();
 				} else {

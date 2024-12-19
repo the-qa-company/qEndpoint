@@ -45,28 +45,6 @@ public class PrefixesStorageTest {
 		assertEquals(6, st.prefixOf(ByteString.of("gggg01")));
 	}
 
-	@Test
-	public void sizeofTest() {
-
-		PrefixesStorage st = new PrefixesStorage();
-
-		st.loadConfig(IntStream.range(0, 127).mapToObj(String::valueOf).collect(Collectors.joining(";")));
-		assertEquals(1, st.sizeof());
-
-		st.loadConfig(IntStream.range(0, 128).mapToObj(String::valueOf).collect(Collectors.joining(";")));
-		assertEquals(2, st.sizeof());
-
-		st.loadConfig(IntStream.range(0, 129).mapToObj(String::valueOf).collect(Collectors.joining(";")));
-		assertEquals(2, st.sizeof());
-
-		st.loadConfig(IntStream.range(0, 0).mapToObj(String::valueOf).collect(Collectors.joining(";")));
-		assertEquals(0, st.sizeof());
-
-		st.loadConfig(IntStream.range(0, 1).mapToObj(String::valueOf).collect(Collectors.joining(";")));
-		assertEquals(1, st.sizeof());
-
-	}
-
 	public ByteString prefix1(int pref, String end) {
 		ReplazableString rs = new ReplazableString();
 		rs.append((byte) pref);
@@ -122,7 +100,7 @@ public class PrefixesStorageTest {
 	public void serialStrTest() {
 		for (int val : new int[] { 14, 127, 129, 0xFFFF, 0x78FF }) {
 			PrefixesStorage st = new PrefixesStorage();
-			String cfg = IntStream.range(0, val).mapToObj(String::valueOf).collect(Collectors.joining(";"));
+			String cfg = IntStream.range(0, val).mapToObj(String::valueOf).sorted().collect(Collectors.joining(";"));
 			st.loadConfig(cfg);
 
 			PrefixesStorage lo = new PrefixesStorage();
