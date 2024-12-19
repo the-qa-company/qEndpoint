@@ -275,6 +275,11 @@ public class VByte {
 	}
 
 	public static int sizeOfSigned(long number) {
-		return (BitUtil.log2(number) - 1) / 7 + 1 + 1;
+		if (number < 0) {
+			// set the 1st bit to 1
+			return sizeOf(~(number << 1));
+		} else {
+			return sizeOf(number << 1);
+		}
 	}
 }
