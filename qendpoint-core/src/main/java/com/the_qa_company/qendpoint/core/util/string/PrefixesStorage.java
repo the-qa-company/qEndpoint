@@ -46,7 +46,9 @@ public class PrefixesStorage {
 	}
 
 	/**
-	 * add a prefix to the storage, the storage should be committed after using {@link #commitPrefixes()} to keep integrity
+	 * add a prefix to the storage, the storage should be committed after using
+	 * {@link #commitPrefixes()} to keep integrity
+	 *
 	 * @param prefix prefix
 	 */
 	public void addPrefix(CharSequence prefix) {

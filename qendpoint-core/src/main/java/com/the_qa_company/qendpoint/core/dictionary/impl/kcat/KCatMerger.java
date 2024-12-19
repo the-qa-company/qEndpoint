@@ -95,7 +95,7 @@ public class KCatMerger implements AutoCloseable {
 	 * Create KCatMerger
 	 *
 	 * @param hdts           the hdts to cat
-	 * @param deletedTriple deleted triples
+	 * @param deletedTriple  deleted triples
 	 * @param location       working location
 	 * @param listener       listener to log the state
 	 * @param bufferSize     buffer size
@@ -105,25 +105,27 @@ public class KCatMerger implements AutoCloseable {
 	 * @throws java.io.IOException io exception
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
-	                  int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
+			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
 		this(hdts, deletedTriple, location, listener, bufferSize, dictionaryType, quad, spec, null);
 	}
+
 	/**
 	 * Create KCatMerger
 	 *
-	 * @param hdts           the hdts to cat
-	 * @param deletedTriple deleted triples
-	 * @param location       working location
-	 * @param listener       listener to log the state
-	 * @param bufferSize     buffer size
-	 * @param dictionaryType dictionary type
-	 * @param quad           quad
-	 * @param spec           spec to config the HDT
+	 * @param hdts            the hdts to cat
+	 * @param deletedTriple   deleted triples
+	 * @param location        working location
+	 * @param listener        listener to log the state
+	 * @param bufferSize      buffer size
+	 * @param dictionaryType  dictionary type
+	 * @param quad            quad
+	 * @param spec            spec to config the HDT
 	 * @param prefixesStorage prefixes
 	 * @throws java.io.IOException io exception
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
-			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec, PrefixesStorage prefixesStorage) throws IOException {
+			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec, PrefixesStorage prefixesStorage)
+			throws IOException {
 		this.hdts = hdts;
 		this.listener = listener;
 		this.dictionaryType = dictionaryType;
