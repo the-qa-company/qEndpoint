@@ -197,6 +197,14 @@ public class MergeRunnable {
 		return Files.exists(Path.of(file));
 	}
 
+	private static boolean existsAny(List<String> files) {
+		for (String file : files) {
+			if (Files.exists(Path.of(file)))
+				return true;
+		}
+		return false;
+	}
+
 	/**
 	 * test if the file "file + {@link #OLD_EXT}" exists
 	 *
@@ -205,6 +213,21 @@ public class MergeRunnable {
 	 */
 	private static boolean existsOld(String file) {
 		return exists(file + OLD_EXT);
+	}
+
+	/**
+	 * test if the file "file + {@link #OLD_EXT}" exists for file in files
+	 *
+	 * @param files the files
+	 * @return true if the file exists, false otherwise
+	 */
+	private static boolean existsOldAny(List<String> files) {
+		for (String file : files) {
+			if (exists(file + OLD_EXT)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -225,6 +248,14 @@ public class MergeRunnable {
 		rename(file + OLD_EXT, file);
 	}
 
+	private static void renameFromOld(List<String> files) {
+		for (String file : files) {
+			if (Files.exists(Path.of(file + OLD_EXT))) {
+				rename(file + OLD_EXT, file);
+			}
+		}
+	}
+
 	/**
 	 * rename a file to another
 	 *
@@ -234,6 +265,29 @@ public class MergeRunnable {
 	private static void rename(String oldFile, String newFile) {
 		try {
 			Files.move(Path.of(oldFile), Path.of(newFile), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
+			if (MergeRunnableStopPoint.debug)
+				throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * rename a file to another list
+	 *
+	 * @param oldFile the current name
+	 * @param newFile the new name
+	 */
+	private static void rename(List<String> oldFile, List<String> newFile) {
+		if (oldFile.size() != newFile.size())
+			throw new RuntimeException("Bad list count: " + oldFile.size() + "/" + newFile.size());
+		try {
+			for (int i = 0; i < oldFile.size(); i++) {
+				Path old = Path.of(oldFile.get(i));
+				if (Files.exists(old)) {
+					Files.move(old, Path.of(newFile.get(i)), StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
 		} catch (IOException e) {
 			logger.warn("Can't rename the file {} into {} ({})", oldFile, newFile, e.getClass().getName());
 			if (MergeRunnableStopPoint.debug)
@@ -686,7 +740,7 @@ public class MergeRunnable {
 		boolean existsOldTripleDeleteTempArr = endpoint.getValidOrders().stream()
 				.anyMatch(order -> existsOld(endpointFiles.getTripleDeleteTempArr(order)));
 
-		if (existsOldTripleDeleteTempArr && !exists(endpointFiles.getHDTNewIndexV11())) {
+		if (existsOldTripleDeleteTempArr && !existsAny(endpointFiles.getHDTNewIndexNames())) {
 			// after rename(endpointFiles.getHDTNewIndexV11(),
 			// endpointFiles.getHDTIndexV11());
 			return Step3SubStep.AFTER_INDEX_V11_RENAME;
@@ -696,7 +750,7 @@ public class MergeRunnable {
 			// endpointFiles.getHDTIndex());
 			return Step3SubStep.AFTER_INDEX_RENAME;
 		}
-		if (existsOld(endpointFiles.getHDTIndexV11())) {
+		if (existsOldAny(endpointFiles.getHDTIndexNames())) {
 			// after renameToOld(endpointFiles.getHDTIndexV11());
 			return Step3SubStep.AFTER_INDEX_V11_OLD_RENAME;
 		}
@@ -725,11 +779,11 @@ public class MergeRunnable {
 
 		switch (step3SubStep) {
 		case AFTER_INDEX_V11_RENAME:
-			rename(endpointFiles.getHDTIndexV11(), endpointFiles.getHDTNewIndexV11());
+			rename(endpointFiles.getHDTIndexNames(), endpointFiles.getHDTNewIndexNames());
 		case AFTER_INDEX_RENAME:
 			rename(endpointFiles.getHDTIndex(), endpointFiles.getHDTNewIndex());
 		case AFTER_INDEX_V11_OLD_RENAME:
-			renameFromOld(endpointFiles.getHDTIndexV11());
+			renameFromOld(endpointFiles.getHDTIndexNames());
 		case AFTER_INDEX_OLD_RENAME:
 			renameFromOld(endpointFiles.getHDTIndex());
 		case AFTER_TRIPLEDEL_TMP_OLD_RENAME:
@@ -773,7 +827,7 @@ public class MergeRunnable {
 		boolean graph;
 		try (HDT newHdt = HDTManager.mapIndexedHDT(endpointFiles.getHDTNewIndex(), endpoint.getHDTSpec(), null)) {
 			if (dumpInfo != null) {
-				dumpInfo.afterIndexing(endpoint, Path.of(endpointFiles.getHDTNewIndexV11()));
+				dumpInfo.afterIndexing(endpoint, endpointFiles.getHDTNewIndexNamesPath());
 				endpoint.setDumping(endpoint.getDumpRef().get() != null);
 			}
 			graph = newHdt.getDictionary().supportGraphs();
@@ -795,12 +849,15 @@ public class MergeRunnable {
 			this.endpoint.resetDeleteArray(newHdt);
 		}
 
-		Path hdtIndexV11 = Path.of(endpointFiles.getHDTIndexV11());
-		// if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so we
-		// create a mock index file
-		// (ignored by RDF-HDT)
-		if (!Files.exists(hdtIndexV11)) {
-			Files.writeString(hdtIndexV11, "");
+		if (!endpoint.getHDTSpec().getBoolean(HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, false)) {
+			Path hdtIndexV11 = Path.of(endpointFiles.getHDTIndexV11());
+			// if the index.hdt.index.v1-1 doesn't exist, the hdt is empty, so
+			// we
+			// create a mock index file
+			// (ignored by RDF-HDT)
+			if (!Files.exists(hdtIndexV11)) {
+				Files.writeString(hdtIndexV11, "");
+			}
 		}
 
 		// rename new hdt to old hdt name so that they are replaces
@@ -817,7 +874,7 @@ public class MergeRunnable {
 		rename(endpointFiles.getHDTNewIndex(), endpointFiles.getHDTIndex());
 		debugStepPoint(MergeRunnableStopPoint.STEP3_FILES_MID2);
 		// AFTER_INDEX_RENAME
-		rename(endpointFiles.getHDTNewIndexV11(), endpointFiles.getHDTIndexV11());
+		rename(endpointFiles.getHDTNewIndexNames(), endpointFiles.getHDTIndexNames());
 		// AFTER_INDEX_V11_RENAME
 
 		HDT tempHdt = endpoint.loadIndex();
