@@ -3,9 +3,12 @@ package com.the_qa_company.qendpoint.store;
 import com.the_qa_company.qendpoint.compiler.ParsedStringValue;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
+import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIndexFile;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * store the files used by the endpoint store
@@ -32,6 +35,42 @@ public class EndpointFiles {
 	 */
 	public static String getHDTIndexV11(String locationHdt, String hdtIndexName) {
 		return locationHdt + hdtIndexName + HDTVersion.get_index_suffix("-");
+	}
+
+	public static List<String> getHDTIndexNames(String locationHdt, String hdtIndexName) {
+		Path path = Path.of(locationHdt + hdtIndexName);
+
+		List<String> list = new ArrayList<>();
+
+		Path hdtPath = Path.of(getHDTIndex(locationHdt, hdtIndexName));
+
+		list.add(getHDTIndexV11(locationHdt, hdtIndexName));
+
+		for (TripleComponentOrder order : TripleComponentOrder.values()) {
+			if (order == TripleComponentOrder.Unknown)
+				continue;
+			list.add(BitmapTriplesIndexFile.getIndexPath(hdtPath, order).toAbsolutePath().toString());
+		}
+
+		return list;
+	}
+
+	public static List<Path> getHDTIndexNamesPath(String locationHdt, String hdtIndexName) {
+		Path path = Path.of(locationHdt + hdtIndexName);
+
+		List<Path> list = new ArrayList<>();
+
+		Path hdtPath = Path.of(getHDTIndex(locationHdt, hdtIndexName));
+
+		list.add(Path.of(getHDTIndexV11(locationHdt, hdtIndexName)));
+
+		for (TripleComponentOrder order : TripleComponentOrder.values()) {
+			if (order == TripleComponentOrder.Unknown)
+				continue;
+			list.add(BitmapTriplesIndexFile.getIndexPath(hdtPath, order));
+		}
+
+		return list;
 	}
 
 	// basic locations
@@ -184,18 +223,23 @@ public class EndpointFiles {
 		return getHDTIndexV11(locationHdt, hdtIndexName);
 	}
 
+	public List<String> getHDTIndexNames() {
+		return getHDTIndexNames(locationHdt, hdtIndexName);
+	}
+
+	public List<String> getHDTNewIndexNames() {
+		return getHDTIndexNames(locationHdt, hdtIndexName + ".new.hdt");
+	}
+
+	public List<Path> getHDTNewIndexNamesPath() {
+		return getHDTIndexNamesPath(locationHdt, hdtIndexName + ".new.hdt");
+	}
+
 	/**
 	 * @return the HDT file
 	 */
 	public Path getHDTIndexPath() {
 		return Path.of(getHDTIndex());
-	}
-
-	/**
-	 * @return the HDT file with HDT version
-	 */
-	public Path getHDTIndexV11Path() {
-		return Path.of(getHDTIndexV11());
 	}
 
 	/**

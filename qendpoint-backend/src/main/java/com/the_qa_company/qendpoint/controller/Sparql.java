@@ -456,7 +456,10 @@ public class Sparql {
 
 			Files.createDirectories(Paths.get(locationHdt));
 			Files.deleteIfExists(Paths.get(hdtOutput));
-			Files.deleteIfExists(Paths.get(EndpointFiles.getHDTIndexV11(locationHdt, hdtIndexName)));
+
+			for (String indexFile : EndpointFiles.getHDTIndexNames(locationHdt, hdtIndexName)) {
+				Files.deleteIfExists(Path.of(indexFile));
+			}
 
 			if (sparqlRepository.getOptions().getStorageMode().equals(SailCompilerSchema.ENDPOINTSTORE_STORAGE)) {
 				shutdown();
