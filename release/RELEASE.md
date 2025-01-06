@@ -1,4 +1,1 @@
-- show lucene indexes names when loading (#537)
-- send HTTP 400 with bad query (#384)
-- update commons-compress to 1.26.0 and remove protobuf from mvn (#549)
-- cache superblock locations (#528)
+- fix multi-index merge (#560)
