@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -37,6 +38,7 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -97,7 +99,8 @@ public class HDTManagerTest {
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES);
 		}
 
 		protected static List<String> diskDictCat() {
@@ -193,11 +196,20 @@ public class HDTManagerTest {
 			Dictionary ad = actual.getDictionary();
 			assertEqualsHDT("Subjects", ed.getSubjects(), ad.getSubjects());
 			assertEqualsHDT("Predicates", ed.getPredicates(), ad.getPredicates());
-			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang) {
+
+			PrefixesStorage eps = ed.getPrefixesStorage(false);
+			PrefixesStorage aps = ad.getPrefixesStorage(false);
+
+			assertEquals("prefixes storages aren't the same", eps, aps);
+
+			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang
+					|| ed instanceof MultipleSectionDictionaryLangPrefixes) {
 				if (ed instanceof MultipleBaseDictionary) {
 					assertTrue("ad not a MSD" + ad.getClass(), ad instanceof MultipleBaseDictionary);
-				} else {
+				} else if (ed instanceof MultipleSectionDictionaryLang) {
 					assertTrue("ad not a MSDL" + ad.getClass(), ad instanceof MultipleSectionDictionaryLang);
+				} else {
+					assertTrue("ad not a MSDLP" + ad.getClass(), ad instanceof MultipleSectionDictionaryLangPrefixes);
 				}
 				Map<? extends CharSequence, DictionarySection> keysE = ed.getAllObjects();
 				Map<? extends CharSequence, DictionarySection> keysA = ad.getAllObjects();
@@ -376,26 +388,26 @@ public class HDTManagerTest {
 	@RunWith(Parameterized.class)
 	public static class DynamicDiskTest extends HDTManagerTestBase {
 
-		@Parameterized.Parameters(name = "{7} - {0}")
+		@Parameterized.Parameters(name = "{7} - {0} - {10}")
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
 			for (String dict : diskDict()) {
 				params.addAll(List.of(
 						new Object[] { "slow-str1", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream=true" },
+								"debug.disk.slow.stream=true", "" },
 						new Object[] { "slow-str2", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream2=true" },
+								"debug.disk.slow.stream2=true", "" },
 						new Object[] { "slow-cfsd", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.pfsd=true" },
+								"debug.disk.slow.pfsd=true", "" },
 						new Object[] { "slow-kw-d", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.dict=true" },
+								"debug.disk.slow.kway.dict=true", "" },
 						new Object[] { "slow-kw-t", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.triple=true" }));
+								"debug.disk.slow.kway.triple=true", "" }));
 				for (int threads : new int[] {
 						// sync
 						1,
@@ -403,19 +415,18 @@ public class HDTManagerTest {
 						2,
 						// async, large thread count
 						8 }) {
-					List<String> modes;
 					// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
-					modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
+					List<String> modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					for (String mode : modes) {
 						params.addAll(List.of(
 								new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
-										false, dict, SIZE_VALUE, "" },
+										false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
-										mode, false, dict, SIZE_VALUE, "" },
+										mode, false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
-										threads, mode, false, dict, SIZE_VALUE, "" },
+										threads, mode, false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
-										false, dict, SIZE_VALUE, "" }));
+										false, dict, SIZE_VALUE, "", "" }));
 					}
 				}
 			}
@@ -443,6 +454,8 @@ public class HDTManagerTest {
 		public long size;
 		@Parameterized.Parameter(9)
 		public String addedSpecs;
+		@Parameterized.Parameter(10)
+		public String prefixes;
 		public boolean quadDict;
 
 		@Before
@@ -452,6 +465,7 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_KEY, compressMode);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 			spec.set(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY, true);
+			spec.set(HDTOptionsKeys.LOADER_PREFIXES, prefixes);
 
 			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 		}

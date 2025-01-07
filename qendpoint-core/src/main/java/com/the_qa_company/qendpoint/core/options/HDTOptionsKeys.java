@@ -381,6 +381,11 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD = "dictionaryMultiObjLangQuad";
+	/**
+	 * multi section dictionary lang
+	 */
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language prefixes")
+	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES = "dictionaryMultiObjLangPrefixes";
 
 	/**
 	 * Ignore MSDL RDFTYPE INDEX
@@ -566,6 +571,9 @@ public class HDTOptionsKeys {
 
 	@Key(type = Key.Type.BOOLEAN, desc = "only run the remote path in the autoexec, default: true")
 	public static final String AUTOINDEXER_RUN_ONLY_REMOTE = "autoIndexer.runOnlyRemove";
+
+	@Key(type = Key.Type.STRING, desc = "Prefixes to index dataset, default: none")
+	public static final String LOADER_PREFIXES = "loader.prefixes";
 
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();

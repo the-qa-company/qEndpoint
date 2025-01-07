@@ -340,7 +340,7 @@ public class HDTManagerImpl extends HDTManager {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
-				true, rdfNotation)) {
+				true, rdfNotation, hdtFormat)) {
 			return doGenerateHDT(iterator, baseURI, hdtFormat, listener);
 		}
 	}
@@ -413,7 +413,7 @@ public class HDTManagerImpl extends HDTManager {
 		if (compressionType == CompressionType.NONE) {
 			RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 			try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, rdfFileName,
-					baseURI, true, rdfNotation)) {
+					baseURI, true, rdfNotation, hdtFormat)) {
 				return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
 			}
 		}
@@ -432,7 +432,7 @@ public class HDTManagerImpl extends HDTManager {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
-				true, rdfNotation)) {
+				true, rdfNotation, hdtFormat)) {
 			return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
 		}
 	}
@@ -562,7 +562,7 @@ public class HDTManagerImpl extends HDTManager {
 			throws IOException, ParserException {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, filename, baseURI, true,
-				rdfNotation)) {
+				rdfNotation, hdtFormat)) {
 			return doHDTCatTree(fluxStop, supplier, iterator, baseURI, hdtFormat, listener);
 		}
 	}
@@ -573,7 +573,7 @@ public class HDTManagerImpl extends HDTManager {
 			throws IOException, ParserException {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, stream, baseURI, true,
-				rdfNotation)) {
+				rdfNotation, hdtFormat)) {
 			return doHDTCatTree(fluxStop, supplier, iterator, baseURI, hdtFormat, listener);
 		}
 	}

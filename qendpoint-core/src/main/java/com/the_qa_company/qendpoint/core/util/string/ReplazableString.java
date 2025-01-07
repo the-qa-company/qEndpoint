@@ -70,6 +70,11 @@ public final class ReplazableString implements CharSequence, ByteString {
 		}
 	}
 
+	public void append(byte c) {
+		ensureSize(this.used + 1);
+		buffer[this.used++] = c;
+	}
+
 	public void append(byte[] data) {
 		this.append(data, 0, data.length);
 	}
