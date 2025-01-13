@@ -418,11 +418,6 @@ public class Bitmap375Big extends Bitmap64Big {
 		return HDTVocabulary.BITMAP_TYPE_PLAIN;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see hdt.compact.bitmap.Bitmap#load(java.io.InputStream,
-	 * hdt.listener.ProgressListener)
-	 */
 	@Override
 	public void load(InputStream input, ProgressListener listener) throws IOException {
 		super.load(input, listener);

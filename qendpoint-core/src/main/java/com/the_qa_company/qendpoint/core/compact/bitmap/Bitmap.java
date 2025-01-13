@@ -20,9 +20,13 @@ package com.the_qa_company.qendpoint.core.compact.bitmap;
 
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * @author mario.arias
@@ -112,6 +116,16 @@ public interface Bitmap {
 	 */
 	long getSizeBytes();
 
+	default void savePath(Path output) throws IOException {
+		savePath(output, ProgressListener.ignore());
+	}
+
+	default void savePath(Path output, ProgressListener listener) throws IOException {
+		try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(output))) {
+			save(os, listener);
+		}
+	}
+
 	/**
 	 * Dump Bitmap into an {@link OutputStream}
 	 *
@@ -122,6 +136,14 @@ public interface Bitmap {
 	 */
 	void save(OutputStream output, ProgressListener listener) throws IOException;
 
+	default void loadPath(Path input) throws IOException {
+		loadPath(input, ProgressListener.ignore());
+	}
+	default void loadPath(Path input, ProgressListener listener) throws IOException {
+		try (InputStream is = new BufferedInputStream(Files.newInputStream(input))) {
+			load(is, listener);
+		}
+	}
 	/**
 	 * Load Bitmap from an {@link OutputStream}
 	 *
@@ -130,6 +152,7 @@ public interface Bitmap {
 	 *                 if no notifications needed.
 	 * @throws IOException io exception while loading the bitmap
 	 */
+
 	void load(InputStream input, ProgressListener listener) throws IOException;
 
 	/**
