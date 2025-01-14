@@ -1,11 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 
 public abstract class AbstractLongArray implements LongArray {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final int ESTIMATED_LOCATION_ARRAY_SIZE;
 
@@ -29,23 +26,24 @@ public abstract class AbstractLongArray implements LongArray {
 	private final long[] estimatedLocationMin = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
 	private final long[] estimatedLocation = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
 
-	private int estimatedLocationBucketSize;
+	private long estimatedLocationBucketSize;
 
 	long maxValue = 1;
 
 	@Override
-	public int getEstimatedLocationArrayBucketSize() {
+	public long getEstimatedLocationArrayBucketSize() {
 		return estimatedLocationBucketSize;
 	}
 
 	private void updateEstimatedLocationArrayBucketSize() {
-		int minBucketSize = (int) (maxValue / ESTIMATED_LOCATION_ARRAY_SIZE);
-		// we want to have the next power of 2
-		int next = 1;
-		while (next < minBucketSize) {
-			next <<= 1;
-		}
-		this.estimatedLocationBucketSize = next;
+		//int minBucketSize = (int) (maxValue / ESTIMATED_LOCATION_ARRAY_SIZE);
+		//// we want to have the next power of 2
+		//int next = 1;
+		//while (next < minBucketSize) {
+		//	next <<= 1;
+		//}
+		// this.estimatedLocationBucketSize = next;
+		this.estimatedLocationBucketSize = ((1L << BitUtil.log2(maxValue)) - 1) / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
 	}
 
 	@Override
@@ -66,14 +64,10 @@ public abstract class AbstractLongArray implements LongArray {
 	@Override
 	public void recalculateEstimatedValueLocation() {
 		updateEstimatedLocationArrayBucketSize();
-		int estimatedLocationBucketSize = getEstimatedLocationArrayBucketSize();
+		long estimatedLocationBucketSize = getEstimatedLocationArrayBucketSize();
 		long len = length();
-		boolean shouldLog = len > 1024 * 1024 * 2;
-		if (shouldLog) {
-			logger.info("Recalculating estimated location array 0%");
-		}
 
-		for (int i = 0; i < len; i++) {
+		for (long i = 0; i < len; i++) {
 			long val = get(i);
 			if (val == 0) {
 				continue;
@@ -87,14 +81,6 @@ public abstract class AbstractLongArray implements LongArray {
 				estimatedLocationMin[index] = Math.min(estimatedLocationMin[index], i);
 			}
 			estimatedLocation[index] = (estimatedLocationMax[index] + estimatedLocationMin[index]) / 2;
-
-			if (shouldLog && i % (1024 * 1024) == 0) {
-				logger.info("Recalculating estimated location array {}%", (int) Math.floor(100.0 / len * i));
-			}
-		}
-
-		if (shouldLog) {
-			logger.info("Recalculating estimated location array 100%");
 		}
 	}
 

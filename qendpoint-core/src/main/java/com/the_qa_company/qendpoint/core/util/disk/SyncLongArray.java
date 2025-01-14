@@ -85,7 +85,7 @@ public class SyncLongArray implements LongArray {
 	}
 
 	@Override
-	public int getEstimatedLocationArrayBucketSize() {
+	public long getEstimatedLocationArrayBucketSize() {
 		return array.getEstimatedLocationArrayBucketSize();
 	}
 

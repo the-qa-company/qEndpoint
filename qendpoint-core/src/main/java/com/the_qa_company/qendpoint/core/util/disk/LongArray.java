@@ -238,7 +238,7 @@ public interface LongArray extends Iterable<Long> {
 		return EMPTY_ARRAY;
 	}
 
-	default int getEstimatedLocationArrayBucketSize() {
+	default long getEstimatedLocationArrayBucketSize() {
 		return 65536;
 	}
 
