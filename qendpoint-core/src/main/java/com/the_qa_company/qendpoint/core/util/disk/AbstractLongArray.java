@@ -4,7 +4,7 @@ import com.the_qa_company.qendpoint.core.util.BitUtil;
 
 public abstract class AbstractLongArray implements LongArray {
 
-	private static final int ESTIMATED_LOCATION_ARRAY_SIZE;
+	static final int ESTIMATED_LOCATION_ARRAY_SIZE;
 
 	static {
 		// get total amount of memory that this java program is allowed to use
@@ -35,14 +35,8 @@ public abstract class AbstractLongArray implements LongArray {
 		return estimatedLocationBucketSize;
 	}
 
-	private void updateEstimatedLocationArrayBucketSize() {
-		//int minBucketSize = (int) (maxValue / ESTIMATED_LOCATION_ARRAY_SIZE);
-		//// we want to have the next power of 2
-		//int next = 1;
-		//while (next < minBucketSize) {
-		//	next <<= 1;
-		//}
-		// this.estimatedLocationBucketSize = next;
+	void updateEstimatedLocationArrayBucketSize() {
+//		this.estimatedLocationBucketSize =  maxValue/ESTIMATED_LOCATION_ARRAY_SIZE+1;
 		this.estimatedLocationBucketSize = ((1L << BitUtil.log2(maxValue)) - 1) / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
 	}
 
