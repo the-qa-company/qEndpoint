@@ -67,7 +67,7 @@ public abstract class AbstractLongArray implements LongArray {
 				continue;
 			}
 
-			int index = (int) (val / estimatedLocationBucketSize + 1);
+			int index = (int) (val / estimatedLocationBucketSize);
 			estimatedLocationMax[index] = Math.max(estimatedLocationMax[index], i);
 			if (estimatedLocationMin[index] == 0) {
 				estimatedLocationMin[index] = i;

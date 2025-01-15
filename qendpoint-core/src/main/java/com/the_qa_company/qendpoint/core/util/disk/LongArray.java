@@ -243,7 +243,7 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	default long getEstimatedLocationLowerBound(long val) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = (int) (val / getEstimatedLocationArrayBucketSize());
 		if (index - 1 >= 0) {
 			long t = getEstimatedLocationArrayMax()[index - 1];
 			if (t > 0) {
@@ -254,7 +254,7 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	default long getEstimatedLocationUpperBound(long val) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = (int) (val / getEstimatedLocationArrayBucketSize());
 		long[] estimatedLocationMin = getEstimatedLocationArrayMin();
 		if (index + 1 < estimatedLocationMin.length) {
 			long t = estimatedLocationMin[index + 1];
@@ -267,7 +267,7 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	default long getEstimatedLocation(long val, long min, long max) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = (int) (val / getEstimatedLocationArrayBucketSize());
 		var estimatedLocation = getEstimatedLocationArray();
 
 		if (index >= estimatedLocation.length) {
@@ -287,7 +287,7 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	default void updateEstimatedValueLocation(long val, long min) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = (int) (val / getEstimatedLocationArrayBucketSize());
 		long[] estimatedLocation = getEstimatedLocationArray();
 		if (index >= estimatedLocation.length) {
 			return;
