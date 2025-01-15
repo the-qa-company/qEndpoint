@@ -1,3 +1,6 @@
+## Version 2.4.1
+        
+- fix multi-index merge (#560)
 ## Version 2.4.0
         
 - show lucene indexes names when loading (#537)
