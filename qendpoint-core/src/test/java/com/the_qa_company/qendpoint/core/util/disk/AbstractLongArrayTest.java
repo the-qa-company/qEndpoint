@@ -44,7 +44,30 @@ public class AbstractLongArrayTest {
 			}
 		};
 
+		longArray.getEstimatedLocation(Long.MAX_VALUE, -1, Long.MAX_VALUE);
+		longArray.getEstimatedLocationLowerBound(Long.MAX_VALUE);
+		longArray.getEstimatedLocationUpperBound(Long.MAX_VALUE);
+
+		longArray.getEstimatedLocation(-1, -1, Long.MAX_VALUE);
+		longArray.getEstimatedLocationLowerBound(-1);
+		longArray.getEstimatedLocationUpperBound(-1);
+
+		longArray.getEstimatedLocation(0, -1, Long.MAX_VALUE);
+		longArray.getEstimatedLocationLowerBound(0);
+		longArray.getEstimatedLocationUpperBound(0);
+
 		longArray.recalculateEstimatedValueLocation();
+		longArray.getEstimatedLocation(Long.MAX_VALUE, -1, Long.MAX_VALUE);
+		longArray.getEstimatedLocationLowerBound(Long.MAX_VALUE);
+		longArray.getEstimatedLocationUpperBound(Long.MAX_VALUE);
+
+		longArray.getEstimatedLocation(-1, -1, Long.MAX_VALUE);
+		longArray.getEstimatedLocationLowerBound(-1);
+		longArray.getEstimatedLocationUpperBound(-1);
+
+		longArray.getEstimatedLocation(0, -1, Long.MAX_VALUE);
+		longArray.getEstimatedLocationLowerBound(0);
+		longArray.getEstimatedLocationUpperBound(0);
 
 		for (long i = 0; i < (AbstractLongArray.ESTIMATED_LOCATION_ARRAY_SIZE * 1024L) + 3; i++) {
 			testMaxValue(longArray, i);
@@ -66,9 +89,6 @@ public class AbstractLongArrayTest {
 		long estimatedLocation = longArray.getEstimatedLocation(Long.MAX_VALUE, -1, Long.MAX_VALUE);
 		long estimatedLocationLowerBound = longArray.getEstimatedLocationLowerBound(Long.MAX_VALUE);
 		long estimatedLocationUpperBound = longArray.getEstimatedLocationUpperBound(Long.MAX_VALUE);
-		System.out.println(estimatedLocation);
-		System.out.println(estimatedLocationLowerBound);
-		System.out.println(estimatedLocationUpperBound);
 	}
 
 	private static void testMaxValue(AbstractLongArray longArray, long value) {
