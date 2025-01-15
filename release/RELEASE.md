@@ -1,1 +1,1 @@
-- fix multi-index merge (#560)
+- fix computation issue (#573)
