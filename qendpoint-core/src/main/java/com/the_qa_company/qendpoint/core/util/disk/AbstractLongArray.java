@@ -37,8 +37,8 @@ public abstract class AbstractLongArray implements LongArray {
 	}
 
 	void updateEstimatedLocationArrayBucketSize() {
-//		this.estimatedLocationBucketSize =  maxValue/ESTIMATED_LOCATION_ARRAY_SIZE+1;
-		this.estimatedLocationBucketSize = ((1L << BitUtil.log2(maxValue)) - 1) / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
+		this.estimatedLocationBucketSize = maxValue / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
+//		this.estimatedLocationBucketSize = ((1L << BitUtil.log2(maxValue)) - 1) / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
 		assert this.estimatedLocationBucketSize > 0;
 	}
 
