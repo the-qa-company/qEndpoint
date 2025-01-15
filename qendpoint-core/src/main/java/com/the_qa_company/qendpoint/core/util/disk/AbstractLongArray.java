@@ -1,10 +1,11 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
+import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 
 public abstract class AbstractLongArray implements LongArray {
 
-	private static final int ESTIMATED_LOCATION_ARRAY_SIZE;
+	static final int ESTIMATED_LOCATION_ARRAY_SIZE;
 
 	static {
 		// get total amount of memory that this java program is allowed to use
@@ -26,7 +27,7 @@ public abstract class AbstractLongArray implements LongArray {
 	private final long[] estimatedLocationMin = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
 	private final long[] estimatedLocation = new long[ESTIMATED_LOCATION_ARRAY_SIZE];
 
-	private long estimatedLocationBucketSize;
+	private long estimatedLocationBucketSize = 1;
 
 	long maxValue = 1;
 
@@ -35,15 +36,10 @@ public abstract class AbstractLongArray implements LongArray {
 		return estimatedLocationBucketSize;
 	}
 
-	private void updateEstimatedLocationArrayBucketSize() {
-		//int minBucketSize = (int) (maxValue / ESTIMATED_LOCATION_ARRAY_SIZE);
-		//// we want to have the next power of 2
-		//int next = 1;
-		//while (next < minBucketSize) {
-		//	next <<= 1;
-		//}
-		// this.estimatedLocationBucketSize = next;
-		this.estimatedLocationBucketSize = ((1L << BitUtil.log2(maxValue)) - 1) / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
+	void updateEstimatedLocationArrayBucketSize() {
+		this.estimatedLocationBucketSize = maxValue / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
+//		this.estimatedLocationBucketSize = ((1L << BitUtil.log2(maxValue)) - 1) / ESTIMATED_LOCATION_ARRAY_SIZE + 1;
+		assert this.estimatedLocationBucketSize > 0;
 	}
 
 	@Override
@@ -63,6 +59,10 @@ public abstract class AbstractLongArray implements LongArray {
 
 	@Override
 	public void recalculateEstimatedValueLocation() {
+		if (Bitmap375Big.oldBinarySearch) {
+			return;
+		}
+
 		updateEstimatedLocationArrayBucketSize();
 		long estimatedLocationBucketSize = getEstimatedLocationArrayBucketSize();
 		long len = length();
@@ -70,10 +70,21 @@ public abstract class AbstractLongArray implements LongArray {
 		for (long i = 0; i < len; i++) {
 			long val = get(i);
 			if (val == 0) {
+				// val shouldn't be zero, since this represents a value that
+				// does not exist
 				continue;
 			}
 
-			int index = (int) (val / estimatedLocationBucketSize + 1);
+			int index = getEstimatedLocationIndex(val);
+			if (index >= estimatedLocation.length || index >= estimatedLocationMax.length
+					|| index >= estimatedLocationMin.length) {
+				logger.warn("Index out of bounds for " + getClass().getSimpleName()
+						+ " when recalculateEstimatedValueLocation for value " + val + " and estimatedBucketSize "
+						+ estimatedLocationBucketSize + " and index " + index + " and estimatedLocation.length "
+						+ estimatedLocation.length + " and estimatedLocationMax.length " + estimatedLocationMax.length
+						+ " and estimatedLocationMin.length " + estimatedLocationMin.length);
+				continue;
+			}
 			estimatedLocationMax[index] = Math.max(estimatedLocationMax[index], i);
 			if (estimatedLocationMin[index] == 0) {
 				estimatedLocationMin[index] = i;

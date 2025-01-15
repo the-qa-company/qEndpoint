@@ -44,7 +44,7 @@ public class Bitmap375Big extends Bitmap64Big {
 
 	private static final Logger logger = LoggerFactory.getLogger(Bitmap375Big.class);
 
-	private static final boolean oldBinarySearch;
+	public static final boolean oldBinarySearch;
 
 	static {
 		// check if the system property "useOldBinarySeearch" is set to true
