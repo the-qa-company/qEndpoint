@@ -22,5 +22,4 @@ jobs:
           pr_title: "Sync master into dev"
           pr_body: "Sync master into dev."
           pr_label: "sync"
-          pr_assignee: "ate47"
           github_token: ${{ secrets.GITHUB_TOKEN }}
