@@ -238,14 +238,17 @@ public interface LongArray extends Iterable<Long> {
 		return EMPTY_ARRAY;
 	}
 
-	default int getEstimatedLocationArrayBucketSize() {
+	default long getEstimatedLocationArrayBucketSize() {
 		return 65536;
 	}
 
 	default long getEstimatedLocationLowerBound(long val) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
-		if (index - 1 >= 0) {
-			long t = getEstimatedLocationArrayMax()[index - 1];
+		int index = getEstimatedLocationIndex(val);
+		// move to the index below to get the estimated lower bound
+		index -= 1;
+		long[] estimatedLocationArrayMax = getEstimatedLocationArrayMax();
+		if (index >= 0 && index < estimatedLocationArrayMax.length) {
+			long t = estimatedLocationArrayMax[index];
 			if (t > 0) {
 				return t;
 			}
@@ -254,10 +257,12 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	default long getEstimatedLocationUpperBound(long val) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = getEstimatedLocationIndex(val);
+		// move to the index above to get the upper bound
+		index += 1;
 		long[] estimatedLocationMin = getEstimatedLocationArrayMin();
-		if (index + 1 < estimatedLocationMin.length) {
-			long t = estimatedLocationMin[index + 1];
+		if (index < estimatedLocationMin.length && index >= 0) {
+			long t = estimatedLocationMin[index];
 			if (t > 0) {
 				return Math.min(length(), t);
 			}
@@ -267,10 +272,10 @@ public interface LongArray extends Iterable<Long> {
 	}
 
 	default long getEstimatedLocation(long val, long min, long max) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = getEstimatedLocationIndex(val);
 		var estimatedLocation = getEstimatedLocationArray();
 
-		if (index >= estimatedLocation.length) {
+		if (index >= estimatedLocation.length || index < 0) {
 			return (min + max) / 2;
 		}
 		long t = estimatedLocation[index];
@@ -281,15 +286,23 @@ public interface LongArray extends Iterable<Long> {
 		}
 	}
 
+	default int getEstimatedLocationIndex(long val) {
+		long estimatedLocationArrayBucketSize = getEstimatedLocationArrayBucketSize();
+		if (estimatedLocationArrayBucketSize <= 0) {
+			return Integer.MIN_VALUE;
+		}
+		return (int) (val / getEstimatedLocationArrayBucketSize());
+	}
+
 	default void recalculateEstimatedValueLocation() {
 		logger.info("Class {} does not support recalculateEstimatedValueLocation()",
 				this.getClass().getCanonicalName());
 	}
 
 	default void updateEstimatedValueLocation(long val, long min) {
-		int index = (int) (val / getEstimatedLocationArrayBucketSize() + 1);
+		int index = getEstimatedLocationIndex(val);
 		long[] estimatedLocation = getEstimatedLocationArray();
-		if (index >= estimatedLocation.length) {
+		if (index >= estimatedLocation.length || index < 0) {
 			return;
 		}
 		estimatedLocation[index] = min;
