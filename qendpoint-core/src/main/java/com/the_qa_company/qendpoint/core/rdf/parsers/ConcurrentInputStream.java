@@ -32,16 +32,22 @@ public class ConcurrentInputStream {
 		pipedInputStreams = new PipedInputStream[numberOfStreams];
 		pipedOutputStreams = new PipedOutputStream[numberOfStreams];
 
+		// The size of the pipes needs to be larger than the buffer of the
+		// buffered reader that Jena uses inside the parser, which is 131072
+		// bytes. If our pipeSize is too small it limits the ability for the
+		// parsers to work concurrently.
+		int pipeSize = 131072 * 1024;
+
 		try {
 			// Set up main fan-out pipes
 			for (int i = 0; i < numberOfStreams; i++) {
 				pipedOutputStreams[i] = new PipedOutputStream();
-				pipedInputStreams[i] = new PipedInputStream(pipedOutputStreams[i], 131072 * 1024);
+				pipedInputStreams[i] = new PipedInputStream(pipedOutputStreams[i], pipeSize);
 			}
 
 			// Set up bnode pipe
 			bnodeOutputStream = new PipedOutputStream();
-			bnodeInputStream = new PipedInputStream(bnodeOutputStream, 131072 * 1024);
+			bnodeInputStream = new PipedInputStream(bnodeOutputStream, pipeSize);
 
 		} catch (IOException e) {
 			throw new RuntimeException("Error creating pipes", e);
