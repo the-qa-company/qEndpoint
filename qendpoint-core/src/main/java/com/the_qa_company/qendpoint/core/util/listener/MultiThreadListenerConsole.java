@@ -2,6 +2,8 @@ package com.the_qa_company.qendpoint.core.util.listener;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 
@@ -53,11 +55,11 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 
 	public MultiThreadListenerConsole(boolean color, boolean asciiListener) {
 		this.color = color || ALLOW_COLOR_SEQUENCE;
-		if (asciiListener) {
-			threadMessages = new TreeMap<>();
-		} else {
-			threadMessages = null;
-		}
+//		if (asciiListener) {
+		threadMessages = new TreeMap<>();
+//		} else {
+//			threadMessages = null;
+//		}
 	}
 
 	public String color(int r, int g, int b) {
@@ -140,7 +142,7 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 		String msg = colorReset() + progressBar(level) + colorReset() + " " + message;
 		if (threadMessages != null) {
 			threadMessages.put(thread, msg);
-			render();
+//			render();
 		} else {
 			System.out.println(colorReset() + "[" + colorThread() + thread + colorReset() + "]" + msg);
 		}
@@ -160,11 +162,27 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 		System.out.print(message);
 	}
 
+	{
+		ExecutorService executorService = Executors.newSingleThreadExecutor();
+		Executors.newSingleThreadExecutor().submit(() -> {
+			while (true) {
+				try {
+					Thread.sleep(500);
+					render();
+				} catch (InterruptedException e) {
+					break;
+				}
+				executorService.shutdown();
+			}
+		});
+
+	}
+
 	private void render() {
 		render(null);
 	}
 
-	private void render(String ln) {
+	synchronized private void render(String ln) {
 		if (threadMessages == null) {
 			return;
 		}
@@ -197,5 +215,6 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 		previous = lines;
 
 		System.out.print(message);
+		System.out.flush();
 	}
 }

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
@@ -110,13 +112,25 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 		}
 	}
 
-	private final ArrayBlockingQueue<QueueObject<T>> queue = new ArrayBlockingQueue<>(16);
+	private final ArrayBlockingQueue<QueueObject<T>>[] queue = new ArrayBlockingQueue[] {
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024) };
 
 	private T next;
 	private boolean end;
 	private PipedIteratorException exception;
 
 	private Thread thread;
+
+	AtomicInteger indexHasNext = new AtomicInteger(0);
+
+	volatile ArrayBlockingQueue<QueueObject<T>> focusQueue;
 
 	@Override
 	public boolean hasNext() {
@@ -129,7 +143,33 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 
 		QueueObject<T> obj;
 		try {
-			obj = queue.take();
+			var focusQueue = this.focusQueue;
+			if (focusQueue != null) {
+				QueueObject<T> poll = focusQueue.poll(1, TimeUnit.MILLISECONDS);
+				if (poll != null) {
+					obj = poll;
+				} else {
+					obj = null;
+					this.focusQueue = null;
+				}
+			} else {
+				obj = null;
+			}
+
+			if (obj == null) {
+
+				int i = Thread.currentThread().hashCode();
+				obj = queue[i % queue.length].poll(10, java.util.concurrent.TimeUnit.MILLISECONDS);
+				while (obj == null) {
+					for (ArrayBlockingQueue<QueueObject<T>> queueObjects : queue) {
+						obj = queueObjects.poll(1, TimeUnit.MILLISECONDS);
+						if (obj != null) {
+							break;
+						}
+					}
+				}
+			}
+
 		} catch (InterruptedException e) {
 			throw new PipedIteratorException("Can't read pipe", e);
 		}
@@ -162,7 +202,9 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 	public void closePipe(Throwable e) {
 		if (e != null) {
 			// clear the queue to force the exception
-			queue.clear();
+			for (ArrayBlockingQueue<QueueObject<T>> queueObjects : queue) {
+				queueObjects.clear();
+			}
 			if (e instanceof PipedIteratorException) {
 				this.exception = (PipedIteratorException) e;
 			} else {
@@ -170,7 +212,9 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 			}
 		}
 		try {
-			queue.put(new EndQueueObject());
+			for (ArrayBlockingQueue<QueueObject<T>> queueObjects : queue) {
+				queueObjects.put(new EndQueueObject());
+			}
 		} catch (InterruptedException ee) {
 			throw new PipedIteratorException("Can't close pipe", ee);
 		}
@@ -198,9 +242,25 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 		return new MapIterator<>(this, mappingFunction);
 	}
 
+	AtomicInteger index = new AtomicInteger(0);
+
 	public void addElement(T node) {
+		int i = Thread.currentThread().hashCode();
+		int l = i % queue.length;
 		try {
-			queue.put(new ElementQueueObject(node));
+			boolean success = queue[l].offer(new ElementQueueObject(node), 10, TimeUnit.MILLISECONDS);
+			if (!success) {
+				focusQueue = queue[l];
+				while (!success) {
+					for (ArrayBlockingQueue<QueueObject<T>> queueObjects : queue) {
+						success = queueObjects.offer(new ElementQueueObject(node), 1, TimeUnit.MILLISECONDS);
+						if (success) {
+							break;
+						}
+					}
+				}
+			}
+
 		} catch (InterruptedException ee) {
 			throw new PipedIteratorException("Can't add element to pipe", ee);
 		}

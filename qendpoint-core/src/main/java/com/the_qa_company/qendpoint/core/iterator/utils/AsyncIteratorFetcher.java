@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.core.iterator.utils;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -15,6 +17,7 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 	private final Iterator<E> iterator;
 	private final Lock lock = new ReentrantLock();
 	private boolean end;
+	ConcurrentLinkedQueue<E> queue = new ConcurrentLinkedQueue<>();
 
 	public AsyncIteratorFetcher(Iterator<E> iterator) {
 		this.iterator = iterator;
@@ -25,16 +28,33 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 	 */
 	@Override
 	public E get() {
-		lock.lock();
-		try {
-			if (iterator.hasNext()) {
-				return iterator.next();
-			}
-			end = true;
-			return null;
-		} finally {
-			lock.unlock();
+		E poll = queue.poll();
+
+		if (poll != null) {
+			return poll;
 		}
+
+		synchronized (this) {
+			poll = queue.poll();
+			if (poll == null) {
+				if (iterator.hasNext()) {
+					poll = iterator.next();
+				}
+				ArrayList<E> objects = new ArrayList<>(128);
+
+				for (int i = 0; i < 128 && iterator.hasNext(); i++) {
+					objects.add(iterator.next());
+				}
+
+				queue.addAll(objects);
+			}
+
+			if (poll == null) {
+				end = true;
+			}
+			return poll;
+		}
+
 	}
 
 	/**
