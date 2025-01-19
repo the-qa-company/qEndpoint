@@ -14,6 +14,7 @@ import java.util.function.Supplier;
  * @author Antoine Willerval
  */
 public class AsyncIteratorFetcher<E> implements Supplier<E> {
+	public static final int BUFFER = 1024;
 	private final Iterator<E> iterator;
 	private final Lock lock = new ReentrantLock();
 	private boolean end;
@@ -28,6 +29,7 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 	 */
 	@Override
 	public E get() {
+
 		E poll = queue.poll();
 
 		if (poll != null) {
@@ -40,9 +42,9 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 				if (iterator.hasNext()) {
 					poll = iterator.next();
 				}
-				ArrayList<E> objects = new ArrayList<>(128);
+				ArrayList<E> objects = new ArrayList<>(BUFFER);
 
-				for (int i = 0; i < 128 && iterator.hasNext(); i++) {
+				for (int i = 0; i < BUFFER && iterator.hasNext(); i++) {
 					objects.add(iterator.next());
 				}
 
