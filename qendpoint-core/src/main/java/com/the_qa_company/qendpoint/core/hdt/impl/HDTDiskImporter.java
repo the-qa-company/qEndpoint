@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.hdt.impl;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.CompressFourSectionDictionary;
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
@@ -73,6 +74,7 @@ public class HDTDiskImporter implements Closeable {
 	private final boolean debugHDTBuilding;
 	private final Profiler profiler;
 	private final HDTBase<? extends HeaderPrivate, ? extends DictionaryPrivate, ? extends TriplesPrivate> hdt;
+	private final CompressionType compressionType;
 	private long rawSize;
 
 	// component status
@@ -126,6 +128,10 @@ public class HDTDiskImporter implements Closeable {
 		} else {
 			bufferSize = (int) bufferSizeLong;
 		}
+
+		// compression type
+		compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.LOADER_DISK_COMPRESSION_KEY));
+
 		// location of the working directory, will be deleted after generation
 		String baseNameOpt = hdtFormat.get(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY);
 		// location of the future HDT file, do not set to create the HDT in
@@ -188,7 +194,7 @@ public class HDTDiskImporter implements Closeable {
 		try {
 			compressionResult = DictionaryFactory
 					.createSectionCompressor(hdtFormat, basePath.resolve("sectionCompression"), source, listener,
-							bufferSize, chunkSize, 1 << ways, hdtFormat.getBoolean("debug.disk.slow.stream2"))
+							bufferSize, chunkSize, 1 << ways, hdtFormat.getBoolean("debug.disk.slow.stream2"), compressionType)
 					.compress(workers, compressMode);
 		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);
@@ -359,7 +365,7 @@ public class HDTDiskImporter implements Closeable {
 	public void close() throws IOException {
 		try {
 			profiler.stop();
-			profiler.writeProfiling();
+			profiler.writeProfiling(false);
 			listener.notifyProgress(100, "Clearing disk");
 		} finally {
 			try {

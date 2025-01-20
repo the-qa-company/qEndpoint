@@ -438,7 +438,7 @@ public class KCatImpl implements Closeable {
 			try {
 				try {
 					profiler.stop();
-					profiler.writeProfiling();
+					profiler.writeProfiling(false);
 				} finally {
 					profiler.close();
 				}

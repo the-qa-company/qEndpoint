@@ -11,8 +11,6 @@ import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -28,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Utility class to create fake large dataset
@@ -226,12 +223,7 @@ public class LargeFakeDataSetStreamSupplier {
 		OutputStream out;
 
 		if (compressionType != null) {
-			out = switch (compressionType) {
-			case NONE -> pout;
-			case XZ -> new XZCompressorOutputStream(pout);
-			case BZIP -> new BZip2CompressorOutputStream(pout);
-			case GZIP -> new GZIPOutputStream(pout);
-			};
+			out = compressionType.compress(pout);
 		} else {
 			out = pout;
 		}

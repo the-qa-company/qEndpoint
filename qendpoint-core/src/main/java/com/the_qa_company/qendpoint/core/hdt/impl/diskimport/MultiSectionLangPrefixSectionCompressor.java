@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -15,8 +16,8 @@ public class MultiSectionLangPrefixSectionCompressor extends SectionCompressor {
 
 	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName,
 			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
-			int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec) {
-		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
+			int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec, CompressionType compressionType) {
+		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
 		this.prefixes = new PrefixesStorage();
 		this.prefixes.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}

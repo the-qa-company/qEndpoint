@@ -41,7 +41,9 @@ import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
+import net.jpountz.lz4.LZ4Factory;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.jena.ext.com.google.common.math.Stats;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -1224,6 +1226,80 @@ public class HDTManagerTest {
 					hdt.saveToHDT(ff.resolveSibling("big.hdtq"));
 				}
 			}
+		}
+
+		@Test
+		public void lz4ComprTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+
+			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(100_000, 27)
+					.withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			Path ds = root.resolve("ds.nt");
+			StopWatch sw = new StopWatch();
+			System.out.println("gen " + ds);
+			sup.createNTFile(ds);
+			System.out.println("ds file gen in " + sw.stopAndShow());
+
+
+			Path endPath = root.resolve("end.hdt");
+			HDTOptions spec = HDTOptions.of(
+					// use disk
+					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					// loc
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
+					// end
+					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPath
+			);
+
+			// default
+			List<Long> noneVals = new ArrayList<>();
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " none compression in " + sw.stopAndShow());
+				noneVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(noneVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
+			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_KEY, CompressionType.LZ4.name());
+			// lz4 frame
+			List<Long> lz4FrameVals = new ArrayList<>();
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " lz4f compression in " + sw.stopAndShow());
+				lz4FrameVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(lz4FrameVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
+			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_KEY, CompressionType.LZ4B.name());
+			List<Long> lz4BlockVals = new ArrayList<>();
+			// lz4 block
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " lz4b compression in " + sw.stopAndShow());
+				lz4BlockVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(lz4BlockVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
 		}
 	}
 

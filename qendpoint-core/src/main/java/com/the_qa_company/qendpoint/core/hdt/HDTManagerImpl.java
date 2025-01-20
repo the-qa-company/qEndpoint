@@ -513,7 +513,7 @@ public class HDTManagerImpl extends HDTManager {
 					}
 				} finally {
 					profiler.stop();
-					profiler.writeProfiling();
+					profiler.writeProfiling(false);
 				}
 			}
 			return HDTResult.of(hdt);

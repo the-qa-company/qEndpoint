@@ -39,6 +39,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.FourSectionDiction
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionDictionaryKCat;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionLangDictionaryKCat;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionLangPrefixesDictionaryKCat;
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionLangPrefixSectionCompressor;
@@ -206,8 +207,8 @@ public class DictionaryFactory {
 	}
 
 	public static SectionCompressor createSectionCompressor(HDTOptions spec, CloseSuppressPath baseFileName,
-			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
-			int k, boolean debugSleepKwayDict) {
+                                AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
+                                int k, boolean debugSleepKwayDict, CompressionType compressionType) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
 
 		// use the same compressor for quad/triple dict types
@@ -217,16 +218,16 @@ public class DictionaryFactory {
 		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
-			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
+			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
-				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
+				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultiSectionLangSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
-					debugSleepKwayDict, quad);
+					debugSleepKwayDict, quad, compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
 			new MultiSectionLangPrefixSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
-					debugSleepKwayDict, quad, spec);
+					debugSleepKwayDict, quad, spec, compressionType);
 		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
 		};
 	}
