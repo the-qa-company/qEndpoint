@@ -120,7 +120,11 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
 			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
 			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
-			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024) };
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024),
+			new ArrayBlockingQueue<>(16 * 1024), new ArrayBlockingQueue<>(16 * 1024), };
 
 	private T next;
 	private boolean end;
