@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
+import java.util.Arrays;
+
 /**
  * ByteString char sequence, can't be compared with string, faster than string
  * with IO
@@ -48,16 +50,21 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 */
 	@Override
 	default int compareTo(ByteString other) {
-		int n = Math.min(length(), other.length());
-		int k = 0;
-		while (k < n) {
-			char c1 = charAt(k);
-			char c2 = other.charAt(k);
-			if (c1 != c2) {
-				return c1 - c2;
-			}
-			k++;
+
+		int compare = Arrays.compare(getBuffer(), other.getBuffer());
+		if (compare != 0) {
+			return compare;
 		}
+//		int n = Math.min(length(), other.length());
+//		int k = 0;
+//		while (k < n) {
+//			char c1 = charAt(k);
+//			char c2 = other.charAt(k);
+//			if (c1 != c2) {
+//				return c1 - c2;
+//			}
+//			k++;
+//		}
 		return length() - other.length();
 	}
 
@@ -158,4 +165,5 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		}
 		return true;
 	}
+
 }

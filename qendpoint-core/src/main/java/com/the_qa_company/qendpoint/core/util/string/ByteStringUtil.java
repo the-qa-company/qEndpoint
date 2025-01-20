@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
@@ -120,11 +121,25 @@ public class ByteStringUtil {
 	}
 
 	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
+
+		if (str1 instanceof ByteString && str2 instanceof ByteString) {
+			byte[] buffer = ((ByteString) str1).getBuffer();
+			byte[] buffer2 = ((ByteString) str2).getBuffer();
+			// System.out.println("mismatch: " + i);
+			int missmatch = Arrays.mismatch(buffer, from, buffer.length, buffer2, from, buffer2.length);
+			if (missmatch == -1) {
+				return Math.min(buffer.length, buffer2.length) - from;
+			}
+			return missmatch - from;
+
+		}
+
 		int len = Math.min(str1.length(), str2.length());
 		int delta = from;
 		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
 			delta++;
 		}
+		// System.out.println("i: " + i);
 		return delta - from;
 	}
 

@@ -13,6 +13,7 @@ import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResult;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
+import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcherUnordered;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -100,10 +101,14 @@ public class HDTDiskImporter implements Closeable {
 			throw new IllegalArgumentException("Number of workers should be positive!");
 		}
 		// maximum size of a chunk
-		chunkSize = hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_CHUNK_SIZE_KEY, () -> getMaxChunkSize(this.workers));
+		long chunkSize = hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_CHUNK_SIZE_KEY,
+				() -> getMaxChunkSize(this.workers));
 		if (chunkSize < 0) {
 			throw new IllegalArgumentException("Negative chunk size!");
 		}
+		System.err.println("chunkSize: " + chunkSize);
+		this.chunkSize = ((((chunkSize / 1024 / 1024) / 32) * 32) * 1024 * 1024);
+		System.err.println("this.chunkSize: " + this.chunkSize);
 		long maxFileOpenedLong = hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_MAX_FILE_OPEN_KEY, 1024);
 		int maxFileOpened;
 		if (maxFileOpenedLong < 0 || maxFileOpenedLong > Integer.MAX_VALUE) {
@@ -178,10 +183,10 @@ public class HDTDiskImporter implements Closeable {
 			throw new IllegalArgumentException("Dictionary already built! Use another importer instance!");
 		}
 		listener.notifyProgress(0,
-				"Sorting sections with chunk of size: " + StringUtil.humanReadableByteCount(chunkSize, true) + "B with "
-						+ ways + "ways and " + workers + " worker(s)");
+				"Sorting sections with chunk of size: " + StringUtil.humanReadableByteCount(chunkSize, false)
+						+ "iB with " + ways + "ways and " + workers + " worker(s)");
 
-		AsyncIteratorFetcher<TripleString> source = new AsyncIteratorFetcher<>(iterator);
+		AsyncIteratorFetcherUnordered<TripleString> source = new AsyncIteratorFetcherUnordered<>(iterator);
 
 		profiler.pushSection("section compression");
 		CompressionResult compressionResult;

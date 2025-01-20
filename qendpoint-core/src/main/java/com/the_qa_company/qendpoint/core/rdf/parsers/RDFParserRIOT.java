@@ -79,7 +79,10 @@ public class RDFParserRIOT implements RDFParserCallback {
 			threads.forEach(Thread::start);
 			for (Thread thread : threads) {
 				try {
-					thread.join();
+					while (thread.isAlive()) {
+						thread.join(1000);
+					}
+
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}

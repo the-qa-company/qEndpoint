@@ -163,8 +163,8 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 	}
 
 	{
-		ExecutorService executorService = Executors.newSingleThreadExecutor();
-		Executors.newSingleThreadExecutor().submit(() -> {
+
+		Thread thread = new Thread(() -> {
 			while (true) {
 				try {
 					Thread.sleep(500);
@@ -172,9 +172,12 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 				} catch (InterruptedException e) {
 					break;
 				}
-				executorService.shutdown();
 			}
 		});
+
+		thread.setDaemon(true);
+		thread.setName("MultiThreadListenerConsole");
+		thread.start();
 
 	}
 
