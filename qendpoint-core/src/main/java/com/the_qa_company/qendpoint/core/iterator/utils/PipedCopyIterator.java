@@ -147,31 +147,11 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 
 		QueueObject<T> obj;
 		try {
-			var focusQueue = this.focusQueue;
-			if (focusQueue != null) {
-				QueueObject<T> poll = focusQueue.poll(1, TimeUnit.MILLISECONDS);
-				if (poll != null) {
-					obj = poll;
-				} else {
-					obj = null;
-					this.focusQueue = null;
-				}
-			} else {
-				obj = null;
-			}
+			obj = useFocusQueue();
 
 			if (obj == null) {
 
-				int i = Thread.currentThread().hashCode();
-				obj = queue[i % queue.length].poll(10, java.util.concurrent.TimeUnit.MILLISECONDS);
-				while (obj == null) {
-					for (ArrayBlockingQueue<QueueObject<T>> queueObjects : queue) {
-						obj = queueObjects.poll(1, TimeUnit.MILLISECONDS);
-						if (obj != null) {
-							break;
-						}
-					}
-				}
+				obj = useThreadBasedQueue();
 			}
 
 		} catch (InterruptedException e) {
@@ -187,6 +167,51 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 		}
 		next = obj.get();
 		return true;
+	}
+
+	private QueueObject<T> useThreadBasedQueue() throws InterruptedException {
+		QueueObject<T> obj;
+		int i = Thread.currentThread().hashCode();
+		obj = queue[i % queue.length].poll();
+		if (obj == null) {
+			obj = iterateThroughAllQueues(obj);
+		} else if (focusQueue == null) {
+			focusQueue = queue[i % queue.length];
+		}
+		return obj;
+	}
+
+	private QueueObject<T> iterateThroughAllQueues(QueueObject<T> obj) throws InterruptedException {
+		while (obj == null) {
+			for (ArrayBlockingQueue<QueueObject<T>> queueObjects : queue) {
+				obj = queueObjects.poll();
+				if (obj != null) {
+					if (focusQueue == null) {
+						focusQueue = queueObjects;
+					}
+					return obj;
+				}
+			}
+			Thread.sleep(10);
+		}
+		return obj;
+	}
+
+	private QueueObject<T> useFocusQueue() throws InterruptedException {
+		QueueObject<T> obj;
+		var focusQueue = this.focusQueue;
+		if (focusQueue != null) {
+			QueueObject<T> poll = focusQueue.poll();
+			if (poll != null) {
+				obj = poll;
+			} else {
+				obj = null;
+				this.focusQueue = null;
+			}
+		} else {
+			obj = null;
+		}
+		return obj;
 	}
 
 	@Override
@@ -252,7 +277,7 @@ public class PipedCopyIterator<T> implements Iterator<T>, Closeable {
 		int i = Thread.currentThread().hashCode();
 		int l = i % queue.length;
 		try {
-			boolean success = queue[l].offer(new ElementQueueObject(node), 10, TimeUnit.MILLISECONDS);
+			boolean success = queue[l].offer(new ElementQueueObject(node));
 			if (!success) {
 				focusQueue = queue[l];
 				while (!success) {
