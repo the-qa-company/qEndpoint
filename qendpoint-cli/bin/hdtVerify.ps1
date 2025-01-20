@@ -19,6 +19,9 @@ param(
     $load,
     [Parameter()]
     [Switch]
+    $shared,
+    [Parameter()]
+    [Switch]
     $equals,
     [Parameter(ValueFromRemainingArguments, Position = 0)]
     [string[]]

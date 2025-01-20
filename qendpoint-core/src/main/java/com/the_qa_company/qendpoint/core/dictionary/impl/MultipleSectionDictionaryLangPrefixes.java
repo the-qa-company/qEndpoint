@@ -356,4 +356,10 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		}
 		return ret;
 	}
+
+	@Override
+	public boolean isPrefixDictionary() {
+		return true;
+	}
+
 }

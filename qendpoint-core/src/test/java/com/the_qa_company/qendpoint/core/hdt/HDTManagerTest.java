@@ -1092,32 +1092,23 @@ public class HDTManagerTest {
 		public void calcErrorTest() throws ParserException, IOException, NotFoundException {
 			Path root = tempDir.newFolder().toPath();
 
-			HDTOptions s = HDTOptions.of(
-					"loader.cattree.futureHDTLocation", root.resolve("cfuture.hdt"),
-					"loader.cattree.loadertype", "disk",
-					"loader.cattree.location", root.resolve("cattree"),
-					"loader.cattree.memoryFaultFactor", "1",
-					"loader.disk.futureHDTLocation", root.resolve("future_msd.hdt"),
-					"loader.disk.location", root.resolve("gen"),
-					"loader.type", "cat",
-					"parser.ntSimpleParser", "true",
-					"loader.disk.compressWorker", "3",
-					"loader.cattree.kcat", "20",
-					"hdtcat.location", root.resolve("catgen"),
-					"hdtcat.location.future", root.resolve("catgen.hdt"),
-					"bitmaptriples.sequence.disk", "true",
-					"bitmaptriples.indexmethod", "disk",
-					"bitmaptriples.sequence.disk.location", "bitmaptripleseq"
-			);
+			HDTOptions s = HDTOptions.of("loader.cattree.futureHDTLocation", root.resolve("cfuture.hdt"),
+					"loader.cattree.loadertype", "disk", "loader.cattree.location", root.resolve("cattree"),
+					"loader.cattree.memoryFaultFactor", "1", "loader.disk.futureHDTLocation",
+					root.resolve("future_msd.hdt"), "loader.disk.location", root.resolve("gen"), "loader.type", "cat",
+					"parser.ntSimpleParser", "true", "loader.disk.compressWorker", "3", "loader.cattree.kcat", "20",
+					"hdtcat.location", root.resolve("catgen"), "hdtcat.location.future", root.resolve("catgen.hdt"),
+					"bitmaptriples.sequence.disk", "true", "bitmaptriples.indexmethod", "disk",
+					"bitmaptriples.sequence.disk.location", "bitmaptripleseq");
 
 			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(200000, 42)
-					.withMaxElementSplit(100)
-					.withMaxLiteralSize(20);
+					.withMaxElementSplit(100).withMaxLiteralSize(20);
 
 			Path outPath = root.resolve("t.hdt");
 
 			long size;
-			try (HDT hdt = HDTManager.generateHDT(sup.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, s, ProgressListener.ignore())) {
+			try (HDT hdt = HDTManager.generateHDT(sup.createTripleStringStream(),
+					LargeFakeDataSetStreamSupplier.BASE_URI, s, ProgressListener.ignore())) {
 				assertTrue(hdt instanceof MapOnCallHDT);
 				size = hdt.getTriples().getNumberOfElements();
 				hdt.saveToHDT(outPath);

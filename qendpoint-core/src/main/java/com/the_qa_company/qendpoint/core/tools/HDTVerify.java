@@ -3,19 +3,24 @@ package com.the_qa_company.qendpoint.core.tools;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
+import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.IOException;
@@ -50,6 +55,9 @@ public class HDTVerify {
 	@Parameter(names = "-load", description = "Load the HDT in memory for faster results (might be impossible for large a HDT)")
 	public boolean load;
 
+	@Parameter(names = "-shared", description = "Check shared section")
+	public boolean shared;
+
 	@Parameter(names = "-equals", description = "Test all the input HDTs are equals instead of checking validity")
 	public boolean equals;
 
@@ -78,6 +86,86 @@ public class HDTVerify {
 
 	public static boolean checkDictionarySectionOrder(boolean binary, boolean unicode, ColorTool colorTool, String name,
 			DictionarySection section, MultiThreadListenerConsole console) {
+		return checkDictionarySectionOrder(binary, unicode, colorTool, name, section, console, null);
+	}
+
+	public static boolean checkDictionarySharedSectionOrder(boolean binary, boolean unicode, ColorTool colorTool,
+			Dictionary dict, MultiThreadListenerConsole console) {
+		DictionarySection shared = dict.getShared();
+		Iterator<? extends CharSequence> itsh = shared.getSortedEntries();
+		IntermediateListener il = new IntermediateListener(console);
+		il.setPrefix("shared: ");
+
+		boolean error = false;
+		long countSh = 0;
+		long sizeSh = shared.getNumberOfElements();
+		DictionarySection subject = dict.getSubjects();
+		DictionarySection ndt = dict.getAllObjects().get(LiteralsUtils.NO_DATATYPE);
+		while (itsh.hasNext()) {
+			ByteString cs = ByteString.of(itsh.next());
+
+			long sid = subject.locate(cs);
+			long oid;
+			if (ndt != null) {
+				oid = ndt.locate(cs);
+			} else {
+				oid = 0;
+			}
+
+			if (sid >= 1) {
+				if (oid >= 1) {
+					colorTool.error("Find node in shared sec in subject/object", cs.toString());
+				} else {
+					colorTool.error("Find node in shared sec in subject", cs.toString());
+				}
+				error = true;
+			} else if (oid >= 1) {
+				colorTool.error("Find node in shared sec in object", cs.toString());
+			}
+
+			countSh++;
+
+			if (countSh % 10_000 == 0) {
+				String str = cs.toString();
+				il.notifyProgress(100f * countSh / sizeSh, "Verify shared (" + countSh + "/" + sizeSh + "): "
+						+ colorTool.color(3, 3, 3) + (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
+			}
+		}
+		if (error)
+			return true;
+
+		il.setPrefix("shared2: ");
+
+		Iterator<? extends CharSequence> itsu = subject.getSortedEntries();
+		long sizeSu = subject.getNumberOfElements();
+
+		int countSu = 0;
+
+		if (ndt == null) {
+			colorTool.log("no no datatype object section");
+		} else {
+			while (itsu.hasNext()) {
+				ByteString cs = ByteString.of(itsu.next());
+
+				if (ndt.locate(cs) > 0) {
+					colorTool.error("Find subct node in object section", cs.toString());
+				}
+
+				countSu++;
+
+				if (countSu % 10_000 == 0) {
+					String str = cs.toString();
+					il.notifyProgress(100f * countSu / sizeSu, "Verify subject (" + countSu + "/" + sizeSu + "): "
+							+ colorTool.color(3, 3, 3) + (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
+				}
+			}
+		}
+
+		return error;
+	}
+
+	public static boolean checkDictionarySectionOrder(boolean binary, boolean unicode, ColorTool colorTool, String name,
+			DictionarySection section, MultiThreadListenerConsole console, PrefixesStorage prefixes) {
 		Iterator<? extends CharSequence> it = section.getSortedEntries();
 		long size = section.getNumberOfElements();
 		IntermediateListener il = new IntermediateListener(console);
@@ -88,6 +176,18 @@ public class HDTVerify {
 		long count = 0;
 		while (it.hasNext()) {
 			ByteString charSeq = ByteString.of(it.next());
+			if (prefixes != null) {
+				if (!charSeq.isEmpty()) {
+					char c0 = charSeq.charAt(0);
+					if (c0 != LiteralsUtils.DATATYPE_PREFIX_BYTE && c0 != '"' && c0 != '_') {
+						colorTool.error("Non prefixed val data", String.valueOf(charSeq));
+					}
+				}
+				int pref = prefixes.prefixOf(charSeq);
+				if ((pref & 1) != 0) {
+					colorTool.error("Non prefixed val", charSeq + " pref " + (pref >> 1));
+				}
+			}
 			String str = charSeq.toString();
 			count++;
 
@@ -138,9 +238,9 @@ public class HDTVerify {
 		il.notifyProgress(100f, "Verify...");
 
 		if (error) {
-			colorTool.warn("Not valid section");
+			colorTool.warn("Not valid section" + (prefixes != null ? " (prefix)" : "") + " " + size + " nodes");
 		} else {
-			colorTool.log("valid section");
+			colorTool.log("valid section" + (prefixes != null ? " (prefix)" : "") + " " + size + " nodes");
 		}
 		return error;
 	}
@@ -153,37 +253,38 @@ public class HDTVerify {
 			return false;
 		}
 
-		IteratorTripleString its1;
-		IteratorTripleString its2;
-
-		try {
-			its1 = hdt1.search("", "", "");
-			its2 = hdt2.search("", "", "");
-		} catch (NotFoundException e) {
-			throw new AssertionError(e);
-		}
+		IteratorTripleID iti1 = hdt1.getTriples().searchAll();
+		IteratorTripleID iti2 = hdt2.getTriples().searchAll();
 
 		long tripleError = 0;
 		long count = 0;
 		long size = hdt1.getTriples().getNumberOfElements();
 		while (true) {
-			if (!its1.hasNext()) {
-				if (its2.hasNext()) {
+			if (!iti1.hasNext()) {
+				if (iti2.hasNext()) {
 					colorTool.error("Bad iteration");
 					break;
 				}
 				return true;
 			}
 
-			if (!its2.hasNext()) {
+			if (!iti2.hasNext()) {
 				colorTool.error("Bad iteration");
 				return false;
 			}
 
-			TripleString ts1 = its1.next();
-			TripleString ts2 = its2.next();
+			TripleID ti1 = iti1.next();
+			TripleID ti2 = iti2.next();
+			TripleString ts1 = hdt1.getDictionary().toTripleString(ti1);
+			TripleString ts2 = hdt1.getDictionary().toTripleString(ti2);
+
+			if (!ti1.equals(ti2)) {
+				colorTool.error("TripleID not equal!", ti1 + "!=" + ti2 + " / " + ts1 + ":" + ts2);
+				tripleError++;
+			}
+
 			if (!ts1.equals(ts2)) {
-				colorTool.error("Triple not equal!", ts1 + "!=" + ts2);
+				colorTool.error("TripleString not equal!", ts1 + "!=" + ts2 + " / " + ti1 + "!=" + ti2);
 				tripleError++;
 			}
 
@@ -234,16 +335,29 @@ public class HDTVerify {
 			} else {
 				for (HDT hdtl : hdts) {
 					try (HDT hdt = hdtl) {
-						boolean error;
+						boolean error = false;
 						long count = 0;
+
+						// check shared section
+						if (this.shared) {
+							error |= checkDictionarySharedSectionOrder(binary, unicode, colorTool, hdt.getDictionary(),
+									console);
+						}
+
+						PrefixesStorage prefixes = hdt.getDictionary().isPrefixDictionary()
+								? hdt.getDictionary().getPrefixesStorage(true)
+								: null;
+						if (prefixes != null) {
+							colorTool.logValue("Prefixes:", prefixes.saveConfig());
+						}
 						if (hdt.getDictionary().isMultiSectionDictionary()) {
 							colorTool.log("Checking subject entries");
-							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
-									hdt.getDictionary().getSubjects(), console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
+									hdt.getDictionary().getSubjects(), console, prefixes);
 							count += hdt.getDictionary().getSubjects().getNumberOfElements();
 							colorTool.log("Checking predicate entries");
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "predicate",
-									hdt.getDictionary().getPredicates(), console);
+									hdt.getDictionary().getPredicates(), console, prefixes);
 							count += hdt.getDictionary().getPredicates().getNumberOfElements();
 							colorTool.log("Checking object entries");
 							Map<? extends CharSequence, DictionarySection> allObjects = hdt.getDictionary()
@@ -253,35 +367,35 @@ public class HDTVerify {
 								DictionarySection section = entry.getValue();
 								colorTool.log("Checking object section " + sectionName);
 								error |= checkDictionarySectionOrder(binary, unicode, colorTool, "sectionName", section,
-										console);
+										console, prefixes);
 								count += section.getNumberOfElements();
 							}
 							colorTool.log("Checking shared entries");
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
-									hdt.getDictionary().getShared(), console);
+									hdt.getDictionary().getShared(), console, prefixes);
 							count += hdt.getDictionary().getShared().getNumberOfElements();
 						} else {
 							colorTool.log("Checking subject entries");
-							error = checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
-									hdt.getDictionary().getSubjects(), console);
+							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "subject",
+									hdt.getDictionary().getSubjects(), console, prefixes);
 							count += hdt.getDictionary().getSubjects().getNumberOfElements();
 							colorTool.log("Checking predicate entries");
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "predicate",
-									hdt.getDictionary().getPredicates(), console);
+									hdt.getDictionary().getPredicates(), console, prefixes);
 							count += hdt.getDictionary().getPredicates().getNumberOfElements();
 							colorTool.log("Checking object entries");
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "object",
-									hdt.getDictionary().getObjects(), console);
+									hdt.getDictionary().getObjects(), console, prefixes);
 							count += hdt.getDictionary().getObjects().getNumberOfElements();
 							colorTool.log("Checking shared entries");
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "shared",
-									hdt.getDictionary().getShared(), console);
+									hdt.getDictionary().getShared(), console, prefixes);
 							count += hdt.getDictionary().getShared().getNumberOfElements();
 						}
 						if (hdt.getDictionary().supportGraphs()) {
 							colorTool.log("Checking graph entries");
 							error |= checkDictionarySectionOrder(binary, unicode, colorTool, "graph",
-									hdt.getDictionary().getGraphs(), console);
+									hdt.getDictionary().getGraphs(), console, prefixes);
 							count += hdt.getDictionary().getGraphs().getNumberOfElements();
 						}
 

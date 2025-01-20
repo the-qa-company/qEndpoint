@@ -144,6 +144,10 @@ public interface Dictionary extends Closeable {
 		return false;
 	}
 
+	default boolean isPrefixDictionary() {
+		return false;
+	}
+
 	/**
 	 * Returns whether the dictionary supports graphs
 	 *

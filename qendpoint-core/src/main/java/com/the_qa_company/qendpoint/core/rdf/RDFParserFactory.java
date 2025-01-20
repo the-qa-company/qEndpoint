@@ -127,22 +127,8 @@ public class RDFParserFactory {
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, InputStream stream,
 			String baseUri, boolean keepBNode, RDFNotation notation, HDTOptions spec) {
-		String prefixes = spec.get(HDTOptionsKeys.LOADER_PREFIXES);
-
-		if (prefixes == null || prefixes.isEmpty()) {
-			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
-					(triple, pos) -> pipe.addElement(triple.tripleToString())));
-		} else {
-			PrefixesStorage st = new PrefixesStorage();
-			st.loadConfig(prefixes);
-
-			return PipedCopyIterator
-					.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode, (triple, pos) -> {
-						TripleString ts = triple.tripleToString();
-						st.map(ts);
-						pipe.addElement(ts);
-					}));
-		}
+		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
+				(triple, pos) -> pipe.addElement(triple.tripleToString())));
 	}
 
 	/**
@@ -157,22 +143,8 @@ public class RDFParserFactory {
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
 			boolean keepBNode, RDFNotation notation, HDTOptions spec) {
-		String prefixes = spec.get(HDTOptionsKeys.LOADER_PREFIXES);
-
-		if (prefixes == null || prefixes.isEmpty()) {
-			return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
-					(triple, pos) -> pipe.addElement(triple.tripleToString())));
-		} else {
-			PrefixesStorage st = new PrefixesStorage();
-			st.loadConfig(prefixes);
-
-			return PipedCopyIterator
-					.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode, (triple, pos) -> {
-						TripleString ts = triple.tripleToString();
-						st.map(ts);
-						pipe.addElement(ts);
-					}));
-		}
+		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
+				(triple, pos) -> pipe.addElement(triple.tripleToString())));
 	}
 
 }
