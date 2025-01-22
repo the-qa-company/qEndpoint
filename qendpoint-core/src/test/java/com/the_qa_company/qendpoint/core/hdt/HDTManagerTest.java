@@ -41,7 +41,6 @@ import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
-import net.jpountz.lz4.LZ4Factory;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.jena.ext.com.google.common.math.Stats;
 import org.junit.After;
@@ -92,7 +91,7 @@ import static org.junit.Assert.fail;
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class })
+		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.CompressionTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -1233,15 +1232,13 @@ public class HDTManagerTest {
 			Path root = tempDir.newFolder().toPath();
 
 			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(100_000, 27)
-					.withMaxElementSplit(50).withMaxLiteralSize(20);
+					.createSupplierWithMaxTriples(100_000, 27).withMaxElementSplit(50).withMaxLiteralSize(20);
 
 			Path ds = root.resolve("ds.nt");
 			StopWatch sw = new StopWatch();
 			System.out.println("gen " + ds);
 			sup.createNTFile(ds);
 			System.out.println("ds file gen in " + sw.stopAndShow());
-
 
 			Path endPath = root.resolve("end.hdt");
 			HDTOptions spec = HDTOptions.of(
@@ -1250,14 +1247,14 @@ public class HDTManagerTest {
 					// loc
 					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
 					// end
-					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPath
-			);
+					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPath);
 
 			// default
 			List<Long> noneVals = new ArrayList<>();
 			for (int i = 0; i < 10; i++) {
 				sw.reset();
-				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
 					hdt.saveToHDT(endPath);
 				}
 				System.out.println("#" + i + " none compression in " + sw.stopAndShow());
@@ -1268,12 +1265,13 @@ public class HDTManagerTest {
 				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
 			}
 
-			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_KEY, CompressionType.LZ4.name());
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.LZ4.name());
 			// lz4 frame
 			List<Long> lz4FrameVals = new ArrayList<>();
 			for (int i = 0; i < 10; i++) {
 				sw.reset();
-				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
 					hdt.saveToHDT(endPath);
 				}
 				System.out.println("#" + i + " lz4f compression in " + sw.stopAndShow());
@@ -1284,12 +1282,13 @@ public class HDTManagerTest {
 				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
 			}
 
-			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_KEY, CompressionType.LZ4B.name());
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.LZ4B.name());
 			List<Long> lz4BlockVals = new ArrayList<>();
 			// lz4 block
 			for (int i = 0; i < 10; i++) {
 				sw.reset();
-				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES, spec, ProgressListener.ignore())) {
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
 					hdt.saveToHDT(endPath);
 				}
 				System.out.println("#" + i + " lz4b compression in " + sw.stopAndShow());
@@ -1301,6 +1300,7 @@ public class HDTManagerTest {
 			}
 
 		}
+
 	}
 
 	@RunWith(Parameterized.class)
@@ -2186,6 +2186,64 @@ public class HDTManagerTest {
 				}
 			} finally {
 				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+	}
+
+	@RunWith(Parameterized.class)
+	public static class CompressionTest extends HDTManagerTestBase {
+
+		@Parameterized.Parameters(name = "method:{0}")
+		public static Collection<Object> params() {
+			return List.of(CompressionType.values());
+		}
+
+		@Parameterized.Parameter
+		public CompressionType compressionType;
+
+		@Test
+		public void diskComprTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+
+			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 27)
+					.withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			Path ds = root.resolve("ds.nt");
+			sup.createNTFile(ds);
+
+			// after a test, it seems:
+			// "slow" (>3s): gzip, xz, lzma
+			// "fast" (<3s): bzip (2.9) lz4 (2.8) lz4b (2.2) none (2.2)
+
+			Path endPathNone = root.resolve("endnone.hdt");
+			Path endPathComp = root.resolve("endcomp.hdt");
+			HDTOptions spec = HDTOptions.of(
+					// use disk
+					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					// loc
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"));
+
+			// default
+			{
+				spec.set(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPathNone);
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPathNone);
+				}
+			}
+
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, compressionType.name());
+			// compress
+			{
+				spec.set(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPathComp);
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPathComp);
+				}
+			}
+
+			try (HDT none = HDTManager.mapHDT(endPathNone); HDT comp = HDTManager.mapHDT(endPathComp)) {
+				assertEqualsHDT(none, comp);
 			}
 		}
 	}

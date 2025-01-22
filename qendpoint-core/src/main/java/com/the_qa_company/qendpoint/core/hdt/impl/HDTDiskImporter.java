@@ -130,7 +130,7 @@ public class HDTDiskImporter implements Closeable {
 		}
 
 		// compression type
-		compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.LOADER_DISK_COMPRESSION_KEY));
+		compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
 
 		// location of the working directory, will be deleted after generation
 		String baseNameOpt = hdtFormat.get(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY);
@@ -192,10 +192,9 @@ public class HDTDiskImporter implements Closeable {
 		profiler.pushSection("section compression");
 		CompressionResult compressionResult;
 		try {
-			compressionResult = DictionaryFactory
-					.createSectionCompressor(hdtFormat, basePath.resolve("sectionCompression"), source, listener,
-							bufferSize, chunkSize, 1 << ways, hdtFormat.getBoolean("debug.disk.slow.stream2"), compressionType)
-					.compress(workers, compressMode);
+			compressionResult = DictionaryFactory.createSectionCompressor(hdtFormat,
+					basePath.resolve("sectionCompression"), source, listener, bufferSize, chunkSize, 1 << ways,
+					hdtFormat.getBoolean("debug.disk.slow.stream2"), compressionType).compress(workers, compressMode);
 		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);
 		}

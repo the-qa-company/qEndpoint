@@ -13,7 +13,6 @@ import static org.junit.Assert.*;
 
 public class CompressionTypeTest {
 
-
 	@Test
 	public void lz4Test() throws IOException {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -29,7 +28,6 @@ public class CompressionTypeTest {
 			assertEquals(123, VByte.decode(is));
 			assertEquals(1245, VByte.decode(is));
 		}
-
 
 	}
 }

@@ -105,8 +105,8 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "specify that the method doesn't have to copy the triple strings between 2 calls to the iterator")
 	public static final String LOADER_DISK_NO_COPY_ITERATOR_KEY = "loader.disk.noCopyIterator";
 
-	@Key(type = Key.Type.STRING, desc = "Compression algorithm used, default none")
-	public static final String LOADER_DISK_COMPRESSION_KEY = "loader.disk.compression";
+	@Key(type = Key.Type.STRING, desc = "Compression algorithm used to reduce disk based algorithm, default none")
+	public static final String DISK_COMPRESSION_KEY = "disk.compression";
 
 	/**
 	 * Key for the loading mode of a RDF file for the

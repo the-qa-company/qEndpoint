@@ -14,8 +14,8 @@ import com.the_qa_company.qendpoint.core.util.string.CompactString;
  */
 public class MultiSectionSectionCompressor extends SectionCompressor {
 	public MultiSectionSectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
-	                                     MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
-	                                     boolean quad, CompressionType compressionType) {
+			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
+			boolean quad, CompressionType compressionType) {
 		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
 	}
 

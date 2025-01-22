@@ -207,8 +207,8 @@ public class DictionaryFactory {
 	}
 
 	public static SectionCompressor createSectionCompressor(HDTOptions spec, CloseSuppressPath baseFileName,
-                                AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
-                                int k, boolean debugSleepKwayDict, CompressionType compressionType) {
+			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
+			int k, boolean debugSleepKwayDict, CompressionType compressionType) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
 
 		// use the same compressor for quad/triple dict types
@@ -218,7 +218,8 @@ public class DictionaryFactory {
 		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
-			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
+			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad,
+					compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
 				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,

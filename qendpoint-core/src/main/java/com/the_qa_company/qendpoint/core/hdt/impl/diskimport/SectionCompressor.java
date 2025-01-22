@@ -55,8 +55,8 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final CompressionType compressionType;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
-	                         MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
-	                         boolean quads, CompressionType compressionType) {
+			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
+			boolean quads, CompressionType compressionType) {
 		this.source = source;
 		this.listener = listener;
 		this.baseFileName = baseFileName;

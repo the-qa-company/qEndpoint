@@ -273,6 +273,7 @@ public class Profiler implements AutoCloseable {
 	public void writeProfiling() throws IOException {
 		writeProfiling(true);
 	}
+
 	/**
 	 * write the profile into the console
 	 */
