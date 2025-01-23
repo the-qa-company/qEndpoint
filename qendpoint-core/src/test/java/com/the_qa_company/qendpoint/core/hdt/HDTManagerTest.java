@@ -1140,6 +1140,13 @@ public class HDTManagerTest {
 		}
 
 		@Test
+		public void byteshit() {
+			System.out.println(Integer.toHexString(0x80FFFFFF));
+			System.out.println(">> : " + Integer.toHexString(0x80FFFFFF >> 24));
+			System.out.println(">>> : " + Integer.toHexString(0x80FFFFFF >>> 24));
+		}
+
+		@Test
 		public void bigDiskTest() throws ParserException, IOException {
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxSize(100_000_000L, 94);
