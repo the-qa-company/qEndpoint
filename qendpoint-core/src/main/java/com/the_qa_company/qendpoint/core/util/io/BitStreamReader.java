@@ -1,5 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,5 +111,20 @@ public class BitStreamReader implements Closeable {
 		if (closeEnd) {
 			is.close();
 		}
+	}
+
+	public ByteString readByteString() throws IOException {
+		ReplazableString rs = new ReplazableString();
+
+		byte c;
+		while ((c = readByte()) != 0) {
+			rs.append(c);
+		}
+
+		return rs;
+	}
+
+	public String readString() throws IOException {
+		return readByteString().toString();
 	}
 }

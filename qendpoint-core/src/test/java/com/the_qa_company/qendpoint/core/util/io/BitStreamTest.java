@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -95,5 +96,33 @@ public class BitStreamTest {
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
 		new BitStreamReader(in).close();
+	}
+
+	@Test
+	public void unalignStringTest() throws IOException {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		final ByteString hw = ByteString.of("hello world");
+
+		try (BitStreamWriter w = new BitStreamWriter(out)) {
+			w.writeBit(true);
+			w.writeBit(false);
+			w.writeBit(true);
+			// unalign
+			w.writeString(hw);
+			w.writeBit(true);
+			w.writeString(hw.toString());
+		}
+
+		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+
+		try (BitStreamReader r = new BitStreamReader(in)) {
+			assertTrue(r.readBit());
+			assertFalse(r.readBit());
+			assertTrue(r.readBit());
+			assertEquals(hw, r.readByteString());
+			assertTrue(r.readBit());
+			assertEquals(hw.toString(), r.readString());
+			assertEquals(4 + (hw.length() + 1) * 8L * 2, r.getPosition());
+		}
 	}
 }
