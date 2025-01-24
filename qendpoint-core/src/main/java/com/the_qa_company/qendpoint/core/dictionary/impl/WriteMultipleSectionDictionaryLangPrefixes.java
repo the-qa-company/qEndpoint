@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIteratorImpl;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -20,6 +21,7 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,7 +41,8 @@ import java.util.TreeMap;
  *
  * @author Antoine Willerval
  */
-public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictionary {
+public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDictionary {
+	protected final PrefixesStorage prefixesStorage;
 	private final Path filename;
 	private final int bufferSize;
 
@@ -49,11 +52,11 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 		return spec;
 	}
 
-	public WriteMultipleSectionDictionaryLang(HDTOptions spec, Path filename, int bufferSize) {
+	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, Path filename, int bufferSize) {
 		this(spec, filename, bufferSize, false);
 	}
 
-	public WriteMultipleSectionDictionaryLang(HDTOptions spec, Path filename, int bufferSize, boolean quad) {
+	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, Path filename, int bufferSize, boolean quad) {
 		super(withoutRDFType(spec));
 		this.filename = filename;
 		this.bufferSize = bufferSize;
@@ -68,17 +71,26 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 		if (quad) {
 			graph = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "GR"), bufferSize);
 		}
+		prefixesStorage = new PrefixesStorage();
+		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}
 
-	public WriteMultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
+	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
+			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
+			TreeMap<ByteString, DictionarySectionPrivate> objects, PrefixesStorage prefixesStorage) {
+		this(spec, subjects, predicates, shared, objects, null, prefixesStorage);
+	}
+
+	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
 			TreeMap<ByteString, DictionarySectionPrivate> objects) {
-		this(spec, subjects, predicates, shared, objects, null);
+		this(spec, subjects, predicates, shared, objects, null, null);
 	}
 
-	public WriteMultipleSectionDictionaryLang(HDTOptions spec, DictionarySectionPrivate subjects,
+	public WriteMultipleSectionDictionaryLangPrefixes(HDTOptions spec, DictionarySectionPrivate subjects,
 			DictionarySectionPrivate predicates, DictionarySectionPrivate shared,
-			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph) {
+			TreeMap<ByteString, DictionarySectionPrivate> objects, DictionarySectionPrivate graph,
+			PrefixesStorage prefixesStorage) {
 		super(spec);
 		// useless
 		this.filename = null;
@@ -106,6 +118,7 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 				this.nonTyped = sec;
 			}
 		}
+		this.prefixesStorage = prefixesStorage;
 	}
 
 	private ExceptionThread fillSection(Iterator<? extends CharSequence> objects, long count,
@@ -251,6 +264,8 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 		ci.save(output);
 
 		IntermediateListener iListener = new IntermediateListener(listener);
+		prefixesStorage.save(output, iListener);
+
 		iListener.setRange(0, 20);
 		iListener.setPrefix("Save shared: ");
 		shared.save(output, iListener);
@@ -299,6 +314,19 @@ public class WriteMultipleSectionDictionaryLang extends MultipleLangBaseDictiona
 			entry.getValue().save(output, iListener);
 		}
 
+	}
+
+	@Override
+	public String getType() {
+		if (supportGraphs()) {
+			throw new NotImplementedException();
+		}
+		return HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES;
+	}
+
+	@Override
+	public PrefixesStorage getPrefixesStorage(boolean ignoreMapping) {
+		return prefixesStorage;
 	}
 
 	@Override

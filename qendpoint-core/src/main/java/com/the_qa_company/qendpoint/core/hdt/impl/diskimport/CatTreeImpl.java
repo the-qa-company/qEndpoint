@@ -434,7 +434,7 @@ public class CatTreeImpl implements Closeable {
 				Files.deleteIfExists(hdtFile.hdtFile);
 			}
 			profiler.stop();
-			profiler.writeProfiling();
+			profiler.writeProfiling(false);
 		}
 	}
 

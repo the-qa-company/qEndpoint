@@ -70,6 +70,11 @@ public final class ReplazableString implements CharSequence, ByteString {
 		}
 	}
 
+	public void append(byte c) {
+		ensureSize(this.used + 1);
+		buffer[this.used++] = c;
+	}
+
 	public void append(byte[] data) {
 		this.append(data, 0, data.length);
 	}
@@ -176,6 +181,42 @@ public final class ReplazableString implements CharSequence, ByteString {
 			}
 			buffer[used++] = (byte) (value & 0xFF);
 		}
+	}
+
+	public int replace2(BigMappedByteBuffer buffer, long offset, int pos) {
+		used = pos;
+
+		int shift = 0;
+		while (true) {
+			int value = buffer.get(offset + shift++);
+			if (value == 0) {
+				break;
+			}
+			if (used >= this.buffer.length) {
+				this.buffer = Arrays.copyOf(this.buffer, this.buffer.length * 2);
+			}
+			this.buffer[used++] = (byte) (value & 0xFF);
+		}
+
+		return shift;
+	}
+
+	public int replace2(BigByteBuffer buffer, long offset, int pos) {
+		used = pos;
+
+		int shift = 0;
+		while (true) {
+			int value = buffer.get(offset + shift++);
+			if (value == 0) {
+				break;
+			}
+			if (used >= this.buffer.length) {
+				this.buffer = Arrays.copyOf(this.buffer, this.buffer.length * 2);
+			}
+			this.buffer[used++] = (byte) (value & 0xFF);
+		}
+
+		return shift;
 	}
 
 	private static final int READ_AHEAD = 1024;

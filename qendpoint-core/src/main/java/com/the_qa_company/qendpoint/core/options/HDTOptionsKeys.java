@@ -105,6 +105,9 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "specify that the method doesn't have to copy the triple strings between 2 calls to the iterator")
 	public static final String LOADER_DISK_NO_COPY_ITERATOR_KEY = "loader.disk.noCopyIterator";
 
+	@Key(type = Key.Type.STRING, desc = "Compression algorithm used to reduce disk based algorithm, default none")
+	public static final String DISK_COMPRESSION_KEY = "disk.compression";
+
 	/**
 	 * Key for the loading mode of a RDF file for the
 	 * {@link HDTManager#generateHDT(String, String, RDFNotation, HDTOptions, ProgressListener)}
@@ -381,12 +384,24 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD = "dictionaryMultiObjLangQuad";
+	/**
+	 * multi section dictionary lang
+	 */
+	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language prefixes")
+	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES = "dictionaryMultiObjLangPrefixes";
 
 	/**
 	 * Ignore MSDL RDFTYPE INDEX
 	 */
 	@Key(type = Key.Type.ENUM, desc = "Ignore MSDL RDFTYPE INDEX")
 	public static final String DICTIONARY_MSDL_NO_RDFTYPE_INDEX = "dictionary.msdl.nordftypeindex";
+
+	@Key(type = Key.Type.ENUM, desc = "Write section type for disk algorithm")
+	public static final String DISK_WRITE_SECTION_TYPE_KEY = "disk.writeSectionType";
+	@Value(key = DISK_WRITE_SECTION_TYPE_KEY, desc = "PFC section")
+	public static final String DISK_WRITE_SECTION_TYPE_VALUE_PFC = "pfc";
+	@Value(key = DISK_WRITE_SECTION_TYPE_KEY, desc = "stream section")
+	public static final String DISK_WRITE_SECTION_TYPE_VALUE_STREAM = "stream";
 
 	/**
 	 * Location of the HDTCat temp files
@@ -566,6 +581,9 @@ public class HDTOptionsKeys {
 
 	@Key(type = Key.Type.BOOLEAN, desc = "only run the remote path in the autoexec, default: true")
 	public static final String AUTOINDEXER_RUN_ONLY_REMOTE = "autoIndexer.runOnlyRemove";
+
+	@Key(type = Key.Type.STRING, desc = "Prefixes to index dataset, default: none")
+	public static final String LOADER_PREFIXES = "loader.prefixes";
 
 	// use tree-map to have a better order
 	private static final Map<String, Option> OPTION_MAP = new TreeMap<>();

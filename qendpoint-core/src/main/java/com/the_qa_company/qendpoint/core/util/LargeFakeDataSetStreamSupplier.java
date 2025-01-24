@@ -9,9 +9,9 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Utility class to create fake large dataset
@@ -163,6 +162,13 @@ public class LargeFakeDataSetStreamSupplier {
 	}
 
 	/**
+	 * @return iterator of objects
+	 */
+	public Iterator<CharSequence> createObjectsStream() {
+		return MapIterator.<TripleString, CharSequence>of(createTripleStringStream(), TripleString::getObject);
+	}
+
+	/**
 	 * create a nt file from the stream
 	 *
 	 * @param file the file to write
@@ -225,12 +231,7 @@ public class LargeFakeDataSetStreamSupplier {
 		OutputStream out;
 
 		if (compressionType != null) {
-			out = switch (compressionType) {
-			case NONE -> pout;
-			case XZ -> new XZCompressorOutputStream(pout);
-			case BZIP -> new BZip2CompressorOutputStream(pout);
-			case GZIP -> new GZIPOutputStream(pout);
-			};
+			out = compressionType.compress(pout);
 		} else {
 			out = pout;
 		}
@@ -600,6 +601,18 @@ public class LargeFakeDataSetStreamSupplier {
 	public LargeFakeDataSetStreamSupplier withNoDefaultGraph(boolean noDefaultGraph) {
 		this.noDefaultGraph = noDefaultGraph;
 		return this;
+	}
+
+	public PrefixesStorage createPrefixStorage() {
+		PrefixesStorage ps = new PrefixesStorage();
+
+		for (int i = 0; i < maxElementSplit; i++) {
+			ps.addPrefix(BASE_URI + i + "i.test.org/");
+		}
+
+		ps.commitPrefixes();
+
+		return ps;
 	}
 
 	/**

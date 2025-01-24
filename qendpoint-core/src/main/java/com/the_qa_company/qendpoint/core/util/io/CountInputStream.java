@@ -129,7 +129,7 @@ public class CountInputStream extends InputStream {
 
 	public void printIndex(String title) {
 		if (allowDump) {
-			System.out.printf("%s: %x\n", title, total);
+			System.out.printf("%s: %x\n\n", title, total);
 		}
 	}
 }

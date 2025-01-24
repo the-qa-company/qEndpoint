@@ -506,6 +506,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 		adjY = new AdjacencyList(seqY, bitmapY);
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
+		input.printIndex("end");
 
 		isClosed = false;
 	}

@@ -237,7 +237,7 @@ public class AsyncCatTreeWorker implements Closeable {
 			} finally {
 				Files.deleteIfExists(hdtFile);
 				profiler.stop();
-				profiler.writeProfiling();
+				profiler.writeProfiling(false);
 			}
 		}
 	}

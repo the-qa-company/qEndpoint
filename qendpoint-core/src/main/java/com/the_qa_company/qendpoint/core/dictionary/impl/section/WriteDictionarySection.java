@@ -5,10 +5,12 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -43,6 +45,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 	private long numberElements = 0;
 	private long byteoutSize;
 	private boolean created;
+	private final CompressionType compressionType;
 
 	public WriteDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
 		this.bufferSize = bufferSize;
@@ -54,6 +57,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 			throw new IllegalArgumentException("negative pfc.blocksize");
 		}
 		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, 1);
+		compressionType = CompressionType.findOptionVal(spec.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
 	}
 
 	@Override
@@ -82,7 +86,8 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, count / blockSize);
 
 		listener.notifyProgress(0, "Filling section");
-		try (CountOutputStream out = new CountOutputStream(tempFilename.openOutputStream(bufferSize))) {
+		try (CountOutputStream out = new CountOutputStream(
+				compressionType.compress(tempFilename.openOutputStream(bufferSize)))) {
 			CRCOutputStream crcout = new CRCOutputStream(out, new CRC32());
 			ByteString previousStr = null;
 			for (; it.hasNext(); currentCount++) {
@@ -136,9 +141,15 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		if (created) {
 			blocks.save(output, listener);
 			// Write blocks data directly to output, the load was writing using
-			// a
-			// CRC check.
-			Files.copy(tempFilename, output);
+			// a CRC check.
+			if (compressionType == CompressionType.NONE) {
+				// no compression
+				Files.copy(tempFilename, output);
+			} else {
+				try (InputStream comp = compressionType.decompress(tempFilename.openInputStream(bufferSize))) {
+					comp.transferTo(output);
+				}
+			}
 		} else {
 			try (SequenceLog64Big longs = new SequenceLog64Big(1, 0, true)) {
 				// save an empty one because we didn't ingest this section
@@ -199,7 +210,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 			this.listener = ProgressListener.ofNullable(listener);
 			this.count = count;
 			this.block = count < 10 ? 1 : count / 10;
-			out = new CountOutputStream(tempFilename.openOutputStream(bufferSize));
+			out = new CountOutputStream(compressionType.compress(tempFilename.openOutputStream(bufferSize)));
 			crcout = new CRCOutputStream(out, new CRC32());
 		}
 

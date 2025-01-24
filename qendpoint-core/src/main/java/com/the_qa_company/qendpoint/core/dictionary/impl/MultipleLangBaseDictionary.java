@@ -182,6 +182,8 @@ public abstract class MultipleLangBaseDictionary implements DictionaryPrivate {
 	 * sync the ids of each object subsections
 	 */
 	protected void syncLocations() {
+		if (!subjects.isIndexedSection())
+			return;
 		// objectIdLocationsSec
 		// objectIdLocationsSuffix
 		// objectIdLocations

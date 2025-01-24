@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -38,8 +39,10 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.jena.ext.com.google.common.math.Stats;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -88,7 +91,7 @@ import static org.junit.Assert.fail;
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class })
+		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.CompressionTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -98,7 +101,9 @@ public class HDTManagerTest {
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG);
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG
+			// HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES
+			);
 		}
 
 		protected static List<String> diskDictCat() {
@@ -194,11 +199,20 @@ public class HDTManagerTest {
 			Dictionary ad = actual.getDictionary();
 			assertEqualsHDT("Subjects", ed.getSubjects(), ad.getSubjects());
 			assertEqualsHDT("Predicates", ed.getPredicates(), ad.getPredicates());
-			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang) {
+
+			PrefixesStorage eps = ed.getPrefixesStorage(false);
+			PrefixesStorage aps = ad.getPrefixesStorage(false);
+
+			assertEquals("prefixes storages aren't the same", eps, aps);
+
+			if (ed instanceof MultipleBaseDictionary || ed instanceof MultipleSectionDictionaryLang
+					|| ed instanceof MultipleSectionDictionaryLangPrefixes) {
 				if (ed instanceof MultipleBaseDictionary) {
 					assertTrue("ad not a MSD" + ad.getClass(), ad instanceof MultipleBaseDictionary);
-				} else {
+				} else if (ed instanceof MultipleSectionDictionaryLang) {
 					assertTrue("ad not a MSDL" + ad.getClass(), ad instanceof MultipleSectionDictionaryLang);
+				} else {
+					assertTrue("ad not a MSDLP" + ad.getClass(), ad instanceof MultipleSectionDictionaryLangPrefixes);
 				}
 				Map<? extends CharSequence, DictionarySection> keysE = ed.getAllObjects();
 				Map<? extends CharSequence, DictionarySection> keysA = ad.getAllObjects();
@@ -377,26 +391,26 @@ public class HDTManagerTest {
 	@RunWith(Parameterized.class)
 	public static class DynamicDiskTest extends HDTManagerTestBase {
 
-		@Parameterized.Parameters(name = "{7} - {0}")
+		@Parameterized.Parameters(name = "{7} - {0} - {10}")
 		public static Collection<Object[]> params() {
 			List<Object[]> params = new ArrayList<>();
 			for (String dict : diskDict()) {
 				params.addAll(List.of(
 						new Object[] { "slow-str1", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream=true" },
+								"debug.disk.slow.stream=true", "" },
 						new Object[] { "slow-str2", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.stream2=true" },
+								"debug.disk.slow.stream2=true", "" },
 						new Object[] { "slow-cfsd", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.pfsd=true" },
+								"debug.disk.slow.pfsd=true", "" },
 						new Object[] { "slow-kw-d", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.dict=true" },
+								"debug.disk.slow.kway.dict=true", "" },
 						new Object[] { "slow-kw-t", 10, 2, 4, 2,
 								HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE, false, dict, 2,
-								"debug.disk.slow.kway.triple=true" }));
+								"debug.disk.slow.kway.triple=true", "" }));
 				for (int threads : new int[] {
 						// sync
 						1,
@@ -404,19 +418,18 @@ public class HDTManagerTest {
 						2,
 						// async, large thread count
 						8 }) {
-					List<String> modes;
 					// HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_PARTIAL,
-					modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
+					List<String> modes = List.of(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_VALUE_COMPLETE);
 					for (String mode : modes) {
 						params.addAll(List.of(
 								new Object[] { "base-w" + threads + "-" + mode, SIZE_VALUE * 8, 20, 50, threads, mode,
-										false, dict, SIZE_VALUE, "" },
+										false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "duplicates-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads,
-										mode, false, dict, SIZE_VALUE, "" },
+										mode, false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "large-literals-w" + threads + "-" + mode, SIZE_VALUE * 2, 20, 250,
-										threads, mode, false, dict, SIZE_VALUE, "" },
+										threads, mode, false, dict, SIZE_VALUE, "", "" },
 								new Object[] { "quiet-w" + threads + "-" + mode, SIZE_VALUE * 8, 10, 50, threads, mode,
-										false, dict, SIZE_VALUE, "" }));
+										false, dict, SIZE_VALUE, "", "" }));
 					}
 				}
 			}
@@ -444,6 +457,8 @@ public class HDTManagerTest {
 		public long size;
 		@Parameterized.Parameter(9)
 		public String addedSpecs;
+		@Parameterized.Parameter(10)
+		public String prefixes;
 		public boolean quadDict;
 
 		@Before
@@ -453,6 +468,7 @@ public class HDTManagerTest {
 			spec.set(HDTOptionsKeys.LOADER_DISK_COMPRESSION_MODE_KEY, compressMode);
 			spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictionaryType);
 			spec.set(HDTOptionsKeys.LOADER_DISK_NO_COPY_ITERATOR_KEY, true);
+			spec.set(HDTOptionsKeys.LOADER_PREFIXES, prefixes);
 
 			quadDict = DictionaryFactory.isQuadDictionary(dictionaryType);
 		}
@@ -1078,32 +1094,23 @@ public class HDTManagerTest {
 		public void calcErrorTest() throws ParserException, IOException, NotFoundException {
 			Path root = tempDir.newFolder().toPath();
 
-			HDTOptions s = HDTOptions.of(
-					"loader.cattree.futureHDTLocation", root.resolve("cfuture.hdt"),
-					"loader.cattree.loadertype", "disk",
-					"loader.cattree.location", root.resolve("cattree"),
-					"loader.cattree.memoryFaultFactor", "1",
-					"loader.disk.futureHDTLocation", root.resolve("future_msd.hdt"),
-					"loader.disk.location", root.resolve("gen"),
-					"loader.type", "cat",
-					"parser.ntSimpleParser", "true",
-					"loader.disk.compressWorker", "3",
-					"loader.cattree.kcat", "20",
-					"hdtcat.location", root.resolve("catgen"),
-					"hdtcat.location.future", root.resolve("catgen.hdt"),
-					"bitmaptriples.sequence.disk", "true",
-					"bitmaptriples.indexmethod", "disk",
-					"bitmaptriples.sequence.disk.location", "bitmaptripleseq"
-			);
+			HDTOptions s = HDTOptions.of("loader.cattree.futureHDTLocation", root.resolve("cfuture.hdt"),
+					"loader.cattree.loadertype", "disk", "loader.cattree.location", root.resolve("cattree"),
+					"loader.cattree.memoryFaultFactor", "1", "loader.disk.futureHDTLocation",
+					root.resolve("future_msd.hdt"), "loader.disk.location", root.resolve("gen"), "loader.type", "cat",
+					"parser.ntSimpleParser", "true", "loader.disk.compressWorker", "3", "loader.cattree.kcat", "20",
+					"hdtcat.location", root.resolve("catgen"), "hdtcat.location.future", root.resolve("catgen.hdt"),
+					"bitmaptriples.sequence.disk", "true", "bitmaptriples.indexmethod", "disk",
+					"bitmaptriples.sequence.disk.location", "bitmaptripleseq");
 
 			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(200000, 42)
-					.withMaxElementSplit(100)
-					.withMaxLiteralSize(20);
+					.withMaxElementSplit(100).withMaxLiteralSize(20);
 
 			Path outPath = root.resolve("t.hdt");
 
 			long size;
-			try (HDT hdt = HDTManager.generateHDT(sup.createTripleStringStream(), LargeFakeDataSetStreamSupplier.BASE_URI, s, ProgressListener.ignore())) {
+			try (HDT hdt = HDTManager.generateHDT(sup.createTripleStringStream(),
+					LargeFakeDataSetStreamSupplier.BASE_URI, s, ProgressListener.ignore())) {
 				assertTrue(hdt instanceof MapOnCallHDT);
 				size = hdt.getTriples().getNumberOfElements();
 				hdt.saveToHDT(outPath);
@@ -1131,6 +1138,13 @@ public class HDTManagerTest {
 				System.out.println(hdt.getTriples().getNumberOfElements());
 			}
 
+		}
+
+		@Test
+		public void byteshit() {
+			System.out.println(Integer.toHexString(0x80FFFFFF));
+			System.out.println(">> : " + Integer.toHexString(0x80FFFFFF >> 24));
+			System.out.println(">>> : " + Integer.toHexString(0x80FFFFFF >>> 24));
 		}
 
 		@Test
@@ -1220,6 +1234,113 @@ public class HDTManagerTest {
 				}
 			}
 		}
+
+		@Test
+		public void lz4ComprTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+
+			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(100_000, 27).withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			Path ds = root.resolve("ds.nt");
+			StopWatch sw = new StopWatch();
+			System.out.println("gen " + ds);
+			sup.createNTFile(ds);
+			System.out.println("ds file gen in " + sw.stopAndShow());
+
+			Path endPath = root.resolve("end.hdt");
+			HDTOptions spec = HDTOptions.of(
+					// use disk
+					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					// loc
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
+					// end
+					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPath);
+
+			// default
+			List<Long> noneVals = new ArrayList<>();
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " none compression in " + sw.stopAndShow());
+				noneVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(noneVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.LZ4.name());
+			// lz4 frame
+			List<Long> lz4FrameVals = new ArrayList<>();
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " lz4f compression in " + sw.stopAndShow());
+				lz4FrameVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(lz4FrameVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.LZ4B.name());
+			List<Long> lz4BlockVals = new ArrayList<>();
+			// lz4 block
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " lz4b compression in " + sw.stopAndShow());
+				lz4BlockVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(lz4BlockVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
+		}
+
+		@Test
+		public void lz4aComprTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+
+			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(100_000, 27).withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			Path ds = root.resolve("ds.nt");
+			StopWatch sw = new StopWatch();
+			System.out.println("gen " + ds);
+			sup.createNTFile(ds);
+			System.out.println("ds file gen in " + sw.stopAndShow());
+
+			Path endPath = root.resolve("end.hdt");
+			HDTOptions spec = HDTOptions.of(
+					// use disk
+					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					// loc
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
+					// end
+					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPath, HDTOptionsKeys.DISK_COMPRESSION_KEY,
+					CompressionType.LZ4.name(), HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
+					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
+			// lz4 frame
+			sw.reset();
+			try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+					spec, ProgressListener.ignore())) {
+				hdt.saveToHDT(endPath);
+			}
+			System.out.println("lz4f compression in " + sw.stopAndShow());
+		}
+
 	}
 
 	@RunWith(Parameterized.class)
@@ -2105,6 +2226,64 @@ public class HDTManagerTest {
 				}
 			} finally {
 				PathUtils.deleteDirectory(rootDir);
+			}
+		}
+	}
+
+	@RunWith(Parameterized.class)
+	public static class CompressionTest extends HDTManagerTestBase {
+
+		@Parameterized.Parameters(name = "method:{0}")
+		public static Collection<Object> params() {
+			return List.of(CompressionType.values());
+		}
+
+		@Parameterized.Parameter
+		public CompressionType compressionType;
+
+		@Test
+		public void diskComprTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+
+			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10_000, 27)
+					.withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			Path ds = root.resolve("ds.nt");
+			sup.createNTFile(ds);
+
+			// after a test, it seems:
+			// "slow" (>3s): gzip, xz, lzma
+			// "fast" (<3s): bzip (2.9) lz4 (2.8) lz4b (2.2) none (2.2)
+
+			Path endPathNone = root.resolve("endnone.hdt");
+			Path endPathComp = root.resolve("endcomp.hdt");
+			HDTOptions spec = HDTOptions.of(
+					// use disk
+					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					// loc
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"));
+
+			// default
+			{
+				spec.set(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPathNone);
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPathNone);
+				}
+			}
+
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, compressionType.name());
+			// compress
+			{
+				spec.set(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPathComp);
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPathComp);
+				}
+			}
+
+			try (HDT none = HDTManager.mapHDT(endPathNone); HDT comp = HDTManager.mapHDT(endPathComp)) {
+				assertEqualsHDT(none, comp);
 			}
 		}
 	}

@@ -245,6 +245,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			input.printIndex("HDT Triples");
 			triples = TriplesFactory.createTriples(ci);
 			triples.mapFromFile(input, f, iListener);
+			input.printIndex("HDT end");
 		}
 
 		isClosed = false;

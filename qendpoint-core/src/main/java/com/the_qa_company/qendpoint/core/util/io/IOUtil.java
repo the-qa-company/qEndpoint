@@ -910,12 +910,7 @@ public class IOUtil {
 	}
 
 	public static InputStream asUncompressed(InputStream inputStream, CompressionType type) throws IOException {
-		return switch (type) {
-		case GZIP -> new GZIPInputStream(inputStream);
-		case BZIP -> new BZip2CompressorInputStream(inputStream, true);
-		case XZ -> new XZCompressorInputStream(inputStream, true);
-		case NONE -> inputStream;
-		};
+		return type.decompress(inputStream);
 	}
 
 	/**
