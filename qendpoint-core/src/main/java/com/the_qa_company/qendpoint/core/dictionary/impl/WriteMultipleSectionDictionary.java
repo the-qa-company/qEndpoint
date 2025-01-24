@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
@@ -47,10 +48,10 @@ public class WriteMultipleSectionDictionary extends MultipleBaseDictionary {
 		this.filename = filename;
 		this.bufferSize = bufferSize;
 		String name = filename.getFileName().toString();
-		subjects = new WriteDictionarySection(spec, filename.resolveSibling(name + "SU"), bufferSize);
-		predicates = new WriteDictionarySection(spec, filename.resolveSibling(name + "PR"), bufferSize);
+		subjects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SU"), bufferSize);
+		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"), bufferSize);
 		objects = new TreeMap<>();
-		shared = new WriteDictionarySection(spec, filename.resolveSibling(name + "SH"), bufferSize);
+		shared = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SH"), bufferSize);
 	}
 
 	public WriteMultipleSectionDictionary(HDTOptions spec, DictionarySectionPrivate subjects,
@@ -136,7 +137,7 @@ public class WriteMultipleSectionDictionary extends MultipleBaseDictionary {
 				sectionIds.put(type, sidNew);
 
 				// create the new section
-				WriteDictionarySection section = new WriteDictionarySection(spec,
+				DictionarySectionPrivate section = DictionarySectionFactory.createWriteSection(spec,
 						filename.resolveSibling(name + "type" + sidNew), bufferSize);
 				theObjects.put(type, section);
 				section.load(dataTypePeekIt.map(TypedByteString::getNode), count, null);

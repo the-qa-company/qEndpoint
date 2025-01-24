@@ -396,6 +396,13 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.ENUM, desc = "Ignore MSDL RDFTYPE INDEX")
 	public static final String DICTIONARY_MSDL_NO_RDFTYPE_INDEX = "dictionary.msdl.nordftypeindex";
 
+	@Key(type = Key.Type.ENUM, desc = "Write section type for disk algorithm")
+	public static final String DISK_WRITE_SECTION_TYPE_KEY = "disk.writeSectionType";
+	@Value(key = DISK_WRITE_SECTION_TYPE_KEY, desc = "PFC section")
+	public static final String DISK_WRITE_SECTION_TYPE_VALUE_PFC = "pfc";
+	@Value(key = DISK_WRITE_SECTION_TYPE_KEY, desc = "stream section")
+	public static final String DISK_WRITE_SECTION_TYPE_VALUE_STREAM = "stream";
+
 	/**
 	 * Location of the HDTCat temp files
 	 */

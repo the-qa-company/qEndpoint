@@ -215,6 +215,35 @@ public class BigMappedByteBuffer {
 			b2.get(dst, offset + toRead, length - toRead);
 		}
 	}
+	/**
+	 * read a particular number of bytes in the buffer
+	 *
+	 * @param dst    the destination array
+	 * @param position buffer position
+	 * @param offset the offset in the offset
+	 * @param length the length to read
+	 */
+	public void get(byte[] dst, long position, int offset, int length) {
+		int buffer1 = getBufferIndex(position);
+		int buffer2 = getBufferIndex(position + length - 1);
+
+		int r1 = getBufferOffset(position);
+
+		if (buffer1 == buffer2) {
+			// all the bytes are in the same buffer
+			CloseMappedByteBuffer b = buffers.get(buffer1);
+			b.get(r1, dst, offset, length);
+		} else {
+			// we are using 2 buffers
+			CloseMappedByteBuffer b1 = buffers.get(buffer1);
+			CloseMappedByteBuffer b2 = buffers.get(buffer2);
+
+			int toRead = b1.capacity() - getBufferOffset(position);
+
+			b1.get(r1, dst, offset, toRead);
+			b2.get(0, dst, offset + toRead, length - toRead);
+		}
+	}
 
 	/**
 	 * clean the buffer

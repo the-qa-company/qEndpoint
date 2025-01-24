@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl;
 
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
@@ -31,13 +32,13 @@ public class WriteFourSectionDictionary extends BaseDictionary {
 	public WriteFourSectionDictionary(HDTOptions spec, Path filename, int bufferSize, boolean quads) {
 		super(spec);
 		String name = filename.getFileName().toString();
-		subjects = new WriteDictionarySection(spec, filename.resolveSibling(name + "SU"), bufferSize);
-		predicates = new WriteDictionarySection(spec, filename.resolveSibling(name + "PR"), bufferSize);
-		objects = new WriteDictionarySection(spec, filename.resolveSibling(name + "OB"), bufferSize);
-		shared = new WriteDictionarySection(spec, filename.resolveSibling(name + "SH"), bufferSize);
+		subjects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SU"), bufferSize);
+		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"), bufferSize);
+		objects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "OB"), bufferSize);
+		shared = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SH"), bufferSize);
 
 		if (quads) {
-			graphs = new WriteDictionarySection(spec, filename.resolveSibling(name + "GH"), bufferSize);
+			graphs = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "GH"), bufferSize);
 		}
 	}
 

@@ -1,8 +1,11 @@
 package com.the_qa_company.qendpoint.core.dictionary;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
@@ -42,4 +45,14 @@ public interface DictionarySectionPrivate extends DictionarySection {
 	 * @throws IOException
 	 */
 	void load(InputStream input, ProgressListener listener) throws IOException;
+
+	default void save(Path res) throws IOException {
+		save(res, ProgressListener.ignore());
+	}
+
+	default void save(Path res, ProgressListener listener) throws IOException {
+		try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(res))) {
+			save(os, listener);
+		}
+	}
 }

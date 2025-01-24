@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
@@ -158,6 +159,13 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public Iterator<TripleString> createTripleStringStream() {
 		return new FakeStatementIterator();
+	}
+
+	/**
+	 * @return iterator of objects
+	 */
+	public Iterator<CharSequence> createObjectsStream() {
+		return MapIterator.<TripleString, CharSequence>of(createTripleStringStream(), TripleString::getObject);
 	}
 
 	/**

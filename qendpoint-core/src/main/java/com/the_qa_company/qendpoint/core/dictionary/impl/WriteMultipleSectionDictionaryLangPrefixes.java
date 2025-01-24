@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
@@ -60,14 +61,14 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 		this.filename = filename;
 		this.bufferSize = bufferSize;
 		String name = filename.getFileName().toString();
-		subjects = new WriteDictionarySection(spec, filename.resolveSibling(name + "SU"), bufferSize);
-		predicates = new WriteDictionarySection(spec, filename.resolveSibling(name + "PR"), bufferSize);
+		subjects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SU"), bufferSize);
+		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"), bufferSize);
 		typed = new TreeMap<>();
-		nonTyped = new WriteDictionarySection(spec, filename.resolveSibling(name + "NT"), bufferSize);
-		shared = new WriteDictionarySection(spec, filename.resolveSibling(name + "SH"), bufferSize);
+		nonTyped = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "NT"), bufferSize);
+		shared = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SH"), bufferSize);
 		languages = new TreeMap<>();
 		if (quad) {
-			graph = new WriteDictionarySection(spec, filename.resolveSibling(name + "GR"), bufferSize);
+			graph = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "GR"), bufferSize);
 		}
 		prefixesStorage = new PrefixesStorage();
 		prefixesStorage.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
@@ -216,7 +217,7 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 					if (type == LiteralsUtils.NO_DATATYPE && !typedBS.lang) {
 						section = nonTyped;
 					} else {
-						section = new WriteDictionarySection(spec,
+						section = DictionarySectionFactory.createWriteSection(spec,
 								filename.resolveSibling(name + (typedBS.lang ? "lang" : "type") + sidNew), bufferSize);
 
 						if (typedBS.lang) {

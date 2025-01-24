@@ -38,7 +38,7 @@ public class ByteBufferInputStream extends InputStream {
 		if (!buf.hasRemaining()) {
 			return -1;
 		}
-		return buf.get();
+		return Byte.toUnsignedInt(buf.get());
 	}
 
 	@Override
@@ -50,6 +50,12 @@ public class ByteBufferInputStream extends InputStream {
 		len = Math.min(len, buf.remaining());
 		buf.get(bytes, off, len);
 		return len;
+	}
+
+	@Override
+	public long skip(long n) {
+		buf.position(buf.position() + (int)n);
+		return n;
 	}
 
 }

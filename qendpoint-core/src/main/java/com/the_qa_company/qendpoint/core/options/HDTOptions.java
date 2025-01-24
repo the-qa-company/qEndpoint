@@ -838,4 +838,36 @@ public interface HDTOptions {
 
 		return set;
 	}
+
+	default HDTOptions getSubOptions(String namespace) {
+		HDTOptions that = this;
+		return new HDTOptions() {
+			@Override
+			public void clear() {
+				this.getKeys().forEach(k -> {
+					String s = k.toString();
+					if (!namespace.startsWith(s)) {
+						return; // not from our prefix
+					}
+
+					that.set(s, "");
+				});
+			}
+
+			@Override
+			public String get(String key) {
+				return that.get(namespace + key);
+			}
+
+			@Override
+			public void set(String key, String value) {
+				that.set(namespace + key, value);
+			}
+
+			@Override
+			public Set<?> getKeys() {
+				return that.getKeys().stream().filter(k -> namespace.startsWith(k.toString())).collect(Collectors.toSet());
+			}
+		};
+	}
 }
