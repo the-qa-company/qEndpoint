@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.util.crc.CRC;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -53,29 +54,39 @@ public class WriteStreamDictionarySection implements DictionarySectionPrivate {
 		long currentCount = 0;
 
 		listener.notifyProgress(0, "Filling section");
-		try (CountOutputStream countOut = new CountOutputStream(tempFilename.openOutputStream(bufferSize));
-		     OutputStream out = compressionType.compress(countOut)) {
-			CRCOutputStream crcout = new CRCOutputStream(out, new CRC32());
-			ByteString previousStr = ByteString.empty();
-			for (; it.hasNext(); currentCount++) {
-				ByteString str = (ByteString) (it.next());
-				assert str != null;
-				// Find common part.
-				int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
-				// Write Delta in VByte
-				VByte.encode(crcout, delta);
-				// Write remaining
-				ByteStringUtil.append(crcout, str, delta);
-				crcout.write(0);
-				previousStr = str;
-				numberElements++;
-				if (currentCount % block == 0) {
-					listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+		try {
+			CountOutputStream countOut = new CountOutputStream(tempFilename.openOutputStream(bufferSize));
+			countOut.canBeClosed = false;
+			try {
+				CRC crc;
+				try (CRCOutputStream crcout = new CRCOutputStream(compressionType.compress(countOut), new CRC32())) {
+					ByteString previousStr = ByteString.empty();
+					for (; it.hasNext(); currentCount++) {
+						ByteString str = (ByteString) (it.next());
+						assert str != null;
+						// Find common part.
+						int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+						// Write Delta in VByte
+						VByte.encode(crcout, delta);
+						// Write remaining
+						ByteStringUtil.append(crcout, str, delta);
+						crcout.write(0);
+						previousStr = str;
+						numberElements++;
+						if (currentCount % block == 0) {
+							listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+						}
+					}
+					crcout.flush();
+					crc = crcout.getCRC();
 				}
+				byteoutSize = countOut.getTotalBytes();
+				crc.writeCRC(countOut);
+			} finally {
+				countOut.canBeClosed = true;
+				countOut.close();
 			}
 
-			byteoutSize = countOut.getTotalBytes();
-			crcout.writeCRC();
 		} catch (IOException e) {
 			throw new RuntimeException("can't load section", e);
 		}
@@ -137,5 +148,10 @@ public class WriteStreamDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public void close() throws IOException {
 		IOUtil.closeAll(tempFilename);
+	}
+
+	@Override
+	public boolean isIndexedSection() {
+		return false;
 	}
 }

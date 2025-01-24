@@ -351,14 +351,20 @@ public class KCatMerger implements AutoCloseable {
 				return bdb.peek();
 			});
 
-			sectionSubject = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedSubject"), bufferSize);
-			sectionShared = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedShared"), bufferSize);
-			sectionObject = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedObject"), bufferSize);
-			sectionPredicate = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedPredicate"), bufferSize);
-			sectionGraph = quad ? DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedGraph"), bufferSize) : null;
+			sectionSubject = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedSubject"),
+					bufferSize);
+			sectionShared = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedShared"),
+					bufferSize);
+			sectionObject = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedObject"),
+					bufferSize);
+			sectionPredicate = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedPredicate"),
+					bufferSize);
+			sectionGraph = quad
+					? DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedGraph"), bufferSize)
+					: null;
 			sectionSub = new TreeMap<>();
-			sortedSubSections.keySet().forEach((key) -> sectionSub.put(key,
-					DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedSub" + getTypeId(key)), bufferSize)));
+			sortedSubSections.keySet().forEach((key) -> sectionSub.put(key, DictionarySectionFactory
+					.createWriteSection(spec, location.resolve("sortedSub" + getTypeId(key)), bufferSize)));
 
 			catMergerThread = new ExceptionThread(this::runSharedCompute, "KCatMergerThreadShared")
 					.attach(new ExceptionThread(this::runSubSectionCompute, "KCatMergerThreadSubSection"))

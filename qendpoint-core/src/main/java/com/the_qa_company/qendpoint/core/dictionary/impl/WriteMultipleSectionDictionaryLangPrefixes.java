@@ -62,7 +62,8 @@ public class WriteMultipleSectionDictionaryLangPrefixes extends MultipleLangBase
 		this.bufferSize = bufferSize;
 		String name = filename.getFileName().toString();
 		subjects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SU"), bufferSize);
-		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"), bufferSize);
+		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"),
+				bufferSize);
 		typed = new TreeMap<>();
 		nonTyped = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "NT"), bufferSize);
 		shared = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SH"), bufferSize);

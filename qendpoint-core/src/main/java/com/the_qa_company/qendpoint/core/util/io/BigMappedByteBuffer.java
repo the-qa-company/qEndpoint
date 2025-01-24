@@ -215,13 +215,14 @@ public class BigMappedByteBuffer {
 			b2.get(dst, offset + toRead, length - toRead);
 		}
 	}
+
 	/**
 	 * read a particular number of bytes in the buffer
 	 *
-	 * @param dst    the destination array
+	 * @param dst      the destination array
 	 * @param position buffer position
-	 * @param offset the offset in the offset
-	 * @param length the length to read
+	 * @param offset   the offset in the offset
+	 * @param length   the length to read
 	 */
 	public void get(byte[] dst, long position, int offset, int length) {
 		int buffer1 = getBufferIndex(position);

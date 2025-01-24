@@ -102,7 +102,7 @@ public class HDTManagerTest {
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG
-					//HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES
+			// HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES
 			);
 		}
 
@@ -1307,6 +1307,38 @@ public class HDTManagerTest {
 				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
 			}
 
+		}
+
+		@Test
+		public void lz4aComprTest() throws IOException, ParserException {
+			Path root = tempDir.newFolder().toPath();
+
+			LargeFakeDataSetStreamSupplier sup = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(100_000, 27).withMaxElementSplit(50).withMaxLiteralSize(20);
+
+			Path ds = root.resolve("ds.nt");
+			StopWatch sw = new StopWatch();
+			System.out.println("gen " + ds);
+			sup.createNTFile(ds);
+			System.out.println("ds file gen in " + sw.stopAndShow());
+
+			Path endPath = root.resolve("end.hdt");
+			HDTOptions spec = HDTOptions.of(
+					// use disk
+					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					// loc
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("work"),
+					// end
+					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, endPath, HDTOptionsKeys.DISK_COMPRESSION_KEY,
+					CompressionType.LZ4.name(), HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
+					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
+			// lz4 frame
+			sw.reset();
+			try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+					spec, ProgressListener.ignore())) {
+				hdt.saveToHDT(endPath);
+			}
+			System.out.println("lz4f compression in " + sw.stopAndShow());
 		}
 
 	}

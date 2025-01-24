@@ -36,7 +36,7 @@ public class BigMappedByteBufferInputStream extends InputStream {
 			return -1;
 		}
 		// Read only what's left
-		len = (int)Math.min(len, end - offset);
+		len = (int) Math.min(len, end - offset);
 		buf.get(bytes, offset, off, len);
 		offset += len;
 		return len;

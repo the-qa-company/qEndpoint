@@ -37,7 +37,7 @@ public class ByteBufferInputStreamTest {
 				int bufferLen = rnd.nextInt(t.length);
 
 				for (int j = 0; j < bufferLen; j++) {
-					t[j] = (byte)(rnd.nextInt(0x100) & 0xFF);
+					t[j] = (byte) (rnd.nextInt(0x100) & 0xFF);
 				}
 
 				os.write(t, 0, bufferLen);
@@ -57,7 +57,6 @@ public class ByteBufferInputStreamTest {
 		byte[] ex = new byte[0x1000];
 		for (int i = 0; i < COUNT; i++) {
 
-
 			int bufferLen = rnd.nextInt(ex.length);
 
 			for (int j = 0; j < bufferLen; j++) {
@@ -70,14 +69,16 @@ public class ByteBufferInputStreamTest {
 		}
 
 	}
+
 	long oldSize;
 	int oldSize2;
+
 	@Before
 	public void preSetBufferSizes() {
 		oldSize = BigMappedByteBuffer.maxBufferSize;
 		oldSize2 = BigByteBuffer.maxBufferSize;
 		BigMappedByteBuffer.maxBufferSize = COUNT;
-		BigByteBuffer.maxBufferSize = (int)COUNT;
+		BigByteBuffer.maxBufferSize = (int) COUNT;
 	}
 
 	@After
@@ -112,10 +113,11 @@ public class ByteBufferInputStreamTest {
 		long size = writeFile(testFile);
 
 		try (FileChannel ch = FileChannel.open(testFile)) {
-			BigMappedByteBuffer buff = BigMappedByteBuffer.ofFileChannel("test.bin", ch, FileChannel.MapMode.READ_ONLY, 0, size);
+			BigMappedByteBuffer buff = BigMappedByteBuffer.ofFileChannel("test.bin", ch, FileChannel.MapMode.READ_ONLY,
+					0, size);
 
 			try {
-				try (BigMappedByteBufferInputStream is = new BigMappedByteBufferInputStream(buff, 0, size)){
+				try (BigMappedByteBufferInputStream is = new BigMappedByteBufferInputStream(buff, 0, size)) {
 					testFile(is);
 				}
 			} finally {
@@ -124,6 +126,7 @@ public class ByteBufferInputStreamTest {
 
 		}
 	}
+
 	@Test
 	public void loadedBufferTest() throws IOException {
 		Path root = tempDir.newFolder().toPath();

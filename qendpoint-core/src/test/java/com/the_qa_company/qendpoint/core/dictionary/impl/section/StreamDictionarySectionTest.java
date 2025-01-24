@@ -46,7 +46,8 @@ public class StreamDictionarySectionTest {
 		}
 
 		try (CountInputStream cis = new CountInputStream(new BufferedInputStream(Files.newInputStream(res)))) {
-			try (DictionarySectionPrivate sec = DictionarySectionFactory.loadFrom(cis, res.toFile(), ProgressListener.ignore())) {
+			try (DictionarySectionPrivate sec = DictionarySectionFactory.loadFrom(cis, res.toFile(),
+					ProgressListener.ignore())) {
 				Iterator<? extends CharSequence> it = sec.getSortedEntries();
 
 				int idx = 0;
@@ -55,9 +56,8 @@ public class StreamDictionarySectionTest {
 					CharSequence ex = list.get(idx);
 
 					if (comp.compare(bs, ex) != 0) {
-						fail("bad string for index #" + idx + " \n" +
-						     "Expected: " + ex + "\n" +
-						     "Actual  : " + bs + "\n");
+						fail("bad string for index #" + idx + " \n" + "Expected: " + ex + "\n" + "Actual  : " + bs
+								+ "\n");
 					}
 				}
 				assertEquals(idx, list.size());
@@ -96,9 +96,7 @@ public class StreamDictionarySectionTest {
 				CharSequence ex = list.get(idx);
 
 				if (comp.compare(bs, ex) != 0) {
-					fail("bad string for index #" + idx + " \n" +
-					     "Expected: " + ex + "\n" +
-					     "Actual  : " + bs + "\n");
+					fail("bad string for index #" + idx + " \n" + "Expected: " + ex + "\n" + "Actual  : " + bs + "\n");
 				}
 			}
 

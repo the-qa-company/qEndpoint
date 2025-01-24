@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -58,13 +59,16 @@ public class HDTVerify {
 	@Parameter(names = "-shared", description = "Check shared section")
 	public boolean shared;
 
+	@Parameter(names = "-options", description = "options")
+	public String options;
+
 	@Parameter(names = "-equals", description = "Test all the input HDTs are equals instead of checking validity")
 	public boolean equals;
 
 	public ColorTool colorTool;
 
-	private HDT loadOrMap(String file, ProgressListener listener) throws IOException {
-		return load ? HDTManager.loadHDT(file, listener) : HDTManager.mapHDT(file, listener);
+	private HDT loadOrMap(String file, ProgressListener listener, HDTOptions spec) throws IOException {
+		return load ? HDTManager.loadHDT(file, listener, spec) : HDTManager.mapHDT(file, listener, spec);
 	}
 
 	private static void print(byte[] arr) {
@@ -305,9 +309,11 @@ public class HDTVerify {
 		colorTool.setConsole(console);
 		List<HDT> hdts = new ArrayList<>(parameters.size());
 
+		HDTOptions spec = options != null ? HDTOptions.of(options) : HDTOptions.empty();
+
 		try {
 			for (String hdtLocation : parameters) {
-				hdts.add(loadOrMap(hdtLocation, console));
+				hdts.add(loadOrMap(hdtLocation, console, spec));
 			}
 			if (equals) {
 				// we know that we have at least one HDT

@@ -126,7 +126,6 @@ public class StreamDictionarySection implements DictionarySectionPrivate, Closea
 		// nothing to do
 	}
 
-
 	private class StreamBufferReader extends FetcherIterator<ByteString> {
 		long idx;
 		long offset;
@@ -149,5 +148,10 @@ public class StreamDictionarySection implements DictionarySectionPrivate, Closea
 
 			return current;
 		}
+	}
+
+	@Override
+	public boolean isIndexedSection() {
+		return false;
 	}
 }

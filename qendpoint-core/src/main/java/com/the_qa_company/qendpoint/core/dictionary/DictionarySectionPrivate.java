@@ -55,4 +55,8 @@ public interface DictionarySectionPrivate extends DictionarySection {
 			save(os, listener);
 		}
 	}
+
+	default boolean isIndexedSection() {
+		return true;
+	}
 }

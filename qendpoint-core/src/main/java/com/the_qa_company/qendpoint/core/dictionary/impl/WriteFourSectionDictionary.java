@@ -33,12 +33,14 @@ public class WriteFourSectionDictionary extends BaseDictionary {
 		super(spec);
 		String name = filename.getFileName().toString();
 		subjects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SU"), bufferSize);
-		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"), bufferSize);
+		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"),
+				bufferSize);
 		objects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "OB"), bufferSize);
 		shared = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SH"), bufferSize);
 
 		if (quads) {
-			graphs = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "GH"), bufferSize);
+			graphs = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "GH"),
+					bufferSize);
 		}
 	}
 

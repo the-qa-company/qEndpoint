@@ -54,7 +54,7 @@ public class ByteBufferInputStream extends InputStream {
 
 	@Override
 	public long skip(long n) {
-		buf.position(buf.position() + (int)n);
+		buf.position(buf.position() + (int) n);
 		return n;
 	}
 

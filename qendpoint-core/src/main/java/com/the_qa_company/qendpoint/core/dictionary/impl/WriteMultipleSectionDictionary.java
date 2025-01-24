@@ -49,7 +49,8 @@ public class WriteMultipleSectionDictionary extends MultipleBaseDictionary {
 		this.bufferSize = bufferSize;
 		String name = filename.getFileName().toString();
 		subjects = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SU"), bufferSize);
-		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"), bufferSize);
+		predicates = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "PR"),
+				bufferSize);
 		objects = new TreeMap<>();
 		shared = DictionarySectionFactory.createWriteSection(spec, filename.resolveSibling(name + "SH"), bufferSize);
 	}

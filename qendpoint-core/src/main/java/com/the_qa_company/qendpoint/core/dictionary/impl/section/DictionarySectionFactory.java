@@ -41,11 +41,13 @@ public class DictionarySectionFactory {
 	}
 
 	public static DictionarySectionPrivate createWriteSection(HDTOptions spec, Path filename, int bufferSize) {
-		String type = spec.get(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC);
+		String type = spec.get(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
+				HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC);
 		return switch (type) {
-			case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC -> new WriteDictionarySection(spec, filename, bufferSize);
-			case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM -> new WriteStreamDictionarySection(spec, filename, bufferSize);
-			default -> throw new IllegalArgumentException("No write implementation for type " + type);
+		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC -> new WriteDictionarySection(spec, filename, bufferSize);
+		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM ->
+			new WriteStreamDictionarySection(spec, filename, bufferSize);
+		default -> throw new IllegalArgumentException("No write implementation for type " + type);
 		};
 	}
 
@@ -58,7 +60,7 @@ public class DictionarySectionFactory {
 		int dictType = input.read();
 		input.reset();
 		input.mark(64); // To allow children to reset() and try another
-						// instance.
+		// instance.
 
 		DictionarySectionPrivate section;
 
@@ -75,11 +77,11 @@ public class DictionarySectionFactory {
 				section.load(input, listener);
 			}
 			return section;
-			case StreamDictionarySection.TYPE_INDEX:
-				// First try load using the standard PFC
-				section = new StreamDictionarySection(HDTOptions.of());
-				section.load(input, listener);
-				return section;
+		case StreamDictionarySection.TYPE_INDEX:
+			// First try load using the standard PFC
+			section = new StreamDictionarySection(HDTOptions.of());
+			section.load(input, listener);
+			return section;
 		default:
 			throw new IOException("DictionarySection implementation not available for id " + dictType);
 		}
@@ -91,7 +93,7 @@ public class DictionarySectionFactory {
 		int dictType = input.read();
 		input.reset();
 		input.mark(64); // To allow children to reset() and try another
-						// instance.
+		// instance.
 
 		switch (dictType) {
 		case PFCDictionarySection.TYPE_INDEX:

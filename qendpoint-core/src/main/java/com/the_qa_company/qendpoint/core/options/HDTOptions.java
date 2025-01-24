@@ -866,7 +866,8 @@ public interface HDTOptions {
 
 			@Override
 			public Set<?> getKeys() {
-				return that.getKeys().stream().filter(k -> namespace.startsWith(k.toString())).collect(Collectors.toSet());
+				return that.getKeys().stream().filter(k -> namespace.startsWith(k.toString()))
+						.collect(Collectors.toSet());
 			}
 		};
 	}
