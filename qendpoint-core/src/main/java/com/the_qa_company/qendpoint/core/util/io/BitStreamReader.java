@@ -113,6 +113,10 @@ public class BitStreamReader implements Closeable {
 		}
 	}
 
+	public long getOffset() {
+		return offset;
+	}
+
 	public ByteString readByteString() throws IOException {
 		ReplazableString rs = new ReplazableString();
 

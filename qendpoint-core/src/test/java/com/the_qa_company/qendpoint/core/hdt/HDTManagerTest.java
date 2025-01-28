@@ -29,11 +29,14 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIteratorPositionTest;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
+import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
+import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
@@ -185,10 +188,10 @@ public class HDTManagerTest {
 		public static void assertIteratorEquals(Iterator<? extends CharSequence> it1,
 				Iterator<? extends CharSequence> it2) {
 			while (it1.hasNext()) {
-				Assert.assertTrue(it2.hasNext());
-				Assert.assertEquals(it1.next().toString(), it2.next().toString());
+				assertTrue(it2.hasNext());
+				assertEquals(it1.next().toString(), it2.next().toString());
 			}
-			Assert.assertFalse(it2.hasNext());
+			assertFalse(it2.hasNext());
 		}
 
 		public static void assertEqualsHDT(HDT expected, HDT actual) throws NotFoundException {
@@ -1309,6 +1312,61 @@ public class HDTManagerTest {
 
 		}
 
+		@Test
+		public void graphStatsTest() throws IOException {
+			Path hdtPath = Path.of("C:\\Users\\wilat\\workspace\\qEndpoint\\qendpoint\\hdt-store\\wikidata-truthy.hdt");
+
+			StopWatch sw = new StopWatch();
+			long size = Files.size(hdtPath);
+			HDTOptions spec = HDTOptions.of(
+					HDTOptionsKeys.DUMP_BINARY_OFFSETS, true
+			);
+			try (HDT hdt = HDTManager.mapHDT(hdtPath, ProgressListener.sout(), spec)) {
+				System.out.println("indexed in " + sw.stopAndShow());
+				System.out.println("size .... " + StringUtil.humanReadableByteCount(size, true) + "B");
+				Dictionary dict = hdt.getDictionary();
+				System.out.println("Header ------");
+				long zcount = hdt.getTriples().getNumberOfElements();
+				System.out.println("Triples . " + zcount);
+				System.out.println("Dict .... " + dict.getType());
+				System.out.println("Sections ----");
+				System.out.println("Subj .... " + dict.getSubjects().getNumberOfElements());
+				System.out.println("Pred. ... " + dict.getPredicates().getNumberOfElements());
+				System.out.println("Shared .. " + dict.getShared().getNumberOfElements());
+				dict.getAllObjects().forEach((name, sec) ->
+						System.out.println(name + " / " + sec.getNumberOfElements()));
+
+				/*
+				  stats: average number of O per SP?, average number of PO per S??
+				 */
+
+				BitmapTriples bt = (BitmapTriples) hdt.getTriples();
+				long ycount = bt.getSeqY().getNumberOfElements();
+				long xcount = hdt.getDictionary().getNsubjects();
+
+				System.out.println("Num x: " + xcount); // 220975675
+				System.out.println("Num y: " + ycount); // 2073274346
+				System.out.println("Num z: " + zcount); // 7763759851
+
+				System.out.println("avg");
+				System.out.println("z/x: " + (double)zcount / xcount); // 35.1
+				System.out.println("z/y: " + (double)zcount / ycount); // 3.74
+
+				System.out.println("sizes");
+				int lg2pre = BitUtil.log2(dict.getNpredicates());
+				int lg2obj = BitUtil.log2(dict.getNobjects());
+				System.out.println("ly: " + lg2pre); // 14
+				System.out.println("lz: " + lg2obj); // 31
+				long psize = (1 + lg2pre) * ycount;
+				long zsize = (1 + lg2obj) * zcount;
+				System.out.println("P: " + StringUtil.humanReadableByteCount(psize / 8, true) + "B"); // 3.9GB
+				System.out.println("Z: " + StringUtil.humanReadableByteCount(zsize / 8, true) + "B"); // 31GB
+				long sumPZ = (psize + zsize) / 8;
+				System.out.println("Sum: " + StringUtil.humanReadableByteCount(sumPZ, true) + "B" // 35GB / 58%
+				                   + " / " + (sumPZ * 100 / size) + "%");
+				System.out.println("Avg: " + (double)(psize + zsize) / zcount + " bits/triples"); // 36
+			}
+		}
 		@Test
 		public void lz4aComprTest() throws IOException, ParserException {
 			Path root = tempDir.newFolder().toPath();

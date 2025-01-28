@@ -12,6 +12,9 @@ import org.apache.commons.compress.compressors.lzma.LZMACompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -115,5 +118,18 @@ public enum CompressionType {
 	 */
 	public OutputStream compress(OutputStream stream) throws IOException {
 		return compress.apply(stream);
+	}
+
+	public byte[] debugCompress(byte[] buffer) {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
+			try (OutputStream oss = compress(os)) {
+				new ByteArrayInputStream(buffer).transferTo(oss);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		return os.toByteArray();
 	}
 }

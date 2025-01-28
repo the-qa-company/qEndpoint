@@ -75,6 +75,10 @@ public class BitStreamWriter implements Closeable {
 		writeLong(v & 0xFFL, 8);
 	}
 
+	public long getOffset() {
+		return offset;
+	}
+
 	@Override
 	public void close() throws IOException {
 		try {

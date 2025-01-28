@@ -68,6 +68,7 @@ import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIteratorMapDi
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
+import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
@@ -211,6 +212,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			}
 
 			input.printIndex("HDT Header");
+			long offsetHeader = input.getTotalBytes();
 
 			// Load header
 			ci.clear();
@@ -225,7 +227,8 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 				log.error("Empty base uri!");
 			}
 
-			input.printIndex("HDT Dictionary");
+			input.printIndex("HDT Dictionary / " + StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetHeader, true) + "B");
+			long offsetDict = input.getTotalBytes();
 
 			// Load dictionary
 			ci.clear();
@@ -242,10 +245,11 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			ci.load(input);
 			input.reset();
 			iListener.setRange(60, 100);
-			input.printIndex("HDT Triples");
+			input.printIndex("HDT Triples / " + StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetDict, true) + "B");
+			long offsetTriples = input.getTotalBytes();
 			triples = TriplesFactory.createTriples(ci);
 			triples.mapFromFile(input, f, iListener);
-			input.printIndex("HDT end");
+			input.printIndex("HDT end / " + StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetTriples, true) + "B");
 		}
 
 		isClosed = false;
