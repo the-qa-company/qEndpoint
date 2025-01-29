@@ -90,8 +90,9 @@ public interface EndpointStoreDump {
 			Files.createDirectories(outputLocation.getParent());
 			// store the dataset
 			for (Path path : mergedDatasetIndexes) {
-				Files.copy(path, outputLocation.resolve(replaceHDTFilename(path, "store")));
-
+				if (Files.exists(path)) {
+					Files.copy(path, outputLocation.resolve(replaceHDTFilename(path, "store")));
+				}
 			}
 		}
 	}
