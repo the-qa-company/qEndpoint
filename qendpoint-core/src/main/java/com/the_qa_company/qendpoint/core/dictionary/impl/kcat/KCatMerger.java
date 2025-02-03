@@ -8,7 +8,6 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryType;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.OneReadDictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;

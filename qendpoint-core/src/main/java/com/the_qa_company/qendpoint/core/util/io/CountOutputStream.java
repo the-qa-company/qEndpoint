@@ -29,7 +29,7 @@ import java.io.OutputStream;
 public class CountOutputStream extends FilterOutputStream {
 	long total;
 	long partial;
-	public boolean canBeClosed = false;
+	public boolean canBeClosed = true;
 
 	/**
 	 * @param parent

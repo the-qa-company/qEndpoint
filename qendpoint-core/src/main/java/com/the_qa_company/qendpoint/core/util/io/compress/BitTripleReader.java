@@ -26,8 +26,8 @@ public class BitTripleReader extends FetcherExceptionIterator<TripleID, IOExcept
 	public BitTripleReader(InputStream in) throws IOException {
 		this.crcIn = new CRCInputStream(in, new CRC32());
 		this.reader = new BitStreamReader(crcIn, false);
-		this.ySize = (int)reader.readNumber(6);
-		this.zSize = (int)reader.readNumber(6);
+		this.ySize = (int) reader.readNumber(6);
+		this.zSize = (int) reader.readNumber(6);
 	}
 
 	@Override

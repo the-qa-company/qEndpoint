@@ -65,7 +65,8 @@ public class BitTripleTest {
 	private void testCompress(CompressionType type, byte[] data) {
 		int originalLen = data.length;
 		int compLen = type.debugCompress(data).length;
-		System.out.println(type.name() + " " + compLen + " / " + originalLen + " " + ((100L * (originalLen - compLen)) / originalLen) + "%");
+		System.out.println(type.name() + " " + compLen + " / " + originalLen + " "
+				+ ((100L * (originalLen - compLen)) / originalLen) + "%");
 	}
 
 	@Test
@@ -113,15 +114,10 @@ public class BitTripleTest {
 		testCompress(CompressionType.NONE, byteArray);
 
 		/*
-			nice:
-			data 46492764
-			LZ4 46492823 / 46492764 0%
-			LZ4B 46507695 / 46492764 0%
-			LZMA 46989726 / 46492764 -1%
-			BZIP 46719216 / 46492764 0%
-			GZIP 46506967 / 46492764 0%
-			XZ 46494980 / 46492764 0%
-			NONE 46492764 / 46492764 0%
+		 * nice: data 46492764 LZ4 46492823 / 46492764 0% LZ4B 46507695 /
+		 * 46492764 0% LZMA 46989726 / 46492764 -1% BZIP 46719216 / 46492764 0%
+		 * GZIP 46506967 / 46492764 0% XZ 46494980 / 46492764 0% NONE 46492764 /
+		 * 46492764 0%
 		 */
 	}
 

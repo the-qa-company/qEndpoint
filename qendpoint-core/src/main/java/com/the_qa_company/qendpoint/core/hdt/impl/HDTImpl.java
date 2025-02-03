@@ -227,7 +227,8 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 				log.error("Empty base uri!");
 			}
 
-			input.printIndex("HDT Dictionary / " + StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetHeader, true) + "B");
+			input.printIndex("HDT Dictionary / "
+					+ StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetHeader, true) + "B");
 			long offsetDict = input.getTotalBytes();
 
 			// Load dictionary
@@ -245,11 +246,13 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			ci.load(input);
 			input.reset();
 			iListener.setRange(60, 100);
-			input.printIndex("HDT Triples / " + StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetDict, true) + "B");
+			input.printIndex("HDT Triples / "
+					+ StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetDict, true) + "B");
 			long offsetTriples = input.getTotalBytes();
 			triples = TriplesFactory.createTriples(ci);
 			triples.mapFromFile(input, f, iListener);
-			input.printIndex("HDT end / " + StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetTriples, true) + "B");
+			input.printIndex("HDT end / "
+					+ StringUtil.humanReadableByteCount(input.getTotalBytes() - offsetTriples, true) + "B");
 		}
 
 		isClosed = false;

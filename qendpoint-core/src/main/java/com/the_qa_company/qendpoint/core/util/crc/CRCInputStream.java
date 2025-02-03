@@ -49,6 +49,7 @@ public class CRCInputStream extends FilterInputStream {
 	public boolean readCRCAndCheck() throws IOException {
 		return crc.readAndCheck(in);
 	}
+
 	/**
 	 * Read CRC from the stream itself, and check that it matches with the
 	 * generated from the previous bytes.

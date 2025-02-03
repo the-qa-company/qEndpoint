@@ -47,7 +47,6 @@ import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.jena.ext.com.google.common.math.Stats;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -1318,9 +1317,7 @@ public class HDTManagerTest {
 
 			StopWatch sw = new StopWatch();
 			long size = Files.size(hdtPath);
-			HDTOptions spec = HDTOptions.of(
-					HDTOptionsKeys.DUMP_BINARY_OFFSETS, true
-			);
+			HDTOptions spec = HDTOptions.of(HDTOptionsKeys.DUMP_BINARY_OFFSETS, true);
 			try (HDT hdt = HDTManager.mapHDT(hdtPath, ProgressListener.sout(), spec)) {
 				System.out.println("indexed in " + sw.stopAndShow());
 				System.out.println("size .... " + StringUtil.humanReadableByteCount(size, true) + "B");
@@ -1333,11 +1330,12 @@ public class HDTManagerTest {
 				System.out.println("Subj .... " + dict.getSubjects().getNumberOfElements());
 				System.out.println("Pred. ... " + dict.getPredicates().getNumberOfElements());
 				System.out.println("Shared .. " + dict.getShared().getNumberOfElements());
-				dict.getAllObjects().forEach((name, sec) ->
-						System.out.println(name + " / " + sec.getNumberOfElements()));
+				dict.getAllObjects()
+						.forEach((name, sec) -> System.out.println(name + " / " + sec.getNumberOfElements()));
 
 				/*
-				  stats: average number of O per SP?, average number of PO per S??
+				 * stats: average number of O per SP?, average number of PO per
+				 * S??
 				 */
 
 				BitmapTriples bt = (BitmapTriples) hdt.getTriples();
@@ -1349,8 +1347,8 @@ public class HDTManagerTest {
 				System.out.println("Num z: " + zcount); // 7763759851
 
 				System.out.println("avg");
-				System.out.println("z/x: " + (double)zcount / xcount); // 35.1
-				System.out.println("z/y: " + (double)zcount / ycount); // 3.74
+				System.out.println("z/x: " + (double) zcount / xcount); // 35.1
+				System.out.println("z/y: " + (double) zcount / ycount); // 3.74
 
 				System.out.println("sizes");
 				int lg2pre = BitUtil.log2(dict.getNpredicates());
@@ -1362,11 +1360,14 @@ public class HDTManagerTest {
 				System.out.println("P: " + StringUtil.humanReadableByteCount(psize / 8, true) + "B"); // 3.9GB
 				System.out.println("Z: " + StringUtil.humanReadableByteCount(zsize / 8, true) + "B"); // 31GB
 				long sumPZ = (psize + zsize) / 8;
-				System.out.println("Sum: " + StringUtil.humanReadableByteCount(sumPZ, true) + "B" // 35GB / 58%
-				                   + " / " + (sumPZ * 100 / size) + "%");
-				System.out.println("Avg: " + (double)(psize + zsize) / zcount + " bits/triples"); // 36
+				System.out.println("Sum: " + StringUtil.humanReadableByteCount(sumPZ, true) + "B" // 35GB
+																									// /
+																									// 58%
+						+ " / " + (sumPZ * 100 / size) + "%");
+				System.out.println("Avg: " + (double) (psize + zsize) / zcount + " bits/triples"); // 36
 			}
 		}
+
 		@Test
 		public void lz4aComprTest() throws IOException, ParserException {
 			Path root = tempDir.newFolder().toPath();
