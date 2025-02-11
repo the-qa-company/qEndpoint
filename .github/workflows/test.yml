@@ -46,7 +46,7 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -74,7 +74,7 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -102,7 +102,7 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -130,7 +130,7 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -157,7 +157,7 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -185,7 +185,7 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ matrix.jdk }}
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
