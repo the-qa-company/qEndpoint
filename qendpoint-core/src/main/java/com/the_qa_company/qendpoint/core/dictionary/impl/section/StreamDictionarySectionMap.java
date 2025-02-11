@@ -17,8 +17,6 @@ import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.Closeable;
@@ -34,7 +32,6 @@ import java.util.Iterator;
 
 public class StreamDictionarySectionMap implements DictionarySectionPrivate, Closeable {
 
-	private static final Logger logger = LoggerFactory.getLogger(StreamDictionarySectionMap.class);
 	private final BigMappedByteBuffer data;
 	private final long numstrings;
 	private final long bufferSize;
@@ -77,12 +74,6 @@ public class StreamDictionarySectionMap implements DictionarySectionPrivate, Clo
 		IOUtil.skip(crcin, bufferSize + 4); // Including CRC32
 
 		endOffset = input.getTotalBytes();
-
-		logger.info("bufferSize: {}", bufferSize);
-		logger.info("base: {}", base);
-		logger.info("endOffset: {}", endOffset);
-		logger.info("compressionFormatName: {}", compressionFormatName);
-		logger.info("numstrings: {}", numstrings);
 
 		// Read packed data
 		ch = FileChannel.open(Paths.get(f.toString()));
