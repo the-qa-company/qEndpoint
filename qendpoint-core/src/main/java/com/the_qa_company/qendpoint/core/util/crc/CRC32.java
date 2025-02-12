@@ -53,12 +53,10 @@ public class CRC32 implements CRC {
 
 	@Override
 	public void update(byte[] buffer, int offset, int length) {
-		int tbl_idx;
-
 		int len = length;
 		int i = offset;
 		while (len-- != 0) {
-			tbl_idx = (crc32 ^ buffer[i]) & 0xff;
+			int tbl_idx = (crc32 ^ buffer[i]) & 0xff;
 			crc32 = crc32_table[tbl_idx] ^ (crc32 >>> 8);
 			i++;
 		}
@@ -66,12 +64,10 @@ public class CRC32 implements CRC {
 
 	@Override
 	public void update(CloseMappedByteBuffer buffer, int offset, int length) {
-		int tbl_idx;
-
 		int len = length;
 		int i = offset;
 		while (len-- != 0) {
-			tbl_idx = (crc32 ^ buffer.get(i)) & 0xff;
+			int tbl_idx = (crc32 ^ buffer.get(i)) & 0xff;
 			crc32 = crc32_table[tbl_idx] ^ (crc32 >>> 8);
 			i++;
 		}
@@ -132,5 +128,16 @@ public class CRC32 implements CRC {
 	@Override
 	public int sizeof() {
 		return 4;
+	}
+
+	public void update8(byte[] buffer) {
+		crc32 = crc32_table[(crc32 ^ buffer[0]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[1]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[2]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[3]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[4]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[5]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[6]) & 0xff] ^ (crc32 >>> 8);
+		crc32 = crc32_table[(crc32 ^ buffer[7]) & 0xff] ^ (crc32 >>> 8);
 	}
 }

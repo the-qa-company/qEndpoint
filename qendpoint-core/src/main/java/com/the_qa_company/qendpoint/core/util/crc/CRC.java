@@ -63,4 +63,6 @@ public interface CRC extends Comparable<CRC> {
 	 * @return the number of bytes used to store it
 	 */
 	int sizeof();
+
+	void update8(byte[] b);
 }

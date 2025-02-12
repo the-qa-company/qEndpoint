@@ -135,10 +135,10 @@ public class ByteStringUtil {
 		if (from >= len) {
 			return 0;
 		}
-//
-//		if (str1.charAt(from) != str2.charAt(from)) {
-//			return 0;
-//		}
+
+		if (str1.charAt(from) != str2.charAt(from)) {
+			return 0;
+		}
 
 		if (str1 instanceof ByteString && str2 instanceof ByteString) {
 

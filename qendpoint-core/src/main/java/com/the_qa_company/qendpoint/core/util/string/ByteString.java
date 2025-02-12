@@ -76,6 +76,12 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			return length() - other.length();
 		}
 
+		char cc1 = charAt(0);
+		char cc2 = other.charAt(0);
+		if (cc1 != cc2) {
+			return cc1 - cc2;
+		}
+
 		byte[] buffer = getBuffer();
 		byte[] buffer1 = other.getBuffer();
 
@@ -84,6 +90,10 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			return length() - other.length();
 		}
 
+		return extracted(other, mismatch, n);
+	}
+
+	private int extracted(ByteString other, int mismatch, int n) {
 		int k = mismatch;
 		while (k < n) {
 			char c1 = charAt(k);

@@ -57,7 +57,12 @@ public class CRCOutputStream extends FilterOutputStream {
 
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
-		crc.update(b, off, len);
+		if (len == 8 && off == 0) {
+			crc.update8(b);
+		} else {
+			crc.update(b, off, len);
+		}
+
 		out.write(b, off, len);
 	}
 

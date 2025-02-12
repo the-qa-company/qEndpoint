@@ -141,4 +141,9 @@ public class CRC16 implements CRC {
 	public int sizeof() {
 		return 2;
 	}
+
+	@Override
+	public void update8(byte[] b) {
+		update(b, 0, 8);
+	}
 }
