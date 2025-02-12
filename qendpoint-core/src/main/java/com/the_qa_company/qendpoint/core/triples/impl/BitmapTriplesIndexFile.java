@@ -43,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -157,12 +158,12 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 	 * @param mtlistener  listener
 	 * @throws IOException ioe
 	 */
-	public static void generateIndex(BitmapTriples triples, Path destination, TripleComponentOrder order,
+	public static void generateIndex(BitmapTriples bitmapTriples, BitmapTriplesIndex origin, Path destination, TripleComponentOrder order,
 			HDTOptions spec, MultiThreadListener mtlistener) throws IOException {
 		MultiThreadListener listener = MultiThreadListener.ofNullable(mtlistener);
 		Path diskLocation;
-		if (triples.diskSequence) {
-			diskLocation = triples.diskSequenceLocation.createOrGetPath();
+		if (bitmapTriples.diskSequence) {
+			diskLocation = bitmapTriples.diskSequenceLocation.createOrGetPath();
 		} else {
 			diskLocation = Files.createTempDirectory("bitmapTriples");
 		}
@@ -212,31 +213,36 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 			DynamicSequence seqY = null;
 			DynamicSequence seqZ = null;
 			try {
-				sortedIds = new DiskTriplesReorderSorter(workDir,
-						new AsyncIteratorFetcher<>(
-								new MapIterator<>(triples.searchAll(triples.getOrder().mask), TripleID::clone)),
-						listener, bufferSize, chunkSize, k, triples.getOrder(), order).sort(workers);
+				if (origin.getOrder().getSubjectMapping() == order.getSubjectMapping()) {
+					// todo: implement p/o reordering
+				}
+				//else {
+					sortedIds = new DiskTriplesReorderSorter(workDir,
+							new AsyncIteratorFetcher<>(
+									new MapIterator<>(new BitmapTriplesIterator(origin, new TripleID()), TripleID::clone)),
+							listener, bufferSize, chunkSize, k, origin.getOrder(), order).sort(workers);
+				//}
 
-				int ss = BitUtil.log2(triples.getBitmapY().countOnes());
-				int ps = triples.getSeqY().sizeOf();
-				int os = triples.getSeqZ().sizeOf();
+				int ss = BitUtil.log2(origin.getBitmapY().countOnes());
+				int ps = origin.getSeqY().sizeOf();
+				int os = origin.getSeqZ().sizeOf();
 
 				TripleID logTriple = new TripleID(ss, ps, os);
 
 				// we swap the order to find the new allocation numbits
-				TripleComponentOrder oldOrder = triples.getOrder();
+				TripleComponentOrder oldOrder = origin.getOrder();
 				TripleOrderConvert.swapComponentOrder(logTriple, oldOrder, order);
 
 				int ySize = (int) logTriple.getPredicate();
 				int zSize = (int) logTriple.getObject();
 
-				long count = triples.getNumberOfElements();
+				long count = bitmapTriples.getNumberOfElements();
 				workDir.mkdirs();
 				workDir.closeWithDeleteRecurse();
 				bitY = Bitmap64Big.disk(workDir.resolve("bity"), count);
 				bitZ = Bitmap64Big.disk(workDir.resolve("bitZ"), count);
 
-				triples.getSeqY().sizeOf();
+				origin.getSeqY().sizeOf();
 
 				seqY = new SequenceLog64BigDisk(workDir.resolve("seqy"), ySize, count, false, true);
 				seqZ = new SequenceLog64BigDisk(workDir.resolve("seqz"), zSize, count, false, true);
@@ -308,7 +314,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 					bitZ.append(true);
 				}
 
-				assert numTriples == triples.getNumberOfElements();
+				assert numTriples == bitmapTriples.getNumberOfElements();
 
 				seqY.aggressiveTrimToSize();
 				seqZ.trimToSize();
@@ -316,7 +322,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 				// saving the index
 				try (BufferedOutputStream output = new BufferedOutputStream(Files.newOutputStream(destination))) {
 					output.write(MAGIC);
-					IOUtil.writeLong(output, signature(triples));
+					IOUtil.writeLong(output, signature(bitmapTriples));
 
 					IOUtil.writeSizedString(output, order.name(), listener);
 
