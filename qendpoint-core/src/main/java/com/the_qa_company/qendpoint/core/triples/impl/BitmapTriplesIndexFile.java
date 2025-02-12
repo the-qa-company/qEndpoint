@@ -19,6 +19,8 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
@@ -36,6 +38,7 @@ import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -129,7 +132,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 			}
 		}
 
-		CountInputStream stream = new CountInputStream(new BufferedInputStream(Channels.newInputStream(channel)));
+		CountInputStream stream = new CountInputStream(new TempBuffIn(Channels.newInputStream(channel)));
 		stream.skipNBytes(headerSize);
 
 		String orderCfg = IOUtil.readSizedString(stream, ProgressListener.ignore());
@@ -314,7 +317,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 				seqZ.trimToSize();
 
 				// saving the index
-				try (BufferedOutputStream output = new BufferedOutputStream(Files.newOutputStream(destination))) {
+				try (OutputStream output = new TempBuffOut(Files.newOutputStream(destination))) {
 					output.write(MAGIC);
 					IOUtil.writeLong(output, signature(triples));
 

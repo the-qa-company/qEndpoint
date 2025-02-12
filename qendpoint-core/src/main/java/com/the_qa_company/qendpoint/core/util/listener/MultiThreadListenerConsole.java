@@ -194,11 +194,12 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 		message.append("\r");
 		// go back each line of the thread message
 
-		if (previous != 0) {
-			for (int i = 0; i < previous; i++) {
-				message.append(goBackNLine(1)).append(ERASE_LINE);
-			}
-		}
+//		if (previous != 0) {
+//			for (int i = 0; i < previous; i++) {
+//				message.append(goBackNLine(1)).append(ERASE_LINE);
+//			}
+//		}
+		message.append("\033[H\033[2J");
 
 		if (ln != null) {
 			message.append(ln).append("\n");

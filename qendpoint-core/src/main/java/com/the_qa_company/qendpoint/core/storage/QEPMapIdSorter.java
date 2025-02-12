@@ -20,10 +20,12 @@ import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
@@ -92,7 +94,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 				CloseSuppressPath output = merger.waitResult().orElse(null);
 
 				if (output != null) {
-					try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output))) {
+					try (InputStream stream = new TempBuffIn(Files.newInputStream(output))) {
 						QEPMapReader reader = new QEPMapReader(stream);
 
 						long index = 0;
@@ -154,7 +156,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 		@Override
 		public void createChunk(Supplier<QEPMapIds> flux, CloseSuppressPath output)
 				throws KWayMerger.KWayMergerException {
-			try (BufferedOutputStream stream = new BufferedOutputStream(Files.newOutputStream(output))) {
+			try (OutputStream stream = new TempBuffOut(Files.newOutputStream(output))) {
 				QEPMapIds ids;
 
 				List<QEPMapIds> idList = new ArrayList<>();
@@ -163,12 +165,25 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 					idList.add(ids);
 				}
 
-				idList.sort(QEPMapIds::compareTo);
+				idList.parallelStream().sorted(QEPMapIds::compareTo).forEachOrdered(qepMapIds -> {
+					try {
+						VByte.encode(stream, qepMapIds.origin());
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+					try {
+						VByte.encode(stream, qepMapIds.destination());
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				});
 
-				for (QEPMapIds qepMapIds : idList) {
-					VByte.encode(stream, qepMapIds.origin());
-					VByte.encode(stream, qepMapIds.destination());
-				}
+//				idList.sort(QEPMapIds::compareTo);
+//
+//				for (QEPMapIds qepMapIds : idList) {
+//					VByte.encode(stream, qepMapIds.origin());
+//					VByte.encode(stream, qepMapIds.destination());
+//				}
 
 				VByte.encode(stream, 0);
 				VByte.encode(stream, 0);
@@ -184,7 +199,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 				InputStream[] pathInput = new InputStream[inputs.size()];
 
 				for (int i = 0; i < pathInput.length; i++) {
-					pathInput[i] = new BufferedInputStream(Files.newInputStream(inputs.get(i)));
+					pathInput[i] = new TempBuffIn(Files.newInputStream(inputs.get(i)));
 				}
 
 				try {
@@ -192,7 +207,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 					ExceptionIterator<QEPMapIds, IOException> tree = MergeExceptionIterator
 							.buildOfTree(QEPMapReader::new, Arrays.asList(pathInput), 0, inputs.size());
 
-					try (BufferedOutputStream stream = new BufferedOutputStream(Files.newOutputStream(output))) {
+					try (OutputStream stream = new TempBuffOut(Files.newOutputStream(output))) {
 						while (tree.hasNext()) {
 							QEPMapIds ids = tree.next();
 							VByte.encode(stream, ids.origin());

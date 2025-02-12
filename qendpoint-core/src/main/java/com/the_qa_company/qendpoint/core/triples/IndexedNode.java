@@ -50,4 +50,5 @@ public class IndexedNode implements Comparable<IndexedNode>, Cloneable {
 			throw new AssertionError(e);
 		}
 	}
+
 }

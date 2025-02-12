@@ -16,6 +16,7 @@ package com.the_qa_company.qendpoint.core.triples.impl;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -25,6 +26,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
@@ -118,7 +120,7 @@ public class BitmapTriplesCat {
 		vectorY.aggressiveTrimToSize();
 		vectorZ.trimToSize();
 
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(location + "triples"))) {
+		try (OutputStream bos = new TempBuffOut(new FileOutputStream(location + "triples"))) {
 			ControlInfo ci = new ControlInformation();
 			ci.setType(ControlInfo.Type.TRIPLES);
 			ci.setFormat(HDTVocabulary.TRIPLES_TYPE_BITMAP);

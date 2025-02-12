@@ -52,6 +52,8 @@ import com.the_qa_company.qendpoint.core.options.ControlInformation;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.triples.DictionaryEntriesDiff;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
@@ -160,9 +162,9 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 	public void loadFromHDT(String hdtFileName, ProgressListener listener) throws IOException {
 		InputStream in;
 		if (hdtFileName.endsWith(".gz")) {
-			in = new BufferedInputStream(new GZIPInputStream(new FileInputStream(hdtFileName)));
+			in = new TempBuffIn(new GZIPInputStream(new FileInputStream(hdtFileName)));
 		} else {
-			in = new CountInputStream(new BufferedInputStream(new FileInputStream(hdtFileName)));
+			in = new CountInputStream(new TempBuffIn(new FileInputStream(hdtFileName)));
 		}
 		loadFromHDT(in, listener);
 		in.close();
@@ -192,7 +194,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		}
 
 		boolean dumpBinInfo = spec.getBoolean(HDTOptionsKeys.DUMP_BINARY_OFFSETS, false);
-		try (CountInputStream input = new CountInputStream(new BufferedInputStream(new FileInputStream(hdtFileName)),
+		try (CountInputStream input = new CountInputStream(new TempBuffIn(new FileInputStream(hdtFileName)),
 				dumpBinInfo)) {
 
 			input.printIndex("HDT CI");
@@ -256,7 +258,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 	 */
 	@Override
 	public void saveToHDT(String fileName, ProgressListener listener) throws IOException {
-		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
+		try (OutputStream out = new TempBuffOut(new FileOutputStream(fileName))) {
 			// OutputStream out = new GZIPOutputStream(new
 			// BufferedOutputStream(new FileOutputStream(fileName)));
 			saveToHDT(out, listener);
@@ -510,7 +512,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		}
 		CountInputStream in = null;
 		try {
-			in = new CountInputStream(new BufferedInputStream(new FileInputStream(ff)));
+			in = new CountInputStream(new TempBuffIn(new FileInputStream(ff)));
 			ci.load(in);
 			if (isMapped) {
 				triples.mapIndex(in, new File(indexName), ci, listener);
@@ -528,9 +530,9 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 
 			// SAVE
 			if (this.hdtFileName != null) {
-				BufferedOutputStream out = null;
+				OutputStream out = null;
 				try {
-					out = new BufferedOutputStream(new FileOutputStream(versionName));
+					out = new TempBuffOut(new FileOutputStream(versionName));
 					ci.clear();
 					triples.saveIndex(out, ci, listener);
 					out.close();
@@ -611,7 +613,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			// map the generated dictionary
 			FourSectionDictionaryBig dictionary;
 			try (CountInputStream fis = new CountInputStream(
-					new BufferedInputStream(new FileInputStream(location + "dictionary")))) {
+					new TempBuffIn(new FileInputStream(location + "dictionary")))) {
 				dictionary = new FourSectionDictionaryBig(new HDTSpecification());
 				fis.mark(1024);
 				ci2.load(fis);
@@ -655,8 +657,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		Files.delete(Paths.get(location + "O2" + "Types"));
 
 		// map the triples
-		try (CountInputStream fis2 = new CountInputStream(
-				new BufferedInputStream(new FileInputStream(location + "triples")))) {
+		try (CountInputStream fis2 = new CountInputStream(new TempBuffIn(new FileInputStream(location + "triples")))) {
 			ControlInfo ci2 = new ControlInformation();
 			ci2.clear();
 			fis2.mark(1024);
@@ -695,7 +696,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			// map the generated dictionary
 			ControlInfo ci2 = new ControlInformation();
 			try (CountInputStream fis = new CountInputStream(
-					new BufferedInputStream(new FileInputStream(location + "dictionary")))) {
+					new TempBuffIn(new FileInputStream(location + "dictionary")))) {
 				HDTSpecification spec = new HDTSpecification();
 				spec.set(HDTOptionsKeys.TEMP_DICTIONARY_IMPL_KEY, HDTOptionsKeys.TEMP_DICTIONARY_IMPL_VALUE_MULT_HASH);
 				spec.set(HDTOptionsKeys.DICTIONARY_TYPE_KEY, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS);
@@ -757,8 +758,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 		Files.delete(Paths.get(location + "O2"));
 		Files.delete(Paths.get(location + "O2" + "Types"));
 		// map the triples
-		try (CountInputStream fis2 = new CountInputStream(
-				new BufferedInputStream(new FileInputStream(location + "triples")))) {
+		try (CountInputStream fis2 = new CountInputStream(new TempBuffIn(new FileInputStream(location + "triples")))) {
 			ControlInformation ci2 = new ControlInformation();
 			ci2.clear();
 			fis2.mark(1024);
@@ -815,7 +815,7 @@ public class HDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, TriplesPr
 			ControlInfo ci2 = new ControlInformation();
 
 			try (CountInputStream fis = new CountInputStream(
-					new BufferedInputStream(new FileInputStream(location + "dictionary")))) {
+					new TempBuffIn(new FileInputStream(location + "dictionary")))) {
 				fis.mark(1024);
 				ci2.load(fis);
 				fis.reset();

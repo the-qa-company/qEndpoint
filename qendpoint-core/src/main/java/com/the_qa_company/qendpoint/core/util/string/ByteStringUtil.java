@@ -121,20 +121,56 @@ public class ByteStringUtil {
 	}
 
 	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
+		int len = Math.min(str1.length(), str2.length());
+		int delta = from;
+		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
+			delta++;
+		}
+		return delta - from;
+	}
+
+	public static int longestCommonPrefixNew(CharSequence str1, CharSequence str2, int from) {
+
+		int len = Math.min(str1.length(), str2.length());
+		if (from >= len) {
+			return 0;
+		}
+//
+//		if (str1.charAt(from) != str2.charAt(from)) {
+//			return 0;
+//		}
 
 		if (str1 instanceof ByteString && str2 instanceof ByteString) {
+
 			byte[] buffer = ((ByteString) str1).getBuffer();
 			byte[] buffer2 = ((ByteString) str2).getBuffer();
 			// System.out.println("mismatch: " + i);
-			int missmatch = Arrays.mismatch(buffer, from, buffer.length, buffer2, from, buffer2.length);
+			int missmatch = Arrays.mismatch(buffer, from, len, buffer2, from, len);
 			if (missmatch == -1) {
-				return Math.min(buffer.length, buffer2.length) - from;
+				return len - from;
+			} else {
+				return missmatch;
 			}
-			return missmatch - from;
 
+//			int delta = from;
+//			while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
+//				delta++;
+//			}
+//			// System.out.println("i: " + i);
+//			int i = delta - from;
+//
+//			int i1 = missmatch-from;
+//
+//			if (i != i1) {
+////				longestCommonPrefix(str1, str2, from);
+//				throw new AssertionError("Mismatch: " + i + " " + i1);
+//			}
+//
+//			return i1;
+
+//			return missmatch - from;
 		}
 
-		int len = Math.min(str1.length(), str2.length());
 		int delta = from;
 		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
 			delta++;

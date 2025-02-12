@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
@@ -194,7 +195,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public void createNTFile(Path file, CompressionType compressionType) throws IOException {
 		try (Writer writer = new OutputStreamWriter(
-				new BufferedOutputStream(compressionType.compress(Files.newOutputStream(file))))) {
+				new TempBuffOut(compressionType.compress(Files.newOutputStream(file))))) {
 			createNTFile(writer);
 		}
 	}

@@ -20,6 +20,7 @@ import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Profiler;
@@ -254,8 +255,7 @@ public class HDTManagerImpl extends HDTManager {
 					InputStream stream = readIs.is();
 
 					try (InputStream is = checksumPath != null ? new CRCInputStream(stream, new CRC32()) : stream;
-							OutputStream os = new BufferedOutputStream(
-									Files.newOutputStream(preDownload, openOptions))) {
+							OutputStream os = new TempBuffOut(Files.newOutputStream(preDownload, openOptions))) {
 						IOUtil.copy(is, os, listener, 10_000_000);
 						if (is instanceof CRCInputStream crcIs) {
 							checksum = crcIs.getCRC().getValue();

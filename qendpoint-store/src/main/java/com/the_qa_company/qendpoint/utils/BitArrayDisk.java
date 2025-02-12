@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.utils;
 
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.common.io.NioFile;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
@@ -140,8 +141,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 				int lastNonZero = -1;
 				// read previous values
-				try (BufferedInputStream is = new BufferedInputStream(
-						Files.newInputStream(this.output.getFile().toPath()))) {
+				try (InputStream is = new TempBuffIn(Files.newInputStream(this.output.getFile().toPath()))) {
 					// skip header
 					is.skipNBytes(8);
 					for (int i = 0; i < this.words.length; i++) {

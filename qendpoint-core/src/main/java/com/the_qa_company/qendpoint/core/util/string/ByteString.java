@@ -1,5 +1,10 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
+import jdk.incubator.vector.ShortVector;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorOperators;
+import jdk.incubator.vector.VectorSpecies;
+
 import java.util.Arrays;
 
 /**
@@ -44,19 +49,42 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 */
 	byte[] getBuffer();
 
-	/*
-	 * (non-Javadoc)
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 */
 	@Override
 	default int compareTo(ByteString other) {
-
-		int compare = Arrays.compare(getBuffer(), other.getBuffer());
-		if (compare != 0) {
-			return compare;
+		int n = Math.min(length(), other.length());
+		int k = 0;
+		while (k < n) {
+			char c1 = charAt(k);
+			char c2 = other.charAt(k);
+			if (c1 != c2) {
+				return c1 - c2;
+			}
+			k++;
 		}
+		return length() - other.length();
+	}
+
+//	/*
+//	 * (non-Javadoc)
+//	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+//	 */
+//	@Override
+//	default int compareTo(ByteString other) {
 //		int n = Math.min(length(), other.length());
-//		int k = 0;
+//
+//		if (n == 0) {
+//			return length() - other.length();
+//		}
+//
+//		byte[] buffer = getBuffer();
+//		byte[] buffer1 = other.getBuffer();
+//
+//		int mismatch = Arrays.mismatch(buffer, buffer1);
+//		if (mismatch == -1) {
+//			return length() - other.length();
+//		}
+//
+//		int k = mismatch;
 //		while (k < n) {
 //			char c1 = charAt(k);
 //			char c2 = other.charAt(k);
@@ -65,8 +93,8 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 //			}
 //			k++;
 //		}
-		return length() - other.length();
-	}
+//		return length() - other.length();
+//	}
 
 	@Override
 	ByteString subSequence(int start, int end);

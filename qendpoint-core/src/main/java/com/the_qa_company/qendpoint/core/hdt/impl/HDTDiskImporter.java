@@ -187,7 +187,7 @@ public class HDTDiskImporter implements Closeable {
 						+ "iB with " + ways + "ways and " + workers + " worker(s)");
 
 		AsyncIteratorFetcherUnordered<TripleString> source = new AsyncIteratorFetcherUnordered<>(iterator);
-
+//		AsyncIteratorFetcher<TripleString> source = new AsyncIteratorFetcher<>(iterator);
 		profiler.pushSection("section compression");
 		CompressionResult compressionResult;
 		try {

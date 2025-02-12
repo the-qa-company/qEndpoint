@@ -2,6 +2,8 @@ package com.the_qa_company.qendpoint.core.util;
 
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -48,7 +50,7 @@ public class Profiler implements AutoCloseable {
 	 */
 	public static Profiler readFromDisk(Path inputPath) throws IOException {
 		Profiler p = new Profiler("");
-		try (InputStream is = new BufferedInputStream(Files.newInputStream(inputPath))) {
+		try (InputStream is = new TempBuffIn(Files.newInputStream(inputPath))) {
 			for (byte b : HEADER) {
 				if (is.read() != b) {
 					throw new IOException("Missing header for the profiling file!");
@@ -286,7 +288,7 @@ public class Profiler implements AutoCloseable {
 	 * @param outputPath output path
 	 */
 	public void writeToDisk(Path outputPath) throws IOException {
-		try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(outputPath))) {
+		try (OutputStream os = new TempBuffOut(Files.newOutputStream(outputPath))) {
 			for (byte b : HEADER) {
 				os.write(b);
 			}

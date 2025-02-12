@@ -3,6 +3,8 @@ package com.the_qa_company.qendpoint.core.util.nsd;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.storage.QEPCoreException;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
@@ -140,7 +142,7 @@ public class NamespaceData {
 	 */
 	public void load() throws QEPCoreException {
 		synchronized (syncObject) {
-			try (InputStream is = new BufferedInputStream(Files.newInputStream(location))) {
+			try (InputStream is = new TempBuffIn(Files.newInputStream(location))) {
 				// check the binary magic
 				byte[] header = is.readNBytes(MAGIC.length + 1);
 				if (header.length < MAGIC.length + 1) {
@@ -193,7 +195,7 @@ public class NamespaceData {
 				return; // not updated
 			}
 			ProgressListener pl = ProgressListener.ignore();
-			try (OutputStream osh = new BufferedOutputStream(Files.newOutputStream(location))) {
+			try (OutputStream osh = new TempBuffOut(Files.newOutputStream(location))) {
 				// write magic and version
 				osh.write(MAGIC);
 				osh.write(NS_VERSION);

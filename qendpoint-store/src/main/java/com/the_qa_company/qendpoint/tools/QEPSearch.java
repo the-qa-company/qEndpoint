@@ -17,6 +17,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
 import com.the_qa_company.qendpoint.core.tools.HDTVerify;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -1028,7 +1029,7 @@ public class QEPSearch {
 				HDTOptionsKeys.PARSER_DELTAFILE_NO_EXCEPTION, true);
 
 		try (RDFDeltaFileParser.DeltaFileReader reader = new RDFDeltaFileParser.DeltaFileReader(
-				new BufferedInputStream(Files.newInputStream(file)), spec)) {
+				new TempBuffIn(Files.newInputStream(file)), spec)) {
 
 			console.printLine(console.color(5, 5, 1) + "files .. " + console.colorReset() + reader.getSize());
 			console.printLine(console.color(5, 5, 1) + "start .. " + console.colorReset() + reader.getStart());

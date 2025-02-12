@@ -1,6 +1,8 @@
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -12,6 +14,8 @@ import org.junit.rules.TemporaryFolder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
@@ -52,7 +56,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 				map.set(0, 90, true);
 			}
 
-			try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(output));
+			try (InputStream stream = new TempBuffIn(Files.newInputStream(output));
 					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
@@ -102,7 +106,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 					assertTrue(map.access(layer, position));
 				}
 
-				try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(output))) {
+				try (OutputStream out = new TempBuffOut(Files.newOutputStream(output))) {
 					map.save(out, ProgressListener.ignore());
 				}
 			}

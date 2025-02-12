@@ -11,6 +11,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -700,7 +701,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 			if (!file.exists()) {
 				Files.createFile(file.toPath());
 			}
-			OutputStream rdfWriterTempTriplesOut = new BufferedOutputStream(new FileOutputStream(file, isRestarting));
+			OutputStream rdfWriterTempTriplesOut = new TempBuffOut(new FileOutputStream(file, isRestarting));
 			this.rdfWriterTempTriples = graph ? new NQuadsWriter(rdfWriterTempTriplesOut)
 					: new NTriplesWriter(rdfWriterTempTriplesOut);
 			this.rdfWriterTempTriples.startRDF();

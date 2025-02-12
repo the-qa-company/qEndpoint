@@ -39,6 +39,8 @@ import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Mutable;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
@@ -116,7 +118,7 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		ByteString previousStr = null;
 
 		try {
-			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+			try (OutputStream out = new TempBuffOut(new FileOutputStream(file))) {
 				while (it.hasNext()) {
 					ByteString str = ByteString.of(it.next());
 
@@ -161,7 +163,7 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 				byteOut.writeTo(out);
 			}
 
-			try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+			try (InputStream in = new TempBuffIn(new FileInputStream(file))) {
 				// Read block by block
 				// Read packed data
 

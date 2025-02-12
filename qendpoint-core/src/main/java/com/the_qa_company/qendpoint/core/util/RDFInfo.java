@@ -27,6 +27,7 @@ import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
+import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
 
 /**
  * A class for getting basic information about a file
@@ -136,7 +137,7 @@ public class RDFInfo {
 	 */
 	public static long countLines(String filename, RDFParserCallback parser, RDFNotation notation)
 			throws IOException, ParserException {
-		InputStream is = new BufferedInputStream(new FileInputStream(filename));
+		InputStream is = new TempBuffIn(new FileInputStream(filename));
 		try {
 			byte[] c = new byte[1024];
 			int count = 0;
