@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
+import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
@@ -76,21 +77,54 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			return length() - other.length();
 		}
 
-		char cc1 = charAt(0);
-		char cc2 = other.charAt(0);
-		if (cc1 != cc2) {
-			return cc1 - cc2;
-		}
-
 		byte[] buffer = getBuffer();
 		byte[] buffer1 = other.getBuffer();
 
-		int mismatch = Arrays.mismatch(buffer, buffer1);
-		if (mismatch == -1) {
-			return length() - other.length();
+		if (n < 128) {
+			return naive(other, n, buffer, buffer1);
 		}
 
-		return extracted(other, mismatch, n);
+		return vector(other, n, buffer, buffer1);
+
+	}
+
+	private int vector(ByteString other, int n, byte[] buffer, byte[] buffer1) {
+		int mismatch = mismatchVectorByte(buffer, buffer1);
+		if (mismatch == -1 || mismatch >= n) {
+			return length() - other.length();
+		}
+		return charAt(mismatch) - other.charAt(mismatch);
+	}
+
+	private int naive(ByteString other, int n, byte[] buffer, byte[] buffer1) {
+		for (int i = 0; i < 32 && i < n; i++) {
+			if (buffer[i] != buffer1[i]) {
+				return charAt(i) - other.charAt(i);
+			}
+		}
+		return length() - other.length();
+	}
+
+	default int mismatchVectorByte(byte[] byteData1, byte[] byteData2) {
+		int length = Math.min(byteData1.length, byteData2.length);
+		int index = 0;
+		for (; index < ByteVector.SPECIES_PREFERRED.loopBound(length); index += ByteVector.SPECIES_PREFERRED.length()) {
+			ByteVector vector1 = ByteVector.fromArray(ByteVector.SPECIES_PREFERRED, byteData1, index);
+			ByteVector vector2 = ByteVector.fromArray(ByteVector.SPECIES_PREFERRED, byteData2, index);
+			VectorMask<Byte> mask = vector1.compare(VectorOperators.NE, vector2);
+			if (mask.anyTrue()) {
+				return index + mask.firstTrue();
+			}
+		}
+		// process the tail
+		int mismatch = -1;
+		for (int i = index; i < length; ++i) {
+			if (byteData1[i] != byteData2[i]) {
+				mismatch = i;
+				break;
+			}
+		}
+		return mismatch;
 	}
 
 	private int extracted(ByteString other, int mismatch, int n) {

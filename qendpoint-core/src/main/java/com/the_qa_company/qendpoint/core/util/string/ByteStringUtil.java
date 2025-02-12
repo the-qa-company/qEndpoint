@@ -23,11 +23,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
+import jdk.incubator.vector.ByteVector;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorOperators;
+import org.apache.jena.base.Sys;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -129,6 +135,56 @@ public class ByteStringUtil {
 //		return delta - from;
 //	}
 
+	public static void main(String[] args) {
+		ArrayList<byte[]> bytes1 = new ArrayList<>();
+		ArrayList<byte[]> bytes2 = new ArrayList<>();
+
+		Random random = new Random();
+
+		for (int i = 0; i < 2048 * 32; i++) {
+			byte[] byteArray = new byte[random.nextInt(2048)];
+			for (int j = 0; j < byteArray.length; j++) {
+				byteArray[j] = (byte) random.nextInt();
+			}
+			bytes1.add(byteArray);
+		}
+
+		for (int i = 0; i < 2048 * 32; i++) {
+			byte[] byteArray = new byte[random.nextInt(2048)];
+			for (int j = 0; j < byteArray.length; j++) {
+				byteArray[j] = (byte) random.nextInt();
+			}
+			bytes2.add(byteArray);
+		}
+
+		int[] millis = new int[2048];
+		int[] mismatch = new int[2048];
+
+		for (int k = 0; k < 10; k++) {
+			for (int i = 0; i < bytes1.size(); i++) {
+				byte[] byteArray1 = bytes1.get(i);
+				byte[] byteArray2 = bytes2.get(i);
+
+				long start = System.nanoTime();
+				int mismatch1 = Arrays.mismatch(byteArray1, byteArray2);
+				long l = System.nanoTime();
+				if (millis[Math.min(byteArray1.length, byteArray2.length)] == 0) {
+					millis[Math.min(byteArray1.length, byteArray2.length)] = (int) (l - start);
+					mismatch[Math.min(byteArray1.length, byteArray2.length)] = mismatch1;
+				} else {
+					millis[Math.min(byteArray1.length, byteArray2.length)] = Math
+							.min(millis[Math.min(byteArray1.length, byteArray2.length)], (int) (l - start));
+					mismatch[Math.min(byteArray1.length, byteArray2.length)] = mismatch1;
+				}
+			}
+		}
+
+		for (int i = 0; i < millis.length; i++) {
+			System.out.println(i + " " + millis[i] + " ns " + mismatch[i]);
+		}
+
+	}
+
 	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
 
 		int len = Math.min(str1.length(), str2.length());
@@ -142,14 +198,17 @@ public class ByteStringUtil {
 
 		if (str1 instanceof ByteString && str2 instanceof ByteString) {
 
+			if (len - from < 128) {
+				return naive(str1, str2, from, len);
+			}
+
 			byte[] buffer = ((ByteString) str1).getBuffer();
 			byte[] buffer2 = ((ByteString) str2).getBuffer();
 			// System.out.println("mismatch: " + i);
-			int missmatch = Arrays.mismatch(buffer, from, len, buffer2, from, len);
-			if (missmatch == -1) {
-				return len - from;
+			if (from == 0) {
+				return vector(buffer, buffer2, len);
 			} else {
-				return missmatch;
+				return mismatch(from, buffer, len, buffer2);
 			}
 
 //			int delta = from;
@@ -171,12 +230,55 @@ public class ByteStringUtil {
 //			return missmatch - from;
 		}
 
+		return naive(str1, str2, from, len);
+	}
+
+	private static int mismatch(int from, byte[] buffer, int len, byte[] buffer2) {
+		int missmatch = Arrays.mismatch(buffer, from, len, buffer2, from, len);
+		if (missmatch == -1) {
+			return len - from;
+		} else {
+			return missmatch;
+		}
+	}
+
+	private static int vector(byte[] buffer, byte[] buffer2, int len) {
+		int mismatch = mismatchVectorByte(buffer, buffer2);
+		if (mismatch == -1 || mismatch >= len) {
+			return len;
+		} else {
+			return mismatch;
+		}
+	}
+
+	private static int naive(CharSequence str1, CharSequence str2, int from, int len) {
 		int delta = from;
 		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
 			delta++;
 		}
-		// System.out.println("i: " + i);
 		return delta - from;
+	}
+
+	private static int mismatchVectorByte(byte[] byteData1, byte[] byteData2) {
+		int length = Math.min(byteData1.length, byteData2.length);
+		int index = 0;
+		for (; index < ByteVector.SPECIES_PREFERRED.loopBound(length); index += ByteVector.SPECIES_PREFERRED.length()) {
+			ByteVector vector1 = ByteVector.fromArray(ByteVector.SPECIES_PREFERRED, byteData1, index);
+			ByteVector vector2 = ByteVector.fromArray(ByteVector.SPECIES_PREFERRED, byteData2, index);
+			VectorMask<Byte> mask = vector1.compare(VectorOperators.NE, vector2);
+			if (mask.anyTrue()) {
+				return index + mask.firstTrue();
+			}
+		}
+		// process the tail
+		int mismatch = -1;
+		for (int i = index; i < length; ++i) {
+			if (byteData1[i] != byteData2[i]) {
+				mismatch = i;
+				break;
+			}
+		}
+		return mismatch;
 	}
 
 	public static int strcmp(CharSequence str, byte[] buff2, int off2) {
