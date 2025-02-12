@@ -120,16 +120,16 @@ public class ByteStringUtil {
 		return longestCommonPrefix(str1, str2, 0);
 	}
 
-	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
-		int len = Math.min(str1.length(), str2.length());
-		int delta = from;
-		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
-			delta++;
-		}
-		return delta - from;
-	}
+//	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
+//		int len = Math.min(str1.length(), str2.length());
+//		int delta = from;
+//		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
+//			delta++;
+//		}
+//		return delta - from;
+//	}
 
-	public static int longestCommonPrefixNew(CharSequence str1, CharSequence str2, int from) {
+	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
 
 		int len = Math.min(str1.length(), str2.length());
 		if (from >= len) {
