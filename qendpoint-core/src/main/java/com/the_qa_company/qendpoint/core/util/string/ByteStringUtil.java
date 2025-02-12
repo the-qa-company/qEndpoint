@@ -198,18 +198,18 @@ public class ByteStringUtil {
 
 		if (str1 instanceof ByteString && str2 instanceof ByteString) {
 
-			if (len - from < 128) {
+			if (len - from < 64) {
 				return naive(str1, str2, from, len);
 			}
 
 			byte[] buffer = ((ByteString) str1).getBuffer();
 			byte[] buffer2 = ((ByteString) str2).getBuffer();
 			// System.out.println("mismatch: " + i);
-			if (from == 0) {
-				return vector(buffer, buffer2, len);
-			} else {
-				return mismatch(from, buffer, len, buffer2);
-			}
+//			if (from == 0) {
+//				return vector(buffer, buffer2, len);
+//			} else {
+			return mismatch(from, buffer, len, buffer2);
+//			}
 
 //			int delta = from;
 //			while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
