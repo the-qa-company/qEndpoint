@@ -28,16 +28,21 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.HashQuadDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryDiff;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
 import com.the_qa_company.qendpoint.core.dictionary.impl.PSFCFourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.PSFCTempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteFourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionaryLang;
+import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionaryLangPrefixes;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.FourSectionDictionaryKCat;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionDictionaryKCat;
 import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionLangDictionaryKCat;
+import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.MultipleSectionLangPrefixesDictionaryKCat;
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionLangPrefixSectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionLangSectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MultiSectionSectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.SectionCompressor;
@@ -49,6 +54,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.nio.file.Path;
 import java.util.TreeMap;
@@ -152,6 +158,8 @@ public class DictionaryFactory {
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG -> new MultipleSectionDictionaryLang(spec);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultipleSectionDictionaryLang(spec, true);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
+			new MultipleSectionDictionaryLangPrefixes(spec);
 		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
 		};
 	}
@@ -188,6 +196,9 @@ public class DictionaryFactory {
 			new WriteMultipleSectionDictionary(spec, location, bufferSize);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG ->
 			new WriteMultipleSectionDictionaryLang(spec, location, bufferSize);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
+			new WriteMultipleSectionDictionaryLangPrefixes(spec, location, bufferSize);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new WriteMultipleSectionDictionaryLang(spec, location, bufferSize, true);
@@ -197,7 +208,7 @@ public class DictionaryFactory {
 
 	public static SectionCompressor createSectionCompressor(HDTOptions spec, CloseSuppressPath baseFileName,
 			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
-			int k, boolean debugSleepKwayDict) {
+			int k, boolean debugSleepKwayDict, CompressionType compressionType) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
 
 		// use the same compressor for quad/triple dict types
@@ -207,13 +218,17 @@ public class DictionaryFactory {
 		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
-			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
+			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad,
+					compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
-				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad);
+				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultiSectionLangSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
-					debugSleepKwayDict, quad);
+					debugSleepKwayDict, quad, compressionType);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
+			new MultiSectionLangPrefixSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
+					debugSleepKwayDict, quad, spec, compressionType);
 		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
 		};
 	}
@@ -234,6 +249,8 @@ public class DictionaryFactory {
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG -> new MultipleSectionDictionaryLang(HDTOptions.of());
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
 			new MultipleSectionDictionaryLang(HDTOptions.of(), true);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES ->
+			new MultipleSectionDictionaryLangPrefixes(HDTOptions.of());
 		default -> throw new IllegalFormatException("Implementation of dictionary not found for " + name);
 		};
 	}
@@ -269,20 +286,16 @@ public class DictionaryFactory {
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION -> new MultipleSectionDictionaryKCat(dictionary);
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG, HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_QUAD ->
 			new MultipleSectionLangDictionaryKCat(dictionary);
+		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES ->
+			new MultipleSectionLangPrefixesDictionaryKCat(dictionary);
 		default -> throw new IllegalArgumentException("Implementation of DictionaryKCat not found for " + type);
 		};
 	}
 
 	public static DictionaryPrivate createWriteDictionary(String type, HDTOptions spec,
 			DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
-			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub) {
-		return createWriteDictionary(type, spec, subject, predicate, object, shared, sub, null);
-	}
-
-	public static DictionaryPrivate createWriteDictionary(String type, HDTOptions spec,
-			DictionarySectionPrivate subject, DictionarySectionPrivate predicate, DictionarySectionPrivate object,
 			DictionarySectionPrivate shared, TreeMap<ByteString, DictionarySectionPrivate> sub,
-			DictionarySectionPrivate graph) {
+			DictionarySectionPrivate graph, PrefixesStorage prefixesStorage) {
 		if (graph == null) {
 			return switch (type) {
 			case HDTVocabulary.DICTIONARY_TYPE_FOUR_SECTION, HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION ->
@@ -291,6 +304,8 @@ public class DictionaryFactory {
 				new WriteMultipleSectionDictionary(spec, subject, predicate, shared, sub);
 			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG ->
 				new WriteMultipleSectionDictionaryLang(spec, subject, predicate, shared, sub);
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES ->
+				new WriteMultipleSectionDictionaryLangPrefixes(spec, subject, predicate, shared, sub, prefixesStorage);
 			default -> throw new IllegalArgumentException("Unknown dictionary type " + type);
 			};
 		}

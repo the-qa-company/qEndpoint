@@ -475,7 +475,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 	@Override
 	public void mapFromFile(CountInputStream input, File f, ProgressListener listener) throws IOException {
-		log.info("Mapping BitmapTriples from {}", f.getName());
+		log.trace("Mapping BitmapTriples from {}", f);
 		ControlInformation ci = new ControlInformation();
 		ci.load(input);
 		if (ci.getType() != ControlInfo.Type.TRIPLES) {
@@ -506,6 +506,7 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 		adjY = new AdjacencyList(seqY, bitmapY);
 		adjZ = new AdjacencyList(seqZ, bitmapZ);
+		input.printIndex("end");
 
 		isClosed = false;
 	}

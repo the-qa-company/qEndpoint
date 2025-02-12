@@ -29,6 +29,7 @@ import java.io.OutputStream;
 public class CountOutputStream extends FilterOutputStream {
 	long total;
 	long partial;
+	public boolean canBeClosed = true;
 
 	/**
 	 * @param parent
@@ -82,5 +83,12 @@ public class CountOutputStream extends FilterOutputStream {
 		out.write(b, off, len);
 		partial += len;
 		total += len;
+	}
+
+	@Override
+	public void close() throws IOException {
+		if (canBeClosed) {
+			super.close();
+		}
 	}
 }

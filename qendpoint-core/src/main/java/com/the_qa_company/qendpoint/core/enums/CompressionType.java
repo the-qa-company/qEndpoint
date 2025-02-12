@@ -1,11 +1,20 @@
 package com.the_qa_company.qendpoint.core.enums;
 
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionFunction;
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4FrameInputStream;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.apache.commons.compress.compressors.lzma.LZMACompressorInputStream;
+import org.apache.commons.compress.compressors.lzma.LZMACompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,11 +35,23 @@ public enum CompressionType {
 	/**
 	 * bzip compression (.bz2 .bz)
 	 */
-	BZIP(BZip2CompressorInputStream::new, BZip2CompressorOutputStream::new, "bz2", "bz"),
+	BZIP(in -> new BZip2CompressorInputStream(in, true), BZip2CompressorOutputStream::new, "bz2", "bz"),
 	/**
-	 * bzip compression (.xz)
+	 * xz compression (.xz)
 	 */
-	XZ(XZCompressorInputStream::new, XZCompressorOutputStream::new, "xz"),
+	XZ(in -> new XZCompressorInputStream(in, true), XZCompressorOutputStream::new, "xz"),
+	/**
+	 * lz4 compression
+	 */
+	LZ4(LZ4FrameInputStream::new, LZ4FrameOutputStream::new),
+	/**
+	 * lz4 compression
+	 */
+	LZ4B(LZ4BlockInputStream::new, LZ4BlockOutputStream::new),
+	/**
+	 * lzma compression
+	 */
+	LZMA(LZMACompressorInputStream::new, LZMACompressorOutputStream::new),
 	/**
 	 * no compression
 	 */
@@ -59,6 +80,12 @@ public enum CompressionType {
 		return NONE;
 	}
 
+	public static CompressionType findOptionVal(String name) {
+		if (name == null || name.isEmpty())
+			return NONE;
+		return valueOf(name.toUpperCase());
+	}
+
 	private final String[] ext;
 	private final ExceptionFunction<InputStream, InputStream, IOException> decompress;
 	private final ExceptionFunction<OutputStream, OutputStream, IOException> compress;
@@ -68,6 +95,7 @@ public enum CompressionType {
 		this.decompress = decompress;
 		this.compress = compress;
 		this.ext = ext;
+		assert name().toUpperCase().equals(name()) : "bad name";
 	}
 
 	/**
@@ -90,5 +118,18 @@ public enum CompressionType {
 	 */
 	public OutputStream compress(OutputStream stream) throws IOException {
 		return compress.apply(stream);
+	}
+
+	public byte[] debugCompress(byte[] buffer) {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
+			try (OutputStream oss = compress(os)) {
+				new ByteArrayInputStream(buffer).transferTo(oss);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		return os.toByteArray();
 	}
 }

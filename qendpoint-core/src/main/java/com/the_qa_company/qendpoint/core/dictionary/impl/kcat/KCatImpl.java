@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmap;
 import com.the_qa_company.qendpoint.core.compact.bitmap.NegBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
@@ -31,6 +32,7 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.Closeable;
 import java.io.File;
@@ -41,6 +43,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 
 /**
  * Implementation of HDTCat_K algorithm
@@ -129,6 +132,7 @@ public class KCatImpl implements Closeable {
 	private final int bufferSize;
 	private final HDTOptions hdtFormat;
 	private final TripleComponentOrder order;
+	private final PrefixesStorage prefixesStorage;
 	private final long rawSize;
 	private final Profiler profiler;
 	private final boolean closeHDTs;
@@ -212,6 +216,36 @@ public class KCatImpl implements Closeable {
 							+ this.order + "] != type(hdt" + index + ") [" + order + "]");
 				}
 			}
+			// check if we can cat using the prefixes storage
+			PrefixesStorage storage = firstHDT.getDictionary().getPrefixesStorage(true);
+			if (storage != null) {
+				boolean fastCatPref = true;
+
+				for (int hidx = 1; hidx < hdts.length; hidx++) {
+					if (!Objects.equals(storage, hdts[hidx].getDictionary().getPrefixesStorage(true))) {
+						fastCatPref = false;
+						break;
+					}
+				}
+				if (this.hdtFormat.getBoolean("debug.kcatimpl.checkFastCatPref", false)) {
+					if (!fastCatPref) {
+						throw new AssertionError("fastCatPref isn't true");
+					}
+				}
+				if (fastCatPref) {
+					// we can disable the prefix mapping
+					for (HDT hdt : hdts) {
+						hdt.getDictionary().setPrefixMapping(false);
+						assert !(hdt.getDictionary() instanceof MultipleSectionDictionaryLangPrefixes dpr)
+								|| dpr.getPrefixesStorage(false) != null;
+					}
+					prefixesStorage = storage.copy();
+				} else {
+					prefixesStorage = null;
+				}
+			} else {
+				prefixesStorage = null;
+			}
 
 			this.rawSize = rawSize;
 
@@ -259,7 +293,6 @@ public class KCatImpl implements Closeable {
 					// fill the maps based on the deleted triples
 					long c = 0;
 
-					@SuppressWarnings("resource")
 					MultiLayerBitmap bm = MultiLayerBitmap.ofBitmap(deleteBitmap,
 							hdt.getDictionary().supportGraphs() ? hdt.getDictionary().getNgraphs() : 1);
 
@@ -327,7 +360,7 @@ public class KCatImpl implements Closeable {
 	 */
 	KCatMerger createMerger(ProgressListener listener) throws IOException {
 		return new KCatMerger(hdts, deleteBitmapTriples, location, listener, bufferSize, dictionaryType, quad,
-				hdtFormat);
+				hdtFormat, prefixesStorage);
 	}
 
 	/**
@@ -405,7 +438,7 @@ public class KCatImpl implements Closeable {
 			try {
 				try {
 					profiler.stop();
-					profiler.writeProfiling();
+					profiler.writeProfiling(false);
 				} finally {
 					profiler.close();
 				}

@@ -61,6 +61,20 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		return length() - other.length();
 	}
 
+	default int compareTo(CharSequence other) {
+		int n = Math.min(length(), other.length());
+		int k = 0;
+		while (k < n) {
+			char c1 = charAt(k);
+			char c2 = other.charAt(k);
+			if (c1 != c2) {
+				return c1 - c2;
+			}
+			k++;
+		}
+		return length() - other.length();
+	}
+
 	@Override
 	ByteString subSequence(int start, int end);
 
@@ -96,6 +110,28 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		System.arraycopy(getBuffer(), 0, buffer, 0, length());
 		// text
 		System.arraycopy(other.getBuffer(), 0, buffer, length(), other.length());
+		return new CompactString(buffer);
+	}
+
+	default ByteString copyAppend(ByteString other, int start) {
+		return copyAppend(other, start, other.length() - start);
+	}
+
+	default ByteString copyAppend(ByteString other, int start, int len) {
+		if (len == 0) {
+			return this;
+		}
+		if (isEmpty()) {
+			if (len == other.length()) {
+				return other;
+			}
+			return other.subSequence(start, len);
+		}
+		byte[] buffer = new byte[length() + len];
+		// prefix
+		System.arraycopy(getBuffer(), 0, buffer, 0, length());
+		// text
+		System.arraycopy(other.getBuffer(), start, buffer, length(), len);
 		return new CompactString(buffer);
 	}
 

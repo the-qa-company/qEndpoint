@@ -19,7 +19,12 @@ param(
     $load,
     [Parameter()]
     [Switch]
+    $shared,
+    [Parameter()]
+    [Switch]
     $equals,
+    [Parameter()]
+    $options,
     [Parameter(ValueFromRemainingArguments, Position = 0)]
     [string[]]
     $OtherParams

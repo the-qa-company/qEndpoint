@@ -245,7 +245,8 @@ public class Profiler implements AutoCloseable {
 			return;
 		}
 		if (!getMainSection().isRunning()) {
-			throw new IllegalArgumentException("profiler not running!");
+			return; // don't care
+			//throw new IllegalArgumentException("profiler not running!");
 		}
 		getMainSection().popSection();
 	}
@@ -271,10 +272,19 @@ public class Profiler implements AutoCloseable {
 	 * write the profile into the console
 	 */
 	public void writeProfiling() throws IOException {
+		writeProfiling(true);
+	}
+
+	/**
+	 * write the profile into the console
+	 */
+	public void writeProfiling(boolean console) throws IOException {
 		if (disabled || deep != 0) {
 			return;
 		}
-		getMainSection().writeProfiling("", true);
+		if (console) {
+			getMainSection().writeProfiling("", true);
+		}
 		if (outputPath != null) {
 			writeToDisk(outputPath);
 		}
