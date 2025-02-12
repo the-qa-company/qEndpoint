@@ -77,10 +77,15 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			return length() - other.length();
 		}
 
+		int i = charAt(0) - other.charAt(0);
+		if (i != 0) {
+			return i;
+		}
+
 		byte[] buffer = getBuffer();
 		byte[] buffer1 = other.getBuffer();
 
-		if (n < 128) {
+		if (n < 16) {
 			return naive(other, n, buffer, buffer1);
 		}
 
