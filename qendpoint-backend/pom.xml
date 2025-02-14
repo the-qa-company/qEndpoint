@@ -147,6 +147,8 @@
                     <source>${java.source.version}</source>
                     <target>${java.target.version}</target>
                     <compilerArgs>
+<!--                        <arg>&#45;&#45;enable-preview</arg>-->
+<!--                        <arg>&#45;&#45;add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</arg>-->
                         <arg>--add-exports</arg>
                         <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
                         <arg>--add-exports</arg>
