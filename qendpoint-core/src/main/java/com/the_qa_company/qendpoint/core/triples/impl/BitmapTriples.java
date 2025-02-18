@@ -1374,8 +1374,24 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 			Path subIndexPath = BitmapTriplesIndexFile.getIndexPath(fileLocation, order);
 
 			// (re)generate the file
-			BitmapTriplesIndex origin = this; // todo: use better origin using the order
+
+			// check if we can avoid sorting the subject layer
+			BitmapTriplesIndex origin = switch (order) {
+			case SPO -> indexes.get(TripleComponentOrder.SOP);
+			case SOP -> indexes.get(TripleComponentOrder.SPO);
+			case POS -> indexes.get(TripleComponentOrder.PSO);
+			case PSO -> indexes.get(TripleComponentOrder.POS);
+			case OSP -> indexes.get(TripleComponentOrder.OPS);
+			case OPS -> indexes.get(TripleComponentOrder.OSP);
+			default -> throw new IllegalArgumentException("Invalid order: " + order);
+			};
+			if (origin == null)
+				origin = this;
+
+			StopWatch sw = new StopWatch();
+			log.debug("generate other idx {}->{}", origin.getOrder(), order);
 			BitmapTriplesIndexFile.generateIndex(this, origin, subIndexPath, order, spec, mListener);
+			log.debug("end generate other idx {}->{} in {}", origin.getOrder(), order, sw.stopAndShow());
 
 			try (FileChannel channel = FileChannel.open(subIndexPath, StandardOpenOption.READ)) {
 				// load from the path...
@@ -1383,8 +1399,8 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 				BitmapTriplesIndex old = indexes.put(order, idx);
 				indexesMask |= order.mask;
 				if (old != null) {
-					log.warn("an index is using a bad order old:{} cur:{} new:{} after exception", old.getOrder(), order,
-							idx.getOrder());
+					log.warn("an index is using a bad order old:{} cur:{} new:{} after exception", old.getOrder(),
+							order, idx.getOrder());
 				}
 				IOUtil.closeQuietly(old); // should be null?
 			} catch (NoSuchFileException ex2) {

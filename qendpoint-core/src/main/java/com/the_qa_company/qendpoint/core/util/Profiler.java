@@ -246,7 +246,7 @@ public class Profiler implements AutoCloseable {
 		}
 		if (!getMainSection().isRunning()) {
 			return; // don't care
-			//throw new IllegalArgumentException("profiler not running!");
+			// throw new IllegalArgumentException("profiler not running!");
 		}
 		getMainSection().popSection();
 	}

@@ -40,8 +40,12 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	protected long nextY, nextZ;
 	protected long x, y, z;
 
-	protected BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern, boolean search) {
+	protected final TripleComponentOrder order;
+
+	protected BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern, boolean search,
+			TripleComponentOrder order) {
 		this.idx = idx;
+		this.order = order;
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
 		if (search) {
@@ -50,11 +54,20 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	}
 
 	public BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern) {
-		this(idx, pattern, true);
+		this(idx, pattern, true, idx.getOrder());
+	}
+
+	public BitmapTriplesIterator(BitmapTriplesIndex idx, TripleID pattern, TripleComponentOrder order) {
+		this(idx, pattern, true, order);
 	}
 
 	public BitmapTriplesIterator(BitmapTriplesIndex idx, long minZ, long maxZ) {
+		this(idx, minZ, maxZ, idx.getOrder());
+	}
+
+	public BitmapTriplesIterator(BitmapTriplesIndex idx, long minZ, long maxZ, TripleComponentOrder order) {
 		this.idx = idx;
+		this.order = order;
 		this.returnTriple = new TripleID();
 		this.pattern = new TripleID();
 		adjY = idx.getAdjacencyListY();
@@ -70,7 +83,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	public void newSearch(TripleID pattern) {
 		this.pattern.assign(pattern);
 
-		TripleOrderConvert.swapComponentOrder(this.pattern, TripleComponentOrder.SPO, idx.getOrder());
+		TripleOrderConvert.swapComponentOrder(this.pattern, TripleComponentOrder.SPO, order);
 		patX = this.pattern.getSubject();
 		patY = this.pattern.getPredicate();
 		patZ = this.pattern.getObject();
@@ -87,7 +100,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	protected void updateOutput() {
 		lastPosition = posZ;
 		returnTriple.setAll(x, y, z);
-		TripleOrderConvert.swapComponentOrder(returnTriple, idx.getOrder(), TripleComponentOrder.SPO);
+		TripleOrderConvert.swapComponentOrder(returnTriple, order, TripleComponentOrder.SPO);
 	}
 
 	private void findRange() {
@@ -277,7 +290,7 @@ public class BitmapTriplesIterator implements SuppliableIteratorTripleID {
 	 */
 	@Override
 	public TripleComponentOrder getOrder() {
-		return idx.getOrder();
+		return order;
 	}
 
 	/*
