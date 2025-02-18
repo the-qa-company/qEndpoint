@@ -60,7 +60,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		this.source = source;
 		this.listener = listener;
 		this.baseFileName = baseFileName;
-		this.bufferSize = bufferSize;
+		this.bufferSize = Math.max(4 * 1024 * 1024, bufferSize);
 		this.chunkSize = chunkSize;
 		this.k = k;
 		this.debugSleepKwayDict = debugSleepKwayDict;
