@@ -1,11 +1,5 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
-import jdk.incubator.vector.ByteVector;
-import jdk.incubator.vector.ShortVector;
-import jdk.incubator.vector.VectorMask;
-import jdk.incubator.vector.VectorOperators;
-import jdk.incubator.vector.VectorSpecies;
-
 import java.util.Arrays;
 
 /**
@@ -50,21 +44,6 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 */
 	byte[] getBuffer();
 
-//	@Override
-//	default int compareTo(ByteString other) {
-//		int n = Math.min(length(), other.length());
-//		int k = 0;
-//		while (k < n) {
-//			char c1 = charAt(k);
-//			char c2 = other.charAt(k);
-//			if (c1 != c2) {
-//				return c1 - c2;
-//			}
-//			k++;
-//		}
-//		return length() - other.length();
-//	}
-
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
@@ -72,28 +51,15 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	@Override
 	default int compareTo(ByteString other) {
 		int n = Math.min(length(), other.length());
-
-		if (n == 0) {
-			return length() - other.length();
+		if (n < 128) {
+			return naive(other, n);
 		}
-
-		byte[] buffer = getBuffer();
-		byte[] buffer1 = other.getBuffer();
-
-		if (n < 64) {
-			return naive(other, n, buffer, buffer1);
-		}
-
-		int i = charAt(0) - other.charAt(0);
-		if (i != 0) {
-			return i;
-		}
-
-		return vector(other, n, buffer, buffer1);
-
+		return vector(other, n);
 	}
 
-	private int vector(ByteString other, int n, byte[] buffer, byte[] buffer1) {
+	private int vector(ByteString other, int n) {
+		byte[] buffer = getBuffer();
+		byte[] buffer1 = other.getBuffer();
 		int mismatch = Arrays.mismatch(buffer, buffer1);
 		if (mismatch == -1 || mismatch >= n) {
 			return length() - other.length();
@@ -101,39 +67,8 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		return charAt(mismatch) - other.charAt(mismatch);
 	}
 
-	private int naive(ByteString other, int n, byte[] buffer, byte[] buffer1) {
-		for (int i = 0; i < 32 && i < n; i++) {
-			if (buffer[i] != buffer1[i]) {
-				return charAt(i) - other.charAt(i);
-			}
-		}
-		return length() - other.length();
-	}
-
-	default int mismatchVectorByte(byte[] byteData1, byte[] byteData2) {
-		int length = Math.min(byteData1.length, byteData2.length);
-		int index = 0;
-		for (; index < ByteVector.SPECIES_PREFERRED.loopBound(length); index += ByteVector.SPECIES_PREFERRED.length()) {
-			ByteVector vector1 = ByteVector.fromArray(ByteVector.SPECIES_PREFERRED, byteData1, index);
-			ByteVector vector2 = ByteVector.fromArray(ByteVector.SPECIES_PREFERRED, byteData2, index);
-			VectorMask<Byte> mask = vector1.compare(VectorOperators.NE, vector2);
-			if (mask.anyTrue()) {
-				return index + mask.firstTrue();
-			}
-		}
-		// process the tail
-		int mismatch = -1;
-		for (int i = index; i < length; ++i) {
-			if (byteData1[i] != byteData2[i]) {
-				mismatch = i;
-				break;
-			}
-		}
-		return mismatch;
-	}
-
-	private int extracted(ByteString other, int mismatch, int n) {
-		int k = mismatch;
+	private int naive(ByteString other, int n) {
+		int k = 0;
 		while (k < n) {
 			char c1 = charAt(k);
 			char c2 = other.charAt(k);
