@@ -1385,8 +1385,9 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 			case OPS -> indexes.get(TripleComponentOrder.OSP);
 			default -> throw new IllegalArgumentException("Invalid order: " + order);
 			};
-			if (origin == null)
-				origin = this;
+			if (origin == null) {
+				origin = this; // use bitmaptriples by default
+			}
 
 			StopWatch sw = new StopWatch();
 			log.debug("generate other idx {}->{}", origin.getOrder(), order);

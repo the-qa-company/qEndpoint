@@ -44,37 +44,34 @@ public class BitmapTriplesIndexFileTest {
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true
 		// , "debug.bitmaptriples.allowFastSort", true
 		);
-		try {
-			Path hdtPath = root.resolve("temp.hdt");
+		Path hdtPath = root.resolve("temp.hdt");
 
-			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(1000, 10).withMaxLiteralSize(50).withMaxElementSplit(20);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(1000, 10)
+				.withMaxLiteralSize(50).withMaxElementSplit(20);
 
-			supplier.createAndSaveFakeHDT(spec, hdtPath);
+		supplier.createAndSaveFakeHDT(spec, hdtPath);
 
-			// should load
-			HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
-			assertTrue("ops index doesn't exist",
-					Files.exists(BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OPS)));
-			assertFalse("foq index exists",
-					Files.exists(hdtPath.resolveSibling(hdtPath.getFileName() + HDTVersion.get_index_suffix("-"))));
+		// should load
+		HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
+		assertTrue("ops index doesn't exist",
+				Files.exists(BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OPS)));
+		assertFalse("foq index exists",
+				Files.exists(hdtPath.resolveSibling(hdtPath.getFileName() + HDTVersion.get_index_suffix("-"))));
 
-			long crcold = crc32(Files.readAllBytes(hdtPath));
+		long crcold = crc32(Files.readAllBytes(hdtPath));
 
-			Path hdtPath2 = root.resolve("temp2.hdt");
+		Path hdtPath2 = root.resolve("temp2.hdt");
 
-			Files.move(hdtPath, hdtPath2);
+		Files.move(hdtPath, hdtPath2);
 
-			supplier.createAndSaveFakeHDT(spec, hdtPath);
-			// should erase the previous index and generate another one
-			HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
+		supplier.createAndSaveFakeHDT(spec, hdtPath);
+		// should erase the previous index and generate another one
+		HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
 
-			long crcnew = crc32(Files.readAllBytes(hdtPath));
+		long crcnew = crc32(Files.readAllBytes(hdtPath));
 
-			assertNotEquals("files are the same", crcold, crcnew);
-		} finally {
-			PathUtils.deleteDirectory(root);
-		}
+		assertNotEquals("files are the same", crcold, crcnew);
+		PathUtils.deleteDirectory(root);
 	}
 
 	private void assertBitmapTriplesIndexFileEquals(Path hdtPath, Path expected, Path actual) throws IOException {
@@ -110,59 +107,56 @@ public class BitmapTriplesIndexFileTest {
 
 		HDTOptions spec = HDTOptions.of(HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "spo,sop,ops,osp,pos,pso",
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true);
-		try {
-			Path hdtPath = root.resolve("temp.hdt");
-			Path hdtPath2 = root.resolve("temp2.hdt");
+		Path hdtPath = root.resolve("temp.hdt");
+		Path hdtPath2 = root.resolve("temp2.hdt");
 
-			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(10000, 10).withMaxLiteralSize(50).withMaxElementSplit(20);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 10)
+				.withMaxLiteralSize(50).withMaxElementSplit(20);
 
-			supplier.createAndSaveFakeHDT(spec, hdtPath);
+		supplier.createAndSaveFakeHDT(spec, hdtPath);
 
-			// should load
-			HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
-			Path ospPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OSP);
-			Path opsPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OPS);
-			Path posPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.POS);
-			Path psoPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.PSO);
-			Path sopPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.SOP);
-			assertTrue("osp index doesn't exist", Files.exists(ospPath));
-			assertTrue("ops index doesn't exist", Files.exists(opsPath));
-			assertFalse("foq index exists",
-					Files.exists(hdtPath.resolveSibling(hdtPath.getFileName() + HDTVersion.get_index_suffix("-"))));
+		// should load
+		HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
+		Path ospPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OSP);
+		Path opsPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.OPS);
+		Path posPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.POS);
+		Path psoPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.PSO);
+		Path sopPath = BitmapTriplesIndexFile.getIndexPath(hdtPath, TripleComponentOrder.SOP);
+		assertTrue("osp index doesn't exist", Files.exists(ospPath));
+		assertTrue("ops index doesn't exist", Files.exists(opsPath));
+		assertFalse("foq index exists",
+				Files.exists(hdtPath.resolveSibling(hdtPath.getFileName() + HDTVersion.get_index_suffix("-"))));
 
-			Path ospPathOld = ospPath.resolveSibling(ospPath.getFileName() + "2");
-			Path opsPathOld = opsPath.resolveSibling(opsPath.getFileName() + "2");
-			Path posPathOld = posPath.resolveSibling(posPath.getFileName() + "2");
-			Path psoPathOld = psoPath.resolveSibling(psoPath.getFileName() + "2");
-			Path sopPathOld = sopPath.resolveSibling(sopPath.getFileName() + "2");
+		Path ospPathOld = ospPath.resolveSibling(ospPath.getFileName() + "2");
+		Path opsPathOld = opsPath.resolveSibling(opsPath.getFileName() + "2");
+		Path posPathOld = posPath.resolveSibling(posPath.getFileName() + "2");
+		Path psoPathOld = psoPath.resolveSibling(psoPath.getFileName() + "2");
+		Path sopPathOld = sopPath.resolveSibling(sopPath.getFileName() + "2");
 
-			Files.move(ospPath, ospPathOld);
-			Files.move(opsPath, opsPathOld);
-			Files.move(posPath, posPathOld);
-			Files.move(psoPath, psoPathOld);
-			Files.move(sopPath, sopPathOld);
+		Files.move(ospPath, ospPathOld);
+		Files.move(opsPath, opsPathOld);
+		Files.move(posPath, posPathOld);
+		Files.move(psoPath, psoPathOld);
+		Files.move(sopPath, sopPathOld);
 
-			Files.move(hdtPath, hdtPath2);
+		Files.move(hdtPath, hdtPath2);
 
-			spec.set("debug.bitmaptriples.allowFastSort", false);
-			supplier.reset();
-			supplier.createAndSaveFakeHDT(spec, hdtPath);
-			// should erase the previous index and generate another one
-			HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
+		spec.set("debug.bitmaptriples.allowFastSort", false);
+		supplier.reset();
+		supplier.createAndSaveFakeHDT(spec, hdtPath);
+		// should erase the previous index and generate another one
+		HDTManager.mapIndexedHDT(hdtPath, spec, ProgressListener.ignore()).close();
 
-			try (HDT hdt1 = HDTManager.mapHDT(hdtPath); HDT hdt2 = HDTManager.mapHDT(hdtPath2)) {
-				HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(hdt1, hdt2);
-			}
-
-			assertBitmapTriplesIndexFileEquals(hdtPath, sopPath, sopPathOld);
-			assertBitmapTriplesIndexFileEquals(hdtPath, posPath, posPathOld);
-			assertBitmapTriplesIndexFileEquals(hdtPath, psoPath, psoPathOld);
-			assertBitmapTriplesIndexFileEquals(hdtPath, ospPath, ospPathOld);
-			assertBitmapTriplesIndexFileEquals(hdtPath, opsPath, opsPathOld);
-
-		} finally {
-			PathUtils.deleteDirectory(root);
+		try (HDT hdt1 = HDTManager.mapHDT(hdtPath); HDT hdt2 = HDTManager.mapHDT(hdtPath2)) {
+			HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(hdt1, hdt2);
 		}
+
+		assertBitmapTriplesIndexFileEquals(hdtPath, sopPath, sopPathOld);
+		assertBitmapTriplesIndexFileEquals(hdtPath, posPath, posPathOld);
+		assertBitmapTriplesIndexFileEquals(hdtPath, psoPath, psoPathOld);
+		assertBitmapTriplesIndexFileEquals(hdtPath, ospPath, ospPathOld);
+		assertBitmapTriplesIndexFileEquals(hdtPath, opsPath, opsPathOld);
+
+		PathUtils.deleteDirectory(root);
 	}
 }
