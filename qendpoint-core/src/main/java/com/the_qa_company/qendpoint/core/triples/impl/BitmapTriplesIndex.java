@@ -5,7 +5,9 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 
-public interface BitmapTriplesIndex {
+import java.io.Closeable;
+
+public interface BitmapTriplesIndex extends Closeable {
 	Bitmap getBitmapY();
 
 	Bitmap getBitmapZ();

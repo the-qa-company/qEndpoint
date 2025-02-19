@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.exceptions.CRCException;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +48,18 @@ public class CRCInputStream extends FilterInputStream {
 	 */
 	public boolean readCRCAndCheck() throws IOException {
 		return crc.readAndCheck(in);
+	}
+
+	/**
+	 * Read CRC from the stream itself, and check that it matches with the
+	 * generated from the previous bytes.
+	 *
+	 * @throws IOException if bad crc
+	 */
+	public void assertCRC() throws IOException {
+		if (!crc.readAndCheck(in)) {
+			throw new CRCException("Invalid crc exception");
+		}
 	}
 
 	@Override

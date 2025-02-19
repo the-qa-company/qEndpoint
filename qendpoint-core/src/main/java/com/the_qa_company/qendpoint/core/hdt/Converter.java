@@ -4,6 +4,7 @@ import com.the_qa_company.qendpoint.core.hdt.impl.converter.FSDToMSDConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.FSDToMSDLConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToFSDConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToMSDConverter;
+import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToMSDLPConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDToFSDConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDToMSDLConverter;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
@@ -63,6 +64,10 @@ public interface Converter {
 			}
 			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> {
 				return new MSDLToMSDConverter();
+			}
+			case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION_LANG_PREFIXES,
+					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES -> {
+				return new MSDLToMSDLPConverter();
 			}
 			}
 		}

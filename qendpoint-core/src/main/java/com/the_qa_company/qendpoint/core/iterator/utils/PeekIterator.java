@@ -12,7 +12,7 @@ public interface PeekIterator<T> extends Iterator<T> {
 	 * @return element
 	 * @param <T> iterator type
 	 */
-	static <T extends CharSequence> PeekIterator<T> of(Iterator<T> it) {
+	static <T> PeekIterator<T> of(Iterator<T> it) {
 		if (it instanceof PeekIterator<T> it2) {
 			return it2;
 		}

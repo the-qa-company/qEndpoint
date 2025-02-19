@@ -1,8 +1,10 @@
 package com.the_qa_company.qendpoint.core.util;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.util.ConcurrentModificationException;
@@ -17,13 +19,21 @@ public class LiteralsUtils {
 	 */
 	public static final byte DATATYPE_BYTE = 0x20;
 	/**
-	 * The constant DATATYPE_BYTE.
+	 * The constant DATATYPE_HIGH_BYTE.
 	 */
 	public static final byte DATATYPE_HIGH_BYTE = 0x7F;
 	/**
-	 * The constant DATATYPE_BYTE as a ByteString.
+	 * The constant DATATYPE_PREFIX_BYTE.
+	 */
+	public static final byte DATATYPE_PREFIX_BYTE = 'p';
+	/**
+	 * The constant DATATYPE_HIGH_BYTE as a ByteString.
 	 */
 	public static final ByteString DATATYPE_HIGH_BYTE_BS = new CompactString(new byte[] { DATATYPE_HIGH_BYTE });
+	/**
+	 * The constant DATATYPE_PREFIX_BYTE as a ByteString.
+	 */
+	public static final ByteString DATATYPE_PREFIX_BYTE_BS = new CompactString(new byte[] { DATATYPE_PREFIX_BYTE });
 	/**
 	 * The constant NO_DATATYPE_STR.
 	 */
@@ -311,8 +321,9 @@ public class LiteralsUtils {
 		return str;
 	}
 
-	/*
+	/**
 	 * place the type/lang before the literal
+	 *
 	 * @param str the literal
 	 * @return prefixed literal
 	 */
@@ -342,6 +353,72 @@ public class LiteralsUtils {
 		}
 
 		return new CompactString(str);
+	}
+
+	/**
+	 * place the type/lang before the literal with PrefixesStorage
+	 *
+	 * @param str      the literal
+	 * @param prefixes prefixes to reduce the size
+	 * @return prefixed literal
+	 */
+	public static ByteString litToPrefLangCut(CharSequence str, PrefixesStorage prefixes) {
+		int lindex = getLangIndex(str);
+
+		// language literal
+		if (lindex != -1 && lindex < str.length()) {
+			ReplazableString prefixedValue = new ReplazableString(str.length() + 1);
+			prefixedValue.appendNoCompact(DATATYPE_HIGH_BYTE_BS);
+			prefixedValue.appendNoCompact(str, lindex - 1, str.length() - lindex + 1);
+			prefixedValue.appendNoCompact(str, 0, lindex - 1);
+			return prefixedValue;
+		}
+
+		int index = getTypeIndex(str);
+
+		// typed literal
+		if (index != -1 && index < str.length()) {
+			// add the literal value
+			// -2 because len("^^")
+			ReplazableString prefixedValue = new ReplazableString(str.length() - 1);
+			prefixedValue.appendNoCompact(DATATYPE_HIGH_BYTE_BS);
+			prefixedValue.appendNoCompact(str, index, str.length() - index);
+			prefixedValue.appendNoCompact(str, 0, index - 2);
+			return prefixedValue;
+		}
+
+		return resToPrefLangCut(str, prefixes);
+	}
+
+	public static ByteString resToPrefLangCut(CharSequence str, PrefixesStorage prefixes) {
+		if (str.isEmpty() || str.charAt(0) == '_' || str.charAt(0) == '"') {
+			return new CompactString(str); // base impl
+		}
+
+		int pid = prefixes.prefixOf(str);
+		int prefix = pid + 1; // add +1 to avoid \0 char
+		ByteString removed = prefixes.getPrefix(pid);
+		ReplazableString prefixedValue = new ReplazableString(
+				1 + VByte.sizeOf(prefix) + str.length() - removed.length());
+		prefixedValue.appendNoCompact(DATATYPE_PREFIX_BYTE_BS);
+		VByte.encodeStr(prefixedValue, prefix);
+		prefixedValue.appendNoCompact(str, removed.length(), str.length() - removed.length());
+		return prefixedValue;
+	}
+
+	public static CharSequence cutPrefToRes(CharSequence str, PrefixesStorage prefixes) {
+		if (str.isEmpty() || str.charAt(0) != DATATYPE_PREFIX_BYTE) {
+			return str; // nothing to decrypt
+		}
+		Mutable<Long> val = new Mutable<>(0L);
+		int off = 1 + VByte.decodeStr(str, 1, val);
+
+		int pid = val.getValue().intValue() - 1;
+		ByteString prefixStr = prefixes.getPrefix(pid);
+		ReplazableString prefixedValue = new ReplazableString(str.length() - off + prefixStr.length());
+		prefixedValue.appendNoCompact(prefixStr);
+		prefixedValue.appendNoCompact(str, off, str.length() - off);
+		return prefixedValue;
 	}
 
 	/**
@@ -607,8 +684,24 @@ public class LiteralsUtils {
 	 * @return a + b
 	 */
 	public static ByteString cat(CharSequence a, CharSequence b, CharSequence c) {
+		if (a.isEmpty()) {
+			return cat(b, c);
+		}
+		if (b.isEmpty()) {
+			return cat(a, c);
+		}
+		if (c.isEmpty()) {
+			return cat(a, b);
+		}
 		ByteString bsa = ByteString.of(a);
 		ByteString bsb = ByteString.of(b);
-		return bsa.copyAppend(bsb);
+		ByteString bsc = ByteString.of(c);
+		byte[] buffer = new byte[bsa.length() + bsb.length() + bsc.length()];
+		System.arraycopy(bsa.getBuffer(), 0, buffer, 0, bsa.length());
+		int len = bsa.length();
+		System.arraycopy(bsb.getBuffer(), 0, buffer, len, bsb.length());
+		len += bsb.length();
+		System.arraycopy(bsc.getBuffer(), 0, buffer, len, bsc.length());
+		return new CompactString(buffer);
 	}
 }

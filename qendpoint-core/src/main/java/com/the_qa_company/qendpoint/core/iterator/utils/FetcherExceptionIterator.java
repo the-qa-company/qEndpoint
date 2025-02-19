@@ -6,7 +6,7 @@ package com.the_qa_company.qendpoint.core.iterator.utils;
  * @param <T> iterator type
  * @param <E> exception type
  */
-public abstract class FetcherExceptionIterator<T, E extends Exception> implements ExceptionIterator<T, E> {
+public abstract class FetcherExceptionIterator<T, E extends Exception> implements PeekExceptionIterator<T, E> {
 	private T next;
 	private boolean end;
 
@@ -43,9 +43,7 @@ public abstract class FetcherExceptionIterator<T, E extends Exception> implement
 		}
 	}
 
-	/**
-	 * @return peek the element without passing to the next element
-	 */
+	@Override
 	public T peek() throws E {
 		if (hasNext()) {
 			return next;

@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
+import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -51,10 +52,11 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final int k;
 	private final boolean debugSleepKwayDict;
 	private final boolean quads;
+	private final CompressionType compressionType;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
-			boolean quads) {
+			boolean quads, CompressionType compressionType) {
 		this.source = source;
 		this.listener = listener;
 		this.baseFileName = baseFileName;
@@ -63,6 +65,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		this.k = k;
 		this.debugSleepKwayDict = debugSleepKwayDict;
 		this.quads = quads;
+		this.compressionType = compressionType;
 	}
 
 	/*
@@ -380,7 +383,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public OutputStream openWSubject() throws IOException {
-			return s.openOutputStream(bufferSize);
+			return compressionType.compress(s.openOutputStream(bufferSize));
 		}
 
 		/**
@@ -388,7 +391,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public OutputStream openWPredicate() throws IOException {
-			return p.openOutputStream(bufferSize);
+			return compressionType.compress(p.openOutputStream(bufferSize));
 		}
 
 		/**
@@ -396,7 +399,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public OutputStream openWObject() throws IOException {
-			return o.openOutputStream(bufferSize);
+			return compressionType.compress(o.openOutputStream(bufferSize));
 		}
 
 		/**
@@ -404,7 +407,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public OutputStream openWGraph() throws IOException {
-			return g.openOutputStream(bufferSize);
+			return compressionType.compress(g.openOutputStream(bufferSize));
 		}
 
 		/**
@@ -412,7 +415,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public InputStream openRSubject() throws IOException {
-			return s.openInputStream(bufferSize);
+			return compressionType.decompress(s.openInputStream(bufferSize));
 		}
 
 		/**
@@ -420,7 +423,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public InputStream openRPredicate() throws IOException {
-			return p.openInputStream(bufferSize);
+			return compressionType.decompress(p.openInputStream(bufferSize));
 		}
 
 		/**
@@ -428,7 +431,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public InputStream openRObject() throws IOException {
-			return o.openInputStream(bufferSize);
+			return compressionType.decompress(o.openInputStream(bufferSize));
 		}
 
 		/**
@@ -436,7 +439,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 * @throws IOException can't open the stream
 		 */
 		public InputStream openRGraph() throws IOException {
-			return g.openInputStream(bufferSize);
+			return compressionType.decompress(g.openInputStream(bufferSize));
 		}
 
 		/**

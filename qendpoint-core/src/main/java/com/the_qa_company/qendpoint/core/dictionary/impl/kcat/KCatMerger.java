@@ -6,8 +6,8 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryType;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.OneReadDictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -27,6 +27,7 @@ import com.the_qa_company.qendpoint.core.util.concurrent.SyncSeq;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -80,12 +81,13 @@ public class KCatMerger implements AutoCloseable {
 	final AtomicLong[] countSubject;
 	final AtomicLong[] countObject;
 
-	private final WriteDictionarySection sectionSubject;
-	private final WriteDictionarySection sectionShared;
-	private final WriteDictionarySection sectionObject;
-	private final WriteDictionarySection sectionPredicate;
-	private final WriteDictionarySection sectionGraph;
-	private final Map<ByteString, WriteDictionarySection> sectionSub;
+	private final DictionarySectionPrivate sectionSubject;
+	private final DictionarySectionPrivate sectionShared;
+	private final DictionarySectionPrivate sectionObject;
+	private final DictionarySectionPrivate sectionPredicate;
+	private final DictionarySectionPrivate sectionGraph;
+	private final Map<ByteString, DictionarySectionPrivate> sectionSub;
+	private final PrefixesStorage prefixesStorage;
 	private final Map<ByteString, Integer> typeId = new HashMap<>();
 	private boolean running;
 
@@ -93,6 +95,7 @@ public class KCatMerger implements AutoCloseable {
 	 * Create KCatMerger
 	 *
 	 * @param hdts           the hdts to cat
+	 * @param deletedTriple  deleted triples
 	 * @param location       working location
 	 * @param listener       listener to log the state
 	 * @param bufferSize     buffer size
@@ -103,9 +106,30 @@ public class KCatMerger implements AutoCloseable {
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
 			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
+		this(hdts, deletedTriple, location, listener, bufferSize, dictionaryType, quad, spec, null);
+	}
+
+	/**
+	 * Create KCatMerger
+	 *
+	 * @param hdts            the hdts to cat
+	 * @param deletedTriple   deleted triples
+	 * @param location        working location
+	 * @param listener        listener to log the state
+	 * @param bufferSize      buffer size
+	 * @param dictionaryType  dictionary type
+	 * @param quad            quad
+	 * @param spec            spec to config the HDT
+	 * @param prefixesStorage prefixes
+	 * @throws java.io.IOException io exception
+	 */
+	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
+			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec, PrefixesStorage prefixesStorage)
+			throws IOException {
 		this.hdts = hdts;
 		this.listener = listener;
 		this.dictionaryType = dictionaryType;
+		this.prefixesStorage = prefixesStorage;
 
 		DictionaryKCat[] cats = new DictionaryKCat[hdts.length];
 		subjectsMaps = new SyncSeq[hdts.length];
@@ -326,14 +350,20 @@ public class KCatMerger implements AutoCloseable {
 				return bdb.peek();
 			});
 
-			sectionSubject = new WriteDictionarySection(spec, location.resolve("sortedSubject"), bufferSize);
-			sectionShared = new WriteDictionarySection(spec, location.resolve("sortedShared"), bufferSize);
-			sectionObject = new WriteDictionarySection(spec, location.resolve("sortedObject"), bufferSize);
-			sectionPredicate = new WriteDictionarySection(spec, location.resolve("sortedPredicate"), bufferSize);
-			sectionGraph = quad ? new WriteDictionarySection(spec, location.resolve("sortedGraph"), bufferSize) : null;
+			sectionSubject = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedSubject"),
+					bufferSize);
+			sectionShared = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedShared"),
+					bufferSize);
+			sectionObject = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedObject"),
+					bufferSize);
+			sectionPredicate = DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedPredicate"),
+					bufferSize);
+			sectionGraph = quad
+					? DictionarySectionFactory.createWriteSection(spec, location.resolve("sortedGraph"), bufferSize)
+					: null;
 			sectionSub = new TreeMap<>();
-			sortedSubSections.keySet().forEach((key) -> sectionSub.put(key,
-					new WriteDictionarySection(spec, location.resolve("sortedSub" + getTypeId(key)), bufferSize)));
+			sortedSubSections.keySet().forEach((key) -> sectionSub.put(key, DictionarySectionFactory
+					.createWriteSection(spec, location.resolve("sortedSub" + getTypeId(key)), bufferSize)));
 
 			catMergerThread = new ExceptionThread(this::runSharedCompute, "KCatMergerThreadShared")
 					.attach(new ExceptionThread(this::runSubSectionCompute, "KCatMergerThreadSubSection"))
@@ -487,7 +517,7 @@ public class KCatMerger implements AutoCloseable {
 		catMergerThread.joinAndCrashIfRequired();
 
 		return DictionaryFactory.createWriteDictionary(dictionaryType, null, getSectionSubject(), getSectionPredicate(),
-				getSectionObject(), getSectionShared(), getSectionSub(), getSectionGraph());
+				getSectionObject(), getSectionShared(), getSectionSub(), getSectionGraph(), prefixesStorage);
 	}
 
 	private void runSharedCompute() {
@@ -573,9 +603,9 @@ public class KCatMerger implements AutoCloseable {
 
 		long shift = 1L;
 		// load data typed sections
-		for (Map.Entry<ByteString, WriteDictionarySection> e : sectionSub.entrySet()) {
+		for (Map.Entry<ByteString, DictionarySectionPrivate> e : sectionSub.entrySet()) {
 			ByteString key = e.getKey();
-			WriteDictionarySection section = e.getValue();
+			DictionarySectionPrivate section = e.getValue();
 
 			ExceptionIterator<DuplicateBuffer, RuntimeException> bufferIterator = sortedSubSections.get(key);
 
@@ -747,7 +777,7 @@ public class KCatMerger implements AutoCloseable {
 	/**
 	 * @return graph section
 	 */
-	public WriteDictionarySection getSectionGraph() {
+	public DictionarySectionPrivate getSectionGraph() {
 		return sectionGraph;
 	}
 

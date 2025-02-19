@@ -22,9 +22,13 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.options.HDTOptions;
+import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 
@@ -36,6 +40,17 @@ public class DictionarySectionFactory {
 	private DictionarySectionFactory() {
 	}
 
+	public static DictionarySectionPrivate createWriteSection(HDTOptions spec, Path filename, int bufferSize) {
+		String type = spec.get(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
+				HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC);
+		return switch (type) {
+		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC -> new WriteDictionarySection(spec, filename, bufferSize);
+		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM ->
+			new WriteStreamDictionarySection(spec, filename, bufferSize);
+		default -> throw new IllegalArgumentException("No write implementation for type " + type);
+		};
+	}
+
 	public static DictionarySectionPrivate loadFrom(InputStream input, ProgressListener listener) throws IOException {
 		if (!input.markSupported()) {
 			throw new IllegalArgumentException(
@@ -45,22 +60,27 @@ public class DictionarySectionFactory {
 		int dictType = input.read();
 		input.reset();
 		input.mark(64); // To allow children to reset() and try another
-						// instance.
+		// instance.
 
-		DictionarySectionPrivate section = null;
+		DictionarySectionPrivate section;
 
 		switch (dictType) {
 		case PFCDictionarySection.TYPE_INDEX:
 			try {
 				// First try load using the standard PFC
-				section = new PFCDictionarySection(new HDTSpecification());
+				section = new PFCDictionarySection(HDTOptions.of());
 				section.load(input, listener);
 			} catch (IllegalArgumentException e) {
 				// The PFC Could not load the file because it is too big, use
 				// PFCBig
-				section = new PFCDictionarySectionBig(new HDTSpecification());
+				section = new PFCDictionarySectionBig(HDTOptions.of());
 				section.load(input, listener);
 			}
+			return section;
+		case StreamDictionarySection.TYPE_INDEX:
+			// First try load using the standard PFC
+			section = new StreamDictionarySection(HDTOptions.of());
+			section.load(input, listener);
 			return section;
 		default:
 			throw new IOException("DictionarySection implementation not available for id " + dictType);
@@ -73,12 +93,13 @@ public class DictionarySectionFactory {
 		int dictType = input.read();
 		input.reset();
 		input.mark(64); // To allow children to reset() and try another
-						// instance.
+		// instance.
 
 		switch (dictType) {
 		case PFCDictionarySection.TYPE_INDEX:
-			// First try load using the standard PFC
 			return new PFCDictionarySectionMap(input, f);
+		case StreamDictionarySection.TYPE_INDEX:
+			return new StreamDictionarySectionMap(input, f);
 		default:
 			throw new IOException("DictionarySection implementation not available for id " + dictType);
 		}

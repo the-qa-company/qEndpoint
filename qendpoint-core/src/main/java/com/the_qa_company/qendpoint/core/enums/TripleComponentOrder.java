@@ -19,9 +19,13 @@
 
 package com.the_qa_company.qendpoint.core.enums;
 
+import com.the_qa_company.qendpoint.core.triples.TripleID;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongFunction;
+import java.util.function.ToLongFunction;
 
 /**
  * Indicates the order of the triples
@@ -70,6 +74,9 @@ public enum TripleComponentOrder {
 	private final TripleComponentRole subjectMapping;
 	private final TripleComponentRole predicateMapping;
 	private final TripleComponentRole objectMapping;
+	private final TripleComponentRole subjectLookup;
+	private final TripleComponentRole predicateLookup;
+	private final TripleComponentRole objectLookup;
 	public final int mask;
 
 	TripleComponentOrder(TripleComponentRole subjectMapping, TripleComponentRole predicateMapping,
@@ -78,6 +85,26 @@ public enum TripleComponentOrder {
 		this.predicateMapping = predicateMapping;
 		this.objectMapping = objectMapping;
 		this.mask = mask;
+		subjectLookup = computeLookup(TripleComponentRole.SUBJECT);
+		predicateLookup = computeLookup(TripleComponentRole.PREDICATE);
+		objectLookup = computeLookup(TripleComponentRole.OBJECT);
+	}
+
+	private TripleComponentRole computeLookup(TripleComponentRole searched) {
+		if (searched == subjectMapping) {
+			return TripleComponentRole.SUBJECT;
+		}
+		if (searched == predicateMapping) {
+			return TripleComponentRole.PREDICATE;
+		}
+		if (searched == objectMapping) {
+			return TripleComponentRole.OBJECT;
+		}
+		// unknown
+		if (mask == 0) {
+			return null;
+		}
+		throw new IllegalArgumentException("Invalid lookup build : " + searched + " " + this);
 	}
 
 	/**
@@ -144,4 +171,95 @@ public enum TripleComponentOrder {
 		return objectMapping;
 	}
 
+	public TripleComponentRole getSubjectLookup() {
+		return subjectLookup;
+	}
+
+	public TripleComponentRole getPredicateLookup() {
+		return predicateLookup;
+	}
+
+	public TripleComponentRole getObjectLookup() {
+		return objectLookup;
+	}
+
+	public static ToLongFunction<TripleID> getFunc(TripleComponentRole role) {
+		return switch (role) {
+		case SUBJECT -> TripleID::getSubject;
+		case PREDICATE -> TripleID::getPredicate;
+		case OBJECT -> TripleID::getObject;
+		case GRAPH -> TripleID::getGraph;
+		};
+	}
+
+	public static void setRole(TripleComponentRole role, TripleID id, long val) {
+		switch (role) {
+		case SUBJECT -> id.setSubject(val);
+		case PREDICATE -> id.setPredicate(val);
+		case OBJECT -> id.setObject(val);
+		case GRAPH -> id.setGraph(val);
+		}
+		;
+	}
+
+	public static long getRole(TripleComponentRole role, TripleID id) {
+		return switch (role) {
+		case SUBJECT -> id.getSubject();
+		case PREDICATE -> id.getPredicate();
+		case OBJECT -> id.getObject();
+		case GRAPH -> id.getGraph();
+		};
+	}
+
+	public TripleComponentRole getLookup(TripleComponentRole role) {
+		return switch (role) {
+		case SUBJECT -> getSubjectLookup();
+		case PREDICATE -> getPredicateLookup();
+		case OBJECT -> getObjectLookup();
+		case GRAPH -> TripleComponentRole.GRAPH;
+		};
+	}
+
+	public TripleComponentRole getMapping(TripleComponentRole role) {
+		return switch (role) {
+		case SUBJECT -> getSubjectMapping();
+		case PREDICATE -> getPredicateMapping();
+		case OBJECT -> getObjectMapping();
+		case GRAPH -> TripleComponentRole.GRAPH;
+		};
+	}
+
+	public ToLongFunction<TripleID> getSubjectFunction() {
+		return getFunc(getSubjectMapping());
+	}
+
+	public ToLongFunction<TripleID> getPredicateFunction() {
+		return getFunc(getPredicateMapping());
+	}
+
+	public ToLongFunction<TripleID> getObjectFunction() {
+		return getFunc(getObjectMapping());
+	}
+
+	public void setSubject(TripleID id, long val) {
+		setRole(getSubjectMapping(), id, val);
+	}
+
+	public void setPredicate(TripleID id, long val) {
+		setRole(getPredicateMapping(), id, val);
+	}
+
+	public void setObject(TripleID id, long val) {
+		setRole(getObjectMapping(), id, val);
+	}
+
+	public void remap(TripleID id, TripleComponentOrder origin) {
+		long s = id.getSubject();
+		long p = id.getPredicate();
+		long o = id.getObject();
+
+		setRole(getMapping(origin.getLookup(TripleComponentRole.SUBJECT)), id, s);
+		setRole(getMapping(origin.getLookup(TripleComponentRole.PREDICATE)), id, p);
+		setRole(getMapping(origin.getLookup(TripleComponentRole.OBJECT)), id, o);
+	}
 }
