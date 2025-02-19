@@ -116,7 +116,7 @@ jobs:
           distribution: 'microsoft'
           java-version: 17
       - name: Download qendpoint jar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: "qendpoint.jar"
       - name: Create Icon
@@ -152,7 +152,7 @@ jobs:
           distribution: 'microsoft'
           java-version: 17
       - name: Download endpoint jar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: "qendpoint.jar"
       - name: Package jar as msi installer
@@ -177,7 +177,7 @@ jobs:
           distribution: 'microsoft'
           java-version: 17
       - name: Download endpoint jar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: "qendpoint.jar"
       - name: Package jar as deb installer
@@ -202,7 +202,7 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v3
       - name: Download qendpoint jar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: "qendpoint.jar"
       - name: Move endpoint
@@ -282,7 +282,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Extract artifacts
         run: |
           mkdir -p deploy_file
