@@ -65,14 +65,14 @@ jobs:
       - name: move endpoint
         run: mv qendpoint-backend/target/qendpoint-*-exec.jar qendpoint.jar
       - name: Deploy jar
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "qendpoint.jar"
           path: "qendpoint.jar"
       - name: move cli
         run: mv qendpoint-cli/target/qendpoint-cli-*-distribution.zip qendpoint-cli.zip
       - name: Deploy CLI zip
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "qendpoint-cli.zip"
           path: "qendpoint-cli.zip"
@@ -135,7 +135,7 @@ jobs:
 
         run: scripts/build_package_osx.sh qendpoint.jar
       - name: Upload dmg
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "qendpoint.dmg"
           path: "qendpoint.dmg"
@@ -160,7 +160,7 @@ jobs:
           scripts/build_package.ps1 scripts/jpackage_windows.cfg qendpoint.jar
           mv scripts/build/distributions/*.msi qendpoint.msi
       - name: Upload installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "qendpoint.msi"
           path: "qendpoint.msi"
@@ -185,7 +185,7 @@ jobs:
           scripts/build_package.sh scripts/jpackage_linux.cfg qendpoint.jar
           mv scripts/build/distributions/*.deb qendpoint.deb
       - name: Upload installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "qendpoint.deb"
           path: "qendpoint.deb"
