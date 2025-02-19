@@ -9,7 +9,6 @@ import com.the_qa_company.qendpoint.core.compact.sequence.DynamicSequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
-import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.GroupBySubjectMapIterator;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.SignatureIOException;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteOrder;
@@ -44,7 +42,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -53,7 +50,7 @@ import static java.lang.String.format;
  *
  * @author Antoine Willerval
  */
-public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
+public class BitmapTriplesIndexFile implements BitmapTriplesIndex {
 
 	private static final Logger logger = LoggerFactory.getLogger(BitmapTriplesIndexFile.class);
 

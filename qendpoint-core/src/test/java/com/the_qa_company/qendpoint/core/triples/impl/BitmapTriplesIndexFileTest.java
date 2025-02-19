@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
+import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,7 +26,7 @@ import java.nio.file.StandardOpenOption;
 
 import static org.junit.Assert.*;
 
-public class BitmapTriplesIndexFileTest {
+public class BitmapTriplesIndexFileTest extends AbstractMapMemoryTest {
 
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
@@ -77,9 +78,11 @@ public class BitmapTriplesIndexFileTest {
 	private void assertBitmapTriplesIndexFileEquals(Path hdtPath, Path expected, Path actual) throws IOException {
 		try (HDT hdt = HDTManager.mapHDT(hdtPath);
 				FileChannel exch = FileChannel.open(expected, StandardOpenOption.READ);
-				FileChannel acch = FileChannel.open(actual, StandardOpenOption.READ);) {
-			BitmapTriplesIndex ex = BitmapTriplesIndexFile.map(expected, exch, (BitmapTriples) hdt.getTriples(), false);
-			BitmapTriplesIndex ac = BitmapTriplesIndexFile.map(actual, acch, (BitmapTriples) hdt.getTriples(), false);
+				FileChannel acch = FileChannel.open(actual, StandardOpenOption.READ);
+				BitmapTriplesIndex ex = BitmapTriplesIndexFile.map(expected, exch, (BitmapTriples) hdt.getTriples(),
+						false);
+				BitmapTriplesIndex ac = BitmapTriplesIndexFile.map(actual, acch, (BitmapTriples) hdt.getTriples(),
+						false)) {
 
 			assertEquals(ex.getOrder(), ac.getOrder());
 
