@@ -1,3 +1,6 @@
+## Version 2.4.2
+        
+- fix computation issue (#573)
 ## Version 2.4.1
         
 - fix multi-index merge (#560)
