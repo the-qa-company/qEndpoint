@@ -193,9 +193,13 @@ public class CompressUtil {
 			while (it.hasNext()) {
 				IndexedNode node = it.next();
 				ByteString next = node.getNode();
-				int cmp = prev.compareTo(next);
-				assert cmp <= 0 : "bad order : " + prev + " > " + next;
-				if (cmp == 0) {
+				boolean equals = prev.equals(next);
+
+				assert prev.compareTo(next) <= 0 : "bad order : " + prev + " > " + next;
+				assert !equals || prev.compareTo(next) == 0 : "bad equals : " + prev + " != " + next;
+				assert equals || prev.compareTo(next) != 0 : "bad compare : " + prev + " != " + next;
+
+				if (equals) {
 					if (!prev.isEmpty() || prevRead) {
 						// same as previous, ignore
 						assert this.id != node.getIndex() : "same index and prevIndex";

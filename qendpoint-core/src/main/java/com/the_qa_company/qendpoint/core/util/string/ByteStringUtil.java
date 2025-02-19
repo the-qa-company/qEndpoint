@@ -198,39 +198,52 @@ public class ByteStringUtil {
 
 		if (str1 instanceof ByteString && str2 instanceof ByteString) {
 
-			if (len - from < 64) {
+			if (len - from < 4) {
+				if (from == 0) {
+					return switch (len) {
+					case 1 -> str1.charAt(0) == str2.charAt(0) ? 1 : 0;
+					case 2 -> naiveLength2(str1, str2);
+					case 3 -> naiveLength3(str1, str2);
+					default -> naive(str1, str2, from, len);
+					};
+				}
 				return naive(str1, str2, from, len);
 			}
 
 			byte[] buffer = ((ByteString) str1).getBuffer();
 			byte[] buffer2 = ((ByteString) str2).getBuffer();
-			// System.out.println("mismatch: " + i);
-//			if (from == 0) {
-//				return vector(buffer, buffer2, len);
-//			} else {
 			return mismatch(from, buffer, len, buffer2);
-//			}
 
-//			int delta = from;
-//			while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
-//				delta++;
-//			}
-//			// System.out.println("i: " + i);
-//			int i = delta - from;
-//
-//			int i1 = missmatch-from;
-//
-//			if (i != i1) {
-////				longestCommonPrefix(str1, str2, from);
-//				throw new AssertionError("Mismatch: " + i + " " + i1);
-//			}
-//
-//			return i1;
-
-//			return missmatch - from;
 		}
 
 		return naive(str1, str2, from, len);
+	}
+
+	private static int naiveLength3(CharSequence str1, CharSequence str2) {
+		char c = str1.charAt(0);
+		char c1 = str2.charAt(0);
+		if (c != c1) {
+			return 0;
+		}
+		c = str1.charAt(1);
+		c1 = str2.charAt(1);
+		if (c != c1) {
+			return 1;
+		}
+		c = str1.charAt(2);
+		c1 = str2.charAt(2);
+		return c == c1 ? 3 : 2;
+	}
+
+	private static int naiveLength2(CharSequence str1, CharSequence str2) {
+		char c = str1.charAt(0);
+		char c1 = str2.charAt(0);
+		if (c != c1) {
+			return 0;
+		}
+		c = str1.charAt(1);
+		c1 = str2.charAt(1);
+		return c == c1 ? 2 : 1;
 	}
 
 	private static int mismatch(int from, byte[] buffer, int len, byte[] buffer2) {
@@ -242,21 +255,20 @@ public class ByteStringUtil {
 		}
 	}
 
-	private static int vector(byte[] buffer, byte[] buffer2, int len) {
-		int mismatch = mismatchVectorByte(buffer, buffer2);
-		if (mismatch == -1 || mismatch >= len) {
-			return len;
-		} else {
-			return mismatch;
-		}
-	}
-
 	private static int naive(CharSequence str1, CharSequence str2, int from, int len) {
 		int delta = from;
 		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
 			delta++;
 		}
 		return delta - from;
+	}
+
+	private static int naive(CharSequence str1, CharSequence str2) {
+		int delta = 0;
+		while (delta < 3 && str1.charAt(delta) == str2.charAt(delta)) {
+			delta++;
+		}
+		return delta;
 	}
 
 	private static int mismatchVectorByte(byte[] byteData1, byte[] byteData2) {

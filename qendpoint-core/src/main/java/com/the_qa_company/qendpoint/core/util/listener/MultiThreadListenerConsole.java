@@ -167,7 +167,7 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 		Thread thread = new Thread(() -> {
 			while (true) {
 				try {
-					Thread.sleep(500);
+					Thread.sleep(2000);
 					render();
 				} catch (InterruptedException e) {
 					break;

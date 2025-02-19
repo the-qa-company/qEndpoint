@@ -18,7 +18,7 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 	private final Lock lock = new ReentrantLock();
 	private boolean end;
 
-	volatile ConcurrentLinkedQueue<E> queue = new ConcurrentLinkedQueue<>();
+	ConcurrentLinkedQueue<E> queue = new ConcurrentLinkedQueue<>();
 
 	public AsyncIteratorFetcher(Iterator<E> iterator) {
 		this.iterator = iterator;

@@ -291,36 +291,44 @@ public final class ReplazableString implements CharSequence, ByteString {
 			return true;
 		}
 		if (o instanceof CompactString) {
-			CompactString cmp = (CompactString) o;
-			if (buffer.length != cmp.data.length) {
-				return false;
-			}
-
-			// Byte by byte comparison
-			int i = buffer.length;
-			while (i-- != 0) {
-				if (buffer[i] != cmp.data[i]) {
-					return false;
-				}
-			}
-			return true;
+			return equalsCompactString((CompactString) o);
 		} else if (o instanceof ReplazableString cmp) {
-			if (this.used != cmp.used) {
-				return false;
-			}
-
-			// Byte by byte comparison
-			int i = this.used;
-			while (i-- != 0) {
-				if (buffer[i] != cmp.buffer[i]) {
-					return false;
-				}
-			}
-			return true;
+			return equalsReplazableString(cmp);
 		} else if (o instanceof CharSequence other) {
 			return length() == other.length() && CharSequenceComparator.getInstance().compare(this, other) == 0;
 		}
 		throw new NotImplementedException();
+	}
+
+	private boolean equalsReplazableString(ReplazableString cmp) {
+		if (this.used != cmp.used) {
+			return false;
+		}
+
+		// Byte by byte comparison
+		int i = this.used;
+		while (i-- != 0) {
+			if (buffer[i] != cmp.buffer[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private boolean equalsCompactString(CompactString o) {
+		CompactString cmp = o;
+		if (used != cmp.data.length) {
+			return false;
+		}
+
+		// Byte by byte comparison
+		int i = used;
+		while (i-- != 0) {
+			if (buffer[i] != cmp.data[i]) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/*

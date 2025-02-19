@@ -1,10 +1,13 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
+import com.the_qa_company.qendpoint.core.iterator.utils.MergeJoinZipper;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
+import com.the_qa_company.qendpoint.core.triples.TripleIDComparator;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Version of {@link MergeExceptionIterator} with {@link IndexedNode}
@@ -20,6 +23,7 @@ public class CompressNodeMergeIterator extends MergeExceptionIterator<IndexedNod
 
 	public static <T extends ExceptionIterator<IndexedNode, IOException>> ExceptionIterator<IndexedNode, IOException> buildOfTree(
 			T[] lst) {
+//		return MergeJoinZipper.buildMergeTree(Arrays.asList(lst), IndexedNode::compareTo);
 		return buildOfTree(it -> it, IndexedNode::compareTo, lst, 0, lst.length);
 	}
 }

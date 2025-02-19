@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * ByteString char sequence, can't be compared with string, faster than string
@@ -51,9 +52,78 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	@Override
 	default int compareTo(ByteString other) {
 		int n = Math.min(length(), other.length());
-		if (n < 128) {
-			return naive(other, n);
+		switch (n) {
+		case 0:
+			return length() - other.length();
+		case 1: {
+			char c1 = charAt(0);
+			char c2 = other.charAt(0);
+			int ret = c1 - c2;
+			if (ret != 0) {
+				return ret;
+			}
+			return length() - other.length();
 		}
+		case 2: {
+			char c1 = charAt(0);
+			char c2 = other.charAt(0);
+			if (c1 != c2) {
+				return c1 - c2;
+			}
+			c1 = charAt(1);
+			c2 = other.charAt(1);
+			if (c1 != c2) {
+				return c1 - c2;
+			}
+			return length() - other.length();
+		}
+		case 3:
+			return naive3(other);
+		default:
+			return fastCompare(other, n);
+		}
+
+	}
+
+//	LongAdder compareLessThan8 = new LongAdder();
+//	LongAdder compareLessThan4 = new LongAdder();
+//	LongAdder compareVector = new LongAdder();
+
+	private int fastCompare(ByteString other, int n) {
+
+//		if ((compareVector.sum() + compareLessThan8.sum()) % 1000000 == 0) {
+//			System.out.println("compareLessThan4: " + compareLessThan4.sum());
+//			System.out.println("compareLessThan8: " + compareLessThan8.sum());
+//			System.out.println("compareVector: " + compareVector.sum());
+//		}
+
+//		if (n > 20) {
+//			char c = charAt(0);
+//			if (c == 'h') {
+//				if (charAt(0) != other.charAt(0)) {
+//					return charAt(0) - other.charAt(0);
+//				}
+//				if (charAt(n / 2) != other.charAt(n / 2)) {
+//					n = n / 2;
+//				}
+//			}
+//		}
+
+//		if (Temp.fast) {
+		for (int i = 0; i < 4 && i < n; i++) {
+			char c1 = charAt(i);
+			char c2 = other.charAt(i);
+			if (c1 != c2) {
+//				compareLessThan4.increment();
+				return c1 - c2;
+			}
+		}
+
+//			Temp.fast = false;
+//		}
+
+//		compareVector.increment();
+
 		return vector(other, n);
 	}
 
@@ -64,6 +134,9 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		if (mismatch == -1 || mismatch >= n) {
 			return length() - other.length();
 		}
+//		if (mismatch < 8) {
+//			Temp.fast = true;
+//		}
 		return charAt(mismatch) - other.charAt(mismatch);
 	}
 
@@ -77,6 +150,28 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			}
 			k++;
 		}
+		return length() - other.length();
+	}
+
+	private int naive3(ByteString other) {
+		char c1 = charAt(0);
+		char c2 = other.charAt(0);
+		if (c1 != c2) {
+			return c1 - c2;
+		}
+
+		c1 = charAt(1);
+		c2 = other.charAt(1);
+		if (c1 != c2) {
+			return c1 - c2;
+		}
+
+		c1 = charAt(2);
+		c2 = other.charAt(2);
+		if (c1 != c2) {
+			return c1 - c2;
+		}
+
 		return length() - other.length();
 	}
 
@@ -178,4 +273,8 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 		return true;
 	}
 
+}
+
+class Temp {
+	volatile static boolean fast = false;
 }
