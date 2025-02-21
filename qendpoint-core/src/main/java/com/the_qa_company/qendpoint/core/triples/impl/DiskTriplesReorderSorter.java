@@ -16,9 +16,11 @@ import com.the_qa_company.qendpoint.core.util.io.compress.CompressTripleWriter;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<TripleID, SizeFetcher<TripleID>> {
@@ -31,10 +33,11 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 	private final TripleComponentOrder oldOrder;
 	private final TripleComponentOrder newOrder;
 	private final AtomicLong read = new AtomicLong();
+	private final boolean ignorePO;
 
 	public DiskTriplesReorderSorter(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleID> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, TripleComponentOrder oldOrder,
-			TripleComponentOrder newOrder) {
+			TripleComponentOrder newOrder, boolean ignorePO) {
 		this.source = source;
 		this.listener = MultiThreadListener.ofNullable(listener);
 		this.baseFileName = baseFileName;
@@ -43,6 +46,7 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 		this.k = k;
 		this.oldOrder = oldOrder;
 		this.newOrder = newOrder;
+		this.ignorePO = ignorePO;
 	}
 
 	@Override
@@ -63,7 +67,11 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 		}
 
 		// sort the pairs
-		pairs.parallelSort(TripleID::compareTo);
+		if (ignorePO) {
+			pairs.parallelSort(Comparator.comparingLong(TripleID::getSubject));
+		} else {
+			pairs.parallelSort(TripleID::compareTo);
+		}
 
 		// write the result on disk
 		int count = 0;
@@ -98,8 +106,13 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 				}
 
 				// use spo because we are writing xyz
-				ExceptionIterator<TripleID, IOException> it = CompressTripleMergeIterator.buildOfTree(readers,
-						TripleComponentOrder.SPO);
+				ExceptionIterator<TripleID, IOException> it;
+				if (ignorePO) {
+					// ignore po by comparing only the subjects
+					it = CompressTripleMergeIterator.buildOfTree(Function.identity(), Comparator.comparingLong(TripleID::getSubject), readers, 0, readers.length);
+				} else {
+					it = CompressTripleMergeIterator.buildOfTree(readers, TripleComponentOrder.SPO);
+				}
 				// at least one
 				long rSize = it.getSize();
 				long size = Math.max(rSize, 1);

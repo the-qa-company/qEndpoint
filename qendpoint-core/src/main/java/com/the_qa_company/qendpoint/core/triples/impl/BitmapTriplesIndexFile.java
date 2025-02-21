@@ -213,43 +213,66 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex {
 			DynamicSequence seqY = null;
 			DynamicSequence seqZ = null;
 			try {
-				boolean useFastSort = oldOrder.getSubjectMapping() == order.getSubjectMapping()
-						&& spec.getBoolean("debug.bitmaptriples.allowFastSort", true);
+				int fastSortIdx;
 
 				int ss = BitUtil.log2(origin.getBitmapY().countOnes());
 				int ps = origin.getSeqY().sizeOf();
 				int os = origin.getSeqZ().sizeOf();
 
 				TripleID logTriple;
-				if (useFastSort) {
+				boolean debugAllowFastSort = spec.getBoolean("debug.bitmaptriples.allowFastSort", true);
+				boolean debugAllowFastSortV2 = spec.getBoolean("debug.bitmaptriples.allowFastSortV2", true);
+				boolean sameSubject = oldOrder.getSubjectMapping() == order.getSubjectMapping();
+				if (debugAllowFastSort && (sameSubject || debugAllowFastSortV2)) {
+					ExceptionIterator<TripleID, IOException> sgrouped;
+					if (sameSubject) {
+						fastSortIdx = 1;
+						// reorder to match a similar subject
+						sgrouped = ExceptionIterator
+								.<TripleID, IOException>of(
+										new BitmapTriplesIterator(origin, new TripleID(), TripleComponentOrder.SPO))
+								.map(next -> {
+									TripleID v = next.clone();
+									// we switch the object and predicate
+									v.setObject(next.getPredicate());
+									v.setPredicate(next.getObject());
+									return v;
+								});
+					} else {
+						fastSortIdx = 2;
+						// we force the read as a SPO because we know we
+						// won't have to reorder them
+						origin = bitmapTriples;
+						oldOrder = origin.getOrder();
+
+						// sort to group subjects
+						sgrouped = new DiskTriplesReorderSorter(workDir,
+								new AsyncIteratorFetcher<>(new MapIterator<>(
+										new BitmapTriplesIterator(origin, new TripleID()), TripleID::clone)),
+								listener, bufferSize, chunkSize, k, oldOrder, order, true).sort(workers)
+								.map(TripleID::clone); // we need to clone to be able to use the sort group buffer
+					}
+
 					// no need to sort everything
-					sortedIds = SortGroupSubjectIterator.of(
-							// we force the read as a SPO because we know we
-							// won't have to reorder them
-							ExceptionIterator
-									.<TripleID, IOException>of(
-											new BitmapTriplesIterator(origin, new TripleID(), TripleComponentOrder.SPO))
-									.map(next -> {
-										TripleID v = next.clone();
-										// we switch the object and predicate
-										v.setObject(next.getPredicate());
-										v.setPredicate(next.getObject());
-										return v;
-									}));
-					logTriple = new TripleID(ss, os, ps);
+					sortedIds = SortGroupSubjectIterator.of(sgrouped);
 				} else {
+					fastSortIdx = 0;
 					origin = bitmapTriples;
 					oldOrder = origin.getOrder();
 					sortedIds = new DiskTriplesReorderSorter(workDir,
 							new AsyncIteratorFetcher<>(new MapIterator<>(
 									new BitmapTriplesIterator(origin, new TripleID()), TripleID::clone)),
-							listener, bufferSize, chunkSize, k, oldOrder, order).sort(workers);
-
-					logTriple = new TripleID(ss, ps, os);
-
-					// we swap the order to find the new allocation numbits
-					TripleOrderConvert.swapComponentOrder(logTriple, oldOrder, order);
+							listener, bufferSize, chunkSize, k, oldOrder, order, false).sort(workers);
 				}
+
+				if (spec.getBoolean("debug.bitmaptriples.fastSortCheckSubjectGroups", false)) {
+					sortedIds = new DebugCheckTripleIDOrderterator<>(sortedIds);
+				}
+
+				logTriple = new TripleID(ss, ps, os);
+
+				// we swap the order to find the new allocation numbits
+				TripleOrderConvert.swapComponentOrder(logTriple, oldOrder, order);
 
 				// System.out.println(logTriple);
 
@@ -306,7 +329,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex {
 						} else if (y != lastY) {
 							if (y < lastY) {
 								throw new IllegalFormatException(
-										"Middle level must be increasing for each parent. " + tid);
+										"Middle level must be increasing for each parent. " + y + " < " + lastY);
 							}
 
 							// Y changed
@@ -318,7 +341,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex {
 						} else {
 							if (z < lastZ) {
 								throw new IllegalFormatException(
-										"Lower level must be increasing for each parent. " + tid);
+										"Lower level must be increasing for each parent. " + z + " < " + lastZ);
 							}
 
 							// Z changed
@@ -335,7 +358,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex {
 					}
 				} catch (RuntimeException e) {
 					throw new IOException("Error when compressing triples " + tid + " " + oldOrder + " -> " + order
-							+ (useFastSort ? " [fast]" : " [un]"), e);
+							+ " fidx:" + fastSortIdx, e);
 				}
 
 				if (numTriples > 0) {
