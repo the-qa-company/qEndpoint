@@ -99,19 +99,21 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 		try {
 			listener.notifyProgress(0, "merging triples " + output.getFileName());
 			CompressTripleReader[] readers = new CompressTripleReader[inputs.size()];
+			@SuppressWarnings("unchecked")
+			ExceptionIterator<TripleID, IOException>[] readersBuff = new ExceptionIterator[readers.length];
 			long count = 0;
 			try {
 				for (int i = 0; i < inputs.size(); i++) {
-					readers[i] = new CompressTripleReader(inputs.get(i).openInputStream(bufferSize));
+					readersBuff[i] = TripleIdBufferedIterator.of(readers[i] = new CompressTripleReader(inputs.get(i).openInputStream(bufferSize)), 1);
 				}
 
 				// use spo because we are writing xyz
 				ExceptionIterator<TripleID, IOException> it;
 				if (ignorePO) {
 					// ignore po by comparing only the subjects
-					it = CompressTripleMergeIterator.buildOfTree(Function.identity(), Comparator.comparingLong(TripleID::getSubject), readers, 0, readers.length);
+					it = CompressTripleMergeIterator.buildOfTree(Function.identity(), Comparator.comparingLong(TripleID::getSubject), readersBuff, 0, readersBuff.length);
 				} else {
-					it = CompressTripleMergeIterator.buildOfTree(readers, TripleComponentOrder.SPO);
+					it = CompressTripleMergeIterator.buildOfTree(readersBuff, TripleComponentOrder.SPO);
 				}
 				// at least one
 				long rSize = it.getSize();

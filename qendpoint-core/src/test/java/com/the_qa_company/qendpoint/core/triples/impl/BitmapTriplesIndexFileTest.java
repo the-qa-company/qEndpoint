@@ -256,13 +256,13 @@ public class BitmapTriplesIndexFileTest extends AbstractMapMemoryTest {
 
 		HDTOptions spec = HDTOptions.of(
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_OTHERS, "spo,sop,ops,osp,pos,pso",
-				"debug.bitmaptriples.allowFastSortV2", false,
+				"debug.bitmaptriples.allowFastSortV2", true,
 				"debug.bitmaptriples.allowFastSort", true,
 				HDTOptionsKeys.BITMAPTRIPLES_INDEX_NO_FOQ, true
 		);
 
 		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000000, 10)
-				.withMaxLiteralSize(50).withMaxElementSplit(20);
+				.withMaxLiteralSize(20).withMaxElementSplit(50);
 
 		Path hdtPath = root.resolve("test.hdt");
 
@@ -277,6 +277,8 @@ public class BitmapTriplesIndexFileTest extends AbstractMapMemoryTest {
 		// 1 4 sec 200 ms
 		// 2 4 sec
 
+
+		// 50/20
 		// v time 10000000
 		// 0 41 sec 903 ms 915 us
 		/*
@@ -318,6 +320,48 @@ public class BitmapTriplesIndexFileTest extends AbstractMapMemoryTest {
 17:24:58.481 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->OSP in 8 sec 507 ms 40 us
 17:24:58.506 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx OSP->OPS
 17:25:00.258 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx OSP->OPS in 1 sec 752 ms 118 us
+		 */
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// 20/50
+		// v time 10000000
+		// 0 42 sec 84 ms 290 us
+		/*
+17:46:05.225 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->SOP
+17:46:14.023 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->SOP in 8 sec 798 ms 285 us
+17:46:14.089 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->PSO
+17:46:22.684 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->PSO in 8 sec 594 ms 561 us
+17:46:22.717 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx PSO->POS
+17:46:30.713 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx PSO->POS in 7 sec 995 ms 910 us
+17:46:30.744 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->OSP
+17:46:38.739 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->OSP in 7 sec 995 ms 75 us
+17:46:38.777 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx OSP->OPS
+17:46:47.085 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx OSP->OPS in 8 sec 309 ms 100 us
+		 */
+		// 1
+		/*
+17:43:13.434 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->SOP
+17:43:17.835 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->SOP in 4 sec 402 ms 196 us
+17:43:17.898 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->PSO
+17:43:26.837 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->PSO in 8 sec 939 ms 3 us
+17:43:26.878 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx PSO->POS
+17:43:30.978 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx PSO->POS in 4 sec 100 ms 326 us
+17:43:31.020 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->OSP
+17:43:40.733 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->OSP in 9 sec 712 ms 534 us
+17:43:40.776 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx OSP->OPS
+17:43:43.240 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx OSP->OPS in 2 sec 463 ms 484 us
+		 */
+		// 2 32 sec 586 ms 978 us
+		/*
+17:41:26.768 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->SOP
+17:41:31.567 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->SOP in 4 sec 799 ms 37 us
+17:41:31.688 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->PSO
+17:41:42.630 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->PSO in 10 sec 941 ms 223 us
+17:41:42.681 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx PSO->POS
+17:41:46.415 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx PSO->POS in 3 sec 733 ms 525 us
+17:41:46.454 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx SPO->OSP
+17:41:56.367 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx SPO->OSP in 9 sec 913 ms 366 us
+17:41:56.395 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - generate other idx OSP->OPS
+17:41:58.867 [main] DEBUG c.t.q.c.triples.impl.BitmapTriples - end generate other idx OSP->OPS in 2 sec 472 ms 101 us
 		 */
 		PathUtils.deleteDirectory(root);
 	}

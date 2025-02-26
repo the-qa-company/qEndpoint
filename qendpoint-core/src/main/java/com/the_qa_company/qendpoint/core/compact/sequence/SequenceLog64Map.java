@@ -201,7 +201,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 			result = (getWord(i) << (W - j - numbits)) >>> (W - numbits);
 		} else {
 			result = getWord(i) >>> j;
-			result = result | (getWord(i + 1) << ((W << 1) - j - numbits)) >>> (W - numbits);
+			result = result | ((getWord(i + 1) << ((W << 1) - j - numbits)) >>> (W - numbits));
 		}
 		return result;
 	}
