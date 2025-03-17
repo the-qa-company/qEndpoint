@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 /**
  * Synchronise an iterator
@@ -19,7 +18,7 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 	private final Iterator<E> iterator;
 	private final Lock lock = new ReentrantLock();
 	private boolean end;
-	Queue<E>[] queue = new Queue[] { new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
+	volatile Queue<E>[] queue = new Queue[] { new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
 			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
 			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
 			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
@@ -38,37 +37,78 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 
 		int index = (int) (Thread.currentThread().getId() % queue.length);
 
-		// With this approach there is some risk that a queue is filled but
-		// never emptied. Maybe we should look for another queue to read from
-		// before filling our own queue?
-		synchronized (queue[index]) {
-			E poll = queue[index].poll();
+		Queue<E> es = queue[index];
+		if (es == null) {
+			for (Queue<E> eQueue : queue) {
+				if (eQueue != null) {
+					synchronized (eQueue) {
+						E poll = eQueue.poll();
 
-			if (poll != null) {
-				return poll;
-			}
-
-			synchronized (this) {
-				poll = queue[index].poll();
-				if (poll == null) {
-					if (iterator.hasNext()) {
-						poll = iterator.next();
+						if (poll != null) {
+							return poll;
+						}
 					}
-					ArrayList<E> objects = new ArrayList<>(BUFFER);
-
-					for (int i = 0; i < BUFFER && iterator.hasNext(); i++) {
-						objects.add(iterator.next());
-					}
-
-					queue[index].addAll(objects);
 				}
-
-				if (poll == null) {
-					end = true;
-				}
-				return poll;
 			}
 		}
+
+		if (es != null) {
+			// With this approach there is some risk that a queue is filled but
+			// never emptied. Maybe we should look for another queue to read
+			// from
+			// before filling our own queue?
+			synchronized (es) {
+				E poll = es.poll();
+
+				if (poll != null) {
+					return poll;
+				}
+
+				synchronized (this) {
+					es = queue[index];
+					if (es != null) {
+
+						poll = es.poll();
+						if (poll == null) {
+							if (iterator.hasNext()) {
+								poll = iterator.next();
+								ArrayList<E> objects = new ArrayList<>(BUFFER);
+
+								for (int i = 0; i < BUFFER && iterator.hasNext(); i++) {
+									es.add(iterator.next());
+								}
+
+								es.addAll(objects);
+							}
+
+						}
+
+						if (poll == null) {
+							queue[index] = null;
+						} else {
+							return poll;
+						}
+					}
+				}
+			}
+		}
+
+		for (Queue<E> eQueue : queue) {
+			if (eQueue != null) {
+
+				synchronized (eQueue) {
+					synchronized (this) {
+						E poll = eQueue.poll();
+
+						if (poll != null) {
+							return poll;
+						}
+					}
+				}
+			}
+		}
+		end = true;
+		return null;
 
 	}
 
