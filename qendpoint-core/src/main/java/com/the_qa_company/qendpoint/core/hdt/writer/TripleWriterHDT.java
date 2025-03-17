@@ -18,7 +18,7 @@ import com.the_qa_company.qendpoint.core.header.HeaderUtil;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
@@ -40,9 +40,10 @@ public class TripleWriterHDT implements TripleWriter {
 		this.baseUri = baseUri;
 		this.spec = spec;
 		if (compress) {
-			this.out = new TempBuffOut(new GZIPOutputStream(new TempBuffOut(new FileOutputStream(outFile))));
+			this.out = new FastBufferedOutputStream(
+					new GZIPOutputStream(new FastBufferedOutputStream(new FileOutputStream(outFile))));
 		} else {
-			this.out = new TempBuffOut(new FileOutputStream(outFile));
+			this.out = new FastBufferedOutputStream(new FileOutputStream(outFile), 4 * 1024 * 1024);
 		}
 		close = true;
 		init();
@@ -51,7 +52,7 @@ public class TripleWriterHDT implements TripleWriter {
 	public TripleWriterHDT(String baseUri, HDTOptions spec, OutputStream out) {
 		this.baseUri = baseUri;
 		this.spec = spec;
-		this.out = new TempBuffOut(out);
+		this.out = new FastBufferedOutputStream(out);
 		init();
 	}
 

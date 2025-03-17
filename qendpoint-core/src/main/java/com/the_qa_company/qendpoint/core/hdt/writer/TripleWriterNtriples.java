@@ -11,7 +11,7 @@ import java.io.Writer;
 import java.util.zip.GZIPOutputStream;
 
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 public class TripleWriterNtriples implements TripleWriter {
@@ -21,7 +21,8 @@ public class TripleWriterNtriples implements TripleWriter {
 
 	public TripleWriterNtriples(String outFile, boolean compress) throws IOException {
 		if (compress) {
-			this.out = new OutputStreamWriter(new GZIPOutputStream(new TempBuffOut(new FileOutputStream(outFile))));
+			this.out = new OutputStreamWriter(
+					new GZIPOutputStream(new FastBufferedOutputStream(new FileOutputStream(outFile))));
 		} else {
 			this.out = new BufferedWriter(new FileWriter(outFile));
 		}

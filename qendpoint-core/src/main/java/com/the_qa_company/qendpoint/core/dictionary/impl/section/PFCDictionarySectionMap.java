@@ -25,7 +25,7 @@ import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
@@ -376,7 +376,7 @@ public class PFCDictionarySectionMap implements DictionarySectionPrivate, Closea
 
 	@Override
 	public void save(OutputStream output, ProgressListener listener) throws IOException {
-		InputStream in = new TempBuffIn(new FileInputStream(f));
+		InputStream in = new FastBufferedInputStream(new FileInputStream(f));
 		IOUtil.skip(in, startOffset);
 		IOUtil.copyStream(in, output, endOffset - startOffset);
 		in.close();

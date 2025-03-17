@@ -4,8 +4,8 @@ import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
@@ -147,14 +147,14 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 					assertEquals(it2.next(), it.next());
 				}
 
-				try (OutputStream stream = new TempBuffOut(Files.newOutputStream(path))) {
+				try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(path))) {
 					triples.save(stream, new ControlInformation(), ProgressListener.ignore());
 				}
 			}
 
 			// load
 			try (BitmapQuadTriples triples = new BitmapQuadTriples()) {
-				try (InputStream stream = new TempBuffIn(Files.newInputStream(path))) {
+				try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(path))) {
 					ControlInformation ci = new ControlInformation();
 					ci.load(stream);
 					triples.load(stream, ci, ProgressListener.ignore());
@@ -170,7 +170,7 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 
 			// map
 			try (BitmapQuadTriples triples = new BitmapQuadTriples()) {
-				try (InputStream stream = new TempBuffIn(Files.newInputStream(path))) {
+				try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(path))) {
 					CountInputStream cstream = new CountInputStream(stream);
 					triples.mapFromFile(cstream, path.toFile(), ProgressListener.ignore());
 				}

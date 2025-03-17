@@ -2,8 +2,8 @@ package com.the_qa_company.qendpoint.core.options;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -39,7 +39,8 @@ public class HDTOptionsFile {
 			return;
 		}
 		ProgressListener l = ProgressListener.ignore();
-		try (CRCInputStream is = new CRCInputStream(new TempBuffIn(Files.newInputStream(location)), new CRC32())) {
+		try (CRCInputStream is = new CRCInputStream(new FastBufferedInputStream(Files.newInputStream(location)),
+				new CRC32())) {
 			if (IOUtil.readLong(is) != MAGIC)
 				throw new IOException("Can't read HDTOptions file: Bad magic");
 
@@ -60,7 +61,8 @@ public class HDTOptionsFile {
 
 	public void save() throws IOException {
 		ProgressListener l = ProgressListener.ignore();
-		try (CRCOutputStream os = new CRCOutputStream(new TempBuffOut(Files.newOutputStream(location)), new CRC32())) {
+		try (CRCOutputStream os = new CRCOutputStream(new FastBufferedOutputStream(Files.newOutputStream(location)),
+				new CRC32())) {
 			IOUtil.writeLong(os, MAGIC);
 			Set<?> keys = options.getKeys();
 			VByte.encode(os, keys.size());

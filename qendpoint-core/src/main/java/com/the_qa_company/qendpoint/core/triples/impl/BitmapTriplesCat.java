@@ -26,7 +26,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
@@ -120,7 +120,7 @@ public class BitmapTriplesCat {
 		vectorY.aggressiveTrimToSize();
 		vectorZ.trimToSize();
 
-		try (OutputStream bos = new TempBuffOut(new FileOutputStream(location + "triples"))) {
+		try (OutputStream bos = new FastBufferedOutputStream(new FileOutputStream(location + "triples"))) {
 			ControlInfo ci = new ControlInformation();
 			ci.setType(ControlInfo.Type.TRIPLES);
 			ci.setFormat(HDTVocabulary.TRIPLES_TYPE_BITMAP);

@@ -20,8 +20,8 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
@@ -149,7 +149,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						merger.startMerger();
 						// create
 						DictionaryPrivate dict = merger.buildDictionary();
-						try (OutputStream stream = new TempBuffOut(Files.newOutputStream(dictFile))) {
+						try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(dictFile))) {
 							writeSection(dict.getShared(), stream);
 							writeSection(dict.getSubjects(), stream);
 							writeSection(dict.getPredicates(), stream);
@@ -240,7 +240,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						}
 					}
 				}
-				try (InputStream stream = new TempBuffIn(Files.newInputStream(dictFile))) {
+				try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(dictFile))) {
 					// read the sections
 					try (DictionarySection sh = loadSection(stream);
 							DictionarySection su = loadSection(stream);
@@ -483,7 +483,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						merger.startMerger();
 						// create
 						DictionaryPrivate dict = merger.buildDictionary();
-						try (OutputStream stream = new TempBuffOut(Files.newOutputStream(dictFile))) {
+						try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(dictFile))) {
 							writeSection(dict.getShared(), stream);
 							writeSection(dict.getSubjects(), stream);
 							writeSection(dict.getPredicates(), stream);
@@ -501,7 +501,7 @@ public class KCatMergerTest extends AbstractMapMemoryTest {
 						}
 					}
 				}
-				try (InputStream stream = new TempBuffIn(Files.newInputStream(dictFile))) {
+				try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(dictFile))) {
 					// read the sections
 					try (DictionarySection sh = loadSection(stream);
 							DictionarySection su = loadSection(stream);

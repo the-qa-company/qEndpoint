@@ -1,8 +1,8 @@
 package com.the_qa_company.qendpoint.core.compact.bitmap;
 
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import org.apache.commons.io.file.PathUtils;
 import org.junit.After;
@@ -56,7 +56,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 				map.set(0, 90, true);
 			}
 
-			try (InputStream stream = new TempBuffIn(Files.newInputStream(output));
+			try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(output));
 					MultiRoaringBitmap map = MultiRoaringBitmap.load(stream)) {
 				for (int i = 0; i < 100; i++) {
 					switch (i) {
@@ -106,7 +106,7 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 					assertTrue(map.access(layer, position));
 				}
 
-				try (OutputStream out = new TempBuffOut(Files.newOutputStream(output))) {
+				try (OutputStream out = new FastBufferedOutputStream(Files.newOutputStream(output))) {
 					map.save(out, ProgressListener.ignore());
 				}
 			}

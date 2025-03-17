@@ -14,6 +14,8 @@ import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
 import com.the_qa_company.qendpoint.core.util.disk.LongArray;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -94,7 +96,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 				CloseSuppressPath output = merger.waitResult().orElse(null);
 
 				if (output != null) {
-					try (InputStream stream = new TempBuffIn(Files.newInputStream(output))) {
+					try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(output))) {
 						QEPMapReader reader = new QEPMapReader(stream);
 
 						long index = 0;
@@ -156,7 +158,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 		@Override
 		public void createChunk(Supplier<QEPMapIds> flux, CloseSuppressPath output)
 				throws KWayMerger.KWayMergerException {
-			try (OutputStream stream = new TempBuffOut(Files.newOutputStream(output))) {
+			try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(output))) {
 				QEPMapIds ids;
 
 				List<QEPMapIds> idList = new ArrayList<>();
@@ -199,7 +201,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 				InputStream[] pathInput = new InputStream[inputs.size()];
 
 				for (int i = 0; i < pathInput.length; i++) {
-					pathInput[i] = new TempBuffIn(Files.newInputStream(inputs.get(i)));
+					pathInput[i] = new FastBufferedInputStream(Files.newInputStream(inputs.get(i)));
 				}
 
 				try {
@@ -207,7 +209,7 @@ public class QEPMapIdSorter implements Closeable, Iterable<QEPMapIdSorter.QEPMap
 					ExceptionIterator<QEPMapIds, IOException> tree = MergeExceptionIterator
 							.buildOfTree(QEPMapReader::new, Arrays.asList(pathInput), 0, inputs.size());
 
-					try (OutputStream stream = new TempBuffOut(Files.newOutputStream(output))) {
+					try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(output))) {
 						while (tree.hasNext()) {
 							QEPMapIds ids = tree.next();
 							VByte.encode(stream, ids.origin());

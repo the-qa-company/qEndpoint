@@ -25,7 +25,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.StringUtil;
@@ -395,9 +395,9 @@ public class IOUtil {
 			con.connect();
 			input = con.getInputStream();
 		} else if (name.equals("-")) {
-			input = new TempBuffIn(System.in);
+			input = new FastBufferedInputStream(System.in);
 		} else {
-			input = new TempBuffIn(new FileInputStream(fileName));
+			input = new FastBufferedInputStream(new FileInputStream(fileName));
 		}
 		if (!skipHandled) {
 			input.skipNBytes(startLen);
@@ -616,7 +616,7 @@ public class IOUtil {
 	}
 
 	public static void decompressGzip(File src, File trgt) throws IOException {
-		try (InputStream in = new GZIPInputStream(new TempBuffIn(new FileInputStream(src)))) {
+		try (InputStream in = new GZIPInputStream(new FastBufferedInputStream(new FileInputStream(src)))) {
 			Files.copy(in, trgt.toPath());
 		}
 	}

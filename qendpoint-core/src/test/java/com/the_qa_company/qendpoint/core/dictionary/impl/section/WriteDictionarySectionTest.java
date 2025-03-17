@@ -3,7 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import org.apache.commons.io.file.PathUtils;
@@ -50,10 +50,10 @@ public class WriteDictionarySectionTest {
 				}
 				Path t1Save = dir.resolve("t1.save");
 				Path t2Save = dir.resolve("t2.save");
-				try (OutputStream os = new TempBuffOut(Files.newOutputStream(t1Save))) {
+				try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(t1Save))) {
 					section1.save(os, ProgressListener.ignore());
 				}
-				try (OutputStream os = new TempBuffOut(Files.newOutputStream(t2Save))) {
+				try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(t2Save))) {
 					section2.save(os, ProgressListener.ignore());
 				}
 

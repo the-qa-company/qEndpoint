@@ -4,7 +4,7 @@ import com.github.jsonldjava.shaded.com.google.common.base.Stopwatch;
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.OverrideHDTOptions;
@@ -926,7 +926,7 @@ public class MergeRunnable {
 	}
 
 	private void writeTempFile(RepositoryConnection connection, String file, boolean graph) throws IOException {
-		try (OutputStream out = new TempBuffOut(new FileOutputStream(file))) {
+		try (OutputStream out = new FastBufferedOutputStream(new FileOutputStream(file))) {
 			RDFWriter writer = Rio.createWriter(
 					endpoint.getHdt().getDictionary().supportGraphs() ? RDFFormat.NQUADS : RDFFormat.NTRIPLES, out);
 			RepositoryResult<Statement> repositoryResult = connection.getStatements(null, null, null, false);

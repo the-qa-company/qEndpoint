@@ -19,7 +19,7 @@
 
 package com.the_qa_company.qendpoint.core.options;
 
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public interface ControlInfo extends HDTOptions {
 	void setFormat(String format);
 
 	default void save(Path filename) throws IOException {
-		try (OutputStream os = new TempBuffOut(Files.newOutputStream(filename))) {
+		try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(filename))) {
 			save(os);
 		}
 	}

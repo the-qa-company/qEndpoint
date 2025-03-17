@@ -8,7 +8,7 @@ import com.the_qa_company.qendpoint.core.header.HeaderFactory;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
@@ -88,7 +88,7 @@ public class WriteHDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, Trip
 
 	@Override
 	public void saveToHDT(String fileName, ProgressListener listener) throws IOException {
-		try (OutputStream out = new TempBuffOut(Files.newOutputStream(Path.of(fileName)))) {
+		try (OutputStream out = new FastBufferedOutputStream(Files.newOutputStream(Path.of(fileName)))) {
 			saveToHDT(out, listener);
 		}
 	}

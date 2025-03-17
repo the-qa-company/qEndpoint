@@ -1,7 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -235,7 +235,7 @@ public class CloseSuppressPath implements Path, Closeable {
 	}
 
 	public InputStream openInputStream(int bufferSize, OpenOption... options) throws IOException {
-		return new TempBuffIn(openInputStream(options), bufferSize);
+		return new FastBufferedInputStream(openInputStream(options), bufferSize);
 	}
 
 	public InputStream openInputStream(OpenOption... options) throws IOException {
@@ -247,7 +247,7 @@ public class CloseSuppressPath implements Path, Closeable {
 	}
 
 	public OutputStream openOutputStream(int bufferSize, OpenOption... options) throws IOException {
-		return new TempBuffOut(openOutputStream(options), bufferSize);
+		return new FastBufferedOutputStream(openOutputStream(options), bufferSize);
 	}
 
 	/**

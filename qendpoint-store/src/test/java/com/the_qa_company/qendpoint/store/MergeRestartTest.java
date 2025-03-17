@@ -2,7 +2,7 @@ package com.the_qa_company.qendpoint.store;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.MultiLayerBitmapWrapper;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -889,7 +889,8 @@ public class MergeRestartTest {
 			connection.remove(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new TempBuffOut(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new FastBufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("REM HDT " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 
@@ -913,7 +914,8 @@ public class MergeRestartTest {
 			connection.remove(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new TempBuffOut(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new FastBufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("REM RDF " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 	}
@@ -936,7 +938,8 @@ public class MergeRestartTest {
 			connection.add(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new TempBuffOut(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new FastBufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("ADD RDF " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 	}
@@ -960,7 +963,8 @@ public class MergeRestartTest {
 			connection.add(stm);
 		});
 		writeInfoCount(out, count);
-		try (OutputStream buff = new TempBuffOut(new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
+		try (OutputStream buff = new FastBufferedOutputStream(
+				new FileOutputStream(out.getAbsolutePath() + ".delta", true))) {
 			buff.write(("ADD HDT " + id + " / " + count + "\n").getBytes(StandardCharsets.UTF_8));
 		}
 	}

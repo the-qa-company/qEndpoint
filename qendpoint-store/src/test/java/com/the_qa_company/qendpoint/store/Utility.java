@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -161,7 +161,7 @@ public class Utility {
 
 	private static void writeBigIndex(File file) throws IOException {
 		ValueFactory vf = new MemValueFactory();
-		try (OutputStream out = new TempBuffOut(new FileOutputStream(file))) {
+		try (OutputStream out = new FastBufferedOutputStream(new FileOutputStream(file))) {
 			RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
 			writer.startRDF();
 			for (int i = 1; i <= COUNT; i++) {

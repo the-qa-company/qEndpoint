@@ -3,8 +3,8 @@ package com.the_qa_company.qendpoint.core.compact.bitmap;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.storage.TempBuffIn;
-import com.the_qa_company.qendpoint.core.storage.TempBuffOut;
+import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
@@ -69,7 +69,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 	 * @throws IOException io exception when loading
 	 */
 	public static MultiRoaringBitmap load(Path input) throws IOException {
-		try (InputStream stream = new TempBuffIn(Files.newInputStream(input))) {
+		try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(input))) {
 			return load(stream);
 		}
 	}
@@ -341,7 +341,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 		int sizeInBytes = handle.serializedSizeInBytes();
 		outputMax += sizeInBytes + 8 + 8 + 1;
 
-		OutputStream os = new TempBuffOut(Channels.newOutputStream(output.position(loc)));
+		OutputStream os = new FastBufferedOutputStream(Channels.newOutputStream(output.position(loc)));
 		os.write(BLOCK_BITMAP);
 		IOUtil.writeLong(os, sizeInBytes);
 		IOUtil.writeLong(os, layer);
@@ -356,7 +356,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 	}
 
 	public void save(Path output) throws IOException {
-		try (OutputStream stream = new TempBuffOut(Files.newOutputStream(output))) {
+		try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(output))) {
 			save(stream);
 		}
 	}
