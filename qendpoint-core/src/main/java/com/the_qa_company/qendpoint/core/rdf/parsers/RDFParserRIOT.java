@@ -134,8 +134,6 @@ public class RDFParserRIOT implements RDFParserCallback {
 	}
 
 	public static class ElemStringBuffer implements StreamRDF {
-		private final TripleString triple = new TripleString();
-		private final QuadString quad = new QuadString();
 		private final RDFCallback callback;
 		private final static AtomicInteger counter = new AtomicInteger(0);
 
@@ -148,6 +146,8 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 		@Override
 		public void triple(Triple parsedTriple) {
+			TripleString triple = new TripleString();
+
 			int i = counter.incrementAndGet();
 			if (i % 100 == 0 && i > 177271352) {
 				System.out.println("Triple count: " + i);
@@ -160,6 +160,8 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 		@Override
 		public void quad(Quad parsedQuad) {
+			QuadString quad = new QuadString();
+
 			int i = counter.incrementAndGet();
 			if (i % 100 == 0 && i > 177271352) {
 				System.out.println("Quad count: " + i);
