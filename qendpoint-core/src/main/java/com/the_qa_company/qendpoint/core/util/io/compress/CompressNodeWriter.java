@@ -51,6 +51,7 @@ public class CompressNodeWriter implements Closeable {
 	@Override
 	public void close() throws IOException {
 		writeCRC();
+		out.flush();
 		out.close();
 	}
 }

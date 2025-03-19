@@ -4,8 +4,8 @@ import com.the_qa_company.qendpoint.core.enums.ResultEstimationType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
@@ -15,8 +15,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -147,14 +145,14 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 					assertEquals(it2.next(), it.next());
 				}
 
-				try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(path))) {
+				try (OutputStream stream = new BufferedOutputStream(Files.newOutputStream(path))) {
 					triples.save(stream, new ControlInformation(), ProgressListener.ignore());
 				}
 			}
 
 			// load
 			try (BitmapQuadTriples triples = new BitmapQuadTriples()) {
-				try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(path))) {
+				try (InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
 					ControlInformation ci = new ControlInformation();
 					ci.load(stream);
 					triples.load(stream, ci, ProgressListener.ignore());
@@ -170,7 +168,7 @@ public class BitmapQuadTriplesTest extends AbstractMapMemoryTest {
 
 			// map
 			try (BitmapQuadTriples triples = new BitmapQuadTriples()) {
-				try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(path))) {
+				try (InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
 					CountInputStream cstream = new CountInputStream(stream);
 					triples.mapFromFile(cstream, path.toFile(), ProgressListener.ignore());
 				}

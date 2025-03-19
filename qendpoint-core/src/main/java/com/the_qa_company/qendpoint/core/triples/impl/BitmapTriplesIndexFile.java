@@ -19,8 +19,8 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
@@ -33,8 +33,6 @@ import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -132,7 +130,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 			}
 		}
 
-		CountInputStream stream = new CountInputStream(new FastBufferedInputStream(Channels.newInputStream(channel)));
+		CountInputStream stream = new CountInputStream(new BufferedInputStream(Channels.newInputStream(channel)));
 		stream.skipNBytes(headerSize);
 
 		String orderCfg = IOUtil.readSizedString(stream, ProgressListener.ignore());
@@ -317,7 +315,7 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex, Closeable {
 				seqZ.trimToSize();
 
 				// saving the index
-				try (OutputStream output = new FastBufferedOutputStream(Files.newOutputStream(destination))) {
+				try (OutputStream output = new BufferedOutputStream(Files.newOutputStream(destination))) {
 					output.write(MAGIC);
 					IOUtil.writeLong(output, signature(triples));
 

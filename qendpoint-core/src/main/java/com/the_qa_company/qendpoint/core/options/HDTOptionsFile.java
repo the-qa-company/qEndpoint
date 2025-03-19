@@ -2,15 +2,13 @@ package com.the_qa_company.qendpoint.core.options;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,7 +37,7 @@ public class HDTOptionsFile {
 			return;
 		}
 		ProgressListener l = ProgressListener.ignore();
-		try (CRCInputStream is = new CRCInputStream(new FastBufferedInputStream(Files.newInputStream(location)),
+		try (CRCInputStream is = new CRCInputStream(new BufferedInputStream(Files.newInputStream(location)),
 				new CRC32())) {
 			if (IOUtil.readLong(is) != MAGIC)
 				throw new IOException("Can't read HDTOptions file: Bad magic");
@@ -61,7 +59,7 @@ public class HDTOptionsFile {
 
 	public void save() throws IOException {
 		ProgressListener l = ProgressListener.ignore();
-		try (CRCOutputStream os = new CRCOutputStream(new FastBufferedOutputStream(Files.newOutputStream(location)),
+		try (CRCOutputStream os = new CRCOutputStream(new BufferedOutputStream(Files.newOutputStream(location)),
 				new CRC32())) {
 			IOUtil.writeLong(os, MAGIC);
 			Set<?> keys = options.getKeys();

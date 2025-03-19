@@ -3,7 +3,7 @@ package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import org.apache.commons.io.file.PathUtils;
@@ -12,7 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -50,10 +49,10 @@ public class WriteDictionarySectionTest {
 				}
 				Path t1Save = dir.resolve("t1.save");
 				Path t2Save = dir.resolve("t2.save");
-				try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(t1Save))) {
+				try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(t1Save))) {
 					section1.save(os, ProgressListener.ignore());
 				}
-				try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(t2Save))) {
+				try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(t2Save))) {
 					section2.save(os, ProgressListener.ignore());
 				}
 

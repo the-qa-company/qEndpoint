@@ -1,10 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -235,7 +233,7 @@ public class CloseSuppressPath implements Path, Closeable {
 	}
 
 	public InputStream openInputStream(int bufferSize, OpenOption... options) throws IOException {
-		return new FastBufferedInputStream(openInputStream(options), bufferSize);
+		return new BufferedInputStream(openInputStream(options), bufferSize);
 	}
 
 	public InputStream openInputStream(OpenOption... options) throws IOException {
@@ -247,7 +245,7 @@ public class CloseSuppressPath implements Path, Closeable {
 	}
 
 	public OutputStream openOutputStream(int bufferSize, OpenOption... options) throws IOException {
-		return new FastBufferedOutputStream(openOutputStream(options), bufferSize);
+		return new BufferedOutputStream(openOutputStream(options), bufferSize);
 	}
 
 	/**

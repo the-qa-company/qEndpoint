@@ -2,13 +2,12 @@ package com.the_qa_company.qendpoint.utils;
 
 import com.the_qa_company.qendpoint.core.options.ControlInfo;
 import com.the_qa_company.qendpoint.core.options.ControlInformation;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
 import org.eclipse.rdf4j.query.resultio.TupleQueryResultWriterRegistry;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,7 +87,7 @@ public class FormatUtils {
 	 */
 	public static byte[] readCookie(Path file, int size) {
 		try (InputStream stream = Files.newInputStream(file)) {
-			return (size > 0x1000 ? new FastBufferedInputStream(stream) : stream).readNBytes(size);
+			return (size > 0x1000 ? new BufferedInputStream(stream) : stream).readNBytes(size);
 		} catch (IOException e) {
 			return new byte[0];
 		}

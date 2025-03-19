@@ -1,13 +1,12 @@
 package com.the_qa_company.qendpoint.utils;
 
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import com.the_qa_company.qendpoint.store.exception.EndpointStoreException;
 import org.eclipse.rdf4j.common.io.NioFile;
 import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.File;
@@ -141,8 +140,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 				int lastNonZero = -1;
 				// read previous values
-				try (InputStream is = new FastBufferedInputStream(
-						Files.newInputStream(this.output.getFile().toPath()))) {
+				try (InputStream is = new BufferedInputStream(Files.newInputStream(this.output.getFile().toPath()))) {
 					// skip header
 					is.skipNBytes(8);
 					for (int i = 0; i < this.words.length; i++) {

@@ -37,7 +37,7 @@ public abstract class AbstractNTriplesParserTest {
 		String input = format(CharSpace.ASCII, new Producer() {
 			@Override
 			public void writeTo(StreamRDF out) {
-				out.triple(new Triple(n, n, n));
+				out.triple(Triple.create(n, n, n));
 			}
 		});
 
@@ -60,9 +60,9 @@ public abstract class AbstractNTriplesParserTest {
 		String input = format(CharSpace.ASCII, new Producer() {
 			@Override
 			public void writeTo(StreamRDF out) {
-				out.triple(new Triple(s, p, o1));
-				out.triple(new Triple(s, p, o2));
-				out.triple(new Triple(s, p, o3));
+				out.triple(Triple.create(s, p, o1));
+				out.triple(Triple.create(s, p, o2));
+				out.triple(Triple.create(s, p, o3));
 			}
 		});
 

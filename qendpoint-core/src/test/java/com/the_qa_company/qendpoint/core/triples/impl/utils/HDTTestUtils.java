@@ -16,7 +16,6 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;

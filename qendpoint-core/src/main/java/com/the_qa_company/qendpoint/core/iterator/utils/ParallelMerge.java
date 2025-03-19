@@ -269,7 +269,7 @@ class MergeNode<T> implements MergeSource<T> {
 		// Ugly but easy: if exhaustedFlag points to leftExhausted, set it, else
 		// set rightExhausted
 		// A better design might store a boolean or do a callback.
-		com.github.jsonldjava.shaded.com.google.common.base.Supplier<Boolean> isLeftExhausted = this::isLeftExhausted;
+		Supplier<Boolean> isLeftExhausted = this::isLeftExhausted;
 		if (exhaustedFlag == isLeftExhausted) {
 			leftExhausted = true;
 		} else {

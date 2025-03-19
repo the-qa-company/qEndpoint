@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -23,6 +24,8 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
 			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
 			new ArrayDeque(BUFFER), };
+
+	AtomicInteger counter = new AtomicInteger(0);
 
 	public AsyncIteratorFetcherUnordered(Iterator<E> iterator) {
 		super(iterator);
@@ -45,6 +48,7 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						E poll = eQueue.poll();
 
 						if (poll != null) {
+							counter.incrementAndGet();
 							return poll;
 						}
 					}
@@ -61,6 +65,7 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 				E poll = es.poll();
 
 				if (poll != null) {
+					counter.incrementAndGet();
 					return poll;
 				}
 
@@ -86,6 +91,7 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						if (poll == null) {
 							queue[index] = null;
 						} else {
+							counter.incrementAndGet();
 							return poll;
 						}
 					}
@@ -101,12 +107,23 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						E poll = eQueue.poll();
 
 						if (poll != null) {
+							counter.incrementAndGet();
 							return poll;
 						}
 					}
 				}
 			}
 		}
+
+		synchronized (this) {
+			if (iterator.hasNext()) {
+				E poll = iterator.next();
+				counter.incrementAndGet();
+				return poll;
+			}
+		}
+
+		System.out.println("AsyncIteratorFetcherUnordered: " + counter.get());
 		end = true;
 		return null;
 

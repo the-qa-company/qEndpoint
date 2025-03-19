@@ -3,6 +3,7 @@ package com.the_qa_company.qendpoint.core.iterator.utils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -15,10 +16,9 @@ import java.util.function.Supplier;
  */
 public class AsyncIteratorFetcher<E> implements Supplier<E> {
 	private final Iterator<E> iterator;
-	private final Lock lock = new ReentrantLock();
 	private boolean end;
 
-	ConcurrentLinkedQueue<E> queue = new ConcurrentLinkedQueue<>();
+	private ConcurrentLinkedQueue<E> queue = new ConcurrentLinkedQueue<>();
 
 	public AsyncIteratorFetcher(Iterator<E> iterator) {
 		this.iterator = iterator;
@@ -27,7 +27,7 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 	/**
 	 * @return an element from the iterator, this method is thread safe
 	 */
-	@Override
+//	@Override
 //	public E get() {
 //		lock.lock();
 //		try {
@@ -41,15 +41,20 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 //		}
 //	}
 
+	AtomicInteger counter = new AtomicInteger(0);
+
+	@Override
 	public E get() {
 		E poll = queue.poll();
 		if (poll != null) {
+			counter.incrementAndGet();
 			return poll;
 		}
 
 		synchronized (this) {
 			poll = queue.poll();
 			if (poll != null) {
+				counter.incrementAndGet();
 				return poll;
 			}
 
@@ -63,8 +68,12 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 			}
 			this.queue = newqueue;
 			if (poll != null) {
+				counter.incrementAndGet();
 				return poll;
 			}
+
+			System.out.println("AsyncIteratorFetcher: " + counter.get());
+
 			end = true;
 			return null;
 		}

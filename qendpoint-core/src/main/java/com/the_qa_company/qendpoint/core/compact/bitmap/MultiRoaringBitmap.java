@@ -3,15 +3,13 @@ package com.the_qa_company.qendpoint.core.compact.bitmap;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.roaringbitmap.RoaringBitmap;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -69,7 +67,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 	 * @throws IOException io exception when loading
 	 */
 	public static MultiRoaringBitmap load(Path input) throws IOException {
-		try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(input))) {
+		try (InputStream stream = new BufferedInputStream(Files.newInputStream(input))) {
 			return load(stream);
 		}
 	}
@@ -341,7 +339,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 		int sizeInBytes = handle.serializedSizeInBytes();
 		outputMax += sizeInBytes + 8 + 8 + 1;
 
-		OutputStream os = new FastBufferedOutputStream(Channels.newOutputStream(output.position(loc)));
+		OutputStream os = new BufferedOutputStream(Channels.newOutputStream(output.position(loc)));
 		os.write(BLOCK_BITMAP);
 		IOUtil.writeLong(os, sizeInBytes);
 		IOUtil.writeLong(os, layer);
@@ -356,7 +354,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 	}
 
 	public void save(Path output) throws IOException {
-		try (OutputStream stream = new FastBufferedOutputStream(Files.newOutputStream(output))) {
+		try (OutputStream stream = new BufferedOutputStream(Files.newOutputStream(output))) {
 			save(stream);
 		}
 	}

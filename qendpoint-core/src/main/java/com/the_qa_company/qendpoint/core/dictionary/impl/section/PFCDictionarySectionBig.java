@@ -19,8 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,8 +37,8 @@ import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Mutable;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
@@ -118,7 +116,7 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		ByteString previousStr = null;
 
 		try {
-			try (OutputStream out = new FastBufferedOutputStream(new FileOutputStream(file))) {
+			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
 				while (it.hasNext()) {
 					ByteString str = ByteString.of(it.next());
 
@@ -163,7 +161,7 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 				byteOut.writeTo(out);
 			}
 
-			try (InputStream in = new FastBufferedInputStream(new FileInputStream(file))) {
+			try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
 				// Read block by block
 				// Read packed data
 

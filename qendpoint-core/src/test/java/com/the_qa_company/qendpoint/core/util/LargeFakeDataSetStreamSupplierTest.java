@@ -10,7 +10,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import org.junit.Rule;
@@ -20,7 +20,6 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManagerTest;
 import com.the_qa_company.qendpoint.core.iterator.utils.CombinedIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -185,8 +184,8 @@ public class LargeFakeDataSetStreamSupplierTest {
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES,
 				HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "true")));
 		try {
-			try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(p12));
-					InputStream stream2 = new FastBufferedInputStream(Files.newInputStream(p3));
+			try (InputStream stream = new BufferedInputStream(Files.newInputStream(p12));
+					InputStream stream2 = new BufferedInputStream(Files.newInputStream(p3));
 					PipedCopyIterator<TripleString> it1 = RDFParserFactory.readAsIterator(parser, stream, "http://w",
 							true, RDFNotation.NTRIPLES);
 					PipedCopyIterator<TripleString> it2 = RDFParserFactory.readAsIterator(parser, stream2, "http://w",

@@ -20,7 +20,7 @@ import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Profiler;
@@ -36,7 +36,6 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -255,7 +254,7 @@ public class HDTManagerImpl extends HDTManager {
 					InputStream stream = readIs.is();
 
 					try (InputStream is = checksumPath != null ? new CRCInputStream(stream, new CRC32()) : stream;
-							OutputStream os = new FastBufferedOutputStream(
+							OutputStream os = new BufferedOutputStream(
 									Files.newOutputStream(preDownload, openOptions))) {
 						IOUtil.copy(is, os, listener, 10_000_000);
 						if (is instanceof CRCInputStream crcIs) {

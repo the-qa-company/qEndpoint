@@ -19,7 +19,7 @@ import com.the_qa_company.qendpoint.model.EndpointStoreValueFactory;
 import com.the_qa_company.qendpoint.model.HDTValue;
 import com.the_qa_company.qendpoint.utils.BitArrayDisk;
 import com.the_qa_company.qendpoint.utils.CloseSafeHDT;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.eclipse.rdf4j.common.concurrent.locks.Lock;
@@ -51,7 +51,6 @@ import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -701,8 +700,7 @@ public class EndpointStore extends AbstractNotifyingSail {
 			if (!file.exists()) {
 				Files.createFile(file.toPath());
 			}
-			OutputStream rdfWriterTempTriplesOut = new FastBufferedOutputStream(
-					new FileOutputStream(file, isRestarting));
+			OutputStream rdfWriterTempTriplesOut = new BufferedOutputStream(new FileOutputStream(file, isRestarting));
 			this.rdfWriterTempTriples = graph ? new NQuadsWriter(rdfWriterTempTriplesOut)
 					: new NTriplesWriter(rdfWriterTempTriplesOut);
 			this.rdfWriterTempTriples.startRDF();

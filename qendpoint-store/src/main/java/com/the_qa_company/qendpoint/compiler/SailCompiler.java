@@ -8,7 +8,7 @@ import com.the_qa_company.qendpoint.compiler.sail.MultiFilterLinkedSailCompiler;
 import com.the_qa_company.qendpoint.compiler.source.EmptyTripleSourceGetter;
 import com.the_qa_company.qendpoint.compiler.source.ModelTripleSourceGetter;
 import com.the_qa_company.qendpoint.compiler.source.SailTripleSourceModel;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.IRI;
@@ -24,7 +24,6 @@ import org.eclipse.rdf4j.sail.Sail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -134,7 +133,7 @@ public class SailCompiler {
 		RDFFormat format = Rio.getParserFormatForFileName(rdfFile.getFileName().toString())
 				.orElseThrow(() -> new IllegalArgumentException("Can't find parser for file: " + rdfFile));
 
-		try (InputStream stream = new FastBufferedInputStream(Files.newInputStream(rdfFile))) {
+		try (InputStream stream = new BufferedInputStream(Files.newInputStream(rdfFile))) {
 			load(stream, format);
 		}
 	}

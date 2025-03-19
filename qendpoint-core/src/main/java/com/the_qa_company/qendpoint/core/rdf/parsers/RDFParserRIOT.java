@@ -141,10 +141,17 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 		public ElemStringBuffer(RDFCallback callback) {
 			this.callback = callback;
+
+			Runtime.getRuntime().addShutdownHook(
+					new Thread(() -> { System.out.println("Total triples parsed: " + counter.get()); }));
 		}
 
 		@Override
 		public void triple(Triple parsedTriple) {
+			int i = counter.incrementAndGet();
+			if (i % 100 == 0 && i > 177271352) {
+				System.out.println("Triple count: " + i);
+			}
 			triple.setAll(JenaNodeFormatter.format(parsedTriple.getSubject()),
 					JenaNodeFormatter.format(parsedTriple.getPredicate()),
 					JenaNodeFormatter.format(parsedTriple.getObject()));
@@ -153,6 +160,10 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 		@Override
 		public void quad(Quad parsedQuad) {
+			int i = counter.incrementAndGet();
+			if (i % 100 == 0 && i > 177271352) {
+				System.out.println("Quad count: " + i);
+			}
 			quad.setAll(JenaNodeFormatter.format(parsedQuad.getSubject()),
 					JenaNodeFormatter.format(parsedQuad.getPredicate()),
 					JenaNodeFormatter.format(parsedQuad.getObject()), JenaNodeFormatter.format(parsedQuad.getGraph()));

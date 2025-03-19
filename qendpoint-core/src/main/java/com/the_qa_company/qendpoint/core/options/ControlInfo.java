@@ -19,9 +19,8 @@
 
 package com.the_qa_company.qendpoint.core.options;
 
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,7 +44,7 @@ public interface ControlInfo extends HDTOptions {
 	void setFormat(String format);
 
 	default void save(Path filename) throws IOException {
-		try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(filename))) {
+		try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(filename))) {
 			save(os);
 		}
 	}

@@ -25,7 +25,7 @@ import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
@@ -36,7 +36,6 @@ import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -66,7 +65,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 
 	public SequenceLog64Map(File f) throws IOException {
 		// Read from the beginning of the file
-		this(new CountInputStream(new FastBufferedInputStream(new FileInputStream(f))), f, true);
+		this(new CountInputStream(new BufferedInputStream(new FileInputStream(f))), f, true);
 	}
 
 	public SequenceLog64Map(CountInputStream in, File f) throws IOException {
@@ -163,7 +162,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 		// FIXME: Bug in the previous code, find what because it should be more
 		// efficient
 
-		CountInputStream in = new CountInputStream(new FastBufferedInputStream(new FileInputStream(f)));
+		CountInputStream in = new CountInputStream(new BufferedInputStream(new FileInputStream(f)));
 		IOUtil.skip(in, base + ((numwords - 1) * 8L));
 //		System.out.println("Last word starts at: "+in.getTotalBytes());
 		// Read only used bits from last entry (byte aligned, little endian)

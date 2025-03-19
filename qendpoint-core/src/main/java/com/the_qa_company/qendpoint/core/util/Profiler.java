@@ -2,11 +2,9 @@ package com.the_qa_company.qendpoint.core.util;
 
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedInputStream;
+import org.spf4j.io.BufferedOutputStream;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +48,7 @@ public class Profiler implements AutoCloseable {
 	 */
 	public static Profiler readFromDisk(Path inputPath) throws IOException {
 		Profiler p = new Profiler("");
-		try (InputStream is = new FastBufferedInputStream(Files.newInputStream(inputPath))) {
+		try (InputStream is = new BufferedInputStream(Files.newInputStream(inputPath))) {
 			for (byte b : HEADER) {
 				if (is.read() != b) {
 					throw new IOException("Missing header for the profiling file!");
@@ -288,7 +286,7 @@ public class Profiler implements AutoCloseable {
 	 * @param outputPath output path
 	 */
 	public void writeToDisk(Path outputPath) throws IOException {
-		try (OutputStream os = new FastBufferedOutputStream(Files.newOutputStream(outputPath))) {
+		try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(outputPath))) {
 			for (byte b : HEADER) {
 				os.write(b);
 			}

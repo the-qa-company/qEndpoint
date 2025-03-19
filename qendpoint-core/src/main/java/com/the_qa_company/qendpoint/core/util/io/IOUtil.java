@@ -25,7 +25,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import com.the_qa_company.qendpoint.core.unsafe.MemoryUtils;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.StringUtil;
@@ -34,7 +34,6 @@ import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -395,9 +394,9 @@ public class IOUtil {
 			con.connect();
 			input = con.getInputStream();
 		} else if (name.equals("-")) {
-			input = new FastBufferedInputStream(System.in);
+			input = new BufferedInputStream(System.in);
 		} else {
-			input = new FastBufferedInputStream(new FileInputStream(fileName));
+			input = new BufferedInputStream(new FileInputStream(fileName));
 		}
 		if (!skipHandled) {
 			input.skipNBytes(startLen);
@@ -616,7 +615,7 @@ public class IOUtil {
 	}
 
 	public static void decompressGzip(File src, File trgt) throws IOException {
-		try (InputStream in = new GZIPInputStream(new FastBufferedInputStream(new FileInputStream(src)))) {
+		try (InputStream in = new GZIPInputStream(new BufferedInputStream(new FileInputStream(src)))) {
 			Files.copy(in, trgt.toPath());
 		}
 	}

@@ -27,8 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
-import static org.apache.jena.riot.lang.extra.TurtleJCC.lang;
-
 public class HasmacHDTImporterTest {
 
 	private final HDTSpecification spec;

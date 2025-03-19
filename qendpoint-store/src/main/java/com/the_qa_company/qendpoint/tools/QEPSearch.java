@@ -17,7 +17,7 @@ import com.the_qa_company.qendpoint.core.hdt.HDTVersion;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
+import org.spf4j.io.BufferedInputStream;
 import com.the_qa_company.qendpoint.core.tools.HDTVerify;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
@@ -49,7 +49,6 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractNotifyingSail;
 import org.eclipse.rdf4j.sail.nativerdf.NativeStore;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -1029,7 +1028,7 @@ public class QEPSearch {
 				HDTOptionsKeys.PARSER_DELTAFILE_NO_EXCEPTION, true);
 
 		try (RDFDeltaFileParser.DeltaFileReader reader = new RDFDeltaFileParser.DeltaFileReader(
-				new FastBufferedInputStream(Files.newInputStream(file)), spec)) {
+				new BufferedInputStream(Files.newInputStream(file)), spec)) {
 
 			console.printLine(console.color(5, 5, 1) + "files .. " + console.colorReset() + reader.getSize());
 			console.printLine(console.color(5, 5, 1) + "start .. " + console.colorReset() + reader.getStart());

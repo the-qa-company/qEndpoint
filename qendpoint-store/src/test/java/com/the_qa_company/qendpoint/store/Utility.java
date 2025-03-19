@@ -1,6 +1,6 @@
 package com.the_qa_company.qendpoint.store;
 
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -38,7 +38,6 @@ import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -161,7 +160,7 @@ public class Utility {
 
 	private static void writeBigIndex(File file) throws IOException {
 		ValueFactory vf = new MemValueFactory();
-		try (OutputStream out = new FastBufferedOutputStream(new FileOutputStream(file))) {
+		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
 			RDFWriter writer = Rio.createWriter(RDFFormat.NTRIPLES, out);
 			writer.startRDF();
 			for (int i = 1; i <= COUNT; i++) {

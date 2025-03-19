@@ -7,14 +7,13 @@ import com.the_qa_company.qendpoint.core.hdt.HDTManager;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -195,7 +194,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 */
 	public void createNTFile(Path file, CompressionType compressionType) throws IOException {
 		try (Writer writer = new OutputStreamWriter(
-				new FastBufferedOutputStream(compressionType.compress(Files.newOutputStream(file))))) {
+				new BufferedOutputStream(compressionType.compress(Files.newOutputStream(file))))) {
 			createNTFile(writer);
 		}
 	}

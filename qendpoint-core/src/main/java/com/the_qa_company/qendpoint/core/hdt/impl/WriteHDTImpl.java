@@ -8,14 +8,13 @@ import com.the_qa_company.qendpoint.core.header.HeaderFactory;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,7 +87,7 @@ public class WriteHDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, Trip
 
 	@Override
 	public void saveToHDT(String fileName, ProgressListener listener) throws IOException {
-		try (OutputStream out = new FastBufferedOutputStream(Files.newOutputStream(Path.of(fileName)))) {
+		try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(Path.of(fileName)))) {
 			saveToHDT(out, listener);
 		}
 	}

@@ -128,5 +128,17 @@
             <artifactId>fastutil</artifactId>
             <version>8.5.15</version>
         </dependency>
+        <dependency>
+            <groupId>org.spf4j</groupId>
+            <artifactId>spf4j-core</artifactId>
+            <version>8.10.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.avro</groupId>
+                    <artifactId>avro</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
     </dependencies>
 </project>

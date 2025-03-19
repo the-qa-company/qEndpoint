@@ -1,6 +1,5 @@
 package com.the_qa_company.qendpoint.core.hdt.writer;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -11,7 +10,7 @@ import java.io.Writer;
 import java.util.zip.GZIPOutputStream;
 
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 
 public class TripleWriterNtriples implements TripleWriter {
@@ -22,7 +21,7 @@ public class TripleWriterNtriples implements TripleWriter {
 	public TripleWriterNtriples(String outFile, boolean compress) throws IOException {
 		if (compress) {
 			this.out = new OutputStreamWriter(
-					new GZIPOutputStream(new FastBufferedOutputStream(new FileOutputStream(outFile))));
+					new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(outFile))));
 		} else {
 			this.out = new BufferedWriter(new FileWriter(outFile));
 		}

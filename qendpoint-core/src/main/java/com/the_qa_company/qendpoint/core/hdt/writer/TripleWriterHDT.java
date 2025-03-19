@@ -1,6 +1,5 @@
 package com.the_qa_company.qendpoint.core.hdt.writer;
 
-import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,7 +17,7 @@ import com.the_qa_company.qendpoint.core.header.HeaderUtil;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import org.spf4j.io.BufferedOutputStream;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
@@ -40,10 +39,10 @@ public class TripleWriterHDT implements TripleWriter {
 		this.baseUri = baseUri;
 		this.spec = spec;
 		if (compress) {
-			this.out = new FastBufferedOutputStream(
-					new GZIPOutputStream(new FastBufferedOutputStream(new FileOutputStream(outFile))));
+			this.out = new BufferedOutputStream(
+					new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(outFile))));
 		} else {
-			this.out = new FastBufferedOutputStream(new FileOutputStream(outFile), 4 * 1024 * 1024);
+			this.out = new BufferedOutputStream(new FileOutputStream(outFile), 4 * 1024 * 1024);
 		}
 		close = true;
 		init();
@@ -52,7 +51,7 @@ public class TripleWriterHDT implements TripleWriter {
 	public TripleWriterHDT(String baseUri, HDTOptions spec, OutputStream out) {
 		this.baseUri = baseUri;
 		this.spec = spec;
-		this.out = new FastBufferedOutputStream(out);
+		this.out = new BufferedOutputStream(out);
 		init();
 	}
 
