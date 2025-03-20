@@ -15,16 +15,19 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Antoine Willerval
  */
 public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
+
+	private static final int CORES = Runtime.getRuntime().availableProcessors();
+
 	public static final int BUFFER = 1024 * 4;
 	private final Iterator<E> iterator;
 	private boolean end;
-	volatile Queue<E>[] queue = new Queue[] { new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
-			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
-			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
-			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
-			new ArrayDeque(BUFFER), };
+	volatile Queue<E>[] queue = new Queue[CORES * 2];
 
-	AtomicInteger counter = new AtomicInteger(0);
+	{
+		for (int i = 0; i < queue.length; i++) {
+			queue[i] = new ArrayDeque<>(BUFFER);
+		}
+	}
 
 	public AsyncIteratorFetcherUnordered(Iterator<E> iterator) {
 		super(iterator);
@@ -47,7 +50,6 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						E poll = eQueue.poll();
 
 						if (poll != null) {
-							counter.incrementAndGet();
 							return poll;
 						}
 					}
@@ -64,7 +66,6 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 				E poll = es.poll();
 
 				if (poll != null) {
-					counter.incrementAndGet();
 					return poll;
 				}
 
@@ -76,13 +77,9 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						if (poll == null) {
 							if (iterator.hasNext()) {
 								poll = iterator.next();
-								ArrayList<E> objects = new ArrayList<>(BUFFER);
-
 								for (int i = 0; i < BUFFER && iterator.hasNext(); i++) {
-									objects.add(iterator.next());
+									es.add(iterator.next());
 								}
-
-								es.addAll(objects);
 							}
 
 						}
@@ -90,7 +87,6 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						if (poll == null) {
 							queue[index] = null;
 						} else {
-							counter.incrementAndGet();
 							return poll;
 						}
 					}
@@ -106,7 +102,6 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 						E poll = eQueue.poll();
 
 						if (poll != null) {
-							counter.incrementAndGet();
 							return poll;
 						}
 					}
@@ -117,12 +112,10 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 		synchronized (this) {
 			if (iterator.hasNext()) {
 				E poll = iterator.next();
-				counter.incrementAndGet();
 				return poll;
 			}
 		}
 
-		System.out.println("AsyncIteratorFetcherUnordered: " + counter.get());
 		end = true;
 		return null;
 

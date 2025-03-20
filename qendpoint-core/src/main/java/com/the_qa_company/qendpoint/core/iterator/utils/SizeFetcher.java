@@ -30,7 +30,7 @@ public class SizeFetcher<E> implements Supplier<E> {
 
 	private final long maxSize;
 
-	private volatile long size;
+	private long size;
 
 	public SizeFetcher(Supplier<E> supplier, ToLongFunction<E> sizeGetter, long maxSize) {
 		this.supplier = supplier;
@@ -50,9 +50,6 @@ public class SizeFetcher<E> implements Supplier<E> {
 		}
 
 		size += sizeGetter.applyAsLong(e);
-//		if (size % 100000 == 0) {
-//			System.out.println("Size: " + size);
-//		}
 
 		return e;
 	}

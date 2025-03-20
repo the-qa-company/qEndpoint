@@ -41,20 +41,16 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 //		}
 //	}
 
-	AtomicInteger counter = new AtomicInteger(0);
-
 	@Override
 	public E get() {
 		E poll = queue.poll();
 		if (poll != null) {
-			counter.incrementAndGet();
 			return poll;
 		}
 
 		synchronized (this) {
 			poll = queue.poll();
 			if (poll != null) {
-				counter.incrementAndGet();
 				return poll;
 			}
 
@@ -68,11 +64,8 @@ public class AsyncIteratorFetcher<E> implements Supplier<E> {
 			}
 			this.queue = newqueue;
 			if (poll != null) {
-				counter.incrementAndGet();
 				return poll;
 			}
-
-			System.out.println("AsyncIteratorFetcher: " + counter.get());
 
 			end = true;
 			return null;

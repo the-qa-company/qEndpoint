@@ -26,6 +26,7 @@ import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.iri.impl.LexerFixer;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.lang.LabelToNode;
@@ -48,7 +49,7 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer) {
 
-		if (lang != Lang.NQUADS || lang != Lang.NTRIPLES) {
+		if (lang != Lang.NQUADS && lang != Lang.NTRIPLES) {
 			if (keepBNode) {
 				RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
 						.parse(buffer);
@@ -59,6 +60,8 @@ public class RDFParserRIOT implements RDFParserCallback {
 		}
 
 		if (keepBNode) {
+			LexerFixer.fixLexers();
+
 			ConcurrentInputStream cs = new ConcurrentInputStream(stream, CORES - 1);
 
 			InputStream bnodes = cs.getBnodeStream();
@@ -126,16 +129,16 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-						RDFCallback callback) throws ParserException {
+			RDFCallback callback) throws ParserException {
 		try {
 			switch (notation) {
-				case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, new ElemStringBuffer(callback));
-				case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, new ElemStringBuffer(callback));
-				case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, new ElemStringBuffer(callback));
-				case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, new ElemStringBuffer(callback));
-				case TRIG -> parse(input, baseUri, Lang.TRIG, keepBNode, new ElemStringBuffer(callback));
-				case TRIX -> parse(input, baseUri, Lang.TRIX, keepBNode, new ElemStringBuffer(callback));
-				default -> throw new NotImplementedException("Parser not found for format " + notation);
+			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, new ElemStringBuffer(callback));
+			case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, new ElemStringBuffer(callback));
+			case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, new ElemStringBuffer(callback));
+			case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, new ElemStringBuffer(callback));
+			case TRIG -> parse(input, baseUri, Lang.TRIG, keepBNode, new ElemStringBuffer(callback));
+			case TRIX -> parse(input, baseUri, Lang.TRIX, keepBNode, new ElemStringBuffer(callback));
+			default -> throw new NotImplementedException("Parser not found for format " + notation);
 			}
 		} catch (Exception e) {
 			log.error("Unexpected exception.", e);

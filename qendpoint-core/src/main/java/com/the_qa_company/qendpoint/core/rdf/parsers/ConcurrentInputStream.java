@@ -60,6 +60,9 @@ public class ConcurrentInputStream {
 				String line;
 				int currentStreamIndex = 0;
 				while ((line = reader.readLine()) != null) {
+					if (line.isEmpty()) {
+						continue; // Skip empty lines
+					}
 
 					byte[] data = (line + "\n").getBytes(StandardCharsets.UTF_8);
 
