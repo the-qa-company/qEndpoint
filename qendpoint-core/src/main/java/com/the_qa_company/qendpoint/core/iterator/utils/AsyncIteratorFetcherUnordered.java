@@ -17,7 +17,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 	public static final int BUFFER = 1024 * 4;
 	private final Iterator<E> iterator;
-	private final Lock lock = new ReentrantLock();
 	private boolean end;
 	volatile Queue<E>[] queue = new Queue[] { new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
 			new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER), new ArrayDeque(BUFFER),
@@ -80,7 +79,7 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 								ArrayList<E> objects = new ArrayList<>(BUFFER);
 
 								for (int i = 0; i < BUFFER && iterator.hasNext(); i++) {
-									es.add(iterator.next());
+									objects.add(iterator.next());
 								}
 
 								es.addAll(objects);

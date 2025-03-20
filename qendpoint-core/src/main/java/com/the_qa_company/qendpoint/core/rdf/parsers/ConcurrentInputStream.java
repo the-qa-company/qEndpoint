@@ -59,19 +59,7 @@ public class ConcurrentInputStream {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(source, StandardCharsets.UTF_8))) {
 				String line;
 				int currentStreamIndex = 0;
-				long lineCount = 0;
-				long start = System.currentTimeMillis();
 				while ((line = reader.readLine()) != null) {
-//					lineCount++;
-//					if (lineCount == 1000000) {
-//						long end = System.currentTimeMillis();
-//						long duration = end - start;
-//						// print lines per second
-//						System.out.println(String.format("ConcurrentInputStream lines per second: %,d",
-//								((int) Math.floor(lineCount / (duration / 1000.0)))));
-//						start = end;
-//						lineCount = 0;
-//					}
 
 					byte[] data = (line + "\n").getBytes(StandardCharsets.UTF_8);
 
