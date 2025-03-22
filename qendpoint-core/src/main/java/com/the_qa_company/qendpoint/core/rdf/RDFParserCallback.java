@@ -56,6 +56,6 @@ public interface RDFParserCallback {
 		doParse(file.toAbsolutePath().toString(), baseUri, notation, keepBNode, callback);
 	}
 
-	void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
+	void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback, boolean parallel)
 			throws ParserException;
 }

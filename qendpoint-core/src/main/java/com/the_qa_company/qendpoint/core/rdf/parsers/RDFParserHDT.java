@@ -32,7 +32,7 @@ public class RDFParserHDT implements RDFParserCallback {
 	}
 
 	@Override
-	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
+	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback, boolean parallel)
 			throws ParserException {
 		try {
 			// create a temp

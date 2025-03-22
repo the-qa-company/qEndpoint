@@ -71,7 +71,7 @@ public class RDFParserList implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+						RDFCallback callback, boolean parallel) throws ParserException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 		try {
 			doParse(reader, baseUri, notation, keepBNode, callback);

@@ -87,7 +87,7 @@ public abstract class AbstractNTriplesParserTest {
 
 		final List<TripleString> triples = new ArrayList<>();
 		createParser().doParse(in, "http://example.com#", RDFNotation.NTRIPLES, false,
-				(triple, pos) -> triples.add(new TripleString(triple)));
+				(triple, pos) -> triples.add(new TripleString(triple)), false);
 
 		assertEquals(expectedCount, triples.size());
 		return triples;
