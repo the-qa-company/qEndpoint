@@ -121,7 +121,7 @@ public class RDFParserDir implements RDFParserCallback {
 	}
 
 	@Override
-	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
+	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback, boolean parallel)
 			throws ParserException {
 		throw new NotImplementedException("Can't parse a stream of directory!");
 	}

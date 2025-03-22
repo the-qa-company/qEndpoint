@@ -99,7 +99,7 @@ public class RDFParserFactory {
 			String baseUri, boolean keepBNode, RDFNotation notation) {
 		return PipedCopyIteratorUnordered
 				.createOfCallback((PipedCopyIteratorUnordered.PipeCallBack<TripleString>) pipe -> parser.doParse(stream,
-						baseUri, notation, keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString())));
+						baseUri, notation, keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString()), false));
 	}
 
 	/**
@@ -131,7 +131,7 @@ public class RDFParserFactory {
 			String baseUri, boolean keepBNode, RDFNotation notation, HDTOptions spec) {
 		return PipedCopyIteratorUnordered
 				.createOfCallback((PipedCopyIteratorUnordered.PipeCallBack<TripleString>) pipe -> parser.doParse(stream,
-						baseUri, notation, keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString())));
+						baseUri, notation, keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString()), true));
 	}
 
 	/**

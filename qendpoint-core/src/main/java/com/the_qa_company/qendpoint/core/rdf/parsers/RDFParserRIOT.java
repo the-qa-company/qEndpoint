@@ -47,9 +47,9 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	private static final int CORES = Runtime.getRuntime().availableProcessors();
 
-	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer) {
+	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer, boolean parallel) {
 
-		if (lang != Lang.NQUADS && lang != Lang.NTRIPLES) {
+		if (!parallel || (lang != Lang.NQUADS && lang != Lang.NTRIPLES)) {
 			if (keepBNode) {
 				RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
 						.parse(buffer);
@@ -118,7 +118,7 @@ public class RDFParserRIOT implements RDFParserCallback {
 	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {
 		try (InputStream input = IOUtil.getFileInputStream(fileName)) {
-			doParse(input, baseUri, notation, keepBNode, callback);
+			doParse(input, baseUri, notation, keepBNode, callback, false);
 		} catch (FileNotFoundException e) {
 			throw new ParserException(e);
 		} catch (Exception e) {
@@ -129,15 +129,15 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+						RDFCallback callback, boolean parallel) throws ParserException {
 		try {
 			switch (notation) {
-			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, new ElemStringBuffer(callback));
-			case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, new ElemStringBuffer(callback));
-			case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, new ElemStringBuffer(callback));
-			case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, new ElemStringBuffer(callback));
-			case TRIG -> parse(input, baseUri, Lang.TRIG, keepBNode, new ElemStringBuffer(callback));
-			case TRIX -> parse(input, baseUri, Lang.TRIX, keepBNode, new ElemStringBuffer(callback));
+			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, new ElemStringBuffer(callback), parallel);
+			case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, new ElemStringBuffer(callback), parallel);
+			case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, new ElemStringBuffer(callback), parallel);
+			case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, new ElemStringBuffer(callback), parallel);
+			case TRIG -> parse(input, baseUri, Lang.TRIG, keepBNode, new ElemStringBuffer(callback), parallel);
+			case TRIX -> parse(input, baseUri, Lang.TRIX, keepBNode, new ElemStringBuffer(callback), parallel);
 			default -> throw new NotImplementedException("Parser not found for format " + notation);
 			}
 		} catch (Exception e) {
