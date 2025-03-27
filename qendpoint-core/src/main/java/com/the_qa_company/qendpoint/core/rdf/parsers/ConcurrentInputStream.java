@@ -1,5 +1,8 @@
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 
 public class ConcurrentInputStream {
 
+	private static final Logger log = LoggerFactory.getLogger(ConcurrentInputStream.class);
 	private final InputStream source;
 	private final int numberOfStreams;
 
@@ -55,7 +59,30 @@ public class ConcurrentInputStream {
 	}
 
 	private void startReadingThread() {
-		readerThread = new Thread(() -> {
+		readerThread = new Thread(new ReaderThread());
+
+		readerThread.setName("ConcurrentInputStream reader");
+		readerThread.setDaemon(true);
+		readerThread.start();
+	}
+
+	/**
+	 * Returns the stream for blank-node lines only.
+	 */
+	public InputStream getBnodeStream() {
+		return bnodeInputStream;
+	}
+
+	/**
+	 * Returns the array of InputStreams that share all concurrently read data.
+	 */
+	public InputStream[] getStreams() {
+		return pipedInputStreams;
+	}
+
+	private class ReaderThread implements Runnable {
+		@Override
+		public void run() {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(source, StandardCharsets.UTF_8))) {
 				String line;
 				int currentStreamIndex = 0;
@@ -77,6 +104,7 @@ public class ConcurrentInputStream {
 					}
 				}
 			} catch (IOException e) {
+				log.error("Error reading input stream", e);
 				// If there's a read error, close everything.
 			} finally {
 				// Close all output streams to signal EOF
@@ -89,27 +117,10 @@ public class ConcurrentInputStream {
 
 				try {
 					bnodeOutputStream.close();
-				} catch (IOException ignored) {
+				} catch (IOException e) {
+					log.error("Error closing bnodeOutputStream", e);
 				}
 			}
-		});
-
-		readerThread.setName("ConcurrentInputStream reader");
-		readerThread.setDaemon(true);
-		readerThread.start();
-	}
-
-	/**
-	 * Returns the stream for blank-node lines only.
-	 */
-	public InputStream getBnodeStream() {
-		return bnodeInputStream;
-	}
-
-	/**
-	 * Returns the array of InputStreams that share all concurrently read data.
-	 */
-	public InputStream[] getStreams() {
-		return pipedInputStreams;
+		}
 	}
 }

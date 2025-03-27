@@ -422,7 +422,7 @@ public class TripleString {
 	 * @throws IOException when IOException occurs
 	 */
 	public CharSequence asNtriple() throws IOException {
-		StringBuilder str = new StringBuilder();
+		StringBuilder str = new StringBuilder(subject.length() + predicate.length() + object.length() + 10);
 		this.dumpNtriple(str);
 		return str;
 	}
