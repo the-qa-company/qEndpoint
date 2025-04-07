@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
@@ -55,11 +54,10 @@ public class FourSectionDictionaryBig extends BaseDictionary {
 
 	public FourSectionDictionaryBig(HDTOptions spec) {
 		super(spec);
-		// FIXME: Read type from spec.
-		subjects = new PFCDictionarySectionBig(spec);
-		predicates = new PFCDictionarySectionBig(spec);
-		objects = new PFCDictionarySectionBig(spec);
-		shared = new PFCDictionarySectionBig(spec);
+		subjects = DictionarySectionFactory.createDictionarySection(spec);
+		predicates = DictionarySectionFactory.createDictionarySection(spec);
+		objects = DictionarySectionFactory.createDictionarySection(spec);
+		shared = DictionarySectionFactory.createDictionarySection(spec);
 	}
 
 	/*

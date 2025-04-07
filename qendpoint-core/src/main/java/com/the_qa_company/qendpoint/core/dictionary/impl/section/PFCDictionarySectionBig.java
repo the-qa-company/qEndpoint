@@ -68,7 +68,7 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 	public static final int DEFAULT_BLOCK_SIZE = 16;
 	public static final int BLOCK_PER_BUFFER = 1000000;
 
-	BigByteBuffer[] data = new BigByteBuffer[0];
+	private BigByteBuffer[] data = new BigByteBuffer[0];
 	long[] posFirst = new long[0];
 	protected SequenceLog64Big blocks = new SequenceLog64Big();
 	protected int blocksize;
@@ -199,6 +199,7 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 					block += BLOCK_PER_BUFFER;
 					buffer++;
 				}
+				if (data.length != buffer) throw new IOException("invalid end buffer " + data.length + " != " + buffer);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Can't load dictionary.", e);
@@ -474,7 +475,14 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 		int buffer = 0;
 		long bytePos = 0;
 		long numBlocks = blocks.getNumberOfElements();
-		long numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
+		long numBuffers;
+		if (numBlocks > 0 && numstrings > 0) {
+			// non empty section
+			numBuffers = 1 + numBlocks / BLOCK_PER_BUFFER;
+		} else {
+			// else empty section then it's zero
+			numBuffers = 0;
+		}
 		data = new BigByteBuffer[(int) numBuffers];
 		posFirst = new long[(int) numBuffers];
 
@@ -482,8 +490,6 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 			long nextBlock = Math.min(numBlocks - 1, block + BLOCK_PER_BUFFER);
 			long nextBytePos = blocks.get(nextBlock);
 
-			// System.out.println("Loading block: "+i+" from "+previous+" to "+
-			// current+" of size "+ (current-previous));
 			BigByteBuffer bigByteBuffer = BigByteBuffer.allocate(nextBytePos - bytePos);
 			bigByteBuffer.readStream(in, 0, bigByteBuffer.size(), listener);
 			data[buffer] = bigByteBuffer;
@@ -493,6 +499,9 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 			bytePos = nextBytePos;
 			block += BLOCK_PER_BUFFER;
 			buffer++;
+		}
+		if (data.length != buffer) {
+			throw new IOException("invalid end buffer " + data.length + " != " + buffer + " for " + blocks.getNumberOfElements() + " blocks");
 		}
 
 		if (!in.readCRCAndCheck()) {

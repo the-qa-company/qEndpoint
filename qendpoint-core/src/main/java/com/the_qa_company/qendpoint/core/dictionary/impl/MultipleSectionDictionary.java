@@ -75,7 +75,7 @@ public class MultipleSectionDictionary extends MultipleBaseDictionary {
 				(key, value) -> (value - other.getShared().getNumberOfElements()));
 		CustomIterator customIterator = new CustomIterator(iter, literalsCounts, false);
 		while (customIterator.hasNext()) {
-			PFCDictionarySection section = new PFCDictionarySection(spec);
+			DictionarySectionPrivate section = DictionarySectionFactory.createDictionarySection(spec);
 			ByteString type = ByteString.of(LiteralsUtils.getType(customIterator.prev));
 			long numEntries = literalsCounts.get(type);
 

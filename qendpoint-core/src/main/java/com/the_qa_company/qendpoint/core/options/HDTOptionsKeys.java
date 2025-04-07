@@ -389,6 +389,21 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = DICTIONARY_TYPE_KEY, desc = "Multi section dictionary language prefixes")
 	public static final String DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES = "dictionaryMultiObjLangPrefixes";
+	/**
+	 * Implementation of the dictionary
+	 */
+	@Key(type = Key.Type.ENUM, desc = "HDT dictionary section type")
+	public static final String DICTIONARY_SECTION_TYPE_KEY = "dictionary.section.type";
+	/**
+	 * prefix front coded section
+	 */
+	@Value(key = DICTIONARY_SECTION_TYPE_KEY, desc = "Default section")
+	public static final String DICTIONARY_SECTION_TYPE_VALUE_PFC = "dictionarySectionPFC";
+	/**
+	 * stream section
+	 */
+	@Value(key = DICTIONARY_SECTION_TYPE_KEY, desc = "Stream section")
+	public static final String DICTIONARY_SECTION_TYPE_VALUE_STREAM = "dictionarySectionSream";
 
 	/**
 	 * Ignore MSDL RDFTYPE INDEX

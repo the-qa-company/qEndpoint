@@ -9,7 +9,7 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.dictionary.impl.UnmodifiableDictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
@@ -95,7 +95,7 @@ public class MSDToMSDLConverter implements Converter {
 				Map<? extends CharSequence, DictionarySection> allObjects = origin.getDictionary().getAllObjects();
 
 				DictionarySection ndt = allObjects.getOrDefault(LiteralsUtils.NO_DATATYPE,
-						new PFCDictionarySection(options));
+						DictionarySectionFactory.createDictionarySection(options));
 				DictionarySection lg = allObjects.get(LiteralsUtils.LITERAL_LANG_TYPE);
 				TreeMap<ByteString, DictionarySectionPrivate> typed = new TreeMap<>();
 

@@ -4,8 +4,6 @@ import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
@@ -53,16 +51,15 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 
 	public MultipleSectionDictionaryLangPrefixes(HDTOptions spec, boolean quad) {
 		super(spec);
-		// FIXME: Read type from spec.
-		subjects = new PFCDictionarySectionBig(spec);
-		predicates = new PFCDictionarySectionBig(spec);
+		subjects = DictionarySectionFactory.createDictionarySection(spec);
+		predicates = DictionarySectionFactory.createDictionarySection(spec);
 		Comparator<CharSequence> cmp = CharSequenceComparator.getInstance();
 		typed = new TreeMap<>(cmp);
 		languages = new TreeMap<>(cmp);
-		nonTyped = new PFCDictionarySectionBig(spec);
-		shared = new PFCDictionarySectionBig(spec);
+		nonTyped = DictionarySectionFactory.createDictionarySection(spec);
+		shared = DictionarySectionFactory.createDictionarySection(spec);
 		if (quad) {
-			graph = new PFCDictionarySectionBig(spec);
+			graph = DictionarySectionFactory.createDictionarySection(spec);
 		}
 		prefixesStorage.loadConfig(this.spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}
@@ -84,7 +81,7 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		this.predicates = predicates;
 		this.typed = typed;
 		this.languages = languages;
-		this.nonTyped = Objects.requireNonNullElseGet(nonTyped, () -> new PFCDictionarySection(spec));
+		this.nonTyped = Objects.requireNonNullElseGet(nonTyped, () -> DictionarySectionFactory.createDictionarySection(spec));
 		this.shared = shared;
 		this.graph = graph;
 		syncLocations();
@@ -163,7 +160,7 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 				count = literalsCounts.get(LiteralsUtils.LANG_OPERATOR.copyAppend(language));
 				Iterator<? extends CharSequence> stopIt = StopIterator.count(it, count).map(LiteralsUtils::removeLang);
 
-				PFCDictionarySectionBig section = new PFCDictionarySectionBig(spec);
+				DictionarySectionPrivate section = DictionarySectionFactory.createDictionarySection(spec);
 				section.load(stopIt, count, listener);
 				DictionarySectionPrivate old = languages.put(language, section);
 				assert old == null : "section already def for " + first;
@@ -173,7 +170,7 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 				count = literalsCounts.get(bsType);
 				Iterator<? extends CharSequence> stopIt = StopIterator.count(it, count).map(LiteralsUtils::removeType);
 
-				PFCDictionarySectionBig section = new PFCDictionarySectionBig(spec);
+				DictionarySectionPrivate section = DictionarySectionFactory.createDictionarySection(spec);
 				section.load(stopIt, count, listener);
 				DictionarySectionPrivate old = typed.put(bsType, section);
 				assert old == null : "section already def for " + first;
@@ -216,7 +213,7 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 							pred.reset();
 							continue;
 						}
-						PFCDictionarySectionBig section = new PFCDictionarySectionBig(spec);
+						DictionarySectionPrivate section = DictionarySectionFactory.createDictionarySection(spec);
 						section.load(it.map(LiteralsUtils::removeTypeAndLang), 1, listener);
 						pred.reset();
 

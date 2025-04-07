@@ -2,10 +2,9 @@ package com.the_qa_company.qendpoint.core.dictionary.impl;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
@@ -42,10 +41,10 @@ public class MultipleSectionDictionaryBig extends MultipleBaseDictionary {
 	public MultipleSectionDictionaryBig(HDTOptions spec) {
 		super(spec);
 		// FIXME: Read type from spec.
-		subjects = new PFCDictionarySectionBig(spec);
-		predicates = new PFCDictionarySectionBig(spec);
+		subjects = DictionarySectionFactory.createDictionarySection(spec);
+		predicates = DictionarySectionFactory.createDictionarySection(spec);
 		objects = new TreeMap<>(CharSequenceComparator.getInstance());
-		shared = new PFCDictionarySectionBig(spec);
+		shared = DictionarySectionFactory.createDictionarySection(spec);
 	}
 
 	/*
@@ -65,7 +64,7 @@ public class MultipleSectionDictionaryBig extends MultipleBaseDictionary {
 		CustomIterator customIterator = new CustomIterator(iter, literalsCounts, false);
 
 		while (customIterator.hasNext()) {
-			PFCDictionarySectionBig section = new PFCDictionarySectionBig(spec);
+			DictionarySectionPrivate section = DictionarySectionFactory.createDictionarySection(spec);
 			ByteString type = (ByteString) LiteralsUtils.getType(customIterator.prev);
 			long numEntries = literalsCounts.get(type);
 
@@ -88,7 +87,7 @@ public class MultipleSectionDictionaryBig extends MultipleBaseDictionary {
 									b -> LiteralsUtils.prefToLit(ByteString.of(b))), pred));
 
 					while (it.hasNext()) {
-						PFCDictionarySection section = new PFCDictionarySection(spec);
+						DictionarySectionPrivate section = DictionarySectionFactory.createDictionarySection(spec);
 						ByteString type = (ByteString) (LiteralsUtils.getType(it.peek()));
 						long count;
 						if (LiteralsUtils.isNoDatatype(type)) {

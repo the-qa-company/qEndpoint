@@ -27,8 +27,6 @@ import java.io.OutputStream;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionBig;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.header.Header;
@@ -52,7 +50,7 @@ public class FourQuadSectionDictionary extends FourSectionDictionaryBig {
 
 	public FourQuadSectionDictionary(HDTOptions spec) {
 		super(spec);
-		graphs = new PFCDictionarySectionBig(spec);
+		graphs = DictionarySectionFactory.createDictionarySection(spec);
 	}
 
 	/*
