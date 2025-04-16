@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
+import com.the_qa_company.qendpoint.core.util.HashUtil;
+
 /**
  * ByteString char sequence, can't be compared with string, faster than string
  * with IO
@@ -193,5 +195,17 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 			}
 		}
 		return true;
+	}
+
+	default long hash64() {
+		return HashUtil.hashFNV64(this);
+	}
+
+	default long hash39() {
+		return HashUtil.hashFNV39(this);
+	}
+
+	default long hash32() {
+		return HashUtil.hashFNV32(this);
 	}
 }

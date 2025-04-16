@@ -11,8 +11,10 @@ import com.the_qa_company.qendpoint.core.util.ContainerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -44,23 +46,38 @@ public class RDFParserDir implements RDFParserCallback {
 
 	}
 
-	@Override
-	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
-		doParse(Path.of(fileName), baseUri, notation, keepBNode, callback);
+	@SuppressWarnings("resource")
+	public Stream<Path> getFiles(Path path, RDFNotation notation) throws IOException {
+		switch (notation) {
+		case DIR -> {
+			return Files.walk(path);
+		}
+		case FILE_LIST -> {
+			return Files.lines(path).flatMap(line -> {
+				if (line.isBlank() || line.charAt(0) == '#') {
+					return null;
+				}
+
+				return Stream.of(Path.of(line));
+			});
+		}
+		default -> throw new IllegalArgumentException("Can't use dir parser with " + notation);
+		}
 	}
 
 	@Override
-	public void doParse(Path path, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
+	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {
-		if (notation != RDFNotation.DIR) {
-			throw new IllegalArgumentException("Can't parse notation different than " + RDFNotation.DIR + "!");
+		Path path = Path.of(fileName);
+		if (notation != RDFNotation.DIR && notation != RDFNotation.FILE_LIST) {
+			throw new IllegalArgumentException(
+					"Can't parse notation different than " + RDFNotation.DIR + " or " + RDFNotation.FILE_LIST + "!");
 		}
 
 		try {
 			if (async == 1) {
 				// no async parser, faster to use recursion
-				try (Stream<Path> subFiles = Files.list(path)) {
+				try (Stream<Path> subFiles = getFiles(path, notation)) {
 					subFiles.forEach(child -> {
 						try {
 							if (Files.isDirectory(child)) {
@@ -189,8 +206,8 @@ public class RDFParserDir implements RDFParserCallback {
 		@Override
 		public FutureList call() throws ParserException {
 			FutureList list = new FutureList();
-			if (notation == RDFNotation.DIR) {
-				try (Stream<Path> subFiles = Files.list(path)) {
+			if (notation == RDFNotation.DIR || notation == RDFNotation.FILE_LIST) {
+				try (Stream<Path> subFiles = getFiles(path, notation)) {
 					subFiles.forEach(child -> {
 						if (Files.isDirectory(child)) {
 							list.add(executorService.submit(new LoadTask(executorService, child, baseUri,

@@ -81,7 +81,8 @@ public class MultipleSectionDictionaryLangPrefixes extends MultipleLangBaseDicti
 		this.predicates = predicates;
 		this.typed = typed;
 		this.languages = languages;
-		this.nonTyped = Objects.requireNonNullElseGet(nonTyped, () -> DictionarySectionFactory.createDictionarySection(spec));
+		this.nonTyped = Objects.requireNonNullElseGet(nonTyped,
+				() -> DictionarySectionFactory.createDictionarySection(spec));
 		this.shared = shared;
 		this.graph = graph;
 		syncLocations();

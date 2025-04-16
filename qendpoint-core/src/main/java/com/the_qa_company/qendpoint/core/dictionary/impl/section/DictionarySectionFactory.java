@@ -50,7 +50,6 @@ public class DictionarySectionFactory {
 		};
 	}
 
-
 	public static DictionarySectionPrivate createDictionarySection(HDTOptions spec) {
 		return createDictionarySection(spec, "");
 	}
@@ -59,9 +58,9 @@ public class DictionarySectionFactory {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_SECTION_TYPE_KEY, defaultValue);
 
 		return switch (name) {
-			case "", HDTOptionsKeys.DICTIONARY_SECTION_TYPE_VALUE_PFC -> new PFCDictionarySectionBig(spec);
-			case HDTOptionsKeys.DICTIONARY_SECTION_TYPE_VALUE_STREAM -> new StreamDictionarySection(spec);
-			default -> throw new IllegalFormatException("Implementation of dictionary section not found for " + name);
+		case "", HDTOptionsKeys.DICTIONARY_SECTION_TYPE_VALUE_PFC -> new PFCDictionarySectionBig(spec);
+		case HDTOptionsKeys.DICTIONARY_SECTION_TYPE_VALUE_STREAM -> new StreamDictionarySection(spec);
+		default -> throw new IllegalFormatException("Implementation of dictionary section not found for " + name);
 		};
 	}
 
@@ -102,9 +101,9 @@ public class DictionarySectionFactory {
 		// instance.
 
 		return switch (dictType) {
-			case PFCDictionarySection.TYPE_INDEX -> new PFCDictionarySectionMap(input, f);
-			case StreamDictionarySection.TYPE_INDEX -> new StreamDictionarySectionMap(input, f);
-			default -> throw new IOException("DictionarySection implementation not available for id " + dictType);
+		case PFCDictionarySection.TYPE_INDEX -> new PFCDictionarySectionMap(input, f);
+		case StreamDictionarySection.TYPE_INDEX -> new StreamDictionarySectionMap(input, f);
+		default -> throw new IOException("DictionarySection implementation not available for id " + dictType);
 		};
 	}
 }

@@ -199,7 +199,8 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 					block += BLOCK_PER_BUFFER;
 					buffer++;
 				}
-				if (data.length != buffer) throw new IOException("invalid end buffer " + data.length + " != " + buffer);
+				if (data.length != buffer)
+					throw new IOException("invalid end buffer " + data.length + " != " + buffer);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Can't load dictionary.", e);
@@ -501,7 +502,8 @@ public class PFCDictionarySectionBig implements DictionarySectionPrivate {
 			buffer++;
 		}
 		if (data.length != buffer) {
-			throw new IOException("invalid end buffer " + data.length + " != " + buffer + " for " + blocks.getNumberOfElements() + " blocks");
+			throw new IOException("invalid end buffer " + data.length + " != " + buffer + " for "
+					+ blocks.getNumberOfElements() + " blocks");
 		}
 
 		if (!in.readCRCAndCheck()) {

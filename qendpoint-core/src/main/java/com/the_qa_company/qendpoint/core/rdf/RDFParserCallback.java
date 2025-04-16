@@ -19,7 +19,10 @@
 
 package com.the_qa_company.qendpoint.core.rdf;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -48,8 +51,14 @@ public interface RDFParserCallback {
 		}
 	}
 
-	void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException;
+	default void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
+			throws ParserException {
+		try (InputStream is = new BufferedInputStream(Files.newInputStream(Path.of(fileName)))) {
+			doParse(is, baseUri, notation, keepBNode, callback);
+		} catch (IOException e) {
+			throw new ParserException(e);
+		}
+	}
 
 	default void doParse(Path file, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {

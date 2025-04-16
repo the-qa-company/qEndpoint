@@ -63,6 +63,7 @@ public class RDFParserFactory {
 		case TRIX:
 			return new RDFParserRIOT();
 		case DIR:
+		case FILE_LIST:
 			return new RDFParserDir(spec);
 		case LIST:
 			return new RDFParserList(spec);

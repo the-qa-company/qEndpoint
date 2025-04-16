@@ -100,6 +100,11 @@ public enum RDFNotation {
 	LIST,
 
 	/**
+	 * File containing a list of URIs with RDF content in other RDF Formats
+	 */
+	FILE_LIST,
+
+	/**
 	 * Directory with RDF content
 	 */
 	DIR,
@@ -143,6 +148,9 @@ public enum RDFNotation {
 		}
 		case "list" -> {
 			return LIST;
+		}
+		case "filelist", "flist" -> {
+			return FILE_LIST;
 		}
 		case "hdt" -> {
 			return HDT;
@@ -197,6 +205,8 @@ public enum RDFNotation {
 			return ZIP;
 		} else if (str.endsWith("list")) {
 			return LIST;
+		} else if (str.endsWith("fl")) {
+			return FILE_LIST;
 		} else if (str.endsWith("hdt")) {
 			return HDT;
 		} else if (str.endsWith("trig")) {

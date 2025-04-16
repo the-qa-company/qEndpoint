@@ -27,7 +27,6 @@ public class PFCDictionarySectionBigTest {
 	public void loadSaveEmptyTest() throws IOException {
 		Path root = tempDir.newFolder().toPath();
 
-
 		try {
 			Path secPath = root.resolve("dicsec.bin");
 			try (PFCDictionarySectionBig sec = new PFCDictionarySectionBig(HDTOptions.empty())) {
@@ -35,9 +34,7 @@ public class PFCDictionarySectionBigTest {
 				sec.save(secPath);
 			}
 
-
-			try (
-					PFCDictionarySectionBig sec = new PFCDictionarySectionBig(HDTOptions.empty());
+			try (PFCDictionarySectionBig sec = new PFCDictionarySectionBig(HDTOptions.empty());
 					InputStream is = new BufferedInputStream(Files.newInputStream(secPath))) {
 				sec.load(is, ProgressListener.ignore());
 				sec.save(secPath);
@@ -54,10 +51,7 @@ public class PFCDictionarySectionBigTest {
 	public void loadSave1ElTest() throws IOException {
 		Path root = tempDir.newFolder().toPath();
 
-		Set<String> set = Set.of(
-				"aaaa",
-				"bbbb",
-				"cccc"
+		Set<String> set = Set.of("aaaa", "bbbb", "cccc"
 
 		);
 
@@ -68,9 +62,7 @@ public class PFCDictionarySectionBigTest {
 				sec.save(secPath);
 			}
 
-
-			try (
-					PFCDictionarySectionBig sec = new PFCDictionarySectionBig(HDTOptions.empty());
+			try (PFCDictionarySectionBig sec = new PFCDictionarySectionBig(HDTOptions.empty());
 					InputStream is = new BufferedInputStream(Files.newInputStream(secPath))) {
 				sec.load(is, ProgressListener.ignore());
 				sec.save(secPath);
