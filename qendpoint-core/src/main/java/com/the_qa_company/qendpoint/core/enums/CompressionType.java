@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.enums;
 
+import com.github.luben.zstd.ZstdInputStream;
+import com.github.luben.zstd.ZstdOutputStream;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionFunction;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
@@ -12,7 +14,6 @@ import org.apache.commons.compress.compressors.lzma.LZMACompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,6 +53,10 @@ public enum CompressionType {
 	 * lzma compression
 	 */
 	LZMA(LZMACompressorInputStream::new, LZMACompressorOutputStream::new),
+	/**
+	 * zstd compression
+	 */
+	ZSTD(ZstdInputStream::new, ZstdOutputStream::new, "zstd"),
 	/**
 	 * no compression
 	 */

@@ -1309,6 +1309,23 @@ public class HDTManagerTest {
 				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
 			}
 
+			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.ZSTD.name());
+			List<Long> zstdBlockVals = new ArrayList<>();
+			// zstd block
+			for (int i = 0; i < 10; i++) {
+				sw.reset();
+				try (HDT hdt = HDTManager.generateHDT(ds, LargeFakeDataSetStreamSupplier.BASE_URI, RDFNotation.NTRIPLES,
+						spec, ProgressListener.ignore())) {
+					hdt.saveToHDT(endPath);
+				}
+				System.out.println("#" + i + " zstd compression in " + sw.stopAndShow());
+				zstdBlockVals.add(sw.getMeasure());
+			}
+			{
+				Stats stats = Stats.of(zstdBlockVals);
+				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+
 		}
 
 		@Test

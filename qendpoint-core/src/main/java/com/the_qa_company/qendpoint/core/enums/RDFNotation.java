@@ -182,7 +182,7 @@ public enum RDFNotation {
 		int idx = str.lastIndexOf('.');
 		if (idx != -1) {
 			String ext = str.substring(idx + 1);
-			if (ext.equals("gz") || ext.equals("bz") || ext.equals("bz2") || ext.equals("xz")) {
+			if (ext.equals("gz") || ext.equals("bz") || ext.equals("bz2") || ext.equals("xz") || ext.equals("zstd")) {
 				str = str.substring(0, idx);
 			}
 		}

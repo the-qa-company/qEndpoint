@@ -125,7 +125,7 @@ public class HDTManagerImpl extends HDTManager {
 		return HDTResult.of(hdt);
 	}
 
-	private RDFFluxStop readFluxStopOrSizeLimit(HDTOptions spec) {
+	public static RDFFluxStop readFluxStopOrSizeLimit(HDTOptions spec) {
 		// if no config, use default implementation
 		return spec.getFluxStop(HDTOptionsKeys.RDF_FLUX_STOP_KEY, () -> {
 			// get the chunk size to base the work
@@ -446,7 +446,7 @@ public class HDTManagerImpl extends HDTManager {
 		return (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * 0.85);
 	}
 
-	private static long findBestMemoryChunkDiskMapTreeCat() {
+	public static long findBestMemoryChunkDiskMapTreeCat() {
 		Runtime runtime = Runtime.getRuntime();
 		long maxRam = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * 0.85) / 3;
 

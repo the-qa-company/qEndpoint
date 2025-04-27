@@ -17,6 +17,7 @@
  */
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.github.luben.zstd.ZstdInputStream;
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap64Big;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
@@ -409,6 +410,8 @@ public class IOUtil {
 				input = new BZip2CompressorInputStream(input, true);
 			} else if (name.endsWith("xz")) {
 				input = new XZCompressorInputStream(input, true);
+			} else if (name.endsWith("zstd")) {
+				input = new ZstdInputStream(input);
 			}
 		}
 		return input;

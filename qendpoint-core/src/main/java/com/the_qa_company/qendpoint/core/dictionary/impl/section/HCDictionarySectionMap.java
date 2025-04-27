@@ -120,7 +120,6 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 		}
 	}
 
-
 	@Override
 	public void load(TempDictionarySection other, ProgressListener listener) {
 		load(other.getEntries(), other.getNumberOfElements(), listener);
@@ -145,7 +144,6 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 	public long locate(CharSequence s) {
 		ByteString bs = ByteString.of(s);
 		long hash = bs.hash39();
-
 
 		return 0;
 	}

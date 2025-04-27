@@ -25,7 +25,11 @@ import com.the_qa_company.qendpoint.core.quad.QuadString;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
+import org.apache.jena.riot.RDFParserBuilder;
+import org.apache.jena.riot.RiotException;
 import org.apache.jena.riot.lang.LabelToNode;
+import org.apache.jena.riot.system.ErrorHandler;
+import org.apache.jena.riot.system.ErrorHandlerFactory;
 import org.apache.jena.riot.system.StreamRDF;
 import org.apache.jena.sparql.core.Quad;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -37,6 +41,8 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.String.format;
+
 /**
  * @author mario.arias
  */
@@ -44,12 +50,27 @@ public class RDFParserRIOT implements RDFParserCallback {
 	private static final Logger log = LoggerFactory.getLogger(RDFParserRIOT.class);
 
 	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer) {
+		RDFParserBuilder bld = RDFParser.source(stream).base(baseUri).lang(lang).strict(false)
+				.errorHandler(new ErrorHandler() {
+					@Override
+					public void warning(String s, long l, long l1) {
+						log.warn("{} [{}:{}]", s, l, l1);
+					}
+
+					@Override
+					public void error(String s, long l, long l1) {
+						log.error("{} [{}:{}]", s, l, l1);
+					}
+
+					@Override
+					public void fatal(String s, long l, long l1) {
+						throw new RiotException(format("%s [%d:%d]", s, l, l1));
+					}
+				});
 		if (keepBNode) {
-			RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
-					.parse(buffer);
-		} else {
-			RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
+			bld = bld.labelToNode(LabelToNode.createUseLabelAsGiven());
 		}
+		bld.parse(buffer);
 	}
 
 	/*
