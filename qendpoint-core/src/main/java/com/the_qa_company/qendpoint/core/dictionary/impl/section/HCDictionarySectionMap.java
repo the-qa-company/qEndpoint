@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
+import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdInputStream;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.compact.sequence.Sequence;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceFactory;
@@ -8,13 +10,19 @@ import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.iterator.utils.FetcherIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
+import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBufferInputStream;
+import com.the_qa_company.qendpoint.core.util.io.ByteBufferInputStream;
+import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CompactString;
+import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +57,6 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 	protected long numstrings;
 	protected long dataSize;
 
-	@SuppressWarnings("resource")
 	public HCDictionarySectionMap(CountInputStream input, File f) throws IOException {
 		this.f = f;
 		startOffset = input.getTotalBytes();
@@ -132,6 +139,7 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 
 	@Override
 	public void save(OutputStream output, ProgressListener listener) throws IOException {
+		throw new NotImplementedException("save");
 
 	}
 
@@ -149,13 +157,44 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 	}
 
 	@Override
-	public CharSequence extract(long pos) {
-		return null;
+	public CharSequence extract(long id) {
+		if (buffers == null || blocks == null) {
+			return null;
+		}
+
+		if (id < 1 || id > numstrings) {
+			return null;
+		}
+
+		long block = (id - 1) / blocksize;
+		BigMappedByteBuffer buffer = buffers[(int) (block / BLOCKS_PER_BYTEBUFFER)].duplicate();
+		buffer.position(blocks.get(block) - posFirst[(int) (block / BLOCKS_PER_BYTEBUFFER)]);
+
+		try {
+			int blockLen = (int)VByte.decode(buffer);
+			ZstdInputStream is = new ZstdInputStream(new BigMappedByteBufferInputStream(buffer, buffer.position(), blockLen));
+
+			long stringid = (id - 1) % blocksize;
+			// skip the previous strings
+			for (long i = 1; i < stringid; i++) {
+				long len = VByte.decode(is);
+				is.skipNBytes(len);
+			}
+			// read str
+			int len = (int) VByte.decode(is);
+			byte[] strbuff = new byte[len];
+			if (is.readNBytes(strbuff, 0, len) != len) {
+				throw new IOException("Can't decode string");
+			}
+			return new CompactString(strbuff).getDelayed();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public long size() {
-		return 0;
+		return dataSize + blocks.size() + hashes.size();
 	}
 
 	@Override
@@ -165,11 +204,37 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 
 	@Override
 	public Iterator<? extends CharSequence> getSortedEntries() {
-		return null;
+		return new FetcherIterator<CharSequence>() {
+			private ReplazableString tempString = new ReplazableString();
+			private ZstdInputStream zstdstream;
+			private long offset;
+			private long strid;
+
+			@Override
+			protected CharSequence getNext() {
+				if (strid >= numstrings) return null;
+				if (strid % blocksize == 0) {
+					// need to load the stream
+
+
+					
+				}
+				strid++;
+				return null;
+			}
+		};
 	}
 
 	@Override
 	public void close() throws IOException {
-
+		if (buffers != null) {
+			for (BigMappedByteBuffer buffer : buffers) {
+				if (buffer != null) {
+					buffer.clean();
+				}
+			}
+			buffers = null;
+		}
+		Closer.closeAll(hashes, blocks);
 	}
 }
