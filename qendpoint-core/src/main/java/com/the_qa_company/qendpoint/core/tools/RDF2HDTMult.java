@@ -74,7 +74,7 @@ public class RDF2HDTMult implements ProgressListener {
 				baseURI = path.toUri().toString();
 				colorTool.warn("base uri not specified, using '" + baseURI + "'");
 			}
-			Path outfile = outDir.resolve(path.getFileName() + ".hdt");
+			Path outfile = outDir.resolve(path.getFileName());
 			return gen.genFile(path, outfile, baseURI, spec);
 		}).toList();
 

@@ -1,7 +1,6 @@
 package com.the_qa_company.qendpoint.core.hdt.impl.diskimport;
 
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDTManagerImpl;
 import com.the_qa_company.qendpoint.core.hdt.HDTSupplier;
 import com.the_qa_company.qendpoint.core.iterator.utils.FluxStopTripleStringIterator;
@@ -64,9 +63,6 @@ public class ChunkGenImpl {
 					PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, is, baseURI,
 							true, notation, spec)) {
 				HDTOptions specTmp = spec.pushTop();
-
-				Profiler prof = new Profiler("gen " + in.getFileName());
-				specTmp.set(HDTOptionsKeys.PROFILER_KEY, prof);
 				Path workdir = Path.of("workdir").resolve(in.getFileName());
 
 				specTmp.set(HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, workdir.resolve("future.hdt"));
@@ -75,12 +71,28 @@ public class ChunkGenImpl {
 				specTmp.set(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, workdir.resolve("gendisk"));
 				specTmp.set(HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, workdir.resolve("cattree"));
 
+
 				FluxStopTripleStringIterator it = FluxStopTripleStringIteratorImpl.newInstance(iterator, stop,
 						supportCount, true);
-				IntermediateListener il = new IntermediateListener(listener, "file#" + out.getFileName() + " - ");
-				supplier.doGenerateHDT(it, baseURI, specTmp, il, out);
+				int id = 0;
+				while (it.hasNextFlux()) {
+					Path outIt = out.resolveSibling(out.getFileName() + "." + id + ".hdt");
+					try (Profiler prof = new Profiler("gen " + in.getFileName())) {
+						prof.setDisabled(false);
+						prof.pushSection("generation");
+						specTmp.set(HDTOptionsKeys.PROFILER_KEY, prof);
+						IntermediateListener il = new IntermediateListener(listener, "file#" + outIt.getFileName() + " - ");
 
-				prof.writeToDisk(out.resolveSibling(out.getFileName() + ".prof"));
+						// force the garbage collection
+						System.gc();
+
+						supplier.doGenerateHDT(it, baseURI, specTmp, il, outIt);
+						prof.popSection();
+
+						prof.writeToDisk(outIt.resolveSibling(outIt.getFileName() + ".prof"));
+					}
+					id++;
+				}
 				return out;
 			} catch (Throwable t) {
 				exception.accumulateAndGet(t, (or, t2) -> {
