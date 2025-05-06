@@ -16,6 +16,7 @@ import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.ICompressNodeReader;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
@@ -53,6 +54,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final boolean debugSleepKwayDict;
 	private final boolean quads;
 	private final CompressionType compressionType;
+	private final boolean useRaw;
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
@@ -66,6 +68,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		this.debugSleepKwayDict = debugSleepKwayDict;
 		this.quads = quads;
 		this.compressionType = compressionType;
+		useRaw = compressionType != CompressionType.NONE;
 	}
 
 	/*
@@ -139,7 +142,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			return new CompressionResultEmpty();
 		}
 		return new CompressionResultFile(triples.get(), ntRawSize.get(), new TripleFile(sections.get(), false),
-				supportsGraph());
+				supportsGraph(), useRaw);
 	}
 
 	/**
@@ -173,7 +176,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				}
 			}
 		}
-		return new CompressionResultPartial(files, triples.get(), ntRawSize.get(), supportsGraph());
+		return new CompressionResultPartial(files, triples.get(), ntRawSize.get(), supportsGraph(), useRaw);
 	}
 
 	/**
@@ -275,7 +278,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWSubject()) {
 					subjects.parallelSort(IndexedNode::compareTo);
-					CompressUtil.writeCompressedSection(subjects, stream, il);
+					CompressUtil.writeCompressedSection(subjects, stream, il, useRaw);
 				}
 				il.setRange(range, range + split);
 				range += split;
@@ -283,7 +286,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWPredicate()) {
 					predicates.parallelSort(IndexedNode::compareTo);
-					CompressUtil.writeCompressedSection(predicates, stream, il);
+					CompressUtil.writeCompressedSection(predicates, stream, il, useRaw);
 				}
 				il.setRange(range, range + split);
 				range += split;
@@ -291,7 +294,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				il.notifyProgress(0, "sorting");
 				try (OutputStream stream = sections.openWObject()) {
 					objects.parallelSort(IndexedNode::compareTo);
-					CompressUtil.writeCompressedSection(objects, stream, il);
+					CompressUtil.writeCompressedSection(objects, stream, il, useRaw);
 				}
 				if (graph != null) {
 					il.setRange(range, range + split);
@@ -299,7 +302,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 					il.notifyProgress(0, "sorting");
 					try (OutputStream stream = sections.openWGraph()) {
 						graph.parallelSort(IndexedNode::compareTo);
-						CompressUtil.writeCompressedSection(graph, stream, il);
+						CompressUtil.writeCompressedSection(graph, stream, il, useRaw);
 					}
 				}
 			} finally {
@@ -533,12 +536,12 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			il.notifyProgress(0, "merging section");
 
 			// readers to create the merge tree
-			CompressNodeReader[] readers = new CompressNodeReader[triples.size()];
+			ICompressNodeReader[] readers = new ICompressNodeReader[triples.size()];
 			Closeable[] fileDeletes = new Closeable[triples.size()];
 			try {
 				long size = 0L;
 				for (int i = 0; i < triples.size(); i++) {
-					CompressNodeReader reader = new CompressNodeReader(openR.apply(triples.get(i)));
+					ICompressNodeReader reader = ICompressNodeReader.of(openR.apply(triples.get(i)), useRaw);
 					size += reader.getSize();
 					readers[i] = reader;
 					fileDeletes[i] = fileDelete.apply(triples.get(i));
@@ -547,7 +550,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				// section
 				try (OutputStream output = openW.get()) { // IndexNodeDeltaMergeExceptionIterator
 					CompressUtil.writeCompressedSection(CompressNodeMergeIterator.buildOfTree(readers), size, output,
-							il);
+							il, useRaw);
 				}
 			} finally {
 				if (async) {

@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.util.io.compress.CompressNodeMergeItera
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressNodeReader;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.compress.ICompressNodeReader;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -27,11 +28,11 @@ public class CompressionResultPartial implements CompressionResult {
 	private final ExceptionIterator<IndexedNode, IOException> graph;
 
 	public CompressionResultPartial(List<SectionCompressor.TripleFile> files, long triplesCount, long ntSize,
-			boolean graph) throws IOException {
+			boolean graph, boolean useRaw) throws IOException {
 		this.files = new ArrayList<>(files.size());
 		this.ntSize = ntSize;
 		for (SectionCompressor.TripleFile file : files) {
-			this.files.add(new CompressNodeReaderTriple(file, graph));
+			this.files.add(new CompressNodeReaderTriple(file, graph, useRaw));
 		}
 		this.triplesCount = triplesCount;
 
@@ -47,7 +48,7 @@ public class CompressionResultPartial implements CompressionResult {
 	}
 
 	private ExceptionIterator<IndexedNode, IOException> createBTree(int start, int end,
-			Function<CompressNodeReaderTriple, CompressNodeReader> fetcher) {
+			Function<CompressNodeReaderTriple, ICompressNodeReader> fetcher) {
 		int size = end - start;
 		if (size <= 0) {
 			return ExceptionIterator.empty();
@@ -135,15 +136,15 @@ public class CompressionResultPartial implements CompressionResult {
 	}
 
 	private static class CompressNodeReaderTriple implements Closeable {
-		final CompressNodeReader s, p, o, g;
+		final ICompressNodeReader s, p, o, g;
 		final SectionCompressor.TripleFile file;
 
-		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph) throws IOException {
-			this.s = new CompressNodeReader(file.openRSubject());
-			this.p = new CompressNodeReader(file.openRPredicate());
-			this.o = new CompressNodeReader(file.openRObject());
+		public CompressNodeReaderTriple(SectionCompressor.TripleFile file, boolean graph, boolean useRaw) throws IOException {
+			this.s = ICompressNodeReader.of(file.openRSubject(), useRaw);
+			this.p = ICompressNodeReader.of(file.openRPredicate(), useRaw);
+			this.o = ICompressNodeReader.of(file.openRObject(), useRaw);
 			if (graph) {
-				this.g = new CompressNodeReader(file.openRGraph());
+				this.g = ICompressNodeReader.of(file.openRGraph(), useRaw);
 			} else {
 				this.g = null;
 			}
@@ -155,19 +156,19 @@ public class CompressionResultPartial implements CompressionResult {
 			IOUtil.closeAll(s, p, o, g);
 		}
 
-		public CompressNodeReader getS() {
+		public ICompressNodeReader getS() {
 			return s;
 		}
 
-		public CompressNodeReader getP() {
+		public ICompressNodeReader getP() {
 			return p;
 		}
 
-		public CompressNodeReader getO() {
+		public ICompressNodeReader getO() {
 			return o;
 		}
 
-		public CompressNodeReader getG() {
+		public ICompressNodeReader getG() {
 			return g;
 		}
 	}

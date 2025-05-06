@@ -71,7 +71,6 @@ public class ChunkGenImpl {
 				specTmp.set(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, workdir.resolve("gendisk"));
 				specTmp.set(HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, workdir.resolve("cattree"));
 
-
 				FluxStopTripleStringIterator it = FluxStopTripleStringIteratorImpl.newInstance(iterator, stop,
 						supportCount, true);
 				int id = 0;
@@ -81,7 +80,8 @@ public class ChunkGenImpl {
 						prof.setDisabled(false);
 						prof.pushSection("generation");
 						specTmp.set(HDTOptionsKeys.PROFILER_KEY, prof);
-						IntermediateListener il = new IntermediateListener(listener, "file#" + outIt.getFileName() + " - ");
+						IntermediateListener il = new IntermediateListener(listener,
+								"file#" + outIt.getFileName() + " - ");
 
 						// force the garbage collection
 						System.gc();

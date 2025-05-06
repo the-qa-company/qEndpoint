@@ -42,12 +42,16 @@ public class BitmapFactoryImpl extends BitmapFactory {
 	}
 
 	@Override
-	protected Bitmap doCreateBitmap(InputStream input) throws IOException {
+	protected Bitmap doCreateBitmap(InputStream input, boolean index) throws IOException {
 		input.mark(1);
 		int value = input.read();
 		input.reset();
 		if (value == TYPE_BITMAP_PLAIN) {
-			return Bitmap375Big.memory(0);
+			if (index) {
+				return Bitmap375Big.memory(0);
+			} else {
+				return Bitmap64Big.memory(0);
+			}
 		}
 		throw new IllegalFormatException("Implementation not found for Bitmap with code " + value);
 	}

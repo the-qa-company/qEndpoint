@@ -76,7 +76,19 @@ public abstract class BitmapFactory {
 	 * @throws IOException io exception while reading
 	 */
 	public static Bitmap createBitmap(InputStream input) throws IOException {
-		return getInstance().doCreateBitmap(input);
+		return createBitmap(input, true);
+	}
+
+	/**
+	 * load a bitmap from an {@link InputStream}
+	 *
+	 * @param input The stream
+	 * @param index use indexed bitmap
+	 * @return bitmap
+	 * @throws IOException io exception while reading
+	 */
+	public static Bitmap createBitmap(InputStream input, boolean index) throws IOException {
+		return getInstance().doCreateBitmap(input, index);
 	}
 
 	/**
@@ -91,7 +103,7 @@ public abstract class BitmapFactory {
 
 	protected abstract ModifiableBitmap doCreateRWModifiableBitmap(long size);
 
-	protected abstract Bitmap doCreateBitmap(InputStream input) throws IOException;
+	protected abstract Bitmap doCreateBitmap(InputStream input, boolean index) throws IOException;
 
 	protected abstract Bitmap doEmpty();
 }

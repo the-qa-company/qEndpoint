@@ -1,15 +1,12 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
-import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
-import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -18,13 +15,12 @@ import java.io.OutputStream;
  *
  * @author Antoine Willerval
  */
-public class CompressNodeWriter implements ICompressNodeWriter {
+public class CompressNodeWriterRaw implements ICompressNodeWriter {
 	private final CRCOutputStream out;
-	private final ReplazableString previousStr = new ReplazableString();
 
-	public CompressNodeWriter(OutputStream stream, long size) throws IOException {
+	public CompressNodeWriterRaw(OutputStream stream, long size) throws IOException {
 		this.out = new CRCOutputStream(stream, new CRC8());
-		VByte.encode(this.out, size);
+		IOUtil.writeLong(this.out, size);
 		this.out.writeCRC();
 		this.out.setCRC(new CRC32());
 	}
@@ -34,15 +30,10 @@ public class CompressNodeWriter implements ICompressNodeWriter {
 		ByteString str = node.getNode();
 		long index = node.getIndex();
 
-		// Find common part.
-		int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
-		// Write Delta in VByte
-		VByte.encode(out, delta);
-		// Write remaining
-		ByteStringUtil.append(out, str, delta);
-		out.write(0); // End of string
-		VByte.encode(out, index); // index of the node
-		previousStr.replace(str);
+		int len = str.length();
+		IOUtil.writeInt(out, len);
+		out.write(str.getBuffer(), 0, len);
+		IOUtil.writeLong(out, index); // index of the node
 	}
 
 	@Override

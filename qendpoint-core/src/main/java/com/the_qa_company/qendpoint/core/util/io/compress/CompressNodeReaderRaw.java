@@ -2,8 +2,8 @@ package com.the_qa_company.qendpoint.core.util.io.compress;
 
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
@@ -18,21 +18,20 @@ import java.util.function.Consumer;
  *
  * @author Antoine Willerval
  */
-public class CompressNodeReader implements ICompressNodeReader {
+public class CompressNodeReaderRaw implements ICompressNodeReader {
 	private final CRCInputStream stream;
 	private final long size;
 	private long index;
-	private int delta;
 	private boolean waiting;
 	private final IndexedNode last;
 	private final ReplazableString tempString;
 	private final Consumer<IndexedNode> consumer;
 
-	public CompressNodeReader(InputStream stream) throws IOException {
+	public CompressNodeReaderRaw(InputStream stream) throws IOException {
 		this.stream = new CRCInputStream(stream, new CRC8());
-		this.size = VByte.decode(this.stream);
+		this.size = IOUtil.readLong(this.stream);
 		if (!this.stream.readCRCAndCheck()) {
-			throw new CRCException("CRC Error while merging Section Plain Front Coding Header.");
+			throw new CRCException("CRC Error while merging Section Plain Front Coding Header. size:" + this.size);
 		}
 		this.stream.setCRC(new CRC32());
 		this.tempString = new ReplazableString();
@@ -44,7 +43,6 @@ public class CompressNodeReader implements ICompressNodeReader {
 	public long getSize() {
 		return size;
 	}
-
 
 	@Override
 	public void checkComplete() throws IOException {
@@ -62,9 +60,9 @@ public class CompressNodeReader implements ICompressNodeReader {
 		if (waiting) {
 			return last;
 		}
-		delta = (int) VByte.decode(stream);
-		tempString.replace2(stream, delta);
-		long index = VByte.decode(stream);
+		int len = IOUtil.readInt(stream);
+		tempString.replace(stream, 0, len);
+		long index = IOUtil.readLong(stream);
 		last.setIndex(index);
 		consumer.accept(last);
 		waiting = true;
@@ -98,7 +96,7 @@ public class CompressNodeReader implements ICompressNodeReader {
 
 	@Override
 	public int lastDelta() {
-		return delta;
+		return 0;
 	}
 
 	@Override

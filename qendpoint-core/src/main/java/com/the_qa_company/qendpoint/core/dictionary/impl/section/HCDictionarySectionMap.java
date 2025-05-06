@@ -171,8 +171,9 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 		buffer.position(blocks.get(block) - posFirst[(int) (block / BLOCKS_PER_BYTEBUFFER)]);
 
 		try {
-			int blockLen = (int)VByte.decode(buffer);
-			ZstdInputStream is = new ZstdInputStream(new BigMappedByteBufferInputStream(buffer, buffer.position(), blockLen));
+			int blockLen = (int) VByte.decode(buffer);
+			ZstdInputStream is = new ZstdInputStream(
+					new BigMappedByteBufferInputStream(buffer, buffer.position(), blockLen));
 
 			long stringid = (id - 1) % blocksize;
 			// skip the previous strings
@@ -212,12 +213,11 @@ public class HCDictionarySectionMap implements DictionarySectionPrivate {
 
 			@Override
 			protected CharSequence getNext() {
-				if (strid >= numstrings) return null;
+				if (strid >= numstrings)
+					return null;
 				if (strid % blocksize == 0) {
 					// need to load the stream
 
-
-					
 				}
 				strid++;
 				return null;

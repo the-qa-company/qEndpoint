@@ -19,6 +19,7 @@
 
 package com.the_qa_company.qendpoint.core.util.string;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -148,8 +149,11 @@ public final class ReplazableString implements CharSequence, ByteString {
 	}
 
 	public void replace(InputStream in, int pos, int len) throws IOException {
-		byte[] buffer = IOUtil.readBuffer(in, len, null);
-		replace(pos, buffer, 0, len);
+		ensureSize(pos + len);
+		if (in.readNBytes(buffer, pos, len) != len) {
+			throw new EOFException();
+		}
+		used = pos + len;
 	}
 
 	public void replace(ByteBuffer in, int pos, int len) throws IOException {

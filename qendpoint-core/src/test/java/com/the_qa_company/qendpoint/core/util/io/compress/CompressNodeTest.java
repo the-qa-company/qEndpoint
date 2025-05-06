@@ -1,17 +1,29 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import org.junit.Assert;
 import org.junit.Test;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
+@RunWith(Parameterized.class)
 public class CompressNodeTest {
+	@Parameterized.Parameters(name = "raw:{0}")
+	public static Collection<Object> params() {
+		return List.of(true, false);
+	}
+
+	@Parameterized.Parameter
+	public boolean useRaw;
 
 	@Test
 	public void writeReadTest() throws InterruptedException, IOException {
@@ -20,7 +32,7 @@ public class CompressNodeTest {
 			List<IndexedNode> nodes = Arrays.asList(new IndexedNode("bob", 1), new IndexedNode("charles", 6),
 					new IndexedNode("jack", 2), new IndexedNode("michel", 3));
 			new ExceptionThread(() -> {
-				CompressNodeReader reader = new CompressNodeReader(in);
+				ICompressNodeReader reader = ICompressNodeReader.of(in, useRaw);
 				Assert.assertEquals(nodes.size(), reader.getSize());
 				try {
 					for (IndexedNode excepted : nodes) {
@@ -37,7 +49,7 @@ public class CompressNodeTest {
 					in.close();
 				}
 			}, "ReadTest").attach(new ExceptionThread(() -> {
-				CompressNodeWriter writer = new CompressNodeWriter(out, nodes.size());
+				ICompressNodeWriter writer = ICompressNodeWriter.of(out, nodes.size(), useRaw);
 				try {
 					for (IndexedNode node : nodes) {
 						writer.appendNode(node);
@@ -61,7 +73,7 @@ public class CompressNodeTest {
 			List<IndexedNode> nodes = Arrays.asList(new IndexedNode("bob", 1), new IndexedNode("charles", 6),
 					new IndexedNode("jack", 2), new IndexedNode("michel", 3));
 			new ExceptionThread(() -> {
-				CompressNodeReader reader = new CompressNodeReader(in);
+				ICompressNodeReader reader = ICompressNodeReader.of(in, useRaw);
 				Assert.assertEquals(nodes.size(), reader.getSize());
 				try {
 					for (IndexedNode excepted : nodes) {
@@ -79,7 +91,7 @@ public class CompressNodeTest {
 				}
 			}, "ReadTest").attach(new ExceptionThread(() -> {
 				try {
-					CompressUtil.writeCompressedSection(nodes, out, null);
+					CompressUtil.writeCompressedSection(nodes, out, null, useRaw);
 					out.write(34);
 					out.write(12);
 					out.write(27);
@@ -97,7 +109,7 @@ public class CompressNodeTest {
 			List<IndexedNode> nodes = Arrays.asList(new IndexedNode("bob", 1), new IndexedNode("charles", 6),
 					new IndexedNode("jack", 2), new IndexedNode("michel", 3));
 			new ExceptionThread(() -> {
-				CompressNodeReader reader = new CompressNodeReader(in);
+				ICompressNodeReader reader = ICompressNodeReader.of(in, useRaw);
 				Assert.assertEquals(nodes.size(), reader.getSize());
 				try {
 					for (IndexedNode excepted : nodes) {
@@ -120,7 +132,7 @@ public class CompressNodeTest {
 					in.close();
 				}
 			}, "ReadTest").attach(new ExceptionThread(() -> {
-				CompressNodeWriter writer = new CompressNodeWriter(out, nodes.size());
+				ICompressNodeWriter writer = ICompressNodeWriter.of(out, nodes.size(), useRaw);
 				try {
 					for (IndexedNode node : nodes) {
 						writer.appendNode(node);
@@ -156,7 +168,7 @@ public class CompressNodeTest {
 					new IndexedNode("zzzccc", 2), new IndexedNode("zzzddd", 6), new IndexedNode("zzzeee", 4),
 					new IndexedNode("zzzfff", 5), new IndexedNode("zzzggg", 7));
 			new ExceptionThread(() -> {
-				CompressNodeReader reader = new CompressNodeReader(finalIn);
+				ICompressNodeReader reader = ICompressNodeReader.of(finalIn, useRaw);
 				Assert.assertEquals(finalExcepted.size(), reader.getSize());
 				try {
 					for (IndexedNode excepted : finalExcepted) {
@@ -174,7 +186,7 @@ public class CompressNodeTest {
 				}
 			}, "ReadTest").attach(new ExceptionThread(() -> {
 				try {
-					CompressUtil.writeCompressedSection(nodes1, node1Out, null);
+					CompressUtil.writeCompressedSection(nodes1, node1Out, null, useRaw);
 					node1Out.write(34);
 					node1Out.write(12);
 					node1Out.write(27);
@@ -183,7 +195,7 @@ public class CompressNodeTest {
 				}
 			}, "Write1Test"), new ExceptionThread(() -> {
 				try {
-					CompressUtil.writeCompressedSection(nodes2, node2Out, null);
+					CompressUtil.writeCompressedSection(nodes2, node2Out, null, useRaw);
 					node2Out.write(42);
 					node2Out.write(19);
 					node2Out.write(1);
@@ -192,7 +204,7 @@ public class CompressNodeTest {
 				}
 			}, "Write2Test"), new ExceptionThread(() -> {
 				try {
-					CompressUtil.mergeCompressedSection(node1In, node2In, finalOut, null);
+					CompressUtil.mergeCompressedSection(node1In, node2In, finalOut, null, useRaw);
 					finalOut.write(98);
 					finalOut.write(18);
 					finalOut.write(22);

@@ -1270,10 +1270,6 @@ public class HDTManagerTest {
 				System.out.println("#" + i + " none compression in " + sw.stopAndShow());
 				noneVals.add(sw.getMeasure());
 			}
-			{
-				Stats stats = Stats.of(noneVals);
-				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
-			}
 
 			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.LZ4.name());
 			// lz4 frame
@@ -1287,10 +1283,6 @@ public class HDTManagerTest {
 				System.out.println("#" + i + " lz4f compression in " + sw.stopAndShow());
 				lz4FrameVals.add(sw.getMeasure());
 			}
-			{
-				Stats stats = Stats.of(lz4FrameVals);
-				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
-			}
 
 			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.LZ4B.name());
 			List<Long> lz4BlockVals = new ArrayList<>();
@@ -1303,10 +1295,6 @@ public class HDTManagerTest {
 				}
 				System.out.println("#" + i + " lz4b compression in " + sw.stopAndShow());
 				lz4BlockVals.add(sw.getMeasure());
-			}
-			{
-				Stats stats = Stats.of(lz4BlockVals);
-				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
 			}
 
 			spec.set(HDTOptionsKeys.DISK_COMPRESSION_KEY, CompressionType.ZSTD.name());
@@ -1322,8 +1310,20 @@ public class HDTManagerTest {
 				zstdBlockVals.add(sw.getMeasure());
 			}
 			{
+				Stats stats = Stats.of(noneVals);
+				System.out.println("none stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+			{
+				Stats stats = Stats.of(lz4FrameVals);
+				System.out.println("lz4 stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+			{
+				Stats stats = Stats.of(lz4BlockVals);
+				System.out.println("lz4b stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+			}
+			{
 				Stats stats = Stats.of(zstdBlockVals);
-				System.out.println("stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
+				System.out.println("zstd stats: " + stats.mean() + "/" + stats.min() + "/" + stats.max());
 			}
 
 		}

@@ -39,7 +39,20 @@ public class CompressUtil {
 	 */
 	public static void writeCompressedSection(List<IndexedNode> strings, OutputStream output, ProgressListener listener)
 			throws IOException {
-		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener);
+		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener, false);
+	}
+	/**
+	 * write a sorted list of indexed node
+	 *
+	 * @param strings  the nodes to write
+	 * @param output   the output
+	 * @param listener the listener to see the progress
+	 * @param useRaw   use raw writer
+	 * @throws IOException writing exception
+	 */
+	public static void writeCompressedSection(List<IndexedNode> strings, OutputStream output, ProgressListener listener, boolean useRaw)
+			throws IOException {
+		writeCompressedSection(ExceptionIterator.of(strings.iterator()), strings.size(), output, listener, useRaw);
 	}
 
 	/**
@@ -52,8 +65,26 @@ public class CompressUtil {
 	 * @throws IOException writing exception
 	 */
 	public static void writeCompressedSection(ExceptionIterator<IndexedNode, IOException> it, long size,
-			OutputStream output, ProgressListener listener) throws IOException {
-		CompressNodeWriter writer = new CompressNodeWriter(output, size);
+	                                          OutputStream output, ProgressListener listener) throws IOException {
+		writeCompressedSection(it, size, output, listener, false);
+	}
+	public static void mergeCompressedSection(InputStream stream1, InputStream stream2, OutputStream output,
+	                                          ProgressListener listener) throws IOException {
+		mergeCompressedSection(stream1, stream2, output, listener, false);
+	}
+	/**
+	 * write a sorted iterator of indexed node
+	 *
+	 * @param it       iterator to write
+	 * @param size     size of the iterator
+	 * @param output   the output where to write
+	 * @param listener the listener to see the progress
+	 * @param useRaw   use raw writer
+	 * @throws IOException writing exception
+	 */
+	public static void writeCompressedSection(ExceptionIterator<IndexedNode, IOException> it, long size,
+			OutputStream output, ProgressListener listener, boolean useRaw) throws IOException {
+		ICompressNodeWriter writer = ICompressNodeWriter.of(output, size, useRaw);
 		long element = 0;
 		long block = size < 10 ? 1 : size / 10;
 		while (it.hasNext()) {
@@ -76,19 +107,20 @@ public class CompressUtil {
 	 * @param stream1  input stream 1
 	 * @param stream2  input stream 2
 	 * @param output   output stream
+	 * @param useRaw   use raw reader
 	 * @param listener the listener to see the progress
 	 * @throws IOException read/writing exception
 	 */
 	public static void mergeCompressedSection(InputStream stream1, InputStream stream2, OutputStream output,
-			ProgressListener listener) throws IOException {
-		CompressNodeReader in1r = new CompressNodeReader(stream1);
-		CompressNodeReader in2r = new CompressNodeReader(stream2);
+			ProgressListener listener, boolean useRaw) throws IOException {
+		ICompressNodeReader in1r = ICompressNodeReader.of(stream1, useRaw);
+		ICompressNodeReader in2r = ICompressNodeReader.of(stream2, useRaw);
 
 		long size1 = in1r.getSize();
 		long size2 = in2r.getSize();
 
 		// merge the section
-		writeCompressedSection(new CompressNodeMergeIterator(in1r, in2r), size1 + size2, output, listener);
+		writeCompressedSection(new CompressNodeMergeIterator(in1r, in2r), size1 + size2, output, listener, useRaw);
 		// check we have completed the 2 readers
 		in1r.checkComplete();
 		in2r.checkComplete();
