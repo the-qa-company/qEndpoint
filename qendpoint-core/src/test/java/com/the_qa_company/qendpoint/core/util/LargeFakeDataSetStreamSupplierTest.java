@@ -60,7 +60,6 @@ public class LargeFakeDataSetStreamSupplierTest {
 				it.forEachRemaining(set1::add);
 				it2.forEachRemaining(set2::add);
 
-
 				assertEquals(set1.size(), set2.size());
 				assertEquals(set1, set2);
 

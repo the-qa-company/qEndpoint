@@ -55,7 +55,7 @@ public class RDFParserTar implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-						RDFCallback callback, boolean parallel) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		try {
 
 			final TarArchiveInputStream debInputStream = (TarArchiveInputStream) new ArchiveStreamFactory()

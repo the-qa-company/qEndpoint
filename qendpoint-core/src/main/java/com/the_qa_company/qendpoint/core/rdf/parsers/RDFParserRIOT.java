@@ -47,7 +47,8 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	private static final int CORES = Runtime.getRuntime().availableProcessors();
 
-	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer, boolean parallel) {
+	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer,
+			boolean parallel) {
 
 		if (!parallel || (lang != Lang.NQUADS && lang != Lang.NTRIPLES)) {
 			if (keepBNode) {
@@ -129,7 +130,7 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-						RDFCallback callback, boolean parallel) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		try {
 			switch (notation) {
 			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, new ElemStringBuffer(callback), parallel);

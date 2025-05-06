@@ -154,8 +154,8 @@ public class RDFDeltaFileParser implements RDFParserCallback {
 	}
 
 	@Override
-	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback, boolean parallel)
-			throws ParserException {
+	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		try {
 			// read df file
 			DeltaFileReader reader = new DeltaFileReader(in, spec);

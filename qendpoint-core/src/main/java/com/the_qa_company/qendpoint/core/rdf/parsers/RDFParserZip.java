@@ -52,7 +52,7 @@ public class RDFParserZip implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-						RDFCallback callback, boolean parallel) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		try {
 			ZipInputStream zin = new ZipInputStream(input);
 

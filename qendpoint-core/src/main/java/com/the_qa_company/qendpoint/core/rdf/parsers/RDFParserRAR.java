@@ -119,7 +119,7 @@ public class RDFParserRAR implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-						RDFCallback callback, boolean parallel) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		throw new NotImplementedException();
 	}
 
