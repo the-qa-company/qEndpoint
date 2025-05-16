@@ -24,6 +24,7 @@ import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.iri.impl.LexerFixer;
@@ -36,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
@@ -63,47 +65,30 @@ public class RDFParserRIOT implements RDFParserCallback {
 		if (keepBNode) {
 			LexerFixer.fixLexers();
 
-			ConcurrentInputStream cs = new ConcurrentInputStream(stream, CORES - 1);
+			try (ConcurrentInputStream cs = new ConcurrentInputStream(stream, CORES - 1)) {
+				ExceptionThread readThread = cs.getReadingThread();
 
-			InputStream bnodes = cs.getBnodeStream();
+				InputStream bnodes = cs.getBnodeStream();
 
-			var threads = new ArrayList<Thread>();
+				readThread.attach(new ExceptionThread(() -> RDFParser.source(bnodes).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+						.parse(buffer), "BNode parser"));
 
-			Thread e1 = new Thread(() -> {
-				RDFParser.source(bnodes).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
-						.parse(buffer);
-			});
-			e1.setName("BNode parser");
-			threads.add(e1);
-
-			InputStream[] streams = cs.getStreams();
-			int i = 0;
-			for (InputStream s : streams) {
-				int temp = i + 1;
-				Thread e = new Thread(() -> {
-					RDFParser.source(s).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
-							.parse(buffer);
-				});
-				i++;
-				e.setName("Stream parser " + i);
-				threads.add(e);
-
-			}
-
-			threads.forEach(Thread::start);
-			for (Thread thread : threads) {
+				InputStream[] streams = cs.getStreams();
+				int i = 0;
+				for (InputStream s : streams) {
+					readThread.attach(new ExceptionThread(() -> RDFParser.source(s).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+							.parse(buffer), "Stream parser " + i));
+				}
 				try {
-					while (thread.isAlive()) {
-						thread.join(1000);
-					}
-
+					readThread.joinAndCrashIfRequired();
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
+			} catch (ExceptionThread.ExceptionThreadException e) {
+				if (e.getCause() instanceof RuntimeException re) throw re;
+				if (e.getCause() instanceof Error er) throw er;
+				throw e;
 			}
-
-//			RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
-//					.parse(buffer);
 		} else {
 			RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
 		}
