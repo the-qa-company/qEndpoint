@@ -77,7 +77,7 @@ public class RDFParserSimpleTest {
 					System.out.println(count[0] + " triples " + watch.stopAndShow());
 				}
 				count[0]++;
-			});
+			}, false);
 
 			t.join();
 			if (re[0] != null) {

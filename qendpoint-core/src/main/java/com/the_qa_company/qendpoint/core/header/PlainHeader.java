@@ -137,7 +137,7 @@ public class PlainHeader implements HeaderPrivate, RDFCallback {
 		try {
 			RDFParserSimple parser = new RDFParserSimple();
 			parser.doParse(new ByteArrayInputStream(headerData), "http://www.rdfhdt.org", RDFNotation.NTRIPLES, true,
-					this);
+					this, false);
 		} catch (ParserException e) {
 			log.error("Unexpected exception.", e);
 			throw new IllegalFormatException("Error parsing header");

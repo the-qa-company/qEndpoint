@@ -147,15 +147,15 @@ public class RDFDeltaFileParser implements RDFParserCallback {
 	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {
 		try (InputStream is = IOUtil.getFileInputStream(fileName)) {
-			doParse(is, baseUri, notation, keepBNode, callback);
+			doParse(is, baseUri, notation, keepBNode, callback, false);
 		} catch (IOException e) {
 			throw new ParserException(e);
 		}
 	}
 
 	@Override
-	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
+	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		try {
 			// read df file
 			DeltaFileReader reader = new DeltaFileReader(in, spec);
@@ -169,7 +169,7 @@ public class RDFDeltaFileParser implements RDFParserCallback {
 				try {
 					// read the next byte information
 					parser.doParse(new GZIPInputStream(new ByteArrayInputStream(next.data)), baseUri, not, keepBNode,
-							callback);
+							callback, false);
 				} catch (IOException e) {
 					throw new ParserException("Error when reading " + next.fileName + " size: " + next.data.length, e);
 				}
