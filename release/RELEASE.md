@@ -1,1 +1,3 @@
-- fix multi-index merge (#560)
+- fix docker startup (#602)
+- fix sparql format (#605)
+
