@@ -15,7 +15,8 @@ import '@triply/yasgui/build/yasgui.min.css'
 
 import s from './index.module.scss'
 
-const spfmt = require('sparql-formatter')
+// @ts-ignore
+import { spfmt } from 'sparql-formatter'
 
 Yasgui.Yasr.registerPlugin('QueryPlanPlugin', QueryPlanPlugin as any)
 interface ExportedYasguiTab {
@@ -57,9 +58,6 @@ export default function SparqlEndpoint () {
     setRequest: setPrefixesRequest
   } = prefixesReq
 
-  // Format request
-  const [tabToFormat, setTabToFormat] = useState<string>()
-
   const checkPrefixes = useCallback(() => {
     setPrefixesRequest(fetch(`${config.apiBase}/api/endpoint/prefixes`))
   }, [setPrefixesRequest])
@@ -88,20 +86,16 @@ export default function SparqlEndpoint () {
 
   /** Called when the user presses the button "format" */
   const onClickFormat = () => {
-    const query = yasguiRef.current?.getTab()?.getQuery()
-    const tabId = yasguiRef.current?.getTab()?.getId()
+    const tab = yasguiRef.current?.getTab()
+    const query = tab?.getQuery()
     // Check validity
-    if (query === undefined || tabId === undefined) {
+    if (tab === undefined || query === undefined) {
       enqueueSnackbar('No query to format', { variant: 'warning' })
       return
     }
-    // Save the tab to format and make the request
-    setTabToFormat(tabId)
 
     const formatted = spfmt(query) as string
 
-    const tab = yasguiRef.current?.getTab(tabToFormat)
-    if (tab === undefined) return // Handle only if the tab is still open
     // Set the query
     tab.setQuery(formatted)
   }
