@@ -1,3 +1,14 @@
+## Version 2.5.0
+        
+- Reuse permutation for other indexes generation (#589)
+- Better compression of intermediate graph (#541)
+- Fix dump copy call (#583)
+## Version 2.4.2
+        
+- fix computation issue (#573)
+## Version 2.4.1
+        
+- fix multi-index merge (#560)
 ## Version 2.4.0
         
 - show lucene indexes names when loading (#537)
