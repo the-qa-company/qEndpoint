@@ -44,7 +44,7 @@
         <json_simple.version>1.1.1</json_simple.version>
         <junit.version>4.13.2</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
-        <spring.version>2.7.5</spring.version>
+        <spring.version>3.4.5</spring.version>
         <logback.version>1.5.6</logback.version>
         <roaringbitmap.version>0.9.44</roaringbitmap.version>
         <commons-compress.version>1.26.0</commons-compress.version>

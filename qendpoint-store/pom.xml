@@ -43,6 +43,7 @@
         <lwjgl.version>3.3.1</lwjgl.version>
         <rdf4j.version>5.1.0</rdf4j.version>
         <logback.version>1.5.6</logback.version>
+        <beanutils.version>1.11.0</beanutils.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -157,6 +158,11 @@
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>${json_simple.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>${beanutils.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
