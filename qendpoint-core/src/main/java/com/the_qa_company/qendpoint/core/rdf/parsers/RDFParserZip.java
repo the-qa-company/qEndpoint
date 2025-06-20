@@ -42,7 +42,7 @@ public class RDFParserZip implements RDFParserCallback {
 			throws ParserException {
 		try {
 			InputStream input = IOUtil.getFileInputStream(fileName);
-			this.doParse(input, baseUri, notation, keepBNode, callback);
+			this.doParse(input, baseUri, notation, keepBNode, callback, false);
 			input.close();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -52,7 +52,7 @@ public class RDFParserZip implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		try {
 			ZipInputStream zin = new ZipInputStream(input);
 
@@ -67,7 +67,7 @@ public class RDFParserZip implements RDFParserCallback {
 						System.out.println("Parse from zip: " + zipEntry.getName() + " as " + guessnot);
 						RDFParserCallback parser = RDFParserFactory.getParserCallback(guessnot, spec);
 
-						parser.doParse(nonCloseIn, baseUri, guessnot, keepBNode, callback);
+						parser.doParse(nonCloseIn, baseUri, guessnot, keepBNode, callback, false);
 					} catch (IllegalArgumentException | ParserException e1) {
 						e1.printStackTrace();
 					}

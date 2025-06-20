@@ -99,7 +99,7 @@ public class RDFParserRAR implements RDFParserCallback {
 					Process processExtract = extractProcessBuilder.start();
 
 					InputStream in = processExtract.getInputStream();
-					parser.doParse(in, baseUri, guessnot, keepBNode, callback);
+					parser.doParse(in, baseUri, guessnot, keepBNode, callback, false);
 
 					in.close();
 					processExtract.waitFor();
@@ -119,7 +119,7 @@ public class RDFParserRAR implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		throw new NotImplementedException();
 	}
 
