@@ -1,0 +1,123 @@
+Distinct (resultSizeActual=0, totalTimeActual=5.0s, selfTimeActual=0.001ms)
+   Projection (resultSizeActual=0, totalTimeActual=5.0s, selfTimeActual=0.0ms)
+   ├── ProjectionElemList
+   │     ProjectionElem "countryID"
+   │     ProjectionElem "year"
+   │     ProjectionElem "amountLots"
+   │     ProjectionElem "numSingleBidders"
+   └── Extension (resultSizeActual=0, totalTimeActual=5.0s)
+         Group (countryID, year) (resultSizeActual=0, totalTimeActual=5.0s, selfTimeActual=2.45ms)
+            Join (HashJoinIteration) (resultSizeActual=0, totalTimeActual=5.0s, selfTimeActual=0.015ms)
+            ╠══ Extension (resultSizeActual=1, totalTimeActual=5.0s, selfTimeActual=1.47ms) [left]
+            ║  ├── Join (JoinIterator) (resultSizeActual=1, totalTimeActual=5.0s, selfTimeActual=0.041ms)
+            ║  │  ╠══ Join (JoinIterator) (resultSizeActual=1, totalTimeActual=5.0s, selfTimeActual=0.088ms) [left]
+            ║  │  ║  ├── Join (JoinIterator) (resultSizeActual=19, totalTimeActual=5.0s, selfTimeActual=0.117ms) [left]
+            ║  │  ║  │  ╠══ Join (JoinIterator) (resultSizeActual=19, totalTimeActual=5.0s, selfTimeActual=0.096ms) [left]
+            ║  │  ║  │  ║  ├── Join (JoinIterator) (resultSizeActual=19, totalTimeActual=5.0s, selfTimeActual=1.9s) [left]
+            ║  │  ║  │  ║  │  ╠══ Join (JoinIterator) (resultSizeActual=1.9M, totalTimeActual=1.8s, selfTimeActual=144ms) [left]
+            ║  │  ║  │  ║  │  ║  ├── Join (JoinIterator) (resultSizeActual=19, totalTimeActual=2.24ms, selfTimeActual=0.129ms) [left]
+            ║  │  ║  │  ║  │  ║  │  ╠══ Join (JoinIterator) (resultSizeActual=8, totalTimeActual=1.84ms, selfTimeActual=0.473ms) [left]
+            ║  │  ║  │  ║  │  ║  │  ║  ├── Join (JoinIterator) (resultSizeActual=10, totalTimeActual=0.45ms, selfTimeActual=0.203ms) [left]
+            ║  │  ║  │  ║  │  ║  │  ║  │  ╠══ StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.106ms, selfTimeActual=0.106ms) [left]
+            ║  │  ║  │  ║  │  ║  │  ║  │  ║     s: Var (name=resultnotice)
+            ║  │  ║  │  ║  │  ║  │  ║  │  ║     p: Var (name=_const_6aa9a9c_uri, value=http://data.europa.eu/a4g/ontology#refersToRole, anonymous)
+            ║  │  ║  │  ║  │  ║  │  ║  │  ║     o: Var (name=buyerrole)
+            ║  │  ║  │  ║  │  ║  │  ║  │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=10, totalTimeActual=0.141ms, selfTimeActual=0.141ms) [right]
+            ║  │  ║  │  ║  │  ║  │  ║  │        s: Var (name=proc)
+            ║  │  ║  │  ║  │  ║  │  ║  │        p: Var (name=_const_f5e5585a_uri, value=http://www.w3.org/1999/02/22-rdf-syntax-ns#type, anonymous)
+            ║  │  ║  │  ║  │  ║  │  ║  │        o: Var (name=_const_be18ee7b_uri, value=http://data.europa.eu/a4g/ontology#Procedure, anonymous)
+            ║  │  ║  │  ║  │  ║  │  ║  └── Filter (resultSizeActual=8, totalTimeActual=0.918ms, selfTimeActual=0.727ms) [right]
+            ║  │  ║  │  ║  │  ║  │  ║     ╠══ Compare (!=)
+            ║  │  ║  │  ║  │  ║  │  ║     ║     Var (name=p)
+            ║  │  ║  │  ║  │  ║  │  ║     ║     ValueConstant (value=http://publications.europa.eu/resource/authority/procurement-procedure-type/neg-wo-call)
+            ║  │  ║  │  ║  │  ║  │  ║     ╚══ StatementPattern [index: SPO]  (resultSizeActual=9, totalTimeActual=0.191ms, selfTimeActual=0.191ms)
+            ║  │  ║  │  ║  │  ║  │  ║           s: Var (name=proc)
+            ║  │  ║  │  ║  │  ║  │  ║           p: Var (name=_const_9c756f6b_uri, value=http://data.europa.eu/a4g/ontology#hasProcedureType, anonymous)
+            ║  │  ║  │  ║  │  ║  │  ║           o: Var (name=p)
+            ║  │  ║  │  ║  │  ║  │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=19, totalTimeActual=0.268ms, selfTimeActual=0.268ms) [right]
+            ║  │  ║  │  ║  │  ║  │        s: Var (name=proc)
+            ║  │  ║  │  ║  │  ║  │        p: Var (name=_const_9c3f1eec_uri, value=http://data.europa.eu/a4g/ontology#hasProcurementScopeDividedIntoLot, anonymous)
+            ║  │  ║  │  ║  │  ║  │        o: Var (name=lot)
+            ║  │  ║  │  ║  │  ║  └── StatementPattern [index: SPO]  (resultSizeActual=1.9M, totalTimeActual=1.6s, selfTimeActual=1.6s) [right]
+            ║  │  ║  │  ║  │  ║        s: Var (name=stat)
+            ║  │  ║  │  ║  │  ║        p: Var (name=_const_f5e5585a_uri, value=http://www.w3.org/1999/02/22-rdf-syntax-ns#type, anonymous)
+            ║  │  ║  │  ║  │  ║        o: Var (name=_const_ea79e75_uri, value=http://data.europa.eu/a4g/ontology#SubmissionStatisticalInformation, anonymous)
+            ║  │  ║  │  ║  │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=19, totalTimeActual=1.2s, selfTimeActual=1.2s) [right]
+            ║  │  ║  │  ║  │        s: Var (name=stat)
+            ║  │  ║  │  ║  │        p: Var (name=_const_25686184_uri, value=http://data.europa.eu/a4g/ontology#concernsSubmissionsForLot, anonymous)
+            ║  │  ║  │  ║  │        o: Var (name=lot)
+            ║  │  ║  │  ║  └── StatementPattern [index: SPO]  (resultSizeActual=19, totalTimeActual=0.242ms, selfTimeActual=0.242ms) [right]
+            ║  │  ║  │  ║        s: Var (name=stat)
+            ║  │  ║  │  ║        p: Var (name=_const_98c73a3c_uri, value=http://data.europa.eu/a4g/ontology#hasReceivedTenders, anonymous)
+            ║  │  ║  │  ║        o: Var (name=bidders)
+            ║  │  ║  │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=19, totalTimeActual=0.205ms, selfTimeActual=0.205ms) [right]
+            ║  │  ║  │        s: Var (name=resultnotice)
+            ║  │  ║  │        p: Var (name=_const_f5e5585a_uri, value=http://www.w3.org/1999/02/22-rdf-syntax-ns#type, anonymous)
+            ║  │  ║  │        o: Var (name=_const_77e914ad_uri, value=http://data.europa.eu/a4g/ontology#ResultNotice, anonymous)
+            ║  │  ║  └── StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.068ms, selfTimeActual=0.068ms) [right]
+            ║  │  ║        s: Var (name=resultnotice)
+            ║  │  ║        p: Var (name=_const_183bd06d_uri, value=http://data.europa.eu/a4g/ontology#refersToProcedure, anonymous)
+            ║  │  ║        o: Var (name=proc)
+            ║  │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.061ms, selfTimeActual=0.061ms) [right]
+            ║  │        s: Var (name=resultnotice)
+            ║  │        p: Var (name=_const_1b0b00ca_uri, value=http://data.europa.eu/a4g/ontology#hasDispatchDate, anonymous)
+            ║  │        o: Var (name=ddate)
+            ║  └── ExtensionElem (year)
+            ║        FunctionCall (http://www.w3.org/2005/xpath-functions#year-from-dateTime)
+            ║           FunctionCall (http://www.w3.org/2001/XMLSchema#dateTime)
+            ║              Var (name=ddate)
+            ╚══ Distinct (new scope) (resultSizeActual=1, totalTimeActual=1.02ms, selfTimeActual=0.655ms) [right]
+                  Projection (resultSizeActual=1, totalTimeActual=0.365ms, selfTimeActual=0.025ms)
+                  ╠══ ProjectionElemList
+                  ║     ProjectionElem "buyerrole"
+                  ║     ProjectionElem "countryID"
+                  ╚══ Join (JoinIterator) (resultSizeActual=1, totalTimeActual=0.34ms, selfTimeActual=0.083ms)
+                     ├── Join (JoinIterator) (resultSizeActual=1, totalTimeActual=0.227ms, selfTimeActual=0.026ms) [left]
+                     │  ╠══ Join (JoinIterator) (resultSizeActual=1, totalTimeActual=0.179ms, selfTimeActual=0.064ms) [left]
+                     │  ║  ├── Join (JoinIterator) (resultSizeActual=1, totalTimeActual=0.074ms, selfTimeActual=0.047ms) [left]
+                     │  ║  │  ╠══ StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.011ms, selfTimeActual=0.011ms) [left]
+                     │  ║  │  ║     s: Var (name=buyerrole)
+                     │  ║  │  ║     p: Var (name=_const_beb855c2_uri, value=http://data.europa.eu/a4g/ontology#playedBy, anonymous)
+                     │  ║  │  ║     o: Var (name=org)
+                     │  ║  │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.016ms, selfTimeActual=0.016ms) [right]
+                     │  ║  │        s: Var (name=org)
+                     │  ║  │        p: Var (name=_const_beb18915_uri, value=https://www.w3.org/ns/legal#registeredAddress, anonymous)
+                     │  ║  │        o: Var (name=orgaddress)
+                     │  ║  └── StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.041ms, selfTimeActual=0.041ms) [right]
+                     │  ║        s: Var (name=orgaddress)
+                     │  ║        p: Var (name=_const_2f7de0e1_uri, value=http://data.europa.eu/a4g/ontology#hasCountryCode, anonymous)
+                     │  ║        o: Var (name=countrycode)
+                     │  ╚══ StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.022ms, selfTimeActual=0.022ms) [right]
+                     │        s: Var (name=countrycode)
+                     │        p: Var (name=_const_a825a5f4_uri, value=http://purl.org/dc/elements/1.1/identifier, anonymous)
+                     │        o: Var (name=countryID)
+                     └── Filter (resultSizeActual=1, totalTimeActual=0.03ms, selfTimeActual=0.009ms) [right]
+                        ╠══ Compare (!=)
+                        ║     Var (name=buytype)
+                        ║     ValueConstant (value=http://publications.europa.eu/resource/authority/buyer-legal-type/eu-int-org)
+                        ╚══ StatementPattern [index: SPO]  (resultSizeActual=1, totalTimeActual=0.022ms, selfTimeActual=0.022ms)
+                              s: Var (name=org)
+                              p: Var (name=_const_1abd8d4b_uri, value=http://data.europa.eu/a4g/ontology#hasBuyerType, anonymous)
+                              o: Var (name=buytype)
+            GroupElem (amountLots)
+               Count (Distinct)
+                  Var (name=lot)
+            GroupElem (numSingleBidders)
+               Sum
+                  If
+                     Compare (=)
+                        Var (name=bidders)
+                        ValueConstant (value="1"^^<http://www.w3.org/2001/XMLSchema#integer>)
+                     ValueConstant (value="1"^^<http://www.w3.org/2001/XMLSchema#integer>)
+                     ValueConstant (value="0"^^<http://www.w3.org/2001/XMLSchema#integer>)
+         ExtensionElem (amountLots)
+            Count (Distinct)
+               Var (name=lot)
+         ExtensionElem (numSingleBidders)
+            Sum
+               If
+                  Compare (=)
+                     Var (name=bidders)
+                     ValueConstant (value="1"^^<http://www.w3.org/2001/XMLSchema#integer>)
+                  ValueConstant (value="1"^^<http://www.w3.org/2001/XMLSchema#integer>)
+                  ValueConstant (value="0"^^<http://www.w3.org/2001/XMLSchema#integer>)
