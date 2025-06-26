@@ -6,9 +6,11 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivateAppender;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.UnmodifiableDictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
@@ -165,7 +167,7 @@ public class FSDToMSDConverter implements Converter {
 					try {
 						Bucket bucket = objectsAppender.computeIfAbsent(type, key -> {
 							int id = objects.size();
-							WriteDictionarySection section = new WriteDictionarySection(options,
+							WriteDictionarySectionPrivate section = DictionarySectionFactory.createWriteSection(options,
 									dir.resolve("type_" + id + ".sec"), bufferSize);
 							objects.put(type, section);
 							try {
@@ -176,7 +178,7 @@ public class FSDToMSDConverter implements Converter {
 								throw new ContainerException(e);
 							}
 						});
-						WriteDictionarySection.WriteDictionarySectionAppender appender = bucket.appender();
+						WriteDictionarySectionPrivateAppender appender = bucket.appender();
 						appender.append((ByteString) LiteralsUtils.removeType(str));
 						OutputStream ids = bucket.idWriter();
 						// write index -> inSectionIndex
@@ -217,7 +219,7 @@ public class FSDToMSDConverter implements Converter {
 
 	}
 
-	private record Bucket(WriteDictionarySection.WriteDictionarySectionAppender appender, CloseSuppressPath idsPath,
+	private record Bucket(WriteDictionarySectionPrivateAppender appender, CloseSuppressPath idsPath,
 			OutputStream idWriter) implements Closeable {
 
 		@Override

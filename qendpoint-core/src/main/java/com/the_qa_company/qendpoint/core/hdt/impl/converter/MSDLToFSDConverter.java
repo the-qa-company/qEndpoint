@@ -6,9 +6,10 @@ import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.FourSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.UnmodifiableDictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
@@ -89,7 +90,7 @@ public class MSDLToFSDConverter implements Converter {
 				Map<? extends CharSequence, DictionarySection> objects = origin.getDictionary().getAllObjects();
 				MSDLSectionMerger merger = new MSDLSectionMerger(objects, objectMap);
 				objectMap.clear();
-				try (WriteDictionarySection wObjects = new WriteDictionarySection(options,
+				try (WriteDictionarySectionPrivate wObjects = DictionarySectionFactory.createWriteSection(options,
 						dir.resolveSibling("objects"), bufferSize)) {
 					// load the new objects
 					wObjects.load(merger, listener);

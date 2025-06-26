@@ -32,15 +32,16 @@ public class WriteDictionarySectionTest {
 		Path dir = tempDir.newFolder().toPath();
 		try {
 
-			try (WriteDictionarySection section1 = new WriteDictionarySection(HDTOptions.of(), dir.resolve("t1"), 4096);
-					WriteDictionarySection section2 = new WriteDictionarySection(HDTOptions.of(), dir.resolve("t2"),
-							4096)) {
+			try (WritePFCDictionarySection section1 = new WritePFCDictionarySection(HDTOptions.of(), dir.resolve("t1"),
+					4096);
+					WritePFCDictionarySection section2 = new WritePFCDictionarySection(HDTOptions.of(),
+							dir.resolve("t2"), 4096)) {
 				Iterator<? extends CharSequence> it1 = stream().objectIterator();
 				Iterator<? extends CharSequence> it2 = stream().objectIterator();
 
 				section1.load(new MapIterator<>(it1, ByteString::of), 10_000, ProgressListener.ignore());
 
-				try (WriteDictionarySection.WriteDictionarySectionAppender appender = section2.createAppender(10_000,
+				try (WritePFCDictionarySection.WriteDictionarySectionAppender appender = section2.createAppender(10_000,
 						ProgressListener.ignore())) {
 					while (it2.hasNext()) {
 						CharSequence next = it2.next();

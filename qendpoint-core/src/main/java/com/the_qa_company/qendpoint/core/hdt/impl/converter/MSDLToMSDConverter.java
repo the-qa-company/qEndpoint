@@ -7,9 +7,10 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.UnmodifiableDictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
@@ -127,7 +128,7 @@ public class MSDLToMSDConverter implements Converter {
 					start += section.getNumberOfElements();
 				}
 
-				try (WriteDictionarySection wObjects = new WriteDictionarySection(options,
+				try (WriteDictionarySectionPrivate wObjects = DictionarySectionFactory.createWriteSection(options,
 						dir.resolveSibling("objects"), bufferSize)) {
 					futureAllObjects.put(LiteralsUtils.LITERAL_LANG_TYPE, wObjects);
 

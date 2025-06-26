@@ -1,7 +1,9 @@
 package com.the_qa_company.qendpoint.core.util;
 
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.DelayedString;
@@ -14,23 +16,23 @@ public class SortedDictionarySectionIndex {
 	static final ByteString START_LITERAL = ByteString.of("\"");
 	static final ByteString END_BNODE = new CompactString(new byte[] { '_', (byte) (':' + 1) });
 	static final ByteString END_LITERAL = new CompactString(new byte[] { (byte) ('"' + 1) });
-	private DictionarySection section;
+	private DictionarySectionPrivate section;
 	long bnodeStart;
 	long bnodeEnd;
 	long literalStart;
 	long literalEnd;
 
-	public SortedDictionarySectionIndex(DictionarySection section) {
+	public SortedDictionarySectionIndex(DictionarySectionPrivate section) {
 		setSection(section);
 	}
 
-	public void setSection(DictionarySection section) {
+	public void setSection(DictionarySectionPrivate section) {
 		this.section = section;
 		syncLocation();
 	}
 
 	private void syncLocation() {
-		if (section.getNumberOfElements() == 0) {
+		if (section.getNumberOfElements() == 0 || !section.isIndexedSection()) {
 			return;
 		}
 
@@ -66,6 +68,9 @@ public class SortedDictionarySectionIndex {
 	public RDFNodeType getNodeType(long id) {
 		if (id > section.getNumberOfElements()) {
 			return null;
+		}
+		if (!section.isIndexedSection()) {
+			throw new NotImplementedException("Can't use getNodeType without an indexed section");
 		}
 		if (id >= bnodeStart && id < bnodeEnd) {
 			return RDFNodeType.BLANK_NODE;

@@ -7,10 +7,12 @@ import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivateAppender;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.dictionary.impl.UnmodifiableDictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.Converter;
@@ -210,7 +212,7 @@ public class MSDToMSDLConverter implements Converter {
 					try {
 						Bucket bucket = languageAppenders.computeIfAbsent(lang, key -> {
 							int id = languages.size();
-							WriteDictionarySection section = new WriteDictionarySection(options,
+							WriteDictionarySectionPrivate section = DictionarySectionFactory.createWriteSection(options,
 									dir.resolve("lang_" + id + ".sec"), bufferSize);
 							languages.put(lang, section);
 							try {
@@ -221,7 +223,7 @@ public class MSDToMSDLConverter implements Converter {
 								throw new ContainerException(e);
 							}
 						});
-						WriteDictionarySection.WriteDictionarySectionAppender appender = bucket.appender();
+						WriteDictionarySectionPrivateAppender appender = bucket.appender();
 						appender.append((ByteString) LiteralsUtils.removeTypeAndLang(str));
 						OutputStream ids = bucket.idWriter();
 						// write index -> inSectionIndex
@@ -262,7 +264,7 @@ public class MSDToMSDLConverter implements Converter {
 
 	}
 
-	private record Bucket(WriteDictionarySection.WriteDictionarySectionAppender appender, CloseSuppressPath idsPath,
+	private record Bucket(WriteDictionarySectionPrivateAppender appender, CloseSuppressPath idsPath,
 			OutputStream idWriter) implements Closeable {
 
 		@Override
