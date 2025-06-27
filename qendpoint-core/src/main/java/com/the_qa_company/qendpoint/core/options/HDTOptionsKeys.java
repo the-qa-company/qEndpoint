@@ -109,6 +109,12 @@ public class HDTOptionsKeys {
 	public static final String DISK_COMPRESSION_KEY = "disk.compression";
 
 	/**
+	 * Use the pfc compression, default true. Boolean value
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Use the pfc compression, default true")
+	public static final String DISk_USE_PFC = "disk.usePfc";
+
+	/**
 	 * Key for the loading mode of a RDF file for the
 	 * {@link HDTManager#generateHDT(String, String, RDFNotation, HDTOptions, ProgressListener)}
 	 * method, this key isn't working with the other methods. Value can be

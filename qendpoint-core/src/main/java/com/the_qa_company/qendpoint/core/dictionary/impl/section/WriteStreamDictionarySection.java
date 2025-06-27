@@ -37,12 +37,14 @@ public class WriteStreamDictionarySection implements WriteDictionarySectionPriva
 	private long byteoutSize;
 	private boolean created;
 	private final CompressionType compressionType;
+	private final boolean usePfc;
 
 	public WriteStreamDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
 		this.bufferSize = bufferSize;
 		String fn = filename.getFileName().toString();
 		tempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_temp"));
 		compressionType = CompressionType.findOptionVal(spec.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
+		usePfc = spec.getBoolean(HDTOptionsKeys.DISk_USE_PFC, true);
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class WriteStreamDictionarySection implements WriteDictionarySectionPriva
 						ByteString str = (ByteString) (it.next());
 						assert str != null;
 						// Find common part.
-						int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+						int delta = usePfc ? ByteStringUtil.longestCommonPrefix(previousStr, str) : 0;
 						// Write Delta in VByte
 						VByte.encode(crcout, delta);
 						// Write remaining
