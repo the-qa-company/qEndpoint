@@ -31,7 +31,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 		return Stream
 				.of(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC,
 						HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM)
-				.flatMap(secType -> Stream.of(CompressionType.NONE, CompressionType.LZ4)
+				.flatMap(secType -> Stream.of(CompressionType.NONE, CompressionType.LZ4, CompressionType.ZSTD)
 						.map(compType -> new Object[] { secType, compType }))
 				.toList();
 	}

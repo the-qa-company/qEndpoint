@@ -1,8 +1,6 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivateAppender;
@@ -45,6 +43,7 @@ public class WriteStreamDictionarySection implements WriteDictionarySectionPriva
 		tempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_temp"));
 		compressionType = CompressionType.findOptionVal(spec.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
 		usePfc = spec.getBoolean(HDTOptionsKeys.DISk_USE_PFC, true);
+		System.out.println("\n\n\n" + usePfc + "\n\n\n");
 	}
 
 	@Override
@@ -187,7 +186,7 @@ public class WriteStreamDictionarySection implements WriteDictionarySectionPriva
 		public void append(ByteString str) throws IOException {
 			assert str != null;
 			// Find common part.
-			int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+			int delta = usePfc ? ByteStringUtil.longestCommonPrefix(previousStr, str) : 0;
 			// Write Delta in VByte
 			VByte.encode(crcout, delta);
 			// Write remaining
