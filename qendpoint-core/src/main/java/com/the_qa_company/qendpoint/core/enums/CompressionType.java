@@ -11,8 +11,9 @@ import org.apache.commons.compress.compressors.lzma.LZMACompressorInputStream;
 import org.apache.commons.compress.compressors.lzma.LZMACompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,6 +53,10 @@ public enum CompressionType {
 	 * lzma compression
 	 */
 	LZMA(LZMACompressorInputStream::new, LZMACompressorOutputStream::new),
+	/**
+	 * zstd
+	 */
+	ZSTD(ZstdCompressorInputStream::new, ZstdCompressorOutputStream::new),
 	/**
 	 * no compression
 	 */
