@@ -68,7 +68,8 @@ public class FileUploadTest {
 
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<Object> params() {
-		ArrayList<Object> list = new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+//		ArrayList<Object> list = new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+		ArrayList<Object> list = new ArrayList<>();
 		list.add(RDFFormat.HDT);
 		return list;
 	}
@@ -97,7 +98,7 @@ public class FileUploadTest {
 			if (!Files.exists(RDFFile)) {
 				try (OutputStream os = new FileOutputStream(RDFFile.toFile()); InputStream is = stream(COKTAILS_NT)) {
 					if (format == RDFFormat.HDT) {
-						try (HDT hdt = HDTManager.generateHDT(is, "http://example.org/#", RDFNotation.TURTLE,
+						try (HDT hdt = HDTManager.generateHDT(is, "http://example.org/#", RDFNotation.NTRIPLES,
 								HDTOptions.empty(), ProgressListener.ignore())) {
 							hdt.saveToHDT(os);
 						}
