@@ -92,7 +92,7 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 
 		// Load RDF in the dictionary and generate triples
 		dictionary.startProcessing();
-		parser.doParse(filename, baseUri, notation, true, appender);
+		parser.doParse(filename, baseUri, notation, true, appender, false);
 		dictionary.endProcessing();
 
 		// Reorganize both the dictionary and the triples

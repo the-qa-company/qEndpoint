@@ -40,9 +40,10 @@ public class UnicodeEscapeTest {
 				throw new RuntimeException(e);
 			}
 		}));
-		factory.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true, (t, i) -> ts1.add(t.tripleToString()));
-		factory2.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true,
-				(t, i) -> ts2.add(t.tripleToString()));
+		factory.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true, (t, i) -> ts1.add(t.tripleToString()),
+				true);
+		factory2.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true, (t, i) -> ts2.add(t.tripleToString()),
+				true);
 
 		Iterator<TripleString> it1 = ts1.iterator();
 		Iterator<TripleString> it2 = ts2.iterator();

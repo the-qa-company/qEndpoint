@@ -103,7 +103,7 @@ public class HDTDiffCat {
 				}
 			} else {
 				RDFParserCallback parser = RDFParserFactory.getParserCallback(type, spec);
-				parser.doParse(diff, "", type, true, callback);
+				parser.doParse(diff, "", type, true, callback, false);
 			}
 		} catch (Throwable t) {
 			try {
