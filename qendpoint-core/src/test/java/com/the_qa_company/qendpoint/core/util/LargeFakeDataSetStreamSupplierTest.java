@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIteratorUnordered;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
@@ -48,9 +49,10 @@ public class LargeFakeDataSetStreamSupplierTest {
 
 		Iterator<TripleString> it2 = triples.createTripleStringStream();
 		try (InputStream is = Files.newInputStream(testNt)) {
-			try (PipedCopyIterator<TripleString> it = RDFParserFactory.readAsIterator(
-					RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES), is, HDTTestUtils.BASE_URI, true,
-					RDFNotation.NTRIPLES)) {
+			RDFParserCallback parser = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES);
+			try (PipedCopyIterator<TripleString> it = PipedCopyIteratorUnordered
+					.createUnorderedOfCallback(pipe -> parser.doParse(is, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES,
+							true, (triple, pos) -> pipe.addElement(triple.tripleToString()), false))) {
 				it.forEachRemaining(s -> {
 					assertTrue(it2.hasNext());
 					assertEquals(it2.next(), s);
