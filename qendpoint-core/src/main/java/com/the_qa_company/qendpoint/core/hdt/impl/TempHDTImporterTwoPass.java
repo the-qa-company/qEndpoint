@@ -48,7 +48,7 @@ public class TempHDTImporterTwoPass implements TempHDTImporter {
 		}
 
 		@Override
-		public void processTriple(TripleString triple, long pos) {
+		public synchronized void processTriple(TripleString triple, long pos) {
 			dict.insert(triple.getSubject(), TripleComponentRole.SUBJECT);
 			dict.insert(triple.getPredicate(), TripleComponentRole.PREDICATE);
 			dict.insert(triple.getObject(), TripleComponentRole.OBJECT);
@@ -80,7 +80,7 @@ public class TempHDTImporterTwoPass implements TempHDTImporter {
 		}
 
 		@Override
-		public void processTriple(TripleString triple, long pos) {
+		public synchronized void processTriple(TripleString triple, long pos) {
 			triples.insert(dict.stringToId(triple.getSubject(), TripleComponentRole.SUBJECT),
 					dict.stringToId(triple.getPredicate(), TripleComponentRole.PREDICATE),
 					dict.stringToId(triple.getObject(), TripleComponentRole.OBJECT));
@@ -108,14 +108,14 @@ public class TempHDTImporterTwoPass implements TempHDTImporter {
 
 		// Load RDF in the dictionary
 		dictionary.startProcessing();
-		parser.doParse(filename, baseUri, notation, true, new DictionaryAppender(dictionary, listener));
+		parser.doParse(filename, baseUri, notation, true, new DictionaryAppender(dictionary, listener), false);
 		dictionary.endProcessing();
 
 		// Reorganize IDs before loading triples
 		modHDT.reorganizeDictionary(listener);
 
 		// Load triples (second pass)
-		parser.doParse(filename, baseUri, notation, true, new TripleAppender2(dictionary, triples, listener));
+		parser.doParse(filename, baseUri, notation, true, new TripleAppender2(dictionary, triples, listener), false);
 
 		// reorganize HDT
 		modHDT.reorganizeTriples(listener);

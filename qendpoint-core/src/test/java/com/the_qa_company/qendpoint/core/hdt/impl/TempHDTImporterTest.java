@@ -59,7 +59,7 @@ public class TempHDTImporterTest {
 			// force duplication of the triple string data
 			triples.add(new TripleString(triple.getSubject().toString(), triple.getPredicate().toString(),
 					triple.getObject().toString()));
-		});
+		}, true);
 		return triples.iterator();
 	}
 

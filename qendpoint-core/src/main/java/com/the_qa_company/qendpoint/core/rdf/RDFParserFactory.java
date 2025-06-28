@@ -21,6 +21,7 @@ package com.the_qa_company.qendpoint.core.rdf;
 
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIteratorUnordered;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFDeltaFileParser;
@@ -34,7 +35,6 @@ import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserTar;
 import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserZip;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
-import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 
 import java.io.InputStream;
 
@@ -97,8 +97,8 @@ public class RDFParserFactory {
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, InputStream stream,
 			String baseUri, boolean keepBNode, RDFNotation notation) {
-		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
-				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+		return PipedCopyIteratorUnordered.createUnorderedOfCallback(pipe -> parser.doParse(stream, baseUri, notation,
+				keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString()), true));
 	}
 
 	/**
@@ -112,8 +112,8 @@ public class RDFParserFactory {
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
 			boolean keepBNode, RDFNotation notation) {
-		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
-				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+		return PipedCopyIteratorUnordered.createUnorderedOfCallback(pipe -> parser.doParse(file, baseUri, notation,
+				keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString()), true));
 	}
 
 	/**
@@ -127,8 +127,8 @@ public class RDFParserFactory {
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, InputStream stream,
 			String baseUri, boolean keepBNode, RDFNotation notation, HDTOptions spec) {
-		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(stream, baseUri, notation, keepBNode,
-				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+		return PipedCopyIteratorUnordered.createUnorderedOfCallback(pipe -> parser.doParse(stream, baseUri, notation,
+				keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString()), true));
 	}
 
 	/**
@@ -143,8 +143,8 @@ public class RDFParserFactory {
 	 */
 	public static PipedCopyIterator<TripleString> readAsIterator(RDFParserCallback parser, String file, String baseUri,
 			boolean keepBNode, RDFNotation notation, HDTOptions spec) {
-		return PipedCopyIterator.createOfCallback(pipe -> parser.doParse(file, baseUri, notation, keepBNode,
-				(triple, pos) -> pipe.addElement(triple.tripleToString())));
+		return PipedCopyIteratorUnordered.createUnorderedOfCallback(pipe -> parser.doParse(file, baseUri, notation,
+				keepBNode, (triple, pos) -> pipe.addElement(triple.tripleToString()), true));
 	}
 
 }

@@ -18,24 +18,29 @@
 
 package com.the_qa_company.qendpoint.core.rdf.parsers;
 
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
+import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.quad.QuadString;
+import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import org.apache.commons.io.IOUtils;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.iri.impl.LexerFixer;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.lang.LabelToNode;
 import org.apache.jena.riot.system.StreamRDF;
 import org.apache.jena.sparql.core.Quad;
-import com.the_qa_company.qendpoint.core.enums.RDFNotation;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
-import com.the_qa_company.qendpoint.core.exceptions.ParserException;
-import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
-import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 
 /**
  * @author mario.arias
@@ -43,13 +48,144 @@ import org.slf4j.LoggerFactory;
 public class RDFParserRIOT implements RDFParserCallback {
 	private static final Logger log = LoggerFactory.getLogger(RDFParserRIOT.class);
 
-	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer) {
-		if (keepBNode) {
-			RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
-					.parse(buffer);
-		} else {
-			RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
+	private static final int CORES = Runtime.getRuntime().availableProcessors();
+
+	static volatile boolean fixedLexer = false;
+
+	private void parse(InputStream stream, String baseUri, Lang lang, boolean keepBNode, ElemStringBuffer buffer,
+			boolean parallel) {
+
+		long started = System.currentTimeMillis();
+		try {
+			try (FileWriter fileWriter = new FileWriter("parsingStarted.txt")) {
+				IOUtils.write("Started parsing at " + started + "\n", fileWriter);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
+
+		if (!fixedLexer) {
+			synchronized (this) {
+				if (!fixedLexer) {
+					LexerFixer.fixLexers();
+					fixedLexer = true;
+				}
+			}
+		}
+
+		if (parallel && (lang == Lang.TURTLE)) {
+			if (keepBNode) {
+
+				ChunkedConcurrentInputStream cs = new ChunkedConcurrentInputStream(stream, CORES - 1);
+
+				InputStream bnodes = cs.getBnodeStream();
+
+				var threads = new ArrayList<Thread>();
+
+				Thread e1 = new Thread(() -> {
+					RDFParser.source(bnodes).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+							.parse(buffer);
+				});
+				e1.setName("BNode parser");
+				threads.add(e1);
+
+				InputStream[] streams = cs.getStreams();
+				int i = 0;
+				for (InputStream s : streams) {
+					int temp = i + 1;
+					Thread e = new Thread(() -> {
+						RDFParser.source(s).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+								.parse(buffer);
+					});
+					i++;
+					e.setName("Stream parser " + i);
+					threads.add(e);
+
+				}
+
+				threads.forEach(Thread::start);
+				for (Thread thread : threads) {
+					try {
+						while (thread.isAlive()) {
+							thread.join(1000);
+						}
+
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				}
+
+			} else {
+				RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
+			}
+		} else if (parallel && (lang == Lang.NQUADS || lang == Lang.NTRIPLES)) {
+
+			if (keepBNode) {
+
+				ConcurrentInputStream cs = new ConcurrentInputStream(stream, CORES - 1);
+
+				InputStream bnodes = cs.getBnodeStream();
+
+				var threads = new ArrayList<Thread>();
+
+				Thread e1 = new Thread(() -> {
+					RDFParser.source(bnodes).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+							.parse(buffer);
+				});
+				e1.setName("BNode parser");
+				threads.add(e1);
+
+				InputStream[] streams = cs.getStreams();
+				int i = 0;
+				for (InputStream s : streams) {
+					int temp = i + 1;
+					Thread e = new Thread(() -> {
+						RDFParser.source(s).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+								.parse(buffer);
+					});
+					i++;
+					e.setName("Stream parser " + i);
+					threads.add(e);
+
+				}
+
+				threads.forEach(Thread::start);
+				for (Thread thread : threads) {
+					try {
+						while (thread.isAlive()) {
+							thread.join(1000);
+						}
+
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				}
+
+//			RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+//					.parse(buffer);
+			} else {
+				RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
+			}
+		} else {
+			if (keepBNode) {
+				RDFParser.source(stream).base(baseUri).lang(lang).labelToNode(LabelToNode.createUseLabelAsGiven())
+						.parse(buffer);
+			} else {
+				RDFParser.source(stream).base(baseUri).lang(lang).parse(buffer);
+			}
+		}
+
+		long finished = System.currentTimeMillis();
+		try {
+			try (FileWriter fileWriter = new FileWriter("parsingFinished.txt")) {
+				IOUtils.write(
+						"Finished parsing at " + finished + "\n" + "Total time: " + (finished - started) / 1000 + "\n",
+						fileWriter);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
 	/*
@@ -59,10 +195,10 @@ public class RDFParserRIOT implements RDFParserCallback {
 	 * hdt.rdf.RDFParserCallback.Callback)
 	 */
 	@Override
-	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
+	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		try (InputStream input = IOUtil.getFileInputStream(fileName)) {
-			doParse(input, baseUri, notation, keepBNode, callback);
+			doParse(input, baseUri, notation, keepBNode, callback, true);
 		} catch (FileNotFoundException e) {
 			throw new ParserException(e);
 		} catch (Exception e) {
@@ -73,16 +209,16 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
+		System.out.println();
 		try {
-			ElemStringBuffer buffer = new ElemStringBuffer(callback);
 			switch (notation) {
-			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, buffer);
-			case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, buffer);
-			case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, buffer);
-			case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, buffer);
-			case TRIG -> parse(input, baseUri, Lang.TRIG, keepBNode, buffer);
-			case TRIX -> parse(input, baseUri, Lang.TRIX, keepBNode, buffer);
+			case NTRIPLES -> parse(input, baseUri, Lang.NTRIPLES, keepBNode, new ElemStringBuffer(callback), parallel);
+			case NQUAD -> parse(input, baseUri, Lang.NQUADS, keepBNode, new ElemStringBuffer(callback), parallel);
+			case RDFXML -> parse(input, baseUri, Lang.RDFXML, keepBNode, new ElemStringBuffer(callback), parallel);
+			case N3, TURTLE -> parse(input, baseUri, Lang.TURTLE, keepBNode, new ElemStringBuffer(callback), parallel);
+			case TRIG -> parse(input, baseUri, Lang.TRIG, keepBNode, new ElemStringBuffer(callback), parallel);
+			case TRIX -> parse(input, baseUri, Lang.TRIX, keepBNode, new ElemStringBuffer(callback), parallel);
 			default -> throw new NotImplementedException("Parser not found for format " + notation);
 			}
 		} catch (Exception e) {
@@ -91,17 +227,16 @@ public class RDFParserRIOT implements RDFParserCallback {
 		}
 	}
 
-	private static class ElemStringBuffer implements StreamRDF {
-		private final TripleString triple = new TripleString();
-		private final QuadString quad = new QuadString();
+	public static class ElemStringBuffer implements StreamRDF {
 		private final RDFCallback callback;
 
-		private ElemStringBuffer(RDFCallback callback) {
+		public ElemStringBuffer(RDFCallback callback) {
 			this.callback = callback;
 		}
 
 		@Override
 		public void triple(Triple parsedTriple) {
+			TripleString triple = new TripleString();
 			triple.setAll(JenaNodeFormatter.format(parsedTriple.getSubject()),
 					JenaNodeFormatter.format(parsedTriple.getPredicate()),
 					JenaNodeFormatter.format(parsedTriple.getObject()));
@@ -110,6 +245,7 @@ public class RDFParserRIOT implements RDFParserCallback {
 
 		@Override
 		public void quad(Quad parsedQuad) {
+			QuadString quad = new QuadString();
 			quad.setAll(JenaNodeFormatter.format(parsedQuad.getSubject()),
 					JenaNodeFormatter.format(parsedQuad.getPredicate()),
 					JenaNodeFormatter.format(parsedQuad.getObject()), JenaNodeFormatter.format(parsedQuad.getGraph()));
