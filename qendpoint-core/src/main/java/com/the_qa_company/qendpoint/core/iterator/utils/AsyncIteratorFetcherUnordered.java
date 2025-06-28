@@ -15,7 +15,26 @@ public class AsyncIteratorFetcherUnordered<E> extends AsyncIteratorFetcher<E> {
 
 	private static final int CORES = Runtime.getRuntime().availableProcessors();
 
-	public static final int BUFFER = 1024 * 32;
+	public static final int BUFFER;
+
+	static {
+		long maxMemory = Runtime.getRuntime().maxMemory() / 1024 / 1024; // in
+																			// MB
+		if (maxMemory >= 32 * 1024) {
+			BUFFER = 1024 * 32;
+		} else if (maxMemory >= 16 * 1024) {
+			BUFFER = 1024 * 16;
+		} else if (maxMemory >= 8 * 1024) {
+			BUFFER = 1024 * 8;
+		} else if (maxMemory >= 4 * 1024) {
+			BUFFER = 1024 * 4;
+		} else if (maxMemory >= 2 * 1024) {
+			BUFFER = 1024 * 2;
+		} else {
+			BUFFER = 1024;
+		}
+	}
+
 	private final Iterator<E> iterator;
 	private boolean end;
 	volatile Queue<E>[] queue = new Queue[CORES * 2];

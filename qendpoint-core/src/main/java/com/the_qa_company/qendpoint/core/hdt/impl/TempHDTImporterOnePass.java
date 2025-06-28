@@ -53,7 +53,7 @@ public class TempHDTImporterOnePass implements TempHDTImporter {
 		}
 
 		@Override
-		public void processTriple(TripleString triple, long pos) {
+		public synchronized void processTriple(TripleString triple, long pos) {
 			long s = dict.insert(triple.getSubject(), TripleComponentRole.SUBJECT);
 			long p = dict.insert(triple.getPredicate(), TripleComponentRole.PREDICATE);
 			long o = dict.insert(triple.getObject(), TripleComponentRole.OBJECT);

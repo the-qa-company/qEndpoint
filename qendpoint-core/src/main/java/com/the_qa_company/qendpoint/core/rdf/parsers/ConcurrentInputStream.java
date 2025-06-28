@@ -14,6 +14,27 @@ import java.nio.charset.StandardCharsets;
 public class ConcurrentInputStream {
 
 	private static final Logger log = LoggerFactory.getLogger(ConcurrentInputStream.class);
+
+	public static final int BUFFER;
+
+	static {
+		long maxMemory = Runtime.getRuntime().maxMemory() / 1024 / 1024; // in
+																			// MB
+		if (maxMemory >= 32 * 1024) {
+			BUFFER = 128;
+		} else if (maxMemory >= 16 * 1024) {
+			BUFFER = 128 / 2;
+		} else if (maxMemory >= 8 * 1024) {
+			BUFFER = 128 / 4;
+		} else if (maxMemory >= 4 * 1024) {
+			BUFFER = 128 / 8;
+		} else if (maxMemory >= 2 * 1024) {
+			BUFFER = 128 / 16;
+		} else {
+			BUFFER = 128 / 32;
+		}
+	}
+
 	private final InputStream source;
 	private final int numberOfStreams;
 
@@ -40,7 +61,7 @@ public class ConcurrentInputStream {
 		// buffered reader that Jena uses inside the parser, which is 131072
 		// bytes. If our pipeSize is too small it limits the ability for the
 		// parsers to work concurrently.
-		int pipeSize = 131072 * 1024;
+		int pipeSize = 131072 * BUFFER;
 
 		try {
 			// Set up main fan-out pipes
