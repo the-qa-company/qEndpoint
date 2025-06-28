@@ -48,7 +48,7 @@ public class TempHDTImporterTwoPass implements TempHDTImporter {
 		}
 
 		@Override
-		public void processTriple(TripleString triple, long pos) {
+		public synchronized void processTriple(TripleString triple, long pos) {
 			dict.insert(triple.getSubject(), TripleComponentRole.SUBJECT);
 			dict.insert(triple.getPredicate(), TripleComponentRole.PREDICATE);
 			dict.insert(triple.getObject(), TripleComponentRole.OBJECT);
@@ -80,7 +80,7 @@ public class TempHDTImporterTwoPass implements TempHDTImporter {
 		}
 
 		@Override
-		public void processTriple(TripleString triple, long pos) {
+		public synchronized void processTriple(TripleString triple, long pos) {
 			triples.insert(dict.stringToId(triple.getSubject(), TripleComponentRole.SUBJECT),
 					dict.stringToId(triple.getPredicate(), TripleComponentRole.PREDICATE),
 					dict.stringToId(triple.getObject(), TripleComponentRole.OBJECT));
