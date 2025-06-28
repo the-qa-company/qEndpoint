@@ -14,6 +14,7 @@ import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResult;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
+import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcherUnordered;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -187,7 +188,7 @@ public class HDTDiskImporter implements Closeable {
 				"Sorting sections with chunk of size: " + StringUtil.humanReadableByteCount(chunkSize, true) + "B with "
 						+ ways + "ways and " + workers + " worker(s)");
 
-		AsyncIteratorFetcher<TripleString> source = new AsyncIteratorFetcher<>(iterator);
+		AsyncIteratorFetcherUnordered<TripleString> source = new AsyncIteratorFetcherUnordered<>(iterator);
 
 		profiler.pushSection("section compression");
 		CompressionResult compressionResult;
