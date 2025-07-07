@@ -365,6 +365,7 @@ public class StreamTriples implements TriplesPrivate {
 		public void goTo(long pos) {
 			if (pos == numSharedTriples) {
 				goToAfterShared();
+				triple.setAll(numShared, 0, 0);
 				return;
 			}
 			if (pos == 0) {

@@ -5,12 +5,12 @@ import com.the_qa_company.qendpoint.core.compact.bitmap.ModifiableBitmap;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.BaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
+import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.GroupBySubjectMapIterator;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionMap;
 import com.the_qa_company.qendpoint.core.dictionary.impl.section.StreamDictionarySectionMap;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
@@ -21,8 +21,6 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
-import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
-import com.the_qa_company.qendpoint.core.iterator.utils.MergeExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
@@ -31,7 +29,6 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -244,23 +241,48 @@ public class HDTManagerTest {
 			assertEqualsHDT("Shared", ed.getShared(), ad.getShared());
 			assertEquals(ed.getType(), ad.getType());
 
+			long sidsharedAc = GroupBySubjectMapIterator.firstSubjectTripleId(actual);
+			long sidsharedEx = GroupBySubjectMapIterator.firstSubjectTripleId(expected);
+			assertEquals("invalid shared id id", sidsharedEx, sidsharedAc);
+
 			// test triples
 			assertEquals("non matching sizes", expected.getTriples().getNumberOfElements(),
 					actual.getTriples().getNumberOfElements());
-			IteratorTripleID actualIt = actual.getTriples().searchAll();
-			IteratorTripleID expectedIt = expected.getTriples().searchAll();
+			{
+				IteratorTripleID actualIt = actual.getTriples().searchAll();
+				IteratorTripleID expectedIt = expected.getTriples().searchAll();
 
-			while (expectedIt.hasNext()) {
-				assertTrue(actualIt.hasNext());
+				while (expectedIt.hasNext()) {
+					assertTrue(actualIt.hasNext());
 
-				TripleID expectedTriple = expectedIt.next();
-				TripleID actualTriple = actualIt.next();
+					TripleID expectedTriple = expectedIt.next();
+					TripleID actualTriple = actualIt.next();
 
-				long location = expectedIt.getLastTriplePosition();
-				assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
-				assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+					long location = expectedIt.getLastTriplePosition();
+					assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
+					assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+				}
+				assertFalse(actualIt.hasNext());
 			}
-			assertFalse(actualIt.hasNext());
+			{
+				IteratorTripleID actualIt = actual.getTriples().searchAll();
+				IteratorTripleID expectedIt = expected.getTriples().searchAll();
+				actualIt.goTo(sidsharedAc);
+				expectedIt.goTo(sidsharedAc);
+
+				while (expectedIt.hasNext()) {
+					assertTrue(actualIt.hasNext());
+
+					TripleID expectedTriple = expectedIt.next();
+					TripleID actualTriple = actualIt.next();
+
+					long location = expectedIt.getLastTriplePosition();
+					assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
+					assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+				}
+				assertFalse(actualIt.hasNext());
+			}
+
 
 			// test header
 			assertEquals(actual.getHeader().getBaseURI(), expected.getHeader().getBaseURI());

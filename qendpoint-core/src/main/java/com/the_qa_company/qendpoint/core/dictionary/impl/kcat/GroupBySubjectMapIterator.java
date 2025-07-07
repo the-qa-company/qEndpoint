@@ -96,7 +96,7 @@ public class GroupBySubjectMapIterator implements Iterator<TripleID> {
 		}
 	}
 
-	private static long firstSubjectTripleId(HDT hdt) {
+	public static long firstSubjectTripleId(HDT hdt) {
 		if (hdt.getDictionary().getSubjects().getNumberOfElements() == 0) {
 			// no subjects
 			return -1;
