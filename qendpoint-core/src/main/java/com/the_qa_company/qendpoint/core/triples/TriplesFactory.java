@@ -26,7 +26,11 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapQuadTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
+import com.the_qa_company.qendpoint.core.triples.impl.StreamTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.TriplesList;
+import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
+import com.the_qa_company.qendpoint.core.triples.impl.WriteStreamTriples;
+import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 
 import java.io.IOException;
 
@@ -87,8 +91,27 @@ public class TriplesFactory {
 			return new BitmapTriples();
 		} else if (HDTVocabulary.TRIPLES_TYPE_BITMAP_QUAD.equals(format)) {
 			return new BitmapQuadTriples();
+		} else if (HDTVocabulary.TRIPLES_TYPE_STREAM.equals(format)) {
+			return new StreamTriples();
 		} else {
 			throw new IllegalArgumentException("No implementation for Triples type: " + format);
+		}
+	}
+	public static TriplesPrivate createWriteTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize) throws IOException {
+		return createWriteTriples(spec, triples, bufferSize, -1);
+	}
+
+	public static TriplesPrivate createWriteTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, long quads) throws IOException {
+		String format = spec.get(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP);
+
+		switch (format) {
+			case HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP -> {
+				return new WriteBitmapTriples(spec, triples, bufferSize, quads);
+			}
+			case HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM -> {
+				return new WriteStreamTriples(spec, triples, bufferSize, quads);
+			}
+			default -> throw new IllegalArgumentException("No implementation for write triples type: " + format);
 		}
 	}
 

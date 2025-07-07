@@ -318,6 +318,7 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, quadInfoAG, triples);
 	}
 
+	/*
 	public class BitmapTriplesAppender {
 		long lastX = 0, lastY = 0, lastZ = 0;
 		long x, y, z;
@@ -395,4 +396,5 @@ public class WriteBitmapTriples implements TriplesPrivate {
 			vectorZ.aggressiveTrimToSize();
 		}
 	}
+	 */
 }

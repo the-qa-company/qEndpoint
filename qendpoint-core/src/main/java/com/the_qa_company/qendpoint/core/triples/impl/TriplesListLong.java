@@ -560,4 +560,9 @@ public class TriplesListLong implements TempTriples {
 	public long getGraphsCount() {
 		return numGraphs;
 	}
+
+	@Override
+	public long getSharedCount() {
+		throw new NotImplementedException();
+	}
 }

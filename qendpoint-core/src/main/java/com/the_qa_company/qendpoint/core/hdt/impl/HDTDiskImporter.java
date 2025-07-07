@@ -247,7 +247,7 @@ public class HDTDiskImporter implements Closeable {
 			MapCompressTripleMerger tripleMapper = new MapCompressTripleMerger(basePath.resolve("tripleMapper"),
 					new AsyncIteratorFetcher<>(TripleGenerator.of(mapper.getTripleCount(), mapper.supportsGraph())),
 					mapper, listener, order, bufferSize, chunkSize, 1 << ways,
-					mapper.supportsGraph() ? mapper.getGraphsCount() : 0);
+					mapper.supportsGraph() ? mapper.getGraphsCount() : 0, mapper.getSharedCount());
 			tripleCompressionResult = tripleMapper.merge(workers, compressMode);
 		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);

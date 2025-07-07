@@ -409,6 +409,13 @@ public class HDTOptionsKeys {
 	@Value(key = DISK_WRITE_SECTION_TYPE_KEY, desc = "stream section")
 	public static final String DISK_WRITE_SECTION_TYPE_VALUE_STREAM = "stream";
 
+	@Key(type = Key.Type.ENUM, desc = "Write triples type for disk algorithm")
+	public static final String DISK_WRITE_TRIPLES_TYPE_KEY = "disk.writeTriplesType";
+	@Value(key = DISK_WRITE_TRIPLES_TYPE_KEY, desc = "bitmap")
+	public static final String DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP = "bitmap";
+	@Value(key = DISK_WRITE_TRIPLES_TYPE_KEY, desc = "stream")
+	public static final String DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM = "stream";
+	//
 	/**
 	 * Location of the HDTCat temp files
 	 */

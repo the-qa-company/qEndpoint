@@ -43,7 +43,6 @@ public class WriteStreamDictionarySection implements WriteDictionarySectionPriva
 		tempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_temp"));
 		compressionType = CompressionType.findOptionVal(spec.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
 		usePfc = spec.getBoolean(HDTOptionsKeys.DISk_USE_PFC, true);
-		System.out.println("\n\n\n" + usePfc + "\n\n\n");
 	}
 
 	@Override

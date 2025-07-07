@@ -37,15 +37,13 @@ public class OneReadTempTriples implements TempTriples {
 	private IteratorTripleID iterator;
 	private TripleComponentOrder order;
 	private long graphs;
+	private long shared;
 
-	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples) {
-		this(iterator, order, triples, 0);
-	}
-
-	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples, long graphs) {
+	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples, long graphs, long shared) {
 		this.iterator = new SimpleIteratorTripleID(iterator, order, triples);
 		this.order = order;
 		this.graphs = graphs;
+		this.shared = shared;
 	}
 
 	@Override
@@ -208,11 +206,6 @@ public class OneReadTempTriples implements TempTriples {
 	}
 
 	@Override
-	public List<TripleComponentOrder> getTripleComponentOrder(TripleID t) {
-		return List.of();
-	}
-
-	@Override
 	public void close() throws IOException {
 		// nothing to do
 	}
@@ -220,6 +213,11 @@ public class OneReadTempTriples implements TempTriples {
 	@Override
 	public long getGraphsCount() {
 		return graphs;
+	}
+
+	@Override
+	public long getSharedCount() {
+		return shared;
 	}
 
 	private static class SimpleIteratorTripleID implements IteratorTripleID {

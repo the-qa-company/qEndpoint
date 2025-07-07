@@ -23,9 +23,11 @@ import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.Triples;
+import com.the_qa_company.qendpoint.core.triples.TriplesFactory;
+import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.OneReadTempTriples;
-import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
+import com.the_qa_company.qendpoint.core.triples.impl.StreamTriples;
 import com.the_qa_company.qendpoint.core.util.Profiler;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
@@ -111,10 +113,13 @@ public class KCatImpl implements Closeable {
 
 	private static TripleComponentOrder getOrder(HDT hdt) {
 		Triples triples = hdt.getTriples();
-		if (!(triples instanceof BitmapTriples bt)) {
-			throw new IllegalArgumentException("HDT Triples can't be BitmapTriples");
+		if (triples instanceof BitmapTriples bt) {
+			return bt.getOrder();
 		}
-		return bt.getOrder();
+		if (triples instanceof StreamTriples st) {
+			return st.getOrder();
+		}
+		throw new IllegalArgumentException("Unknown HDT Triples implementation");
 	}
 
 	private final String baseURI;
@@ -384,14 +389,14 @@ public class KCatImpl implements Closeable {
 				// stream
 				Iterator<TripleID> tripleIterator = GroupBySubjectMapIterator.fromHDTs(merger, hdts, deleteBitmaps);
 				long quads = quad ? dictionary.getNgraphs() : -1;
-				try (WriteBitmapTriples triples = new WriteBitmapTriples(hdtFormat, location.resolve("triples"),
+				try (TriplesPrivate triples = TriplesFactory.createWriteTriples(hdtFormat, location.resolve("triples"),
 						bufferSize, quads)) {
 					long count = Arrays.stream(hdts).mapToLong(h -> h.getTriples().getNumberOfElements()).sum();
 
 					il.setRange(40, 80);
 					il.setPrefix("Merge triples: ");
 					il.notifyProgress(0, "start");
-					triples.load(new OneReadTempTriples(tripleIterator, order, count, quads), il);
+					triples.load(new OneReadTempTriples(tripleIterator, order, count, quads, merger.getCountShared()), il);
 					profiler.popSection();
 
 					WriteHDTImpl writeHDT = new WriteHDTImpl(hdtFormat, location, dictionary, triples,
