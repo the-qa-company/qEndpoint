@@ -116,6 +116,7 @@ public class WriteStreamDictionarySection implements WriteDictionarySectionPriva
 			// write empty an empty data section because we don't have anything
 			out.writeCRC();
 		}
+		IOUtil.writeInt(out, StreamDictionarySection.STREAM_SECTION_END_COOKIE);
 	}
 
 	@Override

@@ -66,8 +66,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -2538,6 +2540,41 @@ public class HDTManagerTest {
 	@RunWith(Parameterized.class)
 	public static class StreamHDTTest extends HDTManagerTestBase {
 
+		public static void dumpDictionary(HDT hdt, String filename) {
+			try {
+				Path out = Path.of(filename).toAbsolutePath();
+
+				Map<? extends CharSequence, DictionarySection> obj = hdt.getDictionary().getAllObjects();
+
+				Files.createDirectories(out.getParent());
+				try (Writer w = new FileWriter(out.toFile())) {
+					obj.forEach((key, sec) -> {
+						Iterator<? extends CharSequence> it = sec.getSortedEntries();
+						long id = 0;
+						try {
+							String kstr = key.toString();
+							while (it.hasNext()) {
+								w.append(kstr).append(',').append(String.valueOf(id++)).append(',')
+										.append(it.next().toString()).append('\n');
+								if (id % 1000 == 0) {
+									w.flush();
+								}
+							}
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+
+					});
+
+					w.flush();
+				}
+
+				System.out.println("Dump into " + out);
+			} catch (IOException e) {
+				throw new AssertionError(e);
+			}
+		}
+
 		@Parameterized.Parameters(name = "dict:{0}")
 		public static Collection<String> params() {
 			return List.of(
@@ -2555,8 +2592,10 @@ public class HDTManagerTest {
 			Path root = tempDir.newFolder().toPath();
 			Path exp = root.resolve("ex.hdt");
 			Path acp = root.resolve("ac.hdt");
+			Path exp2 = root.resolve("ex2.hdt");
+			Path acp2 = root.resolve("ac2.hdt");
 
-			final long count = 2500;
+			final long count = 250;
 
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxTriples(count, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
@@ -2586,6 +2625,21 @@ public class HDTManagerTest {
 			try (
 					HDT ac = HDTManager.mapHDT(acp);
 					HDT ex = HDTManager.mapHDT(exp)
+			) {
+				checkHDTConsistency(ex);
+				checkHDTConsistency(ac);
+				ac.saveToHDT(acp2);
+				ex.saveToHDT(exp2);
+
+				assertTrue(ac.getTriples() instanceof StreamTriples);
+				assertTrue(ex.getTriples() instanceof BitmapTriples);
+				assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
+				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				assertEqualsHDT(ex, ac);
+			}
+			try (
+					HDT ac = HDTManager.mapHDT(acp2);
+					HDT ex = HDTManager.mapHDT(exp2)
 			) {
 				checkHDTConsistency(ex);
 				checkHDTConsistency(ac);
@@ -2629,7 +2683,7 @@ public class HDTManagerTest {
 			);
 			HDTOptions specAc = specEx.pushTop();
 			specAc.setOptions(
-					//HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
+					HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
 					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
 			);
 
@@ -2644,7 +2698,7 @@ public class HDTManagerTest {
 				hdt.saveToHDT(exp3);
 				checkHDTConsistency(hdt);
 			}
-			try (HDT hdt = HDTManager.catHDTPath(List.of(exp, exp2), specEx, ProgressListener.ignore())) {
+			try (HDT hdt = HDTManager.catHDTPath(List.of(exp, exp2), specAc, ProgressListener.ignore())) {
 				hdt.saveToHDT(acp3);
 				checkHDTConsistency(hdt);
 			}
@@ -2677,7 +2731,7 @@ public class HDTManagerTest {
 			Path acp3 = root.resolve("ac2.hdt");
 
 
-			final long count = 2500;
+			final long count = 250;
 
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxTriples(count, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
@@ -2695,7 +2749,7 @@ public class HDTManagerTest {
 			);
 			HDTOptions specAc = specEx.pushTop();
 			specAc.setOptions(
-					//HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
+					HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
 					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
 			);
 

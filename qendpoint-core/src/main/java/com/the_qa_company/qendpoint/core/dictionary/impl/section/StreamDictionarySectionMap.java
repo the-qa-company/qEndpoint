@@ -73,6 +73,11 @@ public class StreamDictionarySectionMap implements DictionarySectionPrivate, Clo
 		long base = input.getTotalBytes();
 		IOUtil.skip(crcin, bufferSize + 4); // Including CRC32
 
+		int cookie = IOUtil.readInt(crcin);
+		if (cookie != StreamDictionarySection.STREAM_SECTION_END_COOKIE) {
+			throw new IOException("Can't read stream triples end cookie, found 0x" + Integer.toHexString(cookie));
+		}
+
 		endOffset = input.getTotalBytes();
 
 		// Read packed data

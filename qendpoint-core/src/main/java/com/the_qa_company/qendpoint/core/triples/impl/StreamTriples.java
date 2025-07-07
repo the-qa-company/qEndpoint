@@ -42,6 +42,7 @@ public class StreamTriples implements TriplesPrivate {
 	public static final int FLAG_SAME_PREDICATE = 1 << 1;
 	public static final int FLAG_END = 1 << 2;
 	public static final int FLAG_SHARED_END = 1 << 3;
+	public static final int STREAM_TRIPLES_END_COOKIE = 0x48545324;
 	private long numTriples;
 	private long numShared;
 	private long numSharedTriples;
@@ -113,6 +114,7 @@ public class StreamTriples implements TriplesPrivate {
 		try (InputStream is = stream(false)) {
 			is.transferTo(output); // the stream already has its own crc
 		}
+		IOUtil.writeInt(output, STREAM_TRIPLES_END_COOKIE); // end cookie
 	}
 
 	@Override
@@ -155,6 +157,11 @@ public class StreamTriples implements TriplesPrivate {
 
 			bufferShared.readStream(input, 0, compressedSizeShared, iListener);
 			bufferCommon.readStream(input, 0, compressedSizeCommon, iListener);
+
+			int cookie = IOUtil.readInt(input);
+			if (cookie != STREAM_TRIPLES_END_COOKIE) {
+				throw new IOException("Can't read stream triples end cookie, found 0x" + Integer.toHexString(cookie));
+			}
 		} catch (Throwable t) {
 			cleanup();
 			throw t;
@@ -203,6 +210,11 @@ public class StreamTriples implements TriplesPrivate {
 			mappedShared = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base, compressedSizeShared);
 			mappedCommon = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base + compressedSizeShared, compressedSizeCommon);
 			IOUtil.skip(input, compressedSizeShared + compressedSizeCommon);
+
+			int cookie = IOUtil.readInt(input);
+			if (cookie != STREAM_TRIPLES_END_COOKIE) {
+				throw new IOException("Can't read stream triples end cookie, found 0x" + Integer.toHexString(cookie));
+			}
 		} catch (Throwable t) {
 			cleanup();
 			throw t;

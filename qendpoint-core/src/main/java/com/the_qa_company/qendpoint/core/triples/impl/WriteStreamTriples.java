@@ -95,6 +95,7 @@ public class WriteStreamTriples implements TriplesPrivate {
 		assert compressedSizeCommon == Files.size(triplesCommon);
 		Files.copy(this.triplesShared, output);
 		Files.copy(this.triplesCommon, output);
+		IOUtil.writeInt(output, StreamTriples.STREAM_TRIPLES_END_COOKIE); // end cookie
 	}
 
 	@Override

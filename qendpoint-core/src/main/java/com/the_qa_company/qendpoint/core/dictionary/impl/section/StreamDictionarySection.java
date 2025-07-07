@@ -28,6 +28,7 @@ import java.util.Iterator;
 
 public class StreamDictionarySection implements DictionarySectionPrivate, Closeable {
 	public static final int TYPE_INDEX = 0x30;
+	public static final int STREAM_SECTION_END_COOKIE = 0x48535324;
 	BigByteBuffer data = BigByteBuffer.allocate(0);
 	private long numstrings;
 	private long bufferSize;
@@ -84,6 +85,7 @@ public class StreamDictionarySection implements DictionarySectionPrivate, Closea
 		out.setCRC(new CRC32());
 		data.writeStream(out, 0, bufferSize, listener);
 		out.writeCRC();
+		IOUtil.writeInt(out, STREAM_SECTION_END_COOKIE);
 	}
 
 	@Override
@@ -118,6 +120,11 @@ public class StreamDictionarySection implements DictionarySectionPrivate, Closea
 
 		if (!in.readCRCAndCheck()) {
 			throw new CRCException("CRC Error while reading Dictionary Section Plain Front Coding Data.");
+		}
+
+		int cookie = IOUtil.readInt(in);
+		if (cookie != STREAM_SECTION_END_COOKIE) {
+			throw new IOException("Can't read stream triples end cookie, found 0x" + Integer.toHexString(cookie));
 		}
 	}
 
