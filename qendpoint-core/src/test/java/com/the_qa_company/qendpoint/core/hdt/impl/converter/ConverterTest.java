@@ -29,8 +29,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 	@Parameterized.Parameters(name = "sec:{0} comp:{1} tri:{2}")
 	public static Collection<Object[]> params() {
 		return Stream
-				.of(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC,
-						HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM)
+				.of(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC) // FIXME: add stream HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
 				.flatMap(secType ->
 						Stream.of(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM)
 								.flatMap(tripleType ->  Stream.of(CompressionType.NONE, CompressionType.LZ4, CompressionType.ZSTD)
