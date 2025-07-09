@@ -2575,17 +2575,41 @@ public class HDTManagerTest {
 			}
 		}
 
-		@Parameterized.Parameters(name = "dict:{0}")
-		public static Collection<String> params() {
-			return List.of(
+		@Parameterized.Parameters(name = "dict:{0} strDict:{1} strTrip:{2} triples:{3}")
+		public static Collection<Object[]> params() {
+			return Stream.of(
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
 					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG
-			);
+			).flatMap(dictType ->
+					Stream.of(false).flatMap( // FIXME: implement streamed dict
+							streamDict ->
+									Stream.of(false, true).map(
+											streamTriples ->
+													new Object[] { dictType, streamDict, streamTriples, 500 }
+									)
+					)
+			).toList();
 		}
 
 		@Parameterized.Parameter
 		public String dictType;
+		@Parameterized.Parameter(1)
+		public boolean streamDict;
+		@Parameterized.Parameter(2)
+		public boolean streamTriples;
+		@Parameterized.Parameter(3)
+		public long triplesCount;
+
+		private HDTOptions applyStreamSpec(HDTOptions spec) {
+			if (streamDict) {
+				spec.set(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
+			}
+			if (streamTriples) {
+				spec.set(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM);
+			}
+			return spec;
+		}
 
 		@Test
 		public void diskGenTest() throws IOException, ParserException, NotFoundException {
@@ -2595,10 +2619,8 @@ public class HDTManagerTest {
 			Path exp2 = root.resolve("ex2.hdt");
 			Path acp2 = root.resolve("ac2.hdt");
 
-			final long count = 250;
-
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(count, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
 					.withUnicode(false);
 
 			HDTOptions specEx = HDTOptions.of(
@@ -2611,11 +2633,7 @@ public class HDTManagerTest {
 					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
 					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt")
 			);
-			HDTOptions specAc = specEx.pushTop();
-			specAc.setOptions(
-					HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
-					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
-			);
+			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
 
 			supplier.reset();
 			supplier.createAndSaveFakeHDT(specEx, exp);
@@ -2631,9 +2649,17 @@ public class HDTManagerTest {
 				ac.saveToHDT(acp2);
 				ex.saveToHDT(exp2);
 
-				assertTrue(ac.getTriples() instanceof StreamTriples);
+				if (streamTriples) {
+					assertTrue(ac.getTriples() instanceof StreamTriples);
+				} else {
+					assertTrue(ac.getTriples() instanceof BitmapTriples);
+				}
+				if (streamDict) {
+					assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
+				} else {
+					assertTrue(ac.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				}
 				assertTrue(ex.getTriples() instanceof BitmapTriples);
-				assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
 				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
 				assertEqualsHDT(ex, ac);
 			}
@@ -2644,9 +2670,17 @@ public class HDTManagerTest {
 				checkHDTConsistency(ex);
 				checkHDTConsistency(ac);
 
-				assertTrue(ac.getTriples() instanceof StreamTriples);
+				if (streamTriples) {
+					assertTrue(ac.getTriples() instanceof StreamTriples);
+				} else {
+					assertTrue(ac.getTriples() instanceof BitmapTriples);
+				}
+				if (streamDict) {
+					assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
+				} else {
+					assertTrue(ac.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				}
 				assertTrue(ex.getTriples() instanceof BitmapTriples);
-				assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
 				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
 				assertEqualsHDT(ex, ac);
 			}
@@ -2665,10 +2699,8 @@ public class HDTManagerTest {
 			Path acp3 = root.resolve("ac2.hdt");
 
 
-			final long count = 2500;
-
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(count, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
 					.withUnicode(false);
 
 			HDTOptions specEx = HDTOptions.of(
@@ -2681,11 +2713,7 @@ public class HDTManagerTest {
 					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
 					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt")
 			);
-			HDTOptions specAc = specEx.pushTop();
-			specAc.setOptions(
-					HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
-					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
-			);
+			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
 
 			supplier.reset();
 			supplier.createAndSaveFakeHDT(specEx, exp);
@@ -2731,10 +2759,8 @@ public class HDTManagerTest {
 			Path acp3 = root.resolve("ac2.hdt");
 
 
-			final long count = 250;
-
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
-					.createSupplierWithMaxTriples(count, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
 					.withUnicode(false);
 
 			HDTOptions specEx = HDTOptions.of(
@@ -2747,11 +2773,7 @@ public class HDTManagerTest {
 					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
 					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt")
 			);
-			HDTOptions specAc = specEx.pushTop();
-			specAc.setOptions(
-					HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM,
-					HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
-			);
+			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
 
 			supplier.reset();
 			supplier.createAndSaveFakeHDT(specEx, exp);
