@@ -269,20 +269,26 @@ public class HDTManagerTest {
 			{
 				IteratorTripleID actualIt = actual.getTriples().searchAll();
 				IteratorTripleID expectedIt = expected.getTriples().searchAll();
-				actualIt.goTo(sidsharedAc);
-				expectedIt.goTo(sidsharedAc);
+				if (actualIt.hasNext() && actualIt.canGoTo() && expectedIt.canGoTo()) {
+					assertTrue(expectedIt.hasNext());
+					actualIt.goTo(sidsharedAc);
+					expectedIt.goTo(sidsharedAc);
 
-				while (expectedIt.hasNext()) {
-					assertTrue(actualIt.hasNext());
+					while (true) {
 
-					TripleID expectedTriple = expectedIt.next();
-					TripleID actualTriple = actualIt.next();
+						TripleID expectedTriple = expectedIt.next();
+						TripleID actualTriple = actualIt.next();
 
-					long location = expectedIt.getLastTriplePosition();
-					assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
-					assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+						long location = expectedIt.getLastTriplePosition();
+						assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
+						assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+						if (!expectedIt.hasNext()) {
+							break;
+						}
+						assertTrue(actualIt.hasNext());
+					}
+					assertFalse(actualIt.hasNext());
 				}
-				assertFalse(actualIt.hasNext());
 			}
 
 
