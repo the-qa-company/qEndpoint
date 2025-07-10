@@ -488,12 +488,14 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 		ControlInformation ci = new ControlInformation();
 		ci.load(input);
 		if (ci.getType() != ControlInfo.Type.TRIPLES) {
-			throw new IllegalFormatException("Trying to read a triples section, but was not triples. found " + ci.getType());
+			throw new IllegalFormatException(
+					"Trying to read a triples section, but was not triples. found " + ci.getType());
 		}
 
 		if (!ci.getFormat().equals(getType())) {
 			throw new IllegalFormatException(
-					"Trying to read BitmapTriples, but the data does not seem to be BitmapTriples, found " + ci.getFormat());
+					"Trying to read BitmapTriples, but the data does not seem to be BitmapTriples, found "
+							+ ci.getFormat());
 		}
 
 		order = TripleComponentOrder.values()[(int) ci.getInt("order")];

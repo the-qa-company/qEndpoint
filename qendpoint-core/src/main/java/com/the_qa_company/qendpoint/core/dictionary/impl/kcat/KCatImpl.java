@@ -396,7 +396,8 @@ public class KCatImpl implements Closeable {
 					il.setRange(40, 80);
 					il.setPrefix("Merge triples: ");
 					il.notifyProgress(0, "start");
-					triples.load(new OneReadTempTriples(tripleIterator, order, count, quads, merger.getCountShared()), il);
+					triples.load(new OneReadTempTriples(tripleIterator, order, count, quads, merger.getCountShared()),
+							il);
 					profiler.popSection();
 
 					WriteHDTImpl writeHDT = new WriteHDTImpl(hdtFormat, location, dictionary, triples,

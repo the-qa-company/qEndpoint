@@ -97,21 +97,25 @@ public class TriplesFactory {
 			throw new IllegalArgumentException("No implementation for Triples type: " + format);
 		}
 	}
-	public static TriplesPrivate createWriteTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize) throws IOException {
+
+	public static TriplesPrivate createWriteTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize)
+			throws IOException {
 		return createWriteTriples(spec, triples, bufferSize, -1);
 	}
 
-	public static TriplesPrivate createWriteTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, long quads) throws IOException {
-		String format = spec.get(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP);
+	public static TriplesPrivate createWriteTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize,
+			long quads) throws IOException {
+		String format = spec.get(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY,
+				HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP);
 
 		switch (format) {
-			case HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP -> {
-				return new WriteBitmapTriples(spec, triples, bufferSize, quads);
-			}
-			case HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM -> {
-				return new WriteStreamTriples(spec, triples, bufferSize, quads);
-			}
-			default -> throw new IllegalArgumentException("No implementation for write triples type: " + format);
+		case HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP -> {
+			return new WriteBitmapTriples(spec, triples, bufferSize, quads);
+		}
+		case HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM -> {
+			return new WriteStreamTriples(spec, triples, bufferSize, quads);
+		}
+		default -> throw new IllegalArgumentException("No implementation for write triples type: " + format);
 		}
 	}
 

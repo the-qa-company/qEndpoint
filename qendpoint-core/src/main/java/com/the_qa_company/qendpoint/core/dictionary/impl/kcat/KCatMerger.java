@@ -869,7 +869,8 @@ public class KCatMerger implements AutoCloseable {
 				// wouldn't be
 				// without duplicated or a so/sh conflict
 				if (used == buffer.length) {
-					throw new ArrayIndexOutOfBoundsException("More than " + used + " nodes for string " + node.getNode());
+					throw new ArrayIndexOutOfBoundsException(
+							"More than " + used + " nodes for string " + node.getNode());
 				}
 				buffer[used++] = node;
 				return true;

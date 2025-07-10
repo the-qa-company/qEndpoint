@@ -57,7 +57,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 
 	public WriteStreamTriples(HDTOptions spec, CloseSuppressPath triples, int bufferSize, long quads)
 			throws IOException {
-		if (quads != -1) throw new IllegalArgumentException("stream quads not supported");
+		if (quads != -1)
+			throw new IllegalArgumentException("stream quads not supported");
 		String orderStr = spec.get(HDTOptionsKeys.TRIPLE_ORDER_KEY);
 		if (orderStr == null) {
 			this.order = TripleComponentOrder.SPO;
@@ -95,7 +96,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 		assert compressedSizeCommon == Files.size(triplesCommon);
 		Files.copy(this.triplesShared, output);
 		Files.copy(this.triplesCommon, output);
-		IOUtil.writeInt(output, StreamTriples.STREAM_TRIPLES_END_COOKIE); // end cookie
+		IOUtil.writeInt(output, StreamTriples.STREAM_TRIPLES_END_COOKIE); // end
+																			// cookie
 	}
 
 	@Override
@@ -141,7 +143,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 
 	@Override
 	public String getType() {
-		//return quadInfoAG != null ? HDTVocabulary.TRIPLES_TYPE_STREAM_QUAD : HDTVocabulary.TRIPLES_TYPE_STREAM;
+		// return quadInfoAG != null ? HDTVocabulary.TRIPLES_TYPE_STREAM_QUAD :
+		// HDTVocabulary.TRIPLES_TYPE_STREAM;
 		return HDTVocabulary.TRIPLES_TYPE_STREAM;
 	}
 
@@ -202,8 +205,10 @@ public class WriteStreamTriples implements TriplesPrivate {
 		try {
 			if (numShared != 0) {
 				// start compress
-				CountOutputStream compressedStream = new CountOutputStream(this.triplesShared.openOutputStream(bufferSize));
-				try (CRCOutputStream out = new CRCOutputStream(new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32())) {
+				CountOutputStream compressedStream = new CountOutputStream(
+						this.triplesShared.openOutputStream(bufferSize));
+				try (CRCOutputStream out = new CRCOutputStream(
+						new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32())) {
 					long lastSubject = 0;
 					long lastPred = 0;
 					for (; it.hasNext(); it.next()) {
@@ -232,7 +237,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 
 						lastPred = tid.getPredicate();
 
-						ListenerUtil.notifyCond(listener, "Converting to StreamTriples " + numTriples + "/" + number, numTriples, numTriples, number);
+						ListenerUtil.notifyCond(listener, "Converting to StreamTriples " + numTriples + "/" + number,
+								numTriples, numTriples, number);
 					}
 					out.write(StreamTriples.FLAG_END | StreamTriples.FLAG_SHARED_END);
 					out.writeCRC();
@@ -242,8 +248,10 @@ public class WriteStreamTriples implements TriplesPrivate {
 				numSharedTriples = numTriples;
 			}
 			{
-				CountOutputStream compressedStream = new CountOutputStream(this.triplesCommon.openOutputStream(bufferSize));
-				try (CRCOutputStream out = new CRCOutputStream(new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32())) {
+				CountOutputStream compressedStream = new CountOutputStream(
+						this.triplesCommon.openOutputStream(bufferSize));
+				try (CRCOutputStream out = new CRCOutputStream(
+						new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32())) {
 					long lastSubject = numShared;
 					long lastPred = 0;
 					for (; it.hasNext(); it.next()) {
@@ -269,7 +277,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 
 						lastPred = tid.getPredicate();
 
-						ListenerUtil.notifyCond(listener, "Converting to StreamTriples " + numTriples + "/" + number, numTriples, numTriples, number);
+						ListenerUtil.notifyCond(listener, "Converting to StreamTriples " + numTriples + "/" + number,
+								numTriples, numTriples, number);
 					}
 					out.write(StreamTriples.FLAG_END);
 					out.writeCRC();

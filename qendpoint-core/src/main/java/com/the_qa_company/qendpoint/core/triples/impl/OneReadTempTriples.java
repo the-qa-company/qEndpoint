@@ -39,7 +39,8 @@ public class OneReadTempTriples implements TempTriples {
 	private long graphs;
 	private long shared;
 
-	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples, long graphs, long shared) {
+	public OneReadTempTriples(Iterator<TripleID> iterator, TripleComponentOrder order, long triples, long graphs,
+			long shared) {
 		this.iterator = new SimpleIteratorTripleID(iterator, order, triples);
 		this.order = order;
 		this.graphs = graphs;

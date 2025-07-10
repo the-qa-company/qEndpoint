@@ -100,7 +100,8 @@ import static org.junit.Assert.fail;
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.CompressionTest.class, HDTManagerTest.StreamHDTTest.class })
+		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.CompressionTest.class,
+		HDTManagerTest.StreamHDTTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -291,7 +292,6 @@ public class HDTManagerTest {
 				}
 			}
 
-
 			// test header
 			assertEquals(actual.getHeader().getBaseURI(), expected.getHeader().getBaseURI());
 			if (expected.getHeader().getNumberOfElements() != actual.getHeader().getNumberOfElements()) {
@@ -360,7 +360,7 @@ public class HDTManagerTest {
 					}
 				}
 				long min = Math.min(dict.getSubjects().getNumberOfElements(), dict.getShared().getNumberOfElements());
-				assertTrue("bad tried : " + tried  + "/" + min, tried >= min);
+				assertTrue("bad tried : " + tried + "/" + min, tried >= min);
 			}
 			// check object/shared consistency
 			DictionarySection ndtsec = dict.getAllObjects().get(LiteralsUtils.NO_DATATYPE);
@@ -385,7 +385,7 @@ public class HDTManagerTest {
 					}
 				}
 				long min = Math.min(ndtsec.getNumberOfElements(), dict.getShared().getNumberOfElements());
-				assertTrue("bad tried : " + tried  + "/" + min, tried >= min);
+				assertTrue("bad tried : " + tried + "/" + min, tried >= min);
 			}
 
 			ReplazableString prev = new ReplazableString();
@@ -453,7 +453,7 @@ public class HDTManagerTest {
 			}
 			if (hdt.getTriples() instanceof StreamTriples) {
 				assertTrue(tripleIt instanceof StreamTriples.StreamReader);
-				StreamTriples.StreamReader sr = (StreamTriples.StreamReader)tripleIt;
+				StreamTriples.StreamReader sr = (StreamTriples.StreamReader) tripleIt;
 
 				try {
 					sr.checkEnd();
@@ -2584,19 +2584,17 @@ public class HDTManagerTest {
 
 		@Parameterized.Parameters(name = "dict:{0} strDict:{1} strTrip:{2} triples:{3}")
 		public static Collection<Object[]> params() {
-			return Stream.of(
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
-					HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG
-			).flatMap(dictType ->
-					Stream.of(false).flatMap( // FIXME: implement streamed dict
-							streamDict ->
-									Stream.of(false, true).map(
-											streamTriples ->
-													new Object[] { dictType, streamDict, streamTriples, 500 }
-									)
-					)
-			).toList();
+			return Stream
+					.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+							HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+							HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG)
+					.flatMap(dictType -> Stream.of(false).flatMap( // FIXME:
+																	// implement
+																	// streamed
+																	// dict
+							streamDict -> Stream.of(false, true)
+									.map(streamTriples -> new Object[] { dictType, streamDict, streamTriples, 500 })))
+					.toList();
 		}
 
 		@Parameterized.Parameter
@@ -2610,10 +2608,12 @@ public class HDTManagerTest {
 
 		private HDTOptions applyStreamSpec(HDTOptions spec) {
 			if (streamDict) {
-				spec.set(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
+				spec.set(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
+						HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
 			}
 			if (streamTriples) {
-				spec.set(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM);
+				spec.set(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY,
+						HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM);
 			}
 			return spec;
 		}
@@ -2630,16 +2630,12 @@ public class HDTManagerTest {
 					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
 					.withUnicode(false);
 
-			HDTOptions specEx = HDTOptions.of(
-					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType,
-					HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
+			HDTOptions specEx = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
 					HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, root.resolve("ct"),
-					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"),
-					HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("hc.hdt"),
-					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
-					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt")
-			);
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"), HDTOptionsKeys.HDTCAT_FUTURE_LOCATION,
+					root.resolve("hc.hdt"), HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
+					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt"));
 			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
 
 			supplier.reset();
@@ -2647,10 +2643,7 @@ public class HDTManagerTest {
 			supplier.reset();
 			supplier.createAndSaveFakeHDT(specAc, acp);
 
-			try (
-					HDT ac = HDTManager.mapHDT(acp);
-					HDT ex = HDTManager.mapHDT(exp)
-			) {
+			try (HDT ac = HDTManager.mapHDT(acp); HDT ex = HDTManager.mapHDT(exp)) {
 				checkHDTConsistency(ex);
 				checkHDTConsistency(ac);
 				ac.saveToHDT(acp2);
@@ -2670,10 +2663,7 @@ public class HDTManagerTest {
 				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
 				assertEqualsHDT(ex, ac);
 			}
-			try (
-					HDT ac = HDTManager.mapHDT(acp2);
-					HDT ex = HDTManager.mapHDT(exp2)
-			) {
+			try (HDT ac = HDTManager.mapHDT(acp2); HDT ex = HDTManager.mapHDT(exp2)) {
 				checkHDTConsistency(ex);
 				checkHDTConsistency(ac);
 
@@ -2705,21 +2695,16 @@ public class HDTManagerTest {
 			Path acp2 = root.resolve("ac2.hdt");
 			Path acp3 = root.resolve("ac2.hdt");
 
-
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
 					.withUnicode(false);
 
-			HDTOptions specEx = HDTOptions.of(
-					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType,
-					HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
+			HDTOptions specEx = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
 					HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, root.resolve("ct"),
-					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"),
-					HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("hc.hdt"),
-					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
-					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt")
-			);
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"), HDTOptionsKeys.HDTCAT_FUTURE_LOCATION,
+					root.resolve("hc.hdt"), HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
+					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt"));
 			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
 
 			supplier.reset();
@@ -2742,10 +2727,7 @@ public class HDTManagerTest {
 				checkHDTConsistency(hdt);
 			}
 
-			try (
-					HDT ac = HDTManager.mapHDT(acp3);
-					HDT ex = HDTManager.mapHDT(exp3)
-			) {
+			try (HDT ac = HDTManager.mapHDT(acp3); HDT ex = HDTManager.mapHDT(exp3)) {
 				checkHDTConsistency(ex);
 				checkHDTConsistency(ac);
 
@@ -2765,21 +2747,16 @@ public class HDTManagerTest {
 			Path acp2 = root.resolve("ac2.hdt");
 			Path acp3 = root.resolve("ac2.hdt");
 
-
 			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
 					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
 					.withUnicode(false);
 
-			HDTOptions specEx = HDTOptions.of(
-					HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType,
-					HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
+			HDTOptions specEx = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
 					HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, root.resolve("ct"),
-					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"),
-					HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, root.resolve("hc.hdt"),
-					HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
-					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt")
-			);
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"), HDTOptionsKeys.HDTCAT_FUTURE_LOCATION,
+					root.resolve("hc.hdt"), HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
+					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt"));
 			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
 
 			supplier.reset();
@@ -2804,10 +2781,7 @@ public class HDTManagerTest {
 			}
 			checkHDTConsistency(acp3);
 
-			try (
-					HDT ac = HDTManager.mapHDT(acp3);
-					HDT ex = HDTManager.mapHDT(exp3)
-			) {
+			try (HDT ac = HDTManager.mapHDT(acp3); HDT ex = HDTManager.mapHDT(exp3)) {
 				assertTrue(ex.getTriples() instanceof BitmapTriples);
 				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
 

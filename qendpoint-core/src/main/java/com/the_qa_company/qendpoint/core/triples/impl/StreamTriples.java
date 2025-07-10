@@ -76,7 +76,8 @@ public class StreamTriples implements TriplesPrivate {
 	private InputStream stream(boolean shared) throws IOException {
 		// ignore end CRC
 		if (mappedShared != null || mappedCommon != null) {
-			return shared ? new BigMappedByteBufferInputStream(mappedShared) : new BigMappedByteBufferInputStream(mappedCommon);
+			return shared ? new BigMappedByteBufferInputStream(mappedShared)
+					: new BigMappedByteBufferInputStream(mappedCommon);
 		}
 
 		if (bufferShared != null || bufferCommon != null) {
@@ -207,8 +208,10 @@ public class StreamTriples implements TriplesPrivate {
 		try {
 			ch = FileChannel.open(Paths.get(f.toString()));
 			long base = input.getTotalBytes();
-			mappedShared = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base, compressedSizeShared);
-			mappedCommon = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY, base + compressedSizeShared, compressedSizeCommon);
+			mappedShared = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY,
+					base, compressedSizeShared);
+			mappedCommon = BigMappedByteBuffer.ofFileChannel(f.getAbsolutePath(), ch, FileChannel.MapMode.READ_ONLY,
+					base + compressedSizeShared, compressedSizeCommon);
 			IOUtil.skip(input, compressedSizeShared + compressedSizeCommon);
 
 			int cookie = IOUtil.readInt(input);
@@ -270,7 +273,8 @@ public class StreamTriples implements TriplesPrivate {
 	public SuppliableIteratorTripleID search(TripleID pattern) {
 		if (!pattern.isEmpty()) {
 			if (pattern.getSubject() != numShared + 1 || pattern.getPredicate() != 0 || pattern.getObject() != 0) {
-				// we can do it by filtering the triples, but it would be too long
+				// we can do it by filtering the triples, but it would be too
+				// long
 				throw new IllegalArgumentException("Can't search pattern over stream triples!");
 			}
 			return new StreamReader(false);
@@ -414,7 +418,8 @@ public class StreamTriples implements TriplesPrivate {
 
 		@Override
 		public TripleID next() {
-			if (!hasNext()) return null;
+			if (!hasNext())
+				return null;
 
 			offset++;
 
@@ -425,7 +430,8 @@ public class StreamTriples implements TriplesPrivate {
 				}
 
 				if ((flags & FLAG_SAME_SUBJECT) == 0) {
-					triple.setSubject(triple.getSubject() + 1); // increase subject id
+					triple.setSubject(triple.getSubject() + 1); // increase
+																// subject id
 				}
 
 				if ((flags & FLAG_SAME_PREDICATE) == 0) {
