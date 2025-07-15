@@ -34,6 +34,7 @@ import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 
 import java.io.BufferedInputStream;
 import java.io.Closeable;
@@ -51,7 +52,7 @@ import java.util.Iterator;
 /**
  * @author mario.arias
  */
-public class SequenceLog64Map implements Sequence, Closeable {
+public class SequenceLog64Map implements Sequence, Closeable, IntegrityObject {
 	private static final byte W = 64;
 	private static final long LONGS_PER_BUFFER = 128 * 1024 * 1024; // 128*8 =
 	// 1Gb per
@@ -62,6 +63,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 	private final long numentries;
 	private long lastword;
 	private final long numwords;
+	private final long crc;
 
 	public SequenceLog64Map(File f) throws IOException {
 		// Read from the beginning of the file
@@ -100,7 +102,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 			lastword = BitUtil.readLowerBitsByteAligned(lastWordUsed, in);
 //			System.out.println("LastWord0: "+Long.toHexString(lastword));
 		}
-		IOUtil.skip(in, 4); // CRC
+		crc = IOUtil.readInt(in) & 0xFFFFFFFFL;
 
 		mapFiles(f, base);
 
@@ -113,6 +115,8 @@ public class SequenceLog64Map implements Sequence, Closeable {
 		this.numbits = numbits;
 		this.numentries = numentries;
 		this.numwords = SequenceLog64.numWordsFor(numbits, numentries);
+
+		crc = 0;
 
 		mapFiles(f, 0);
 	}
@@ -285,6 +289,20 @@ public class SequenceLog64Map implements Sequence, Closeable {
 			Closer.closeAll(buffers, ch);
 		} finally {
 			buffers = null;
+		}
+	}
+
+	@Override
+	public void checkIntegrity() throws IOException {
+		CRC32 crc = new CRC32();
+
+		for (CloseMappedByteBuffer buffer : buffers) {
+			crc.update(buffer, 0, buffer.capacity());
+		}
+
+		long crcVal = crc.getValue();
+		if (crcVal != this.crc) {
+			throw new CRCException("Invalid sequence crc: 0x" + Long.toHexString(crcVal) + " != 0x" + Long.toHexString(this.crc));
 		}
 	}
 }
