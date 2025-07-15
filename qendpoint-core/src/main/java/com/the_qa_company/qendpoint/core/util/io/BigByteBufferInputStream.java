@@ -1,9 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-public class BigByteBufferInputStream extends InputStream {
+public class BigByteBufferInputStream extends BufferInputStream {
 	final BigByteBuffer buf;
 	long offset;
 	long end;
@@ -20,6 +19,11 @@ public class BigByteBufferInputStream extends InputStream {
 
 	public boolean hasRemaining() {
 		return offset < end;
+	}
+
+	@Override
+	public long remaining() {
+		return end - offset;
 	}
 
 	@Override
@@ -49,4 +53,8 @@ public class BigByteBufferInputStream extends InputStream {
 		return n;
 	}
 
+	@Override
+	public boolean canRead(long len) {
+		return offset + len <= end;
+	}
 }

@@ -4,21 +4,38 @@ import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class CRCStreamTest {
+	public static final int size = 1000000;
 
-	@Before
-	public void setUp() throws Exception {
-
+	@Parameterized.Parameters(name = "CRC{0}")
+	public static List<Object> params() {
+		return List.of(8, 16, 32);
 	}
 
-	public boolean testCRC(CRC generator, CRC checker, int size) throws Exception {
-		ByteArrayOutputStream byteStrOut = new ByteArrayOutputStream(size + 10);
+	@Parameterized.Parameter
+	public int len;
 
-		CRCOutputStream crcStrmOut = new CRCOutputStream(byteStrOut, generator);
+	public CRC crc() {
+		return switch (len) {
+		case 8 -> new CRC8();
+		case 16 -> new CRC16();
+		case 32 -> new CRC32();
+		default -> throw new AssertionError("Invalid CRC" + len);
+		};
+	}
+
+	@Test
+	public void testStreamCRC() throws Exception {
+		ByteArrayOutputStream byteStrOut = new ByteArrayOutputStream(size + len / 8);
+
+		CRCOutputStream crcStrmOut = new CRCOutputStream(byteStrOut, crc());
 		for (int i = 0; i < size; i++) {
 			crcStrmOut.write(i & 0xFF);
 		}
@@ -27,28 +44,29 @@ public class CRCStreamTest {
 //		System.out.println("CRC: "+crcStrmOut.crc);
 
 		ByteArrayInputStream byteStrIn = new ByteArrayInputStream(byteStrOut.toByteArray());
-		CRCInputStream crcStrmIn = new CRCInputStream(byteStrIn, checker);
+		CRCInputStream crcStrmIn = new CRCInputStream(byteStrIn, crc());
 		for (int i = 0; i < size; i++) {
 			crcStrmIn.read();
 		}
-		boolean ok = crcStrmIn.readCRCAndCheck();
-		crcStrmIn.close();
-		return ok;
+		assertTrue(crcStrmIn.readCRCAndCheck());
 	}
 
 	@Test
-	public void testCRC8() throws Exception {
-		assertTrue(testCRC(new CRC8(), new CRC8(), 1000 * 1000));
-	}
+	public void testBufferCRC() throws Exception {
+		ByteArrayOutputStream byteStrOut = new ByteArrayOutputStream(size + len / 8);
 
-	@Test
-	public void testCRC16() throws Exception {
-		assertTrue(testCRC(new CRC16(), new CRC16(), 1000 * 1000));
-	}
+		CRCOutputStream crcStrmOut = new CRCOutputStream(byteStrOut, crc());
+		for (int i = 0; i < size; i++) {
+			crcStrmOut.write(i & 0xFF);
+		}
+		crcStrmOut.writeCRC();
+		crcStrmOut.close();
+//		System.out.println("CRC: "+crcStrmOut.crc);
 
-	@Test
-	public void testCRC32() throws Exception {
-		assertTrue(testCRC(new CRC32(), new CRC32(), 1000 * 1000));
+		ByteArrayInputStream byteStrIn = new ByteArrayInputStream(byteStrOut.toByteArray());
+		CRC crc = crc();
+		crc.update(byteStrIn, size);
+		assertTrue(crc.readAndCheck(byteStrIn));
 	}
 
 }

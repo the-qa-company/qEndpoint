@@ -45,6 +45,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 	private long numSharedTriples;
 	private long compressedSizeShared;
 	private long compressedSizeCommon;
+	private long decompressedSizeShared;
+	private long decompressedSizeCommon;
 	private final CloseSuppressPath triples;
 	private final CloseSuppressPath triplesShared;
 	private final CloseSuppressPath triplesCommon;
@@ -89,6 +91,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 		VByte.encode(crc, numSharedTriples);
 		VByte.encode(crc, compressedSizeShared);
 		VByte.encode(crc, compressedSizeCommon);
+		VByte.encode(crc, decompressedSizeShared);
+		VByte.encode(crc, decompressedSizeCommon);
 		IOUtil.writeSizedString(crc, compressionType.name(), iListener);
 		crc.writeCRC();
 
@@ -200,6 +204,8 @@ public class WriteStreamTriples implements TriplesPrivate {
 		numTriples = 0;
 		compressedSizeShared = 0;
 		compressedSizeCommon = 0;
+		decompressedSizeShared = 0;
+		decompressedSizeCommon = 0;
 		numShared = triples.getSharedCount();
 		numSharedTriples = 0;
 		try {
@@ -207,8 +213,9 @@ public class WriteStreamTriples implements TriplesPrivate {
 				// start compress
 				CountOutputStream compressedStream = new CountOutputStream(
 						this.triplesShared.openOutputStream(bufferSize));
-				try (CRCOutputStream out = new CRCOutputStream(
-						new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32())) {
+				CRCOutputStream crcout = new CRCOutputStream(
+						new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32());
+				try (CountOutputStream out = new CountOutputStream(crcout)) {
 					long lastSubject = 0;
 					long lastPred = 0;
 					for (; it.hasNext(); it.next()) {
@@ -241,8 +248,9 @@ public class WriteStreamTriples implements TriplesPrivate {
 								numTriples, numTriples, number);
 					}
 					out.write(StreamTriples.FLAG_END | StreamTriples.FLAG_SHARED_END);
-					out.writeCRC();
-					out.flush();
+					decompressedSizeShared = out.getTotalBytes();
+					crcout.writeCRC();
+					crcout.flush();
 				}
 				compressedSizeShared = compressedStream.getTotalBytes();
 				numSharedTriples = numTriples;
@@ -250,8 +258,9 @@ public class WriteStreamTriples implements TriplesPrivate {
 			{
 				CountOutputStream compressedStream = new CountOutputStream(
 						this.triplesCommon.openOutputStream(bufferSize));
-				try (CRCOutputStream out = new CRCOutputStream(
-						new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32())) {
+				CRCOutputStream crcout = new CRCOutputStream(
+						new BufferedOutputStream(compressionType.compress(compressedStream)), new CRC32());
+				try (CountOutputStream out = new CountOutputStream(crcout)) {
 					long lastSubject = numShared;
 					long lastPred = 0;
 					for (; it.hasNext(); it.next()) {
@@ -281,8 +290,9 @@ public class WriteStreamTriples implements TriplesPrivate {
 								numTriples, numTriples, number);
 					}
 					out.write(StreamTriples.FLAG_END);
-					out.writeCRC();
-					out.flush();
+					decompressedSizeCommon = out.getTotalBytes();
+					crcout.writeCRC();
+					crcout.flush();
 				}
 				compressedSizeCommon = compressedStream.getTotalBytes();
 			}

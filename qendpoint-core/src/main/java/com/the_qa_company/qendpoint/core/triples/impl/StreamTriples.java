@@ -18,6 +18,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
+import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -25,8 +26,10 @@ import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBufferInputStream;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBufferInputStream;
+import com.the_qa_company.qendpoint.core.util.io.BufferInputStream;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
 import java.io.File;
@@ -37,7 +40,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class StreamTriples implements TriplesPrivate {
+public class StreamTriples implements TriplesPrivate, IntegrityObject {
 	public static final int FLAG_SAME_SUBJECT = 1;
 	public static final int FLAG_SAME_PREDICATE = 1 << 1;
 	public static final int FLAG_END = 1 << 2;
@@ -48,6 +51,8 @@ public class StreamTriples implements TriplesPrivate {
 	private long numSharedTriples;
 	private long compressedSizeShared;
 	private long compressedSizeCommon;
+	private long decompressedSizeShared;
+	private long decompressedSizeCommon;
 	private CompressionType compressionType = CompressionType.NONE;
 	private FileChannel ch;
 	private BigMappedByteBuffer mappedShared;
@@ -73,7 +78,7 @@ public class StreamTriples implements TriplesPrivate {
 		}
 	}
 
-	private InputStream stream(boolean shared) throws IOException {
+	private BufferInputStream stream(boolean shared) throws IOException {
 		// ignore end CRC
 		if (mappedShared != null || mappedCommon != null) {
 			return shared ? new BigMappedByteBufferInputStream(mappedShared)
@@ -139,6 +144,8 @@ public class StreamTriples implements TriplesPrivate {
 		numSharedTriples = VByte.decode(crc);
 		compressedSizeShared = VByte.decode(crc);
 		compressedSizeCommon = VByte.decode(crc);
+		decompressedSizeShared = VByte.decode(crc);
+		decompressedSizeCommon = VByte.decode(crc);
 
 		String compressionFormatName = IOUtil.readSizedString(crc, iListener);
 
@@ -192,6 +199,8 @@ public class StreamTriples implements TriplesPrivate {
 		numSharedTriples = VByte.decode(crc);
 		compressedSizeShared = VByte.decode(crc);
 		compressedSizeCommon = VByte.decode(crc);
+		decompressedSizeShared = VByte.decode(crc);
+		decompressedSizeCommon = VByte.decode(crc);
 
 		String compressionFormatName = IOUtil.readSizedString(crc, iListener);
 
@@ -321,6 +330,32 @@ public class StreamTriples implements TriplesPrivate {
 	@Override
 	public void close() throws IOException {
 		cleanup();
+	}
+
+	private void checkIntegrity(boolean shared, long len) throws IOException {
+		try (InputStream bis = uncompressedStream(shared)) {
+			CRC32 crc = new CRC32();
+
+			crc.update(bis, len);
+			long crcVal = IOUtil.readInt(bis) & 0xFFFFFFFFL;
+			long ex = crc.getValue();
+
+			if (bis.read() != -1) {
+				throw new IOException("Not EOF");
+			}
+
+			if (crcVal != ex) {
+				throw new CRCException("Invalid crc for " + len + " for" + (shared ? "" : " non") + " shared data: 0x"
+						+ Long.toHexString(crcVal) + " != 0x" + Long.toHexString(ex));
+			}
+		}
+	}
+
+	@Override
+	public void checkIntegrity() throws IOException {
+		// check stream integrities
+		checkIntegrity(false, decompressedSizeCommon);
+		checkIntegrity(true, decompressedSizeShared);
 	}
 
 	public class StreamReader implements SuppliableIteratorTripleID {

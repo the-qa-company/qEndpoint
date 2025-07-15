@@ -16,6 +16,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
@@ -67,6 +68,9 @@ public class HDTVerify {
 
 	@Parameter(names = "-equals", description = "Test all the input HDTs are equals instead of checking validity")
 	public boolean equals;
+
+	@Parameter(names = "-integrity", description = "Check data integrity")
+	public boolean integrity;
 
 	@Parameter(names = "-eqtr", description = "Use triplestring equals instead of dict+triples equals")
 	public boolean eqtr;
@@ -530,6 +534,16 @@ public class HDTVerify {
 					try (HDT hdt = hdtl) {
 						boolean error = false;
 						long count = 0;
+
+						if (integrity) {
+							try {
+								IntegrityObject.checkObjectIntegrity(hdtl);
+							} catch (IOException e) {
+								colorTool.error("Invalid object integrity", e);
+								error = true;
+								continue; // can't go after invalid integrity
+							}
+						}
 
 						error |= checkTriples(colorTool, hdt.getTriples(), console);
 

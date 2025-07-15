@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.util.StringUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import java.util.Date;
  * @param <T> triple type
  */
 public abstract class HDTBase<H extends Header, D extends DictionaryPrivate, T extends TriplesPrivate>
-		implements HDTPrivate {
+		implements HDTPrivate, IntegrityObject {
 	protected final HDTOptions spec;
 	protected H header;
 	protected D dictionary;
@@ -181,4 +182,8 @@ public abstract class HDTBase<H extends Header, D extends DictionaryPrivate, T e
 		header.insert(publicationInfoNode, HDTVocabulary.DUBLIN_CORE_ISSUED, StringUtil.formatDate(new Date()));
 	}
 
+	@Override
+	public void checkIntegrity() throws IOException {
+		IntegrityObject.checkAllIntegrity(header, dictionary, triples);
+	}
 }

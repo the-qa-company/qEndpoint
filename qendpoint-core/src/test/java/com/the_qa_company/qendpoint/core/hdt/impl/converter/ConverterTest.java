@@ -87,6 +87,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 
 				try (HDT mut = HDTManager.mapHDT(mutPath)) {
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(fsd, mut);
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(mut);
 				}
 			}
 		} finally {
@@ -123,6 +124,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 
 				try (HDT mut = HDTManager.mapHDT(mutPath)) {
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(msd, mut);
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(mut);
 				}
 			}
 		} finally {
@@ -160,6 +162,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 
 				try (HDT mut = HDTManager.mapHDT(mutPath)) {
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(msdl, mut);
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(mut);
 				}
 			}
 		} finally {
@@ -196,6 +199,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 
 				try (HDT mut = HDTManager.mapHDT(mutPath)) {
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(fsd, mut);
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(mut);
 				}
 			}
 		} finally {
@@ -232,6 +236,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 
 				try (HDT mut = HDTManager.mapHDT(mutPath)) {
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(msd, mut);
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(mut);
 				}
 			}
 		} finally {
@@ -269,6 +274,7 @@ public class ConverterTest extends AbstractMapMemoryTest {
 
 				try (HDT mut = HDTManager.mapHDT(mutPath)) {
 					HDTManagerTest.HDTManagerTestBase.assertEqualsHDT(msdl, mut);
+					HDTManagerTest.HDTManagerTestBase.checkHDTConsistency(mut);
 				}
 			}
 		} finally {

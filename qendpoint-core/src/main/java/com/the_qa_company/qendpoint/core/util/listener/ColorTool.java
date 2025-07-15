@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.listener;
 
+import java.util.Objects;
+
 public class ColorTool {
 	private final boolean color;
 	private final boolean quiet;
@@ -30,9 +32,9 @@ public class ColorTool {
 		if (console != null) {
 			console.printLine(str);
 		} else if (serr) {
-			System.err.println(str);
+			System.err.println(str + colorReset());
 		} else {
-			System.out.println(str);
+			System.out.println(str + colorReset());
 		}
 	}
 
@@ -98,6 +100,38 @@ public class ColorTool {
 				print(prefix("ERRR", 5, 0, 0) + " " + prefix(title, 5, 3, 0) + " " + colorReset() + text, serr);
 			} else {
 				print(prefix("ERRR", 5, 0, 0) + " " + colorReset() + text, serr);
+			}
+		}
+	}
+
+	public void error(String title, Throwable t) {
+		error(title, t, false);
+	}
+
+	public void error(String title, Throwable t, boolean ignoreQuiet) {
+		error(title, t, ignoreQuiet, t);
+	}
+
+	private void error(String title, Throwable t, boolean ignoreQuiet, Throwable parent) {
+		if (!quiet || ignoreQuiet) {
+			String msg = t.getClass() + ": " + Objects.requireNonNullElse(t.getMessage(), "<no message>");
+			if (title != null) {
+				print(prefix("ERRR", 5, 0, 0) + " " + prefix(title, 5, 3, 0) + " " + colorReset() + msg, true);
+			} else {
+				print(prefix("ERRR", 5, 0, 0) + " " + colorReset() + msg, true);
+			}
+
+			StackTraceElement[] trace = t.getStackTrace();
+			for (StackTraceElement ste : trace) {
+				print(prefix("ERRR", 5, 0, 0) + " " + colorReset() + "\t at " + ste);
+			}
+			Throwable[] suppressed = t.getSuppressed();
+			for (Throwable supp : suppressed) {
+				if (supp == parent) {
+					print(prefix("ERRR", 5, 0, 0) + " " + colorReset() + "Suppressed: CIRCULAR[" + supp + "]");
+				} else {
+					error("Supressed", supp, ignoreQuiet, parent);
+				}
 			}
 		}
 	}

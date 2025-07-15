@@ -61,6 +61,7 @@ import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.io.compress.Pair;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
@@ -92,7 +93,7 @@ import java.util.stream.Collectors;
 /**
  * @author mario.arias
  */
-public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
+public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex, IntegrityObject {
 	private static final Logger log = LoggerFactory.getLogger(BitmapTriples.class);
 
 	protected TripleComponentOrder order;
@@ -1457,6 +1458,11 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 	public Bitmap getBitmapIndex() {
 		return bitmapIndexZ;
+	}
+
+	@Override
+	public void checkIntegrity() throws IOException {
+		IntegrityObject.checkAllIntegrity(bitmapY, bitmapZ, seqY, seqZ);
 	}
 
 	public static class CreateOnUsePath implements Closeable {

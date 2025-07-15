@@ -44,6 +44,7 @@ import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
@@ -462,6 +463,11 @@ public class HDTManagerTest {
 				}
 			}
 			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
+			try {
+				IntegrityObject.checkObjectIntegrity(hdt);
+			} catch (IOException e) {
+				throw new AssertionError("Integrity exception", e);
+			}
 		}
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
