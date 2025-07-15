@@ -111,6 +111,8 @@ public class StreamTriples implements TriplesPrivate, IntegrityObject {
 		VByte.encode(crc, numSharedTriples);
 		VByte.encode(crc, compressedSizeShared);
 		VByte.encode(crc, compressedSizeCommon);
+		VByte.encode(crc, decompressedSizeShared);
+		VByte.encode(crc, decompressedSizeCommon);
 		IOUtil.writeSizedString(crc, compressionType.name(), iListener);
 		crc.writeCRC();
 
