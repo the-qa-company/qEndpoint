@@ -297,6 +297,7 @@ public class SequenceLog64Map implements Sequence, Closeable, IntegrityObject {
 		CRC32 crc = new CRC32();
 
 		for (CloseMappedByteBuffer buffer : buffers) {
+			if (buffer == null) continue;
 			crc.update(buffer, 0, buffer.capacity());
 		}
 
