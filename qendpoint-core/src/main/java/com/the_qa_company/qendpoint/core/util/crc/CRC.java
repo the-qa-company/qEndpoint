@@ -71,12 +71,12 @@ public interface CRC extends Comparable<CRC> {
 			remaining -= r;
 
 			if (remaining < newUpdate) {
-				listener.notifyProgress((float) (100 * (len - remaining)) / len,
+				il.notifyProgress((float) (100 * (len - remaining)) / len,
 						"updating crc " + (len - remaining) + "/" + len);
 				newUpdate = remaining - len / 10;
 			}
 		}
-		listener.notifyProgress(100, "crc updated");
+		il.notifyProgress(100, "crc updated");
 	}
 
 	/**
