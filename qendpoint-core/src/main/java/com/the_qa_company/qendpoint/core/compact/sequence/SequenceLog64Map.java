@@ -293,17 +293,22 @@ public class SequenceLog64Map implements Sequence, Closeable, IntegrityObject {
 	}
 
 	@Override
-	public void checkIntegrity() throws IOException {
+	public void checkIntegrity(ProgressListener listener) throws IOException {
 		CRC32 crc = new CRC32();
 
-		for (CloseMappedByteBuffer buffer : buffers) {
-			if (buffer == null) continue;
+		ProgressListener il = ProgressListener.ofNullable(listener);
+		for (int i = 0; i < buffers.length; i++) {
+			CloseMappedByteBuffer buffer = buffers[i];
+			if (buffer == null)
+				continue;
+			il.notifyProgress((float) i / buffers.length, "load sequence buffers " + i + "/" + buffers.length);
 			crc.update(buffer, 0, buffer.capacity());
 		}
 
 		long crcVal = crc.getValue();
 		if (crcVal != this.crc) {
-			throw new CRCException("Invalid sequence crc: 0x" + Long.toHexString(crcVal) + " != 0x" + Long.toHexString(this.crc));
+			throw new CRCException(
+					"Invalid sequence crc: 0x" + Long.toHexString(crcVal) + " != 0x" + Long.toHexString(this.crc));
 		}
 	}
 }

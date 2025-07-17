@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+
 import java.io.IOException;
 
 /**
@@ -11,26 +13,27 @@ import java.io.IOException;
 public interface IntegrityObject {
 	/**
 	 * check if an object is an {@link IntegrityObject} and call
-	 * {@link #checkIntegrity()} on it.
+	 * {@link #checkIntegrity(ProgressListener)} on it.
 	 *
 	 * @param obj the object
 	 * @throws IOException same as checkIntegrity
 	 */
-	static void checkObjectIntegrity(Object obj) throws IOException {
+	static void checkObjectIntegrity(ProgressListener listener, Object obj) throws IOException {
 		if (obj instanceof IntegrityObject io) {
-			io.checkIntegrity();
+			io.checkIntegrity(listener);
 		}
 	}
 
 	/**
-	 * call {@link #checkObjectIntegrity(Object)} on multiple objects.
+	 * call {@link #checkObjectIntegrity(ProgressListener, Object)} on multiple
+	 * objects.
 	 *
 	 * @param objs the objects
 	 * @throws IOException same as checkObjectIntegrity
 	 */
-	static void checkAllIntegrity(Object... objs) throws IOException {
+	static void checkAllIntegrity(ProgressListener listener, Object... objs) throws IOException {
 		for (Object o : objs) {
-			checkObjectIntegrity(o);
+			checkObjectIntegrity(listener, o);
 		}
 	}
 
@@ -39,5 +42,5 @@ public interface IntegrityObject {
 	 *
 	 * @throws IOException integrity or read exception
 	 */
-	void checkIntegrity() throws IOException;
+	void checkIntegrity(ProgressListener listener) throws IOException;
 }

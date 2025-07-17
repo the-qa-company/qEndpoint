@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 public class HDTManagerImpl extends HDTManager {
 	private static final Logger logger = LoggerFactory.getLogger(HDTManagerImpl.class);
@@ -584,6 +585,25 @@ public class HDTManagerImpl extends HDTManager {
 		try (CatTreeImpl tree = new CatTreeImpl(hdtFormat)) {
 			return tree.doGeneration(fluxStop, supplier, iterator, baseURI, listener);
 		}
+	}
+
+	@Override
+	protected void doSetupDiskOptions(HDTOptions spec, Path output, Path location) {
+		if (location == null) {
+			Objects.requireNonNull(output, "output and location can't be null!");
+			location = output.resolveSibling(output.getFileName() + "_work");
+		}
+		// work locations
+		spec.setOptions(
+				HDTOptionsKeys.HDTCAT_LOCATION, location.resolve("hc"),
+				HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, location.resolve("ct"),
+				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gd"),
+				HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION, location.resolve("sd"),
+			// future locations
+				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("gd.hdt"),
+				HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, location.resolve("ct.hdt"),
+				HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, location.resolve("hc.hdt")
+		);
 	}
 
 	@Override

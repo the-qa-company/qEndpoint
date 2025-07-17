@@ -110,7 +110,7 @@ public class CloseSafeHDT implements HDT, IntegrityObject {
 	}
 
 	@Override
-	public void checkIntegrity() throws IOException {
-		IntegrityObject.checkObjectIntegrity(hdt);
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkObjectIntegrity(listener, hdt);
 	}
 }

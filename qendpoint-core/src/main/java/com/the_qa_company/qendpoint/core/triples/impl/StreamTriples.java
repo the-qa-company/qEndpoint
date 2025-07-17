@@ -334,11 +334,11 @@ public class StreamTriples implements TriplesPrivate, IntegrityObject {
 		cleanup();
 	}
 
-	private void checkIntegrity(boolean shared, long len) throws IOException {
+	private void checkIntegrity(ProgressListener listener, boolean shared, long len) throws IOException {
 		try (InputStream bis = uncompressedStream(shared)) {
 			CRC32 crc = new CRC32();
 
-			crc.update(bis, len);
+			crc.update(bis, len, listener);
 			long crcVal = IOUtil.readInt(bis) & 0xFFFFFFFFL;
 			long ex = crc.getValue();
 
@@ -354,10 +354,10 @@ public class StreamTriples implements TriplesPrivate, IntegrityObject {
 	}
 
 	@Override
-	public void checkIntegrity() throws IOException {
+	public void checkIntegrity(ProgressListener listener) throws IOException {
 		// check stream integrities
-		checkIntegrity(false, decompressedSizeCommon);
-		checkIntegrity(true, decompressedSizeShared);
+		checkIntegrity(listener, false, decompressedSizeCommon);
+		checkIntegrity(listener, true, decompressedSizeShared);
 	}
 
 	public class StreamReader implements SuppliableIteratorTripleID {

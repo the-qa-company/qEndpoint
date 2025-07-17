@@ -537,7 +537,7 @@ public class HDTVerify {
 
 						if (integrity) {
 							try {
-								IntegrityObject.checkObjectIntegrity(hdtl);
+								IntegrityObject.checkObjectIntegrity(console, hdtl);
 							} catch (IOException e) {
 								colorTool.error("Invalid object integrity", e);
 								error = true;

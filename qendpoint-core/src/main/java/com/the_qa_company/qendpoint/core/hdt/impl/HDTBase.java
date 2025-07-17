@@ -183,7 +183,7 @@ public abstract class HDTBase<H extends Header, D extends DictionaryPrivate, T e
 	}
 
 	@Override
-	public void checkIntegrity() throws IOException {
-		IntegrityObject.checkAllIntegrity(header, dictionary, triples);
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkAllIntegrity(listener, header, dictionary, triples);
 	}
 }

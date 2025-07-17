@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.util.crc;
 
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.io.CloseMappedByteBuffer;
 
 import java.io.EOFException;
@@ -51,17 +52,31 @@ public interface CRC extends Comparable<CRC> {
 	boolean readAndCheck(CloseMappedByteBuffer buffer, int offset) throws IOException;
 
 	default void update(InputStream is, long len) throws IOException {
+		update(is, len, null);
+	}
+
+	default void update(InputStream is, long len, ProgressListener listener) throws IOException {
+		ProgressListener il = ProgressListener.ofNullable(listener);
 		if (len <= 0)
 			return; // nothing to see
 		byte[] buffer = new byte[0x1000];
-		while (len > 0) {
-			int toread = (int) Math.min(buffer.length, len);
+		long remaining = len;
+		long newUpdate = len;
+		while (remaining > 0) {
+			int toread = (int) Math.min(buffer.length, remaining);
 			int r = is.readNBytes(buffer, 0, toread);
 			if (r == 0)
 				throw new EOFException();
 			update(buffer, 0, r);
-			len -= r;
+			remaining -= r;
+
+			if (remaining < newUpdate) {
+				listener.notifyProgress((float) (100 * (len - remaining)) / len,
+						"updating crc " + (len - remaining) + "/" + len);
+				newUpdate = remaining - len / 10;
+			}
 		}
+		listener.notifyProgress(100, "crc updated");
 	}
 
 	/**

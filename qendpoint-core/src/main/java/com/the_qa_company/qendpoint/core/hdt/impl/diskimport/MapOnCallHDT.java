@@ -174,7 +174,7 @@ public class MapOnCallHDT implements HDTPrivate, IntegrityObject {
 	}
 
 	@Override
-	public void checkIntegrity() throws IOException {
-		IntegrityObject.checkObjectIntegrity(mapOrGetHDT());
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkObjectIntegrity(listener, mapOrGetHDT());
 	}
 }

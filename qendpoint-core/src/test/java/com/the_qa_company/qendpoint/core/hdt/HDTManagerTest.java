@@ -464,7 +464,7 @@ public class HDTManagerTest {
 			}
 			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
 			try {
-				IntegrityObject.checkObjectIntegrity(hdt);
+				IntegrityObject.checkObjectIntegrity(ProgressListener.ignore(), hdt);
 			} catch (IOException e) {
 				throw new AssertionError("Integrity exception", e);
 			}

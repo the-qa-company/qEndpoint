@@ -1461,8 +1461,8 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex, Integr
 	}
 
 	@Override
-	public void checkIntegrity() throws IOException {
-		IntegrityObject.checkAllIntegrity(bitmapY, bitmapZ, seqY, seqZ);
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkAllIntegrity(listener, bitmapY, bitmapZ, seqY, seqZ);
 	}
 
 	public static class CreateOnUsePath implements Closeable {
