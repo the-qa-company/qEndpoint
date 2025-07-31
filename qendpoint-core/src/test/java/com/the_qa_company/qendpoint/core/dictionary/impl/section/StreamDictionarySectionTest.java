@@ -122,22 +122,18 @@ public class StreamDictionarySectionTest {
 		Path genexPath = root.resolve("genex.hdt");
 		HDTManager.setupDiskOptions(spec, genPath, root.resolve("work"));
 
-		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000, 42);
+		LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier.createSupplierWithMaxTriples(10000,
+				42);
 
 		supplier.reset();
 		supplier.createAndSaveFakeHDT(spec, genexPath);
 
 		supplier.reset();
-		spec.setOptions(
-				HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
-				HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM
-		);
+		spec.setOptions(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+				HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY, HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
 		supplier.createAndSaveFakeHDT(spec, genPath);
 
-		try (
-				HDT ac = HDTManager.mapHDT(genPath);
-				HDT ex = HDTManager.mapHDT(genexPath);
-				) {
+		try (HDT ac = HDTManager.mapHDT(genPath); HDT ex = HDTManager.mapHDT(genexPath);) {
 			IntegrityObject.checkAllIntegrity(ProgressListener.ignore(), ex, ac);
 		}
 

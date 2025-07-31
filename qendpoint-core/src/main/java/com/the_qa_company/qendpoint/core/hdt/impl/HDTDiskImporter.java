@@ -130,7 +130,11 @@ public class HDTDiskImporter implements Closeable {
 		}
 
 		// compression type
-		compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
+		if (hdtFormat.getBoolean(HDTOptionsKeys.LOADER_DISK_USE_COMPRESSION_KEY, false)) {
+			compressionType = CompressionType.NONE;
+		} else {
+			compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
+		}
 
 		// location of the working directory, will be deleted after generation
 		String baseNameOpt = hdtFormat.get(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY);

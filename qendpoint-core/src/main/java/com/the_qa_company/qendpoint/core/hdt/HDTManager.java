@@ -1369,8 +1369,9 @@ public abstract class HDTManager {
 
 	/**
 	 * Setup disk options for generate
-	 * @param spec options
-	 * @param output output
+	 *
+	 * @param spec     options
+	 * @param output   output
 	 * @param location work location
 	 */
 	public static void setupDiskOptions(HDTOptions spec, Path output, Path location) {
@@ -1379,7 +1380,8 @@ public abstract class HDTManager {
 
 	/**
 	 * Setup disk options for generate
-	 * @param spec options
+	 *
+	 * @param spec   options
 	 * @param output output
 	 */
 	public static void setupDiskOptions(HDTOptions spec, Path output) {

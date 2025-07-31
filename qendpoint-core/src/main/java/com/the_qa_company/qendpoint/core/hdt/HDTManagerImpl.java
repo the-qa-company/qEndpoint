@@ -594,16 +594,14 @@ public class HDTManagerImpl extends HDTManager {
 			location = output.resolveSibling(output.getFileName() + "_work");
 		}
 		// work locations
-		spec.setOptions(
-				HDTOptionsKeys.HDTCAT_LOCATION, location.resolve("hc"),
+		spec.setOptions(HDTOptionsKeys.HDTCAT_LOCATION, location.resolve("hc"),
 				HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, location.resolve("ct"),
 				HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, location.resolve("gd"),
 				HDTOptionsKeys.BITMAPTRIPLES_SEQUENCE_DISK_LOCATION, location.resolve("sd"),
-			// future locations
+				// future locations
 				HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, location.resolve("gd.hdt"),
 				HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, location.resolve("ct.hdt"),
-				HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, location.resolve("hc.hdt")
-		);
+				HDTOptionsKeys.HDTCAT_FUTURE_LOCATION, location.resolve("hc.hdt"));
 	}
 
 	@Override

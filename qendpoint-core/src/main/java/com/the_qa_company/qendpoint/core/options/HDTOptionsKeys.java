@@ -108,6 +108,9 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.STRING, desc = "Compression algorithm used to reduce disk based algorithm, default none")
 	public static final String DISK_COMPRESSION_KEY = "disk.compression";
 
+	@Key(type = Key.Type.BOOLEAN, desc = "Use disk.compression to compress disk chunks, default false")
+	public static final String LOADER_DISK_USE_COMPRESSION_KEY = "load.disk.useCompression";
+
 	/**
 	 * Use the pfc compression, default true. Boolean value
 	 */
