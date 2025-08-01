@@ -18,6 +18,7 @@ import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.Closeable;
@@ -153,7 +154,7 @@ public class StreamDictionarySection implements DictionarySectionPrivate, Closea
 			offset += current.replace2(data, offset, delta);
 			idx++;
 
-			return current;
+			return new CompactString(current);
 		}
 	}
 
