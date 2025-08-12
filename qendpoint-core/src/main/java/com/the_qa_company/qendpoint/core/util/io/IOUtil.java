@@ -56,6 +56,8 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.FileSystemException;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -920,56 +922,63 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static void deleteDirRecurse(Path path) throws IOException {
-        Files.walkFileTree(path, new FileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                return FileVisitResult.CONTINUE;
-            }
+		Files.walkFileTree(path, new FileVisitor<>() {
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+				return FileVisitResult.CONTINUE;
+			}
 
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                deleteWithRetry(file);
-                return FileVisitResult.CONTINUE;
-            }
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				deleteWithRetry(file);
+				return FileVisitResult.CONTINUE;
+			}
 
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                // Log the failure, decide if you want to terminate or continue
-                System.err.println("Failed to visit file: " + file + ", error: " + exc.getMessage());
-                return FileVisitResult.TERMINATE; // Or CONTINUE, depending on desired behavior
-            }
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException exc) {
+				// Log the failure, decide if you want to terminate or continue
+				System.err.println("Failed to visit file: " + file + ", error: " + exc.getMessage());
+				return FileVisitResult.TERMINATE; // Or CONTINUE, depending on
+													// desired behavior
+			}
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                deleteWithRetry(dir);
-                return FileVisitResult.CONTINUE;
-            }
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				deleteWithRetry(dir);
+				return FileVisitResult.CONTINUE;
+			}
 
-            private void deleteWithRetry(Path targetPath) throws IOException {
-                final int MAX_RETRIES = 5;
-                final long RETRY_DELAY_MS = 100; // 100 milliseconds
+			private void deleteWithRetry(Path targetPath) throws IOException {
+				final int MAX_RETRIES = 5;
+				final long RETRY_DELAY_MS = 100; // 100 milliseconds
 
-                for (int i = 0; i < MAX_RETRIES; i++) {
-                    try {
-                        Files.delete(targetPath);
-                        return; // Success, exit retry loop
-                    } catch (FileSystemException e) {
-                        if (e.getMessage().contains("Device or resource busy") || e.getMessage().contains("Directory not empty")) {
-                            System.err.println("Attempt " + (i + 1) + " to delete " + targetPath + " failed: " + e.getMessage() + ". Retrying...");
-                            try {
-                                Thread.sleep(RETRY_DELAY_MS);
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                                throw new IOException("Deletion interrupted for " + targetPath, ie);
-                            }
-                        } else {
-                            throw e; // Re-throw other FileSystemExceptions immediately
-                        }
-                    }
-                }
-                throw new IOException("Failed to delete " + targetPath + " after " + MAX_RETRIES + " retries.");
-            }
-        });
-    }
+				for (int i = 0; i < MAX_RETRIES; i++) {
+					try {
+						Files.delete(targetPath);
+						return; // Success, exit retry loop
+
+					} catch (NoSuchFileException e) {
+						return;
+					} catch (FileSystemException e) {
+						if (e.getMessage().contains("Device or resource busy")
+								|| e.getMessage().contains("Directory not empty")) {
+							System.err.println("Attempt " + (i + 1) + " to delete " + targetPath + " failed: "
+									+ e.getMessage() + ". Retrying...");
+							try {
+								Thread.sleep(RETRY_DELAY_MS);
+							} catch (InterruptedException ie) {
+								Thread.currentThread().interrupt();
+								throw new IOException("Deletion interrupted for " + targetPath, ie);
+							}
+						} else {
+							throw e; // Re-throw other FileSystemExceptions
+										// immediately
+						}
+					}
+				}
+				throw new IOException("Failed to delete " + targetPath + " after " + MAX_RETRIES + " retries.");
+			}
+		});
+	}
 
 }
