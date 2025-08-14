@@ -140,7 +140,7 @@ public class HDTConvertTool {
 		List<HDTConversionTask> tasks = getTasks(input, output);
 		for (HDTConversionTask task : tasks) {
 			StopWatch lw = new StopWatch();
-			colorTool.log("Converting " + task.input + " to " + task.output + "/" + newType + " " + (total + 1) + "/"
+			colorTool.log("Converting " + task.input + " to " + task.output + " (" + newType + ") " + (total + 1) + "/"
 					+ tasks.size());
 			try (HDT hdt = input(task.input, spec, listenerConsole)) {
 				String oldType = hdt.getDictionary().getType();
