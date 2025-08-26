@@ -14,6 +14,7 @@ import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -111,7 +112,11 @@ public enum CompressionType {
 	 * @throws IOException io
 	 */
 	public InputStream decompress(InputStream stream) throws IOException {
-		return decompress.apply(stream);
+		InputStream nstream = decompress.apply(stream);
+		if (nstream == stream) {
+			return stream; // identity
+		}
+		return new BufferedInputStream(nstream);
 	}
 
 	/**
