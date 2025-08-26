@@ -5,27 +5,31 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
-import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
-import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
+import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.listener.ColorTool;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.MultiThreadListenerConsole;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.PrefixesStorage;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +68,12 @@ public class HDTVerify {
 
 	@Parameter(names = "-equals", description = "Test all the input HDTs are equals instead of checking validity")
 	public boolean equals;
+
+	@Parameter(names = "-integrity", description = "Check data integrity")
+	public boolean integrity;
+
+	@Parameter(names = "-eqtr", description = "Use triplestring equals instead of dict+triples equals")
+	public boolean eqtr;
 
 	public ColorTool colorTool;
 
@@ -249,7 +259,188 @@ public class HDTVerify {
 		return error;
 	}
 
+	private boolean checkTriples(ColorTool colorTool, Triples triples, MultiThreadListenerConsole console) {
+		IntermediateListener il = new IntermediateListener(console);
+		String type = triples.getType();
+		boolean err = false;
+
+		switch (type) {
+		case HDTVocabulary.TRIPLES_TYPE_STREAM, HDTVocabulary.TRIPLES_TYPE_BITMAP -> {
+			// we need to check the order: correlative,
+			TripleID prev = new TripleID();
+			long size = triples.getNumberOfElements();
+
+			IteratorTripleID it = triples.searchAll();
+
+			long count = 0;
+			while (it.hasNext()) {
+				TripleID next = it.next();
+				count++;
+
+				int c = prev.compareTo(next);
+
+				if (c >= 0) {
+					colorTool.error("Bad triples order(bs)", prev + " > " + next);
+					err = true;
+				} else if (prev.getSubject() + 1 < next.getSubject()) {
+					colorTool.error("Non correlative subject ids", prev + " / " + next);
+					err = true;
+				}
+
+				prev.setAll(next.getSubject(), next.getPredicate(), next.getObject());
+
+				if (count % 10_000 == 0) {
+					il.notifyProgress(100f * count / size,
+							"Verify (" + count + "/" + size + "): " + colorTool.color(3, 3, 3) + prev);
+				}
+			}
+			il.notifyProgress(100, "done triples");
+		}
+		default -> {
+			colorTool.log("Ignore triples type " + type + ": unknown");
+			return false;
+		}
+		}
+
+		if (err) {
+			colorTool.warn("Not valid triples");
+		} else {
+			colorTool.log("valid triples");
+		}
+		return err;
+	}
+
+	public Map<CharSequence, DictionarySection> getDictMap(Dictionary dict) {
+		Map<CharSequence, DictionarySection> map = new HashMap<>(dict.getAllObjects());
+		map.put("##subject", dict.getSubjects());
+		map.put("##shared", dict.getShared());
+		map.put("##predicate", dict.getPredicates());
+		if (dict.supportGraphs()) {
+			DictionarySection g = dict.getGraphs();
+			if (g != null) {
+				map.put("##graph", g);
+			}
+		}
+		return map;
+	}
+
 	public boolean assertHdtEquals(HDT hdt1, HDT hdt2, MultiThreadListenerConsole console, String desc) {
+		if (eqtr) {
+			return assertHdtEqualsString(hdt1, hdt2, console, desc);
+		}
+		IntermediateListener il = new IntermediateListener(console);
+		il.setPrefix(desc + ": ");
+		if (hdt1.getTriples().getNumberOfElements() != hdt2.getTriples().getNumberOfElements()) {
+			colorTool.error("HDT with different number of elements!");
+			return false;
+		}
+
+		// check dictionaries
+		Map<? extends CharSequence, DictionarySection> dict1 = getDictMap(hdt1.getDictionary());
+		Map<? extends CharSequence, DictionarySection> dict2 = getDictMap(hdt2.getDictionary());
+		if (dict1.size() != dict2.size()) {
+			colorTool.error("HDT with different number of dictionary sections!");
+			return false;
+		}
+
+		Comparator<CharSequence> cmp = CharSequenceComparator.getInstance();
+
+		if (dict1.entrySet().stream().anyMatch(e -> {
+			CharSequence key = e.getKey();
+			DictionarySection sect1 = e.getValue();
+			DictionarySection sect2 = dict2.get(key);
+
+			if (sect2 == null) {
+				colorTool.error("Can't find section " + key + " in section dictionary");
+				return true;
+			}
+			if (sect1.getNumberOfElements() != sect2.getNumberOfElements()) {
+				colorTool.error("HDT section " + key + "with different number of elements!");
+				return true;
+			}
+
+			Iterator<? extends CharSequence> it1 = sect1.getSortedEntries();
+			Iterator<? extends CharSequence> it2 = sect2.getSortedEntries();
+
+			long count = 0;
+			long size = sect1.getNumberOfElements();
+
+			while (it1.hasNext()) {
+				if (!it2.hasNext()) {
+					// err size?????
+					colorTool.error("Invalid iterator for key " + key + "! Too much it1");
+					return true;
+				}
+
+				CharSequence next1 = it1.next();
+				CharSequence next2 = it2.next();
+
+				if (cmp.compare(next1, next2) != 0) {
+					colorTool.error("Element not equals for dict section " + key + " : " + next1 + " != " + next2);
+					return true;
+				}
+
+				count++;
+
+				if (count % 10_000 == 0) {
+					String str = next1.toString();
+					il.notifyProgress(100f * count / size, "Verify " + key + " (" + count + "/" + size + "): "
+							+ colorTool.color(3, 3, 3) + (str.length() > 17 ? (str.substring(0, 17) + "...") : str));
+				}
+			}
+			if (it2.hasNext()) {
+				// err size?????
+				colorTool.error("Invalid iterator for key " + key + "! Too much it2");
+				return true;
+			}
+			il.notifyProgress(100, "checked");
+			colorTool.log("Dictionary section equals : " + key);
+
+			return false;
+		})) {
+			return false;
+		}
+
+		// we know that the dict is fine, we can check the triples value
+		IteratorTripleID tit1 = hdt1.getTriples().searchAll();
+		IteratorTripleID tit2 = hdt2.getTriples().searchAll();
+
+		long count = 0;
+		long size = hdt1.getTriples().getNumberOfElements();
+		while (tit1.hasNext()) {
+			if (!tit2.hasNext()) {
+				colorTool.error("Invalid triples iterator! Too much tit1"); // err
+																			// size?????
+				return false;
+			}
+
+			TripleID next1 = tit1.next();
+			TripleID next2 = tit2.next();
+
+			if (!next1.equals(next2)) {
+				colorTool.error("Triple not equals : " + next1 + " != " + next2);
+				return false;
+			}
+
+			count++;
+
+			if (count % 10_000 == 0) {
+				il.notifyProgress(100f * count / size,
+						"Verify triples (" + count + "/" + size + "): " + colorTool.color(3, 3, 3) + next1);
+			}
+		}
+		if (tit2.hasNext()) {
+			colorTool.error("Invalid triples iterator! Too much tit2"); // err
+																		// size?????
+			return false;
+		}
+		il.notifyProgress(100, "checked");
+		colorTool.log("Triples equals");
+
+		return true;
+	}
+
+	public boolean assertHdtEqualsString(HDT hdt1, HDT hdt2, MultiThreadListenerConsole console, String desc) {
 		IntermediateListener il = new IntermediateListener(console);
 		il.setPrefix(desc + ": ");
 		if (hdt1.getTriples().getNumberOfElements() != hdt2.getTriples().getNumberOfElements()) {
@@ -343,6 +534,18 @@ public class HDTVerify {
 					try (HDT hdt = hdtl) {
 						boolean error = false;
 						long count = 0;
+
+						if (integrity) {
+							try {
+								IntegrityObject.checkObjectIntegrity(console, hdtl);
+							} catch (IOException e) {
+								colorTool.error("Invalid object integrity", e);
+								error = true;
+								continue; // can't go after invalid integrity
+							}
+						}
+
+						error |= checkTriples(colorTool, hdt.getTriples(), console);
 
 						// check shared section
 						if (this.shared) {

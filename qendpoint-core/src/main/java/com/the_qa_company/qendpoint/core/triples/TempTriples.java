@@ -95,4 +95,6 @@ public interface TempTriples extends TriplesPrivate, Closeable {
 			DictionaryIDMapping mapGraph);
 
 	long getGraphsCount();
+
+	long getSharedCount();
 }

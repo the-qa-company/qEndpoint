@@ -1,9 +1,8 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-public class BigMappedByteBufferInputStream extends InputStream {
+public class BigMappedByteBufferInputStream extends BufferInputStream {
 	final BigMappedByteBuffer buf;
 	long offset;
 	long end;
@@ -16,6 +15,11 @@ public class BigMappedByteBufferInputStream extends InputStream {
 		this.buf = buf;
 		this.offset = offset;
 		end = offset + len;
+	}
+
+	@Override
+	public long remaining() {
+		return end - offset;
 	}
 
 	public boolean hasRemaining() {
@@ -47,5 +51,10 @@ public class BigMappedByteBufferInputStream extends InputStream {
 		n = Math.min(n, end - offset);
 		offset += n;
 		return n;
+	}
+
+	@Override
+	public boolean canRead(long len) {
+		return offset + len <= end;
 	}
 }

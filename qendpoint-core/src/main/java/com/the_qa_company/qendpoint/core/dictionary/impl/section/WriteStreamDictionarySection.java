@@ -1,8 +1,9 @@
 package com.the_qa_company.qendpoint.core.dictionary.impl.section;
 
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
-import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivateAppender;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -27,19 +28,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 
-public class WriteStreamDictionarySection implements DictionarySectionPrivate {
+public class WriteStreamDictionarySection implements WriteDictionarySectionPrivate {
 	private final CloseSuppressPath tempFilename;
 	private long numberElements = 0;
 	private final int bufferSize;
 	private long byteoutSize;
 	private boolean created;
 	private final CompressionType compressionType;
+	private final boolean usePfc;
 
 	public WriteStreamDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
 		this.bufferSize = bufferSize;
 		String fn = filename.getFileName().toString();
 		tempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_temp"));
 		compressionType = CompressionType.findOptionVal(spec.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
+		usePfc = spec.getBoolean(HDTOptionsKeys.DISk_USE_PFC, true);
 	}
 
 	@Override
@@ -65,7 +68,7 @@ public class WriteStreamDictionarySection implements DictionarySectionPrivate {
 						ByteString str = (ByteString) (it.next());
 						assert str != null;
 						// Find common part.
-						int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+						int delta = usePfc ? ByteStringUtil.longestCommonPrefix(previousStr, str) : 0;
 						// Write Delta in VByte
 						VByte.encode(crcout, delta);
 						// Write remaining
@@ -113,6 +116,7 @@ public class WriteStreamDictionarySection implements DictionarySectionPrivate {
 			// write empty an empty data section because we don't have anything
 			out.writeCRC();
 		}
+		IOUtil.writeInt(out, StreamDictionarySection.STREAM_SECTION_END_COOKIE);
 	}
 
 	@Override
@@ -153,5 +157,65 @@ public class WriteStreamDictionarySection implements DictionarySectionPrivate {
 	@Override
 	public boolean isIndexedSection() {
 		return false;
+	}
+
+	@Override
+	public WriteDictionarySectionAppender createAppender(long count, ProgressListener listener) throws IOException {
+		return new WriteDictionarySectionAppender(count, listener);
+	}
+
+	public class WriteDictionarySectionAppender implements WriteDictionarySectionPrivateAppender {
+		private final ProgressListener listener;
+		private final long count;
+
+		private final long block;
+		private final CountOutputStream out;
+		long currentCount = 0;
+		CRCOutputStream crcout;
+		ByteString previousStr = ByteString.empty();
+
+		public WriteDictionarySectionAppender(long count, ProgressListener listener) throws IOException {
+			this.listener = ProgressListener.ofNullable(listener);
+			this.count = count;
+			this.block = count < 10 ? 1 : count / 10;
+			out = new CountOutputStream(compressionType.compress(tempFilename.openOutputStream(bufferSize)));
+			crcout = new CRCOutputStream(out, new CRC32());
+		}
+
+		@Override
+		public void append(ByteString str) throws IOException {
+			assert str != null;
+			// Find common part.
+			int delta = usePfc ? ByteStringUtil.longestCommonPrefix(previousStr, str) : 0;
+			// Write Delta in VByte
+			VByte.encode(crcout, delta);
+			// Write remaining
+			ByteStringUtil.append(crcout, str, delta);
+
+			crcout.write(0);
+			previousStr = str;
+			numberElements++;
+			if (currentCount % block == 0) {
+				listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+			}
+			currentCount++;
+		}
+
+		@Override
+		public long getNumberElements() {
+			return numberElements;
+		}
+
+		@Override
+		public void close() throws IOException {
+			try {
+				byteoutSize = out.getTotalBytes();
+				crcout.writeCRC();
+				listener.notifyProgress(100, "Completed section filling");
+				created = true;
+			} finally {
+				IOUtil.closeObject(out);
+			}
+		}
 	}
 }

@@ -5,6 +5,8 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64Big;
 import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivateAppender;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
@@ -36,7 +38,7 @@ import java.util.Iterator;
  *
  * @author Antoine Willerval
  */
-public class WriteDictionarySection implements DictionarySectionPrivate {
+public class WritePFCDictionarySection implements WriteDictionarySectionPrivate {
 	private final CloseSuppressPath tempFilename;
 	private final CloseSuppressPath blockTempFilename;
 	private SequenceLog64BigDisk blocks;
@@ -47,7 +49,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 	private boolean created;
 	private final CompressionType compressionType;
 
-	public WriteDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
+	public WritePFCDictionarySection(HDTOptions spec, Path filename, int bufferSize) {
 		this.bufferSize = bufferSize;
 		String fn = filename.getFileName().toString();
 		tempFilename = CloseSuppressPath.of(filename.resolveSibling(fn + "_temp"));
@@ -65,7 +67,9 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		load(other.getSortedEntries(), other.getNumberOfElements(), plistener);
 	}
 
-	public WriteDictionarySectionAppender createAppender(long count, ProgressListener listener) throws IOException {
+	@Override
+	public WritePFCDictionarySection.WriteDictionarySectionAppender createAppender(long count,
+			ProgressListener listener) throws IOException {
 		blocks.close();
 		Files.deleteIfExists(blockTempFilename);
 		blocks = new SequenceLog64BigDisk(blockTempFilename.toAbsolutePath().toString(), 64, count / blockSize);
@@ -196,7 +200,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 		IOUtil.closeAll(blocks, tempFilename, blockTempFilename);
 	}
 
-	public class WriteDictionarySectionAppender implements Closeable {
+	public class WriteDictionarySectionAppender implements WriteDictionarySectionPrivateAppender {
 		private final ProgressListener listener;
 		private final long count;
 
@@ -214,6 +218,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 			crcout = new CRCOutputStream(out, new CRC32());
 		}
 
+		@Override
 		public void append(ByteString str) throws IOException {
 			assert str != null;
 			if (numberElements % blockSize == 0) {
@@ -238,6 +243,7 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 			currentCount++;
 		}
 
+		@Override
 		public long getNumberElements() {
 			return numberElements;
 		}

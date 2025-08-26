@@ -16,6 +16,7 @@ import com.the_qa_company.qendpoint.core.util.io.BigMappedByteBufferInputStream;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
+import com.the_qa_company.qendpoint.core.util.string.CompactString;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.BufferedInputStream;
@@ -72,6 +73,11 @@ public class StreamDictionarySectionMap implements DictionarySectionPrivate, Clo
 
 		long base = input.getTotalBytes();
 		IOUtil.skip(crcin, bufferSize + 4); // Including CRC32
+
+		int cookie = IOUtil.readInt(crcin);
+		if (cookie != StreamDictionarySection.STREAM_SECTION_END_COOKIE) {
+			throw new IOException("Can't read stream triples end cookie, found 0x" + Integer.toHexString(cookie));
+		}
 
 		endOffset = input.getTotalBytes();
 
@@ -167,7 +173,7 @@ public class StreamDictionarySectionMap implements DictionarySectionPrivate, Clo
 				current.replace2(is, delta);
 				idx++;
 
-				return current;
+				return new CompactString(current);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}

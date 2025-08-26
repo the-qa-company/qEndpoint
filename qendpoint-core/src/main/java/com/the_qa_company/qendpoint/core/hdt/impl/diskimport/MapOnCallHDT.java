@@ -12,6 +12,7 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.Triples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +30,7 @@ import java.util.Iterator;
  * @author Antoine Willerval
  */
 @SuppressWarnings("resource")
-public class MapOnCallHDT implements HDTPrivate {
+public class MapOnCallHDT implements HDTPrivate, IntegrityObject {
 	private final Path hdtFile;
 	private HDT hdt;
 
@@ -170,5 +171,10 @@ public class MapOnCallHDT implements HDTPrivate {
 	@Override
 	public void populateHeaderStructure(String baseUri) {
 		((HDTPrivate) mapOrGetHDT()).populateHeaderStructure(baseUri);
+	}
+
+	@Override
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkObjectIntegrity(listener, mapOrGetHDT());
 	}
 }

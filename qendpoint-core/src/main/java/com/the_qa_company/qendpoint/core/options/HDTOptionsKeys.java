@@ -108,6 +108,15 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.STRING, desc = "Compression algorithm used to reduce disk based algorithm, default none")
 	public static final String DISK_COMPRESSION_KEY = "disk.compression";
 
+	@Key(type = Key.Type.BOOLEAN, desc = "Use disk.compression to compress disk chunks, default false")
+	public static final String LOADER_DISK_USE_COMPRESSION_KEY = "load.disk.useCompression";
+
+	/**
+	 * Use the pfc compression, default true. Boolean value
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Use the pfc compression, default true")
+	public static final String DISk_USE_PFC = "disk.usePfc";
+
 	/**
 	 * Key for the loading mode of a RDF file for the
 	 * {@link HDTManager#generateHDT(String, String, RDFNotation, HDTOptions, ProgressListener)}
@@ -403,6 +412,13 @@ public class HDTOptionsKeys {
 	@Value(key = DISK_WRITE_SECTION_TYPE_KEY, desc = "stream section")
 	public static final String DISK_WRITE_SECTION_TYPE_VALUE_STREAM = "stream";
 
+	@Key(type = Key.Type.ENUM, desc = "Write triples type for disk algorithm")
+	public static final String DISK_WRITE_TRIPLES_TYPE_KEY = "disk.writeTriplesType";
+	@Value(key = DISK_WRITE_TRIPLES_TYPE_KEY, desc = "bitmap")
+	public static final String DISK_WRITE_TRIPLES_TYPE_VALUE_BITMAP = "bitmap";
+	@Value(key = DISK_WRITE_TRIPLES_TYPE_KEY, desc = "stream")
+	public static final String DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM = "stream";
+	//
 	/**
 	 * Location of the HDTCat temp files
 	 */

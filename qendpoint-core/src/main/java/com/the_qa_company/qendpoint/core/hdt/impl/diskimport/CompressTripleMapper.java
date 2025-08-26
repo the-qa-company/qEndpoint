@@ -179,4 +179,8 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 	public long getGraphsCount() {
 		return graphs;
 	}
+
+	public long getSharedCount() {
+		return shared;
+	}
 }
