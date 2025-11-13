@@ -1,1 +1,1 @@
-- update common-beanutils to 1.11.0 (#608)
+- Upgrade rdf4j version to 5.2.0 (#567)
