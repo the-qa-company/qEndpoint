@@ -41,7 +41,7 @@
         <json_simple.version>1.1.1</json_simple.version>
         <junit.version>4.13.2</junit.version>
         <lwjgl.version>3.3.1</lwjgl.version>
-        <rdf4j.version>5.1.0</rdf4j.version>
+        <rdf4j.version>5.2.0</rdf4j.version>
         <logback.version>1.5.6</logback.version>
         <beanutils.version>1.11.0</beanutils.version>
 
