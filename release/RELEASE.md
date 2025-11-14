@@ -1,3 +1,1 @@
-- fix docker startup (#602)
-- fix sparql format (#605)
-
+- Upgrade rdf4j version to 5.2.0 (#567)

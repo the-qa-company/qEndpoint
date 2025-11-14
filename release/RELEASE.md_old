@@ -1,3 +1,12 @@
+## Version 2.5.2
+        
+- update common-beanutils to 1.11.0 (#608)
+
+## Version 2.5.1
+        
+- fix docker startup (#602)
+- fix sparql format (#605)
+
 ## Version 2.5.0
         
 - Reuse permutation for other indexes generation (#589)
