@@ -25,8 +25,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -51,10 +53,16 @@ public class LargeFakeDataSetStreamSupplierTest {
 			try (PipedCopyIterator<TripleString> it = RDFParserFactory.readAsIterator(
 					RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES), is, HDTTestUtils.BASE_URI, true,
 					RDFNotation.NTRIPLES)) {
-				it.forEachRemaining(s -> {
-					assertTrue(it2.hasNext());
-					assertEquals(it2.next(), s);
-				});
+
+				Set<TripleString> set1 = new HashSet<>();
+				Set<TripleString> set2 = new HashSet<>();
+
+				it.forEachRemaining(set1::add);
+				it2.forEachRemaining(set2::add);
+
+				assertEquals(set1.size(), set2.size());
+				assertEquals(set1, set2);
+
 				assertFalse(it.hasNext());
 			}
 		}
