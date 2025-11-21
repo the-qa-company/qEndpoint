@@ -53,6 +53,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	private final boolean debugSleepKwayDict;
 	private final boolean quads;
 	private final CompressionType compressionType;
+	private final long start = System.currentTimeMillis();
 
 	public SectionCompressor(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleString> source,
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
@@ -253,7 +254,10 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 			}
 
 			if (tripleID % 100_000 == 0) {
-				listener.notifyProgress(10, "reading triples " + tripleID);
+				// use start to measure how many triples are read per second
+				int triplesPerSecond = (int) (tripleID / ((System.currentTimeMillis() - start) / 1000.0));
+
+				listener.notifyProgress(10, "reading triples " + tripleID + " triples per second: " + triplesPerSecond);
 			}
 			// too much ram allowed?
 			if (subjects.size() == Integer.MAX_VALUE - 6) {

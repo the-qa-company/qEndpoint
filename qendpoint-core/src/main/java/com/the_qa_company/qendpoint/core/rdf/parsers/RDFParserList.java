@@ -53,8 +53,8 @@ public class RDFParserList implements RDFParserCallback {
 	 * hdt.rdf.RDFParserCallback.RDFCallback)
 	 */
 	@Override
-	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
+	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		BufferedReader reader;
 		try {
 			reader = IOUtil.getFileReader(fileName);
@@ -63,7 +63,7 @@ public class RDFParserList implements RDFParserCallback {
 			throw new ParserException(e);
 		}
 		try {
-			doParse(reader, baseUri, notation, keepBNode, callback);
+			doParse(reader, baseUri, notation, keepBNode, callback, parallel);
 		} finally {
 			IOUtil.closeQuietly(reader);
 		}
@@ -71,10 +71,10 @@ public class RDFParserList implements RDFParserCallback {
 
 	@Override
 	public void doParse(InputStream input, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 		try {
-			doParse(reader, baseUri, notation, keepBNode, callback);
+			doParse(reader, baseUri, notation, keepBNode, callback, parallel);
 		} finally {
 			try {
 				reader.close();
@@ -84,7 +84,7 @@ public class RDFParserList implements RDFParserCallback {
 	}
 
 	private void doParse(BufferedReader reader, String baseUri, RDFNotation notation, boolean keepBNode,
-			RDFCallback callback) throws ParserException {
+			RDFCallback callback, boolean parallel) throws ParserException {
 		try {
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -96,7 +96,7 @@ public class RDFParserList implements RDFParserCallback {
 					System.out.println("Parse from list: " + line + " as " + guessnot);
 					RDFParserCallback parser = RDFParserFactory.getParserCallback(guessnot, spec);
 
-					parser.doParse(line, baseUri, guessnot, keepBNode, callback);
+					parser.doParse(line, baseUri, guessnot, keepBNode, callback, parallel);
 				}
 			}
 			reader.close();

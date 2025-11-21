@@ -26,23 +26,24 @@ public class UnicodeEscapeTest {
 		RDFParserCallback factory2 = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES,
 				HDTOptions.of(Map.of(HDTOptionsKeys.NT_SIMPLE_PARSER_KEY, "false")));
 
-		Set<TripleString> ts1 = new TreeSet<>(Comparator.comparing(t -> {
+		Set<TripleString> ts1 = Collections.synchronizedSet(new TreeSet<>(Comparator.comparing(t -> {
 			try {
 				return t.asNtriple().toString();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-		}));
-		Set<TripleString> ts2 = new TreeSet<>(Comparator.comparing(t -> {
+		})));
+		Set<TripleString> ts2 = Collections.synchronizedSet(new TreeSet<>(Comparator.comparing(t -> {
 			try {
 				return t.asNtriple().toString();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-		}));
-		factory.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true, (t, i) -> ts1.add(t.tripleToString()));
-		factory2.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true,
-				(t, i) -> ts2.add(t.tripleToString()));
+		})));
+		factory.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true, (t, i) -> ts1.add(t.tripleToString()),
+				true);
+		factory2.doParse(file, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true, (t, i) -> ts2.add(t.tripleToString()),
+				true);
 
 		Iterator<TripleString> it1 = ts1.iterator();
 		Iterator<TripleString> it2 = ts2.iterator();

@@ -84,7 +84,7 @@ public class RDFParserDirTest {
 		assertTrue(callback instanceof RDFParserDir);
 
 		callback.doParse(filename, "http://example.org/#", dir, true,
-				(triple, pos) -> assertTrue("triple " + triple + " wasn't excepted", excepted.remove(triple)));
+				(triple, pos) -> assertTrue("triple " + triple + " wasn't excepted", excepted.remove(triple)), true);
 	}
 
 	@Test
@@ -120,7 +120,7 @@ public class RDFParserDirTest {
 				for (Path path : allFiles) {
 					RDFParserCallback parser = RDFParserFactory.getParserCallback(RDFNotation.NTRIPLES);
 					parser.doParse(path.toAbsolutePath().toString(), HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, true,
-							containerSimple);
+							containerSimple, true);
 				}
 			}
 			time.stop();
@@ -138,7 +138,8 @@ public class RDFParserDirTest {
 				assertTrue(parser instanceof RDFParserDir);
 				assertEquals(maxThread, ((RDFParserDir) parser).async);
 
-				parser.doParse(root.toAbsolutePath().toString(), HDTTestUtils.BASE_URI, notation, true, containerAsync);
+				parser.doParse(root.toAbsolutePath().toString(), HDTTestUtils.BASE_URI, notation, true, containerAsync,
+						true);
 			}
 			time.stop();
 			if (LOG_TIME) {
@@ -157,7 +158,8 @@ public class RDFParserDirTest {
 				assertTrue(parser instanceof RDFParserDir);
 				assertEquals(1, ((RDFParserDir) parser).async);
 
-				parser.doParse(root.toAbsolutePath().toString(), HDTTestUtils.BASE_URI, notation, true, containerSync);
+				parser.doParse(root.toAbsolutePath().toString(), HDTTestUtils.BASE_URI, notation, true, containerSync,
+						true);
 			}
 
 			time.stop();

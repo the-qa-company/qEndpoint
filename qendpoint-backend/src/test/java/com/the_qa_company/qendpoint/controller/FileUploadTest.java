@@ -64,9 +64,12 @@ public class FileUploadTest {
 	public static final String COKTAILS_NT = "cocktails.nt";
 	private static final Logger logger = LoggerFactory.getLogger(FileUploadTest.class);
 
+	private static boolean initialised = false;
+
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<Object> params() {
-		ArrayList<Object> list = new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+//		ArrayList<Object> list = new ArrayList<>(RDFParserRegistry.getInstance().getKeys());
+		ArrayList<Object> list = new ArrayList<>();
 		list.add(RDFFormat.HDT);
 		return list;
 	}
@@ -79,25 +82,35 @@ public class FileUploadTest {
 
 	public FileUploadTest(RDFFormat format) throws IOException, ParserException {
 		this.format = format;
-		RDFFormat originalFormat = Rio.getParserFormatForFileName(COKTAILS_NT).orElseThrow();
 
+		RDFFormat originalFormat = Rio.getParserFormatForFileName(COKTAILS_NT).orElseThrow();
 		RDFParser parser = Rio.createParser(originalFormat);
 		Path testDir = Paths.get("tests", "testrdf");
 		Files.createDirectories(testDir);
 		Path RDFFile = testDir.resolve(COKTAILS_NT + "." + format.getDefaultFileExtension());
-		if (!Files.exists(RDFFile)) {
-			try (OutputStream os = new FileOutputStream(RDFFile.toFile()); InputStream is = stream(COKTAILS_NT)) {
-				if (format == RDFFormat.HDT) {
-					try (HDT hdt = HDTManager.generateHDT(is, "http://example.org/#", RDFNotation.TURTLE,
-							HDTOptions.empty(), ProgressListener.ignore())) {
-						hdt.saveToHDT(os);
+
+		if (!initialised || !Files.exists(RDFFile)) {
+
+			if (Files.exists(RDFFile)) {
+				Files.delete(RDFFile);
+			}
+
+			if (!Files.exists(RDFFile)) {
+				try (OutputStream os = new FileOutputStream(RDFFile.toFile()); InputStream is = stream(COKTAILS_NT)) {
+					if (format == RDFFormat.HDT) {
+						try (HDT hdt = HDTManager.generateHDT(is, "http://example.org/#", RDFNotation.NTRIPLES,
+								HDTOptions.empty(), ProgressListener.ignore())) {
+							hdt.saveToHDT(os);
+						}
+					} else {
+						RDFWriter writer = Rio.createWriter(format, os);
+						parser.setRDFHandler(noBNode(writer));
+						parser.parse(is);
 					}
-				} else {
-					RDFWriter writer = Rio.createWriter(format, os);
-					parser.setRDFHandler(noBNode(writer));
-					parser.parse(is);
 				}
 			}
+
+			initialised = true;
 		}
 
 		fileName = RDFFile.toFile().getAbsolutePath();

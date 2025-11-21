@@ -44,7 +44,7 @@ public class RDFParserHDTTest {
 		IteratorTripleString it = hdt.search("", "", "");
 
 		callback.doParse(filename, "http://example.org/#", dir, true,
-				(triple, pos) -> Assert.assertEquals(it.next(), triple));
+				(triple, pos) -> Assert.assertEquals(it.next(), triple), true);
 
 		hdt.close();
 	}

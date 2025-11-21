@@ -45,14 +45,14 @@ public class RDFParserDir implements RDFParserCallback {
 	}
 
 	@Override
-	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
-		doParse(Path.of(fileName), baseUri, notation, keepBNode, callback);
+	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
+		doParse(Path.of(fileName), baseUri, notation, keepBNode, callback, parallel);
 	}
 
 	@Override
-	public void doParse(Path path, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
+	public void doParse(Path path, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		if (notation != RDFNotation.DIR) {
 			throw new IllegalArgumentException("Can't parse notation different than " + RDFNotation.DIR + "!");
 		}
@@ -64,7 +64,7 @@ public class RDFParserDir implements RDFParserCallback {
 					subFiles.forEach(child -> {
 						try {
 							if (Files.isDirectory(child)) {
-								doParse(child, baseUri, RDFNotation.DIR, keepBNode, callback);
+								doParse(child, baseUri, RDFNotation.DIR, keepBNode, callback, parallel);
 								return;
 							}
 							RDFParserCallback rdfParserCallback;
@@ -80,7 +80,7 @@ public class RDFParserDir implements RDFParserCallback {
 							log.debug("parse {}", child);
 							// we can parse it, parsing it
 							rdfParserCallback.doParse(child.toAbsolutePath().toString(), baseUri, childNotation,
-									keepBNode, callback);
+									keepBNode, callback, parallel);
 						} catch (ParserException e) {
 							throw new ContainerException(e);
 						}
@@ -100,8 +100,8 @@ public class RDFParserDir implements RDFParserCallback {
 				// list of all the future loaded by the parser
 				FutureList list = new FutureList();
 				// send the first task with the root directory
-				list.add(executorService.submit(
-						new LoadTask(executorService, path, baseUri, RDFNotation.DIR, keepBNode, asyncRdfCallback)));
+				list.add(executorService.submit(new LoadTask(executorService, path, baseUri, RDFNotation.DIR, keepBNode,
+						asyncRdfCallback, parallel)));
 
 				// wait for end of all the futures
 				try {
@@ -121,8 +121,8 @@ public class RDFParserDir implements RDFParserCallback {
 	}
 
 	@Override
-	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
+	public void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		throw new NotImplementedException("Can't parse a stream of directory!");
 	}
 
@@ -175,15 +175,17 @@ public class RDFParserDir implements RDFParserCallback {
 		private final RDFNotation notation;
 		private final boolean keepBNode;
 		private final RDFCallback callback;
+		private final boolean parallel;
 
 		private LoadTask(ExecutorService executorService, Path path, String baseUri, RDFNotation notation,
-				boolean keepBNode, RDFCallback callback) {
+				boolean keepBNode, RDFCallback callback, boolean parallel) {
 			this.executorService = executorService;
 			this.path = path;
 			this.baseUri = baseUri;
 			this.notation = notation;
 			this.keepBNode = keepBNode;
 			this.callback = callback;
+			this.parallel = parallel;
 		}
 
 		@Override
@@ -194,7 +196,7 @@ public class RDFParserDir implements RDFParserCallback {
 					subFiles.forEach(child -> {
 						if (Files.isDirectory(child)) {
 							list.add(executorService.submit(new LoadTask(executorService, child, baseUri,
-									RDFNotation.DIR, keepBNode, callback)));
+									RDFNotation.DIR, keepBNode, callback, parallel)));
 							return;
 						}
 						RDFNotation childNotation;
@@ -207,8 +209,8 @@ public class RDFParserDir implements RDFParserCallback {
 						}
 						log.debug("parse {}", child);
 						// we can parse it, parsing it
-						list.add(executorService.submit(
-								new LoadTask(executorService, child, baseUri, childNotation, keepBNode, callback)));
+						list.add(executorService.submit(new LoadTask(executorService, child, baseUri, childNotation,
+								keepBNode, callback, parallel)));
 					});
 				} catch (IOException | SecurityException e) {
 					throw new ParserException(e);
@@ -226,7 +228,8 @@ public class RDFParserDir implements RDFParserCallback {
 				}
 
 				log.debug("parse {}", path);
-				rdfParserCallback.doParse(path.toAbsolutePath().toString(), baseUri, notation, keepBNode, callback);
+				rdfParserCallback.doParse(path.toAbsolutePath().toString(), baseUri, notation, keepBNode, callback,
+						parallel);
 			}
 
 			return list;

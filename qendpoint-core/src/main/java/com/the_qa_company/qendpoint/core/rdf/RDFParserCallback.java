@@ -48,14 +48,14 @@ public interface RDFParserCallback {
 		}
 	}
 
-	void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException;
+	void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException;
 
-	default void doParse(Path file, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException {
-		doParse(file.toAbsolutePath().toString(), baseUri, notation, keepBNode, callback);
+	default void doParse(Path file, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
+		doParse(file.toAbsolutePath().toString(), baseUri, notation, keepBNode, callback, parallel);
 	}
 
-	void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
-			throws ParserException;
+	void doParse(InputStream in, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException;
 }
