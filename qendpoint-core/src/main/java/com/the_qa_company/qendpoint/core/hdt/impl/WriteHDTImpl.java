@@ -9,8 +9,8 @@ import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
+import com.the_qa_company.qendpoint.core.triples.TriplesFactory;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
-import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
@@ -40,7 +40,7 @@ public class WriteHDTImpl extends HDTBase<HeaderPrivate, DictionaryPrivate, Trip
 		dictionary = DictionaryFactory.createWriteDictionary(this.spec, workingLocation.resolve("section"), bufferSize);
 		// we need to have the bitmaps in memory, so we can't bypass the
 		// implementation
-		triples = new WriteBitmapTriples(this.spec, workingLocation.resolve("tripleBitmap"), bufferSize,
+		triples = TriplesFactory.createWriteTriples(this.spec, workingLocation.resolve("tripleBitmap"), bufferSize,
 				dictionary.supportGraphs() ? 1 : -1);
 		// small, can use default implementation
 		header = HeaderFactory.createHeader(this.spec);

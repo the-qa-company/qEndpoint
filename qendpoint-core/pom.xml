@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>qendpoint-core</artifactId>
-    <version>2.5.1</version>
+    <version>2.5.2</version>
 
     <packaging>jar</packaging>
 
@@ -27,7 +27,7 @@
     <parent>
         <groupId>com.the-qa-company</groupId>
         <artifactId>qendpoint-parent</artifactId>
-        <version>2.5.1</version>
+        <version>2.5.2</version>
     </parent>
 
     <licenses>
@@ -52,6 +52,7 @@
         <jena.version>4.3.2</jena.version>
         <slf4j.version>1.7.30</slf4j.version>
         <lz4.version>1.8.0</lz4.version>
+        <zstd.version>1.5.7-3</zstd.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -125,6 +126,11 @@
             <groupId>org.lz4</groupId>
             <artifactId>lz4-java</artifactId>
             <version>${lz4.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.luben</groupId>
+            <artifactId>zstd-jni</artifactId>
+            <version>${zstd.version}</version>
         </dependency>
     </dependencies>
 </project>

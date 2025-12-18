@@ -10,6 +10,9 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleLangBaseDictionary;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLangPrefixes;
+import com.the_qa_company.qendpoint.core.dictionary.impl.kcat.GroupBySubjectMapIterator;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.PFCDictionarySectionMap;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.StreamDictionarySectionMap;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.RDFNodeType;
 import com.the_qa_company.qendpoint.core.enums.RDFNotation;
@@ -18,6 +21,7 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
+import com.the_qa_company.qendpoint.core.iterator.utils.PeekIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
@@ -31,6 +35,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIteratorPositionTest;
+import com.the_qa_company.qendpoint.core.triples.impl.StreamTriples;
 import com.the_qa_company.qendpoint.core.triples.impl.utils.HDTTestUtils;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.LargeFakeDataSetStreamSupplier;
@@ -39,6 +44,7 @@ import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.StringUtil;
 import com.the_qa_company.qendpoint.core.util.io.AbstractMapMemoryTest;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTest;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
@@ -61,8 +67,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,7 +101,8 @@ import static org.junit.Assert.fail;
 @Suite.SuiteClasses({ HDTManagerTest.DynamicDiskTest.class, HDTManagerTest.DynamicCatTreeTest.class,
 		HDTManagerTest.FileDynamicTest.class, HDTManagerTest.StaticTest.class, HDTManagerTest.MSDLangTest.class,
 		HDTManagerTest.HDTQTest.class, HDTManagerTest.DictionaryLangTypeTest.class,
-		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.CompressionTest.class })
+		HDTManagerTest.MSDLangQuadTest.class, HDTManagerTest.CompressionTest.class,
+		HDTManagerTest.StreamHDTTest.class })
 public class HDTManagerTest {
 	public static class HDTManagerTestBase extends AbstractMapMemoryTest implements ProgressListener {
 		protected final Logger logger;
@@ -194,8 +203,6 @@ public class HDTManagerTest {
 		}
 
 		public static void assertEqualsHDT(HDT expected, HDT actual) throws NotFoundException {
-			assertEquals("non matching sizes", expected.getTriples().getNumberOfElements(),
-					actual.getTriples().getNumberOfElements());
 			// test dictionary
 			Dictionary ed = expected.getDictionary();
 			Dictionary ad = actual.getDictionary();
@@ -238,21 +245,53 @@ public class HDTManagerTest {
 			assertEqualsHDT("Shared", ed.getShared(), ad.getShared());
 			assertEquals(ed.getType(), ad.getType());
 
+			long sidsharedAc = GroupBySubjectMapIterator.firstSubjectTripleId(actual);
+			long sidsharedEx = GroupBySubjectMapIterator.firstSubjectTripleId(expected);
+			assertEquals("invalid shared id id", sidsharedEx, sidsharedAc);
+
 			// test triples
-			IteratorTripleID actualIt = actual.getTriples().searchAll();
-			IteratorTripleID expectedIt = expected.getTriples().searchAll();
+			assertEquals("non matching sizes", expected.getTriples().getNumberOfElements(),
+					actual.getTriples().getNumberOfElements());
+			{
+				IteratorTripleID actualIt = actual.getTriples().searchAll();
+				IteratorTripleID expectedIt = expected.getTriples().searchAll();
 
-			while (expectedIt.hasNext()) {
-				assertTrue(actualIt.hasNext());
+				while (expectedIt.hasNext()) {
+					assertTrue(actualIt.hasNext());
 
-				TripleID expectedTriple = expectedIt.next();
-				TripleID actualTriple = actualIt.next();
+					TripleID expectedTriple = expectedIt.next();
+					TripleID actualTriple = actualIt.next();
 
-				long location = expectedIt.getLastTriplePosition();
-				assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
-				assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+					long location = expectedIt.getLastTriplePosition();
+					assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
+					assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+				}
+				assertFalse(actualIt.hasNext());
 			}
-			assertFalse(actualIt.hasNext());
+			if (false) { // FIXME: seem to create issues with Quad dicts
+				IteratorTripleID actualIt = actual.getTriples().searchAll();
+				IteratorTripleID expectedIt = expected.getTriples().searchAll();
+				if (actualIt.hasNext() && actualIt.canGoTo() && expectedIt.canGoTo()) {
+					assertTrue(expectedIt.hasNext());
+					actualIt.goTo(sidsharedAc);
+					expectedIt.goTo(sidsharedAc);
+
+					while (true) {
+
+						TripleID expectedTriple = expectedIt.next();
+						TripleID actualTriple = actualIt.next();
+
+						long location = expectedIt.getLastTriplePosition();
+						assertEquals("The tripleID location doesn't match", location, actualIt.getLastTriplePosition());
+						assertEquals("The tripleID #" + location + " doesn't match", expectedTriple, actualTriple);
+						if (!expectedIt.hasNext()) {
+							break;
+						}
+						assertTrue(actualIt.hasNext());
+					}
+					assertFalse(actualIt.hasNext());
+				}
+			}
 
 			// test header
 			assertEquals(actual.getHeader().getBaseURI(), expected.getHeader().getBaseURI());
@@ -266,6 +305,19 @@ public class HDTManagerTest {
 
 				fail("Size of the header doesn't match " + bld + expected.getHeader().getNumberOfElements() + "!="
 						+ actual.getHeader().getNumberOfElements());
+			}
+		}
+
+		public static void checkHDTConsistency(Path path) {
+			try {
+				try (HDT hdt = HDTManager.mapHDT(path)) {
+					checkHDTConsistency(hdt);
+				}
+				try (HDT hdt = HDTManager.loadHDT(path)) {
+					checkHDTConsistency(hdt);
+				}
+			} catch (IOException io) {
+				throw new RuntimeException(io);
 			}
 		}
 
@@ -286,8 +338,58 @@ public class HDTManagerTest {
 				map.put("Graph", dict.getGraphs());
 			}
 
-			ReplazableString prev = new ReplazableString();
 			Comparator<CharSequence> cmp = CharSequenceComparator.getInstance();
+			// check subject/shared consistency
+			{
+				long tried = 0;
+				PeekIterator<? extends CharSequence> suit = PeekIterator.of(dict.getSubjects().getSortedEntries());
+				PeekIterator<? extends CharSequence> shit = PeekIterator.of(dict.getShared().getSortedEntries());
+				while (suit.hasNext() && shit.hasNext()) {
+					CharSequence subj = suit.peek();
+					CharSequence shar = shit.peek();
+
+					int compr = cmp.compare(subj, shar);
+					tried++;
+					assertNotEquals("(BS) Subject and shared section overlap! " + subj, 0, compr);
+
+					if (compr < 0) {
+						// subj < shar
+						suit.next();
+					} else {
+						// shar < subj
+						shit.next();
+					}
+				}
+				long min = Math.min(dict.getSubjects().getNumberOfElements(), dict.getShared().getNumberOfElements());
+				assertTrue("bad tried : " + tried + "/" + min, tried >= min);
+			}
+			// check object/shared consistency
+			DictionarySection ndtsec = dict.getAllObjects().get(LiteralsUtils.NO_DATATYPE);
+			if (ndtsec != null) {
+				PeekIterator<? extends CharSequence> suit = PeekIterator.of(ndtsec.getSortedEntries());
+				PeekIterator<? extends CharSequence> shit = PeekIterator.of(dict.getShared().getSortedEntries());
+				long tried = 0;
+				while (suit.hasNext() && shit.hasNext()) {
+					CharSequence subj = suit.peek();
+					CharSequence shar = shit.peek();
+
+					int compr = cmp.compare(subj, shar);
+					tried++;
+					assertNotEquals("(BS) Subject and shared section overlap! " + subj, 0, compr);
+
+					if (compr < 0) {
+						// subj < shar
+						suit.next();
+					} else {
+						// shar < subj
+						shit.next();
+					}
+				}
+				long min = Math.min(ndtsec.getNumberOfElements(), dict.getShared().getNumberOfElements());
+				assertTrue("bad tried : " + tried + "/" + min, tried >= min);
+			}
+
+			ReplazableString prev = new ReplazableString();
 			map.forEach((name, section) -> {
 				prev.clear();
 				String prev2 = "";
@@ -333,18 +435,39 @@ public class HDTManagerTest {
 					prev.replace(next);
 				}
 			});
+
 			IteratorTripleID tripleIt = hdt.getTriples().searchAll();
 			long count = 0;
 			TripleID last = new TripleID(-1, -1, -1);
 			while (tripleIt.hasNext()) {
 				TripleID tid = tripleIt.next();
-				if (tid.match(last)) { // same graph?
-					continue;
+				int c = last.compareTo(tid);
+				if (c == 0) { // same graph?
+					assertNotEquals("equals triple in the hdt", tid, last);
+					continue; // ignore this triple
+				}
+				if (c > 0) {
+					fail("invalid triples order: " + last + " > " + tid);
 				}
 				count++;
 				last.setAll(tid.getSubject(), tid.getPredicate(), tid.getObject());
 			}
+			if (hdt.getTriples() instanceof StreamTriples) {
+				assertTrue(tripleIt instanceof StreamTriples.StreamReader);
+				StreamTriples.StreamReader sr = (StreamTriples.StreamReader) tripleIt;
+
+				try {
+					sr.checkEnd();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
 			assertEquals("tripleIt:" + tripleIt.getClass(), hdt.getTriples().getNumberOfElements(), count);
+			try {
+				IntegrityObject.checkObjectIntegrity(ProgressListener.ignore(), hdt);
+			} catch (IOException e) {
+				throw new AssertionError("Integrity exception", e);
+			}
 		}
 
 		public static void assertComponentsNotNull(String message, TripleString ts) {
@@ -2424,6 +2547,257 @@ public class HDTManagerTest {
 			} finally {
 				PathUtils.deleteDirectory(root);
 			}
+		}
+	}
+
+	@RunWith(Parameterized.class)
+	public static class StreamHDTTest extends HDTManagerTestBase {
+
+		public static void dumpDictionary(HDT hdt, String filename) {
+			try {
+				Path out = Path.of(filename).toAbsolutePath();
+
+				Map<? extends CharSequence, DictionarySection> obj = hdt.getDictionary().getAllObjects();
+
+				Files.createDirectories(out.getParent());
+				try (Writer w = new FileWriter(out.toFile())) {
+					obj.forEach((key, sec) -> {
+						Iterator<? extends CharSequence> it = sec.getSortedEntries();
+						long id = 0;
+						try {
+							String kstr = key.toString();
+							while (it.hasNext()) {
+								w.append(kstr).append(',').append(String.valueOf(id++)).append(',')
+										.append(it.next().toString()).append('\n');
+								if (id % 1000 == 0) {
+									w.flush();
+								}
+							}
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+
+					});
+
+					w.flush();
+				}
+
+				System.out.println("Dump into " + out);
+			} catch (IOException e) {
+				throw new AssertionError(e);
+			}
+		}
+
+		@Parameterized.Parameters(name = "dict:{0} strDict:{1} strTrip:{2} triples:{3}")
+		public static Collection<Object[]> params() {
+			return Stream
+					.of(HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS,
+							HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+							HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG)
+					.flatMap(dictType -> Stream.of(false).flatMap( // FIXME:
+																	// implement
+																	// streamed
+																	// dict
+							streamDict -> Stream.of(false, true)
+									.map(streamTriples -> new Object[] { dictType, streamDict, streamTriples, 500 })))
+					.toList();
+		}
+
+		@Parameterized.Parameter
+		public String dictType;
+		@Parameterized.Parameter(1)
+		public boolean streamDict;
+		@Parameterized.Parameter(2)
+		public boolean streamTriples;
+		@Parameterized.Parameter(3)
+		public long triplesCount;
+
+		private HDTOptions applyStreamSpec(HDTOptions spec) {
+			if (streamDict) {
+				spec.set(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
+						HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM);
+			}
+			if (streamTriples) {
+				spec.set(HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_KEY,
+						HDTOptionsKeys.DISK_WRITE_TRIPLES_TYPE_VALUE_STREAM);
+			}
+			return spec;
+		}
+
+		@Test
+		public void diskGenTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+			Path exp = root.resolve("ex.hdt");
+			Path acp = root.resolve("ac.hdt");
+			Path exp2 = root.resolve("ex2.hdt");
+			Path acp2 = root.resolve("ac2.hdt");
+
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+					.withUnicode(false);
+
+			HDTOptions specEx = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
+					HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, root.resolve("ct"),
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"), HDTOptionsKeys.HDTCAT_FUTURE_LOCATION,
+					root.resolve("hc.hdt"), HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
+					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt"));
+			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
+
+			supplier.reset();
+			supplier.createAndSaveFakeHDT(specEx, exp);
+			supplier.reset();
+			supplier.createAndSaveFakeHDT(specAc, acp);
+
+			try (HDT ac = HDTManager.mapHDT(acp); HDT ex = HDTManager.mapHDT(exp)) {
+				checkHDTConsistency(ex);
+				checkHDTConsistency(ac);
+				ac.saveToHDT(acp2);
+				ex.saveToHDT(exp2);
+
+				if (streamTriples) {
+					assertTrue(ac.getTriples() instanceof StreamTriples);
+				} else {
+					assertTrue(ac.getTriples() instanceof BitmapTriples);
+				}
+				if (streamDict) {
+					assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
+				} else {
+					assertTrue(ac.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				}
+				assertTrue(ex.getTriples() instanceof BitmapTriples);
+				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				assertEqualsHDT(ex, ac);
+			}
+			try (HDT ac = HDTManager.mapHDT(acp2); HDT ex = HDTManager.mapHDT(exp2)) {
+				checkHDTConsistency(ex);
+				checkHDTConsistency(ac);
+
+				if (streamTriples) {
+					assertTrue(ac.getTriples() instanceof StreamTriples);
+				} else {
+					assertTrue(ac.getTriples() instanceof BitmapTriples);
+				}
+				if (streamDict) {
+					assertTrue(ac.getDictionary().getSubjects() instanceof StreamDictionarySectionMap);
+				} else {
+					assertTrue(ac.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				}
+				assertTrue(ex.getTriples() instanceof BitmapTriples);
+				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+				assertEqualsHDT(ex, ac);
+			}
+
+			PathUtils.deleteDirectory(root);
+		}
+
+		@Test
+		public void diskGenCatTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+			Path exp = root.resolve("ex.hdt");
+			Path exp2 = root.resolve("ex2.hdt");
+			Path exp3 = root.resolve("ex2.hdt");
+			Path acp = root.resolve("ac.hdt");
+			Path acp2 = root.resolve("ac2.hdt");
+			Path acp3 = root.resolve("ac2.hdt");
+
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+					.withUnicode(false);
+
+			HDTOptions specEx = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
+					HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, root.resolve("ct"),
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"), HDTOptionsKeys.HDTCAT_FUTURE_LOCATION,
+					root.resolve("hc.hdt"), HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
+					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt"));
+			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
+
+			supplier.reset();
+			supplier.createAndSaveFakeHDT(specEx, exp);
+			supplier.createAndSaveFakeHDT(specEx, exp2);
+			supplier.reset();
+			supplier.createAndSaveFakeHDT(specAc, acp);
+			supplier.createAndSaveFakeHDT(specAc, acp2);
+
+			try (HDT hdt = HDTManager.catHDTPath(List.of(exp, exp2), specEx, ProgressListener.ignore())) {
+				hdt.saveToHDT(exp3);
+				checkHDTConsistency(hdt);
+			}
+			try (HDT hdt = HDTManager.catHDTPath(List.of(exp, exp2), specAc, ProgressListener.ignore())) {
+				hdt.saveToHDT(acp3);
+				checkHDTConsistency(hdt);
+			}
+			try (HDT hdt = HDTManager.catHDTPath(List.of(acp, acp2), specAc, ProgressListener.ignore())) {
+				hdt.saveToHDT(acp3);
+				checkHDTConsistency(hdt);
+			}
+
+			try (HDT ac = HDTManager.mapHDT(acp3); HDT ex = HDTManager.mapHDT(exp3)) {
+				checkHDTConsistency(ex);
+				checkHDTConsistency(ac);
+
+				assertEqualsHDT(ex, ac);
+			}
+
+			PathUtils.deleteDirectory(root);
+		}
+
+		@Test
+		public void diskGenCatNoStreamTest() throws IOException, ParserException, NotFoundException {
+			Path root = tempDir.newFolder().toPath();
+			Path exp = root.resolve("ex.hdt");
+			Path exp2 = root.resolve("ex2.hdt");
+			Path exp3 = root.resolve("ex2.hdt");
+			Path acp = root.resolve("ac.hdt");
+			Path acp2 = root.resolve("ac2.hdt");
+			Path acp3 = root.resolve("ac2.hdt");
+
+			LargeFakeDataSetStreamSupplier supplier = LargeFakeDataSetStreamSupplier
+					.createSupplierWithMaxTriples(triplesCount, 34).withMaxElementSplit(20).withMaxLiteralSize(10)
+					.withUnicode(false);
+
+			HDTOptions specEx = HDTOptions.of(HDTOptionsKeys.LOADER_TYPE_KEY, HDTOptionsKeys.LOADER_TYPE_VALUE_DISK,
+					HDTOptionsKeys.DICTIONARY_TYPE_KEY, dictType, HDTOptionsKeys.HDTCAT_LOCATION, root.resolve("hc"),
+					HDTOptionsKeys.LOADER_CATTREE_LOCATION_KEY, root.resolve("ct"),
+					HDTOptionsKeys.LOADER_DISK_LOCATION_KEY, root.resolve("gd"), HDTOptionsKeys.HDTCAT_FUTURE_LOCATION,
+					root.resolve("hc.hdt"), HDTOptionsKeys.LOADER_DISK_FUTURE_HDT_LOCATION_KEY, root.resolve("gd.hdt"),
+					HDTOptionsKeys.LOADER_CATTREE_FUTURE_HDT_LOCATION_KEY, root.resolve("ct.hdt"));
+			HDTOptions specAc = applyStreamSpec(specEx.pushTop());
+
+			supplier.reset();
+			supplier.createAndSaveFakeHDT(specEx, exp);
+			supplier.createAndSaveFakeHDT(specEx, exp2);
+			supplier.reset();
+			supplier.createAndSaveFakeHDT(specAc, acp);
+			supplier.createAndSaveFakeHDT(specAc, acp2);
+			checkHDTConsistency(acp);
+			checkHDTConsistency(acp2);
+			checkHDTConsistency(exp);
+			checkHDTConsistency(exp2);
+
+			try (HDT hdt = HDTManager.catHDTPath(List.of(exp, exp2), specEx, ProgressListener.ignore())) {
+				hdt.saveToHDT(exp3);
+				checkHDTConsistency(hdt);
+			}
+			checkHDTConsistency(exp3);
+			try (HDT hdt = HDTManager.catHDTPath(List.of(acp, acp2), specEx, ProgressListener.ignore())) {
+				hdt.saveToHDT(acp3);
+				checkHDTConsistency(hdt);
+			}
+			checkHDTConsistency(acp3);
+
+			try (HDT ac = HDTManager.mapHDT(acp3); HDT ex = HDTManager.mapHDT(exp3)) {
+				assertTrue(ex.getTriples() instanceof BitmapTriples);
+				assertTrue(ex.getDictionary().getSubjects() instanceof PFCDictionarySectionMap);
+
+				checkHDTConsistency(ex);
+				checkHDTConsistency(ac);
+
+				assertEqualsHDT(ex, ac);
+			}
+
+			PathUtils.deleteDirectory(root);
 		}
 	}
 }

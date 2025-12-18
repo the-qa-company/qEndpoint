@@ -7,6 +7,7 @@ import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToMSDConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDLToMSDLPConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDToFSDConverter;
 import com.the_qa_company.qendpoint.core.hdt.impl.converter.MSDToMSDLConverter;
+import com.the_qa_company.qendpoint.core.hdt.impl.converter.TriplesConverter;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
@@ -32,6 +33,10 @@ public interface Converter {
 		Objects.requireNonNull(origin, "origin can't be null!");
 
 		String oldType = origin.getDictionary().getType();
+
+		if (newType.equalsIgnoreCase("same") || oldType.equals(newType)) {
+			return new TriplesConverter(oldType); // keep the same type
+		}
 
 		switch (oldType) {
 		case HDTVocabulary.DICTIONARY_TYPE_MULT_SECTION, HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> {

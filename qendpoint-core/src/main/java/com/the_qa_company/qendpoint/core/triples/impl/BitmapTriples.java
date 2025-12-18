@@ -61,6 +61,7 @@ import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 import com.the_qa_company.qendpoint.core.util.io.compress.Pair;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
 import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
@@ -92,7 +93,7 @@ import java.util.stream.Collectors;
 /**
  * @author mario.arias
  */
-public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
+public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex, IntegrityObject {
 	private static final Logger log = LoggerFactory.getLogger(BitmapTriples.class);
 
 	protected TripleComponentOrder order;
@@ -488,12 +489,14 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 		ControlInformation ci = new ControlInformation();
 		ci.load(input);
 		if (ci.getType() != ControlInfo.Type.TRIPLES) {
-			throw new IllegalFormatException("Trying to read a triples section, but was not triples.");
+			throw new IllegalFormatException(
+					"Trying to read a triples section, but was not triples. found " + ci.getType());
 		}
 
 		if (!ci.getFormat().equals(getType())) {
 			throw new IllegalFormatException(
-					"Trying to read BitmapTriples, but the data does not seem to be BitmapTriples");
+					"Trying to read BitmapTriples, but the data does not seem to be BitmapTriples, found "
+							+ ci.getFormat());
 		}
 
 		order = TripleComponentOrder.values()[(int) ci.getInt("order")];
@@ -1455,6 +1458,11 @@ public class BitmapTriples implements TriplesPrivate, BitmapTriplesIndex {
 
 	public Bitmap getBitmapIndex() {
 		return bitmapIndexZ;
+	}
+
+	@Override
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkAllIntegrity(listener, bitmapY, bitmapZ, seqY, seqZ);
 	}
 
 	public static class CreateOnUsePath implements Closeable {

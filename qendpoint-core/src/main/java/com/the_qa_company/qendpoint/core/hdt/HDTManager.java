@@ -1367,6 +1367,27 @@ public abstract class HDTManager {
 				HDTOptions.ofNullable(hdtFormat), ProgressListener.ofNullable(listener));
 	}
 
+	/**
+	 * Setup disk options for generate
+	 *
+	 * @param spec     options
+	 * @param output   output
+	 * @param location work location
+	 */
+	public static void setupDiskOptions(HDTOptions spec, Path output, Path location) {
+		HDTManager.getInstance().doSetupDiskOptions(spec, output, location);
+	}
+
+	/**
+	 * Setup disk options for generate
+	 *
+	 * @param spec   options
+	 * @param output output
+	 */
+	public static void setupDiskOptions(HDTOptions spec, Path output) {
+		HDTManager.getInstance().doSetupDiskOptions(spec, output, null);
+	}
+
 	// Abstract methods for the current implementation
 	protected abstract HDTOptions doReadOptions(String file) throws IOException;
 
@@ -1446,5 +1467,7 @@ public abstract class HDTManager {
 	protected abstract HDTResult doHDTCatTree(RDFFluxStop fluxStop, HDTSupplier supplier,
 			Iterator<TripleString> iterator, String baseURI, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException;
+
+	protected abstract void doSetupDiskOptions(HDTOptions spec, Path output, Path location);
 
 }

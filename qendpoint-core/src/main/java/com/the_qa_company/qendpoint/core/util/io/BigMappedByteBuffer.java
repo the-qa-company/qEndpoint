@@ -27,8 +27,8 @@ public class BigMappedByteBuffer {
 	 */
 	public static BigMappedByteBuffer ofFileChannel(String filename, FileChannel ch, FileChannel.MapMode mode,
 			long position, long size) throws IOException {
-		int bufferCount = (int) ((size - 1) / maxBufferSize) + 1;
 		BigMappedByteBuffer buffer = new BigMappedByteBuffer(null, new ArrayList<>());
+		int bufferCount = size == 0 ? 0 : (int) ((size - 1) / maxBufferSize) + 1;
 		for (int i = 0; i < bufferCount; i++) {
 			long mapSize;
 

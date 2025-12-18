@@ -5,8 +5,9 @@ import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySection;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.TempDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.WriteMultipleSectionDictionaryLangPrefixes;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.Converter;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
@@ -149,7 +150,7 @@ public class MSDLToMSDLPConverter implements Converter {
 
 			Files.createDirectories(dataDir);
 			Path ws = dataDir.resolve("sec.bin");
-			try (WriteDictionarySection sec = new WriteDictionarySection(options, ws, 4096)) {
+			try (WriteDictionarySectionPrivate sec = DictionarySectionFactory.createWriteSection(options, ws, 4096)) {
 
 				Iterator<? extends CharSequence> mapped = original.getSortedEntries();
 

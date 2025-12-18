@@ -44,10 +44,11 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 	private final AtomicLong triplesCount = new AtomicLong();
 	private final long chunkSize;
 	private final long graphs;
+	private final long shared;
 
 	public MapCompressTripleMerger(CloseSuppressPath baseFileName, AsyncIteratorFetcher<TripleID> source,
 			CompressTripleMapper mapper, MultiThreadListener listener, TripleComponentOrder order, int bufferSize,
-			long chunkSize, int k, long graphs) {
+			long chunkSize, int k, long graphs, long shared) {
 		this.baseFileName = baseFileName;
 		this.source = source;
 		this.mapper = mapper;
@@ -57,6 +58,7 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 		this.chunkSize = chunkSize;
 		this.k = k;
 		this.graphs = graphs;
+		this.shared = shared;
 	}
 
 	/**
@@ -79,7 +81,7 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 		if (sections.isEmpty()) {
 			return new TripleCompressionResultEmpty(order);
 		}
-		return new TripleCompressionResultFile(triplesCount.get(), sections.get(), order, bufferSize, graphs);
+		return new TripleCompressionResultFile(triplesCount.get(), sections.get(), order, bufferSize, graphs, shared);
 	}
 
 	/**
@@ -110,7 +112,7 @@ public class MapCompressTripleMerger implements KWayMerger.KWayMergerImpl<Triple
 				}
 			}
 		}
-		return new TripleCompressionResultPartial(files, triplesCount.get(), order, bufferSize, graphs) {
+		return new TripleCompressionResultPartial(files, triplesCount.get(), order, bufferSize, graphs, shared) {
 			@Override
 			public void close() throws IOException {
 				try {

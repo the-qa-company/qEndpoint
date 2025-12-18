@@ -25,11 +25,10 @@ import java.io.InputStream;
 import java.nio.file.Path;
 
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
-import com.the_qa_company.qendpoint.core.options.HDTSpecification;
 import com.the_qa_company.qendpoint.core.util.io.CountInputStream;
 
 /**
@@ -40,11 +39,12 @@ public class DictionarySectionFactory {
 	private DictionarySectionFactory() {
 	}
 
-	public static DictionarySectionPrivate createWriteSection(HDTOptions spec, Path filename, int bufferSize) {
+	public static WriteDictionarySectionPrivate createWriteSection(HDTOptions spec, Path filename, int bufferSize) {
 		String type = spec.get(HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_KEY,
 				HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC);
 		return switch (type) {
-		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC -> new WriteDictionarySection(spec, filename, bufferSize);
+		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_PFC ->
+			new WritePFCDictionarySection(spec, filename, bufferSize);
 		case HDTOptionsKeys.DISK_WRITE_SECTION_TYPE_VALUE_STREAM ->
 			new WriteStreamDictionarySection(spec, filename, bufferSize);
 		default -> throw new IllegalArgumentException("No write implementation for type " + type);

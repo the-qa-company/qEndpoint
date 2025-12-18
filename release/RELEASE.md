@@ -1,3 +1,1 @@
-- fix docker startup (#602)
-- fix sparql format (#605)
-
+- update common-beanutils to 1.11.0 (#608)

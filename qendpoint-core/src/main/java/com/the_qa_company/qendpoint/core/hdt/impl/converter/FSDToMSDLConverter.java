@@ -6,9 +6,11 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.dictionary.Dictionary;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.DictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivate;
+import com.the_qa_company.qendpoint.core.dictionary.WriteDictionarySectionPrivateAppender;
 import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictionaryLang;
 import com.the_qa_company.qendpoint.core.dictionary.impl.UnmodifiableDictionarySectionPrivate;
-import com.the_qa_company.qendpoint.core.dictionary.impl.section.WriteDictionarySection;
+import com.the_qa_company.qendpoint.core.dictionary.impl.section.DictionarySectionFactory;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.hdt.Converter;
@@ -23,9 +25,9 @@ import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.triples.TriplesFactory;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.triples.impl.OneReadTempTriples;
-import com.the_qa_company.qendpoint.core.triples.impl.WriteBitmapTriples;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.ContainerException;
 import com.the_qa_company.qendpoint.core.util.LiteralsUtils;
@@ -95,7 +97,7 @@ public class FSDToMSDLConverter implements Converter {
 					buckets.load(origin.getDictionary().getObjects().getSortedEntries(),
 							origin.getDictionary().getNobjects(), listener);
 
-					try (WriteBitmapTriples triples = new WriteBitmapTriples(options, dir.resolve("triples"),
+					try (TriplesPrivate triples = TriplesFactory.createWriteTriples(options, dir.resolve("triples"),
 							bufferSize)) {
 						triples.load(new OneReadTempTriples(
 								new ObjectReSortIterator(new MapIterator<>(origin.getTriples().searchAll(), tid -> {
@@ -106,7 +108,7 @@ public class FSDToMSDLConverter implements Converter {
 											: "bad index " + (tid.getObject() - nShared) + "/" + nShared;
 									return new TripleID(tid.getSubject(), tid.getPredicate(),
 											objectMap.get(tid.getObject() - nShared) + nShared);
-								}), order), order, origin.getTriples().getNumberOfElements()), listener);
+								}), order), order, origin.getTriples().getNumberOfElements(), 0, nShared), listener);
 						// HEADER
 						HeaderPrivate header = new PlainHeader();
 
@@ -178,8 +180,8 @@ public class FSDToMSDLConverter implements Converter {
 							ByteString lang = (ByteString) LiteralsUtils.getLanguage(str).orElseThrow();
 							bucket = languagesAppender.computeIfAbsent(lang, key -> {
 								int id = languages.size();
-								WriteDictionarySection section = new WriteDictionarySection(options,
-										dir.resolve("lang_" + id + ".sec"), bufferSize);
+								WriteDictionarySectionPrivate section = DictionarySectionFactory
+										.createWriteSection(options, dir.resolve("lang_" + id + ".sec"), bufferSize);
 								languages.put(lang, section);
 								try {
 									CloseSuppressPath idsPath = dir.resolve("lang_" + id + ".triples");
@@ -192,8 +194,8 @@ public class FSDToMSDLConverter implements Converter {
 						} else {
 							bucket = objectsAppender.computeIfAbsent(type, key -> {
 								int id = objects.size();
-								WriteDictionarySection section = new WriteDictionarySection(options,
-										dir.resolve("type_" + id + ".sec"), bufferSize);
+								WriteDictionarySectionPrivate section = DictionarySectionFactory
+										.createWriteSection(options, dir.resolve("type_" + id + ".sec"), bufferSize);
 								objects.put(type, section);
 								try {
 									CloseSuppressPath idsPath = dir.resolve("type_" + id + ".triples");
@@ -204,7 +206,7 @@ public class FSDToMSDLConverter implements Converter {
 								}
 							});
 						}
-						WriteDictionarySection.WriteDictionarySectionAppender appender = bucket.appender();
+						WriteDictionarySectionPrivateAppender appender = bucket.appender();
 						appender.append((ByteString) LiteralsUtils.removeTypeAndLang(str));
 						OutputStream ids = bucket.idWriter();
 						// write index -> inSectionIndex
@@ -262,7 +264,7 @@ public class FSDToMSDLConverter implements Converter {
 
 	}
 
-	private record Bucket(WriteDictionarySection.WriteDictionarySectionAppender appender, CloseSuppressPath idsPath,
+	private record Bucket(WriteDictionarySectionPrivateAppender appender, CloseSuppressPath idsPath,
 			OutputStream idWriter) implements Closeable {
 
 		@Override

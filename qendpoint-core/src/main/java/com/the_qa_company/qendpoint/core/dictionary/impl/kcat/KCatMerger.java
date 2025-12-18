@@ -868,6 +868,10 @@ public class KCatMerger implements AutoCloseable {
 				// we can't have more than buffer size because a source HDT
 				// wouldn't be
 				// without duplicated or a so/sh conflict
+				if (used == buffer.length) {
+					throw new ArrayIndexOutOfBoundsException(
+							"More than " + used + " nodes for string " + node.getNode());
+				}
 				buffer[used++] = node;
 				return true;
 			}

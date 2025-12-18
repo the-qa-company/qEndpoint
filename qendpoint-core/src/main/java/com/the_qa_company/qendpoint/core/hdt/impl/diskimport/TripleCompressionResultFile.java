@@ -20,11 +20,13 @@ public class TripleCompressionResultFile implements TripleCompressionResult {
 	private final TripleComponentOrder order;
 	private final CloseSuppressPath triples;
 	private final long graphs;
+	private final long shared;
 
 	public TripleCompressionResultFile(long tripleCount, CloseSuppressPath triples, TripleComponentOrder order,
-			int bufferSize, long graphs) throws IOException {
+			int bufferSize, long graphs, long shared) throws IOException {
 		this.tripleCount = tripleCount;
 		this.graphs = graphs;
+		this.shared = shared;
 		this.reader = new CompressTripleReader(triples.openInputStream(bufferSize));
 		this.order = order;
 		this.triples = triples;
@@ -32,7 +34,7 @@ public class TripleCompressionResultFile implements TripleCompressionResult {
 
 	@Override
 	public TempTriples getTriples() {
-		return new OneReadTempTriples(reader.asIterator(), order, tripleCount, graphs);
+		return new OneReadTempTriples(reader.asIterator(), order, tripleCount, graphs, shared);
 	}
 
 	@Override

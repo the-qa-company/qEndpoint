@@ -8,6 +8,7 @@ import com.the_qa_company.qendpoint.core.header.Header;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.triples.Triples;
+import com.the_qa_company.qendpoint.core.util.io.IntegrityObject;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,7 +18,7 @@ import java.io.OutputStream;
  *
  * @author Antoine Willerval
  */
-public class CloseSafeHDT implements HDT {
+public class CloseSafeHDT implements HDT, IntegrityObject {
 	private final HDT hdt;
 	private boolean closed;
 
@@ -106,5 +107,10 @@ public class CloseSafeHDT implements HDT {
 	public IteratorTripleString search(CharSequence subject, CharSequence predicate, CharSequence object,
 			CharSequence graph, int searchOrderMask) throws NotFoundException {
 		return hdt.search(subject, predicate, object, graph, searchOrderMask);
+	}
+
+	@Override
+	public void checkIntegrity(ProgressListener listener) throws IOException {
+		IntegrityObject.checkObjectIntegrity(listener, hdt);
 	}
 }

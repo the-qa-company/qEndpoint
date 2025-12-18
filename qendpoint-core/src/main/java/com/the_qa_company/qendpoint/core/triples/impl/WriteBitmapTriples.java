@@ -318,81 +318,33 @@ public class WriteBitmapTriples implements TriplesPrivate {
 		Closer.closeAll(bitY, bitZ, vectorY, seqY, vectorZ, seqZ, quadInfoAG, triples);
 	}
 
-	public class BitmapTriplesAppender {
-		long lastX = 0, lastY = 0, lastZ = 0;
-		long x, y, z;
-		final long number;
-		final ProgressListener listener;
-
-		private BitmapTriplesAppender(long number, ProgressListener listener) {
-			this.number = number;
-			this.listener = listener;
-		}
-
-		public void append(TripleID triple) {
-			TripleOrderConvert.swapComponentOrder(triple, TripleComponentOrder.SPO, order);
-
-			x = triple.getSubject();
-			y = triple.getPredicate();
-			z = triple.getObject();
-			if (x == 0 || y == 0 || z == 0) {
-				throw new IllegalFormatException("None of the components of a triple can be null");
-			}
-
-			if (numTriples == 0) {
-				// First triple
-				vectorY.append(y);
-				vectorZ.append(z);
-			} else if (x != lastX) {
-				if (x != lastX + 1) {
-					throw new IllegalFormatException(
-							"Upper level must be increasing and correlative. " + x + " != " + lastX + "+ 1");
-				}
-				// X changed
-				bitY.append(true);
-				vectorY.append(y);
-
-				bitZ.append(true);
-				vectorZ.append(z);
-			} else if (y != lastY) {
-				if (y < lastY) {
-					throw new IllegalFormatException(
-							"Middle level must be increasing for each parent. " + y + " < " + lastY);
-				}
-
-				// Y changed
-				bitY.append(false);
-				vectorY.append(y);
-
-				bitZ.append(true);
-				vectorZ.append(z);
-			} else {
-				if (z < lastZ) {
-					throw new IllegalFormatException(
-							"Lower level must be increasing for each parent. " + z + " < " + lastZ);
-				}
-
-				// Z changed
-				bitZ.append(false);
-				vectorZ.append(z);
-			}
-
-			lastX = x;
-			lastY = y;
-			lastZ = z;
-
-			ListenerUtil.notifyCond(listener, "Converting to BitmapTriples", numTriples, numTriples, number);
-			numTriples++;
-		}
-
-		public void done() {
-			if (numTriples > 0) {
-				bitY.append(true);
-				bitZ.append(true);
-			}
-
-			vectorY.aggressiveTrimToSize();
-			vectorZ.aggressiveTrimToSize();
-		}
-	}
+	/*
+	 * public class BitmapTriplesAppender { long lastX = 0, lastY = 0, lastZ =
+	 * 0; long x, y, z; final long number; final ProgressListener listener;
+	 * private BitmapTriplesAppender(long number, ProgressListener listener) {
+	 * this.number = number; this.listener = listener; } public void
+	 * append(TripleID triple) { TripleOrderConvert.swapComponentOrder(triple,
+	 * TripleComponentOrder.SPO, order); x = triple.getSubject(); y =
+	 * triple.getPredicate(); z = triple.getObject(); if (x == 0 || y == 0 || z
+	 * == 0) { throw new
+	 * IllegalFormatException("None of the components of a triple can be null");
+	 * } if (numTriples == 0) { // First triple vectorY.append(y);
+	 * vectorZ.append(z); } else if (x != lastX) { if (x != lastX + 1) { throw
+	 * new IllegalFormatException(
+	 * "Upper level must be increasing and correlative. " + x + " != " + lastX +
+	 * "+ 1"); } // X changed bitY.append(true); vectorY.append(y);
+	 * bitZ.append(true); vectorZ.append(z); } else if (y != lastY) { if (y <
+	 * lastY) { throw new IllegalFormatException(
+	 * "Middle level must be increasing for each parent. " + y + " < " + lastY);
+	 * } // Y changed bitY.append(false); vectorY.append(y); bitZ.append(true);
+	 * vectorZ.append(z); } else { if (z < lastZ) { throw new
+	 * IllegalFormatException(
+	 * "Lower level must be increasing for each parent. " + z + " < " + lastZ);
+	 * } // Z changed bitZ.append(false); vectorZ.append(z); } lastX = x; lastY
+	 * = y; lastZ = z; ListenerUtil.notifyCond(listener,
+	 * "Converting to BitmapTriples", numTriples, numTriples, number);
+	 * numTriples++; } public void done() { if (numTriples > 0) {
+	 * bitY.append(true); bitZ.append(true); } vectorY.aggressiveTrimToSize();
+	 * vectorZ.aggressiveTrimToSize(); } }
+	 */
 }
