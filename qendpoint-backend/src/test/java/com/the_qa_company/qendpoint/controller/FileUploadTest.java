@@ -214,30 +214,33 @@ public class FileUploadTest {
 			long[] storeExtra = new long[1];
 			long[] duplicateRemoved = new long[1];
 			logger.info("Store size before scan: {}", connection.size());
-			RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false);
-			while (sts.hasNext()) {
-				Statement next = sts.next();
-				if (next.getSubject().isBNode() || next.getObject().isBNode()
-						|| next.getSubject().toString().startsWith("_:")
-						|| next.getObject().toString().startsWith("_:")) {
-					storeSkippedBNode[0]++;
-					continue;
-				}
-				storeTotal[0]++;
-				boolean removed = statementList.remove(next);
-				if (!removed) {
-					storeExtra[0]++;
-					if (storeExtra[0] <= 5) {
-						logger.warn("Store statement not in expected list: {}", next);
+			try (RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false)) {
+				while (sts.hasNext()) {
+					Statement next = sts.next();
+					if (next.getSubject().isBNode() || next.getObject().isBNode()
+							|| next.getSubject().toString().startsWith("_:")
+							|| next.getObject().toString().startsWith("_:")) {
+						storeSkippedBNode[0]++;
+						continue;
 					}
-				}
-				Assert.assertTrue("Statement (" + next.getSubject().toString() + ", " + next.getPredicate().toString()
-						+ ", " + next.getObject().toString() + "), not in " + fileName, removed);
-				if (removed) {
-					while (statementList.remove(next)) {
-						// remove duplicates
-						duplicateRemoved[0]++;
-						logger.trace("removed duplicate of {}", next);
+					storeTotal[0]++;
+					boolean removed = statementList.remove(next);
+					if (!removed) {
+						storeExtra[0]++;
+						if (storeExtra[0] <= 5) {
+							logger.warn("Store statement not in expected list: {}", next);
+						}
+					}
+					Assert.assertTrue(
+							"Statement (" + next.getSubject().toString() + ", " + next.getPredicate().toString() + ", "
+									+ next.getObject().toString() + "), not in " + fileName,
+							removed);
+					if (removed) {
+						while (statementList.remove(next)) {
+							// remove duplicates
+							duplicateRemoved[0]++;
+							logger.trace("removed duplicate of {}", next);
+						}
 					}
 				}
 			}

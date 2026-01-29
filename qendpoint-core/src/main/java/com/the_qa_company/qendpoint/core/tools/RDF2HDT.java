@@ -113,6 +113,14 @@ public class RDF2HDT implements ProgressListener {
 		return maxRam / shift;
 	}
 
+	private void applyThreadingOverrides(HDTOptions spec) {
+		if (spec == null) {
+			return;
+		}
+		// No-op: retain configured threading until specific overrides are
+		// needed.
+	}
+
 	public void execute() throws ParserException, IOException {
 		HDTOptions spec;
 		if (configFile != null) {
@@ -123,6 +131,7 @@ public class RDF2HDT implements ProgressListener {
 		if (options != null) {
 			spec.setOptions(options);
 		}
+		applyThreadingOverrides(spec);
 		Path outputPath = Path.of(hdtOutput);
 		if (noRecreate && Files.exists(outputPath)) {
 			if (!generateIndex) {
