@@ -95,16 +95,18 @@ public class Closer implements Iterable<Closeable>, Closeable {
 	 * already-discovered resources during traversal.
 	 */
 	private void addDeep(Object root) {
-		if (root == null)
+		if (root == null) {
 			return;
+		}
 
 		Deque<Object> stack = new ArrayDeque<>();
 		pushIfNotNull(stack, root);
 
 		while (!stack.isEmpty()) {
 			Object obj = stack.pop();
-			if (obj == null)
+			if (obj == null) {
 				continue;
+			}
 
 			// Cycle/dedup guard:
 			// we only process a specific object identity once.
@@ -172,10 +174,12 @@ public class Closer implements Iterable<Closeable>, Closeable {
 			// 6) Map container: traverse keys + values
 			if (obj instanceof Map<?, ?> map) {
 				try {
-					for (Object v : map.values())
+					for (Object v : map.values()) {
 						pushIfNotNull(stack, v);
-					for (Object k : map.keySet())
+					}
+					for (Object k : map.keySet()) {
 						pushIfNotNull(stack, k);
+					}
 				} catch (Throwable t) {
 					list.add(throwingHighValue(t));
 				}
@@ -224,8 +228,9 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		if (list.isEmpty())
+		if (list.isEmpty()) {
 			return;
+		}
 
 		// Close in reverse order (try-with-resources semantics).
 		// JLS: resources are closed in reverse order of initialization.
@@ -235,20 +240,23 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 		for (int i = list.size() - 1; i >= 0; i--) {
 			Closeable c = list.get(i);
-			if (c == null)
+			if (c == null) {
 				continue;
+			}
 
 			try {
 				c.close();
 			} catch (Throwable t) {
-				if (failures == null)
+				if (failures == null) {
 					failures = new ArrayList<>();
+				}
 				failures.add(t);
 			}
 		}
 
-		if (failures == null)
+		if (failures == null) {
 			return;
+		}
 
 		// Select primary failure by "severity":
 		// Error > HighValueException > RuntimeException > checked/other.
@@ -267,11 +275,13 @@ public class Closer implements Iterable<Closeable>, Closeable {
 		Throwable primaryToThrow = unwrapHighValue(primary);
 
 		for (Throwable t : failures) {
-			if (t == primary)
+			if (t == primary) {
 				continue;
+			}
 			Throwable suppressed = unwrapHighValue(t);
-			if (suppressed == primaryToThrow)
+			if (suppressed == primaryToThrow) {
 				continue;
+			}
 			primaryToThrow.addSuppressed(suppressed);
 		}
 
@@ -279,12 +289,15 @@ public class Closer implements Iterable<Closeable>, Closeable {
 	}
 
 	private static int severity(Throwable t) {
-		if (t instanceof Error)
+		if (t instanceof Error) {
 			return 3;
-		if (t instanceof HighValueException)
+		}
+		if (t instanceof HighValueException) {
 			return 2;
-		if (t instanceof RuntimeException)
+		}
+		if (t instanceof RuntimeException) {
 			return 1;
+		}
 		return 0;
 	}
 
@@ -316,23 +329,29 @@ public class Closer implements Iterable<Closeable>, Closeable {
 	 */
 	private static Closeable throwingHighValue(Throwable t) {
 		return () -> {
-			if (t instanceof Error err)
+			if (t instanceof Error err) {
 				throw err;
-			if (t instanceof RuntimeException re)
+			}
+			if (t instanceof RuntimeException re) {
 				throw new HighValueException(re);
-			if (t instanceof IOException ioe)
+			}
+			if (t instanceof IOException ioe) {
 				throw new HighValueException(ioe);
+			}
 			throw new HighValueException(new IOException(t));
 		};
 	}
 
 	private static void throwIOOrRuntime(Throwable t) throws IOException {
-		if (t instanceof IOException ioe)
+		if (t instanceof IOException ioe) {
 			throw ioe;
-		if (t instanceof RuntimeException re)
+		}
+		if (t instanceof RuntimeException re) {
 			throw re;
-		if (t instanceof Error err)
+		}
+		if (t instanceof Error err) {
 			throw err;
+		}
 		throw new IOException(t);
 	}
 

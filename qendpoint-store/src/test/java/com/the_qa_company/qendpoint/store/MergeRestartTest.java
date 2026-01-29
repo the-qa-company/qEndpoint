@@ -825,13 +825,14 @@ public class MergeRestartTest {
 	 */
 	private int count(RepositoryConnection connection) {
 		logger.debug("-- list");
-		RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
-		int count = 0;
-		while (sts.hasNext()) {
-			logger.debug(String.valueOf(sts.next()));
-			count++;
+		try (RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true)) {
+			int count = 0;
+			while (sts.hasNext()) {
+				logger.debug(String.valueOf(sts.next()));
+				count++;
+			}
+			return count;
 		}
-		return count;
 	}
 
 	/**
