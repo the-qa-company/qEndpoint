@@ -167,8 +167,14 @@ public class RDFParserRIOT implements RDFParserCallback {
 	@Override
 	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {
+		doParse(fileName, baseUri, notation, keepBNode, callback, true);
+	}
+
+	@Override
+	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback,
+			boolean parallel) throws ParserException {
 		try (InputStream input = IOUtil.getFileInputStream(fileName)) {
-			doParse(input, baseUri, notation, keepBNode, callback, true, false);
+			doParse(input, baseUri, notation, keepBNode, callback, parallel, false);
 		} catch (FileNotFoundException e) {
 			throw new ParserException(e);
 		} catch (Exception e) {

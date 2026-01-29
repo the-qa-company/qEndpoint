@@ -296,6 +296,11 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "Use the canonical NT file parser, removing checks")
 	public static final String NT_SIMPLE_PARSER_KEY = "parser.ntSimpleParser";
 	/**
+	 * Key for enabling parallel parsing in RIOT-based parsers.
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Enable parallel parsing for RIOT-based parsers")
+	public static final String PARSER_RIOT_PARALLEL_KEY = "parser.riot.parallel";
+	/**
 	 * No crc check with deltafile reader, default to false. Boolean value
 	 */
 	@Key(type = Key.Type.BOOLEAN, desc = "No crc check with deltafile reader")
