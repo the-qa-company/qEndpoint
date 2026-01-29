@@ -22,6 +22,7 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.rdf.parsers.BlankNodeIdMapper;
 import com.the_qa_company.qendpoint.core.rdf.parsers.NTriplesChunkedSource;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
@@ -86,6 +87,7 @@ public class HDTDiskImporter implements Closeable {
 	private final Profiler profiler;
 	private final HDTBase<? extends HeaderPrivate, ? extends DictionaryPrivate, ? extends TriplesPrivate> hdt;
 	private final CompressionType compressionType;
+	private final BlankNodeIdMapper bnodeMapper;
 	private long rawSize;
 
 	// component status
@@ -147,6 +149,8 @@ public class HDTDiskImporter implements Closeable {
 
 		// compression type
 		compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
+		bnodeMapper = keepBNode ? null : BlankNodeIdMapper.create();
 
 		// location of the working directory, will be deleted after generation
 		String baseNameOpt = hdtFormat.get(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY);
@@ -260,7 +264,8 @@ public class HDTDiskImporter implements Closeable {
 	public CompressTripleMapper compressDictionaryNTriples(InputStream ntOrNqStream, RDFNotation notation)
 			throws ParserException, IOException {
 		ensureDictionaryNotBuilt();
-		try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(ntOrNqStream, notation, chunkSize)) {
+		try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(ntOrNqStream, notation, chunkSize,
+				8L * 1024 * 1024, 8192, bnodeMapper)) {
 			return compressDictionaryNTriplesInternal(chunked);
 		}
 	}
@@ -268,7 +273,7 @@ public class HDTDiskImporter implements Closeable {
 	public CompressTripleMapper compressDictionaryNTriples(Path ntOrNqPath, RDFNotation notation)
 			throws ParserException, IOException {
 		ensureDictionaryNotBuilt();
-		try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(ntOrNqPath, notation, chunkSize)) {
+		try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(ntOrNqPath, notation, chunkSize, bnodeMapper)) {
 			return compressDictionaryNTriplesInternal(chunked);
 		}
 	}

@@ -296,6 +296,12 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.BOOLEAN, desc = "Use the canonical NT file parser, removing checks")
 	public static final String NT_SIMPLE_PARSER_KEY = "parser.ntSimpleParser";
 	/**
+	 * Key for preserving blank node identifiers. If false, blank node IDs are
+	 * remapped to minted identifiers.
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Preserve blank node identifiers")
+	public static final String PARSER_KEEP_BNODE_KEY = "parser.keepBNode";
+	/**
 	 * Key for enabling parallel parsing in RIOT-based parsers.
 	 */
 	@Key(type = Key.Type.BOOLEAN, desc = "Enable parallel parsing for RIOT-based parsers")

@@ -58,6 +58,7 @@ public final class NTriplesChunkedSource
 
 	private final boolean readQuad;
 	private final long chunkBudgetBytes;
+	private final BlankNodeIdMapper bnodeMapper;
 
 	// limits how much we buffer at once (prevents "double buffering" the whole
 	// chunk in RAM)
@@ -67,11 +68,16 @@ public final class NTriplesChunkedSource
 	private volatile boolean eof;
 
 	public NTriplesChunkedSource(InputStream input, RDFNotation notation, long chunkBudgetBytes) {
-		this(input, notation, chunkBudgetBytes, 8L * 1024 * 1024, 8192);
+		this(input, notation, chunkBudgetBytes, 8L * 1024 * 1024, 8192, null);
 	}
 
 	public NTriplesChunkedSource(InputStream input, RDFNotation notation, long chunkBudgetBytes, long maxBatchBytes,
 			int maxBatchLines) {
+		this(input, notation, chunkBudgetBytes, maxBatchBytes, maxBatchLines, null);
+	}
+
+	public NTriplesChunkedSource(InputStream input, RDFNotation notation, long chunkBudgetBytes, long maxBatchBytes,
+			int maxBatchLines, BlankNodeIdMapper bnodeMapper) {
 		Objects.requireNonNull(input, "input");
 		Objects.requireNonNull(notation, "notation");
 
@@ -94,6 +100,7 @@ public final class NTriplesChunkedSource
 		this.chunkBudgetBytes = chunkBudgetBytes;
 		this.maxBatchBytes = maxBatchBytes;
 		this.maxBatchLines = maxBatchLines;
+		this.bnodeMapper = bnodeMapper;
 		this.expectedInternerEntries = Math.max(DEFAULT_INTERN_ENTRIES,
 				estimateInternerEntries(maxBatchLines, readQuad));
 		this.mmapMode = false;
@@ -105,6 +112,11 @@ public final class NTriplesChunkedSource
 	}
 
 	public NTriplesChunkedSource(Path path, RDFNotation notation, long chunkBudgetBytes) throws IOException {
+		this(path, notation, chunkBudgetBytes, null);
+	}
+
+	public NTriplesChunkedSource(Path path, RDFNotation notation, long chunkBudgetBytes, BlankNodeIdMapper bnodeMapper)
+			throws IOException {
 		Objects.requireNonNull(path, "path");
 		Objects.requireNonNull(notation, "notation");
 
@@ -122,6 +134,7 @@ public final class NTriplesChunkedSource
 		this.chunkBudgetBytes = chunkBudgetBytes;
 		this.maxBatchBytes = 0L;
 		this.maxBatchLines = 0;
+		this.bnodeMapper = bnodeMapper;
 		this.nextOffset = new AtomicLong(0L);
 		this.probeStep = Math.max(1L, chunkBudgetBytes / 8L);
 		this.expectedInternerEntries = Math.max(DEFAULT_INTERN_ENTRIES,
@@ -248,6 +261,7 @@ public final class NTriplesChunkedSource
 					int endExclusive = lineBuffer.endAt(idx);
 					idx++;
 					if (parseLine(slab, start, endExclusive - 1, reusable, readQuad, decoder)) {
+						remapBNodes(reusable);
 						return reusable;
 					}
 					// skip comments/blank/invalid lines, keep scanning
@@ -340,6 +354,7 @@ public final class NTriplesChunkedSource
 				}
 
 				if (parseLine(mapped, lineStart, lineEndExclusive - 1, reusable, readQuad, interner)) {
+					remapBNodes(reusable);
 					return reusable;
 				}
 				// skip comments/blank/invalid lines, keep scanning
@@ -375,6 +390,13 @@ public final class NTriplesChunkedSource
 		long entries = lineCount * (readQuad ? 4L : 3L);
 		long clamped = Math.max(256L, Math.min(262144L, entries));
 		return (int) clamped;
+	}
+
+	private void remapBNodes(TripleString triple) {
+		if (bnodeMapper == null) {
+			return;
+		}
+		bnodeMapper.remap(triple, readQuad);
 	}
 
 	/**
