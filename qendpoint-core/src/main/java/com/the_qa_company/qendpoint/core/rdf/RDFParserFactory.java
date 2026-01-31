@@ -47,8 +47,7 @@ public class RDFParserFactory {
 	}
 
 	private static boolean useParallelRiot(HDTOptions options) {
-		// Parallel RIOT parsing is currently disabled due to corruption races.
-		return false;
+		return options != null && options.getBoolean(HDTOptionsKeys.PARSER_RIOT_PARALLEL_KEY, false);
 	}
 
 	public static RDFParserCallback getParserCallback(RDFNotation notation) {

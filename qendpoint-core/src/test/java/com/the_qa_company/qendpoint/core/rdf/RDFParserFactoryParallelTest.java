@@ -31,7 +31,7 @@ public class RDFParserFactoryParallelTest {
 	}
 
 	@Test
-	public void readAsIteratorForcesSequentialWhenParallelEnabled() throws Exception {
+	public void readAsIteratorHonorsParallelFlagWhenEnabled() throws Exception {
 		TrackingParser parser = new TrackingParser();
 		HDTOptions spec = HDTOptions.of();
 		spec.set(HDTOptionsKeys.PARSER_RIOT_PARALLEL_KEY, "true");
@@ -43,7 +43,7 @@ public class RDFParserFactoryParallelTest {
 			}
 		}
 
-		assertEquals(Boolean.FALSE, parser.parallel.get());
+		assertEquals(Boolean.TRUE, parser.parallel.get());
 	}
 
 	private static final class TrackingParser implements RDFParserCallback {
