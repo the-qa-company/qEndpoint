@@ -794,14 +794,22 @@ public class MergeRestartTest {
 		Files.walkFileTree(root, new FileVisitor<>() {
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				Path newPath = to.resolve(root.relativize(dir));
+				Path relative = root.relativize(dir);
+				if (isNativeStoreLockDir(relative)) {
+					return FileVisitResult.SKIP_SUBTREE;
+				}
+				Path newPath = to.resolve(relative);
 				Files.createDirectories(newPath);
 				return FileVisitResult.CONTINUE;
 			}
 
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				Path newFile = to.resolve(root.relativize(file));
+				Path relative = root.relativize(file);
+				if (isNativeStoreLockFile(relative)) {
+					return FileVisitResult.CONTINUE;
+				}
+				Path newFile = to.resolve(relative);
 				Files.copy(file, newFile);
 				return FileVisitResult.CONTINUE;
 			}
@@ -816,6 +824,16 @@ public class MergeRestartTest {
 				return FileVisitResult.CONTINUE;
 			}
 		});
+	}
+
+	private static boolean isNativeStoreLockDir(Path relative) {
+		return relative.getNameCount() >= 3 && "native-store".equals(relative.getName(0).toString())
+				&& "lock".equals(relative.getName(2).toString());
+	}
+
+	private static boolean isNativeStoreLockFile(Path relative) {
+		return relative.getNameCount() >= 4 && "native-store".equals(relative.getName(0).toString())
+				&& "lock".equals(relative.getName(2).toString());
 	}
 
 	/**
