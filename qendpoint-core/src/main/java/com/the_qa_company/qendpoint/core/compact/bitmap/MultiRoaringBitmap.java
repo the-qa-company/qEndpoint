@@ -301,9 +301,15 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 					long sizeBytes = IOUtil.readLong(stream);
 					long layer = IOUtil.readLong(stream);
 					shift += 8 + 8;
-					MappedRoaringBitmap bm = new MappedRoaringBitmap(
-							IOUtil.mapChannel(fileName, channel, FileChannel.MapMode.READ_ONLY, shift, sizeBytes));
-					maps.get((int) layer).add(bm);
+					CloseMappedByteBuffer buffer = IOUtil.mapChannel(fileName, channel, FileChannel.MapMode.READ_ONLY,
+							shift, sizeBytes);
+					try {
+						MappedRoaringBitmap bm = new MappedRoaringBitmap(buffer);
+						maps.get((int) layer).add(bm);
+					} catch (Throwable t) {
+						buffer.close();
+						throw t;
+					}
 					shift += sizeBytes;
 				}
 				case -1 -> throw new EOFException();

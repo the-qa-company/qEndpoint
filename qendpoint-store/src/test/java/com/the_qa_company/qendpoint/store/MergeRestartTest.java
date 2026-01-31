@@ -490,21 +490,22 @@ public class MergeRestartTest {
 		File testRoot = tempDir.newFolder();
 		File root1 = new File(testRoot, "root1");
 		File root2 = new File(testRoot, "root2");
-		try (Closer closer = Closer.of()) {
-			// create a store to tell which dir we are using
-
-			// start the first phase
-			mergeRestartTest1(stopPoint, root1, closer);
+		try {
+			try (Closer closer = Closer.of()) {
+				// start the first phase
+				mergeRestartTest1(stopPoint, root1, closer);
+			}
 			// re-allow the request, this was set to true in the first phase
 			// crash
 			MergeRunnableStopPoint.disableRequest = false;
-			// MergeRunnableStopPoint.unlockAllLocks();
 
 			// switch the directory we are using
 			swapDir(root1, root2);
 
-			// start the second phase
-			mergeRestartTest2(stopPoint, root2, closer);
+			try (Closer closer = Closer.of()) {
+				// start the second phase
+				mergeRestartTest2(stopPoint, root2, closer);
+			}
 		} catch (Throwable t) {
 			try {
 				FileUtils.deleteDirectory(testRoot);
