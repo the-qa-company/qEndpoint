@@ -217,7 +217,7 @@ public class MergeRestartTest {
 
 		// create a sail repository to create connections to the store
 		SailRepository endpointStore = new SailRepository(store);
-		closer.with((Closeable) endpointStore::shutDown, (Closeable) store::deleteNativeLocks);
+		closer.with((Closeable) store::deleteNativeLocks, (Closeable) endpointStore::shutDown);
 
 		int step = 0;
 		try {
@@ -430,8 +430,8 @@ public class MergeRestartTest {
 				EndpointStoreTest.HDT_INDEX_NAME, spec, nativeStore.getAbsolutePath() + File.separator, false);
 		SailRepository endpointStore2 = new SailRepository(store2);
 
-		closer.with((Closeable) endpointStore2::shutDown, (Closeable) store2::deleteNativeLocks,
-				(Closeable) MergeRunnableStopPoint::unlockAll);
+		closer.with((Closeable) MergeRunnableStopPoint::unlockAll, (Closeable) store2::deleteNativeLocks,
+				(Closeable) endpointStore2::shutDown);
 		// a merge should be triggered
 
 		// test at each step if the count is the same
