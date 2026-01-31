@@ -212,7 +212,6 @@
         <module>qendpoint-cli</module>
         <module>qendpoint-backend</module>
         <module>qendpoint-store</module>
-        <module>qendpoint-benchmarks</module>
     </modules>
 
     <issueManagement>
