@@ -30,6 +30,22 @@ public class RDFParserFactoryParallelTest {
 		assertEquals(Boolean.FALSE, parser.parallel.get());
 	}
 
+	@Test
+	public void readAsIteratorForcesSequentialWhenParallelEnabled() throws Exception {
+		TrackingParser parser = new TrackingParser();
+		HDTOptions spec = HDTOptions.of();
+		spec.set(HDTOptionsKeys.PARSER_RIOT_PARALLEL_KEY, "true");
+
+		try (PipedCopyIterator<TripleString> it = RDFParserFactory.readAsIterator(parser,
+				new ByteArrayInputStream(new byte[0]), "http://example.org/", false, RDFNotation.NTRIPLES, spec)) {
+			while (it.hasNext()) {
+				it.next();
+			}
+		}
+
+		assertEquals(Boolean.FALSE, parser.parallel.get());
+	}
+
 	private static final class TrackingParser implements RDFParserCallback {
 		private final AtomicReference<Boolean> parallel = new AtomicReference<>();
 
