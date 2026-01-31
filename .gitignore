@@ -63,3 +63,4 @@ wdbench-results
 .m2_repo
 /indexing/
 /dev-branch-copy/
+/ci-logs/
