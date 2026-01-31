@@ -130,10 +130,12 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 				// Traverse elements (this will consume the stream).
 				try {
+					List<Object> elements = new ArrayList<>();
 					Iterator<?> it = bs.iterator();
 					while (it.hasNext()) {
-						pushIfNotNull(stack, it.next());
+						elements.add(it.next());
 					}
+					pushListInOrder(elements, stack);
 				} catch (Throwable t) {
 					// Record traversal failure as "high value" throwable.
 					list.add(throwingHighValue(t));
@@ -150,13 +152,7 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 			// 4) Iterable container
 			if (obj instanceof Iterable<?> it) {
-				try {
-					for (Object e : it) {
-						pushIfNotNull(stack, e);
-					}
-				} catch (Throwable t) {
-					list.add(throwingHighValue(t));
-				}
+				pushIterableInOrder(it, stack);
 				continue;
 			}
 
@@ -173,16 +169,10 @@ public class Closer implements Iterable<Closeable>, Closeable {
 
 			// 6) Map container: traverse keys + values
 			if (obj instanceof Map<?, ?> map) {
-				try {
-					for (Object v : map.values()) {
-						pushIfNotNull(stack, v);
-					}
-					for (Object k : map.keySet()) {
-						pushIfNotNull(stack, k);
-					}
-				} catch (Throwable t) {
-					list.add(throwingHighValue(t));
-				}
+				// Preserve iteration order: keys first, then values.
+				// Push values first so keys are popped/processed first.
+				pushIterableInOrder(map.values(), stack);
+				pushIterableInOrder(map.keySet(), stack);
 				continue;
 			}
 
@@ -221,6 +211,28 @@ public class Closer implements Iterable<Closeable>, Closeable {
 		}
 	}
 
+	private void pushIterableInOrder(Iterable<?> it, Deque<Object> stack) {
+		try {
+			if (it instanceof List<?> list) {
+				pushListInOrder(list, stack);
+				return;
+			}
+			List<Object> elements = new ArrayList<>();
+			for (Object e : it) {
+				elements.add(e);
+			}
+			pushListInOrder(elements, stack);
+		} catch (Throwable t) {
+			list.add(throwingHighValue(t));
+		}
+	}
+
+	private static void pushListInOrder(List<?> elements, Deque<Object> stack) {
+		for (int i = elements.size() - 1; i >= 0; i--) {
+			pushIfNotNull(stack, elements.get(i));
+		}
+	}
+
 	@Override
 	public Iterator<Closeable> iterator() {
 		return list.iterator();
@@ -232,13 +244,10 @@ public class Closer implements Iterable<Closeable>, Closeable {
 			return;
 		}
 
-		// Close in reverse order (try-with-resources semantics).
-		// JLS: resources are closed in reverse order of initialization.
-		// [oai_citation:8‡Oracle
-		// Documentation](https://docs.oracle.com/javase/specs/jls/se8/html/jls-14.html)
+		// Close in registration order to match legacy Closer behavior.
 		List<Throwable> failures = null;
 
-		for (int i = list.size() - 1; i >= 0; i--) {
+		for (int i = 0; i < list.size(); i++) {
 			Closeable c = list.get(i);
 			if (c == null) {
 				continue;
