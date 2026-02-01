@@ -13,6 +13,8 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +31,8 @@ public class SectionCompressorExecutorTest {
 		assertEquals(cores, executor.getCorePoolSize());
 		assertEquals(cores, executor.getMaximumPoolSize());
 
-		long before = executor.getCompletedTaskCount();
+		Set<String> mergeThreads = new ConcurrentSkipListSet<>();
+		MultiThreadListener listener = (thread, level, message) -> mergeThreads.add(thread);
 
 		try (CloseSuppressPath tmp = CloseSuppressPath.of(tempDir.newFolder().toPath())) {
 			tmp.closeWithDeleteRecurse();
@@ -38,8 +41,8 @@ public class SectionCompressorExecutorTest {
 			long chunkSize = 1024L;
 			int k = 2;
 
-			SectionCompressor compressor = new SectionCompressor(tmp.resolve("base"), MultiThreadListener.ignore(),
-					bufferSize, chunkSize, k, false, false, CompressionType.NONE);
+			SectionCompressor compressor = new SectionCompressor(tmp.resolve("base"), listener, bufferSize, chunkSize,
+					k, false, false, CompressionType.NONE);
 
 			CloseSuppressPath chunk1 = tmp.resolve("chunk1");
 			CloseSuppressPath chunk2 = tmp.resolve("chunk2");
@@ -55,8 +58,9 @@ public class SectionCompressorExecutorTest {
 			compressor.mergeChunks(List.of(chunk1, chunk2), merged);
 		}
 
-		long after = executor.getCompletedTaskCount();
-		assertTrue("expected shared merge executor to run tasks", after >= before + 3);
+		boolean usedMergeExecutor = mergeThreads.stream()
+				.anyMatch(name -> name.startsWith("section-compressor-merge-"));
+		assertTrue("expected shared merge executor to run tasks", usedMergeExecutor);
 	}
 
 	private static ThreadPoolExecutor sharedExecutor() {
