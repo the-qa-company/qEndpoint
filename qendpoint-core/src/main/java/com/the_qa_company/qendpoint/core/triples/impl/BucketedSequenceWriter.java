@@ -27,6 +27,8 @@ import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Exception;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4SafeDecompressor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.Closeable;
@@ -50,6 +52,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
 final class BucketedSequenceWriter implements Closeable {
+	private static final Logger log = LoggerFactory.getLogger(BucketedSequenceWriter.class);
 	private static final int OBJECT_INDEX_BUCKET_SIZE = 64 * 1024 * 1024;
 	private static final int OBJECT_INDEX_BUFFER_RECORDS = 1024 * 1024;
 	private static final int OBJECT_INDEX_IO_BUFFER_BYTES = 1024 * 1024;
@@ -522,6 +525,12 @@ final class BucketedSequenceWriter implements Closeable {
 		putInt(outArray, base + Integer.BYTES, compressedLength);
 
 		int totalLen = OBJECT_INDEX_CHUNK_HEADER_BYTES + payloadLength;
+		if (totalLen > out.capacity()) {
+			log.error(
+					"BucketedSequenceWriter chunk limit > capacity: totalLen={} capacity={} minCapacity={} "
+							+ "payloadCapacity={} payloadLength={} compressionEnabled={} length={}",
+					totalLen, out.capacity(), minCapacity, payloadCapacity, payloadLength, compressionEnabled, length);
+		}
 		out.clear();
 		out.limit(totalLen);
 

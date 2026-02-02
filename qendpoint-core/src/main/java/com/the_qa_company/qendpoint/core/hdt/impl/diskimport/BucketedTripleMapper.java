@@ -472,6 +472,14 @@ public class BucketedTripleMapper implements CompressFourSectionDictionary.NodeC
 
 			int totalLen = CHUNK_HEADER_BYTES + payloadLength;
 
+			if (totalLen > out.capacity()) {
+				log.error(
+						"BucketedTripleMapper chunk limit > capacity: totalLen={} capacity={} minCapacity={} "
+								+ "payloadCapacity={} payloadLength={} compressionEnabled={} length={}",
+						totalLen, out.capacity(), minCapacity, payloadCapacity, payloadLength, compressionEnabled,
+						length);
+			}
+
 			out.clear();
 			out.limit(totalLen);
 
