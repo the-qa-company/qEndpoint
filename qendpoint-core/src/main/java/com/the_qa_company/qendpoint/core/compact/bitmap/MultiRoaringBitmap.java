@@ -147,7 +147,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 	}
 
 	/**
-	 * create a multi roaring bitmap with a size for stream writing.
+	 * Create a multi roaring bitmap with a size for stream writing.
 	 *
 	 * @param size         size
 	 * @param chunkSize    chunk size
