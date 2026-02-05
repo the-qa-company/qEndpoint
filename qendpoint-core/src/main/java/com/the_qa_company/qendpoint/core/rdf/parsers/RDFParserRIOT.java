@@ -72,6 +72,11 @@ public class RDFParserRIOT implements RDFParserCallback {
 				InputStream bnodes = cs.getBnodeStream();
 				InputStream[] streams = cs.getStreams();
 				runParallelParsers(bnodes, streams, baseUri, lang, callback, strict);
+				try {
+					cs.awaitCompletion();
+				} catch (IOException e) {
+					throw new RuntimeException("Parallel parse failed", e);
+				}
 			} else {
 				configureParser(stream, baseUri, lang, false, strict).parse(buffer);
 			}
@@ -84,6 +89,11 @@ public class RDFParserRIOT implements RDFParserCallback {
 				InputStream bnodes = cs.getBnodeStream();
 				InputStream[] streams = cs.getStreams();
 				runParallelParsers(bnodes, streams, baseUri, lang, callback, strict);
+				try {
+					cs.awaitCompletion();
+				} catch (IOException e) {
+					throw new RuntimeException("Parallel parse failed", e);
+				}
 			} else {
 				configureParser(stream, baseUri, lang, false, strict).parse(buffer);
 			}
@@ -171,7 +181,7 @@ public class RDFParserRIOT implements RDFParserCallback {
 	@Override
 	public void doParse(String fileName, String baseUri, RDFNotation notation, boolean keepBNode, RDFCallback callback)
 			throws ParserException {
-		doParse(fileName, baseUri, notation, keepBNode, callback, true);
+		doParse(fileName, baseUri, notation, keepBNode, callback, false);
 	}
 
 	@Override

@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ChunkedConcurrentInputStream {
 
@@ -25,6 +26,7 @@ public class ChunkedConcurrentInputStream {
 	private PipedOutputStream bnodeOutputStream;
 
 	private Thread readerThread;
+	private final AtomicReference<IOException> readFailure = new AtomicReference<>();
 
 	public ChunkedConcurrentInputStream(InputStream stream, int numberOfStreams) {
 		this.source = stream;
@@ -79,6 +81,19 @@ public class ChunkedConcurrentInputStream {
 		return pipedInputStreams;
 	}
 
+	public void awaitCompletion() throws IOException {
+		try {
+			readerThread.join();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Interrupted while waiting for reader thread", e);
+		}
+		IOException failure = readFailure.get();
+		if (failure != null) {
+			throw new IOException("Error reading input stream", failure);
+		}
+	}
+
 	private class ReaderThread implements Runnable {
 		@Override
 		public void run() {
@@ -118,8 +133,14 @@ public class ChunkedConcurrentInputStream {
 				}
 
 			} catch (IOException e) {
-				log.error("Error reading input stream", e);
-				// If there's a read error, close everything.
+				recordReadFailure(e);
+			} catch (RuntimeException e) {
+				IOException ioCause = findIoCause(e);
+				if (ioCause != null) {
+					recordReadFailure(ioCause);
+				} else {
+					log.error("Error reading input stream", e);
+				}
 			} finally {
 				// Close all output streams to signal EOF
 				for (PipedOutputStream out : pipedOutputStreams) {
@@ -136,5 +157,21 @@ public class ChunkedConcurrentInputStream {
 				}
 			}
 		}
+	}
+
+	private void recordReadFailure(IOException e) {
+		log.error("Error reading input stream", e);
+		readFailure.compareAndSet(null, e);
+	}
+
+	private static IOException findIoCause(Throwable throwable) {
+		Throwable cursor = throwable;
+		while (cursor != null) {
+			if (cursor instanceof IOException ioException) {
+				return ioException;
+			}
+			cursor = cursor.getCause();
+		}
+		return null;
 	}
 }

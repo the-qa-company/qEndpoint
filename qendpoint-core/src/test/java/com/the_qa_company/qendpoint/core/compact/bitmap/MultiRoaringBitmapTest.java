@@ -197,4 +197,52 @@ public class MultiRoaringBitmapTest extends AbstractMapMemoryTest {
 			}
 		}
 	}
+
+	@Test
+	public void saveHeaderMatchesChunkCount() throws IOException {
+		Path root = tempDir.newFolder().toPath();
+
+		try {
+			Path output = root.resolve("tmp-header.bin");
+			MultiRoaringBitmap.defaultChunkSize = 9;
+
+			try (MultiRoaringBitmap original = MultiRoaringBitmap.memory(100, 3)) {
+				original.set(0, 0, true);
+				original.set(2, 99, true);
+
+				try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(output))) {
+					original.save(out, ProgressListener.ignore());
+				}
+
+				try (MultiRoaringBitmap loaded = MultiRoaringBitmap.load(output)) {
+					assertEquals("chunks", original.chunks, loaded.chunks);
+					assertEquals("chunkSize", original.chunkSize, loaded.chunkSize);
+					assertEquals("layers", original.maps.size(), loaded.maps.size());
+				}
+
+				try (MultiRoaringBitmap mapped = MultiRoaringBitmap.mapped(output)) {
+					assertEquals("chunks", original.chunks, mapped.chunks);
+					assertEquals("chunkSize", original.chunkSize, mapped.chunkSize);
+					assertEquals("layers", original.maps.size(), mapped.maps.size());
+				}
+			}
+
+		} finally {
+			PathUtils.deleteDirectory(root);
+		}
+	}
+
+	@Test
+	public void setExpandsOnlyMissingLayers() {
+		MultiRoaringBitmap.defaultChunkSize = 9;
+
+		try (MultiRoaringBitmap map = MultiRoaringBitmap.memory(100, 1)) {
+			map.set(3, 0, true);
+
+			assertEquals(4, map.maps.size());
+			assertTrue(map.access(3, 0));
+		} catch (IOException e) {
+			throw new AssertionError(e);
+		}
+	}
 }

@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ConcurrentInputStream {
 
@@ -25,6 +26,7 @@ public class ConcurrentInputStream {
 	private PipedOutputStream bnodeOutputStream;
 
 	private Thread readerThread;
+	private final AtomicReference<IOException> readFailure = new AtomicReference<>();
 
 	public ConcurrentInputStream(InputStream stream, int numberOfStreams) {
 		this.source = stream;
@@ -79,6 +81,19 @@ public class ConcurrentInputStream {
 		return pipedInputStreams;
 	}
 
+	public void awaitCompletion() throws IOException {
+		try {
+			readerThread.join();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Interrupted while waiting for reader thread", e);
+		}
+		IOException failure = readFailure.get();
+		if (failure != null) {
+			throw new IOException("Error reading input stream", failure);
+		}
+	}
+
 	private class ReaderThread implements Runnable {
 		@Override
 		public void run() {
@@ -104,6 +119,7 @@ public class ConcurrentInputStream {
 				}
 			} catch (IOException e) {
 				log.error("Error reading input stream", e);
+				readFailure.compareAndSet(null, e);
 				// If there's a read error, close everything.
 			} finally {
 				// Close all output streams to signal EOF

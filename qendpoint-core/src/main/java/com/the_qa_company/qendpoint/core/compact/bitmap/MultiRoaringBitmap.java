@@ -378,7 +378,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 		ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
 
 		buffer.putLong(0, COOKIE);
-		buffer.putInt(8, maps.size());
+		buffer.putInt(8, chunks);
 		buffer.putInt(12, chunkSize);
 		buffer.putLong(16, numbits);
 		buffer.putLong(24, maps.size());
@@ -554,7 +554,7 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 		}
 
 		if (layer >= maps.size()) {
-			for (int i = 0; i <= layer; i++) {
+			for (int i = maps.size(); i <= layer; i++) {
 				List<Bitmap> map = new ArrayList<>();
 				maps.add(map);
 				for (int j = 0; j < chunks; j++) {
@@ -562,17 +562,17 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 				}
 			}
 		}
-		List<Bitmap> maps = this.maps.get((int) layer);
+		List<Bitmap> layerMaps = maps.get((int) layer);
 
 		int location = (int) (position / chunkSize);
-		if (location >= maps.size() || position < 0) {
+		if (location >= layerMaps.size() || position < 0) {
 			throw new IllegalArgumentException(format("bit outside of range %d < 0 ||  map(%d)=%d >= %d", position,
-					position, location, maps.size()));
+					position, location, layerMaps.size()));
 		}
 		int localLocation = (int) (position % chunkSize);
 
 		if (output != null) { // streaming
-			if (maps.get(location) == null) {
+			if (layerMaps.get(location) == null) {
 				throw new IllegalArgumentException("Passing unsorted values in streaming mode");
 			}
 			// clear previous
@@ -585,6 +585,6 @@ public class MultiRoaringBitmap implements Closeable, ModifiableMultiLayerBitmap
 		}
 
 		// set the bit
-		((ModifiableBitmap) maps.get(location)).set(localLocation, value);
+		((ModifiableBitmap) layerMaps.get(location)).set(localLocation, value);
 	}
 }

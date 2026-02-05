@@ -13,10 +13,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -54,8 +54,8 @@ public class BucketedTripleMapperMaterializationTest {
 					mapperDir.mkdirs();
 
 					CompressTripleMapper mapper = new CompressTripleMapper(mapperDir, tripleCount, 1024, false, 0);
-					List<String> messages = new ArrayList<>();
-					List<Float> levels = new ArrayList<>();
+					List<String> messages = new CopyOnWriteArrayList<>();
+					List<Float> levels = new CopyOnWriteArrayList<>();
 					ProgressListener progressListener = (level, message) -> {
 						levels.add(level);
 						messages.add(message);
