@@ -10,9 +10,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,6 +31,28 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class IOUtilTest {
+	private static final class SlowCopyOutputStream extends OutputStream {
+		private final byte[] bytes = new byte[Long.BYTES];
+		private int index;
+
+		@Override
+		public void write(int b) {
+			bytes[index++] = (byte) b;
+			Thread.yield();
+		}
+
+		@Override
+		public void write(byte[] b, int off, int len) {
+			for (int i = 0; i < len; i++) {
+				bytes[index++] = b[off + i];
+				Thread.yield();
+			}
+		}
+
+		byte[] toByteArray() {
+			return Arrays.copyOf(bytes, index);
+		}
+	}
 
 	@Rule
 	public TemporaryFolder tempDir = TemporaryFolder.builder().assureDeletion().build();
@@ -57,6 +88,48 @@ public class IOUtilTest {
 		} catch (IOException e) {
 			fail("Exception thrown: " + e);
 		}
+	}
+
+	@Test
+	public void testWriteLongConcurrent() throws Exception {
+		int threads = Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
+		int iterations = 20_000;
+
+		ExecutorService workers = Executors.newFixedThreadPool(threads);
+		CountDownLatch start = new CountDownLatch(1);
+		AtomicInteger mismatches = new AtomicInteger();
+		List<Future<Void>> futures = new ArrayList<>(threads);
+
+		try {
+			for (int t = 0; t < threads; t++) {
+				final int threadId = t;
+				futures.add(workers.submit(() -> {
+					long seed = 0x1100000000000000L + ((long) threadId << 32);
+					start.await();
+					for (int i = 0; i < iterations; i++) {
+						long expected = seed ^ i;
+						SlowCopyOutputStream out = new SlowCopyOutputStream();
+						IOUtil.writeLong(out, expected);
+						long actual = IOUtil.readLong(new ByteArrayInputStream(out.toByteArray()));
+						if (actual != expected) {
+							mismatches.incrementAndGet();
+							return null;
+						}
+					}
+					return null;
+				}));
+			}
+
+			start.countDown();
+			for (Future<Void> future : futures) {
+				future.get();
+			}
+		} finally {
+			workers.shutdownNow();
+			assertTrue("workers did not shutdown", workers.awaitTermination(1, TimeUnit.MINUTES));
+		}
+
+		assertEquals("concurrent IOUtil.writeLong corrupted bytes", 0, mismatches.get());
 	}
 
 	@Test
