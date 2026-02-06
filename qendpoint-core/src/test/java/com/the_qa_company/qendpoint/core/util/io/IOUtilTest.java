@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -130,6 +131,49 @@ public class IOUtilTest {
 		}
 
 		assertEquals("concurrent IOUtil.writeLong corrupted bytes", 0, mismatches.get());
+	}
+
+	@Test
+	public void testWriteLongConcurrentSynchronizedBursts() throws Exception {
+		int threads = Math.max(8, Runtime.getRuntime().availableProcessors() * 4);
+		int rounds = 4_000;
+
+		ExecutorService workers = Executors.newFixedThreadPool(threads);
+		CyclicBarrier syncWrite = new CyclicBarrier(threads);
+		AtomicInteger mismatches = new AtomicInteger();
+		List<Future<Void>> futures = new ArrayList<>(threads);
+
+		try {
+			for (int t = 0; t < threads; t++) {
+				final int threadId = t;
+				futures.add(workers.submit(() -> {
+					long seed = 0x5500000000000000L + ((long) threadId << 32);
+					for (int round = 0; round < rounds; round++) {
+						long expected = seed + (0x9E3779B97F4A7C15L * round);
+						SlowCopyOutputStream out = new SlowCopyOutputStream();
+
+						// Align each writeLong call to maximize overlap across
+						// threads.
+						syncWrite.await();
+						IOUtil.writeLong(out, expected);
+						long actual = IOUtil.readLong(new ByteArrayInputStream(out.toByteArray()));
+						if (actual != expected) {
+							mismatches.incrementAndGet();
+						}
+					}
+					return null;
+				}));
+			}
+
+			for (Future<Void> future : futures) {
+				future.get();
+			}
+		} finally {
+			workers.shutdownNow();
+			assertTrue("workers did not shutdown", workers.awaitTermination(1, TimeUnit.MINUTES));
+		}
+
+		assertEquals("synchronized bursts corrupted IOUtil.writeLong bytes", 0, mismatches.get());
 	}
 
 	@Test
