@@ -202,7 +202,7 @@ public class PlainHeader implements HeaderPrivate, RDFCallback {
 	}
 
 	@Override
-	public void processTriple(TripleString triple, long pos) {
+	synchronized public void processTriple(TripleString triple, long pos) {
 		triples.add(new TripleString(triple));
 	}
 
