@@ -13,12 +13,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 @RunWith(Parameterized.class)
 public class TempHDTImporterTest {
@@ -36,7 +41,13 @@ public class TempHDTImporterTest {
 	}
 
 	private String getFile(String f) {
-		return Objects.requireNonNull(getClass().getClassLoader().getResource(f), "Can't find " + f).getFile();
+		try {
+			return Paths
+					.get(Objects.requireNonNull(getClass().getClassLoader().getResource(f), "Can't find " + f).toURI())
+					.toString();
+		} catch (URISyntaxException e) {
+			throw new IllegalStateException("Invalid resource URI: " + f, e);
+		}
 	}
 
 	@Test
@@ -71,5 +82,20 @@ public class TempHDTImporterTest {
 	@Test
 	public void bNodeZStreamTest() throws ParserException, IOException {
 		HDTManager.generateHDT(asIt(getFile("importer/bnode_z.nt")), HDTTestUtils.BASE_URI, spec, null).close();
+	}
+
+	@Test
+	public void baseUriResolvesRelativeIri() throws ParserException {
+		Iterator<TripleString> it = asIt(getFile("importer/bnode_x.nt"));
+		TripleString first = it.next();
+		TripleString second = it.next();
+
+		assertEquals("_:mysupernode", first.getSubject().toString());
+		assertEquals(HDTTestUtils.BASE_URI + "p", first.getPredicate().toString());
+		assertEquals(HDTTestUtils.BASE_URI + "o", first.getObject().toString());
+		assertEquals(HDTTestUtils.BASE_URI + "s", second.getSubject().toString());
+		assertEquals(HDTTestUtils.BASE_URI + "p", second.getPredicate().toString());
+		assertEquals(HDTTestUtils.BASE_URI + "o", second.getObject().toString());
+		assertFalse(it.hasNext());
 	}
 }

@@ -403,18 +403,22 @@ public class Profiler implements AutoCloseable {
 		}
 
 		void pushSection(String name, int deep) {
-			if (isRunning()) {
-				currentSection.pushSection(name, deep + 1);
+			Section current = currentSection;
+			if (current != null) {
+				current.pushSection(name, deep + 1);
 				return;
 			}
 
-			subSections.add(currentSection = new Section(name));
+			Section section = new Section(name);
+			subSections.add(section);
+			currentSection = section;
 			maxSize = Math.max(name.length() + deep * 2, maxSize);
 		}
 
 		boolean popSection() {
-			if (isRunning()) {
-				if (currentSection.popSection()) {
+			Section current = currentSection;
+			if (current != null) {
+				if (current.popSection()) {
 					currentSection = null;
 				}
 				return false;
@@ -455,8 +459,9 @@ public class Profiler implements AutoCloseable {
 		}
 
 		void stop() {
-			if (isRunning()) {
-				currentSection.stop();
+			Section current = currentSection;
+			if (current != null) {
+				current.stop();
 			}
 			end = System.currentTimeMillis();
 		}

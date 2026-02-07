@@ -7,8 +7,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -175,6 +178,65 @@ public class ProfilerTest {
 		try (Profiler p = new Profiler("")) {
 			p.setDisabled(false);
 			p.popSection();
+		}
+	}
+
+	@Test
+	public void popSectionRaceDoesNotThrow() throws Exception {
+		try (Profiler profiler = new Profiler("race")) {
+			profiler.setDisabled(false);
+			CountDownLatch checked = new CountDownLatch(1);
+			CountDownLatch proceed = new CountDownLatch(1);
+
+			RaceSection main = new RaceSection(profiler, "main", checked, proceed);
+			Field mainSectionField = Profiler.class.getDeclaredField("mainSection");
+			mainSectionField.setAccessible(true);
+			mainSectionField.set(profiler, main);
+
+			Field currentSectionField = Profiler.Section.class.getDeclaredField("currentSection");
+			currentSectionField.setAccessible(true);
+			currentSectionField.set(main, profiler.new Section("child"));
+
+			Thread nuller = new Thread(() -> {
+				try {
+					checked.await(500, TimeUnit.MILLISECONDS);
+					currentSectionField.set(main, null);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				} catch (IllegalAccessException e) {
+					throw new RuntimeException(e);
+				} finally {
+					proceed.countDown();
+				}
+			});
+			nuller.start();
+
+			profiler.popSection();
+
+			nuller.join(1000L);
+			assertFalse("race helper thread stuck", nuller.isAlive());
+		}
+	}
+
+	private static final class RaceSection extends Profiler.Section {
+		private final CountDownLatch checked;
+		private final CountDownLatch proceed;
+
+		private RaceSection(Profiler profiler, String name, CountDownLatch checked, CountDownLatch proceed) {
+			profiler.super(name);
+			this.checked = checked;
+			this.proceed = proceed;
+		}
+
+		@Override
+		boolean isRunning() {
+			checked.countDown();
+			try {
+				proceed.await(500, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			return true;
 		}
 	}
 }

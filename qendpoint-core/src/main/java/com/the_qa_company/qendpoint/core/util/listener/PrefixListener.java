@@ -25,7 +25,7 @@ public abstract class PrefixListener implements ProgressListener {
 
 		@Override
 		public void notifyProgress(float level, String message) {
-			listener.notifyProgress(level, prefix + message);
+			listener.notifyProgress(level, "{}{}", prefix, message);
 		}
 	}
 
@@ -39,7 +39,7 @@ public abstract class PrefixListener implements ProgressListener {
 
 		@Override
 		public void notifyProgress(String thread, float level, String message) {
-			listener.notifyProgress(thread, level, prefix + message);
+			listener.notifyProgress(thread, level, "{}{}", prefix, message);
 		}
 
 		@Override

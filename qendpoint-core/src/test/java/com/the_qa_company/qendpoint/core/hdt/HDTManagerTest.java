@@ -63,9 +63,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -855,9 +857,18 @@ public class HDTManagerTest {
 		@Parameterized.Parameter(2)
 		public long size;
 
+		private String resourcePath(String resource) {
+			try {
+				return Paths.get(Objects
+						.requireNonNull(getClass().getClassLoader().getResource(resource), "Can't find " + resource)
+						.toURI()).toString();
+			} catch (URISyntaxException e) {
+				throw new IllegalStateException("Invalid resource URI: " + resource, e);
+			}
+		}
+
 		private void generateDiskTest() throws IOException, ParserException, NotFoundException {
-			String ntFile = Objects.requireNonNull(getClass().getClassLoader().getResource(file), "Can't find " + file)
-					.getFile();
+			String ntFile = resourcePath(file);
 			// create DISK HDT
 			try (HDT actual = HDTManager.generateHDTDisk(ntFile, HDTTestUtils.BASE_URI, RDFNotation.NTRIPLES, spec,
 					quiet ? null : this)) {
@@ -910,8 +921,7 @@ public class HDTManagerTest {
 
 		@Test
 		public void generateTest() throws IOException, ParserException, NotFoundException {
-			String ntFile = Objects.requireNonNull(getClass().getClassLoader().getResource(file), "Can't find " + file)
-					.getFile();
+			String ntFile = resourcePath(file);
 			// create DISK HDT
 			try (InputStream in = IOUtil.getFileInputStream(ntFile)) {
 				try (PipedCopyIterator<TripleString> it = RDFParserFactory.readAsIterator(

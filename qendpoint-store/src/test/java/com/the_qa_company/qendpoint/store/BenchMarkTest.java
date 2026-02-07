@@ -48,9 +48,11 @@ public class BenchMarkTest {
 				int count = 100000;
 				ValueFactory vf = connection.getValueFactory();
 				stopWatch = StopWatch.createStarted();
-				RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true);
-				while (statements.hasNext())
-					statements.next();
+				try (RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true)) {
+					while (statements.hasNext()) {
+						statements.next();
+					}
+				}
 				stopWatch.stop();
 				logger.debug("Time to query all initially: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
@@ -66,11 +68,12 @@ public class BenchMarkTest {
 					logger.debug("Time to delete: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
 					stopWatch = StopWatch.createStarted();
-					statements = connection.getStatements(null, null, null, true);
 					int c = 0;
-					while (statements.hasNext()) {
-						statements.next();
-						c++;
+					try (RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true)) {
+						while (statements.hasNext()) {
+							statements.next();
+							c++;
+						}
 					}
 					stopWatch.stop();
 					logger.debug("Time to query all: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));

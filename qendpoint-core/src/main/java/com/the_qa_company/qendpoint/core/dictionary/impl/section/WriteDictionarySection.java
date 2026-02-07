@@ -11,6 +11,7 @@ import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -90,27 +91,65 @@ public class WriteDictionarySection implements DictionarySectionPrivate {
 				compressionType.compress(tempFilename.openOutputStream(bufferSize)))) {
 			CRCOutputStream crcout = new CRCOutputStream(out, new CRC32());
 			ByteString previousStr = null;
-			for (; it.hasNext(); currentCount++) {
-				ByteString str = (ByteString) (it.next());
-				assert str != null;
-				if (numberElements % blockSize == 0) {
-					blocks.append(out.getTotalBytes());
+			if (it instanceof PipedCopyIterator<?> piped) {
+				@SuppressWarnings("unchecked")
+				PipedCopyIterator<ByteString> pipe = (PipedCopyIterator<ByteString>) piped;
+				PipedCopyIterator.Batch<ByteString> batch;
+				while ((batch = pipe.takeBatch()) != null) {
+					try {
+						Object[] array = batch.array();
+						int batchSize = batch.size();
+						for (int batchIndex = 0; batchIndex < batchSize; batchIndex++) {
+							ByteString str = (ByteString) array[batchIndex];
+							assert str != null;
+							if (numberElements % blockSize == 0) {
+								blocks.append(out.getTotalBytes());
 
-					// Copy full string
-					ByteStringUtil.append(crcout, str, 0);
-				} else {
-					// Find common part.
-					int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
-					// Write Delta in VByte
-					VByte.encode(crcout, delta);
-					// Write remaining
-					ByteStringUtil.append(crcout, str, delta);
+								// Copy full string
+								ByteStringUtil.append(crcout, str, 0);
+							} else {
+								// Find common part.
+								int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+								// Write Delta in VByte
+								VByte.encode(crcout, delta);
+								// Write remaining
+								ByteStringUtil.append(crcout, str, delta);
+							}
+							crcout.write(0);
+							previousStr = str;
+							numberElements++;
+							if (currentCount % block == 0) {
+								listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+							}
+							currentCount++;
+						}
+					} finally {
+						batch.close();
+					}
 				}
-				crcout.write(0);
-				previousStr = str;
-				numberElements++;
-				if (currentCount % block == 0) {
-					listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+			} else {
+				for (; it.hasNext(); currentCount++) {
+					ByteString str = (ByteString) (it.next());
+					assert str != null;
+					if (numberElements % blockSize == 0) {
+						blocks.append(out.getTotalBytes());
+
+						// Copy full string
+						ByteStringUtil.append(crcout, str, 0);
+					} else {
+						// Find common part.
+						int delta = ByteStringUtil.longestCommonPrefix(previousStr, str);
+						// Write Delta in VByte
+						VByte.encode(crcout, delta);
+						// Write remaining
+						ByteStringUtil.append(crcout, str, delta);
+					}
+					crcout.write(0);
+					previousStr = str;
+					numberElements++;
+					if (currentCount % block == 0) {
+						listener.notifyProgress((float) (currentCount * 100 / count), "Filling section");
+					}
 				}
 			}
 

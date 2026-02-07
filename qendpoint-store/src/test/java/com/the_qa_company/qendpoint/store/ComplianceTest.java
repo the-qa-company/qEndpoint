@@ -6,8 +6,12 @@ import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTManager;
+import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
+import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
+import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapTriplesIndexFile;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.repository.Repository;
@@ -22,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
@@ -40,6 +45,16 @@ public class ComplianceTest {
 
 	@TempDir
 	public Path tempDir;
+
+	private HDT generateHdtNoParallel(File file, String baseUri, HDTOptions spec) throws IOException, ParserException {
+		RDFNotation notation = RDFNotation.guess(file);
+		RDFParserCallback parser = RDFParserFactory.getParserCallback(notation, spec);
+		try (InputStream input = Files.newInputStream(file.toPath());
+				PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, input, baseUri, true,
+						notation)) {
+			return HDTManager.generateHDT(iterator, baseUri, spec, null);
+		}
+	}
 
 	public class EndpointMultIndexSPARQL11QueryComplianceTest extends SPARQL11QueryComplianceTest {
 
@@ -161,8 +176,7 @@ public class ComplianceTest {
 
 			HDTOptions spec = HDTOptions.of();
 
-			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file),
-					spec, null);
+			hdt = generateHdtNoParallel(file, "http://www.example.org/", spec);
 			assert hdt != null;
 			hdt.search("", "", "").forEachRemaining(System.out::println);
 		}
@@ -331,8 +345,7 @@ public class ComplianceTest {
 
 			HDTOptions spec = HDTOptions.of();
 
-			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file),
-					spec, null);
+			hdt = generateHdtNoParallel(file, "http://www.example.org/", spec);
 			assert hdt != null;
 			hdt.search("", "", "").forEachRemaining(System.out::println);
 		}
@@ -450,8 +463,7 @@ public class ComplianceTest {
 
 			HDTOptions spec = HDTOptions.of();
 
-			hdt = HDTManager.generateHDT(file.getAbsolutePath(), "http://www.example.org/", RDFNotation.guess(file),
-					spec, null);
+			hdt = generateHdtNoParallel(file, "http://www.example.org/", spec);
 			assert hdt != null;
 			hdt.search("", "", "").forEachRemaining(System.out::println);
 		}

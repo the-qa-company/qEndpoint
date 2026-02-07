@@ -6,6 +6,7 @@ import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
+import com.the_qa_company.qendpoint.core.util.io.CRCStopBitInputStream;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -23,7 +24,7 @@ public class CompressTripleReader implements ExceptionIterator<TripleID, IOExcep
 	private final boolean quad;
 
 	public CompressTripleReader(InputStream stream) throws IOException {
-		this.stream = new CRCInputStream(stream, new CRC32());
+		this.stream = new CRCStopBitInputStream(stream, new CRC32());
 		int flags = this.stream.read();
 		this.quad = (flags & CompressTripleWriter.FLAG_QUAD) != 0;
 	}

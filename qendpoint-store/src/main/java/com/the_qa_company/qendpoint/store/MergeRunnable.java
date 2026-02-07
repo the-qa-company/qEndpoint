@@ -985,35 +985,36 @@ public class MergeRunnable {
 		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
 			RDFWriter writer = Rio.createWriter(
 					endpoint.getHdt().getDictionary().supportGraphs() ? RDFFormat.NQUADS : RDFFormat.NTRIPLES, out);
-			RepositoryResult<Statement> repositoryResult = connection.getStatements(null, null, null, false);
-			writer.startRDF();
-			logger.debug("Content dumped file");
-			while (repositoryResult.hasNext()) {
-				Statement stm = repositoryResult.next();
+			try (RepositoryResult<Statement> repositoryResult = connection.getStatements(null, null, null, false)) {
+				writer.startRDF();
+				logger.debug("Content dumped file");
+				while (repositoryResult.hasNext()) {
+					Statement stm = repositoryResult.next();
+					Resource newSubjIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDsubject(stm.getSubject());
+					newSubjIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newSubjIRI);
 
-				Resource newSubjIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDsubject(stm.getSubject());
-				newSubjIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newSubjIRI);
+					IRI newPredIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
+					newPredIRI = this.endpoint.getHdtConverter().predicateHdtResourceToResource(newPredIRI);
 
-				IRI newPredIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDpredicate(stm.getPredicate());
-				newPredIRI = this.endpoint.getHdtConverter().predicateHdtResourceToResource(newPredIRI);
+					Value newObjIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
+					newObjIRI = this.endpoint.getHdtConverter().objectHdtResourceToResource(newObjIRI);
 
-				Value newObjIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDobject(stm.getObject());
-				newObjIRI = this.endpoint.getHdtConverter().objectHdtResourceToResource(newObjIRI);
+					Statement stmConverted;
+					if (graph) {
+						Resource newCtxIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDcontext(stm.getContext());
+						newCtxIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newCtxIRI);
 
-				Statement stmConverted;
-				if (graph) {
-					Resource newCtxIRI = this.endpoint.getHdtConverter().rdf4jToHdtIDcontext(stm.getContext());
-					newCtxIRI = this.endpoint.getHdtConverter().subjectHdtResourceToResource(newCtxIRI);
+						stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI,
+								newObjIRI, newCtxIRI);
+					} else {
+						stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI,
+								newObjIRI);
+					}
 
-					stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI, newObjIRI,
-							newCtxIRI);
-				} else {
-					stmConverted = this.endpoint.getValueFactory().createStatement(newSubjIRI, newPredIRI, newObjIRI);
+					writer.handleStatement(stmConverted);
 				}
-
-				writer.handleStatement(stmConverted);
+				writer.endRDF();
 			}
-			writer.endRDF();
 		}
 	}
 

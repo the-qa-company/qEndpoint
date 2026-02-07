@@ -333,14 +333,21 @@ public class HDTManagerImpl extends HDTManager {
 
 	@Override
 	public HDTResult doGenerateHDT(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
-			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener) throws IOException {
+			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
+			throws IOException, ParserException {
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
+		if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(hdtFormat.get(HDTOptionsKeys.LOADER_TYPE_KEY))
+				&& (rdfNotation == RDFNotation.NTRIPLES || rdfNotation == RDFNotation.NQUAD)
+				&& RDFParserFactory.useSimple(hdtFormat)) {
+			return doGenerateHDTDisk(fileStream, baseURI, rdfNotation, compressionType, hdtFormat, listener);
+		}
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
 		// create a parser for this rdf stream
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation);
+		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
-				true, rdfNotation, hdtFormat)) {
+				keepBNode, rdfNotation, hdtFormat)) {
 			return doGenerateHDT(iterator, baseURI, hdtFormat, listener);
 		}
 	}
@@ -411,9 +418,22 @@ public class HDTManagerImpl extends HDTManager {
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
 		if (compressionType == CompressionType.NONE) {
+			if ((rdfNotation == RDFNotation.NTRIPLES || rdfNotation == RDFNotation.NQUAD)
+					&& RDFParserFactory.useSimple(hdtFormat)) {
+				if (!IOUtil.isRemoteURL(rdfFileName) && !"-".equals(rdfFileName)) {
+					Path path = Path.of(rdfFileName);
+					try (HDTDiskImporter hdtDiskImporter = new HDTDiskImporter(hdtFormat, listener, baseURI)) {
+						return HDTResult.of(hdtDiskImporter.runAllStepsNTriples(path, rdfNotation));
+					}
+				}
+				try (InputStream stream = IOUtil.getFileInputStream(rdfFileName, false)) {
+					return doGenerateHDTDisk(stream, baseURI, rdfNotation, compressionType, hdtFormat, listener);
+				}
+			}
+			boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
 			RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 			try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, rdfFileName,
-					baseURI, true, rdfNotation, hdtFormat)) {
+					baseURI, keepBNode, rdfNotation, hdtFormat)) {
 				return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
 			}
 		}
@@ -428,11 +448,19 @@ public class HDTManagerImpl extends HDTManager {
 			throws IOException, ParserException {
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
+		// Pull-based chunked path for NT/NQ when the simple parser is enabled
+		if ((rdfNotation == RDFNotation.NTRIPLES || rdfNotation == RDFNotation.NQUAD)
+				&& RDFParserFactory.useSimple(hdtFormat)) {
+			try (HDTDiskImporter hdtDiskImporter = new HDTDiskImporter(hdtFormat, listener, baseURI)) {
+				return HDTResult.of(hdtDiskImporter.runAllStepsNTriples(fileStream, rdfNotation));
+			}
+		}
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
 		// create a parser for this rdf stream
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
-				true, rdfNotation, hdtFormat)) {
+				keepBNode, rdfNotation, hdtFormat)) {
 			return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
 		}
 	}

@@ -54,6 +54,12 @@ import java.util.Iterator;
 public class SequenceLog64Map implements Sequence, Closeable {
 	private static final byte W = 64;
 	private static final long LONGS_PER_BUFFER = 128 * 1024 * 1024; // 128*8 =
+	private static final int LONGS_PER_BUFFER_SHIFT = 27; // because
+															// 128*1024*1024 ==
+															// 2^27
+	private static final long LONGS_PER_BUFFER_MASK = LONGS_PER_BUFFER - 1;
+	private static final int BYTES_PER_LONG_SHIFT = 3; // 8 bytes
+
 	// 1Gb per
 	// chunk.
 	private CloseMappedByteBuffer[] buffers;
@@ -62,6 +68,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 	private final long numentries;
 	private long lastword;
 	private final long numwords;
+	private final long lastWordIndex;
 
 	public SequenceLog64Map(File f) throws IOException {
 		// Read from the beginning of the file
@@ -107,6 +114,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 		if (closeInput) {
 			in.close();
 		}
+		this.lastWordIndex = numwords - 1;
 	}
 
 	public SequenceLog64Map(int numbits, long numentries, File f) throws IOException {
@@ -115,6 +123,7 @@ public class SequenceLog64Map implements Sequence, Closeable {
 		this.numwords = SequenceLog64.numWordsFor(numbits, numentries);
 
 		mapFiles(f, 0);
+		this.lastWordIndex = numwords - 1;
 	}
 
 	@Override
@@ -174,11 +183,16 @@ public class SequenceLog64Map implements Sequence, Closeable {
 	}
 
 	private long getWord(long w) {
-		if (w == numwords - 1) {
+		if (w == lastWordIndex) {
 			return lastword;
 		}
 
-		return buffers[(int) (w / LONGS_PER_BUFFER)].getLong((int) ((w % LONGS_PER_BUFFER) * 8));
+		final CloseMappedByteBuffer[] bufs = this.buffers;
+
+		final int bufIndex = (int) (w >>> LONGS_PER_BUFFER_SHIFT);
+		final int byteOffset = (int) (w & LONGS_PER_BUFFER_MASK) << BYTES_PER_LONG_SHIFT;
+
+		return bufs[bufIndex].getLong(byteOffset);
 	}
 
 	/*

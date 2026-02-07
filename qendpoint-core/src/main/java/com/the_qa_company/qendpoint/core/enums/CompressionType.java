@@ -1,10 +1,9 @@
 package com.the_qa_company.qendpoint.core.enums;
 
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionFunction;
+import com.the_qa_company.qendpoint.core.util.io.Lz4Config;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
-import net.jpountz.lz4.LZ4FrameInputStream;
-import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.lzma.LZMACompressorInputStream;
@@ -43,11 +42,11 @@ public enum CompressionType {
 	/**
 	 * lz4 compression
 	 */
-	LZ4(LZ4FrameInputStream::new, LZ4FrameOutputStream::new),
+	LZ4(CompressionType::lz4Decompress, CompressionType::lz4Compress),
 	/**
 	 * lz4 compression
 	 */
-	LZ4B(LZ4BlockInputStream::new, LZ4BlockOutputStream::new),
+	LZ4B(CompressionType::lz4Decompress, CompressionType::lz4Compress),
 	/**
 	 * lzma compression
 	 */
@@ -106,6 +105,9 @@ public enum CompressionType {
 	 * @throws IOException io
 	 */
 	public InputStream decompress(InputStream stream) throws IOException {
+		if (!Lz4Config.ENABLED && isLz4()) {
+			return stream;
+		}
 		return decompress.apply(stream);
 	}
 
@@ -117,7 +119,22 @@ public enum CompressionType {
 	 * @throws IOException io
 	 */
 	public OutputStream compress(OutputStream stream) throws IOException {
+		if (!Lz4Config.ENABLED && isLz4()) {
+			return stream;
+		}
 		return compress.apply(stream);
+	}
+
+	private boolean isLz4() {
+		return this == LZ4 || this == LZ4B;
+	}
+
+	private static InputStream lz4Decompress(InputStream stream) throws IOException {
+		return new LZ4BlockInputStream(stream);
+	}
+
+	private static OutputStream lz4Compress(OutputStream stream) throws IOException {
+		return new LZ4BlockOutputStream(stream);
 	}
 
 	public byte[] debugCompress(byte[] buffer) {

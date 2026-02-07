@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -117,6 +118,26 @@ public class CloserTest {
 		checkMap.values().forEach(CloseChecker::check);
 		Arrays.stream(checkArray).forEach(CloseChecker::check);
 		checkList.stream().filter(e -> e instanceof CloseChecker).forEach(c -> ((CloseChecker) c).check());
+	}
+
+	@Test
+	public void closeOrderMatchesRegistrationOrder() throws IOException {
+		List<String> order = new java.util.ArrayList<>();
+		Closeable a = () -> order.add("a");
+		Closeable b = () -> order.add("b");
+		Closeable c = () -> order.add("c");
+
+		Closer.closeAll(a, b, c);
+
+		assertEquals(Arrays.asList("a", "b", "c"), order);
+
+		List<String> iterableOrder = new java.util.ArrayList<>();
+		List<Closeable> closeables = Arrays.asList(() -> iterableOrder.add("a"), () -> iterableOrder.add("b"),
+				() -> iterableOrder.add("c"));
+
+		Closer.closeAll(closeables);
+
+		assertEquals(Arrays.asList("a", "b", "c"), iterableOrder);
 	}
 
 	public static class CloseChecker implements Closeable {

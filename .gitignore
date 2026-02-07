@@ -24,6 +24,7 @@ qendpoint-cli/.idea/
 /qendpoint/
 /tests/
 /dump/
+/qendpoint-benchmarks/target/
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
@@ -55,6 +56,11 @@ release/RELEASE_OUTPUT.md
 .idea
 data
 .nvmrc
+
 wikidata
 qendpoint-store/wdbench-indexes
 wdbench-results
+.m2_repo
+/indexing/
+/dev-branch-copy/
+/ci-logs/

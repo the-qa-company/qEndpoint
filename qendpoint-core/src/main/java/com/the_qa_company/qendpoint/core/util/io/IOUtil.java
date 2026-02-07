@@ -620,6 +620,8 @@ public class IOUtil {
 		}
 	}
 
+	private static final ThreadLocal<byte[]> longWriteBuffer = ThreadLocal.withInitial(() -> new byte[8]);
+
 	/**
 	 * Write long, little endian
 	 *
@@ -628,7 +630,7 @@ public class IOUtil {
 	 * @throws IOException io exception
 	 */
 	public static void writeLong(OutputStream output, long value) throws IOException {
-		byte[] writeBuffer = new byte[8];
+		byte[] writeBuffer = longWriteBuffer.get();
 		writeBuffer[7] = (byte) (value >>> 56);
 		writeBuffer[6] = (byte) (value >>> 48);
 		writeBuffer[5] = (byte) (value >>> 40);

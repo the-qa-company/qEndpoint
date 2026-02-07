@@ -19,7 +19,6 @@
 
 package com.the_qa_company.qendpoint.core.triples.impl;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -166,14 +165,12 @@ public class TriplesListLong implements TempTriples {
 		controlInformation.setInt("order", order.ordinal());
 		controlInformation.save(output);
 
-		DataOutputStream dout = new DataOutputStream(output);
 		int count = 0;
 		for (TripleID triple : arrayOfTriples) {
 			if (triple.isValid()) {
-				// FIXME: writeLong ??
-				dout.writeInt((int) triple.getSubject());
-				dout.writeInt((int) triple.getPredicate());
-				dout.writeInt((int) triple.getObject());
+				IOUtil.writeLong(output, triple.getSubject());
+				IOUtil.writeLong(output, triple.getPredicate());
+				IOUtil.writeLong(output, triple.getObject());
 				ListenerUtil.notifyCond(listener, "Saving TriplesList", count, arrayOfTriples.size());
 			}
 			count++;

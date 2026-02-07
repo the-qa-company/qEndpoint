@@ -17,8 +17,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>${java.source.version}</source>
+                    <target>${java.target.version}</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -51,7 +51,7 @@
 
         <jena.version>4.3.2</jena.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <lz4.version>1.8.1</lz4.version>
+        <lz4-java.version>1.10.2</lz4-java.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -122,9 +122,9 @@
             <version>${roaringbitmap.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.lz4</groupId>
+            <groupId>at.yawk.lz4</groupId>
             <artifactId>lz4-java</artifactId>
-            <version>${lz4.version}</version>
+            <version>${lz4-java.version}</version>
         </dependency>
     </dependencies>
 </project>

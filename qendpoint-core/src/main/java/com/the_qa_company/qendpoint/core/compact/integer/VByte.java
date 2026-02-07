@@ -45,6 +45,14 @@ public class VByte {
 	private VByte() {
 	}
 
+	public interface FastInput {
+		long readVByteLong() throws IOException;
+	}
+
+	public interface FastOutput {
+		void writeVByteLong(long value) throws IOException;
+	}
+
 	/**
 	 * encode a Variable-Byte adding a bit for the sign, should be decoded with
 	 * {@link #decodeSigned(InputStream)}
@@ -85,11 +93,94 @@ public class VByte {
 		if (value < 0) {
 			throw new IllegalArgumentException("Only can encode VByte of positive values");
 		}
-		while (value > 127) {
-			out.write((int) (value & 127));
-			value >>>= 7;
+		if (out instanceof FastOutput) {
+			((FastOutput) out).writeVByteLong(value);
+			return;
 		}
-		out.write((int) (value | 0x80));
+		if (value < 0x80) {
+			out.write((int) (value | 0x80));
+			return;
+		}
+		if (value < 0x4000) {
+			out.write((int) (value & 0x7F));
+			out.write((int) ((value >> 7) | 0x80));
+			return;
+		}
+		if (value < 0x200000) {
+			out.write((int) (value & 0x7F));
+			out.write((int) ((value >> 7) & 0x7F));
+			out.write((int) ((value >> 14) | 0x80));
+			return;
+		}
+		if (value < 0x10000000) {
+			out.write((int) (value & 0x7F));
+			out.write((int) ((value >> 7) & 0x7F));
+			out.write((int) ((value >> 14) & 0x7F));
+			out.write((int) ((value >> 21) | 0x80));
+			return;
+		}
+
+		encodeLongWay(out, value);
+	}
+
+	private static void encodeLongWay(OutputStream out, long value) throws IOException {
+		int bitLen = 64 - Long.numberOfLeadingZeros(value);
+		int extra = (bitLen - 1) / 7;
+
+		switch (extra) {
+		case 8: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) & 0x7F),
+					(byte) ((value >> 21) & 0x7F), (byte) ((value >> 28) & 0x7F), (byte) ((value >> 35) & 0x7F),
+					(byte) ((value >> 42) & 0x7F), (byte) ((value >> 49) & 0x7F), (byte) ((value >> 56) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 7: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) & 0x7F),
+					(byte) ((value >> 21) & 0x7F), (byte) ((value >> 28) & 0x7F), (byte) ((value >> 35) & 0x7F),
+					(byte) ((value >> 42) & 0x7F), (byte) ((value >> 49) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 6: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) & 0x7F),
+					(byte) ((value >> 21) & 0x7F), (byte) ((value >> 28) & 0x7F), (byte) ((value >> 35) & 0x7F),
+					(byte) ((value >> 42) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 5: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) & 0x7F),
+					(byte) ((value >> 21) & 0x7F), (byte) ((value >> 28) & 0x7F), (byte) ((value >> 35) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 4: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) & 0x7F),
+					(byte) ((value >> 21) & 0x7F), (byte) ((value >> 28) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 3: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) & 0x7F),
+					(byte) ((value >> 21) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 2: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) & 0x7F), (byte) ((value >> 14) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 1: {
+			byte[] bytes = { (byte) (value & 0x7F), (byte) ((value >> 7) | 0x80) };
+			out.write(bytes);
+			break;
+		}
+		case 0:
+			out.write((int) (value | 0x80));
+			break;
+		}
 	}
 
 	/**
@@ -111,29 +202,91 @@ public class VByte {
 	}
 
 	public static long decode(InputStream in) throws IOException {
-		long out = 0;
-		int shift = 0;
-		long readbyte = in.read();
-		if (readbyte == -1) {
+		if (in instanceof FastInput) {
+			return ((FastInput) in).readVByteLong();
+		}
+		int b = in.read();
+		if (b < 0) {
 			throw new EOFException();
 		}
-
-		while ((readbyte & 0x80) == 0) {
-			if (shift >= 50) { // We read more bytes than required to load the
-								// max long
-				throw new IllegalArgumentException("Read more bytes than required to load the max long");
-			}
-
-			out |= (readbyte & 127) << shift;
-
-			readbyte = in.read();
-			if (readbyte == -1)
-				throw new EOFException();
-
-			shift += 7;
+		long r = (b & 0x7FL);
+		if ((b & 0x80) != 0) {
+			return r;
 		}
-		out |= (readbyte & 127) << shift;
-		return out;
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 7;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 14;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 21;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 28;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 35;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 42;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 49;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		b = in.read();
+		if (b < 0) {
+			throw new EOFException();
+		}
+		r |= (long) (b & 0x7F) << 56;
+		if ((b & 0x80) != 0) {
+			return r;
+		}
+
+		throw new IllegalArgumentException("Malformed stop-bit varint: more than 9 bytes");
 	}
 
 	public static long decode(ByteBuffer in) throws IOException {

@@ -85,7 +85,9 @@ public class FileUploadTest {
 		Path testDir = Paths.get("tests", "testrdf");
 		Files.createDirectories(testDir);
 		Path RDFFile = testDir.resolve(COKTAILS_NT + "." + format.getDefaultFileExtension());
+		boolean created = false;
 		if (!Files.exists(RDFFile)) {
+			created = true;
 			try (OutputStream os = new FileOutputStream(RDFFile.toFile()); InputStream is = stream(COKTAILS_NT)) {
 				if (format == RDFFormat.HDT) {
 					try (HDT hdt = HDTManager.generateHDT(is, "http://example.org/#", RDFNotation.TURTLE,
@@ -101,6 +103,8 @@ public class FileUploadTest {
 		}
 
 		fileName = RDFFile.toFile().getAbsolutePath();
+		logger.info("Prepared test file for format {} at {} (created={})", format.getName(), fileName, created);
+		logFileStats(RDFFile, "prepared input");
 	}
 
 	@Before
@@ -168,14 +172,22 @@ public class FileUploadTest {
 		EndpointStore store = sparql.endpoint;
 		SailRepository sailRepository = new SailRepository(store);
 		List<Statement> statementList = new ArrayList<>();
+		long[] expectedTotal = new long[1];
+		long[] expectedSkippedBNode = new long[1];
+		long[] expectedWhitespaceNormalized = new long[1];
 		Consumer<Statement> consumer;
+		logger.info("Asserting triples for format {} using expected file {}", format.getName(), fileName);
 		// fix because RDFXML can't handle empty spaces literals
 		if (format == RDFFormat.RDFXML) {
 			consumer = statement -> {
-				if (statement.getSubject().isBNode() || statement.getObject().isBNode())
+				expectedTotal[0]++;
+				if (statement.getSubject().isBNode() || statement.getObject().isBNode()) {
+					expectedSkippedBNode[0]++;
 					return;
+				}
 				org.eclipse.rdf4j.model.Value v = clearSpaces(store.getValueFactory(), statement.getObject());
 				if (v != statement.getObject()) {
+					expectedWhitespaceNormalized[0]++;
 					statementList.add(store.getValueFactory().createStatement(statement.getSubject(),
 							statement.getPredicate(), v));
 				} else {
@@ -184,30 +196,79 @@ public class FileUploadTest {
 			};
 		} else {
 			consumer = statement -> {
-				if (statement.getSubject().isBNode() || statement.getObject().isBNode())
+				expectedTotal[0]++;
+				if (statement.getSubject().isBNode() || statement.getObject().isBNode()) {
+					expectedSkippedBNode[0]++;
 					return;
+				}
 				statementList.add(statement);
 			};
 		}
 		RDFStreamUtils.readRDFStream(stream, Rio.getParserFormatForFileName(fileName).orElseThrow(), true, consumer);
+		logger.info("Expected triples read: total={}, kept={}, skippedBNode={}, normalizedWhitespace={}",
+				expectedTotal[0], statementList.size(), expectedSkippedBNode[0], expectedWhitespaceNormalized[0]);
 
 		try (SailRepositoryConnection connection = sailRepository.getConnection()) {
-			RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false);
-			while (sts.hasNext()) {
-				Statement next = sts.next();
-				if (next.getSubject().isBNode() || next.getObject().isBNode()
-						|| next.getSubject().toString().startsWith("_:")
-						|| next.getObject().toString().startsWith("_:"))
-					continue;
-				Assert.assertTrue("Statement (" + next.getSubject().toString() + ", " + next.getPredicate().toString()
-						+ ", " + next.getObject().toString() + "), not in " + fileName, statementList.remove(next));
-				while (statementList.remove(next)) {
-					// remove duplicates
-					logger.trace("removed duplicate of {}", next);
+			long[] storeTotal = new long[1];
+			long[] storeSkippedBNode = new long[1];
+			long[] storeExtra = new long[1];
+			long[] duplicateRemoved = new long[1];
+			logger.info("Store size before scan: {}", connection.size());
+			try (RepositoryResult<Statement> sts = connection.getStatements(null, null, null, false)) {
+				while (sts.hasNext()) {
+					Statement next = sts.next();
+					if (next.getSubject().isBNode() || next.getObject().isBNode()
+							|| next.getSubject().toString().startsWith("_:")
+							|| next.getObject().toString().startsWith("_:")) {
+						storeSkippedBNode[0]++;
+						continue;
+					}
+					storeTotal[0]++;
+					boolean removed = statementList.remove(next);
+					if (!removed) {
+						storeExtra[0]++;
+						if (storeExtra[0] <= 5) {
+							logger.warn("Store statement not in expected list: {}", next);
+						}
+					}
+					Assert.assertTrue(
+							"Statement (" + next.getSubject().toString() + ", " + next.getPredicate().toString() + ", "
+									+ next.getObject().toString() + "), not in " + fileName,
+							removed);
+					if (removed) {
+						while (statementList.remove(next)) {
+							// remove duplicates
+							duplicateRemoved[0]++;
+							logger.trace("removed duplicate of {}", next);
+						}
+					}
 				}
 			}
+			logger.info("Store scan: total={}, skippedBNode={}, extraInStore={}, duplicateExpectedRemoved={}",
+					storeTotal[0], storeSkippedBNode[0], storeExtra[0], duplicateRemoved[0]);
 		}
 		if (!statementList.isEmpty()) {
+			logger.error("Missing {} statements for format {} expected file {}", statementList.size(), format.getName(),
+					fileName);
+			int sampleLimit = Math.min(5, statementList.size());
+			try (SailRepositoryConnection connection = sailRepository.getConnection()) {
+				for (int i = 0; i < sampleLimit; i++) {
+					Statement missing = statementList.get(i);
+					logger.error("Missing sample {}: {}", i + 1, missing);
+					try (RepositoryResult<Statement> candidates = connection.getStatements(missing.getSubject(),
+							missing.getPredicate(), null, false)) {
+						int candidateCount = 0;
+						while (candidates.hasNext() && candidateCount < 5) {
+							Statement candidate = candidates.next();
+							logger.error("Candidate object {}: {}", candidateCount + 1, candidate.getObject());
+							candidateCount++;
+						}
+						if (candidateCount == 0) {
+							logger.error("No candidate objects for missing sample {} subject/predicate", i + 1);
+						}
+					}
+				}
+			}
 			for (Statement statement : statementList) {
 				System.err.println(statement);
 			}
@@ -217,8 +278,10 @@ public class FileUploadTest {
 
 	@Test
 	public void loadTest() throws IOException {
+		logger.info("Starting loadTest for format {} with file {}", format.getName(), fileName);
 		sparql.init();
-		sparql.loadFile(streamOut(fileName), fileName);
+		Sparql.LoadFileResult result = sparql.loadFile(streamOut(fileName), fileName);
+		logger.info("loadFile result for format {}: {}", format.getName(), result);
 		assertAllCoktailsHDTLoaded();
 	}
 
@@ -266,5 +329,13 @@ public class FileUploadTest {
 				handler.handleComment(s);
 			}
 		};
+	}
+
+	private void logFileStats(Path path, String label) {
+		try {
+			logger.info("File stats ({}): path={}, size={} bytes", label, path.toAbsolutePath(), Files.size(path));
+		} catch (IOException e) {
+			logger.warn("Unable to stat file ({}): path={}", label, path.toAbsolutePath(), e);
+		}
 	}
 }

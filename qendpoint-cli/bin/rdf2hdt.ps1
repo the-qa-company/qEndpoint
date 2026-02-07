@@ -13,6 +13,9 @@ param(
     $base,
     [Switch]
     $index,
+    [Alias("no-recreate")]
+    [Switch]
+    $norecreate,
     [Switch]
     $quiet,
     [Switch]

@@ -35,6 +35,11 @@ import java.nio.file.StandardOpenOption;
 
 public class LongArrayDisk implements Closeable, LongArray {
 	private static final long MAPPING_SIZE = 1 << 30;
+	private static final int BYTES_PER_LONG_SHIFT = 3; // 8 bytes
+	private static final int MAPPING_SIZE_SHIFT = 30; // 1 << 30 bytes
+	private static final int LONGS_PER_MAPPING_SHIFT = MAPPING_SIZE_SHIFT - BYTES_PER_LONG_SHIFT; // 27
+	private static final long LONGS_PER_MAPPING_MASK = (1L << LONGS_PER_MAPPING_SHIFT) - 1L; // (1<<27)-1
+
 	private final boolean closeChannel;
 	private final FileChannel channel;
 	private CloseMappedByteBuffer[] mappings;
@@ -129,11 +134,18 @@ public class LongArrayDisk implements Closeable, LongArray {
 	}
 
 	@Override
-	public long get(long x) {
-		long p = x * 8;
-		int block = (int) (p / MAPPING_SIZE);
-		int offset = (int) (p % MAPPING_SIZE);
-		return mappings[block].getLong(offset);
+	public long get(long index) {
+		// Preserve current semantics: no bounds check here (callers are
+		// expected to behave).
+		final CloseMappedByteBuffer[] maps = this.mappings;
+
+		// index is in longs; each mapping holds 2^27 longs.
+		final int block = (int) (index >> LONGS_PER_MAPPING_SHIFT);
+
+		// Convert "long index within block" -> "byte offset within block"
+		final int byteOffset = (int) (index & LONGS_PER_MAPPING_MASK) << BYTES_PER_LONG_SHIFT;
+
+		return maps[block].getLong(byteOffset);
 	}
 
 	@Override
@@ -145,6 +157,40 @@ public class LongArrayDisk implements Closeable, LongArray {
 		int block = (int) (p / MAPPING_SIZE);
 		int offset = (int) (p % MAPPING_SIZE);
 		mappings[block].putLong(offset, value);
+	}
+
+	public void set(long startIndex, long[] values, int offset, int length) {
+		if (length == 0) {
+			return;
+		}
+		if (values == null) {
+			throw new NullPointerException();
+		}
+		if (startIndex < 0 || startIndex + length > size) {
+			throw new IndexOutOfBoundsException();
+		}
+		if (offset < 0 || length < 0 || offset + length > values.length) {
+			throw new IndexOutOfBoundsException();
+		}
+
+		long p = startIndex * 8;
+		int block = (int) (p / MAPPING_SIZE);
+		int byteOffset = (int) (p % MAPPING_SIZE);
+		int valueOffset = offset;
+		int remaining = length;
+
+		while (remaining > 0) {
+			CloseMappedByteBuffer mapping = mappings[block];
+			int availableLongs = (mapping.capacity() - byteOffset) / Long.BYTES;
+			int toWrite = Math.min(remaining, availableLongs);
+
+			mapping.putLongs(byteOffset, values, valueOffset, toWrite);
+
+			remaining -= toWrite;
+			valueOffset += toWrite;
+			block++;
+			byteOffset = 0;
+		}
 	}
 
 	@Override

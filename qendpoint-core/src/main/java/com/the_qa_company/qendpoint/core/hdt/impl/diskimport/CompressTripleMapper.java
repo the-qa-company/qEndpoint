@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * Map a compress triple file to long array map files
@@ -45,18 +46,29 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 		this.graphs = graphs;
 		int numbits = BitUtil.log2(tripleCount + 2) + CompressUtil.INDEX_SHIFT;
 		int maxElement = (int) Math.min(chunkSize / Long.BYTES / 3, Integer.MAX_VALUE - 5);
+		try {
+			Files.deleteIfExists(locationSubjects);
+			Files.deleteIfExists(locationPredicates);
+			Files.deleteIfExists(locationObjects);
+			if (quads) {
+				Files.deleteIfExists(locationGraph);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Can't reset disk mapping files", e);
+		}
 		subjects = new WriteLongArrayBuffer(
-				new SequenceLog64BigDisk(locationSubjects.toAbsolutePath().toString(), numbits, tripleCount + 2, true),
-				tripleCount, maxElement);
-		predicates = new WriteLongArrayBuffer(new SequenceLog64BigDisk(locationPredicates.toAbsolutePath().toString(),
-				numbits, tripleCount + 2, true), tripleCount, maxElement);
+				new SequenceLog64BigDisk(locationSubjects, numbits, tripleCount + 2, true, false), tripleCount,
+				maxElement);
+		predicates = new WriteLongArrayBuffer(
+				new SequenceLog64BigDisk(locationPredicates, numbits, tripleCount + 2, true, false), tripleCount,
+				maxElement);
 		objects = new WriteLongArrayBuffer(
-				new SequenceLog64BigDisk(locationObjects.toAbsolutePath().toString(), numbits, tripleCount + 2, true),
-				tripleCount, maxElement);
+				new SequenceLog64BigDisk(locationObjects, numbits, tripleCount + 2, true, false), tripleCount,
+				maxElement);
 		if (quads) {
 			graph = new WriteLongArrayBuffer(
-					new SequenceLog64BigDisk(locationGraph.toAbsolutePath().toString(), numbits, tripleCount + 2, true),
-					tripleCount, maxElement);
+					new SequenceLog64BigDisk(locationGraph, numbits, tripleCount + 2, true, false), tripleCount,
+					maxElement);
 		} else {
 			graph = null;
 		}
@@ -80,30 +92,42 @@ public class CompressTripleMapper implements CompressFourSectionDictionary.NodeC
 
 	@Override
 	public void onSubject(long preMapId, long newMapId) {
-		assert preMapId > 0;
-		assert newMapId >= CompressUtil.getHeaderId(1);
 		subjects.set(preMapId, newMapId);
 	}
 
 	@Override
+	public void onSubject(long[] preMapIds, long[] newMapIds, int offset, int length) {
+		subjects.set(preMapIds, newMapIds, offset, length);
+	}
+
+	@Override
 	public void onPredicate(long preMapId, long newMapId) {
-		assert preMapId > 0;
-		assert newMapId >= CompressUtil.getHeaderId(1);
 		predicates.set(preMapId, newMapId);
 	}
 
 	@Override
+	public void onPredicate(long[] preMapIds, long[] newMapIds, int offset, int length) {
+		predicates.set(preMapIds, newMapIds, offset, length);
+	}
+
+	@Override
 	public void onObject(long preMapId, long newMapId) {
-		assert preMapId > 0;
-		assert newMapId >= CompressUtil.getHeaderId(1);
 		objects.set(preMapId, newMapId);
 	}
 
 	@Override
+	public void onObject(long[] preMapIds, long[] newMapIds, int offset, int length) {
+		objects.set(preMapIds, newMapIds, offset, length);
+	}
+
+	@Override
 	public void onGraph(long preMapId, long newMapId) {
-		assert preMapId > 0;
-		assert newMapId >= CompressUtil.getHeaderId(1) : "negative or null new grap id";
 		graph.set(preMapId, newMapId);
+	}
+
+	@Override
+	public void onGraph(long[] preMapIds, long[] newMapIds, int offset, int length) {
+		graph.set(preMapIds, newMapIds, offset, length);
 	}
 
 	public void setShared(long shared) {

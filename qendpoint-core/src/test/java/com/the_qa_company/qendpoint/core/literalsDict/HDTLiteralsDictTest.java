@@ -16,6 +16,8 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.MultipleSectionDictiona
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.Objects;
 
@@ -23,10 +25,20 @@ import static org.junit.Assert.assertEquals;
 
 public class HDTLiteralsDictTest {
 
+	private String resourcePath(String resource) {
+		try {
+			return Paths.get(
+					Objects.requireNonNull(getClass().getClassLoader().getResource(resource), "Can't find " + resource)
+							.toURI())
+					.toString();
+		} catch (URISyntaxException e) {
+			throw new IllegalStateException("Invalid resource URI: " + resource, e);
+		}
+	}
+
 	@Test
 	public void testIdConversion() throws ParserException, IOException, NotFoundException {
-		ClassLoader classLoader = getClass().getClassLoader();
-		String file1 = Objects.requireNonNull(classLoader.getResource("example4+5.nt")).getFile();
+		String file1 = resourcePath("example4+5.nt");
 		HDTSpecification spec = new HDTSpecification();
 		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 		try (HDT hdt1 = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
@@ -54,8 +66,7 @@ public class HDTLiteralsDictTest {
 
 	@Test
 	public void testGetDataTypeRange() throws IOException, ParserException {
-		ClassLoader classLoader = getClass().getClassLoader();
-		String file1 = Objects.requireNonNull(classLoader.getResource("example22.nt")).getFile();
+		String file1 = resourcePath("example22.nt");
 		HDTSpecification spec = new HDTSpecification();
 		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,
@@ -73,8 +84,7 @@ public class HDTLiteralsDictTest {
 
 	@Test
 	public void testGetDataTypeOfId() throws IOException, ParserException {
-		ClassLoader classLoader = getClass().getClassLoader();
-		String file1 = Objects.requireNonNull(classLoader.getResource("example22.nt")).getFile();
+		String file1 = resourcePath("example22.nt");
 		HDTSpecification spec = new HDTSpecification();
 		spec.setOptions("tempDictionary.impl=multHash;dictionary.type=dictionaryMultiObj;");
 		try (HDT hdt = HDTManager.generateHDT(new File(file1).getAbsolutePath(), "uri", RDFNotation.NTRIPLES, spec,

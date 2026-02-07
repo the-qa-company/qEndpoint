@@ -248,25 +248,28 @@ public class EndpointStoreTest {
 				connection.remove(guo, RDF.TYPE, FOAF.PERSON);
 				// wait for merge to be done because it's on a separate thread
 
-				RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true);
-				int count = 0;
-				while (sts.hasNext()) {
-					System.out.println(sts.next());
-					count++;
+				try (RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true)) {
+					int count = 0;
+					while (sts.hasNext()) {
+						System.out.println(sts.next());
+						count++;
+					}
+					// 1 triple hdt, 2 triples native a, 1 triple native b -1
+					// triple
+					// removed from hdt
+					assertEquals(3, count);
 				}
-				// 1 triple hdt, 2 triples native a, 1 triple native b -1 triple
-				// removed from hdt
-				assertEquals(3, count);
 				Thread.sleep(3000);
 
-				sts = connection.getStatements(null, null, null, true);
-				count = 0;
-				while (sts.hasNext()) {
-					System.out.println(sts.next());
-					count++;
+				try (RepositoryResult<Statement> sts = connection.getStatements(null, null, null, true)) {
+					int count = 0;
+					while (sts.hasNext()) {
+						System.out.println(sts.next());
+						count++;
+					}
+					// 2 triples hdt, 0 triples native a, 1 triple native b
+					assertEquals(3, count);
 				}
-				// 2 triples hdt, 0 triples native a, 1 triple native b
-				assertEquals(3, count);
 
 			}
 		} finally {

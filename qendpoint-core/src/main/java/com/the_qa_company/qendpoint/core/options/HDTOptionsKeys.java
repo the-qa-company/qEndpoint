@@ -53,6 +53,17 @@ public class HDTOptionsKeys {
 	@Key(type = Key.Type.NUMBER, desc = "Number of core used to compress the HDT")
 	public static final String LOADER_DISK_COMPRESSION_WORKER_KEY = "loader.disk.compressWorker";
 	/**
+	 * Key for the maximum number of concurrent merge tasks during the disk
+	 * generation pipeline. This is independent from chunk creation concurrency
+	 * (controlled by {@link #LOADER_DISK_COMPRESSION_WORKER_KEY}).
+	 * <p>
+	 * Reducing this value can reduce I/O thrashing on some storage devices by
+	 * limiting how many merge passes read from many files simultaneously.
+	 * </p>
+	 */
+	@Key(type = Key.Type.NUMBER, desc = "Maximum number of concurrent merge tasks during disk generation")
+	public static final String LOADER_DISK_MERGE_CONCURRENCY_KEY = "loader.disk.mergeConcurrency";
+	/**
 	 * Key for the maximum size of a chunk on disk for the {@link HDTManager}
 	 * generateHDTDisk methods, the chunk should be in RAM before writing it on
 	 * disk and should be sorted. long value.
@@ -104,6 +115,15 @@ public class HDTOptionsKeys {
 	 */
 	@Key(type = Key.Type.BOOLEAN, desc = "specify that the method doesn't have to copy the triple strings between 2 calls to the iterator")
 	public static final String LOADER_DISK_NO_COPY_ITERATOR_KEY = "loader.disk.noCopyIterator";
+
+	/**
+	 * Enables a disk-import mapping strategy that avoids tripleId-indexed
+	 * random writes during dictionary construction by routing mapping updates
+	 * into tripleId-range buckets and materializing the final mapping files
+	 * sequentially.
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Enable bucketed mapping (avoid random mmapped writes) during disk import")
+	public static final String LOADER_DISK_BUCKETED_MAPPING_KEY = "loader.disk.bucketedMapping";
 
 	@Key(type = Key.Type.STRING, desc = "Compression algorithm used to reduce disk based algorithm, default none")
 	public static final String DISK_COMPRESSION_KEY = "disk.compression";
@@ -271,10 +291,21 @@ public class HDTOptionsKeys {
 	public static final String PROFILER_ASYNC_OUTPUT_KEY = "profiler.async.output";
 	/**
 	 * Key for enabling the canonical NTriple file simple parser, default to
-	 * false. Boolean value
+	 * true. Boolean value
 	 */
 	@Key(type = Key.Type.BOOLEAN, desc = "Use the canonical NT file parser, removing checks")
 	public static final String NT_SIMPLE_PARSER_KEY = "parser.ntSimpleParser";
+	/**
+	 * Key for preserving blank node identifiers. If false, blank node IDs are
+	 * remapped to minted identifiers.
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Preserve blank node identifiers")
+	public static final String PARSER_KEEP_BNODE_KEY = "parser.keepBNode";
+	/**
+	 * Key for enabling parallel parsing in RIOT-based parsers.
+	 */
+	@Key(type = Key.Type.BOOLEAN, desc = "Enable parallel parsing for RIOT-based parsers")
+	public static final String PARSER_RIOT_PARALLEL_KEY = "parser.riot.parallel";
 	/**
 	 * No crc check with deltafile reader, default to false. Boolean value
 	 */
@@ -505,6 +536,9 @@ public class HDTOptionsKeys {
 	 */
 	@Value(key = BITMAPTRIPLES_INDEX_METHOD_KEY, desc = "Memory optimized option")
 	public static final String BITMAPTRIPLES_INDEX_METHOD_VALUE_OPTIMIZED = "optimized";
+
+	@Key(type = Key.Type.NUMBER, desc = "Parallelism for bitmaptriples object index sort, 0 uses available processors")
+	public static final String BITMAPTRIPLES_OBJECT_INDEX_PARALLELISM_KEY = "bitmaptriples.indexmethod.objectIndex.parallelism";
 
 	/**
 	 * Key for the {@link HDTManager} loadIndexed methods, say the number of

@@ -12,8 +12,8 @@ import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.SignatureIOException;
-import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
+import com.the_qa_company.qendpoint.core.iterator.utils.IteratorChunkedSource;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
@@ -240,10 +240,12 @@ public class BitmapTriplesIndexFile implements BitmapTriplesIndex {
 				} else {
 					origin = bitmapTriples;
 					oldOrder = origin.getOrder();
-					sortedIds = new DiskTriplesReorderSorter(workDir,
-							new AsyncIteratorFetcher<>(new MapIterator<>(
-									new BitmapTriplesIterator(origin, new TripleID()), TripleID::clone)),
-							listener, bufferSize, chunkSize, k, oldOrder, order).sort(workers);
+					try (IteratorChunkedSource<TripleID> chunkSource = IteratorChunkedSource.of(
+							new MapIterator<>(new BitmapTriplesIterator(origin, new TripleID()), TripleID::clone),
+							p -> 3L * Long.BYTES, Math.max(1, chunkSize), null)) {
+						sortedIds = new DiskTriplesReorderSorter(workDir, listener, bufferSize, chunkSize, k, oldOrder,
+								order).sortPull(workers, chunkSource);
+					}
 
 					logTriple = new TripleID(ss, ps, os);
 

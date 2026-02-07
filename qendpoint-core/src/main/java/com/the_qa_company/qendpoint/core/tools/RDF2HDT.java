@@ -2,6 +2,7 @@ package com.the_qa_company.qendpoint.core.tools;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -66,6 +67,10 @@ public class RDF2HDT implements ProgressListener {
 	@Parameter(names = "-index", description = "Generate also external indices to solve all queries")
 	public boolean generateIndex;
 
+	@Parameter(names = { "-no-recreate",
+			"-norecreate" }, description = "Skip HDT generation if output exists; only index when -index is set")
+	public boolean noRecreate;
+
 	@Parameter(names = "-quiet", description = "Do not show progress of the conversion")
 	public boolean quiet;
 
@@ -108,6 +113,14 @@ public class RDF2HDT implements ProgressListener {
 		return maxRam / shift;
 	}
 
+	private void applyThreadingOverrides(HDTOptions spec) {
+		if (spec == null) {
+			return;
+		}
+		// No-op: retain configured threading until specific overrides are
+		// needed.
+	}
+
 	public void execute() throws ParserException, IOException {
 		HDTOptions spec;
 		if (configFile != null) {
@@ -117,6 +130,25 @@ public class RDF2HDT implements ProgressListener {
 		}
 		if (options != null) {
 			spec.setOptions(options);
+		}
+		applyThreadingOverrides(spec);
+		Path outputPath = Path.of(hdtOutput);
+		if (noRecreate && Files.exists(outputPath)) {
+			if (!generateIndex) {
+				colorTool.warn("Output HDT exists and -no-recreate was set, but -index is missing; skipping.");
+				return;
+			}
+			colorTool.log("Skipping HDT conversion, using existing HDT at " + outputPath);
+			ProgressListener listenerConsole = !quiet ? (multiThreadLog ? new MultiThreadListenerConsole(color) : this)
+					: null;
+			StopWatch sw = new StopWatch();
+			try (HDT hdt = HDTManager.mapHDT(hdtOutput, listenerConsole, spec)) {
+				HDTManager.indexedHDT(hdt, listenerConsole, spec);
+			}
+			colorTool.logValue("Index generated and saved in ", sw.stopAndShow());
+			return;
+		} else if (noRecreate) {
+			colorTool.warn("Output HDT not found, ignoring -no-recreate.");
 		}
 		if (baseURI == null) {
 			String input = rdfInput.toLowerCase();
