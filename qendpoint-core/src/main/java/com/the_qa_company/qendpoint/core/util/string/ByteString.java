@@ -1,5 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.string;
 
+import java.util.Arrays;
+
 /**
  * ByteString char sequence, can't be compared with string, faster than string
  * with IO
@@ -48,31 +50,52 @@ public interface ByteString extends CharSequence, Comparable<ByteString> {
 	 */
 	@Override
 	default int compareTo(ByteString other) {
-		int n = Math.min(length(), other.length());
-		int k = 0;
-		while (k < n) {
-			char c1 = charAt(k);
-			char c2 = other.charAt(k);
-			if (c1 != c2) {
-				return c1 - c2;
-			}
-			k++;
+		if (this == other) {
+			return 0;
+
 		}
-		return length() - other.length();
+
+		// Cache lengths once (avoid repeated virtual calls in hot loops)
+		final int len1 = this.length();
+		final int len2 = other.length();
+		final int n = Math.min(len1, len2);
+
+		// Grab backing arrays once
+		final byte[] a = this.getBuffer();
+		final byte[] b = other.getBuffer();
+
+		// HotSpot intrinsic on Java 9+: vectorized/word-at-a-time mismatch
+		// search
+		final int mismatch = Arrays.mismatch(a, 0, n, b, 0, n);
+		if (mismatch >= 0) {
+			// IMPORTANT: unsigned compare to match your charAt() semantics
+			// (0..255)
+			return (a[mismatch] & 0xFF) - (b[mismatch] & 0xFF);
+		}
+
+		// All equal up to min length => shorter one is "smaller"
+		return len1 - len2;
 	}
 
 	default int compareTo(CharSequence other) {
-		int n = Math.min(length(), other.length());
-		int k = 0;
-		while (k < n) {
-			char c1 = charAt(k);
-			char c2 = other.charAt(k);
+		// Fast path when the "CharSequence" is actually a ByteString
+		if (other instanceof ByteString bs) {
+			return compareTo(bs);
+		}
+
+		// Fallback: generic CharSequence compare
+		final int len1 = length();
+		final int len2 = other.length();
+		final int n = Math.min(len1, len2);
+
+		for (int i = 0; i < n; i++) {
+			final char c1 = charAt(i);
+			final char c2 = other.charAt(i);
 			if (c1 != c2) {
 				return c1 - c2;
 			}
-			k++;
 		}
-		return length() - other.length();
+		return len1 - len2;
 	}
 
 	@Override

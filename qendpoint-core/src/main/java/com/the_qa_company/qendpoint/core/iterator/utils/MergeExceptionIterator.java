@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.iterator.utils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -139,9 +140,11 @@ public class MergeExceptionIterator<T, E extends Exception> implements Exception
 		if (length == 1) {
 			return itFunction.apply(start, array.get(start));
 		}
-		int mid = (start + end) / 2;
-		return new MergeExceptionIterator<>(buildOfTree(itFunction, comp, array, start, mid),
-				buildOfTree(itFunction, comp, array, mid, end), comp);
+		ArrayList<ExceptionIterator<T, E>> iterators = new ArrayList<>(length);
+		for (int i = start; i < end; i++) {
+			iterators.add(itFunction.apply(i, array.get(i)));
+		}
+		return LoserTreeMergeExceptionIterator.merge(iterators, comp);
 	}
 
 	private final ExceptionIterator<T, E> in1, in2;
