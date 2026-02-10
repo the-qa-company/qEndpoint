@@ -59,7 +59,7 @@ public class LoserTreeMergeExceptionIterator<T, E extends Exception> implements 
 		}
 
 		if (Thread.currentThread().isInterrupted()) {
-			return false;
+			throw new RuntimeException("LosserTreeMergeExceptionIterator was interrupted, merging was not completed!");
 		}
 
 		// Fast-path: check initialization

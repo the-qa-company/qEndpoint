@@ -69,9 +69,17 @@ public final class IteratorChunkedSource<E> implements ExceptionSupplier<SizedSu
 				}
 			}
 
-			bufferSize = Math.min(32 * 1024 * 1023, Math.max(bufferSize, buffer.size()));
+			// We want to predict the buffer size so that we don't need to
+			// resize the array list, while capping it at a reasonable maximum
+			// to avoid OOM errors. The prediction is shared across all
+			// instances of IteratorChunkedSource and reset when we reach the
+			// end of an iterator to allow it to shrink as well.
+			bufferSize = Math.min(32 * 1024 * 1024, Math.max(bufferSize, buffer.size()));
 
 			if (buffer.isEmpty()) {
+				// We reset the predicted buffer size once we reach the end of
+				// the iterator to allow the prediction to also shrink.
+				bufferSize = 4;
 				end = true;
 				return null;
 			}
