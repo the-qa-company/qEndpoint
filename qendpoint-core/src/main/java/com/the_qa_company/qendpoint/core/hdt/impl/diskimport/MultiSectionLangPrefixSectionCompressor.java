@@ -17,7 +17,32 @@ public class MultiSectionLangPrefixSectionCompressor extends SectionCompressor {
 	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName,
 			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
 			int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec, CompressionType compressionType) {
-		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
+		this(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, spec, compressionType,
+				Integer.MAX_VALUE);
+	}
+
+	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName,
+			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
+			int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec, CompressionType compressionType,
+			int maxConcurrentMerges) {
+		super(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType,
+				maxConcurrentMerges);
+		this.prefixes = new PrefixesStorage();
+		this.prefixes.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
+	}
+
+	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName, MultiThreadListener listener,
+			int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec,
+			CompressionType compressionType) {
+		this(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, spec, compressionType,
+				Integer.MAX_VALUE);
+	}
+
+	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName, MultiThreadListener listener,
+			int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec,
+			CompressionType compressionType, int maxConcurrentMerges) {
+		super(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType,
+				maxConcurrentMerges);
 		this.prefixes = new PrefixesStorage();
 		this.prefixes.loadConfig(spec.get(HDTOptionsKeys.LOADER_PREFIXES));
 	}

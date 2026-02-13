@@ -210,6 +210,11 @@ public class DictionaryFactory {
 			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
 			int k, boolean debugSleepKwayDict, CompressionType compressionType) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
+		int mergeConcurrency = (int) Math.max(4,
+				Math.min(Integer.MAX_VALUE,
+						spec.getInt(HDTOptionsKeys.LOADER_DISK_MERGE_CONCURRENCY_KEY,
+								() -> spec.getInt(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY,
+										Runtime.getRuntime()::availableProcessors))));
 
 		// use the same compressor for quad/triple dict types
 		boolean quad = isQuadDictionary(name);
@@ -219,16 +224,47 @@ public class DictionaryFactory {
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
 			new SectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad,
-					compressionType);
-		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
-				source, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType);
+					compressionType, mergeConcurrency);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS ->
+			new MultiSectionSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
+					debugSleepKwayDict, quad, compressionType, mergeConcurrency);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
 				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
 			new MultiSectionLangSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
-					debugSleepKwayDict, quad, compressionType);
+					debugSleepKwayDict, quad, compressionType, mergeConcurrency);
 		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
 			new MultiSectionLangPrefixSectionCompressor(baseFileName, source, listener, bufferSize, chunkSize, k,
-					debugSleepKwayDict, quad, spec, compressionType);
+					debugSleepKwayDict, quad, spec, compressionType, mergeConcurrency);
+		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
+		};
+	}
+
+	public static SectionCompressor createSectionCompressorPull(HDTOptions spec, CloseSuppressPath baseFileName,
+			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
+			CompressionType compressionType) {
+		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
+		int mergeConcurrency = (int) Math.max(4,
+				Math.min(Integer.MAX_VALUE,
+						spec.getInt(HDTOptionsKeys.LOADER_DISK_MERGE_CONCURRENCY_KEY,
+								() -> spec.getInt(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY,
+										Runtime.getRuntime()::availableProcessors))));
+		boolean quad = isQuadDictionary(name);
+
+		return switch (name) {
+		case "", HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_SECTION_BIG,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_FOUR_QUAD_SECTION ->
+			new SectionCompressor(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad,
+					compressionType, mergeConcurrency);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS -> new MultiSectionSectionCompressor(baseFileName,
+				listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType, mergeConcurrency);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG,
+				HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_QUAD ->
+			new MultiSectionLangSectionCompressor(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict,
+					quad, compressionType, mergeConcurrency);
+		case HDTOptionsKeys.DICTIONARY_TYPE_VALUE_MULTI_OBJECTS_LANG_PREFIXES ->
+			new MultiSectionLangPrefixSectionCompressor(baseFileName, listener, bufferSize, chunkSize, k,
+					debugSleepKwayDict, quad, spec, compressionType, mergeConcurrency);
 		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
 		};
 	}

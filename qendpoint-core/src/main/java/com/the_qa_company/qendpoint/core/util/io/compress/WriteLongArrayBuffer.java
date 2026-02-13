@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.util.io.compress;
 
 import com.the_qa_company.qendpoint.core.util.BitUtil;
+import com.the_qa_company.qendpoint.core.compact.sequence.SequenceLog64BigDisk;
 import com.the_qa_company.qendpoint.core.util.disk.LongArray;
 
 import java.io.Closeable;
@@ -144,6 +145,25 @@ public class WriteLongArrayBuffer implements LongArray, Closeable {
 		}
 		// check for flush
 		checkConsistency();
+	}
+
+	public void set(long[] indexes, long[] values, int offset, int length) {
+		if (length == 0) {
+			return;
+		}
+		if (DISABLE_BUFFER) {
+			if (array instanceof SequenceLog64BigDisk sequence) {
+				sequence.set(indexes, values, offset, length);
+				return;
+			}
+			for (int i = offset; i < offset + length; i++) {
+				array.set(indexes[i], values[i]);
+			}
+			return;
+		}
+		for (int i = offset; i < offset + length; i++) {
+			set(indexes[i], values[i]);
+		}
 	}
 
 	/**
