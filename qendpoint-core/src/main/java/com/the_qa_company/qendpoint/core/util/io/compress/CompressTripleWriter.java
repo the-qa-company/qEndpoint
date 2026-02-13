@@ -38,7 +38,7 @@ public class CompressTripleWriter implements Closeable {
 	 * write a indexed triple into an output
 	 *
 	 * @param triple the triple to write
-	 * @throws java.io.IOException write exception
+	 * @throws IOException write exception
 	 */
 	public void appendTriple(IndexedTriple triple) throws IOException {
 		VByte.encode(out, triple.getSubject().getIndex());
@@ -53,7 +53,7 @@ public class CompressTripleWriter implements Closeable {
 	 * write a indexed triple into an output
 	 *
 	 * @param triple the triple to write
-	 * @throws java.io.IOException write exception
+	 * @throws IOException write exception
 	 */
 	public void appendTriple(TripleID triple) throws IOException {
 		VByte.encode(out, triple.getSubject());

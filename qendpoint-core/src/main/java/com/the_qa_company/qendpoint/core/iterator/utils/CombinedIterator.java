@@ -18,7 +18,7 @@ public class CombinedIterator<T> implements Iterator<T> {
 	 * @param iterators iterators
 	 * @param <T>       iterator type
 	 * @return iterator
-	 * @throws java.lang.NullPointerException if iterators is null
+	 * @throws NullPointerException if iterators is null
 	 */
 	public static <T> Iterator<T> combine(List<Iterator<T>> iterators) {
 		Objects.requireNonNull(iterators, "iterators can't be null");

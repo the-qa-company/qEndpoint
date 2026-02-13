@@ -261,7 +261,7 @@ public class SimpleLiteralHDT implements Literal, HDTValue {
 	 * Returns the label of the literal with its language or datatype. Note that
 	 * this method does not escape the quoted label.
 	 *
-	 * @see org.eclipse.rdf4j.rio.helpers.NTriplesUtil#toNTriplesString(Literal)
+	 * @see NTriplesUtil#toNTriplesString(Literal)
 	 */
 	@Override
 	public String toString() {

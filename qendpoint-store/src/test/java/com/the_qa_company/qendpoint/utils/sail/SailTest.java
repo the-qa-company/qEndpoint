@@ -347,7 +347,7 @@ public abstract class SailTest {
 		}
 
 		/**
-		 * test if this row match a {@link org.eclipse.rdf4j.query.BindingSet}
+		 * test if this row match a {@link BindingSet}
 		 *
 		 * @param set the set
 		 * @return true if this row match the set, false otherwise

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * dictionary section assuming the {@link #getSortedEntries()} or the
  * {@link #getEntries()} will only be called once, it will return an
- * {@link java.lang.IllegalArgumentException} otherwise.
+ * {@link IllegalArgumentException} otherwise.
  *
  * @author Antoine Willerval
  */

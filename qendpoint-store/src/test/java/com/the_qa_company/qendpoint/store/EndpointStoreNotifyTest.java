@@ -619,7 +619,7 @@ public class EndpointStoreNotifyTest {
 	protected static abstract class AbstractEndpointStoreNotifyTest extends SailTest {
 		/**
 		 * basic tuple function in
-		 * {@link com.the_qa_company.qendpoint.store.EndpointStoreNotifyTest.AbstractEndpointStoreNotifyTest.NotifyTestStore}
+		 * {@link EndpointStoreNotifyTest.AbstractEndpointStoreNotifyTest.NotifyTestStore}
 		 * ?subj ex:testStore "query" will search all subject ?subj containing
 		 * "query" in a literal (no matter the predicate)
 		 */

@@ -19,8 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * helper class to create a {@link org.eclipse.rdf4j.sail.lucene.LuceneSail}
- * linked or not
+ * helper class to create a {@link LuceneSail} linked or not
  *
  * @author Antoine Willerval
  */
@@ -191,9 +190,7 @@ public class LuceneSailBuilder {
 	}
 
 	/**
-	 * build the sail as a
-	 * {@link com.the_qa_company.qendpoint.utils.sail.linked.LinkedSail}, can't
-	 * be called twice.
+	 * build the sail as a {@link LinkedSail}, can't be called twice.
 	 *
 	 * @return the sail
 	 */

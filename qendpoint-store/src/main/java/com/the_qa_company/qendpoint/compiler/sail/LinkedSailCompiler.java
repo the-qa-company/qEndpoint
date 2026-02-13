@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.sail.NotifyingSail;
 
 /**
  * A sail to compile a node, register it with
- * {@link com.the_qa_company.qendpoint.compiler.SailCompiler#registerCustomCompiler(LinkedSailCompiler)}
+ * {@link SailCompiler#registerCustomCompiler(LinkedSailCompiler)}
  *
  * @author Antoine Willerval
  */

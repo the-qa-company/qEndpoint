@@ -3,8 +3,8 @@ package com.the_qa_company.qendpoint.core.util.string;
 import java.util.stream.IntStream;
 
 /**
- * CharSequence wrapper throwing an {@link java.lang.AssertionError} if we try
- * to read before the minimum index
+ * CharSequence wrapper throwing an {@link AssertionError} if we try to read
+ * before the minimum index
  */
 public class AssertionCharSequence implements ByteString {
 	private final ByteString sequence;

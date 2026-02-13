@@ -13,9 +13,7 @@ import org.eclipse.rdf4j.model.Value;
 import java.util.Iterator;
 
 /**
- * implementation of
- * {@link com.the_qa_company.qendpoint.compiler.TripleSourceModel} to query
- * {@link org.eclipse.rdf4j.model.Model}
+ * implementation of {@link TripleSourceModel} to query {@link Model}
  *
  * @author Antoine Willerval
  */

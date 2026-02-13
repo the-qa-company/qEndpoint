@@ -21,8 +21,7 @@ public class MapIterator<T, R> implements Iterator<R> {
 	 *
 	 * @param iterator the iterator to map
 	 * @param function the function to map the iterator
-	 * @throws java.lang.NullPointerException if the iterator or the function is
-	 *                                        null
+	 * @throws NullPointerException if the iterator or the function is null
 	 */
 	public MapIterator(Iterator<T> iterator, Function<T, R> function) {
 		this.it = Objects.requireNonNull(iterator, "iterator can't be null!");

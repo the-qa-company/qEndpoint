@@ -20,6 +20,8 @@
 package com.the_qa_company.qendpoint.core.triples;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Comparator;
 
@@ -166,7 +168,7 @@ public class TripleIDComparator implements Comparator<TripleID>, Serializable {
 	 * method for serialization of an instance of this class as specified by
 	 * Serializable
 	 */
-	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+	private void writeObject(ObjectOutputStream out) throws IOException {
 		out.defaultWriteObject();
 	}
 
@@ -174,7 +176,7 @@ public class TripleIDComparator implements Comparator<TripleID>, Serializable {
 	 * method for deserialization of an instance of this class as specified by
 	 * Serializable
 	 */
-	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
 	}
 }

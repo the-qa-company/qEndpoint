@@ -102,7 +102,7 @@ public class KCatMerger implements AutoCloseable {
 	 * @param dictionaryType dictionary type
 	 * @param quad           quad
 	 * @param spec           spec to config the HDT
-	 * @throws java.io.IOException io exception
+	 * @throws IOException io exception
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
 			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec) throws IOException {
@@ -121,7 +121,7 @@ public class KCatMerger implements AutoCloseable {
 	 * @param quad            quad
 	 * @param spec            spec to config the HDT
 	 * @param prefixesStorage prefixes
-	 * @throws java.io.IOException io exception
+	 * @throws IOException io exception
 	 */
 	public KCatMerger(HDT[] hdts, BitmapTriple[] deletedTriple, CloseSuppressPath location, ProgressListener listener,
 			int bufferSize, String dictionaryType, boolean quad, HDTOptions spec, PrefixesStorage prefixesStorage)

@@ -13,9 +13,7 @@ import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 
 /**
- * implementation of
- * {@link com.the_qa_company.qendpoint.compiler.TripleSourceModel} to query
- * {@link org.eclipse.rdf4j.sail.Sail}
+ * implementation of {@link TripleSourceModel} to query {@link Sail}
  *
  * @author Antoine Willerval
  */

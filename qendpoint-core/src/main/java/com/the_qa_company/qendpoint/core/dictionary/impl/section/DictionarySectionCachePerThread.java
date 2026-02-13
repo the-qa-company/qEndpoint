@@ -45,7 +45,7 @@ public class DictionarySectionCachePerThread implements DictionarySectionPrivate
 	private ThreadLocal<Map<CharSequence, Long>> cacheString = new ThreadLocal<Map<CharSequence, Long>>() {
 		@SuppressWarnings("serial")
 		@Override
-		protected java.util.Map<CharSequence, Long> initialValue() {
+		protected Map<CharSequence, Long> initialValue() {
 			return new LinkedHashMap<CharSequence, Long>(CACHE_ENTRIES + 1, .75F, true) {
 				// This method is called just after a new entry has been added
 				@Override
@@ -59,7 +59,7 @@ public class DictionarySectionCachePerThread implements DictionarySectionPrivate
 	private ThreadLocal<Map<Long, CharSequence>> cacheID = new ThreadLocal<Map<Long, CharSequence>>() {
 		@SuppressWarnings("serial")
 		@Override
-		protected java.util.Map<Long, CharSequence> initialValue() {
+		protected Map<Long, CharSequence> initialValue() {
 			return new LinkedHashMap<Long, CharSequence>(CACHE_ENTRIES + 1, .75F, true) {
 				// This method is called just after a new entry has been added
 				@Override
