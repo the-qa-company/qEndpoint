@@ -19,6 +19,6 @@ public class PrefixMultiThreadListener implements MultiThreadListener {
 
 	@Override
 	public void notifyProgress(String thread, float level, String message) {
-		progressListener.notifyProgress(level, "[" + thread + "]" + message);
+		progressListener.notifyProgress(level, "[{}]{}", thread, message);
 	}
 }

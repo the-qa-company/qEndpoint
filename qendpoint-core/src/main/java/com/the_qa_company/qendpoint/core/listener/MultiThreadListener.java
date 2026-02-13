@@ -14,7 +14,17 @@ public interface MultiThreadListener extends ProgressListener {
 		if (listener == null) {
 			return null;
 		}
-		return (thread, level, message) -> listener.notifyProgress(level, message);
+		return new MultiThreadListener() {
+			@Override
+			public void notifyProgress(String thread, float level, String message) {
+				listener.notifyProgress(level, message);
+			}
+
+			@Override
+			public void notifyProgress(String thread, float level, ProgressMessage message) {
+				listener.notifyProgress(level, message);
+			}
+		};
 	}
 
 	/**
@@ -26,6 +36,14 @@ public interface MultiThreadListener extends ProgressListener {
 		return new MultiThreadListener() {
 			@Override
 			public void notifyProgress(String thread, float level, String message) {
+			}
+
+			@Override
+			public void notifyProgress(String thread, float level, ProgressMessage message) {
+			}
+
+			@Override
+			public void notifyProgress(String thread, float level, String template, Object... args) {
 			}
 
 			@Override
@@ -75,6 +93,39 @@ public interface MultiThreadListener extends ProgressListener {
 		notifyProgress(Thread.currentThread().getName(), level, message);
 	}
 
+	@Override
+	default void notifyProgress(float level, ProgressMessage message) {
+		notifyProgress(Thread.currentThread().getName(), level, message);
+	}
+
+	@Override
+	default void notifyProgress(float level, String template, Object... args) {
+		notifyProgress(Thread.currentThread().getName(), level, template, args);
+	}
+
+	/**
+	 * Send progress notification
+	 *
+	 * @param thread  thread name
+	 * @param level   percent of the task accomplished
+	 * @param message Lazy message
+	 */
+	default void notifyProgress(String thread, float level, ProgressMessage message) {
+		notifyProgress(thread, level, message.render());
+	}
+
+	/**
+	 * Send progress notification using a lightweight template.
+	 *
+	 * @param thread   thread name
+	 * @param level    percent of the task accomplished
+	 * @param template Message template
+	 * @param args     Template arguments
+	 */
+	default void notifyProgress(String thread, float level, String template, Object... args) {
+		notifyProgress(thread, level, ProgressMessage.format(template, args));
+	}
+
 	/**
 	 * unregister all the thread
 	 */
@@ -110,10 +161,19 @@ public interface MultiThreadListener extends ProgressListener {
 		if (listener == null) {
 			return this;
 		}
-		return ((thread, level, message) -> {
-			MultiThreadListener.this.notifyProgress(thread, level, message);
-			listener.notifyProgress(thread, level, message);
-		});
+		return new MultiThreadListener() {
+			@Override
+			public void notifyProgress(String thread, float level, String message) {
+				MultiThreadListener.this.notifyProgress(thread, level, message);
+				listener.notifyProgress(thread, level, message);
+			}
+
+			@Override
+			public void notifyProgress(String thread, float level, ProgressMessage message) {
+				MultiThreadListener.this.notifyProgress(thread, level, message);
+				listener.notifyProgress(thread, level, message);
+			}
+		};
 	}
 
 	@Override

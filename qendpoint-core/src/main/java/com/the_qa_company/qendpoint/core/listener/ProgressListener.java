@@ -39,6 +39,14 @@ public interface ProgressListener {
 			}
 
 			@Override
+			public void notifyProgress(float level, ProgressMessage message) {
+			}
+
+			@Override
+			public void notifyProgress(float level, String template, Object... args) {
+			}
+
+			@Override
 			public ProgressListener combine(ProgressListener listener) {
 				if (listener == null) {
 					return this;
@@ -74,6 +82,27 @@ public interface ProgressListener {
 	void notifyProgress(float level, String message);
 
 	/**
+	 * Send progress notification lazily.
+	 *
+	 * @param level   percent of the task accomplished
+	 * @param message Lazy message
+	 */
+	default void notifyProgress(float level, ProgressMessage message) {
+		notifyProgress(level, message.render());
+	}
+
+	/**
+	 * Send progress notification using a lightweight template.
+	 *
+	 * @param level    percent of the task accomplished
+	 * @param template Message template
+	 * @param args     Template arguments
+	 */
+	default void notifyProgress(float level, String template, Object... args) {
+		notifyProgress(level, ProgressMessage.format(template, args));
+	}
+
+	/**
 	 * combine a listener with another one into a new listener
 	 *
 	 * @param listener the listener
@@ -83,10 +112,19 @@ public interface ProgressListener {
 		if (listener == null) {
 			return this;
 		}
-		return ((level, message) -> {
-			ProgressListener.this.notifyProgress(level, message);
-			listener.notifyProgress(level, message);
-		});
+		return new ProgressListener() {
+			@Override
+			public void notifyProgress(float level, String message) {
+				ProgressListener.this.notifyProgress(level, message);
+				listener.notifyProgress(level, message);
+			}
+
+			@Override
+			public void notifyProgress(float level, ProgressMessage message) {
+				ProgressListener.this.notifyProgress(level, message);
+				listener.notifyProgress(level, message);
+			}
+		};
 	}
 
 	default ProgressListener sub(float min, float max) {
