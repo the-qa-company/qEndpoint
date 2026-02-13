@@ -8,7 +8,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.OutputStream;
-import java.lang.reflect.Constructor;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -160,19 +159,13 @@ public class KWayMergerMergeConcurrencyTest {
 	private static <E, S extends Supplier<E>> KWayMerger<E, S> newMerger(CloseSuppressPath workLocation,
 			AsyncIteratorFetcher<E> fetcher, KWayMerger.KWayMergerImpl<E, S> impl, int workers, int k,
 			int maxConcurrentMerges) throws Exception {
-		Constructor<KWayMerger> ctor = KWayMerger.class.getConstructor(CloseSuppressPath.class,
-				AsyncIteratorFetcher.class, KWayMerger.KWayMergerImpl.class, int.class, int.class, int.class);
-		return (KWayMerger<E, S>) ctor.newInstance(workLocation, fetcher, impl, workers, k, maxConcurrentMerges);
+		return new KWayMerger<>(workLocation, fetcher, impl, workers, k, maxConcurrentMerges);
 	}
 
 	@SuppressWarnings("unchecked")
 	private static <E, S extends Supplier<E>> KWayMergerChunked<E, S> newChunkedMerger(CloseSuppressPath workLocation,
 			ExceptionSupplier<S, java.io.IOException> chunkSupplier, KWayMergerChunked.KWayMergerChunkedImpl<E, S> impl,
 			int workers, int k, int maxConcurrentMerges) throws Exception {
-		Constructor<KWayMergerChunked> ctor = KWayMergerChunked.class.getConstructor(CloseSuppressPath.class,
-				ExceptionSupplier.class, KWayMergerChunked.KWayMergerChunkedImpl.class, int.class, int.class,
-				int.class);
-		return (KWayMergerChunked<E, S>) ctor.newInstance(workLocation, chunkSupplier, impl, workers, k,
-				maxConcurrentMerges);
+		return new KWayMergerChunked<>(workLocation, chunkSupplier, impl, workers, k, maxConcurrentMerges);
 	}
 }

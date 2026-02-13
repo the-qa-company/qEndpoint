@@ -4,39 +4,24 @@ import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 public class RDFParserRIOTParallelSupportTest {
 	@Test
-	public void concurrentInputStreamClassesExist() throws Exception {
-		assertClassExists("com.the_qa_company.qendpoint.core.rdf.parsers.ConcurrentInputStream");
-		assertClassExists("com.the_qa_company.qendpoint.core.rdf.parsers.ChunkedConcurrentInputStream");
-		assertClassExists("com.the_qa_company.qendpoint.core.rdf.parsers.TurtleChunker");
+	public void concurrentInputStreamClassesExist() {
+		assertNotNull(ConcurrentInputStream.class);
+		assertNotNull(ChunkedConcurrentInputStream.class);
+		assertNotNull(TurtleChunker.class);
 	}
 
 	@Test
 	public void riotParserSupportsParallelDoParse() throws Exception {
-		Class<?> cls = Class.forName("com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserRIOT");
-		Method method;
-		try {
-			method = cls.getMethod("doParse", InputStream.class, String.class, RDFNotation.class, boolean.class,
-					RDFParserCallback.RDFCallback.class, boolean.class);
-		} catch (NoSuchMethodException e) {
-			fail("Missing parallel doParse overload on RDFParserRIOT");
-			return;
-		}
-		assertNotNull(method);
-	}
-
-	private static void assertClassExists(String name) {
-		try {
-			Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			fail("Missing class " + name);
-		}
+		RDFParserRIOT parser = new RDFParserRIOT();
+		InputStream input = new ByteArrayInputStream(new byte[0]);
+		RDFParserCallback.RDFCallback callback = (triple, pos) -> {};
+		parser.doParse(input, "http://example.org/base", RDFNotation.NTRIPLES, true, callback, true);
 	}
 }

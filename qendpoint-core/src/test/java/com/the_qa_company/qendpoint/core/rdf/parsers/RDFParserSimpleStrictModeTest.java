@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +51,7 @@ public class RDFParserSimpleStrictModeTest {
 	}
 
 	private static RDFParserSimple newStrictParser() throws Exception {
-		Constructor<RDFParserSimple> ctor = RDFParserSimple.class.getConstructor(boolean.class);
-		return ctor.newInstance(true);
+		return new RDFParserSimple(true);
 	}
 
 	private static void assertJenaStrictAccepts(String data) {
