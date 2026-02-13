@@ -3,7 +3,7 @@ package com.the_qa_company.qendpoint.core.util.nsd;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
-import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
+import com.the_qa_company.qendpoint.core.util.io.CRCStopBitInputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 
 import java.io.IOException;
@@ -22,7 +22,7 @@ public class NSDReader10 implements NSDBinaryReader {
 
 	@Override
 	public void readData(NamespaceData data, InputStream stream, ProgressListener ls) throws IOException {
-		CRCInputStream is = new CRCInputStream(stream, new CRC32());
+		CRCStopBitInputStream is = new CRCStopBitInputStream(stream, new CRC32());
 		long count = VByte.decode(is);
 
 		if (count < 0) {

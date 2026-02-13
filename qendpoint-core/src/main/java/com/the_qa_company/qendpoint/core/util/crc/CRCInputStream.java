@@ -65,7 +65,9 @@ public class CRCInputStream extends FilterInputStream {
 	@Override
 	public int read() throws IOException {
 		int val = in.read();
-		crc.update((byte) (val & 0xFF));
+		if (val >= 0) {
+			crc.update((byte) val);
+		}
 		return val;
 	}
 
