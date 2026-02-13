@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -23,15 +23,18 @@ import java.util.stream.Collectors;
 public class KWayMerger<E, S extends Supplier<E>> {
 	private static final AtomicInteger ID = new AtomicInteger();
 	private final int k;
+	private final int maxConcurrentMerges;
 	private final AsyncIteratorFetcher<E> iteratorFetcher;
 	private final KWayMergerImpl<E, S> impl;
 	private final Worker[] workers;
 	private final AtomicLong pathId = new AtomicLong();
 	private final CloseSuppressPath workLocation;
-	private final Lock dataLock = new ReentrantLock();
+	private final ReentrantLock dataLock = new ReentrantLock();
+	private final Condition taskAvailable = dataLock.newCondition();
 	private boolean started;
 	private boolean end;
 	private final HeightTree<Chunk> chunks = new HeightTree<>();
+	private int activeMerges;
 	private Throwable throwable;
 
 	/**
@@ -46,10 +49,28 @@ public class KWayMerger<E, S extends Supplier<E>> {
 	 */
 	public KWayMerger(CloseSuppressPath workLocation, AsyncIteratorFetcher<E> syncSupplier, KWayMergerImpl<E, S> impl,
 			int workers, int k) throws KWayMergerException {
+		this(workLocation, syncSupplier, impl, workers, k, workers);
+	}
+
+	/**
+	 * kwaymerger with a configurable limit on concurrent merge tasks.
+	 *
+	 * @param workLocation        location to store the chunks
+	 * @param syncSupplier        the element supplier
+	 * @param impl                implementation of {@link KWayMergerImpl} to
+	 *                            create/handle the chunks
+	 * @param workers             the number of worker threads
+	 * @param k                   the k in the k-way merge
+	 * @param maxConcurrentMerges maximum number of merge tasks to run
+	 *                            concurrently
+	 */
+	public KWayMerger(CloseSuppressPath workLocation, AsyncIteratorFetcher<E> syncSupplier, KWayMergerImpl<E, S> impl,
+			int workers, int k, int maxConcurrentMerges) throws KWayMergerException {
 		this.workLocation = workLocation;
 		this.iteratorFetcher = syncSupplier;
 		this.impl = impl;
 		this.k = k;
+		this.maxConcurrentMerges = Math.max(1, maxConcurrentMerges);
 
 		try {
 			workLocation.mkdirs();
@@ -181,23 +202,38 @@ public class KWayMerger<E, S extends Supplier<E>> {
 	private KWayMergerRunnable getTask() {
 		dataLock.lock();
 		try {
-			if (end) {
-				if (chunks.size() <= 1) {
-					return null;
+			while (true) {
+				if (end) {
+					if (chunks.size() <= 1) {
+						return null;
+					}
+
+					if (activeMerges < maxConcurrentMerges) {
+						List<Chunk> all = chunks.getAll(k);
+						activeMerges++;
+						return new MergeTask(all);
+					}
+
+					try {
+						taskAvailable.await();
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return null;
+					}
+					continue;
 				}
 
-				List<Chunk> all = chunks.getAll(k);
+				if (activeMerges < maxConcurrentMerges) {
+					List<Chunk> chunkList = chunks.getMax(k);
 
-				return new MergeTask(all);
+					if (chunkList != null) {
+						activeMerges++;
+						return new MergeTask(chunkList);
+					}
+				}
+
+				return new GetTask();
 			}
-
-			List<Chunk> chunkList = chunks.getMax(k);
-
-			if (chunkList != null) {
-				return new MergeTask(chunkList);
-			}
-
-			return new GetTask();
 		} finally {
 			dataLock.unlock();
 		}
@@ -213,21 +249,55 @@ public class KWayMerger<E, S extends Supplier<E>> {
 
 		@Override
 		public void run() throws KWayMergerException {
-			int chunk = chunks.stream().mapToInt(Chunk::getHeight).max().orElseThrow() + 1;
-			CloseSuppressPath mergec = getPath();
-			List<CloseSuppressPath> paths = chunks.stream().map(Chunk::getPath)
-					.collect(Collectors.toUnmodifiableList());
-			impl.mergeChunks(paths, mergec);
 			try {
-				IOUtil.closeAll(paths);
-			} catch (IOException e) {
-				throw new KWayMergerException("Can't close end merge files", e);
-			}
-			dataLock.lock();
-			try {
-				KWayMerger.this.chunks.addElement(new Chunk(chunk, mergec), chunk);
+				int chunk = chunks.stream().mapToInt(Chunk::getHeight).max().orElseThrow() + 1;
+				CloseSuppressPath mergec = getPath();
+				List<CloseSuppressPath> paths = chunks.stream().map(Chunk::getPath)
+						.collect(Collectors.toUnmodifiableList());
+				KWayMergerException mergeException = null;
+				RuntimeException runtimeException = null;
+				Error error = null;
+				try {
+					impl.mergeChunks(paths, mergec);
+				} catch (KWayMergerException e) {
+					mergeException = e;
+					throw e;
+				} catch (RuntimeException e) {
+					runtimeException = e;
+					throw e;
+				} catch (Error e) {
+					error = e;
+					throw e;
+				} finally {
+					try {
+						IOUtil.closeAll(paths);
+					} catch (IOException closeException) {
+						if (mergeException != null) {
+							mergeException.addSuppressed(closeException);
+						} else if (runtimeException != null) {
+							runtimeException.addSuppressed(closeException);
+						} else if (error != null) {
+							error.addSuppressed(closeException);
+						} else {
+							throw new KWayMergerException("Can't close end merge files", closeException);
+						}
+					}
+				}
+				dataLock.lock();
+				try {
+					KWayMerger.this.chunks.addElement(new Chunk(chunk, mergec), chunk);
+					taskAvailable.signalAll();
+				} finally {
+					dataLock.unlock();
+				}
 			} finally {
-				dataLock.unlock();
+				dataLock.lock();
+				try {
+					activeMerges--;
+					taskAvailable.signalAll();
+				} finally {
+					dataLock.unlock();
+				}
 			}
 		}
 	}
@@ -244,6 +314,7 @@ public class KWayMerger<E, S extends Supplier<E>> {
 				end = iteratorFetcher.isEnd();
 				Chunk newChunk = new Chunk(1, chunk);
 				chunks.addElement(newChunk, newChunk.getHeight());
+				taskAvailable.signalAll();
 			} finally {
 				dataLock.unlock();
 			}

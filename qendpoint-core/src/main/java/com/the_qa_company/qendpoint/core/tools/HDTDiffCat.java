@@ -15,6 +15,7 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
+import com.the_qa_company.qendpoint.core.rdf.parsers.RDFParserRIOT;
 import com.the_qa_company.qendpoint.core.triples.IteratorTripleString;
 import com.the_qa_company.qendpoint.core.util.StopWatch;
 import com.the_qa_company.qendpoint.core.util.io.Closer;
@@ -103,7 +104,11 @@ public class HDTDiffCat {
 				}
 			} else {
 				RDFParserCallback parser = RDFParserFactory.getParserCallback(type, spec);
-				parser.doParse(diff, "", type, true, callback);
+				RDFParserCallback.RDFCallback parseCallback = callback;
+				if (parser instanceof RDFParserRIOT) {
+					parseCallback = callback.async();
+				}
+				parser.doParse(diff, "", type, true, parseCallback);
 			}
 		} catch (Throwable t) {
 			try {

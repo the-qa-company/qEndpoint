@@ -4,10 +4,13 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.SizeFetcher;
+import com.the_qa_company.qendpoint.core.iterator.utils.SizedSupplier;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.util.ParallelSortableArrayList;
+import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionSupplier;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
+import com.the_qa_company.qendpoint.core.util.concurrent.KWayMergerChunked;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.io.compress.CompressTripleMergeIterator;
@@ -21,9 +24,11 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<TripleID, SizeFetcher<TripleID>> {
+public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<TripleID, SizedSupplier<TripleID>>,
+		KWayMergerChunked.KWayMergerChunkedImpl<TripleID, SizedSupplier<TripleID>> {
 	private final CloseSuppressPath baseFileName;
-	private final AsyncIteratorFetcher<TripleID> source;
+	private final AsyncIteratorFetcher<TripleID> source; // may be null in
+															// pull-mode
 	private final MultiThreadListener listener;
 	private final int bufferSize;
 	private final long chunkSize;
@@ -45,10 +50,16 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 		this.newOrder = newOrder;
 	}
 
+	public DiskTriplesReorderSorter(CloseSuppressPath baseFileName, MultiThreadListener listener, int bufferSize,
+			long chunkSize, int k, TripleComponentOrder oldOrder, TripleComponentOrder newOrder) {
+		this(baseFileName, null, listener, bufferSize, chunkSize, k, oldOrder, newOrder);
+	}
+
 	@Override
-	public void createChunk(SizeFetcher<TripleID> flux, CloseSuppressPath output)
+	public void createChunk(SizedSupplier<TripleID> flux, CloseSuppressPath output)
 			throws KWayMerger.KWayMergerException {
-		ParallelSortableArrayList<TripleID> pairs = new ParallelSortableArrayList<>(TripleID[].class);
+		int expectedCapacity = (int) Math.min(Integer.MAX_VALUE - 5L, Math.max(16L, chunkSize / (3L * Long.BYTES)));
+		ParallelSortableArrayList<TripleID> pairs = new ParallelSortableArrayList<>(TripleID[].class, expectedCapacity);
 
 		TripleID tid;
 		// loading the pairs
@@ -125,18 +136,45 @@ public class DiskTriplesReorderSorter implements KWayMerger.KWayMergerImpl<Tripl
 	}
 
 	@Override
-	public SizeFetcher<TripleID> newStopFlux(Supplier<TripleID> flux) {
+	public SizedSupplier<TripleID> newStopFlux(Supplier<TripleID> flux) {
 		return SizeFetcher.of(flux, p -> 3 * Long.BYTES, chunkSize);
 	}
 
 	public ExceptionIterator<TripleID, IOException> sort(int workers)
 			throws InterruptedException, IOException, KWayMerger.KWayMergerException {
+		if (source == null) {
+			throw new IllegalStateException("sort(workers) requires a source; use sortPull(...) instead.");
+		}
 		listener.notifyProgress(0, "Triple sort asked in " + baseFileName.toAbsolutePath());
 		// force to create the first file
-		KWayMerger<TripleID, SizeFetcher<TripleID>> merger = new KWayMerger<>(baseFileName, source, this,
+		KWayMerger<TripleID, SizedSupplier<TripleID>> merger = new KWayMerger<>(baseFileName, source, this,
 				Math.max(1, workers - 1), k);
 		merger.start();
 		// wait for the workers to merge the sections and create the triples
+		Optional<CloseSuppressPath> sections = merger.waitResult();
+		if (sections.isEmpty()) {
+			return ExceptionIterator.empty();
+		}
+		CloseSuppressPath path = sections.get();
+		return new CompressTripleReader(path.openInputStream(bufferSize)) {
+			@Override
+			public void close() throws IOException {
+				try {
+					super.close();
+				} finally {
+					IOUtil.closeObject(path);
+				}
+			}
+		};
+	}
+
+	public ExceptionIterator<TripleID, IOException> sortPull(int workers,
+			ExceptionSupplier<SizedSupplier<TripleID>, IOException> chunkSupplier)
+			throws InterruptedException, IOException, KWayMerger.KWayMergerException {
+		listener.notifyProgress(0, "Triple sort asked in " + baseFileName.toAbsolutePath());
+		KWayMergerChunked<TripleID, SizedSupplier<TripleID>> merger = new KWayMergerChunked<>(baseFileName,
+				chunkSupplier, this, Math.max(1, workers - 1), k);
+		merger.start();
 		Optional<CloseSuppressPath> sections = merger.waitResult();
 		if (sections.isEmpty()) {
 			return ExceptionIterator.empty();

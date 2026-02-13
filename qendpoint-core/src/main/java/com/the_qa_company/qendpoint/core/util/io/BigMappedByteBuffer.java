@@ -1,5 +1,6 @@
 package com.the_qa_company.qendpoint.core.util.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.*;
 import java.nio.channels.FileChannel;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class BigMappedByteBuffer {
+public class BigMappedByteBuffer implements Closeable {
 	static long maxBufferSize = Integer.MAX_VALUE;
 
 	/**
@@ -165,6 +166,16 @@ public class BigMappedByteBuffer {
 	 */
 	public BigMappedByteBuffer duplicate() {
 		return new BigMappedByteBuffer(this, b -> new CloseMappedByteBuffer(null, b.duplicate(), true));
+	}
+
+	@Override
+	public void close() {
+		if (parent != null) {
+			return;
+		}
+		for (CloseMappedByteBuffer buffer : buffers) {
+			buffer.close();
+		}
 	}
 
 	/**

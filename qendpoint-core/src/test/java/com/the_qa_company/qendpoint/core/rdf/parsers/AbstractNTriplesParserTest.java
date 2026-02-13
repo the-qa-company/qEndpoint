@@ -32,7 +32,7 @@ public abstract class AbstractNTriplesParserTest {
 	/** Test parsing of escaped unicode characters in IRIs. */
 	@Test
 	public void testIriUnescape() throws Exception {
-		final Node n = NodeFactory.createURI("x\u00c3");
+		final Node n = NodeFactory.createURI("http://example.com/x\u00c3");
 
 		String input = format(CharSpace.ASCII, new Producer() {
 			@Override
@@ -51,8 +51,8 @@ public abstract class AbstractNTriplesParserTest {
 
 	@Test
 	public void testStringUnescape() throws Exception {
-		final Node s = NodeFactory.createURI("x");
-		final Node p = NodeFactory.createURI("y");
+		final Node s = NodeFactory.createURI("http://example.com/x");
+		final Node p = NodeFactory.createURI("http://example.com/y");
 		final Node o1 = NodeFactory.createLiteral("abc\u00c3", "en");
 		final Node o2 = NodeFactory.createLiteral(JenaNodeFormatter.format(o1));
 		final Node o3 = NodeFactory.createLiteral(JenaNodeFormatter.format(o2));

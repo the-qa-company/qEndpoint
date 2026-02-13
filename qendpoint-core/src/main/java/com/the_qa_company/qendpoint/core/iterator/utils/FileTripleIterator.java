@@ -1,9 +1,7 @@
 package com.the_qa_company.qendpoint.core.iterator.utils;
 
 import com.the_qa_company.qendpoint.core.triples.TripleString;
-import com.the_qa_company.qendpoint.core.util.string.ByteString;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -16,11 +14,15 @@ import java.util.Iterator;
  */
 public class FileTripleIterator extends FileChunkIterator<TripleString> {
 	public static long estimateSize(TripleString tripleString) {
-		try {
-			return ByteString.of(tripleString.asNtriple()).getBuffer().length;
-		} catch (IOException e) {
-			throw new RuntimeException("Can't estimate the size of the triple " + tripleString, e);
+		// Approximation used for chunk sizing: cheap and monotonic-ish.
+		long size = tripleString.getSubject().length() + tripleString.getPredicate().length()
+				+ tripleString.getObject().length();
+		CharSequence graph = tripleString.getGraph();
+		if (graph != null && !graph.isEmpty()) {
+			size += graph.length();
 		}
+		// Rough overhead for separators and N-Triples syntax.
+		return size + 16;
 	}
 
 	/**

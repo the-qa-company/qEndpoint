@@ -9,7 +9,10 @@ import com.the_qa_company.qendpoint.core.util.io.compress.PairWriter;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.SizeFetcher;
+import com.the_qa_company.qendpoint.core.iterator.utils.SizedSupplier;
+import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionSupplier;
 import com.the_qa_company.qendpoint.core.util.concurrent.KWayMerger;
+import com.the_qa_company.qendpoint.core.util.concurrent.KWayMergerChunked;
 import com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
 import com.the_qa_company.qendpoint.core.util.listener.IntermediateListener;
@@ -26,9 +29,10 @@ import java.util.function.Supplier;
  *
  * @author Antoine Willerval
  */
-public class DiskIndexSort implements KWayMerger.KWayMergerImpl<Pair, SizeFetcher<Pair>> {
+public class DiskIndexSort implements KWayMerger.KWayMergerImpl<Pair, SizedSupplier<Pair>>,
+		KWayMergerChunked.KWayMergerChunkedImpl<Pair, SizedSupplier<Pair>> {
 	private final CloseSuppressPath baseFileName;
-	private final AsyncIteratorFetcher<Pair> source;
+	private final AsyncIteratorFetcher<Pair> source; // may be null in pull-mode
 	private final MultiThreadListener listener;
 	private final int bufferSize;
 	private final long chunkSize;
@@ -47,9 +51,15 @@ public class DiskIndexSort implements KWayMerger.KWayMergerImpl<Pair, SizeFetche
 		this.comparator = comparator;
 	}
 
+	public DiskIndexSort(CloseSuppressPath baseFileName, MultiThreadListener listener, int bufferSize, long chunkSize,
+			int k, Comparator<Pair> comparator) {
+		this(baseFileName, null, listener, bufferSize, chunkSize, k, comparator);
+	}
+
 	@Override
-	public void createChunk(SizeFetcher<Pair> flux, CloseSuppressPath output) throws KWayMerger.KWayMergerException {
-		ParallelSortableArrayList<Pair> pairs = new ParallelSortableArrayList<>(Pair[].class);
+	public void createChunk(SizedSupplier<Pair> flux, CloseSuppressPath output) throws KWayMerger.KWayMergerException {
+		int expectedCapacity = (int) Math.min(Integer.MAX_VALUE - 5L, Math.max(16L, chunkSize / (3L * Long.BYTES)));
+		ParallelSortableArrayList<Pair> pairs = new ParallelSortableArrayList<>(Pair[].class, expectedCapacity);
 
 		Pair pair;
 		// loading the pairs
@@ -123,7 +133,7 @@ public class DiskIndexSort implements KWayMerger.KWayMergerImpl<Pair, SizeFetche
 	}
 
 	@Override
-	public SizeFetcher<Pair> newStopFlux(Supplier<Pair> flux) {
+	public SizedSupplier<Pair> newStopFlux(Supplier<Pair> flux) {
 		return SizeFetcher.of(flux, p -> 3 * Long.BYTES, chunkSize);
 	}
 
@@ -139,12 +149,39 @@ public class DiskIndexSort implements KWayMerger.KWayMergerImpl<Pair, SizeFetche
 	 */
 	public ExceptionIterator<Pair, IOException> sort(int workers)
 			throws InterruptedException, IOException, KWayMerger.KWayMergerException {
+		if (source == null) {
+			throw new IllegalStateException("sort(workers) requires a source; use sortPull(...) instead.");
+		}
 		listener.notifyProgress(0, "Pair sort asked in " + baseFileName.toAbsolutePath());
 		// force to create the first file
-		KWayMerger<Pair, SizeFetcher<Pair>> merger = new KWayMerger<>(baseFileName, source, this,
+		KWayMerger<Pair, SizedSupplier<Pair>> merger = new KWayMerger<>(baseFileName, source, this,
 				Math.max(1, workers - 1), k);
 		merger.start();
 		// wait for the workers to merge the sections and create the triples
+		Optional<CloseSuppressPath> sections = merger.waitResult();
+		if (sections.isEmpty()) {
+			return ExceptionIterator.empty();
+		}
+		CloseSuppressPath path = sections.get();
+		return new PairReader(path.openInputStream(bufferSize)) {
+			@Override
+			public void close() throws IOException {
+				try {
+					super.close();
+				} finally {
+					IOUtil.closeObject(path);
+				}
+			}
+		};
+	}
+
+	public ExceptionIterator<Pair, IOException> sortPull(int workers,
+			ExceptionSupplier<SizedSupplier<Pair>, IOException> chunkSupplier)
+			throws InterruptedException, IOException, KWayMerger.KWayMergerException {
+		listener.notifyProgress(0, "Pair sort asked in " + baseFileName.toAbsolutePath());
+		KWayMergerChunked<Pair, SizedSupplier<Pair>> merger = new KWayMergerChunked<>(baseFileName, chunkSupplier, this,
+				Math.max(1, workers - 1), k);
+		merger.start();
 		Optional<CloseSuppressPath> sections = merger.waitResult();
 		if (sections.isEmpty()) {
 			return ExceptionIterator.empty();

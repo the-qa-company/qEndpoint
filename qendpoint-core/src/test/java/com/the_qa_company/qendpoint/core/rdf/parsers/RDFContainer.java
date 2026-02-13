@@ -10,7 +10,7 @@ public class RDFContainer implements RDFParserCallback.RDFCallback {
 	private final Set<TripleString> triples = new HashSet<>();
 
 	@Override
-	public void processTriple(TripleString triple, long pos) {
+	synchronized public void processTriple(TripleString triple, long pos) {
 		// clone the triple
 		triples.add(triple.tripleToString());
 	}

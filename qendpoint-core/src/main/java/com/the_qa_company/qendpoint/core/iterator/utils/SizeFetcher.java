@@ -12,7 +12,7 @@ import java.util.function.ToLongFunction;
  *
  * @param <E> supplier type
  */
-public class SizeFetcher<E> implements Supplier<E> {
+public class SizeFetcher<E> implements SizedSupplier<E> {
 	public static SizeFetcher<TripleString> ofTripleString(Supplier<TripleString> supplier, long maxSize) {
 		return of(supplier, FileTripleIterator::estimateSize, maxSize);
 	}
@@ -58,6 +58,7 @@ public class SizeFetcher<E> implements Supplier<E> {
 		return size < maxSize;
 	}
 
+	@Override
 	public long getSize() {
 		return size;
 	}

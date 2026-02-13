@@ -22,7 +22,9 @@ package com.the_qa_company.qendpoint.core.util.string;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.util.io.BigByteBuffer;
@@ -120,12 +122,100 @@ public class ByteStringUtil {
 	}
 
 	public static int longestCommonPrefix(CharSequence str1, CharSequence str2, int from) {
-		int len = Math.min(str1.length(), str2.length());
-		int delta = from;
-		while (delta < len && str1.charAt(delta) == str2.charAt(delta)) {
-			delta++;
+		// Match the style used elsewhere in this util: get rid of lazy wrappers
+		// up front.
+		str1 = DelayedString.unwrap(str1);
+		str2 = DelayedString.unwrap(str2);
+
+		// Preserve old behavior for negative "from":
+		// the old loop would hit charAt(from) and throw from there.
+		if (from < 0) {
+			str1.charAt(from);
 		}
-		return delta - from;
+
+		// Same reference => everything from 'from' matches.
+		if (str1 == str2) {
+			final int len = str1.length();
+			return from >= len ? 0 : (len - from);
+		}
+
+		final int len = Math.min(str1.length(), str2.length());
+		if (from >= len) {
+			return 0;
+		}
+
+		final byte[] a = byteArrayOrNull(str1);
+		final byte[] b = byteArrayOrNull(str2);
+		if (a != null && b != null) {
+			return lcpMismatch(a, b, from, len);
+		}
+
+		if (str1 instanceof CharBuffer cb1 && str2 instanceof CharBuffer cb2 && cb1.hasArray() && cb2.hasArray()) {
+			return charBufMismatch(from, cb1, cb2, len);
+		}
+
+		return fallback(str1, str2, from, len);
+	}
+
+	private static int fallback(CharSequence str1, CharSequence str2, int from, int len) {
+		int i = from;
+		int remaining = len - from;
+
+		while (remaining >= 8) {
+			if (str1.charAt(i) != str2.charAt(i))
+				return i - from;
+			if (str1.charAt(i + 1) != str2.charAt(i + 1))
+				return i + 1 - from;
+			if (str1.charAt(i + 2) != str2.charAt(i + 2))
+				return i + 2 - from;
+			if (str1.charAt(i + 3) != str2.charAt(i + 3))
+				return i + 3 - from;
+			if (str1.charAt(i + 4) != str2.charAt(i + 4))
+				return i + 4 - from;
+			if (str1.charAt(i + 5) != str2.charAt(i + 5))
+				return i + 5 - from;
+			if (str1.charAt(i + 6) != str2.charAt(i + 6))
+				return i + 6 - from;
+			if (str1.charAt(i + 7) != str2.charAt(i + 7))
+				return i + 7 - from;
+
+			i += 8;
+			remaining -= 8;
+		}
+
+		while (remaining-- > 0 && str1.charAt(i) == str2.charAt(i)) {
+			i++;
+		}
+		return i - from;
+	}
+
+	private static int charBufMismatch(int from, CharBuffer cb1, CharBuffer cb2, int len) {
+		final int base1 = cb1.arrayOffset() + cb1.position();
+		final int base2 = cb2.arrayOffset() + cb2.position();
+
+		final int mismatch = Arrays.mismatch(cb1.array(), base1 + from, base1 + len, cb2.array(), base2 + from,
+				base2 + len);
+		return mismatch < 0 ? (len - from) : mismatch;
+	}
+
+	private static byte[] byteArrayOrNull(CharSequence s) {
+		// ReplazableString is explicitly handled in this file already (strcmp),
+		// and gives direct access to its underlying byte[].
+		if (s instanceof ReplazableString rs) {
+			return rs.buffer;
+		}
+		// CompactString implements ByteString in this codebase, so ByteString
+		// covers it too.
+		if (s instanceof ByteString bs) {
+			return bs.getBuffer();
+		}
+		return null;
+	}
+
+	private static int lcpMismatch(byte[] a, byte[] b, int from, int len) {
+		// Range mismatch returns the *relative* mismatch index, or -1 if equal.
+		final int mismatch = Arrays.mismatch(a, from, len, b, from, len);
+		return mismatch < 0 ? (len - from) : mismatch;
 	}
 
 	public static int strcmp(CharSequence str, byte[] buff2, int off2) {

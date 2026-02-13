@@ -16,10 +16,13 @@ import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsFile;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
 import com.the_qa_company.qendpoint.core.options.HDTSpecification;
+import com.the_qa_company.qendpoint.core.rdf.parsers.BlankNodeIdMapper;
+import com.the_qa_company.qendpoint.core.rdf.parsers.NTriplesChunkedSource;
 import com.the_qa_company.qendpoint.core.rdf.RDFFluxStop;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserCallback;
 import com.the_qa_company.qendpoint.core.rdf.RDFParserFactory;
 import com.the_qa_company.qendpoint.core.rdf.TripleWriter;
+import com.the_qa_company.qendpoint.core.iterator.utils.SizedSupplier;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
 import com.the_qa_company.qendpoint.core.util.Profiler;
@@ -40,12 +43,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class HDTManagerImpl extends HDTManager {
 	private static final Logger logger = LoggerFactory.getLogger(HDTManagerImpl.class);
@@ -334,13 +339,23 @@ public class HDTManagerImpl extends HDTManager {
 	@Override
 	public HDTResult doGenerateHDT(InputStream fileStream, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener) throws IOException {
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
+		if (HDTOptionsKeys.LOADER_TYPE_VALUE_DISK.equals(hdtFormat.get(HDTOptionsKeys.LOADER_TYPE_KEY))
+				&& (rdfNotation == RDFNotation.NTRIPLES || rdfNotation == RDFNotation.NQUAD)
+				&& RDFParserFactory.useSimple(hdtFormat)) {
+			try {
+				return doGenerateHDTDisk(fileStream, baseURI, rdfNotation, compressionType, hdtFormat, listener);
+			} catch (ParserException e) {
+				throw new IOException(e);
+			}
+		}
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
 		// create a parser for this rdf stream
-		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation);
+		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
-				true, rdfNotation, hdtFormat)) {
+				keepBNode, rdfNotation, hdtFormat)) {
 			return doGenerateHDT(iterator, baseURI, hdtFormat, listener);
 		}
 	}
@@ -410,10 +425,24 @@ public class HDTManagerImpl extends HDTManager {
 	public HDTResult doGenerateHDTDisk(String rdfFileName, String baseURI, RDFNotation rdfNotation,
 			CompressionType compressionType, HDTOptions hdtFormat, ProgressListener listener)
 			throws IOException, ParserException {
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
 		if (compressionType == CompressionType.NONE) {
+			if ((rdfNotation == RDFNotation.NTRIPLES || rdfNotation == RDFNotation.NQUAD)
+					&& RDFParserFactory.useSimple(hdtFormat)) {
+				if (!IOUtil.isRemoteURL(rdfFileName) && !"-".equals(rdfFileName)) {
+					long chunkBudget = resolveDiskChunkBudget(hdtFormat);
+					try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(Path.of(rdfFileName), rdfNotation,
+							chunkBudget, createBNodeMapper(keepBNode))) {
+						return doGenerateHDTDisk0(asIterator(chunked), false, baseURI, hdtFormat, listener);
+					}
+				}
+				try (InputStream stream = IOUtil.getFileInputStream(rdfFileName, false)) {
+					return doGenerateHDTDisk(stream, baseURI, rdfNotation, compressionType, hdtFormat, listener);
+				}
+			}
 			RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 			try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, rdfFileName,
-					baseURI, true, rdfNotation, hdtFormat)) {
+					baseURI, keepBNode, rdfNotation, hdtFormat)) {
 				return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
 			}
 		}
@@ -428,13 +457,80 @@ public class HDTManagerImpl extends HDTManager {
 			throws IOException, ParserException {
 		// uncompress the stream if required
 		fileStream = IOUtil.asUncompressed(fileStream, compressionType);
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
+		if ((rdfNotation == RDFNotation.NTRIPLES || rdfNotation == RDFNotation.NQUAD)
+				&& RDFParserFactory.useSimple(hdtFormat)) {
+			long chunkBudget = resolveDiskChunkBudget(hdtFormat);
+			try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(fileStream, rdfNotation, chunkBudget,
+					8L * 1024 * 1024, 8192, createBNodeMapper(keepBNode))) {
+				return doGenerateHDTDisk0(asIterator(chunked), false, baseURI, hdtFormat, listener);
+			}
+		}
 		// create a parser for this rdf stream
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(rdfNotation, hdtFormat);
 		// read the stream as triples
 		try (PipedCopyIterator<TripleString> iterator = RDFParserFactory.readAsIterator(parser, fileStream, baseURI,
-				true, rdfNotation, hdtFormat)) {
+				keepBNode, rdfNotation, hdtFormat)) {
 			return doGenerateHDTDisk0(iterator, true, baseURI, hdtFormat, listener);
 		}
+	}
+
+	private static long resolveDiskChunkBudget(HDTOptions hdtFormat) {
+		return hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_CHUNK_SIZE_KEY, HDTManagerImpl::getMaxChunkSize);
+	}
+
+	private static BlankNodeIdMapper createBNodeMapper(boolean keepBNode) {
+		return keepBNode ? null : BlankNodeIdMapper.create();
+	}
+
+	private static Iterator<TripleString> asIterator(NTriplesChunkedSource chunked) {
+		return new Iterator<>() {
+			private SizedSupplier<TripleString> currentChunk;
+			private TripleString next;
+			private boolean finished;
+
+			@Override
+			public boolean hasNext() {
+				pullNext();
+				return next != null;
+			}
+
+			@Override
+			public TripleString next() {
+				pullNext();
+				if (next == null) {
+					throw new NoSuchElementException();
+				}
+				TripleString value = next;
+				next = null;
+				return value;
+			}
+
+			private void pullNext() {
+				if (finished || next != null) {
+					return;
+				}
+				try {
+					while (true) {
+						if (currentChunk == null) {
+							currentChunk = chunked.get();
+							if (currentChunk == null) {
+								finished = true;
+								return;
+							}
+						}
+						TripleString value = currentChunk.get();
+						if (value != null) {
+							next = value.tripleToString();
+							return;
+						}
+						currentChunk = null;
+					}
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}
+		};
 	}
 
 	/**
