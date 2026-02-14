@@ -283,6 +283,16 @@ public class CloseMappedByteBuffer implements Closeable {
 		return buffer.putLong(index, value);
 	}
 
+	public ByteBuffer putLongs(int index, long[] src, int offset, int length) {
+		if (length == 0) {
+			return buffer;
+		}
+		ByteBuffer dup = buffer.duplicate();
+		dup.position(index);
+		dup.asLongBuffer().put(src, offset, length);
+		return buffer;
+	}
+
 	public LongBuffer asLongBuffer() {
 		return buffer.asLongBuffer();
 	}
