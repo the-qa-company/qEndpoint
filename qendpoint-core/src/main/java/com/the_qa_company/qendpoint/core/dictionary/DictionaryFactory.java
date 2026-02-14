@@ -210,11 +210,7 @@ public class DictionaryFactory {
 			AsyncIteratorFetcher<TripleString> source, MultiThreadListener listener, int bufferSize, long chunkSize,
 			int k, boolean debugSleepKwayDict, CompressionType compressionType) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
-		int mergeConcurrency = (int) Math.max(4,
-				Math.min(Integer.MAX_VALUE,
-						spec.getInt(HDTOptionsKeys.LOADER_DISK_MERGE_CONCURRENCY_KEY,
-								() -> spec.getInt(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY,
-										Runtime.getRuntime()::availableProcessors))));
+		int mergeConcurrency = resolveMergeConcurrency(spec);
 
 		// use the same compressor for quad/triple dict types
 		boolean quad = isQuadDictionary(name);
@@ -243,11 +239,7 @@ public class DictionaryFactory {
 			MultiThreadListener listener, int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict,
 			CompressionType compressionType) {
 		String name = spec.get(HDTOptionsKeys.DICTIONARY_TYPE_KEY, "");
-		int mergeConcurrency = (int) Math.max(4,
-				Math.min(Integer.MAX_VALUE,
-						spec.getInt(HDTOptionsKeys.LOADER_DISK_MERGE_CONCURRENCY_KEY,
-								() -> spec.getInt(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY,
-										Runtime.getRuntime()::availableProcessors))));
+		int mergeConcurrency = resolveMergeConcurrency(spec);
 		boolean quad = isQuadDictionary(name);
 
 		return switch (name) {
@@ -267,6 +259,14 @@ public class DictionaryFactory {
 					debugSleepKwayDict, quad, spec, compressionType, mergeConcurrency);
 		default -> throw new IllegalFormatException("Implementation of section compressor not found for " + name);
 		};
+	}
+
+	private static int resolveMergeConcurrency(HDTOptions spec) {
+		return (int) Math.max(1,
+				Math.min(Integer.MAX_VALUE,
+						spec.getInt(HDTOptionsKeys.LOADER_DISK_MERGE_CONCURRENCY_KEY,
+								() -> spec.getInt(HDTOptionsKeys.LOADER_DISK_COMPRESSION_WORKER_KEY,
+										Runtime.getRuntime()::availableProcessors))));
 	}
 
 	/**

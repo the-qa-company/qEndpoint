@@ -185,9 +185,11 @@ public class MultiThreadListenerConsole implements MultiThreadListener {
 
 	public MultiThreadListenerConsole(boolean color, boolean asciiListener) {
 		this.color = color || ALLOW_COLOR_SEQUENCE;
-		threadMessages = new TreeMap<>();
+		threadMessages = asciiListener ? new TreeMap<>() : null;
 		startNanos = System.nanoTime();
-		startRenderThread();
+		if (asciiListener) {
+			startRenderThread();
+		}
 	}
 
 	private void startRenderThread() {
