@@ -116,68 +116,60 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 
 	/**
 	 * mapping method for the subject of the triple, this method should copy the
-	 * sequence!
+	 * sequence if the sequence is not already a ByteString that is unmodifiable
+	 * (like CompactString)
 	 *
 	 * @param seq the subject (before)
 	 * @return the subject mapped
 	 */
 	protected ByteString convertSubject(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return new CompactString(cs);
-		}
-		if (seq instanceof ByteString bs) {
-			return new CompactString(bs);
+			return cs;
 		}
 		return new CompactString(seq);
 	}
 
 	/**
 	 * mapping method for the predicate of the triple, this method should copy
-	 * the sequence!
+	 * sequence if the sequence is not already a ByteString that is unmodifiable
+	 * (like CompactString)
 	 *
 	 * @param seq the predicate (before)
 	 * @return the predicate mapped
 	 */
 	protected ByteString convertPredicate(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return new CompactString(cs);
-		}
-		if (seq instanceof ByteString bs) {
-			return new CompactString(bs);
+			return cs;
 		}
 		return new CompactString(seq);
 	}
 
 	/**
 	 * mapping method for the graph of the triple, this method should copy the
-	 * sequence!
+	 * sequence if the sequence is not already a ByteString that is unmodifiable
+	 * (like CompactString)
 	 *
 	 * @param seq the graph (before)
 	 * @return the graph mapped
 	 */
 	protected ByteString convertGraph(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return new CompactString(cs);
-		}
-		if (seq instanceof ByteString bs) {
-			return new CompactString(bs);
+			return cs;
 		}
 		return new CompactString(seq);
 	}
 
 	/**
 	 * mapping method for the object of the triple, this method should copy the
-	 * sequence!
+	 * sequence if the sequence is not already a ByteString that is unmodifiable
+	 * (like CompactString)
 	 *
 	 * @param seq the object (before)
 	 * @return the object mapped
 	 */
 	protected ByteString convertObject(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return new CompactString(cs);
-		}
-		if (seq instanceof ByteString bs) {
-			return new CompactString(bs);
+			return cs;
 		}
 		return new CompactString(seq);
 	}
