@@ -19,23 +19,23 @@
 
 package com.the_qa_company.qendpoint.core.compact.sequence;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Iterator;
-
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.unsafe.UnsafeLongArray;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
 
 /**
  * @author mario.arias,Lyudmila Balakireva
@@ -93,7 +93,7 @@ public class SequenceLog64Big implements DynamicSequence {
 			return 0;
 		}
 		return (totalBits - 1) % W + 1; // +1 To have output in the range 1-64,
-										// -1 to compensate.
+		// -1 to compensate.
 	}
 
 	/** Number of bytes required to represent n integers of e bits each */
@@ -110,8 +110,9 @@ public class SequenceLog64Big implements DynamicSequence {
 	 * @param index     Position to be retrieved
 	 */
 	private static long getField(UnsafeLongArray data, int bitsField, long index) {
-		if (bitsField == 0)
+		if (bitsField == 0) {
 			return 0;
+		}
 
 		long bitPos = index * bitsField;
 		long i = bitPos / W;
@@ -133,8 +134,9 @@ public class SequenceLog64Big implements DynamicSequence {
 	 * @param value     Value to be stored
 	 */
 	private static void setField(UnsafeLongArray data, int bitsField, long index, long value) {
-		if (bitsField == 0)
+		if (bitsField == 0) {
 			return;
+		}
 
 		long bitPos = index * bitsField;
 		long i = bitPos / W;

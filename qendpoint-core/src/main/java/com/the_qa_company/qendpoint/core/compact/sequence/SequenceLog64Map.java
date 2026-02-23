@@ -55,8 +55,8 @@ public class SequenceLog64Map implements Sequence, Closeable {
 	private static final byte W = 64;
 	private static final long LONGS_PER_BUFFER = 128 * 1024 * 1024; // 128*8 =
 	private static final int LONGS_PER_BUFFER_SHIFT = 27; // because
-															// 128*1024*1024 ==
-															// 2^27
+	// 128*1024*1024 ==
+	// 2^27
 	private static final long LONGS_PER_BUFFER_MASK = LONGS_PER_BUFFER - 1;
 	private static final int BYTES_PER_LONG_SHIFT = 3; // 8 bytes
 
@@ -200,8 +200,9 @@ public class SequenceLog64Map implements Sequence, Closeable {
 		if (index < 0 || index >= numentries) {
 			throw new IndexOutOfBoundsException(index + " < 0 || " + index + ">= " + numentries);
 		}
-		if (numbits == 0)
+		if (numbits == 0) {
 			return 0;
+		}
 
 		long bitPos = index * numbits;
 		long i = bitPos / W;

@@ -19,25 +19,25 @@
 
 package com.the_qa_company.qendpoint.core.compact.sequence;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.Arrays;
-import java.util.Iterator;
-
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.exceptions.CRCException;
 import com.the_qa_company.qendpoint.core.exceptions.IllegalFormatException;
 import com.the_qa_company.qendpoint.core.exceptions.NotFoundException;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
 import com.the_qa_company.qendpoint.core.util.io.IOUtil;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author mario.arias
@@ -97,17 +97,17 @@ public class SequenceLog64 implements DynamicSequence {
 			return 0;
 		}
 		return (int) ((totalBits - 1) % W) + 1; // +1 To have output in the
-												// range 1-64, -1 to compensate.
+		// range 1-64, -1 to compensate.
 	}
 
 	/** Number of bits required for last word */
 	public static int lastWordNumBytes(int bitsField, long total) {
 		return ((lastWordNumBits(bitsField, total) - 1) / 8) + 1; // +1 To have
-																	// output in
-																	// the range
-																	// 1-8, -1
-																	// to
-																	// compensate.
+		// output in
+		// the range
+		// 1-8, -1
+		// to
+		// compensate.
 	}
 
 	/** Number of bytes required to represent n integers of e bits each */
@@ -124,8 +124,9 @@ public class SequenceLog64 implements DynamicSequence {
 	 * @param index     Position to be retrieved
 	 */
 	private static long getField(long[] data, int bitsField, long index) {
-		if (bitsField == 0)
+		if (bitsField == 0) {
 			return 0;
+		}
 
 		long bitPos = index * bitsField;
 		int i = (int) (bitPos / W);
@@ -147,8 +148,9 @@ public class SequenceLog64 implements DynamicSequence {
 	 * @param value     Value to be stored
 	 */
 	private static void setField(long[] data, int bitsField, long index, long value) {
-		if (bitsField == 0)
+		if (bitsField == 0) {
 			return;
+		}
 
 		long bitPos = index * bitsField;
 		int i = (int) (bitPos / W);
@@ -444,12 +446,13 @@ public class SequenceLog64 implements DynamicSequence {
 			long mid = (low + high) >>> 1;
 			long midVal = get(mid);
 
-			if (midVal < element)
+			if (midVal < element) {
 				low = mid + 1;
-			else if (midVal > element)
+			} else if (midVal > element) {
 				high = mid - 1;
-			else
+			} else {
 				return mid; // key found
+			}
 		}
 		return -(low + 1); // key not found.
 	}
