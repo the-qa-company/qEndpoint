@@ -33,13 +33,6 @@ public class MultiSectionLangPrefixSectionCompressor extends SectionCompressor {
 
 	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName, MultiThreadListener listener,
 			int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec,
-			CompressionType compressionType) {
-		this(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, spec, compressionType,
-				Integer.MAX_VALUE);
-	}
-
-	public MultiSectionLangPrefixSectionCompressor(CloseSuppressPath baseFileName, MultiThreadListener listener,
-			int bufferSize, long chunkSize, int k, boolean debugSleepKwayDict, boolean quad, HDTOptions spec,
 			CompressionType compressionType, int maxConcurrentMerges) {
 		super(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType,
 				maxConcurrentMerges);

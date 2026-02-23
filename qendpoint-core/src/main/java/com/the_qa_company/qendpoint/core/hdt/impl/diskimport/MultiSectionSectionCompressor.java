@@ -28,12 +28,6 @@ public class MultiSectionSectionCompressor extends SectionCompressor {
 	}
 
 	public MultiSectionSectionCompressor(CloseSuppressPath baseFileName, MultiThreadListener listener, int bufferSize,
-			long chunkSize, int k, boolean debugSleepKwayDict, boolean quad, CompressionType compressionType) {
-		this(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType,
-				Integer.MAX_VALUE);
-	}
-
-	public MultiSectionSectionCompressor(CloseSuppressPath baseFileName, MultiThreadListener listener, int bufferSize,
 			long chunkSize, int k, boolean debugSleepKwayDict, boolean quad, CompressionType compressionType,
 			int maxConcurrentMerges) {
 		super(baseFileName, listener, bufferSize, chunkSize, k, debugSleepKwayDict, quad, compressionType,
