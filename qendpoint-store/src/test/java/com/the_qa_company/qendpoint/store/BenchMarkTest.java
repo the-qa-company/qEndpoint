@@ -1,9 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.junit.Ignore;
@@ -48,7 +46,7 @@ public class BenchMarkTest {
 				int count = 100000;
 				ValueFactory vf = connection.getValueFactory();
 				stopWatch = StopWatch.createStarted();
-				try (RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true)) {
+				try (var statements = connection.getStatements(null, null, null, true)) {
 					while (statements.hasNext()) {
 						statements.next();
 					}
@@ -69,7 +67,7 @@ public class BenchMarkTest {
 
 					stopWatch = StopWatch.createStarted();
 					int c = 0;
-					try (RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true)) {
+					try (var statements = connection.getStatements(null, null, null, true)) {
 						while (statements.hasNext()) {
 							statements.next();
 							c++;

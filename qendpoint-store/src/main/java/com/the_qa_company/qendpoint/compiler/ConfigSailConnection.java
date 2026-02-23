@@ -1,7 +1,5 @@
 package com.the_qa_company.qendpoint.compiler;
 
-import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
-
 /**
  * Interface to implement into a {@link org.eclipse.rdf4j.sail.SailConnection}
  * returned by the source of a {@link CompiledSail}, the configs will be added
