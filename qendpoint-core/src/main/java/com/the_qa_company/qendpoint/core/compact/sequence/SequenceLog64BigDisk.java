@@ -44,7 +44,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		BIT_MASK[64] = -1L;
 	}
 
-	LongArray data;
+	private LongArrayDisk diskData;
 	private int numbits;
 	private long numentries;
 	private long maxvalue;
@@ -86,7 +86,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		this.numbits = numbits;
 		this.maxvalue = BitUtil.maxVal(numbits);
 		long size = numWordsFor(numbits, capacity);
-		data = new LongArrayDisk(location, Math.max(size, 1), overwrite);
+		diskData = new LongArrayDisk(location, Math.max(size, 1), overwrite);
 		if (initialize) {
 			numentries = capacity;
 		}
@@ -126,7 +126,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param bitsField Length in bits of each field
 	 * @param index     Position to be retrieved
 	 */
-	private static long getField(LongArray data, int bitsField, long index) {
+	private static long getField(LongArrayDisk data, int bitsField, long index) {
 		if (bitsField == 0) {
 			return 0L;
 		}
@@ -160,7 +160,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param index     Position to store in
 	 * @param value     Value to be stored
 	 */
-	private static void setField(LongArray data, int bitsField, long index, long value) {
+	private static void setField(LongArrayDisk data, int bitsField, long index, long value) {
 		if (bitsField == 0) {
 			return;
 		}
@@ -203,7 +203,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	}
 
 	private void resizeArray(long size) throws IOException {
-		data.resize(size);
+		diskData.resize(size);
 	}
 
 	/*
@@ -228,12 +228,12 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		// throw new IndexOutOfBoundsException();
 //		}
 
-		if (position < 0 || numWordsFor(numbits, position) > data.length()) {
+		if (position < 0 || numWordsFor(numbits, position) > diskData.length()) {
 			throw new IndexOutOfBoundsException(
-					position + " < 0 || " + position + " > " + data.length() * 64 / numbits);
+					position + " < 0 || " + position + " > " + diskData.length() * 64 / numbits);
 		}
 
-		return getField(data, numbits, position);
+		return getField(diskData, numbits, position);
 	}
 
 	@Override
@@ -244,7 +244,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		}
 
 		// System.out.println("numbits "+this.numbits);
-		setField(data, numbits, position, value);
+		setField(diskData, numbits, position, value);
 	}
 
 	public void set(long[] positions, long[] values, int offset, int length) {
@@ -258,7 +258,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 			return;
 		}
 
-		if (numbits >= 64 || !(data instanceof LongArrayDisk disk)) {
+		if (numbits >= 64 || diskData == null) {
 			for (int i = offset; i < offset + length; i++) {
 				set(positions[i], values[i]);
 			}
@@ -301,7 +301,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 						runLength = 1;
 					} else if (currentWordIndex == runLastIndex + 1) {
 						if (runLength == run.length) {
-							disk.set(runStart, run, 0, runLength);
+							diskData.set(runStart, run, 0, runLength);
 							runStart = currentWordIndex;
 							runLastIndex = currentWordIndex;
 							run[0] = currentWordValue;
@@ -311,7 +311,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 							runLastIndex = currentWordIndex;
 						}
 					} else {
-						disk.set(runStart, run, 0, runLength);
+						diskData.set(runStart, run, 0, runLength);
 						runStart = currentWordIndex;
 						runLastIndex = currentWordIndex;
 						run[0] = currentWordValue;
@@ -331,7 +331,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 						runLength = 1;
 					} else if (currentWordIndex == runLastIndex + 1) {
 						if (runLength == run.length) {
-							disk.set(runStart, run, 0, runLength);
+							diskData.set(runStart, run, 0, runLength);
 							runStart = currentWordIndex;
 							runLastIndex = currentWordIndex;
 							run[0] = currentWordValue;
@@ -341,7 +341,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 							runLastIndex = currentWordIndex;
 						}
 					} else {
-						disk.set(runStart, run, 0, runLength);
+						diskData.set(runStart, run, 0, runLength);
 						runStart = currentWordIndex;
 						runLastIndex = currentWordIndex;
 						run[0] = currentWordValue;
@@ -356,7 +356,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 						runLength = 1;
 					} else if (nextWordIndex == runLastIndex + 1) {
 						if (runLength == run.length) {
-							disk.set(runStart, run, 0, runLength);
+							diskData.set(runStart, run, 0, runLength);
 							runStart = nextWordIndex;
 							runLastIndex = nextWordIndex;
 							run[0] = nextWordValue;
@@ -366,7 +366,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 							runLastIndex = nextWordIndex;
 						}
 					} else {
-						disk.set(runStart, run, 0, runLength);
+						diskData.set(runStart, run, 0, runLength);
 						runStart = nextWordIndex;
 						runLastIndex = nextWordIndex;
 						run[0] = nextWordValue;
@@ -375,7 +375,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 					nextDirty = false;
 				}
 				currentWordIndex = wordIndex;
-				currentWordValue = disk.get(wordIndex);
+				currentWordValue = diskData.get(wordIndex);
 				nextWordIndex = -1;
 			}
 
@@ -395,7 +395,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 							runLength = 1;
 						} else if (nextWordIndex == runLastIndex + 1) {
 							if (runLength == run.length) {
-								disk.set(runStart, run, 0, runLength);
+								diskData.set(runStart, run, 0, runLength);
 								runStart = nextWordIndex;
 								runLastIndex = nextWordIndex;
 								run[0] = nextWordValue;
@@ -405,7 +405,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 								runLastIndex = nextWordIndex;
 							}
 						} else {
-							disk.set(runStart, run, 0, runLength);
+							diskData.set(runStart, run, 0, runLength);
 							runStart = nextWordIndex;
 							runLastIndex = nextWordIndex;
 							run[0] = nextWordValue;
@@ -413,7 +413,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 						}
 					}
 					nextWordIndex = spillIndex;
-					nextWordValue = disk.get(spillIndex);
+					nextWordValue = diskData.get(spillIndex);
 				}
 
 				long nextMask = ~0L << (numbits + bitOffset - W);
@@ -430,7 +430,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 				runLength = 1;
 			} else if (currentWordIndex == runLastIndex + 1) {
 				if (runLength == run.length) {
-					disk.set(runStart, run, 0, runLength);
+					diskData.set(runStart, run, 0, runLength);
 					runStart = currentWordIndex;
 					runLastIndex = currentWordIndex;
 					run[0] = currentWordValue;
@@ -440,7 +440,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 					runLastIndex = currentWordIndex;
 				}
 			} else {
-				disk.set(runStart, run, 0, runLength);
+				diskData.set(runStart, run, 0, runLength);
 				runStart = currentWordIndex;
 				runLastIndex = currentWordIndex;
 				run[0] = currentWordValue;
@@ -454,7 +454,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 				runLength = 1;
 			} else if (nextWordIndex == runLastIndex + 1) {
 				if (runLength == run.length) {
-					disk.set(runStart, run, 0, runLength);
+					diskData.set(runStart, run, 0, runLength);
 					runStart = nextWordIndex;
 					run[0] = nextWordValue;
 					runLength = 1;
@@ -462,7 +462,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 					run[runLength++] = nextWordValue;
 				}
 			} else {
-				disk.set(runStart, run, 0, runLength);
+				diskData.set(runStart, run, 0, runLength);
 				runStart = nextWordIndex;
 				run[0] = nextWordValue;
 				runLength = 1;
@@ -470,7 +470,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		}
 
 		if (runLength > 0) {
-			disk.set(runStart, run, 0, runLength);
+			diskData.set(runStart, run, 0, runLength);
 		}
 	}
 
@@ -545,9 +545,9 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		// }
 
 		long neededSize = numWordsFor(numbits, numentries + 1);
-		if (data.length() < neededSize) {
+		if (diskData.length() < neededSize) {
 			try {
-				resizeArray(data.length() * 2);
+				resizeArray(diskData.length() * 2);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -572,15 +572,15 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		// System.out.println("newbits"+newbits);
 		if (newbits != numbits) {
 			for (long i = 0; i < numentries; i++) {
-				long value = getField(data, numbits, i);
-				setField(data, newbits, i, value);
+				long value = getField(diskData, numbits, i);
+				setField(diskData, newbits, i, value);
 			}
 			numbits = newbits;
 			maxvalue = BitUtil.maxVal(numbits);
 
 			long totalSize = numWordsFor(numbits, numentries);
 
-			if (totalSize != data.length()) {
+			if (totalSize != diskData.length()) {
 				try {
 					resizeArray(totalSize);
 				} catch (IOException e) {
@@ -611,7 +611,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 
 	@Override
 	public void clear() {
-		data.clear();
+		diskData.clear();
 	}
 
 	/*
@@ -643,14 +643,14 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 
 		long numwords = numWordsFor(numbits, numentries);
 		for (long i = 0; i < numwords - 1; i++) {
-			IOUtil.writeLong(out, data.get(i));
+			IOUtil.writeLong(out, diskData.get(i));
 		}
 
 		if (numwords > 0) {
 			// Write only used bits from last entry (byte aligned, little
 			// endian)
 			long lastWordUsedBits = lastWordNumBits(numbits, numentries);
-			BitUtil.writeLowerBitsByteAligned(data.get(numwords - 1), lastWordUsedBits, out);
+			BitUtil.writeLowerBitsByteAligned(diskData.get(numwords - 1), lastWordUsedBits, out);
 		}
 
 		out.writeCRC();
@@ -670,7 +670,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	}
 
 	public long getRealSize() {
-		return data.length() * 8L;
+		return diskData.length() * 8L;
 	}
 
 	public int getNumBits() {
@@ -689,9 +689,9 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	@Override
 	public void close() throws IOException {
 		try {
-			IOUtil.closeObject(data);
+			IOUtil.closeObject(diskData);
 		} finally {
-			data = null;
+			diskData = null;
 		}
 	}
 }
