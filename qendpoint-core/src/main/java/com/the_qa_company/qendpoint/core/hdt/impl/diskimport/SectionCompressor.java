@@ -123,7 +123,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	 */
 	protected ByteString convertSubject(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return cs;
+			return new CompactString(cs);
 		}
 		if (seq instanceof ByteString bs) {
 			return new CompactString(bs);
@@ -140,7 +140,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	 */
 	protected ByteString convertPredicate(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return cs;
+			return new CompactString(cs);
 		}
 		if (seq instanceof ByteString bs) {
 			return new CompactString(bs);
@@ -157,7 +157,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	 */
 	protected ByteString convertGraph(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return cs;
+			return new CompactString(cs);
 		}
 		if (seq instanceof ByteString bs) {
 			return new CompactString(bs);
@@ -174,7 +174,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 	 */
 	protected ByteString convertObject(CharSequence seq) {
 		if (seq instanceof CompactString cs) {
-			return cs;
+			return new CompactString(cs);
 		}
 		if (seq instanceof ByteString bs) {
 			return new CompactString(bs);
