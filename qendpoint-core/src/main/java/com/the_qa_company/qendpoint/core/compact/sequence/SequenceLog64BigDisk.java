@@ -134,14 +134,11 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		long bitPos = index * bitsField;
 		long i = bitPos / W;
 		long j = bitPos % W;
-		long result;
 		if (j + bitsField <= W) {
-			result = (data.get(i) >>> j) & BIT_MASK[bitsField];
+			return (data.get(i) >>> j) & BIT_MASK[bitsField];
 		} else {
-			result = data.get(i) >>> j;
-			result = result | (data.get(i + 1) << ((W << 1) - j - bitsField)) >>> (W - bitsField);
+			return data.get(i) >>> j | (data.get(i + 1) << ((W << 1) - j - bitsField)) >>> (W - bitsField);
 		}
-		return result;
 	}
 
 	/**

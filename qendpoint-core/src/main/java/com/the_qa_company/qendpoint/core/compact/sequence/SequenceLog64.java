@@ -44,6 +44,15 @@ import com.the_qa_company.qendpoint.core.util.io.IOUtil;
  */
 public class SequenceLog64 implements DynamicSequence {
 	protected static final byte W = 64;
+	private static final long[] BIT_MASK = new long[65];
+
+	static {
+		BIT_MASK[0] = 0L;
+		for (int b = 1; b < 64; b++) {
+			BIT_MASK[b] = (1L << b) - 1L;
+		}
+		BIT_MASK[64] = -1L;
+	}
 
 	protected long[] data;
 	protected int numbits;
@@ -121,14 +130,11 @@ public class SequenceLog64 implements DynamicSequence {
 		long bitPos = index * bitsField;
 		int i = (int) (bitPos / W);
 		int j = (int) (bitPos % W);
-		long result;
 		if (j + bitsField <= W) {
-			result = (data[i] << (W - j - bitsField)) >>> (W - bitsField);
+			return (data[i] >>> j) & BIT_MASK[bitsField];
 		} else {
-			result = data[i] >>> j;
-			result = result | (data[i + 1] << ((W << 1) - j - bitsField)) >>> (W - bitsField);
+			return data[i] >>> j | (data[i + 1] << ((W << 1) - j - bitsField)) >>> (W - bitsField);
 		}
-		return result;
 	}
 
 	/**
