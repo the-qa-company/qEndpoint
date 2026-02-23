@@ -7,26 +7,19 @@ import com.the_qa_company.qendpoint.core.dictionary.impl.section.OneReadDictiona
 import com.the_qa_company.qendpoint.core.enums.TripleComponentRole;
 import com.the_qa_company.qendpoint.core.exceptions.NotImplementedException;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
-import com.the_qa_company.qendpoint.core.listener.ProgressListener;
-import com.the_qa_company.qendpoint.core.triples.IndexedNode;
-import com.the_qa_company.qendpoint.core.triples.TempTriples;
-import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
-import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.MapIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.NotificationExceptionIterator;
 import com.the_qa_company.qendpoint.core.iterator.utils.PipedCopyIterator;
+import com.the_qa_company.qendpoint.core.listener.ProgressListener;
+import com.the_qa_company.qendpoint.core.triples.IndexedNode;
+import com.the_qa_company.qendpoint.core.triples.TempTriples;
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import com.the_qa_company.qendpoint.core.util.io.compress.CompressUtil;
 import com.the_qa_company.qendpoint.core.util.string.CharSequenceComparator;
 import com.the_qa_company.qendpoint.core.util.string.CompactString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.the_qa_company.qendpoint.core.utils.DebugOrderNodeIterator;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -40,7 +33,6 @@ import java.util.function.Consumer;
  */
 public class CompressFourSectionDictionary implements TempDictionary {
 	private static final int PIPE_BULK_BUFFER_SIZE = PipedCopyIterator.BATCH_SIZE;
-	private static final Logger log = LoggerFactory.getLogger(CompressFourSectionDictionary.class);
 
 	private final ExceptionThread cfsdThread;
 	private final TempDictionarySection subject;
@@ -48,9 +40,6 @@ public class CompressFourSectionDictionary implements TempDictionary {
 	private final TempDictionarySection object;
 	private final TempDictionarySection shared;
 	private final TempDictionarySection graph;
-
-	private static final DateTimeFormatter PROGRESS_DATE_TIME_FORMAT = DateTimeFormatter
-			.ofPattern("yyyy-MM-dd HH:mm:ss.SSS z");
 
 	private static void sendPiped(long[] ids, long[] headers, CharSequence[] nodes, int length,
 			PipedCopyIterator<CharSequence> pipe, NodeConsumerBulkMethod method) {
@@ -211,12 +200,6 @@ public class CompressFourSectionDictionary implements TempDictionary {
 		BulkNodeBuffer objectPipeBuffer = new BulkNodeBuffer(object, sortedObject, objectBulk);
 		Comparator<CharSequence> comparator = CharSequenceComparator.getInstance();
 		cfsdThread = new ExceptionThread(() -> {
-			long itemsProcess = 0;
-			long l = System.currentTimeMillis();
-//			Files.writeString(
-//					Path.of("/Users/havardottestad/Documents/Programming/qEndpoint3/indexing/cfds_start_time.txt"),
-//					"CFSD Start time: " + l + "\n");
-
 			try {
 				long sharedId = 1;
 				long subjectId = 1;
@@ -231,24 +214,20 @@ public class CompressFourSectionDictionary implements TempDictionary {
 					int comp = comparator.compare(newSubject.getNode(), newObject.getNode());
 					while (comp != 0) {
 						if (comp < 0) {
-							itemsProcess = logProgress(itemsProcess, l);
 							subjectPipeBuffer.add(newSubject, CompressUtil.getHeaderId(subjectId++));
 							if (!sortedSubject.hasNext()) {
 								// no more subjects, send the current object and
 								// break the shared loop
-								itemsProcess = logProgress(itemsProcess, l);
 								objectPipeBuffer.add(newObject, CompressUtil.getHeaderId(objectId++));
 								break sharedLoop;
 							}
 							newSubject = sortedSubject.next();
 							debugOrderCheckerS.accept(newSubject);
 						} else {
-							itemsProcess = logProgress(itemsProcess, l);
 							objectPipeBuffer.add(newObject, CompressUtil.getHeaderId(objectId++));
 							if (!sortedObject.hasNext()) {
 								// no more objects, send the current subject and
 								// break the shared loop
-								itemsProcess = logProgress(itemsProcess, l);
 								subjectPipeBuffer.add(newSubject, CompressUtil.getHeaderId(subjectId++));
 								break sharedLoop;
 							}
@@ -263,7 +242,6 @@ public class CompressFourSectionDictionary implements TempDictionary {
 					sortedObject.setLastHeader(shid);
 					subjectDuplicateBuffer.add(newSubject.getIndex(), shid);
 					objectDuplicateBuffer.add(newObject.getIndex(), shid);
-					itemsProcess = logProgress(itemsProcess, l);
 					shared.addElement(new CompactString(newSubject.getNode()));
 				}
 				// at least one iterator is empty, closing the shared pipe
@@ -276,7 +254,6 @@ public class CompressFourSectionDictionary implements TempDictionary {
 				while (sortedSubject.hasNext()) {
 					IndexedNode next = sortedSubject.next();
 					debugOrderCheckerS.accept(next);
-					itemsProcess = logProgress(itemsProcess, l);
 					subjectPipeBuffer.add(next, CompressUtil.getHeaderId(subjectId++));
 				}
 				subjectPipeBuffer.flush();
@@ -286,20 +263,11 @@ public class CompressFourSectionDictionary implements TempDictionary {
 				while (sortedObject.hasNext()) {
 					IndexedNode next = sortedObject.next();
 					debugOrderCheckerO.accept(next);
-					itemsProcess = logProgress(itemsProcess, l);
 					objectPipeBuffer.add(next, CompressUtil.getHeaderId(objectId++));
 				}
 				objectPipeBuffer.flush();
 				objectDuplicateBuffer.flush();
 				object.closePipe();
-
-//				long end = System.currentTimeMillis();
-//				Files.writeString(
-//						Path.of("/Users/havardottestad/Documents/Programming/qEndpoint3/indexing/cfds_end_time.txt"),
-//						"CFSD End time: " + end + "\n");
-//				Files.writeString(
-//						Path.of("/Users/havardottestad/Documents/Programming/qEndpoint3/indexing/cfds_total_time.txt"),
-//						"CFSD Total time: " + (end - l) / 1000 + " s\n");
 
 			} catch (Throwable t) {
 				try {
@@ -344,21 +312,6 @@ public class CompressFourSectionDictionary implements TempDictionary {
 		} else {
 			this.graph = null;
 		}
-	}
-
-	private static long logProgress(long itemsProcess, long l) throws IOException {
-//		if (itemsProcess++ % 1_000_000 == 0) {
-//			long current = System.currentTimeMillis();
-//			long elapsedSeconds = Math.max(1L, (current - l) / 1000L);
-//			long itemsPerSecond = itemsProcess / elapsedSeconds;
-//			String datetime = ZonedDateTime.now().format(PROGRESS_DATE_TIME_FORMAT);
-//			Files.writeString(
-//					Path.of("/Users/havardottestad/Documents/Programming/qEndpoint3/indexing/cfds_profress.txt"),
-//					"CFSD progress [" + datetime + "]: " + itemsProcess + " triples processed, " + itemsPerSecond
-//							+ " triples/s\n",
-//					StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-//		}
-		return itemsProcess;
 	}
 
 	@Override
