@@ -188,6 +188,18 @@ public class BucketedTripleMapper implements CompressFourSectionDictionary.NodeC
 			throw t;
 		} finally {
 			executor.shutdown();
+			if (!executor.isTerminated()) {
+				executor.shutdownNow();
+				try {
+					executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+
+				if (!executor.isTerminated()) {
+					log.warn("Executor did not terminate after shutdownNow");
+				}
+			}
 		}
 	}
 
@@ -779,6 +791,10 @@ public class BucketedTripleMapper implements CompressFourSectionDictionary.NodeC
 			long processed = 0;
 			int lastPercent = 0;
 			for (int bucket = 0; bucket < bucketCount; bucket++) {
+				if (Thread.currentThread().isInterrupted()) {
+					throw new RuntimeException("Materialization interrupted");
+				}
+
 				long bucketStart = (long) bucket * bucketSize + 1;
 				long remaining = tripleCount - (bucketStart - 1);
 				if (remaining <= 0) {
