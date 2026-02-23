@@ -12,10 +12,10 @@
  */
 package com.the_qa_company.qendpoint.core.compact.sequence;
 
+import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
-import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
@@ -103,18 +103,14 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		if (totalBits == 0) {
 			return 0;
 		}
-		return (totalBits - 1) % W + 1; // +1 To have output in the range 1-64,
-										// -1 to compensate.
+		// +1 To have output in the range 1-64, -1 to compensate.
+		return (totalBits - 1) % W + 1;
 	}
 
 	/** Number of bits required for last word */
 	public static long lastWordNumBytes(int bitsField, long total) {
-		return ((lastWordNumBits(bitsField, total) - 1) / 8) + 1; // +1 To have
-																	// output in
-																	// the range
-																	// 1-8, -1
-																	// to
-																	// compensate.
+		// +1 To have output in the range 1-8, -1 to compensate.
+		return ((lastWordNumBits(bitsField, total) - 1) / 8) + 1;
 	}
 
 	/** Number of bytes required to represent n integers of e bits each */
@@ -131,16 +127,16 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param index     Position to be retrieved
 	 */
 	private static long getField(LongArray data, int bitsField, long index) {
-		if (bitsField == 0)
+		if (bitsField == 0) {
 			return 0;
+		}
 
 		long bitPos = index * bitsField;
 		long i = bitPos / W;
 		long j = bitPos % W;
-		long fieldMask = BIT_MASK[bitsField];
 		long result;
 		if (j + bitsField <= W) {
-			result = (data.get(i) >>> j) & fieldMask;
+			result = (data.get(i) >>> j) & BIT_MASK[bitsField];
 		} else {
 			result = data.get(i) >>> j;
 			result = result | (data.get(i + 1) << ((W << 1) - j - bitsField)) >>> (W - bitsField);
@@ -158,8 +154,9 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param value     Value to be stored
 	 */
 	private static void setField(LongArray data, int bitsField, long index, long value) {
-		if (bitsField == 0)
+		if (bitsField == 0) {
 			return;
+		}
 
 		final long fieldMask = BIT_MASK[bitsField];
 		final long v = value & fieldMask;
@@ -170,22 +167,17 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		final long w0 = data.get(wordIndex);
 		final int endBit = bitOffset + bitsField;
 		if (endBit <= W) {
-			final long maskAtOffset = fieldMask << bitOffset;
-			data.set(wordIndex, (w0 & ~maskAtOffset) | (v << bitOffset));
+			data.set(wordIndex, (w0 & ~(fieldMask << bitOffset)) | (v << bitOffset));
 			return;
 		}
 
 		final int bitsInFirst = W - bitOffset;
-		final int bitsInSecond = endBit - W;
 		final long maskFirst = BIT_MASK[bitsInFirst];
-		final long maskSecond = BIT_MASK[bitsInSecond];
-		final long newW0 = (w0 & ~(maskFirst << bitOffset)) | ((v & maskFirst) << bitOffset);
-		data.set(wordIndex, newW0);
+		data.set(wordIndex, (w0 & ~(maskFirst << bitOffset)) | ((v & maskFirst) << bitOffset));
 
+		final long maskSecond = BIT_MASK[endBit - W];
 		final long wordIndex1 = wordIndex + 1;
-		final long w1 = data.get(wordIndex1);
-		final long newW1 = (w1 & ~maskSecond) | ((v >>> bitsInFirst) & maskSecond);
-		data.set(wordIndex1, newW1);
+		data.set(wordIndex1, (data.get(wordIndex1) & ~maskSecond) | ((v >>> bitsInFirst) & maskSecond));
 	}
 
 	private void resizeArray(long size) throws IOException {
@@ -236,17 +228,14 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	public void set(long[] positions, long[] values, int offset, int length) {
 		if (length <= 0) {
 			return;
-		}
-		if (positions == null || values == null) {
+		} else if (positions == null || values == null) {
 			throw new NullPointerException();
-		}
-		if (offset < 0 || length < 0 || offset + length > positions.length || offset + length > values.length) {
+		} else if (offset < 0 || offset + length > positions.length || offset + length > values.length) {
 			throw new IndexOutOfBoundsException();
-		}
-
-		if (numbits == 0) {
+		} else if (numbits == 0) {
 			return;
 		}
+
 		if (numbits >= 64 || !(data instanceof LongArrayDisk disk)) {
 			for (int i = offset; i < offset + length; i++) {
 				set(positions[i], values[i]);
@@ -256,7 +245,6 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 
 		sortPairsByKey(positions, values, offset, offset + length);
 
-		final long fieldMask = BIT_MASK[numbits];
 		long[] run = getBulkWriteRunBuffer(length);
 		long runStart = -1;
 		int runLength = 0;
@@ -271,7 +259,6 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		boolean nextDirty = false;
 
 		for (int i = offset; i < offset + length; i++) {
-			long position = positions[i];
 			long value = values[i];
 
 			if (value < 0 || value > maxvalue) {
@@ -279,7 +266,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 						"Value exceeds the maximum for this data structure " + value + " > " + maxvalue);
 			}
 
-			long bitPos = position * (long) numbits;
+			long bitPos = positions[i] * (long) numbits;
 			long wordIndex = bitPos >>> 6;
 			int bitOffset = (int) (bitPos & 63);
 
@@ -311,7 +298,6 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 				}
 				currentWordIndex = nextWordIndex;
 				currentWordValue = nextWordValue;
-				currentDirty = nextDirty;
 				nextWordIndex = -1;
 				nextDirty = false;
 			} else if (wordIndex != currentWordIndex) {
@@ -364,18 +350,15 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 						run[0] = nextWordValue;
 						runLength = 1;
 					}
-					nextWordIndex = -1;
 					nextDirty = false;
 				}
 				currentWordIndex = wordIndex;
 				currentWordValue = disk.get(wordIndex);
-				currentDirty = false;
 				nextWordIndex = -1;
-				nextDirty = false;
 			}
 
 			final int endBit = bitOffset + numbits;
-			long mask = fieldMask << bitOffset;
+			long mask = BIT_MASK[numbits] << bitOffset;
 			currentWordValue = (currentWordValue & ~mask) | (value << bitOffset);
 			currentDirty = true;
 
@@ -409,7 +392,6 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 					}
 					nextWordIndex = spillIndex;
 					nextWordValue = disk.get(spillIndex);
-					nextDirty = false;
 				}
 
 				long nextMask = ~0L << (numbits + bitOffset - W);
@@ -446,24 +428,20 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 		if (nextDirty) {
 			if (runLength == 0) {
 				runStart = nextWordIndex;
-				runLastIndex = nextWordIndex;
 				run[0] = nextWordValue;
 				runLength = 1;
 			} else if (nextWordIndex == runLastIndex + 1) {
 				if (runLength == run.length) {
 					disk.set(runStart, run, 0, runLength);
 					runStart = nextWordIndex;
-					runLastIndex = nextWordIndex;
 					run[0] = nextWordValue;
 					runLength = 1;
 				} else {
 					run[runLength++] = nextWordValue;
-					runLastIndex = nextWordIndex;
 				}
 			} else {
 				disk.set(runStart, run, 0, runLength);
 				runStart = nextWordIndex;
-				runLastIndex = nextWordIndex;
 				run[0] = nextWordValue;
 				runLength = 1;
 			}
@@ -493,14 +471,13 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	}
 
 	private static void sortPairsByKey(long[] keys, long[] values, int from, int to) {
-		int left = from;
 		int right = to - 1;
-		if (left >= right) {
+		if (from >= right) {
 			return;
 		}
 
-		long pivot = keys[left + ((right - left) >>> 1)];
-		int i = left;
+		long pivot = keys[from + ((right - from) >>> 1)];
+		int i = from;
 		int j = right;
 		while (i <= j) {
 			while (keys[i] < pivot) {
