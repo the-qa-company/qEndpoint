@@ -44,15 +44,6 @@ import java.util.List;
  */
 public class SequenceLog64 implements DynamicSequence {
 	protected static final byte W = 64;
-	private static final long[] BIT_MASK = new long[65];
-
-	static {
-		BIT_MASK[0] = 0L;
-		for (int b = 1; b < 64; b++) {
-			BIT_MASK[b] = (1L << b) - 1L;
-		}
-		BIT_MASK[64] = -1L;
-	}
 
 	protected long[] data;
 	protected int numbits;

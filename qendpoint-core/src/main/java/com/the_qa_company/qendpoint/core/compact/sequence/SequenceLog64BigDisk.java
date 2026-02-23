@@ -160,25 +160,25 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param index     Position to store in
 	 * @param value     Value to be stored
 	 */
-	private static void setField(LongArray data, int bits, long index, long value) {
-		if (bits == 0) {
+	private static void setField(LongArray data, int bitsField, long index, long value) {
+		if (bitsField == 0) {
 			return;
 		}
-		// Critical: avoid the wasted read when bits==64.
-		if (bits == 64) {
+		// Critical: avoid the wasted read when bitsField==64.
+		if (bitsField == 64) {
 			data.set(index, value);
 			return;
 		}
 
-		final long bitPos = index * (long) bits;
+		final long bitPos = index * (long) bitsField;
 		final long wordIndex = bitPos >>> 6;
 		final int bitOffset = (int) bitPos & 63;
 
-		final long mask = -1L >>> (64 - bits); // bits in 1..63 here
+		final long mask = -1L >>> (64 - bitsField); // bitsField in 1..63 here
 		final long v = value & mask;
 
 		final long w0 = data.get(wordIndex);
-		final int endBit = bitOffset + bits;
+		final int endBit = bitOffset + bitsField;
 
 		if (endBit <= 64) {
 			final long wordMask = mask << bitOffset; // truncates naturally if
@@ -196,7 +196,7 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 
 		final long wordIndex1 = wordIndex + 1;
 
-		final int bitsInSecond = endBit - 64; // 1..62 (when bits<=63)
+		final int bitsInSecond = endBit - 64; // 1..62 (when bitsField<=63)
 		final long secondMask = (1L << bitsInSecond) - 1L;
 
 		data.set(wordIndex1, (data.get(wordIndex1) & ~secondMask) | ((v >>> bitsInFirst) & secondMask));
