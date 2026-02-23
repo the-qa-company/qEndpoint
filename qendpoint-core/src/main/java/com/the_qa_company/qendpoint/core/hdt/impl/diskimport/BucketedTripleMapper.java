@@ -399,6 +399,11 @@ public class BucketedTripleMapper implements CompressFourSectionDictionary.NodeC
 
 			try {
 				for (int bucket = 0; bucket < bucketCount; bucket++) {
+
+					if (Thread.currentThread().isInterrupted()) {
+						throw new RuntimeException("Flush interrupted");
+					}
+
 					int start = bucketOffsets[bucket];
 					int end = bucketOffsets[bucket + 1];
 					if (start == end) {
@@ -459,6 +464,10 @@ public class BucketedTripleMapper implements CompressFourSectionDictionary.NodeC
 				throws IOException {
 			if (length <= 0) {
 				return CompletableFuture.completedFuture(null);
+			}
+
+			if (Thread.currentThread().isInterrupted()) {
+				throw new RuntimeException("Chunk write interrupted");
 			}
 
 			int payloadCapacity = compressionEnabled ? compressor.maxCompressedLength(length) : length;
