@@ -173,11 +173,19 @@ public class BucketedTripleMapper implements CompressFourSectionDictionary.NodeC
 
 			CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 		} catch (CompletionException e) {
+			for (CompletableFuture<Void> future : futures) {
+				future.cancel(true);
+			}
 			Throwable cause = e.getCause();
 			if (cause instanceof IOException io) {
 				throw io;
 			}
 			throw e;
+		} catch (Throwable t) {
+			for (CompletableFuture<Void> future : futures) {
+				future.cancel(true);
+			}
+			throw t;
 		} finally {
 			executor.shutdown();
 		}
