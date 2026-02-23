@@ -160,31 +160,46 @@ public class SequenceLog64BigDisk implements DynamicSequence, Closeable {
 	 * @param index     Position to store in
 	 * @param value     Value to be stored
 	 */
-	private static void setField(LongArray data, int bitsField, long index, long value) {
-		if (bitsField == 0) {
+	private static void setField(LongArray data, int bits, long index, long value) {
+		if (bits == 0) {
+			return;
+		}
+		// Critical: avoid the wasted read when bits==64.
+		if (bits == 64) {
+			data.set(index, value);
 			return;
 		}
 
-		final long fieldMask = BIT_MASK[bitsField];
-		final long v = value & fieldMask;
-		final long bitPos = index * (long) bitsField;
-		final long wordIndex = bitPos >> 6;
-		final int bitOffset = (int) (bitPos & 63L);
+		final long bitPos = index * (long) bits;
+		final long wordIndex = bitPos >>> 6;
+		final int bitOffset = (int) bitPos & 63;
+
+		final long mask = -1L >>> (64 - bits); // bits in 1..63 here
+		final long v = value & mask;
 
 		final long w0 = data.get(wordIndex);
-		final int endBit = bitOffset + bitsField;
-		if (endBit <= W) {
-			data.set(wordIndex, (w0 & ~(fieldMask << bitOffset)) | (v << bitOffset));
+		final int endBit = bitOffset + bits;
+
+		if (endBit <= 64) {
+			final long wordMask = mask << bitOffset; // truncates naturally if
+														// near the top
+			data.set(wordIndex, (w0 & ~wordMask) | (v << bitOffset));
 			return;
 		}
 
-		final int bitsInFirst = W - bitOffset;
-		final long maskFirst = BIT_MASK[bitsInFirst];
-		data.set(wordIndex, (w0 & ~(maskFirst << bitOffset)) | ((v & maskFirst) << bitOffset));
+		// Spans into next word
+		final int bitsInFirst = 64 - bitOffset; // 1..63
+		final long firstMask = (1L << bitsInFirst) - 1L; // safe: bitsInFirst
+															// never 64 here
 
-		final long maskSecond = BIT_MASK[endBit - W];
+		data.set(wordIndex, (w0 & ~(firstMask << bitOffset)) | ((v & firstMask) << bitOffset));
+
 		final long wordIndex1 = wordIndex + 1;
-		data.set(wordIndex1, (data.get(wordIndex1) & ~maskSecond) | ((v >>> bitsInFirst) & maskSecond));
+
+		final int bitsInSecond = endBit - 64; // 1..62 (when bits<=63)
+		final long secondMask = (1L << bitsInSecond) - 1L;
+
+		data.set(wordIndex1, (data.get(wordIndex1) & ~secondMask) | ((v >>> bitsInFirst) & secondMask));
 	}
 
 	private void resizeArray(long size) throws IOException {

@@ -161,18 +161,39 @@ public class SequenceLog64 implements DynamicSequence {
 		if (bitsField == 0) {
 			return;
 		}
-
-		long bitPos = index * bitsField;
-		int i = (int) (bitPos / W);
-		int j = (int) (bitPos % W);
-
-		long mask = ~(~0L << bitsField) << j;
-		data[i] = (data[i] & ~mask) | (value << j);
-
-		if (j + bitsField > W) {
-			mask = ~0L << (bitsField + j - W);
-			data[i + 1] = (data[i + 1] & mask) | value >>> (W - j);
+		// Critical: avoid the wasted read when bitsField==64.
+		if (bitsField == 64) {
+			data[(int) index] = value;
+			return;
 		}
+
+		final long bitPos = index * (long) bitsField;
+		final int wordIndex = (int) (bitPos >>> 6);
+		final int bitOffset = (int) bitPos & 63;
+
+		final long mask = -1L >>> (64 - bitsField); // bitsField in 1..63 here
+		final long v = value & mask;
+
+		final long w0 = data[wordIndex];
+		final int endBit = bitOffset + bitsField;
+		if (endBit <= 64) {
+			final long wordMask = mask << bitOffset; // truncates naturally if
+														// near the top
+			data[wordIndex] = (w0 & ~wordMask) | (v << bitOffset);
+			return;
+		}
+
+		// Spans into next word.
+		final int bitsInFirst = 64 - bitOffset; // 1..63
+		final long firstMask = (1L << bitsInFirst) - 1L; // safe: bitsInFirst
+															// never 64 here
+
+		data[wordIndex] = (w0 & ~(firstMask << bitOffset)) | ((v & firstMask) << bitOffset);
+
+		final int wordIndex1 = wordIndex + 1;
+		final int bitsInSecond = endBit - 64; // 1..62 (when bitsField<=63)
+		final long secondMask = (1L << bitsInSecond) - 1L;
+		data[wordIndex1] = (data[wordIndex1] & ~secondMask) | ((v >>> bitsInFirst) & secondMask);
 	}
 
 	private void resizeArray(int size) {
