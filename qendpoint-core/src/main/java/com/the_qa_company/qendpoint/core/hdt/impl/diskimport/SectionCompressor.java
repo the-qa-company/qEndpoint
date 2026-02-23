@@ -616,7 +616,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 		 *                              thread
 		 */
 		public void compute(List<TripleFile> triples, boolean async) throws IOException, InterruptedException {
-			if (Thread.currentThread().isInterrupted()) {
+			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 			List<Future<?>> futures = new ArrayList<>(supportsGraph() ? 4 : 3);
@@ -655,7 +655,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 				}));
 			}
 			awaitMergeTasks(futures);
-			if (Thread.currentThread().isInterrupted()) {
+			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 		}
@@ -739,7 +739,7 @@ public class SectionCompressor implements KWayMerger.KWayMergerImpl<TripleString
 					} catch (TimeoutException e) {
 						// ignored
 					}
-					if (Thread.currentThread().isInterrupted()) {
+					if (Thread.interrupted()) {
 						throw new InterruptedException();
 					}
 				}

@@ -125,17 +125,27 @@ public class SequenceLog64 implements DynamicSequence {
 	 */
 	private static long getField(long[] data, int bitsField, long index) {
 		if (bitsField == 0) {
-			return 0;
+			return 0L;
+		}
+		// Big win when bitsField==64: avoid multiply/div/mask entirely.
+		if (bitsField == 64) {
+			return data[(int) index];
 		}
 
-		long bitPos = index * bitsField;
-		int i = (int) (bitPos / W);
-		int j = (int) (bitPos % W);
-		if (j + bitsField <= W) {
-			return (data[i] >>> j) & BIT_MASK[bitsField];
-		} else {
-			return data[i] >>> j | (data[i + 1] << ((W << 1) - j - bitsField)) >>> (W - bitsField);
+		final long bitPos = index * (long) bitsField;
+		final int wordIndex = (int) (bitPos >>> 6); // /64
+		final int bitOffset = (int) bitPos & 63; // %64
+
+		final long w0 = data[wordIndex];
+		final long mask = -1L >>> (64 - bitsField); // bitsField in 1..63 here
+
+		if (bitOffset + bitsField <= 64) {
+			return (w0 >>> bitOffset) & mask;
 		}
+
+		// bitOffset is 1..63 in this branch, so (64 - bitOffset) is 1..63
+		// (safe)
+		return ((w0 >>> bitOffset) | (data[wordIndex + 1] << (64 - bitOffset))) & mask;
 	}
 
 	/**
