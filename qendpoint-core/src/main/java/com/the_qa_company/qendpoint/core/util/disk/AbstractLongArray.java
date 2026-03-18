@@ -1,7 +1,6 @@
 package com.the_qa_company.qendpoint.core.util.disk;
 
 import com.the_qa_company.qendpoint.core.compact.bitmap.Bitmap375Big;
-import com.the_qa_company.qendpoint.core.util.BitUtil;
 
 public abstract class AbstractLongArray implements LongArray {
 

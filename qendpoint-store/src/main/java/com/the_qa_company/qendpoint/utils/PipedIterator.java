@@ -23,8 +23,7 @@ public class PipedIterator<T> implements Iterator<T> {
 	}
 
 	/**
-	 * Callback for the
-	 * {@link #createOfCallback(com.the_qa_company.qendpoint.utils.PipedIterator.PipeCallBack)}
+	 * Callback for the {@link #createOfCallback(PipedIterator.PipeCallBack)}
 	 * method
 	 *
 	 * @param <T> the iterator type

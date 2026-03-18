@@ -173,7 +173,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 *
 	 * @param file the file to write
 	 * @throws IOException io exception
-	 * @see #createNTFile(java.nio.file.Path)
+	 * @see #createNTFile(Path)
 	 */
 	public void createNTFile(String file) throws IOException {
 		createNTFile(Path.of(file));
@@ -184,7 +184,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 *
 	 * @param file the file to write
 	 * @throws IOException io exception
-	 * @see #createNTFile(java.lang.String)
+	 * @see #createNTFile(String)
 	 */
 	public void createNTFile(Path file) throws IOException {
 		createNTFile(file, CompressionType.NONE);
@@ -196,7 +196,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 * @param file            the file to write
 	 * @param compressionType compression type
 	 * @throws IOException io exception
-	 * @see #createNTFile(java.lang.String)
+	 * @see #createNTFile(String)
 	 */
 	public void createNTFile(Path file, CompressionType compressionType) throws IOException {
 		try (Writer writer = new OutputStreamWriter(
@@ -210,7 +210,7 @@ public class LargeFakeDataSetStreamSupplier {
 	 *
 	 * @param writer the writer to write
 	 * @throws IOException io exception
-	 * @see #createNTFile(java.lang.String)
+	 * @see #createNTFile(String)
 	 */
 	public void createNTFile(Writer writer) throws IOException {
 		for (Iterator<TripleString> it = createTripleStringStream(); it.hasNext();) {

@@ -26,7 +26,7 @@ public class EndpointStoreUtils {
 
 	/**
 	 * enable the connection debug, non-closed connection will return an
-	 * {@link java.lang.AssertionError} after shuting down an endpoint
+	 * {@link AssertionError} after shuting down an endpoint
 	 */
 	public static void enableDebugConnection() {
 		debugConnection = true;

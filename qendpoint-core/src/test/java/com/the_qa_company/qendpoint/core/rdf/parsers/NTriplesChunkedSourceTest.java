@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -29,7 +30,7 @@ public class NTriplesChunkedSourceTest {
 				NTriplesChunkedSource source = new NTriplesChunkedSource(in, RDFNotation.NTRIPLES, 1L)) {
 			SizedSupplier<TripleString> chunk1 = source.get();
 			assertNotNull(chunk1);
-			assertTrue(chunk1 instanceof java.util.function.Supplier);
+			assertTrue(chunk1 instanceof Supplier);
 
 			TripleString t1 = chunk1.get();
 			assertNotNull(t1);
@@ -146,7 +147,7 @@ public class NTriplesChunkedSourceTest {
 			try (NTriplesChunkedSource source = new NTriplesChunkedSource(tempFile, RDFNotation.NTRIPLES, 1L)) {
 				SizedSupplier<TripleString> chunk1 = source.get();
 				assertNotNull(chunk1);
-				assertTrue(chunk1 instanceof java.util.function.Supplier);
+				assertTrue(chunk1 instanceof Supplier);
 
 				TripleString t1 = chunk1.get();
 				assertNotNull(t1);

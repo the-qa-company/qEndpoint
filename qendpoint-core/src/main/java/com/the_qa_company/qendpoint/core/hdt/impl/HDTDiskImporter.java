@@ -3,23 +3,29 @@ package com.the_qa_company.qendpoint.core.hdt.impl;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryFactory;
 import com.the_qa_company.qendpoint.core.dictionary.DictionaryPrivate;
 import com.the_qa_company.qendpoint.core.dictionary.impl.CompressFourSectionDictionary;
+import com.the_qa_company.qendpoint.core.enums.RDFNotation;
 import com.the_qa_company.qendpoint.core.enums.CompressionType;
 import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.exceptions.ParserException;
 import com.the_qa_company.qendpoint.core.hdt.HDT;
 import com.the_qa_company.qendpoint.core.hdt.HDTVocabulary;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.BucketedTripleMapper;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressTripleMapper;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.CompressionResult;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.MapOnCallHDT;
+import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.SectionCompressor;
 import com.the_qa_company.qendpoint.core.hdt.impl.diskimport.TripleCompressionResult;
 import com.the_qa_company.qendpoint.core.header.HeaderPrivate;
-import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcher;
 import com.the_qa_company.qendpoint.core.iterator.utils.AsyncIteratorFetcherUnordered;
+import com.the_qa_company.qendpoint.core.iterator.utils.IteratorChunkedSource;
 import com.the_qa_company.qendpoint.core.listener.MultiThreadListener;
 import com.the_qa_company.qendpoint.core.listener.ProgressListener;
 import com.the_qa_company.qendpoint.core.options.HDTOptions;
 import com.the_qa_company.qendpoint.core.options.HDTOptionsKeys;
+import com.the_qa_company.qendpoint.core.rdf.parsers.BlankNodeIdMapper;
+import com.the_qa_company.qendpoint.core.rdf.parsers.NTriplesChunkedSource;
 import com.the_qa_company.qendpoint.core.triples.TempTriples;
+import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleString;
 import com.the_qa_company.qendpoint.core.triples.TriplesPrivate;
 import com.the_qa_company.qendpoint.core.util.BitUtil;
@@ -34,6 +40,7 @@ import com.the_qa_company.qendpoint.core.util.listener.ListenerUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -44,6 +51,9 @@ import java.util.Iterator;
  * @author Antoine Willerval
  */
 public class HDTDiskImporter implements Closeable {
+	private static final int BUCKET_SIZE = 16 * 1024 * 1024;
+	private static final int BUCKET_BUFFER_RECORDS = 1024 * 1024;
+
 	/**
 	 * @return ram on the system
 	 */
@@ -70,12 +80,14 @@ public class HDTDiskImporter implements Closeable {
 	private final long chunkSize;
 	private final int ways;
 	private final int workers;
+	private final int mergeConcurrency;
 	private final int bufferSize;
 	private final boolean mapHDT;
 	private final boolean debugHDTBuilding;
 	private final Profiler profiler;
 	private final HDTBase<? extends HeaderPrivate, ? extends DictionaryPrivate, ? extends TriplesPrivate> hdt;
 	private final CompressionType compressionType;
+	private final BlankNodeIdMapper bnodeMapper;
 	private long rawSize;
 
 	// component status
@@ -102,6 +114,11 @@ public class HDTDiskImporter implements Closeable {
 		if (workers <= 0) {
 			throw new IllegalArgumentException("Number of workers should be positive!");
 		}
+		long mergeConcurrencyLong = hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_MERGE_CONCURRENCY_KEY, workers);
+		if (mergeConcurrencyLong <= 0 || mergeConcurrencyLong > Integer.MAX_VALUE) {
+			throw new IllegalArgumentException("Number of merge workers should be positive!");
+		}
+		mergeConcurrency = (int) Math.min(workers, mergeConcurrencyLong);
 		// maximum size of a chunk
 		chunkSize = hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_CHUNK_SIZE_KEY, () -> getMaxChunkSize(this.workers));
 		if (chunkSize < 0) {
@@ -115,7 +132,7 @@ public class HDTDiskImporter implements Closeable {
 			maxFileOpened = (int) maxFileOpenedLong;
 		}
 		long kwayLong = hdtFormat.getInt(HDTOptionsKeys.LOADER_DISK_KWAY_KEY,
-				() -> Math.max(1, BitUtil.log2(maxFileOpened / this.workers)));
+				() -> Math.max(1, BitUtil.log2(maxFileOpened / this.mergeConcurrency)));
 		if (kwayLong <= 0 || kwayLong > Integer.MAX_VALUE) {
 			throw new IllegalArgumentException("kway can't be negative!");
 		} else {
@@ -132,6 +149,8 @@ public class HDTDiskImporter implements Closeable {
 
 		// compression type
 		compressionType = CompressionType.findOptionVal(hdtFormat.get(HDTOptionsKeys.DISK_COMPRESSION_KEY));
+		boolean keepBNode = hdtFormat.getBoolean(HDTOptionsKeys.PARSER_KEEP_BNODE_KEY, true);
+		bnodeMapper = keepBNode ? null : BlankNodeIdMapper.create();
 
 		// location of the working directory, will be deleted after generation
 		String baseNameOpt = hdtFormat.get(HDTOptionsKeys.LOADER_DISK_LOCATION_KEY);
@@ -181,17 +200,14 @@ public class HDTDiskImporter implements Closeable {
 	 */
 	public CompressTripleMapper compressDictionary(Iterator<TripleString> iterator)
 			throws ParserException, IOException {
-		if (this.dict) {
-			throw new IllegalArgumentException("Dictionary already built! Use another importer instance!");
-		}
+		ensureDictionaryNotBuilt();
 		listener.notifyProgress(0,
 				"Sorting sections with chunk of size: " + StringUtil.humanReadableByteCount(chunkSize, true) + "B with "
-						+ ways + "ways and " + workers + " worker(s)");
-
-		AsyncIteratorFetcherUnordered<TripleString> source = new AsyncIteratorFetcherUnordered<>(iterator);
+						+ ways + "ways and " + workers + " worker(s), merge concurrency: " + mergeConcurrency);
 
 		profiler.pushSection("section compression");
 		CompressionResult compressionResult;
+		AsyncIteratorFetcherUnordered<TripleString> source = new AsyncIteratorFetcherUnordered<>(iterator);
 		try {
 			compressionResult = DictionaryFactory.createSectionCompressor(hdtFormat,
 					basePath.resolve("sectionCompression"), source, listener, bufferSize, chunkSize, 1 << ways,
@@ -207,14 +223,120 @@ public class HDTDiskImporter implements Closeable {
 		profiler.pushSection("dictionary write");
 		// create sections and triple mapping
 		DictionaryPrivate dictionary = hdt.getDictionary();
-		CompressTripleMapper mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize,
-				compressionResult.supportsGraph(),
-				compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
-		try (CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(compressionResult,
-				mapper, listener, debugHDTBuilding, compressionResult.supportsGraph())) {
-			dictionary.loadAsync(modifiableDictionary, listener);
-		} catch (InterruptedException e) {
+		CompressTripleMapper mapper;
+		if (hdtFormat.getBoolean(HDTOptionsKeys.LOADER_DISK_BUCKETED_MAPPING_KEY, true)) {
+			try (BucketedTripleMapper bucketedMapper = new BucketedTripleMapper(basePath.resolve("bucketedMapping"),
+					compressionResult.getTripleCount(), compressionResult.supportsGraph(), BUCKET_SIZE,
+					BUCKET_BUFFER_RECORDS);
+					CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(
+							compressionResult, bucketedMapper, listener, debugHDTBuilding,
+							compressionResult.supportsGraph())) {
+				dictionary.loadAsync(modifiableDictionary, listener);
+				mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize,
+						compressionResult.supportsGraph(),
+						compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
+				bucketedMapper.materializeTo(mapper, listener);
+			} catch (InterruptedException e) {
+				throw new ParserException(e);
+			}
+		} else {
+			mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize,
+					compressionResult.supportsGraph(),
+					compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
+			try (CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(
+					compressionResult, mapper, listener, debugHDTBuilding, compressionResult.supportsGraph())) {
+				dictionary.loadAsync(modifiableDictionary, listener);
+			} catch (InterruptedException e) {
+				throw new ParserException(e);
+			}
+		}
+		profiler.popSection();
+
+		// complete the mapper with the shared count and delete compression data
+		compressionResult.delete();
+		rawSize = compressionResult.getRawSize();
+		mapper.setShared(dictionary.getNshared());
+
+		this.dict = true;
+		return mapper;
+	}
+
+	public CompressTripleMapper compressDictionaryNTriples(InputStream ntOrNqStream, RDFNotation notation)
+			throws ParserException, IOException {
+		ensureDictionaryNotBuilt();
+		try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(ntOrNqStream, notation, chunkSize,
+				8L * 1024 * 1024, 8192, bnodeMapper)) {
+			return compressDictionaryNTriplesInternal(chunked);
+		}
+	}
+
+	public CompressTripleMapper compressDictionaryNTriples(Path ntOrNqPath, RDFNotation notation)
+			throws ParserException, IOException {
+		ensureDictionaryNotBuilt();
+		try (NTriplesChunkedSource chunked = new NTriplesChunkedSource(ntOrNqPath, notation, chunkSize, bnodeMapper)) {
+			return compressDictionaryNTriplesInternal(chunked);
+		}
+	}
+
+	private void ensureDictionaryNotBuilt() {
+		if (this.dict) {
+			throw new IllegalArgumentException("Dictionary already built! Use another importer instance!");
+		}
+	}
+
+	private CompressTripleMapper compressDictionaryNTriplesInternal(NTriplesChunkedSource chunked)
+			throws ParserException, IOException {
+		listener.notifyProgress(0,
+				"Sorting sections with chunk of size: " + StringUtil.humanReadableByteCount(chunkSize, true) + "B with "
+						+ ways + "ways and " + workers + " worker(s)");
+
+		profiler.pushSection("section compression");
+		CompressionResult compressionResult;
+		try {
+			SectionCompressor compressor = DictionaryFactory.createSectionCompressorPull(hdtFormat,
+					basePath.resolve("sectionCompression"), listener, bufferSize, chunkSize, 1 << ways,
+					hdtFormat.getBoolean("debug.disk.slow.stream2"), compressionType);
+
+			compressionResult = compressor.compressPull(workers, compressMode, chunked);
+
+		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);
+		} finally {
+			profiler.popSection();
+		}
+
+		listener.unregisterAllThreads();
+		listener.notifyProgress(20, "Create sections and triple mapping");
+
+		profiler.pushSection("dictionary write");
+		// create sections and triple mapping
+		DictionaryPrivate dictionary = hdt.getDictionary();
+		CompressTripleMapper mapper;
+		if (hdtFormat.getBoolean(HDTOptionsKeys.LOADER_DISK_BUCKETED_MAPPING_KEY, true)) {
+			try (BucketedTripleMapper bucketedMapper = new BucketedTripleMapper(basePath.resolve("bucketedMapping"),
+					compressionResult.getTripleCount(), compressionResult.supportsGraph(), BUCKET_SIZE,
+					BUCKET_BUFFER_RECORDS);
+					CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(
+							compressionResult, bucketedMapper, listener, debugHDTBuilding,
+							compressionResult.supportsGraph())) {
+				dictionary.loadAsync(modifiableDictionary, listener);
+				mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize,
+						compressionResult.supportsGraph(),
+						compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
+				bucketedMapper.materializeTo(mapper, listener);
+			} catch (InterruptedException e) {
+				throw new ParserException(e);
+			}
+		} else {
+			mapper = new CompressTripleMapper(basePath, compressionResult.getTripleCount(), chunkSize,
+					compressionResult.supportsGraph(),
+					compressionResult.supportsGraph() ? compressionResult.getGraphCount() : 0);
+			try (CompressFourSectionDictionary modifiableDictionary = new CompressFourSectionDictionary(
+					compressionResult, mapper, listener, debugHDTBuilding, compressionResult.supportsGraph())) {
+				dictionary.loadAsync(modifiableDictionary, listener);
+			} catch (InterruptedException e) {
+				throw new ParserException(e);
+			}
 		}
 		profiler.popSection();
 
@@ -245,11 +367,15 @@ public class HDTDiskImporter implements Closeable {
 		TripleComponentOrder order = triples.getOrder();
 		profiler.pushSection("triple compression/map");
 		try {
-			MapCompressTripleMerger tripleMapper = new MapCompressTripleMerger(basePath.resolve("tripleMapper"),
-					new AsyncIteratorFetcher<>(TripleGenerator.of(mapper.getTripleCount(), mapper.supportsGraph())),
-					mapper, listener, order, bufferSize, chunkSize, 1 << ways,
-					mapper.supportsGraph() ? mapper.getGraphsCount() : 0);
-			tripleCompressionResult = tripleMapper.merge(workers, compressMode);
+			long tripleIdSize = mapper.supportsGraph() ? 4L * Long.BYTES : 3L * Long.BYTES;
+			try (IteratorChunkedSource<TripleID> chunkSource = IteratorChunkedSource.of(
+					TripleGenerator.of(mapper.getTripleCount(), mapper.supportsGraph()), ignored -> tripleIdSize,
+					chunkSize, null)) {
+				MapCompressTripleMerger tripleMapper = new MapCompressTripleMerger(basePath.resolve("tripleMapper"),
+						mapper, listener, order, bufferSize, chunkSize, 1 << ways,
+						mapper.supportsGraph() ? mapper.getGraphsCount() : 0, mergeConcurrency);
+				tripleCompressionResult = tripleMapper.mergePull(workers, compressMode, chunkSource);
+			}
 		} catch (KWayMerger.KWayMergerException | InterruptedException e) {
 			throw new ParserException(e);
 		}
@@ -358,6 +484,20 @@ public class HDTDiskImporter implements Closeable {
 		compressTriples(mapper);
 		createHeader();
 
+		return convertToHDT();
+	}
+
+	public HDT runAllStepsNTriples(InputStream ntOrNqStream, RDFNotation notation) throws IOException, ParserException {
+		CompressTripleMapper mapper = compressDictionaryNTriples(ntOrNqStream, notation);
+		compressTriples(mapper);
+		createHeader();
+		return convertToHDT();
+	}
+
+	public HDT runAllStepsNTriples(Path ntOrNqPath, RDFNotation notation) throws IOException, ParserException {
+		CompressTripleMapper mapper = compressDictionaryNTriples(ntOrNqPath, notation);
+		compressTriples(mapper);
+		createHeader();
 		return convertToHDT();
 	}
 

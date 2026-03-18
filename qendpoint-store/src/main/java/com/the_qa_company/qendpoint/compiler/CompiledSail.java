@@ -45,15 +45,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * SailWrapper containing a compiled sail with
- * {@link com.the_qa_company.qendpoint.compiler.SailCompiler}
+ * SailWrapper containing a compiled sail with {@link SailCompiler}
  *
  * @author Antoine Willerval
  */
 public class CompiledSail extends SailWrapper {
 	/**
-	 * @return a compiler to create a
-	 *         {@link com.the_qa_company.qendpoint.compiler.CompiledSail}
+	 * @return a compiler to create a {@link CompiledSail}
 	 */
 	public static CompiledSailCompiler compiler() {
 		return new CompiledSailCompiler();
@@ -219,8 +217,7 @@ public class CompiledSail extends SailWrapper {
 	/**
 	 * reindex all the compiled lucene sails
 	 *
-	 * @throws SailException see
-	 *                       {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
+	 * @throws SailException see {@link LuceneSail#reindex()}
 	 */
 	public void reindexLuceneSails() throws SailException {
 		for (LuceneSail sail : luceneSails) {
@@ -245,8 +242,7 @@ public class CompiledSail extends SailWrapper {
 	 * reindex all the compiled lucene sails
 	 *
 	 * @param index index id
-	 * @throws SailException see
-	 *                       {@link org.eclipse.rdf4j.sail.lucene.LuceneSail#reindex()}
+	 * @throws SailException see {@link LuceneSail#reindex()}
 	 */
 	public void reindexLuceneSail(String index) throws SailException {
 		Objects.requireNonNull(index, "index can't be null!");
@@ -381,8 +377,7 @@ public class CompiledSail extends SailWrapper {
 	}
 
 	/**
-	 * Compiler class for the
-	 * {@link com.the_qa_company.qendpoint.compiler.CompiledSail}
+	 * Compiler class for the {@link CompiledSail}
 	 *
 	 * @author Antoine Willerval
 	 */
@@ -436,10 +431,10 @@ public class CompiledSail extends SailWrapper {
 		 * @param close                 if the compiler should close the stream
 		 *                              after reading
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
-		 * @see #withConfig(java.nio.file.Path)
-		 * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
-		 * @see #withConfig(org.eclipse.rdf4j.model.Model)
+		 * @throws NullPointerException a parameter is null
+		 * @see #withConfig(Path)
+		 * @see #withConfig(Sail)
+		 * @see #withConfig(Model)
 		 */
 		public CompiledSailCompiler withConfig(InputStream configRDFStream, RDFFormat configRDFStreamFormat,
 				boolean close) {
@@ -455,11 +450,10 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param configRDFFile the rdf file
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
-		 * @see #withConfig(java.io.InputStream,
-		 *      org.eclipse.rdf4j.rio.RDFFormat, boolean)
-		 * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
-		 * @see #withConfig(org.eclipse.rdf4j.model.Model)
+		 * @throws NullPointerException a parameter is null
+		 * @see #withConfig(InputStream, RDFFormat, boolean)
+		 * @see #withConfig(Sail)
+		 * @see #withConfig(Model)
 		 */
 		public CompiledSailCompiler withConfig(Path configRDFFile) {
 			this.configRDFFile = Objects.requireNonNull(configRDFFile, "configRDFFile can't be null!");
@@ -471,11 +465,10 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param configModel the rdf model
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
-		 * @see #withConfig(java.io.InputStream,
-		 *      org.eclipse.rdf4j.rio.RDFFormat, boolean)
-		 * @see #withConfig(org.eclipse.rdf4j.sail.Sail)
-		 * @see #withConfig(java.nio.file.Path)
+		 * @throws NullPointerException a parameter is null
+		 * @see #withConfig(InputStream, RDFFormat, boolean)
+		 * @see #withConfig(Sail)
+		 * @see #withConfig(Path)
 		 */
 		public CompiledSailCompiler withConfig(Model configModel) {
 			this.configModel = Objects.requireNonNull(configModel, "configModel can't be null!");
@@ -486,17 +479,16 @@ public class CompiledSail extends SailWrapper {
 		 * set a sail to read the config
 		 * <p>
 		 * <b> THIS METHOD ISN'T THE SAME AS
-		 * {@link #withSourceSail(org.eclipse.rdf4j.sail.NotifyingSail)}, it
-		 * will only use the sail to read the config, not wrapping it!! </b>
+		 * {@link #withSourceSail(NotifyingSail)}, it will only use the sail to
+		 * read the config, not wrapping it!! </b>
 		 * </p>
 		 *
 		 * @param configSail the sail
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
-		 * @see #withConfig(java.io.InputStream,
-		 *      org.eclipse.rdf4j.rio.RDFFormat, boolean)
-		 * @see #withConfig(java.nio.file.Path)
-		 * @see #withConfig(org.eclipse.rdf4j.model.Model)
+		 * @throws NullPointerException a parameter is null
+		 * @see #withConfig(InputStream, RDFFormat, boolean)
+		 * @see #withConfig(Path)
+		 * @see #withConfig(Model)
 		 */
 		public CompiledSailCompiler withConfig(Sail configSail) {
 			this.configSail = Objects.requireNonNull(configSail, "configSail can't be null!");
@@ -508,7 +500,7 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param options the options
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withOptions(CompiledSailOptions options) {
 			this.options = Objects.requireNonNull(options, "options can't be null!");
@@ -521,7 +513,7 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param validator the validator
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withValidator(SailCompilerValidator validator) {
 			this.validator = Objects.requireNonNull(validator, "validator can't be null!");
@@ -533,7 +525,7 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param config the config
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withCompilerConfig(SailCompilerConfig config) {
 			this.sailCompilerConfig = Objects.requireNonNull(config, "config can't be null!");
@@ -545,7 +537,7 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param sourceSail the source sail
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withSourceSail(NotifyingSail sourceSail) {
 			this.sourceSail = Objects.requireNonNull(sourceSail, "sourceSail can't be null!");
@@ -554,13 +546,12 @@ public class CompiledSail extends SailWrapper {
 
 		/**
 		 * set the endpoint files for this compiled sail, won't be used if the
-		 * source sail is already an
-		 * {@link com.the_qa_company.qendpoint.store.EndpointStore}, by default
-		 * the values are native-store, hdt-store and index_dev.hdt
+		 * source sail is already an {@link EndpointStore}, by default the
+		 * values are native-store, hdt-store and index_dev.hdt
 		 *
 		 * @param endpointFiles files to load
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withEndpointFiles(EndpointFiles endpointFiles) {
 			this.endpointFiles = Objects.requireNonNull(endpointFiles, "endpointFiles can't be null!");
@@ -573,7 +564,7 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param hdtSpec the spec
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withHDTSpec(String hdtSpec) {
 			HDTOptions spec = HDTOptions.of();
@@ -587,7 +578,7 @@ public class CompiledSail extends SailWrapper {
 		 *
 		 * @param hdtSpec the spec
 		 * @return this
-		 * @throws java.lang.NullPointerException a parameter is null
+		 * @throws NullPointerException a parameter is null
 		 */
 		public CompiledSailCompiler withHDTSpec(HDTOptions hdtSpec) {
 			this.hdtSpec = Objects.requireNonNull(hdtSpec, "hdtSpec can't be null!");

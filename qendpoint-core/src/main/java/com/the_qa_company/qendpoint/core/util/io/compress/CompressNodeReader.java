@@ -9,6 +9,7 @@ import com.the_qa_company.qendpoint.core.iterator.utils.IndexNodeDeltaMergeExcep
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
+import com.the_qa_company.qendpoint.core.util.io.CRCStopBitInputStream;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
 
 import java.io.Closeable;
@@ -33,7 +34,7 @@ public class CompressNodeReader implements ExceptionIterator<IndexedNode, IOExce
 	private final Consumer<IndexedNode> consumer;
 
 	public CompressNodeReader(InputStream stream) throws IOException {
-		this.stream = new CRCInputStream(stream, new CRC8());
+		this.stream = new CRCStopBitInputStream(stream, new CRC8());
 		this.size = VByte.decode(this.stream);
 		if (!this.stream.readCRCAndCheck()) {
 			throw new CRCException("CRC Error while merging Section Plain Front Coding Header.");

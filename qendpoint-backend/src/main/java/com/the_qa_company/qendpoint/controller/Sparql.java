@@ -351,9 +351,7 @@ public class Sparql {
 	/**
 	 * ask for a merge of the endpoint store
 	 *
-	 * @return see
-	 *         {@link com.the_qa_company.qendpoint.store.EndpointStore#mergeStore()}
-	 *         return value
+	 * @return see {@link EndpointStore#mergeStore()} return value
 	 */
 	public MergeRequestResult askForAMerge() {
 		if (endpoint == null) {
@@ -366,9 +364,7 @@ public class Sparql {
 	/**
 	 * ask for a merge of the endpoint store
 	 *
-	 * @return see
-	 *         {@link com.the_qa_company.qendpoint.store.EndpointStore#mergeStore()}
-	 *         return value
+	 * @return see {@link EndpointStore#mergeStore()} return value
 	 */
 	public MergeRequestResult askForADump() {
 		if (endpoint == null) {

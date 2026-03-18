@@ -50,8 +50,7 @@ public class FourSectionDictionaryCat implements DictionaryCat {
 		this.location = location;
 	}
 
-	public void cat(com.the_qa_company.qendpoint.core.dictionary.Dictionary dictionary1, Dictionary dictionary2,
-			ProgressListener listener) throws IOException {
+	public void cat(Dictionary dictionary1, Dictionary dictionary2, ProgressListener listener) throws IOException {
 		allMappings.put(SectionUtil.P1,
 				new CatMapping(location, SectionUtil.P1, dictionary1.getPredicates().getNumberOfElements()));
 		allMappings.put(SectionUtil.P2,

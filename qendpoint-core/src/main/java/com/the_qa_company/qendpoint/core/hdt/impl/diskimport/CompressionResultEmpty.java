@@ -6,6 +6,16 @@ import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
 import java.io.IOException;
 
 public class CompressionResultEmpty implements CompressionResult {
+	private final boolean supportsGraph;
+
+	public CompressionResultEmpty() {
+		this(false);
+	}
+
+	public CompressionResultEmpty(boolean supportsGraph) {
+		this.supportsGraph = supportsGraph;
+	}
+
 	@Override
 	public long getTripleCount() {
 		return 0;
@@ -13,7 +23,7 @@ public class CompressionResultEmpty implements CompressionResult {
 
 	@Override
 	public boolean supportsGraph() {
-		return false;
+		return supportsGraph;
 	}
 
 	@Override

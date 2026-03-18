@@ -548,7 +548,7 @@ public class TriplesListLong implements TempTriples {
 
 	@Override
 	public void replaceAllIds(DictionaryIDMapping mapSubj, DictionaryIDMapping mapPred, DictionaryIDMapping mapObj,
-			DictionaryIDMapping mapGraph) {
+							  DictionaryIDMapping mapGraph) {
 		sorted = false;
 		for (TripleID triple : arrayOfTriples) {
 			triple.setAll(mapSubj.getNewID(triple.getSubject() - 1), mapPred.getNewID(triple.getPredicate() - 1),

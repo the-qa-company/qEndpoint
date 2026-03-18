@@ -4,19 +4,37 @@ import com.the_qa_company.qendpoint.core.enums.TripleComponentOrder;
 import com.the_qa_company.qendpoint.core.triples.IndexedNode;
 import com.the_qa_company.qendpoint.core.triples.IndexedTriple;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
+import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import com.the_qa_company.qendpoint.core.util.crc.CRCInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 import com.the_qa_company.qendpoint.core.iterator.utils.ExceptionIterator;
-import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
 
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 public class CompressTripleTest {
+	private static final VarHandle STREAM_HANDLE = streamHandle();
+
+	private static VarHandle streamHandle() {
+		try {
+			return MethodHandles.privateLookupIn(CompressTripleReader.class, MethodHandles.lookup())
+					.findVarHandle(CompressTripleReader.class, "stream", CRCInputStream.class);
+		} catch (ReflectiveOperationException e) {
+			throw new ExceptionInInitializerError(e);
+		}
+	}
+
+	private static CRCInputStream streamOf(CompressTripleReader reader) {
+		return (CRCInputStream) STREAM_HANDLE.get(reader);
+	}
+
 	@Test
 	public void writeReadTest() throws InterruptedException, IOException {
 		try (PipedOutputStream out = new PipedOutputStream(); PipedInputStream in = new PipedInputStream()) {
@@ -35,6 +53,7 @@ public class CompressTripleTest {
 					new IndexedTriple(new IndexedNode("", 6), new IndexedNode("", 14), new IndexedNode("", 13)));
 			new ExceptionThread(() -> {
 				CompressTripleReader reader = new CompressTripleReader(in);
+				CRCInputStream readerStream = streamOf(reader);
 				try {
 					for (IndexedTriple exceptedIndex : noDupeTriples) {
 						Assert.assertTrue(reader.hasNext());
@@ -44,9 +63,9 @@ public class CompressTripleTest {
 						Assert.assertEquals(excepted, actual);
 					}
 					Assert.assertFalse(reader.hasNext());
-					Assert.assertEquals(34, in.read());
-					Assert.assertEquals(12, in.read());
-					Assert.assertEquals(27, in.read());
+					Assert.assertEquals(34, readerStream.read());
+					Assert.assertEquals(12, readerStream.read());
+					Assert.assertEquals(27, readerStream.read());
 				} finally {
 					in.close();
 				}
@@ -78,6 +97,7 @@ public class CompressTripleTest {
 					new TripleID(2, 12, 15), new TripleID(6, 14, 13));
 			new ExceptionThread(() -> {
 				CompressTripleReader reader = new CompressTripleReader(in);
+				CRCInputStream readerStream = streamOf(reader);
 				try {
 					for (TripleID excepted : noDupeTriples) {
 						Assert.assertTrue(reader.hasNext());
@@ -85,9 +105,9 @@ public class CompressTripleTest {
 						Assert.assertEquals(excepted, actual);
 					}
 					Assert.assertFalse(reader.hasNext());
-					Assert.assertEquals(34, in.read());
-					Assert.assertEquals(12, in.read());
-					Assert.assertEquals(27, in.read());
+					Assert.assertEquals(34, readerStream.read());
+					Assert.assertEquals(12, readerStream.read());
+					Assert.assertEquals(27, readerStream.read());
 				} finally {
 					in.close();
 				}

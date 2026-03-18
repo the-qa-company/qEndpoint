@@ -203,29 +203,32 @@ public class EndpointStorePhaseTest {
 		logger.info("QUERY");
 		sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ");
 		TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-		TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-		assertTrue(tupleQueryResult.hasNext());
-		while (tupleQueryResult.hasNext()) {
-			BindingSet b = tupleQueryResult.next();
-			assertEquals("http://s600", b.getBinding("s").getValue().toString());
+		try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+			assertTrue(tupleQueryResult.hasNext());
+			while (tupleQueryResult.hasNext()) {
+				BindingSet b = tupleQueryResult.next();
+				assertEquals("http://s600", b.getBinding("s").getValue().toString());
+			}
 		}
 
 		sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o130> . } ");
 		tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-		tupleQueryResult = tupleQuery1.evaluate();
-		assertTrue(tupleQueryResult.hasNext());
-		while (tupleQueryResult.hasNext()) {
-			BindingSet b = tupleQueryResult.next();
-			assertEquals("http://s600", b.getBinding("s").getValue().toString());
+		try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+			assertTrue(tupleQueryResult.hasNext());
+			while (tupleQueryResult.hasNext()) {
+				BindingSet b = tupleQueryResult.next();
+				assertEquals("http://s600", b.getBinding("s").getValue().toString());
+			}
 		}
 
 		sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  \"my_name\" . } ");
 		tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-		tupleQueryResult = tupleQuery1.evaluate();
-		assertTrue(tupleQueryResult.hasNext());
-		while (tupleQueryResult.hasNext()) {
-			BindingSet b = tupleQueryResult.next();
-			assertEquals("http://s600", b.getBinding("s").getValue().toString());
+		try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+			assertTrue(tupleQueryResult.hasNext());
+			while (tupleQueryResult.hasNext()) {
+				BindingSet b = tupleQueryResult.next();
+				assertEquals("http://s600", b.getBinding("s").getValue().toString());
+			}
 		}
 
 		connection.close();
@@ -278,11 +281,12 @@ public class EndpointStorePhaseTest {
 		logger.info("QUERY");
 		sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p600>  <http://o600> . } ");
 		TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-		TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-		assertTrue(tupleQueryResult.hasNext());
-		while (tupleQueryResult.hasNext()) {
-			BindingSet b = tupleQueryResult.next();
-			assertEquals("http://s600", b.getBinding("s").getValue().toString());
+		try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+			assertTrue(tupleQueryResult.hasNext());
+			while (tupleQueryResult.hasNext()) {
+				BindingSet b = tupleQueryResult.next();
+				assertEquals("http://s600", b.getBinding("s").getValue().toString());
+			}
 		}
 
 		logger.info("INSERT");
@@ -293,11 +297,12 @@ public class EndpointStorePhaseTest {
 		logger.info("QUERY");
 		sparqlQuery = new StringBuilder("SELECT ?s WHERE { ?s  <http://p700>  <http://o700> . } ");
 		tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-		TupleQueryResult tupleQueryResult2 = tupleQuery1.evaluate();
-		assertTrue(tupleQueryResult2.hasNext());
-		while (tupleQueryResult2.hasNext()) {
-			BindingSet b = tupleQueryResult2.next();
-			assertEquals("http://s700", b.getBinding("s").getValue().toString());
+		try (TupleQueryResult tupleQueryResult2 = tupleQuery1.evaluate()) {
+			assertTrue(tupleQueryResult2.hasNext());
+			while (tupleQueryResult2.hasNext()) {
+				BindingSet b = tupleQueryResult2.next();
+				assertEquals("http://s700", b.getBinding("s").getValue().toString());
+			}
 		}
 
 		connection.close();
@@ -343,12 +348,13 @@ public class EndpointStorePhaseTest {
 		logger.info("QUERY");
 		sparqlQuery = new StringBuilder("SELECT ?o WHERE { <http://s0>  ?p  ?o . } ");
 		TupleQuery tupleQuery1 = connection.prepareTupleQuery(sparqlQuery.toString());
-		TupleQueryResult tupleQueryResult = tupleQuery1.evaluate();
-		assertTrue(tupleQueryResult.hasNext());
-		BindingSet b = tupleQueryResult.next();
-		System.out.println(b.getBinding("o").getValue().toString());
-		assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
-		assertFalse(tupleQueryResult.hasNext());
+		try (TupleQueryResult tupleQueryResult = tupleQuery1.evaluate()) {
+			assertTrue(tupleQueryResult.hasNext());
+			BindingSet b = tupleQueryResult.next();
+			System.out.println(b.getBinding("o").getValue().toString());
+			assertEquals("\"0\"@pl", b.getBinding("o").getValue().toString());
+			assertFalse(tupleQueryResult.hasNext());
+		}
 
 		connection.close();
 

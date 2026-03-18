@@ -50,8 +50,7 @@ public class SailCompiler {
 	private static final Pattern DIR_OPT = Pattern.compile("\\$\\{([^}]+)}");
 
 	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to an
-	 * {@link org.eclipse.rdf4j.model.IRI}
+	 * convert a {@link Value} to an {@link IRI}
 	 *
 	 * @param value the value
 	 * @return the iri
@@ -65,8 +64,7 @@ public class SailCompiler {
 	}
 
 	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to a
-	 * {@link org.eclipse.rdf4j.model.Resource}
+	 * convert a {@link Value} to a {@link Resource}
 	 *
 	 * @param value the value
 	 * @return the resource
@@ -189,14 +187,14 @@ public class SailCompiler {
 	 * set the validator to check the node
 	 *
 	 * @param validator validator
-	 * @throws java.lang.NullPointerException if validator is null
+	 * @throws NullPointerException if validator is null
 	 */
 	public void setValidator(SailCompilerValidator validator) {
 		this.validator = Objects.requireNonNull(validator, "validator can't be null!");
 	}
 
 	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to a String
+	 * convert a {@link Value} to a String
 	 *
 	 * @param value the value
 	 * @return the string
@@ -216,7 +214,7 @@ public class SailCompiler {
 	}
 
 	/**
-	 * convert a {@link org.eclipse.rdf4j.model.Value} to a path
+	 * convert a {@link Value} to a path
 	 *
 	 * @param value the value
 	 * @return the path

@@ -7,7 +7,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +49,7 @@ public class KWayMergerMergeConcurrencyTest {
 				}
 
 				@Override
-				public void mergeChunks(java.util.List<CloseSuppressPath> inputs, CloseSuppressPath output)
+				public void mergeChunks(List<CloseSuppressPath> inputs, CloseSuppressPath output)
 						throws KWayMerger.KWayMergerException {
 					int active = activeMerges.incrementAndGet();
 					maxActiveMerges.accumulateAndGet(active, Math::max);
@@ -93,7 +95,7 @@ public class KWayMergerMergeConcurrencyTest {
 			AtomicInteger mergeCalls = new AtomicInteger();
 			AtomicInteger nextChunk = new AtomicInteger(1);
 
-			ExceptionSupplier<Supplier<Integer>, java.io.IOException> chunkSupplier = () -> {
+			ExceptionSupplier<Supplier<Integer>, IOException> chunkSupplier = () -> {
 				int value = nextChunk.getAndIncrement();
 				if (value > 256) {
 					return null;
@@ -127,7 +129,7 @@ public class KWayMergerMergeConcurrencyTest {
 				}
 
 				@Override
-				public void mergeChunks(java.util.List<CloseSuppressPath> inputs, CloseSuppressPath output)
+				public void mergeChunks(List<CloseSuppressPath> inputs, CloseSuppressPath output)
 						throws KWayMerger.KWayMergerException {
 					int active = activeMerges.incrementAndGet();
 					maxActiveMerges.accumulateAndGet(active, Math::max);
@@ -164,7 +166,7 @@ public class KWayMergerMergeConcurrencyTest {
 
 	@SuppressWarnings("unchecked")
 	private static <E, S extends Supplier<E>> KWayMergerChunked<E, S> newChunkedMerger(CloseSuppressPath workLocation,
-			ExceptionSupplier<S, java.io.IOException> chunkSupplier, KWayMergerChunked.KWayMergerChunkedImpl<E, S> impl,
+			ExceptionSupplier<S, IOException> chunkSupplier, KWayMergerChunked.KWayMergerChunkedImpl<E, S> impl,
 			int workers, int k, int maxConcurrentMerges) throws Exception {
 		return new KWayMergerChunked<>(workLocation, chunkSupplier, impl, workers, k, maxConcurrentMerges);
 	}

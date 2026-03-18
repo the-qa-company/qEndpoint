@@ -1,9 +1,7 @@
 package com.the_qa_company.qendpoint.store;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.junit.Ignore;
@@ -48,9 +46,11 @@ public class BenchMarkTest {
 				int count = 100000;
 				ValueFactory vf = connection.getValueFactory();
 				stopWatch = StopWatch.createStarted();
-				RepositoryResult<Statement> statements = connection.getStatements(null, null, null, true);
-				while (statements.hasNext())
-					statements.next();
+				try (var statements = connection.getStatements(null, null, null, true)) {
+					while (statements.hasNext()) {
+						statements.next();
+					}
+				}
 				stopWatch.stop();
 				logger.debug("Time to query all initially: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
@@ -66,11 +66,12 @@ public class BenchMarkTest {
 					logger.debug("Time to delete: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
 					stopWatch = StopWatch.createStarted();
-					statements = connection.getStatements(null, null, null, true);
 					int c = 0;
-					while (statements.hasNext()) {
-						statements.next();
-						c++;
+					try (var statements = connection.getStatements(null, null, null, true)) {
+						while (statements.hasNext()) {
+							statements.next();
+							c++;
+						}
 					}
 					stopWatch.stop();
 					logger.debug("Time to query all: {}", stopWatch.getTime(TimeUnit.MILLISECONDS));

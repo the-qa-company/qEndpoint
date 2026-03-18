@@ -1,8 +1,7 @@
 package com.the_qa_company.qendpoint.compiler;
 
 /**
- * Utility class to change default values for
- * {@link com.the_qa_company.qendpoint.compiler.CompiledSailOptions}
+ * Utility class to change default values for {@link CompiledSailOptions}
  *
  * @author Antoine Willerval
  */

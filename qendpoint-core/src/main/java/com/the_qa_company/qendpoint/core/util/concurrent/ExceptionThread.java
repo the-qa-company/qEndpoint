@@ -17,8 +17,8 @@ public class ExceptionThread extends Thread {
 	 * @param name      common name
 	 * @param runnables the runnables list, can't be empty
 	 * @return exception thread attached with other runnables
-	 * @throws java.lang.IllegalArgumentException if the array is empty
-	 * @throws java.lang.NullPointerException     if an argument is null
+	 * @throws IllegalArgumentException if the array is empty
+	 * @throws NullPointerException     if an argument is null
 	 */
 	public static ExceptionThread async(String name, ExceptionRunnable... runnables) {
 		Objects.requireNonNull(name, "name can't be null!");
@@ -40,14 +40,14 @@ public class ExceptionThread extends Thread {
 	}
 
 	/**
-	 * Version of {@link java.lang.Runnable} with an exception
+	 * Version of {@link Runnable} with an exception
 	 */
 	@FunctionalInterface
 	public interface ExceptionRunnable {
 		/**
 		 * Runnable used in an {@link ExceptionThread}, can throw an exception
 		 *
-		 * @throws java.lang.Exception if any
+		 * @throws Exception if any
 		 * @see ExceptionThread#ExceptionThread(ExceptionThread.ExceptionRunnable,
 		 *      String)
 		 */
@@ -167,7 +167,7 @@ public class ExceptionThread extends Thread {
 	 * join this thread and create an exception if required, will convert it to
 	 * a runtime exception if it can't be created. If the thread returned an
 	 * exception while the current thread is interrupted, the exception will be
-	 * suppressed in the {@link java.lang.InterruptedException}.
+	 * suppressed in the {@link InterruptedException}.
 	 *
 	 * @throws InterruptedException     interruption while joining the thread
 	 * @throws ExceptionThreadException if the thread or any attached thread

@@ -11,8 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Options loaded from the
- * {@link com.the_qa_company.qendpoint.compiler.SailCompiler.SailCompilerReader}.
+ * Options loaded from the {@link SailCompiler.SailCompilerReader}.
  *
  * @author Antoine Willerval
  */

@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
+import com.the_qa_company.qendpoint.core.util.crc.CRCStopBitOutputStream;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class CompressTripleWriter implements Closeable {
 	private final boolean quad;
 
 	public CompressTripleWriter(OutputStream writer, boolean quad) throws IOException {
-		this.out = new CRCOutputStream(writer, new CRC32());
+		this.out = new CRCStopBitOutputStream(writer, new CRC32());
 		this.quad = quad;
 		// write quad header
 		int flags = 0;
@@ -37,7 +38,7 @@ public class CompressTripleWriter implements Closeable {
 	 * write a indexed triple into an output
 	 *
 	 * @param triple the triple to write
-	 * @throws java.io.IOException write exception
+	 * @throws IOException write exception
 	 */
 	public void appendTriple(IndexedTriple triple) throws IOException {
 		VByte.encode(out, triple.getSubject().getIndex());
@@ -52,7 +53,7 @@ public class CompressTripleWriter implements Closeable {
 	 * write a indexed triple into an output
 	 *
 	 * @param triple the triple to write
-	 * @throws java.io.IOException write exception
+	 * @throws IOException write exception
 	 */
 	public void appendTriple(TripleID triple) throws IOException {
 		VByte.encode(out, triple.getSubject());

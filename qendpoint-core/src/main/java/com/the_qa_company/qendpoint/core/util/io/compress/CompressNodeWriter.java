@@ -5,6 +5,7 @@ import com.the_qa_company.qendpoint.core.compact.integer.VByte;
 import com.the_qa_company.qendpoint.core.util.crc.CRC32;
 import com.the_qa_company.qendpoint.core.util.crc.CRC8;
 import com.the_qa_company.qendpoint.core.util.crc.CRCOutputStream;
+import com.the_qa_company.qendpoint.core.util.crc.CRCStopBitOutputStream;
 import com.the_qa_company.qendpoint.core.util.string.ByteString;
 import com.the_qa_company.qendpoint.core.util.string.ByteStringUtil;
 import com.the_qa_company.qendpoint.core.util.string.ReplazableString;
@@ -23,7 +24,7 @@ public class CompressNodeWriter implements Closeable {
 	private final ReplazableString previousStr = new ReplazableString();
 
 	public CompressNodeWriter(OutputStream stream, long size) throws IOException {
-		this.out = new CRCOutputStream(stream, new CRC8());
+		this.out = new CRCStopBitOutputStream(stream, new CRC8());
 		VByte.encode(this.out, size);
 		this.out.writeCRC();
 		this.out.setCRC(new CRC32());

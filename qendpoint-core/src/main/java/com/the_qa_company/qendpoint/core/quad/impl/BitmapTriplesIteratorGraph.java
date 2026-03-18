@@ -10,8 +10,6 @@ import com.the_qa_company.qendpoint.core.triples.IteratorTripleID;
 import com.the_qa_company.qendpoint.core.triples.TripleID;
 import com.the_qa_company.qendpoint.core.triples.impl.BitmapQuadTriples;
 
-import java.util.List;
-
 public class BitmapTriplesIteratorGraph extends FetcherIterator<TripleID> implements SuppliableIteratorTripleID {
 	private final BitmapQuadTriples quads;
 	private final IteratorTripleID tidIt;

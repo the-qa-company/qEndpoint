@@ -75,7 +75,7 @@ public class BitArrayDisk implements ModifiableBitmap, Closeable {
 
 	/**
 	 * create a in memory bit array, can be switch to a on disk bit array with
-	 * {@link #changeToInDisk(java.io.File)}
+	 * {@link #changeToInDisk(File)}
 	 *
 	 * @param nbits the number of bits to allocate
 	 */

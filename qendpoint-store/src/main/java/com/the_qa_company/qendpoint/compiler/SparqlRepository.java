@@ -84,7 +84,7 @@ public class SparqlRepository {
 	/**
 	 * @return a connection to this repository
 	 * @throws RepositoryException any exception returned by
-	 *                             {@link org.eclipse.rdf4j.repository.sail.SailRepository#getConnection()}
+	 *                             {@link SailRepository#getConnection()}
 	 */
 	public SailRepositoryConnection getConnection() throws RepositoryException {
 		return repository.getConnection();
@@ -144,7 +144,7 @@ public class SparqlRepository {
 	 * @param mimeSetter   mime setter, null for no set
 	 * @param out          output stream
 	 * @param queryParam   query parameters
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out, String queryParam) {
@@ -159,7 +159,7 @@ public class SparqlRepository {
 	 * @param acceptHeader accept header
 	 * @param mimeSetter   mime setter, null for no set
 	 * @param out          output stream
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, Consumer<String> mimeSetter,
 			OutputStream out) {
@@ -176,7 +176,7 @@ public class SparqlRepository {
 	 * @param mimeSetter   mime setter, null for no set
 	 * @param out          output stream
 	 * @param queryParam   query parameters
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
 			Consumer<String> mimeSetter, OutputStream out, String queryParam) {
@@ -197,7 +197,7 @@ public class SparqlRepository {
 	 * @param acceptHeader accept header
 	 * @param mimeSetter   mime setter, null for no set
 	 * @param out          output stream
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
 			Consumer<String> mimeSetter, OutputStream out) {
@@ -214,7 +214,7 @@ public class SparqlRepository {
 	 * @param mimeSetter           mime setter, null for no set
 	 * @param out                  output stream
 	 * @param queryParam           query parameters
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, String acceptLanguageHeader,
 			Consumer<String> mimeSetter, OutputStream out, String queryParam) {
@@ -230,7 +230,7 @@ public class SparqlRepository {
 	 * @param acceptLanguageHeader accept-language header
 	 * @param mimeSetter           mime setter, null for no set
 	 * @param out                  output stream
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(String sparqlQuery, int timeout, String acceptHeader, String acceptLanguageHeader,
 			Consumer<String> mimeSetter, OutputStream out) {
@@ -248,7 +248,7 @@ public class SparqlRepository {
 	 * @param mimeSetter           mime setter, null for no set
 	 * @param out                  output stream
 	 * @param queryParam           query parameters
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
 			String acceptLanguageHeader, Consumer<String> mimeSetter, OutputStream out, String queryParam) {
@@ -270,7 +270,7 @@ public class SparqlRepository {
 	 * @param acceptLanguageHeader accept-language header
 	 * @param mimeSetter           mime setter, null for no set
 	 * @param out                  output stream
-	 * @throws java.lang.NullPointerException if an argument is null
+	 * @throws NullPointerException if an argument is null
 	 */
 	public void execute(RepositoryConnection connection, String sparqlQuery, int timeout, String acceptHeader,
 			String acceptLanguageHeader, Consumer<String> mimeSetter, OutputStream out) {
@@ -303,8 +303,7 @@ public class SparqlRepository {
 	 *
 	 * @param sparqlQuery the query
 	 * @param timeout     query timeout
-	 * @throws java.lang.IllegalArgumentException if the query isn't a tuple
-	 *                                            query
+	 * @throws IllegalArgumentException if the query isn't a tuple query
 	 */
 	public ClosableResult<TupleQueryResult> executeTupleQuery(String sparqlQuery, int timeout) {
 		return executeTupleQuery(null, sparqlQuery, timeout);
@@ -316,8 +315,7 @@ public class SparqlRepository {
 	 * @param connection  the connection to use
 	 * @param sparqlQuery the query
 	 * @param timeout     query timeout
-	 * @throws java.lang.IllegalArgumentException if the query isn't a tuple
-	 *                                            query
+	 * @throws IllegalArgumentException if the query isn't a tuple query
 	 */
 	@SuppressWarnings("unchecked")
 	public ClosableResult<TupleQueryResult> executeTupleQuery(RepositoryConnection connection, String sparqlQuery,
@@ -341,12 +339,8 @@ public class SparqlRepository {
 	 *
 	 * @param sparqlQuery the query
 	 * @param timeout     query timeout
-	 * @throws java.lang.IllegalArgumentException               if the query
-	 *                                                          isn't a boolean
-	 *                                                          query
-	 * @throws org.eclipse.rdf4j.repository.RepositoryException if the
-	 *                                                          connection can't
-	 *                                                          be closed
+	 * @throws IllegalArgumentException if the query isn't a boolean query
+	 * @throws RepositoryException      if the connection can't be closed
 	 */
 	public boolean executeBooleanQuery(String sparqlQuery, int timeout) {
 		return executeBooleanQuery(null, sparqlQuery, timeout);
@@ -358,12 +352,8 @@ public class SparqlRepository {
 	 * @param connection  the connection to use
 	 * @param sparqlQuery the query
 	 * @param timeout     query timeout
-	 * @throws java.lang.IllegalArgumentException               if the query
-	 *                                                          isn't a boolean
-	 *                                                          query
-	 * @throws org.eclipse.rdf4j.repository.RepositoryException if the
-	 *                                                          connection can't
-	 *                                                          be closed
+	 * @throws IllegalArgumentException if the query isn't a boolean query
+	 * @throws RepositoryException      if the connection can't be closed
 	 */
 	public boolean executeBooleanQuery(RepositoryConnection connection, String sparqlQuery, int timeout) {
 		ClosableResult<?> res = execute0(connection, sparqlQuery, timeout, null, null, null, null, "");
@@ -386,8 +376,7 @@ public class SparqlRepository {
 	 *
 	 * @param sparqlQuery the query
 	 * @param timeout     query timeout
-	 * @throws java.lang.IllegalArgumentException if the query isn't a graph
-	 *                                            query
+	 * @throws IllegalArgumentException if the query isn't a graph query
 	 */
 	public ClosableResult<GraphQueryResult> executeGraphQuery(String sparqlQuery, int timeout) {
 		return executeGraphQuery(null, sparqlQuery, timeout);
@@ -399,8 +388,7 @@ public class SparqlRepository {
 	 * @param connection  the connection to use
 	 * @param sparqlQuery the query
 	 * @param timeout     query timeout
-	 * @throws java.lang.IllegalArgumentException if the query isn't a graph
-	 *                                            query
+	 * @throws IllegalArgumentException if the query isn't a graph query
 	 */
 	@SuppressWarnings("unchecked")
 	public ClosableResult<GraphQueryResult> executeGraphQuery(RepositoryConnection connection, String sparqlQuery,
@@ -483,9 +471,7 @@ public class SparqlRepository {
 	 * @param out              output stream
 	 * @param queryParam       query parameters
 	 * @return query result if the output stream is null (useless if out isn't
-	 *         null), return
-	 *         {@link com.the_qa_company.qendpoint.utils.rdf.BooleanQueryResult}
-	 *         for boolean queries
+	 *         null), return {@link BooleanQueryResult} for boolean queries
 	 */
 	private ClosableResult<?> execute0(RepositoryConnection customConnection, String sparqlQuery, int timeout,
 			String acceptHeader, String acceptLanguageHeader, Consumer<String> mimeSetter, OutputStream out,

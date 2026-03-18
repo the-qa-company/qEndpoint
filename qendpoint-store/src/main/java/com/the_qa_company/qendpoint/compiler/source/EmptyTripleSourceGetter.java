@@ -10,8 +10,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 
 /**
- * empty implementation of
- * {@link com.the_qa_company.qendpoint.compiler.TripleSourceModel}
+ * empty implementation of {@link TripleSourceModel}
  *
  * @author Antoine Willerval
  */

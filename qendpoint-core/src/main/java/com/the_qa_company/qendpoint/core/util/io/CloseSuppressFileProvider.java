@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import static com.the_qa_company.qendpoint.core.util.io.CloseSuppressPath.of;
-
 /**
  * {@link FileSystemProvider} implementation for {@link CloseSuppressPath}
  *

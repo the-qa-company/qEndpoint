@@ -1,6 +1,7 @@
 package com.the_qa_company.qendpoint.core.unsafe;
 
 import com.the_qa_company.qendpoint.core.util.concurrent.ExceptionThread;
+import sun.misc.Unsafe;
 
 import java.lang.ref.Cleaner;
 import java.lang.reflect.Field;
@@ -15,7 +16,7 @@ public class MemoryUtils {
 	/**
 	 * Unsafe object
 	 */
-	private static final sun.misc.Unsafe UNSAFE;
+	private static final Unsafe UNSAFE;
 	/**
 	 * Cleaner
 	 */
@@ -56,7 +57,7 @@ public class MemoryUtils {
 		try {
 			Field f = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
 			f.setAccessible(true);
-			UNSAFE = (sun.misc.Unsafe) f.get(null);
+			UNSAFE = (Unsafe) f.get(null);
 			if (UNSAFE == null) {
 				throw new NullPointerException("Unsafe value is null!");
 			}
@@ -90,7 +91,7 @@ public class MemoryUtils {
 	/**
 	 * @return unsafe object, be careful and gentle with it
 	 */
-	public static sun.misc.Unsafe getUnsafe() {
+	public static Unsafe getUnsafe() {
 		return UNSAFE;
 	}
 
