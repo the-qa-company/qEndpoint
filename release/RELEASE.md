@@ -1,1 +1,3 @@
-- Upgrade rdf4j version to 5.2.0 (#567)
+- Add support for unordered iterators/fetchers #610
+- update lz4 to 1.8.1
+
